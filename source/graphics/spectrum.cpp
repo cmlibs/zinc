@@ -743,8 +743,8 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 				Spectrum_settings_remove(spectrum_settings,spectrum_settings_list);
 				spectrum_settings=(struct Spectrum_settings *)NULL;
 			}	
-			if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-				("spectrum_modify_temp"))
+			spectrum_to_be_modified_copy=CREATE(Spectrum)("spectrum_modify_temp");
+			if (spectrum_to_be_modified_copy)
 			{
 				/* if required,generate and set the contours setting */
 				if(number_of_bands)
@@ -766,7 +766,7 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 					Spectrum_add_settings(spectrum_to_be_modified_copy,spectrum_settings,0);
 					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 						spectrum_to_be_modified_copy,spectrum_manager);
-					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
+					DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);
 				}			
 			}
 			else
@@ -2335,9 +2335,7 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->minimum=0;
 			spectrum->clear_colour_before_settings = 1;
 			spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
-			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
-			spectrum->access_count=0;
-			spectrum->colour_lookup_texture = (struct Texture *)NULL;
+			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);			spectrum->access_count=1;			spectrum->colour_lookup_texture = (struct Texture *)NULL;
 			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())
 			{
 				if (name)

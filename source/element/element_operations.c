@@ -44,6 +44,9 @@ therefore cannot reside in finite element modules.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include "command/command.h"
+#include "computed_field/computed_field.h"
+#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
@@ -663,3 +666,201 @@ allowed during identifier changes.
 
 	return (return_code);
 } /* FE_region_change_element_identifiers */
+
+static int FE_element_add_if_selection_ranges_condition_with_group(
+		struct FE_element *element,	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2008
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code, selected;
+	struct CM_element_information identifier;
+	struct FE_element_fe_region_selection_ranges_condition_data *data;
+
+	ENTER(FE_element_add_if_selection_ranges_condition);
+	if (element &&
+		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
+	{
+		return_code = get_FE_element_identifier(element, &identifier);
+		if (identifier.type == data->cm_element_type)
+		{
+			selected = 1;
+			if (selected && data->selected_flag)
+			{
+				selected = IS_OBJECT_IN_LIST(FE_element)(element, data->element_selection_list);
+			}
+			if (selected && data->element_ranges)
+			{
+				selected = Multi_range_is_value_in_range(data->element_ranges, identifier.number);
+			}
+			if (selected && data->conditional_field)
+			{
+				Cmiss_field_id element_group_field = data->conditional_field;
+        Cmiss_field_element_group_template_id element_group =
+        	Cmiss_field_cast_element_group_template(element_group_field);
+				selected = Cmiss_field_element_group_template_is_element_selected(
+					element_group, element);
+        Cmiss_field_destroy(&element_group_field);
+			}
+			if (selected)
+			{
+				return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_add_if_selection_ranges_condition.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_add_if_selection_ranges_condition */
+
+struct LIST(FE_element) *
+	FE_element_list_from_region_and_selection_group(
+		struct Cmiss_region *region, enum CM_element_type cm_element_type,
+		struct Multi_range *element_ranges,
+		struct Computed_field *group_field, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 3 March 2003
+
+DESCRIPTION :
+Creates and returns an element list that is the intersection of:
+- all the elements in <fe_region>;
+- all elements in the <element_selection> if <selected_flag> is set;
+- all elements in the given <element_ranges>, if any.
+- all elements for which the <conditional_field> evaluates as "true"
+  in its centre at the specified <time>
+Up to the calling function to destroy the returned element list.
+==============================================================================*/
+{
+	int i, element_number, elements_in_region, elements_in_ranges = 0,
+		number_of_ranges = 0, return_code, selected, start, stop;
+	struct CM_element_information element_id;
+	struct FE_element *element;
+	struct FE_element_fe_region_selection_ranges_condition_data data;
+	struct FE_region *fe_region = NULL;
+
+	ENTER(FE_element_list_from_fe_region_selection_ranges_condition);
+	if (region)
+	{
+		fe_region = Cmiss_region_get_FE_region(region);
+	}
+	data.element_list = (struct LIST(FE_element) *)NULL;
+	if (fe_region)
+	{
+		if (data.element_list = CREATE(LIST(FE_element))())
+		{
+			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
+			if (element_ranges)
+			{
+				elements_in_ranges = Multi_range_get_total_number_in_ranges(element_ranges);
+			}
+
+			data.fe_region = fe_region;
+			data.cm_element_type = cm_element_type;
+			data.selected_flag = 0;
+			data.element_selection_list = NULL;
+			/* Seems odd to specify an empty element_ranges but I have
+				maintained the previous behaviour */
+			if (element_ranges &&
+				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(element_ranges))))
+			{
+				data.element_ranges = element_ranges;
+			}
+			else
+			{
+				data.element_ranges = (struct Multi_range *)NULL;
+			}
+			data.conditional_field = group_field;
+			data.conditional_field_time = time;
+
+			Cmiss_field_group_id sub_group = NULL;
+			if (group_field)
+			{
+				sub_group = Cmiss_field_cast_group(group_field);
+			}
+      Cmiss_field_id temp_field = NULL;
+      Cmiss_field_element_group_template_id element_group = NULL;
+      if (sub_group)
+      {
+      	Cmiss_field_id element_group_field = Cmiss_field_group_create_element_group(sub_group);
+        if (element_group_field)
+        {
+          element_group =
+            Cmiss_field_cast_element_group_template(element_group_field);
+          Cmiss_field_destroy(&element_group_field);
+        }
+        temp_field = (struct Computed_field *)sub_group;
+        Cmiss_field_destroy(&temp_field);
+        sub_group = NULL;
+      }
+			if (data.element_ranges
+				&& (elements_in_ranges < elements_in_region))
+			{
+				return_code = 1;
+				for (i = 0 ; i < number_of_ranges ; i++)
+				{
+					Multi_range_get_range(element_ranges, i, &start, &stop);
+					for (element_number = start ; element_number <= stop ; element_number++)
+					{
+						element_id.type = cm_element_type;
+						element_id.number = element_number;
+						if (element = FE_region_get_FE_element_from_identifier(
+								 fe_region, &element_id))
+						{
+							selected = 1;
+							if (selected && element_group)
+							{
+								selected = Cmiss_field_element_group_template_is_element_selected(
+									element_group, element);
+							}
+							if (selected)
+							{
+								ADD_OBJECT_TO_LIST(FE_element)(element, data.element_list);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				data.conditional_field = (struct Computed_field *)element_group;
+				return_code =  FE_region_for_each_FE_element(fe_region,
+						FE_element_add_if_selection_ranges_condition_with_group, (void *)&data);
+			}
+      if (element_group)
+      {
+        temp_field = (struct Computed_field *)element_group;
+        Cmiss_field_destroy(&temp_field);
+      }
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_list_from_fe_region_selection_ranges_condition.  "
+					"Error building list");
+				DESTROY(LIST(FE_element))(&data.element_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_list_from_fe_region_selection_ranges_condition.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_list_from_fe_region_selection_ranges_condition.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data.element_list);
+} /* FE_element_list_from_fe_region_selection_ranges_condition */

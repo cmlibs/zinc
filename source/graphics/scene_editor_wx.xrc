@@ -11,6 +11,7 @@
 				<option>0</option>
 				<object class = "wxBoxSizer">
 					<orient>wxHORIZONTAL</orient>
+<!--
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTER</flag>
 						<option>0</option>
@@ -18,13 +19,15 @@
 	   						<label>Scene:</label>
 						</object>
 					</object>
+
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTRE</flag>
 						<option>1</option>
 						<object class="wxPanel" name="SceneObjectChooserPanel">
 							<size>100,26</size>
-		   	    		</object>
-	    	  		</object>
+		   	    </object>
+	    	  </object>
+
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT</flag>
 						<object class = "wxStaticText">
@@ -32,6 +35,7 @@
 							<label>   Current Object:</label>
 						</object>
 					</object>
+
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTRE</flag>
 						<option>0</option>
@@ -52,9 +56,11 @@
 						<object class="wxButton" name="SceneObjectDownButton" >
 							<label>Down</label>
 							<size>-1,26</size>
-		   	    	</object>
-	    	  	</object>
-	     		</object>		
+		   	    </object>
+	    	  </object>
+-->
+
+	     		</object>	
   			</object>
 
 			<object class ="sizeritem">
@@ -70,17 +76,39 @@
 				  			<object class="sizeritem">
 	 				  			<flag>wxEXPAND</flag>
 									<option>1</option>
-									<object class="wxStaticBoxSizer">
-										<style>wxSUNKEN_BORDER</style>
-							   		<object class="sizeritem">
- 				  			    	<flag>wxEXPAND</flag>
-						  			  <option>1</option>
-										  <object class = "wxCheckListBox" name="SceneCheckList">
-												<style>wxLB_HSCROLL</style>
+			            <object class = "wxBoxSizer">
+                  	<orient>wxHORIZONTAL</orient>
+
+  									<object class="sizeritem">
+                    	<flag>wxEXPAND</flag>
+                      <option>1</option>
+                      <object class="wxStaticBoxSizer">
+                        <style>wxSUNKEN_BORDER</style>
+                        <object class="sizeritem">
+                          <flag>wxEXPAND</flag>
+                          <option>1</option>
+                          <object class = "wxPanel" name="TreeControlPanel"/>
+                        </object>
+                      </object>
+                    </object>
+<!--
+										<object class="sizeritem">
+                      <flag>wxEXPAND</flag>
+                      <option>1</option>
+                      <object class="wxStaticBoxSizer">
+                        <style>wxSUNKEN_BORDER</style>
+                        <object class="sizeritem">
+                        	<flag>wxEXPAND</flag>
+                          <option>1</option>
+                          <object class = "wxCheckListBox" name="SceneCheckList">
+                            <style>wxLB_HSCROLL</style>                                                                                    </object>
+                        </object>                                                                                
 											</object>
-								   	</object>
-								 </object>
-							 </object>
+                    </object>
+-->
+
+                  </object>
+               </object>
 
 				  		 <object class="sizeritem">
 								 <option>0</option>
@@ -189,7 +217,7 @@
 												<object class ="sizeritem">
 													<flag>wxEXPAND</flag>
 													<option>1</option>
-													<object class="wxCheckListBox" name="GraphicalItemsListBox">
+													<object class="wxCheckListBox" name="CmissGraphicListBox">
 														<style>wxLB_HSCROLL</style>
 													</object>
 												</object>
@@ -556,6 +584,24 @@
 												</object>
 											</object>
 
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText" name="CircleDiscretizationText"> 
+															<label>Circle Discretization:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="CircleDiscretizationTextCtrl">
+															<style>wxTE_PROCESS_ENTER</style>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
 											<object class="sizeritem">
 				   								<object class = "wxBoxSizer">	
 													<orient>wxHORIZONTAL</orient>
@@ -656,7 +702,24 @@
 															</object>	
 															<object class="sizeritem">
 																<object class	="wxTextCtrl"  name="BaseGlyphSizeTextCtrl">
-          														  	<style>wxTE_PROCESS_ENTER</style>
+          												<style>wxTE_PROCESS_ENTER</style>
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxCheckBox" name="OverlayCheckBox"> 
+																	<label>Overlay</label>
+																</object>
+															</object>
+															<object class="sizeritem">
+																<object class	="wxTextCtrl"  name="OverlayTextCtrl">
+          												<style>wxTE_PROCESS_ENTER</style>
 																</object>
 															</object>	
 														</object>
@@ -756,7 +819,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText"> 
+														<object class	="wxStaticText" name="SelectModeText"> 
 															<label>Select mode:</label>				  			
 	 													</object>
 													</object>

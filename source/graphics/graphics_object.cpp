@@ -56,6 +56,9 @@ gtObject/gtWindow management routines.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_group.h"
+#include "api/cmiss_field_sub_group_template.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/compare.h"
@@ -75,8 +78,9 @@ extern "C" {
 }
 #include "graphics/rendergl.hpp"
 #include "graphics/graphics_object.hpp"
+#include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
-
+#include "computed_field/computed_field_sub_group_template.hpp"
 /*
 Global variables
 ----------------
@@ -3775,6 +3779,7 @@ Allocates memory and assigns fields for a graphics object.
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
+			object->highlight_functor= NULL;
 			return_code = 1;
 			switch (object_type)
 			{
@@ -3818,6 +3823,7 @@ Allocates memory and assigns fields for a graphics object.
 				object->multipass_frame_buffer_object = 0;
 				object->multipass_frame_buffer_texture = 0;
 #endif /* defined (OPENGL_API) */
+				object->overlay = 0;
 				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
 				if (default_material)
@@ -3988,6 +3994,8 @@ and sets <*object> to NULL.
 			{
 				DEACCESS(GT_object)(&(object->nextobject));
 			}
+			if (object->highlight_functor)
+			  delete object->highlight_functor;
 			DEALLOCATE(*object_ptr);
 			return_code=1;
 		}
@@ -6854,6 +6862,96 @@ Clears the list of selected primitives and subobjects in <graphics_object>.
 	return (return_code);
 } /* GT_object_clear_selected_graphic_list */
 
+int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
+    void *group_field_void)
+{
+  struct Computed_field *group_field =
+    (struct Computed_field *)group_field_void;
+  if (graphics_object && graphics_object->highlight_functor)
+  {
+          delete graphics_object->highlight_functor;
+          graphics_object->highlight_functor = NULL;
+  }
+  int return_code = 0;
+  if (graphics_object && group_field)
+  {
+    Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+    Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(sub_group);
+    Cmiss_field_element_group_template_id element_group = NULL;
+    if (element_group_field)
+    {
+      element_group =
+        Cmiss_field_cast_element_group_template(element_group_field);
+      Cmiss_field_destroy(&element_group_field);
+      if (element_group)
+      {
+        Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+          Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+          Cmiss_field_element_group_template_id>(element_group);
+        graphics_object->highlight_functor =
+          new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
+              &Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
+        Cmiss_field_id temporary_handle =
+          reinterpret_cast<Computed_field *>(element_group);
+        Cmiss_field_destroy(&temporary_handle);
+      }
+    }
+    if (sub_group)
+    {
+      struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+      Cmiss_field_destroy(&sub_group_field);
+    }
+    return_code = 1;
+  }
+
+  return (return_code);
+}
+
+int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
+		void *group_field_void)
+{
+	struct Computed_field *group_field =
+		(struct Computed_field *)group_field_void;
+	if (graphics_object && graphics_object->highlight_functor)
+	{
+          delete graphics_object->highlight_functor;
+          graphics_object->highlight_functor = NULL;
+	}
+	int return_code = 0;
+	if (graphics_object && group_field)
+	{
+	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+	  Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+	  Cmiss_field_node_group_template_id node_group = NULL;
+    if (node_group_field)
+    {
+    	node_group =
+    		Cmiss_field_cast_node_group_template(node_group_field);
+    	Cmiss_field_destroy(&node_group_field);
+    	if (node_group)
+    	{
+    		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+    			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+    			Cmiss_field_node_group_template_id>(node_group);
+    		graphics_object->highlight_functor =
+    			new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
+    				  &Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
+    		Cmiss_field_id temporary_handle =
+    			reinterpret_cast<Computed_field *>(node_group);
+    		Cmiss_field_destroy(&temporary_handle);
+    	}
+    }
+    if (sub_group)
+		{
+    	struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+    	Cmiss_field_destroy(&sub_group_field);
+		}
+	  return_code = 1;
+	}
+
+	return (return_code);
+}
+
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges)
 /*******************************************************************************
@@ -7654,7 +7752,6 @@ Creates a GT_object_compile_context structure.
 
 int DESTROY(GT_object_compile_context)(struct GT_object_compile_context **context)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2005
 
 DESCRIPTION :
 Frees the memory for <**context> and sets <*context> to NULL.
@@ -8074,4 +8171,34 @@ int Graphics_vertex_array::clear_buffers()
 Graphics_vertex_array::~Graphics_vertex_array()
 {
 	delete internal;
+}
+
+int GT_object_get_overlay(struct GT_object *graphics_object)
+{
+	return graphics_object->overlay;
+}
+
+int set_GT_object_overlay(struct GT_object *graphics_object, int overlay)
+{
+	int return_code;
+
+	ENTER(set_GT_object_overlay);
+	if (graphics_object)
+	{
+		if (overlay != graphics_object->overlay)
+		{
+			graphics_object->overlay = overlay;
+			GT_object_changed(graphics_object);
+		}
+	  return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_GT_object_overlay.  Invalid graphics object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
 }

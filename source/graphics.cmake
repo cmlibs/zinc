@@ -3,6 +3,7 @@
 
 SET( GRAPHICS_SRCS
 	source/graphics/auxiliary_graphics_types.c
+	source/graphics/cmiss_graphic.cpp
 	source/graphics/cmiss_rendition.cpp
 	source/graphics/colour.c
 	source/graphics/complex.c

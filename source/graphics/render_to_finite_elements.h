@@ -72,9 +72,9 @@ Global functions
 ----------------
 */
 
-int render_to_finite_elements(struct Scene *scene, struct FE_region *fe_region,
-	enum Render_to_finite_elements_mode render_mode, 
-	struct Computed_field *coordinate_field);
+int render_to_finite_elements(struct Scene *scene, struct Cmiss_region *source_region,
+	const char *graphic_name, struct FE_region *fe_region, 
+	enum Render_to_finite_elements_mode render_mode, struct Computed_field *coordinate_field);
 /******************************************************************************
 LAST MODIFIED : 7 December 2005
 

@@ -1705,8 +1705,9 @@ Callback from wxChooser<Scene> when choice is made.
 				 scene_viewer=graphics_window->scene_viewer_array[pane_no];
 				 if (scene)
 				 {
-						Scene_viewer_set_scene(scene_viewer,scene);
-						Graphics_window_update_now(graphics_window);
+					 REACCESS(Scene)(&(graphics_window->scene), scene);
+					 Scene_viewer_set_scene(scene_viewer,scene);
+					 Graphics_window_update_now(graphics_window);
 				 }
 			}
 			return 1;
@@ -4386,7 +4387,7 @@ it.
 			}
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			BOOL win32_return_code;
-			static char *class_name="Graphics_window";
+			static const char *class_name="Graphics_window";
 			WNDCLASS class_information;
 
 			/* check if the class is registered */

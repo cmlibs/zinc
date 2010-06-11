@@ -53,7 +53,7 @@ This provides a Cmgui interface to the window system specific OpenGL binding
 #include "three_d_drawing/window_system_extensions.h"
 
 #if defined (WIN32_USER_INTERFACE)
-int Window_system_extensions_load_wgl_extension(char *extension_name)
+int Window_system_extensions_load_wgl_extension(const char *extension_name)
 /*******************************************************************************
 LAST MODIFIED : 3 October 2007
 

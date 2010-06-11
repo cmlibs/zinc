@@ -13,14 +13,20 @@ Provides the wxWidgets interface to manipulate spectrum settings.
 extern "C" {
 #include <stdio.h>
 #include <math.h>
+#include "api/cmiss_scene.h"
+#include "api/cmiss_graphics_module.h"
+#include "api/cmiss_rendition.h"
 #include "command/parser.h"
 #include "general/debug.h"
+#include "graphics/cmiss_rendition.h"
+#include "graphics/cmiss_graphic.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum_editor_wx.h"
 #include "graphics/spectrum_editor_dialog_wx.h"
+#include "region/cmiss_region.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -64,6 +70,8 @@ Contains all the information carried by the graphical element editor widget.
 	 struct GT_object *graphics_object, *tick_lines_graphics_object,
 			*tick_labels_graphics_object;
 	 int viewer_type;
+	 struct Cmiss_region *private_region;
+	 struct Cmiss_rendition *rendition;
 	 wxSpectrumEditor *wx_spectrum_editor;
 	 wxPanel *spectrum_panel, *spectrum_listbox_panel;
 	 wxFrame *spectrum_editor_frame;
@@ -121,7 +129,8 @@ a complete copy of <Spectrum>.
 			DEACCESS(Spectrum)(&(spectrum_editor->edit_spectrum));
 		}
 		/* make an empty spectrum */
-		if (spectrum_editor->edit_spectrum=ACCESS(Spectrum)(CREATE(Spectrum)("copy")))
+		spectrum_editor->edit_spectrum=CREATE(Spectrum)("copy");
+		if (spectrum_editor->edit_spectrum)
 		{
 			/* copy general settings into new object */
 			MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
@@ -896,9 +905,7 @@ Callback from wxObjectListBox<Spectrum> when choice is made.
 	 ENTER(material_editor_graphical_material_callback);
 	 if (spectrum != NULL)
 	 {
-			spectrum_editor->current_spectrum = spectrum;
-			spectrum_editor_wx_set_spectrum(spectrum_editor,
-				 spectrum);
+		 make_current_spectrum(spectrum_editor, spectrum);
 	 }
 	 return 1;
 }
@@ -1626,7 +1633,7 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 	 int range_set;
 
 	 ENTER(OnSpectrumAutorangePressed);
-	USE_PARAMETER(event);
+	 USE_PARAMETER(event);
 	 if (spectrum_editor)
 	 {
 			range_set = 0;
@@ -1662,8 +1669,8 @@ void OnSpectrumEditorCreateNewSpectrum(wxCommandEvent& event)
 	 if (NewSpectrumDialog->ShowModal() == wxID_OK)
 	 {
 			text = (char*)NewSpectrumDialog->GetValue().mb_str(wxConvUTF8);
-
-			if (spectrum = CREATE(Spectrum)(text))
+			spectrum = CREATE(Spectrum)(text);
+			if (spectrum)
 			{
 				 if(MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
 						(spectrum,spectrum_editor->edit_spectrum))
@@ -1671,8 +1678,6 @@ void OnSpectrumEditorCreateNewSpectrum(wxCommandEvent& event)
 						ADD_OBJECT_TO_MANAGER(Spectrum)(
 							 spectrum, spectrum_editor->spectrum_manager);
 						make_current_spectrum(spectrum_editor, spectrum);
-						spectrum_editor_wx_set_spectrum(spectrum_editor,
-							 spectrum);
 				 }
 			}
 	 }
@@ -1687,9 +1692,7 @@ void OnSpectrumEditorDeleteSpectrum(wxCommandEvent& event)
 	USE_PARAMETER(event);
 	 REMOVE_OBJECT_FROM_MANAGER(Spectrum)(
 			spectrum_editor->current_spectrum,spectrum_editor->spectrum_manager);
-	 spectrum_editor->current_spectrum = NULL;
 	 make_current_spectrum(spectrum_editor, NULL);
-	 spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
 
 	 LEAVE;
 }
@@ -1787,7 +1790,7 @@ a complete copy of <Spectrum>.
 			{
 #if defined (TEST_CODE)
 				display_message(ERROR_MESSAGE,
-					"spectrum_editor_dialog_set_spectrum.  Spectrum not managed");
+					"make_current_spectrum.  Spectrum not managed");
 #endif /* defined (TEST_CODE) */
 				spectrum=(struct Spectrum *)NULL;
 				return_code=0;
@@ -1802,14 +1805,17 @@ a complete copy of <Spectrum>.
 		}
  		spectrum_editor->wx_spectrum_editor->spectrum_editor_spectrum_list_set_selected(
 			 spectrum);
-		spectrum_editor->current_spectrum=spectrum;
+		if (spectrum_editor->current_spectrum != spectrum)
+		{
+			REACCESS(Spectrum)(&spectrum_editor->current_spectrum, spectrum);
+		}
 		spectrum_editor_wx_set_spectrum(
 			 spectrum_editor, spectrum_editor->current_spectrum);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_dialog_set_spectrum.  Invalid argument(s)");
+			"make_current_spectrum.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -1841,7 +1847,7 @@ DESCRIPTION :
 	if (spectrum_editor && spectrum_editor->edit_spectrum 
 		&& spectrum_editor->graphics_object
 		&& spectrum_editor->tick_lines_graphics_object
-		 && spectrum_editor->tick_labels_graphics_object)
+		&& spectrum_editor->tick_labels_graphics_object)
 	{
 		surface = GT_OBJECT_GET(GT_surface)(spectrum_editor->graphics_object, 0);
 		tick_lines = GT_OBJECT_GET(GT_polyline)(spectrum_editor->tick_lines_graphics_object, 0);
@@ -1961,6 +1967,8 @@ DESCRIPTION :
 		}
 		GT_object_changed(spectrum_editor->graphics_object);
 		GT_object_changed(spectrum_editor->tick_labels_graphics_object);
+		Cmiss_rendition_begin_change(spectrum_editor->rendition);
+		Cmiss_rendition_end_change(spectrum_editor->rendition);
 		Scene_viewer_redraw(spectrum_editor->spectrum_editor_scene_viewer);
 		if (spectrum_editor->spectrum_panel)
 		{
@@ -2053,12 +2061,9 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Graphics_font *font,
 	 struct Graphics_buffer_package *graphics_buffer_package,
 	 struct User_interface *user_interface,
-	 struct LIST(GT_object) *glyph_list,
-	 struct MANAGER(Graphical_material) *graphical_material_manager,
-	 struct MANAGER(Light) *light_manager,
-	 struct MANAGER(Spectrum) *spectrum_manager,
-	 struct MANAGER(Texture) *texture_manager,
-	 struct MANAGER(Scene) *scene_manager )
+	 struct Cmiss_graphics_module *graphics_module,
+	 struct MANAGER(Scene) *scene_manager,
+	 struct Cmiss_region *spectrum_region)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
 
@@ -2066,7 +2071,6 @@ DESCRIPTION :
 Creates a spectrum_editor widget.
 ==============================================================================*/
 {
-	 char *name;
 	 int i,j,return_code,surface_discretise_xi1=24,surface_discretise_xi2=108;
 	 GTDATA *data;
 	 struct Spectrum_editor *spectrum_editor;
@@ -2083,11 +2087,11 @@ Creates a spectrum_editor widget.
 	 struct GT_pointset *tick_labels;
 	 struct Graphical_material *tick_material;
 	 char **strings, *string_data;
-	 struct Spectrum *default_scene_spectrum, *temp_spectrum;
+	 struct Spectrum *temp_spectrum = NULL;
 
 	ENTER(CREATE(Spectrum_editor));
 	spectrum_editor = (struct Spectrum_editor *)NULL;
-	if (user_interface)
+	if (user_interface && graphics_module)
 	{
 			/* allocate memory */
 			if (ALLOCATE(spectrum_editor,struct Spectrum_editor,1))
@@ -2097,10 +2101,13 @@ Creates a spectrum_editor widget.
 				spectrum_editor->current_settings = (struct Spectrum_settings *)NULL;
 				spectrum_editor->current_spectrum=(struct Spectrum *)NULL;
 				spectrum_editor->edit_spectrum=(struct Spectrum *)NULL;
+				spectrum_editor->private_region=(struct Cmiss_region *)NULL;
+				spectrum_editor->rendition=(struct Cmiss_rendition *)NULL;
 				spectrum_editor->user_interface=user_interface;
 				spectrum_editor->material_manager_callback_id=(void *)NULL;
 				spectrum_editor->spectrum_manager_callback_id=(void *)NULL;
-				spectrum_editor->spectrum_manager = spectrum_manager;
+				spectrum_editor->spectrum_manager = Cmiss_graphics_module_get_spectrum_manager(
+					graphics_module);
 				spectrum_editor->editor_material = (struct Graphical_material *)NULL;
 				spectrum_editor->tick_material = (struct Graphical_material *)NULL;
 				spectrum_editor->graphics_object = (struct GT_object *)NULL;
@@ -2215,7 +2222,7 @@ Creates a spectrum_editor widget.
 					 Graphical_material_set_ambient(tick_material, &off_white );
 					 Graphical_material_set_diffuse(tick_material, &off_white );
 					 Graphical_material_set_shininess(tick_material, 0.8 );
-					 if ( ALLOCATE( points, Triple, surface_discretise_xi1 *
+					 if (ALLOCATE( points, Triple, surface_discretise_xi1 *
 								 surface_discretise_xi2) &&
 							ALLOCATE( normalpoints, Triple, surface_discretise_xi1 *
 								 surface_discretise_xi2) &&
@@ -2241,17 +2248,19 @@ Creates a spectrum_editor widget.
 											 (float)(surface_discretise_xi2 - 1);
 								 }
 							}
-							if ((spectrum_editor->graphics_object =
-										CREATE(GT_object)("spectrum_editor_surface",g_SURFACE,
-											 spectrum_editor->editor_material)))
+							spectrum_editor->graphics_object =
+								CREATE(GT_object)("spectrum_default",g_SURFACE,
+									spectrum_editor->editor_material);
+							if (spectrum_editor->graphics_object)
 							{
 								 ACCESS(GT_object)(spectrum_editor->graphics_object);
-								 if (cylinder_surface=CREATE(GT_surface)(
-												g_SHADED_TEXMAP, RENDER_TYPE_SHADED, g_QUADRILATERAL,
-												surface_discretise_xi2, surface_discretise_xi1,
-												points, normalpoints, /*tangentpoints*/(Triple *)NULL,
-												/*texturepoints*/(Triple *)NULL,
-												/* n_data_components */1, data))
+								 cylinder_surface=CREATE(GT_surface)(
+									 g_SHADED_TEXMAP, RENDER_TYPE_SHADED, g_QUADRILATERAL,
+									 surface_discretise_xi2, surface_discretise_xi1,
+									 points, normalpoints, /*tangentpoints*/(Triple *)NULL,
+									 /*texturepoints*/(Triple *)NULL,
+									 /* n_data_components */1, data);
+								 if (cylinder_surface)
 								 {
 										GT_OBJECT_ADD(GT_surface)(
 											 spectrum_editor->graphics_object, 0,
@@ -2284,10 +2293,11 @@ Creates a spectrum_editor widget.
 							{
 								 GT_object_set_next_object(spectrum_editor->graphics_object,
 										spectrum_editor->tick_lines_graphics_object);
-								 if (tick_lines = CREATE(GT_polyline)(
-												g_PLAIN_DISCONTINUOUS, /*line_width=default*/0,
-												0, points, /* normalpoints */(Triple *)NULL,
-												g_NO_DATA, (GTDATA *)NULL))
+								 tick_lines = CREATE(GT_polyline)(
+									 g_PLAIN_DISCONTINUOUS, /*line_width=default*/0,
+									 0, points, /* normalpoints */(Triple *)NULL,
+									 g_NO_DATA, (GTDATA *)NULL);
+								 if (tick_lines)
 								 {
 										GT_OBJECT_ADD(GT_polyline)(
 											 spectrum_editor->tick_lines_graphics_object, 0,
@@ -2317,9 +2327,10 @@ Creates a spectrum_editor widget.
 							points[0][2] = 0;
 							strings[0] = string_data;
 							string_data[0] = 0;
-							if ((spectrum_editor->tick_labels_graphics_object =
-										CREATE(GT_object)("spectrum_editor_tick_labels",
-											 g_POINTSET,tick_material)))
+							spectrum_editor->tick_labels_graphics_object =
+								CREATE(GT_object)("spectrum_editor_tick_labels",
+									g_POINTSET,tick_material);
+							if (spectrum_editor->tick_labels_graphics_object)
 							{
 								 GT_object_set_next_object(spectrum_editor->tick_lines_graphics_object,
 										spectrum_editor->tick_labels_graphics_object);
@@ -2347,40 +2358,45 @@ Creates a spectrum_editor widget.
 					 }
 					 if ( return_code )
 					 {
-							default_scene_spectrum = CREATE(Spectrum)("default_scene_spectrum");
-							spectrum_editor->spectrum_editor_scene = CREATE(Scene)("spectrum_editor_scene");
-							Scene_enable_graphics( spectrum_editor->spectrum_editor_scene,
-								 glyph_list, graphical_material_manager, 
-								 spectrum_editor->editor_material, font, light_manager,
-								 spectrum_manager, default_scene_spectrum, 
-								 texture_manager);
+							spectrum_editor->spectrum_editor_scene = Cmiss_scene_create();
+							Cmiss_scene_set_name(spectrum_editor->spectrum_editor_scene, "spectrum_editor_scene");
+							/* Create new rendition */
+							spectrum_editor->private_region = Cmiss_region_access(spectrum_region);
+							Cmiss_graphics_module_enable_renditions(
+								graphics_module, spectrum_editor->private_region);
+							Cmiss_scene_set_region(spectrum_editor->spectrum_editor_scene,
+								spectrum_editor->private_region);
+							Cmiss_scene_enable_rendition(spectrum_editor->spectrum_editor_scene);
+							spectrum_editor->rendition = Cmiss_rendition_get_from_region(
+								spectrum_editor->private_region);
 							viewer_light = CREATE(Light)("spectrum_editor_light");
 							set_Light_direction(viewer_light, light_direction);
 							viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");
 							Light_model_set_ambient(viewer_light_model, &ambient_colour);
-							if (graphics_buffer = create_Graphics_buffer_wx(
-										 graphics_buffer_package, spectrum_editor->spectrum_panel,
-										 GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-										 /*minimum_colour_buffer_depth*/8,
-										 /*minimum_depth_buffer_depth*/8,
-										 /*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer *)NULL))
+							graphics_buffer = create_Graphics_buffer_wx(
+								graphics_buffer_package, spectrum_editor->spectrum_panel,
+								GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+								/*minimum_colour_buffer_depth*/8,
+								/*minimum_depth_buffer_depth*/8,
+								/*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer *)NULL);
+							if (graphics_buffer)
 							{
 								 spectrum_editor->spectrum_editor_scene_viewer = 
 										CREATE(Scene_viewer)(graphics_buffer,
-											 &background_colour,
-											 (struct MANAGER(Light) *)NULL,viewer_light,
+											&background_colour,
+											(struct MANAGER(Light) *)NULL,viewer_light,
 											 (struct MANAGER(Light_model) *)NULL,viewer_light_model,
-											 (struct MANAGER(Scene) *)NULL,
-											 spectrum_editor->spectrum_editor_scene,
-											 (struct MANAGER(Texture) *)NULL,
-											 user_interface );
-								 GET_NAME(GT_object)(spectrum_editor->graphics_object,
-										&name);
-								 return_code=Scene_add_graphics_object(
-										spectrum_editor->spectrum_editor_scene,
-										spectrum_editor->graphics_object, 0,
-										name, /*fast_changing*/0);
-								 DEALLOCATE(name);
+											(struct MANAGER(Scene) *)NULL,
+											spectrum_editor->spectrum_editor_scene,
+											(struct MANAGER(Texture) *)NULL,
+											user_interface );
+								 ADD_OBJECT_TO_LIST(GT_object)(spectrum_editor->graphics_object,
+									 Cmiss_graphics_module_get_glyph_list(graphics_module));
+								 if (spectrum_editor->rendition && spectrum_editor->graphics_object)
+								 {
+									 return_code = Cmiss_rendition_add_glyph(spectrum_editor->rendition, 
+										 spectrum_editor->graphics_object, "spectrum_default");
+								 }
 								 Scene_viewer_set_input_mode(
 										spectrum_editor->spectrum_editor_scene_viewer,
 										SCENE_VIEWER_NO_INPUT );
@@ -2400,13 +2416,15 @@ Creates a spectrum_editor widget.
 										spectrum_editor->spectrum_editor_scene_viewer);
 							}
 					 }
-					 temp_spectrum = spectrum;
+					 if (spectrum)
+					 {
+						 temp_spectrum = spectrum;
+					 }
 					 if (!temp_spectrum)
 					 {
-							temp_spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
-								 (MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
-								 (void *)NULL,
-								 spectrum_editor->spectrum_manager);
+						 temp_spectrum = FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
+							 (MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
+							 (void *)NULL, spectrum_editor->spectrum_manager);
 					 }
 					 make_current_spectrum(spectrum_editor, temp_spectrum);
 					 spectrum_editor->wx_spectrum_editor->set_autorange_scene();
@@ -2471,8 +2489,7 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 			spectrum_editor_wx_set_settings(spectrum_editor);
 			if (spectrum_editor->edit_spectrum)
 			{
-				DESTROY(Spectrum)(&(spectrum_editor->edit_spectrum));
-				spectrum_editor->edit_spectrum = (struct Spectrum *)NULL;
+				DEACCESS(Spectrum)(&(spectrum_editor->edit_spectrum));
 			}
 		}
 		spectrum_editor_wx_update_scene_viewer(spectrum_editor);
@@ -2542,8 +2559,24 @@ Destroys the <*spectrum_editor_address> and sets
 		/* The DEACCESS for the first graphics object automatically works
 			 down the linked list chain */
 		DEACCESS(GT_object)(&spectrum_editor->graphics_object);
+		if (spectrum_editor->rendition)
+		{
+			Cmiss_rendition_destroy(&(spectrum_editor->rendition));
+		}
+		if (spectrum_editor->private_region)
+		{
+			Cmiss_region_destroy(&(spectrum_editor->private_region));
+		}
+		if (spectrum_editor->spectrum_editor_scene)
+		{
+			DEACCESS(Scene)(&spectrum_editor->spectrum_editor_scene);
+		}
 		DESTROY(Scene_viewer)(&spectrum_editor->spectrum_editor_scene_viewer);
 		/* destroy edit_spectrum */
+		if (spectrum_editor->current_spectrum)
+		{
+			DEACCESS(Spectrum)(&spectrum_editor->current_spectrum);
+		}
 		if (spectrum_editor->edit_spectrum)
 		{
 			DEACCESS(Spectrum)(

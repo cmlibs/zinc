@@ -108,6 +108,7 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	GRAPHICS_DRAW_UNSELECTED
 }; /* enum Graphics_select_mode */
 
+#ifndef RENDER_TYPE_DEFINED
 enum Render_type
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
@@ -121,6 +122,8 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	RENDER_TYPE_SHADED,
 	RENDER_TYPE_WIREFRAME
 };
+#define RENDER_TYPE_DEFINED
+#endif /* RENDER_TYPE_DEFINED */
 
 enum Streamline_type
 /*******************************************************************************

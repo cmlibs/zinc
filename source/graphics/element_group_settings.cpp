@@ -6567,7 +6567,7 @@ The graphics object is stored with with the settings it was created from.
 									{
 										selected_node_list = settings_to_object_data->selected_node_list;
 									}
-									glyph_set = create_GT_glyph_set_from_FE_region_nodes(
+									/* glyph_set = create_GT_glyph_set_from_FE_region_nodes(
 										fe_region, settings_to_object_data->rc_coordinate_field,
 										settings->glyph, base_size, centre, scale_factors,
 										settings_to_object_data->time,
@@ -6575,7 +6575,7 @@ The graphics object is stored with with the settings it was created from.
 										settings->variable_scale_field, settings->data_field,
 										settings->font, settings->label_field, 
 										settings->label_density_field, settings->visibility_field,
-										settings->select_mode,selected_node_list);
+										settings->select_mode,selected_node_list); */
 									/* NOT an error if no glyph_set produced == empty group */
 									if (glyph_set)
 									{

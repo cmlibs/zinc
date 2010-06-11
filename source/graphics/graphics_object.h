@@ -1302,6 +1302,11 @@ DESCRIPTION :
 Clears the list of selected primitives and subobjects in <graphics_object>.
 ==============================================================================*/
 
+int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
+    void *group_field_void);
+
+int GT_object_set_node_highlight_functor(struct GT_object *graphics_object, void *group_field);
+
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges);
 /*******************************************************************************
@@ -1497,4 +1502,7 @@ DESCRIPTION :
 Frees the memory for <**context> and sets <*context> to NULL.
 ==============================================================================*/
 
+int GT_object_get_overlay(struct GT_object *graphics_object);
+
+int set_GT_object_overlay(struct GT_object *graphics_object, int overlay);
 #endif /* !defined (GRAPHICS_OBJECT_H) */

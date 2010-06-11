@@ -43,10 +43,14 @@
 
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
+#include <map>
 
 /***************************************************************************//**
  * Common code for all OpenGL based implementations.
  */
+typedef std::map<int, GT_object*> GT_object_map;
+typedef std::map<int, GT_object*>::iterator GT_object_iterator;
+
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
 public:
@@ -65,10 +69,11 @@ public:
 	Texture_tiling *texture_tiling;  /** If a given texture is compiled into tiles
 													 then this field is filled in and expected to
 													 be used when compiling graphics that use that material. */
+	GT_object_map gt_object_map;
 	
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
-		graphics_buffer(graphics_buffer)
+		graphics_buffer(graphics_buffer), gt_object_map()
 	{
 		fast_changing = 0;
 		picking = 0;
@@ -86,10 +91,14 @@ public:
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object);
 
+	virtual int Overlay_graphics_object_compile();
+
 	/***************************************************************************//**
 	 * @see Render_graphics::Material_compile
 	 */
 	virtual int Material_compile(Graphical_material *material);
+
+	virtual int Register_overlay_graphics_object(GT_object *graphics_object);
 
 	/**************************************************************************//**
 	 * Temporarily override the viewing coordinates so that the current opengl

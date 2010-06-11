@@ -90,7 +90,8 @@ For checking fields of a node.
 {
 	int num_required_fields,number_of_nodes,num_coordinate,num_field;
 	struct Computed_field **required_fields;
-	struct Computed_field *visibility_field;
+	struct Computed_field *visibility_field, *group_field;
+	enum Graphics_select_mode select_mode;
 	struct FE_node *field_node;
 	FE_value time;
 }; /* struct Computed_fields_of_node */
@@ -111,9 +112,10 @@ Used with iterators for building glyph sets from nodes.
 		label_bounds_values, n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field, 
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
-		*visibility_field;
+		*visibility_field, *group_field;
 	struct FE_node *label_bounds_node;
 	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
+	enum Graphics_select_mode select_mode;
 }; /* struct Node_to_glyph_set_data */
 
 /*
@@ -142,7 +144,9 @@ structure - assumes they will be statically allocated by the calling procedure.
 		computed_fields_of_node->time = 0;
 		computed_fields_of_node->required_fields=(struct Computed_field **)NULL;
 		computed_fields_of_node->visibility_field=(struct Computed_field *)NULL;
+		computed_fields_of_node->group_field=(struct Computed_field *)NULL;
 		computed_fields_of_node->field_node=(struct FE_node *)NULL;
+		computed_fields_of_node->select_mode=GRAPHICS_SELECT_ON;
 	}
 	else
 	{
@@ -172,6 +176,10 @@ Destroys the structure.  DOES NOT DESTROY THE FIELDS!!!
 		if ((*computed_fields_of_node)->visibility_field)
 		{
 			DEACCESS(Computed_field)(&(*computed_fields_of_node)->visibility_field);
+		}
+		if ((*computed_fields_of_node)->group_field)
+		{
+			DEACCESS(Computed_field)(&(*computed_fields_of_node)->group_field);
 		}
 		DEALLOCATE(*computed_fields_of_node);
 		return_code=1;
@@ -264,8 +272,57 @@ computed_fields_of_node->number_of_nodes++.
 			actual size after adding each node, thereby only visiting and 
 			checking each node once. */
 		current_field_address=computed_fields_of_node->required_fields;
-		
-		if (FE_node_computed_fields_defined(node,
+		if (computed_fields_of_node->select_mode == GRAPHICS_DRAW_SELECTED ||
+			computed_fields_of_node->select_mode == GRAPHICS_DRAW_UNSELECTED)
+		{
+			if (computed_fields_of_node->group_field &&
+				(Computed_field_is_defined_at_node(computed_fields_of_node->group_field,node)) &&
+				(1 == Computed_field_get_number_of_components(
+				computed_fields_of_node->group_field)))
+			{
+				Computed_field_evaluate_at_node(computed_fields_of_node->group_field,
+					node, computed_fields_of_node->time, &visibility);
+				if (visibility >= 1)
+				{
+					switch (computed_fields_of_node->select_mode)
+					{
+						case GRAPHICS_DRAW_SELECTED:
+						{
+							visibility = 1;
+						} break;
+						case GRAPHICS_DRAW_UNSELECTED:
+						{
+							visibility = 0;
+						} break;
+						default:
+						{
+						} break;
+					}
+				}
+				else
+				{
+					switch (computed_fields_of_node->select_mode)
+					{
+						case GRAPHICS_DRAW_SELECTED:
+						{
+							visibility = 0;
+						} break;
+						case GRAPHICS_DRAW_UNSELECTED:
+						{
+							visibility = 1;
+						} break;
+						default:
+						{
+						} break;
+					}
+				}
+			}
+		}
+		else
+		{
+			visibility = 1;
+		}
+		if (visibility && FE_node_computed_fields_defined(node,
 				computed_fields_of_node->num_required_fields,current_field_address))
 		{
 			if (computed_fields_of_node->visibility_field && 
@@ -273,6 +330,7 @@ computed_fields_of_node->number_of_nodes++.
 					 computed_fields_of_node->visibility_field,node)) && 
 				(1 == Computed_field_get_number_of_components(computed_fields_of_node->visibility_field)))
 			{
+
 				Computed_field_evaluate_at_node(computed_fields_of_node->visibility_field,
 					node, computed_fields_of_node->time, &visibility);
 				if (visibility >= 1)
@@ -300,7 +358,7 @@ static int node_to_glyph_set(struct FE_node *node,
 /*******************************************************************************
 LAST MODIFIED : 16 November 2000
 
-DESCRIPTION :
+DESCRIPTION :node_to_glyph_set_data
 Iterator function for adding a glyph showing a node and fields to a glyph_set.
 Up to calling function to call Computed_field_clear_cache for any computed
 fields used here.
@@ -324,8 +382,57 @@ fields used here.
 	number_of_variable_scale_components = 0;
 	node_to_glyph_set_data =
 		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void;
-	visibility_value = 1;
-	if (node_to_glyph_set_data &&
+	if (node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED ||
+		node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED)
+	{
+		if (node_to_glyph_set_data->group_field &&
+			(Computed_field_is_defined_at_node(node_to_glyph_set_data->group_field,node)) &&
+			(1 == Computed_field_get_number_of_components(
+					node_to_glyph_set_data->group_field)))
+		{
+			Computed_field_evaluate_at_node(node_to_glyph_set_data->group_field,
+				node, node_to_glyph_set_data->time, &visibility_value);
+			if (visibility_value >= 1)
+			{
+				switch (node_to_glyph_set_data->select_mode)
+				{
+					case GRAPHICS_DRAW_SELECTED:
+					{
+						visibility_value = 1;
+					} break;
+					case GRAPHICS_DRAW_UNSELECTED:
+					{
+						visibility_value = 0;
+					} break;
+					default:
+					{
+					} break;
+				}
+			}
+			else
+			{
+				switch (node_to_glyph_set_data->select_mode)
+				{
+					case GRAPHICS_DRAW_SELECTED:
+					{
+						visibility_value = 0;
+					} break;
+					case GRAPHICS_DRAW_UNSELECTED:
+					{
+						visibility_value = 1;
+					} break;
+					default:
+					{
+					} break;
+				}
+			}
+		}
+	}
+	else
+	{
+		visibility_value = 1;
+	}
+	if ((visibility_value >= 1) && node_to_glyph_set_data &&
 		node_to_glyph_set_data->visibility_field &&
 		Computed_field_is_defined_at_node(
 			node_to_glyph_set_data->visibility_field,node) &&
@@ -1250,7 +1357,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	struct Graphics_font *font, struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
 	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
-	struct LIST(FE_node) *selected_node_list)
+	struct Computed_field *group_field)
 {
 	char *glyph_name, **labels;
 	float *label_bounds;
@@ -1278,7 +1385,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 		((!label_density_field) ||
 			(3 >=	Computed_field_get_number_of_components(label_density_field))) &&
 		(((GRAPHICS_DRAW_SELECTED!=select_mode)&&
-			(GRAPHICS_DRAW_UNSELECTED!=select_mode))||selected_node_list))
+			(GRAPHICS_DRAW_UNSELECTED!=select_mode))||group_field))
 	{
 		if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
 		{
@@ -1287,10 +1394,16 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 			computed_fields_of_node->num_coordinate=1;
 			computed_fields_of_node->required_fields=required_fields;
 			computed_fields_of_node->time = time;
+			computed_fields_of_node->select_mode = select_mode;
 			if (visibility_field)
 			{
 				computed_fields_of_node->visibility_field = 
 					ACCESS(Computed_field)(visibility_field);
+			}
+			if (group_field)
+			{
+				computed_fields_of_node->group_field =
+					ACCESS(Computed_field)(group_field);
 			}
 			if (coordinate_field)
 			{
@@ -1351,31 +1464,11 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 			if (return_code)
 			{
 				computed_fields_of_node->num_required_fields=number_of_fields;
-				switch (select_mode)
-				{
-					/* adds visibility_field to computed_fields_of_node to work out
-						 the number of nodes in the list to be visualised. */
-					case GRAPHICS_DRAW_SELECTED:
-					{
-						return_code = FE_region_for_each_FE_node_conditional(fe_region,
-							FE_node_is_in_list, selected_node_list,
-							FE_node_count_if_computed_fields_defined,
-							(void *)computed_fields_of_node);
-					} break;
-					case GRAPHICS_DRAW_UNSELECTED:
-					{
-						return_code = FE_region_for_each_FE_node_conditional(fe_region,
-							FE_node_is_not_in_list, selected_node_list,
-							FE_node_count_if_computed_fields_defined,
-							(void *)computed_fields_of_node);
-					} break;
-					default:
-					{
-						return_code = FE_region_for_each_FE_node(fe_region,
-							FE_node_count_if_computed_fields_defined,
-							(void *)computed_fields_of_node);
-					} break;
-				}
+
+				return_code = FE_region_for_each_FE_node(fe_region,
+					FE_node_count_if_computed_fields_defined,
+					(void *)computed_fields_of_node);
+
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
@@ -1487,26 +1580,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 						node_to_glyph_set_data.label_bounds_values = label_bounds_values;
 						node_to_glyph_set_data.label_bounds_vector = label_bounds_vector;
 						node_to_glyph_set_data.label_bounds = label_bounds;
-						switch (select_mode)
-						{
-							case GRAPHICS_DRAW_SELECTED:
-							{
-								return_code = FE_region_for_each_FE_node_conditional(fe_region,
-									FE_node_is_in_list, selected_node_list,
-									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
-							} break;
-							case GRAPHICS_DRAW_UNSELECTED:
-							{
-								return_code = FE_region_for_each_FE_node_conditional(fe_region,
-									FE_node_is_not_in_list, selected_node_list,
-									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
-							} break;
-							default:
-							{
-								return_code = FE_region_for_each_FE_node(fe_region,
-									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
-							} break;
-						}
+						node_to_glyph_set_data.group_field = group_field;
+						node_to_glyph_set_data.select_mode = select_mode;
+						return_code = FE_region_for_each_FE_node(fe_region,
+							node_to_glyph_set, (void *)(&node_to_glyph_set_data));
 						/* clear Computed_field caches so nodes not accessed */
 						Computed_field_clear_cache(coordinate_field);
 						if (orientation_scale_field)
@@ -1538,6 +1615,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 						if (visibility_field)
 						{
 							Computed_field_clear_cache(visibility_field);
+						}
+						if (group_field)
+						{
+							Computed_field_clear_cache(group_field);
 						}
 						if (!return_code)
 						{

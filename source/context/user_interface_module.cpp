@@ -343,6 +343,12 @@ struct User_interface_module *User_interface_module_create(
 		/* graphics window manager.  Note there is no default window. */
 		UI_module->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
+		if (UI_module->event_dispatcher && UI_module->user_interface)
+		{
+			UI_module->default_time_keeper=ACCESS(Time_keeper)(
+				CREATE(Time_keeper)("default", UI_module->event_dispatcher,
+				UI_module->user_interface));
+		}
 		UI_module->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 		if (UI_module->user_interface)
 		{
@@ -401,10 +407,6 @@ struct User_interface_module *User_interface_module_create(
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 		UI_module->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-		UI_module->default_time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default", UI_module->event_dispatcher,
-				UI_module->user_interface));
-		
 		if (UI_module->user_interface)
 		{
 			/* set up image library */

@@ -152,7 +152,7 @@ Global functions
 ----------------
 */
 
-int Open_image_environment(char *program_name);
+int Open_image_environment(const char *program_name);
 /*******************************************************************************
 LAST MODIFIED : 1 March 2002
 

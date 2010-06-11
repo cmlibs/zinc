@@ -48,6 +48,7 @@ Renders gtObjects to Wavefront OBJ file
 extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/renderwavefront.h"
@@ -1232,8 +1233,23 @@ Write the window object to the <wavefront_file_void>.
 			case g_SURFACE:
 			case g_NURBS:
 			{
-				sprintf(filename,"%s_%s.obj",export_to_wavefront_data->base_filename,
-					gt_object->name);
+
+				const char *parsed_name = duplicate_string(gt_object->name);
+				char *temp_string = NULL;
+				const char *num_string = "";
+				if ((temp_string = (char *)strrchr(parsed_name, '/')))
+				{
+					num_string = temp_string+1;
+					temp_string[0] = '\0';
+				}
+				while ((temp_string = (char *)strchr(parsed_name, '/')))
+				{
+					temp_string[0] = '_';
+				}
+				sprintf(filename,"%s%s%s.obj",export_to_wavefront_data->base_filename,
+					parsed_name,num_string);
+
+				DEALLOCATE(parsed_name);
 				fprintf(wavefront_global_file,"call %s\n",filename);
 					
 				if ( wavefront_object_file = fopen(filename, "w"))
@@ -1278,8 +1294,9 @@ Write the window object to the <wavefront_file_void>.
 Global functions
 ----------------
 */
+
 int export_to_wavefront(char *file_name,struct Scene *scene,
-	struct Scene_object *scene_object, int full_comments)
+	struct Cmiss_region *region, const char *graphic_name, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
 
@@ -1288,8 +1305,7 @@ Renders the visible objects to Wavefront object files.
 ==============================================================================*/
 {
 	char *extension;
-	float time;
-	FILE *wavefront_global_file, *wavefront_object_file;
+	FILE *wavefront_global_file;
 	int return_code;
 	struct Export_to_wavefront_data export_to_wavefront_data;
 
@@ -1297,84 +1313,49 @@ Renders the visible objects to Wavefront object files.
 	if (scene)
 	{
 		build_Scene(scene);
-		if (!scene_object)
+		/* Write all the graphics objects in the scene */
+		/* Open file and add header */
+		if (wavefront_global_file = fopen(file_name, "w"))
 		{
-			if (1==Scene_get_number_of_scene_objects(scene))
+			/*???debug */
+			display_message(WARNING_MESSAGE,
+				"export_to_wavefront.  Not fully implemented");
+			
+			fprintf(wavefront_global_file,
+				"# CMGUI Wavefront Object file generator\n");
+			/* Transform.... */
+			
+			/* Draw objects */
+			
+			export_to_wavefront_data.wavefront_file=wavefront_global_file;
+			export_to_wavefront_data.scene=scene;
+			if ( extension = strrchr ( file_name, '.' ))
 			{
-				scene_object = first_Scene_object_in_Scene_that(scene,
-					(LIST_CONDITIONAL_FUNCTION(Scene_object) *)NULL, NULL);
+				*extension = 0;
 			}
-		}
-		if (scene_object && Scene_object_has_gt_object(scene_object,
-			(struct GT_object *)NULL))
-		{
-			/* Write just this graphics object */
-			if ( wavefront_object_file = fopen(file_name, "w"))
+			export_to_wavefront_data.base_filename = file_name;
+			export_to_wavefront_data.full_comments = full_comments;
+
+			if (!region)
 			{
-				fprintf(wavefront_object_file,
-					"# CMGUI Wavefront Object file generator\n#%s \n",file_name);
-				fprintf(wavefront_object_file,"mtllib global.mtl\n\n");
-				file_vertex_index = 0;
-				file_normal_vertex_index = 0;
-				file_texture_vertex_index = 0;
-				if(Scene_object_has_time(scene_object))
-				{
-					time = Scene_object_get_time(scene_object);
-				}
-				else
-				{
-					time = 0.0;
-				}
-				return_code=makewavefront(wavefront_object_file,
-					full_comments, Scene_object_get_gt_object(scene_object),
-					time);
-				fclose(wavefront_object_file);
-				return_code = 1;
+				return_code=for_each_graphics_object_in_scene(scene,
+					graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"export_to_wavefront.  "
-					"Could not open wavefront object file %s", file_name);
-				return_code=0;
+				return_code=Scene_export_region_graphics_object(scene,region,graphic_name,
+					graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 			}
+			/* set lights... */
+			
+			fclose (wavefront_global_file);
+			return_code = 1;
 		}
 		else
 		{
-			/* Write all the graphics objects in the scene */
-			/* Open file and add header */
-			if (wavefront_global_file = fopen(file_name, "w"))
-			{
-				/*???debug */
-				display_message(WARNING_MESSAGE,
-					"export_to_wavefront.  Not fully implemented");
-
-				fprintf(wavefront_global_file,
-					"# CMGUI Wavefront Object file generator\n");
-				/* Transform.... */
-
-				/* Draw objects */
-
-				export_to_wavefront_data.wavefront_file=wavefront_global_file;
-				export_to_wavefront_data.scene=scene;
-				if ( extension = strrchr ( file_name, '.' ))
-				{
-					*extension = 0;
-				}
-				export_to_wavefront_data.base_filename = file_name;
-				export_to_wavefront_data.full_comments = full_comments;
-				return_code=for_each_graphics_object_in_scene(scene,
-					graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
-				/* set lights... */
-
-				fclose (wavefront_global_file);
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"export_to_wavefront.  Could not open wavefront global file");
-				return_code=0;
-			}
+			display_message(ERROR_MESSAGE,
+				"export_to_wavefront.  Could not open wavefront global file");
+			return_code=0;
 		}
 	}
 	else
@@ -1386,3 +1367,4 @@ Renders the visible objects to Wavefront object files.
 
 	return( return_code);
 } /* export_to_wavefront */
+

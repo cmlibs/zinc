@@ -60,7 +60,6 @@ Global functions
  * @param scene_object A scene object to output; if not specified use scene.
  * @return 1 on success, 0 on failure
  */
-int export_to_stl(char *file_name, struct Scene *scene,
-	struct Scene_object *scene_object);
+int export_to_stl(char *file_name, struct Scene *scene);
 
 #endif /* !defined (RENDERSTL_H) */

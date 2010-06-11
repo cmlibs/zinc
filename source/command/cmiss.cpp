@@ -4,7 +4,8 @@
  * Functions for executing cmiss commands.
  */
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+
+* Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -59,8 +60,11 @@
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
 #include "api/cmiss_context.h"
+#include "api/cmiss_field_sub_group_template.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
+#include "api/cmiss_rendition.h"
+#include "api/cmiss_scene.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #if defined (CELL)
@@ -93,6 +97,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_function.h"
+#include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
@@ -166,6 +171,7 @@ extern "C" {
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "graphics/cmiss_graphic.h"
 #include "graphics/cmiss_rendition.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/renderstl.h"
@@ -290,6 +296,8 @@ extern "C" {
 #include "cad/opencascadeimporter.h"
 #endif /* defined (USE_OPENCASCADE) */
 
+#define AWU_TESTING
+
 /*
 Module types
 ------------
@@ -407,7 +415,7 @@ DESCRIPTION :
 
 typedef struct
 /*******************************************************************************
-LAST MODIFIED : 12 December 1996
+LAST MODIFIED : 12 December 1996+
 
 DESCRIPTION :
 ==============================================================================*/
@@ -761,7 +769,7 @@ a single point in 3-D space with a text string drawn beside it.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			graphics_object_name = duplicate_string("annotation");
+			graphics_object_name = duplicate_string("your_annotation");
 			/* must access it now, because we deaccess it later */
 			material=
 				ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
@@ -796,8 +804,9 @@ a single point in 3-D space with a text string drawn beside it.
 			{
 				if (annotation_text)
 				{
-					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-						graphics_object_name,command_data->graphics_object_list))
+					graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+						graphics_object_name,command_data->glyph_list);
+					if (graphics_object)
 					{
 						if (g_POINTSET==GT_object_get_type(graphics_object))
 						{
@@ -822,10 +831,10 @@ a single point in 3-D space with a text string drawn beside it.
 					}
 					else
 					{
-						if (!((graphics_object=CREATE(GT_object)(graphics_object_name,
-							g_POINTSET,material))&&
-							ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-								command_data->graphics_object_list)))
+						graphics_object=CREATE(GT_object)(graphics_object_name,
+							g_POINTSET,material);
+						if (!(graphics_object && ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+									command_data->glyph_list)))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_create_points.  Could not create graphics object");
@@ -845,14 +854,14 @@ a single point in 3-D space with a text string drawn beside it.
 							(*pointlist)[0]=position[0];
 							(*pointlist)[1]=position[1];
 							(*pointlist)[2]=position[2];
-							if (!(font_name && (font = ACCESS(Graphics_font)
-								(Graphics_font_package_get_font(command_data->graphics_font_package, font_name)))))
+							if (!(font_name && (NULL != (font = ACCESS(Graphics_font)
+											(Graphics_font_package_get_font(command_data->graphics_font_package, font_name))))))
 							{
 								font = ACCESS(Graphics_font)(command_data->default_font);
 							}
-							if ((point_set=CREATE(GT_pointset)(1,pointlist,text,g_NO_MARKER,
-								0.0,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,font))&&
-								GT_OBJECT_ADD(GT_pointset)(graphics_object,time,point_set))
+							point_set=CREATE(GT_pointset)(1,pointlist,text,g_NO_MARKER,
+								0.0,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,font);
+							if (point_set&&GT_OBJECT_ADD(GT_pointset)(graphics_object,time,point_set))
 							{
 								return_code = 1;
 							}
@@ -886,7 +895,7 @@ a single point in 3-D space with a text string drawn beside it.
 							if (0==GT_object_get_number_of_times(graphics_object))
 							{
 								REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-									command_data->graphics_object_list);
+									command_data->glyph_list);
 							}
 						}
 					}
@@ -947,7 +956,7 @@ a single point in 3-D space with an axes glyph.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		graphics_object_name = duplicate_string("axes");
+		graphics_object_name = duplicate_string("your axes");
 		glyph = (struct GT_object *)NULL;
 		glyph_name = duplicate_string("axes_xyz");
 		material =
@@ -983,7 +992,7 @@ a single point in 3-D space with an axes glyph.
 		if (return_code)
 		{
 			if (graphics_object = FIND_BY_IDENTIFIER_IN_LIST(GT_object, name)(
-				graphics_object_name, command_data->graphics_object_list))
+				graphics_object_name, command_data->glyph_list))
 			{
 				if (g_GLYPH_SET == GT_object_get_type(graphics_object))
 				{
@@ -1015,7 +1024,7 @@ a single point in 3-D space with an axes glyph.
 				if (!((graphics_object = CREATE(GT_object)(graphics_object_name,
 								g_GLYPH_SET, material)) &&
 					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list)))
+						command_data->glyph_list)))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_create_points.  Could not create graphics object");
@@ -1094,7 +1103,7 @@ a single point in 3-D space with an axes glyph.
 					(0 == GT_object_get_number_of_times(graphics_object)))
 				{
 					REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list);
+						command_data->glyph_list);
 				}
 			}
 		}
@@ -1133,7 +1142,7 @@ with tick marks and labels for showing the scale of a spectrum.
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
 	struct Graphics_font *font;
-	struct GT_object *graphics_object;
+	struct GT_object *graphics_object = NULL;
 	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 	Triple bar_axis,bar_centre,side_axis;
@@ -1145,7 +1154,7 @@ with tick marks and labels for showing the scale of a spectrum.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			graphics_object_name = duplicate_string("colour_bar");
+			graphics_object_name = duplicate_string("your_colour_bar");
 			number_format = duplicate_string("%+.4e");
 			/* must access it now, because we deaccess it later */
 			label_material=
@@ -1227,7 +1236,7 @@ with tick marks and labels for showing the scale of a spectrum.
 				}
 				/* try to find existing colour_bar for updating */
 				graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->graphics_object_list);
+					graphics_object_name,command_data->glyph_list);
 				if (create_Spectrum_colour_bar(&graphics_object,
 						graphics_object_name,spectrum,/*component_number*/0,
 						bar_centre,bar_axis,side_axis,
@@ -1236,9 +1245,9 @@ with tick marks and labels for showing the scale of a spectrum.
 				{
 					ACCESS(GT_object)(graphics_object);
 					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list) ||
+						command_data->glyph_list) ||
 						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list))
+							command_data->glyph_list))
 					{
 						return_code=1;
 					}
@@ -2976,13 +2985,14 @@ DESCRIPTION :
 Executes a GFX CREATE SCENE command.
 ==============================================================================*/
 {
-	const char *current_token;
-	int return_code;
+	const char *current_token = 0;
+	int return_code = 0;
 	struct Cmiss_command_data *command_data;
-	struct Modify_scene_data modify_scene_data;
+ 	struct Modify_scene_data modify_scene_data;
 	struct Scene *scene;
 
 	ENTER(gfx_create_scene);
+
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
@@ -3008,30 +3018,39 @@ Executes a GFX CREATE SCENE command.
 					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
 						current_token,command_data->scene_manager))
 					{
-						if (scene=CREATE(Scene)(current_token))
+						/* new_code */
+						if ((scene=Cmiss_scene_create()))
 						{
-							Scene_enable_graphics(scene,command_data->glyph_list,
-								Material_package_get_material_manager(command_data->material_package),
-								Material_package_get_default_material(command_data->material_package),
-								command_data->default_font,
-								command_data->light_manager,
-								command_data->spectrum_manager,
-								command_data->default_spectrum,
-								command_data->texture_manager);
-							Scene_enable_time_behaviour(scene,
-								command_data->default_time_keeper);
-							shift_Parse_state(state,1);
-							if (state->current_token)
+							if (Cmiss_scene_set_region(scene, command_data->root_region) &&
+								Cmiss_scene_set_name(scene, current_token))
 							{
-								return_code=modify_Scene(state,(void *)scene,
-									(void *)(&modify_scene_data));
+								Cmiss_scene_enable_rendition(scene);
+								Scene_enable_time_behaviour(scene,
+									command_data->default_time_keeper);
+								shift_Parse_state(state,1);
+								if (state->current_token)
+								{
+ 									return_code=modify_Scene(state,(void *)scene,
+ 										(void *)(&modify_scene_data));
+								}
+								else
+								{
+									return_code=1;
+								}
+								if (!ADD_OBJECT_TO_MANAGER(Scene)(scene,
+										command_data->scene_manager))
+								{
+									DEACCESS(Scene)(&scene);
+								}
+								/* Need to deaccess the new scene here as the access count 
+								   is set to 1 when created. */
+								if (scene)
+									DEACCESS(Scene)(&scene);
 							}
 							else
 							{
-								return_code=1;
+								return_code = 0;
 							}
-							ADD_OBJECT_TO_MANAGER(Scene)(scene,
-								command_data->scene_manager);
 						}
 						else
 						{
@@ -3050,8 +3069,8 @@ Executes a GFX CREATE SCENE command.
 				}
 				else
 				{
-					return_code=
-						modify_Scene(state,(void *)NULL,(void *)(&modify_scene_data));
+/* 					return_code= */
+/* 						modify_Scene(state,(void *)NULL,(void *)(&modify_scene_data)); */
 				}
 			}
 			else
@@ -3294,8 +3313,9 @@ static and referred to by gfx_create_Spectrum
 					if (IS_MANAGED(Spectrum)(spectrum_to_be_modified,
 						command_data->spectrum_manager))
 					{
-						if (spectrum_to_be_modified_copy=CREATE(Spectrum)(
-							"spectrum_modify_temp"))
+						spectrum_to_be_modified_copy=CREATE(Spectrum)(
+							"spectrum_modify_temp");
+						if (spectrum_to_be_modified_copy)
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)(
 								spectrum_to_be_modified_copy,spectrum_to_be_modified);
@@ -3326,8 +3346,9 @@ static and referred to by gfx_create_Spectrum
 						{
 							if (return_code=shift_Parse_state(state,1))
 							{
-								if (spectrum_to_be_modified_copy=CREATE(Spectrum)(
-									"spectrum_modify_temp"))
+								spectrum_to_be_modified_copy=CREATE(Spectrum)(
+									"spectrum_modify_temp");
+								if (spectrum_to_be_modified_copy)
 								{
 									MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name)(
 										spectrum_to_be_modified_copy,spectrum_to_be_modified);
@@ -3351,7 +3372,8 @@ static and referred to by gfx_create_Spectrum
 					}
 					else
 					{
-						if (spectrum_to_be_modified=CREATE(Spectrum)("dummy"))
+						spectrum_to_be_modified=CREATE(Spectrum)("dummy");
+						if (spectrum_to_be_modified)
 						{
 							option_table=CREATE(Option_table)();
 							Option_table_add_entry(option_table,"SPECTRUM_NAME",
@@ -3359,7 +3381,7 @@ static and referred to by gfx_create_Spectrum
 								gfx_modify_Spectrum);
 							return_code=Option_table_parse(option_table,state);
 							DESTROY(Option_table)(&option_table);
-							DESTROY(Spectrum)(&spectrum_to_be_modified);
+							DEACCESS(Spectrum)(&spectrum_to_be_modified);
 						}
 						else
 						{
@@ -3504,11 +3526,10 @@ static and referred to by gfx_create_Spectrum
 							}
 							if (spectrum_to_be_modified)
 							{
-
 								MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(
 									spectrum_to_be_modified,spectrum_to_be_modified_copy,
 									command_data->spectrum_manager);
-								DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
+								DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);
 							}
 							else
 							{
@@ -3517,7 +3538,7 @@ static and referred to by gfx_create_Spectrum
 						}
 						else
 						{
-							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
+							DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);
 						}
 					}
 					if(option_table)
@@ -3591,7 +3612,8 @@ Executes a GFX CREATE SPECTRUM command.
 					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,name)(
 						current_token,command_data->spectrum_manager))
 					{
-						if (spectrum=CREATE(Spectrum)(current_token))
+						spectrum=CREATE(Spectrum)(current_token);
+						if (spectrum)
 						{
 							/*???DB.  Temporary */
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)(spectrum,
@@ -3611,8 +3633,7 @@ Executes a GFX CREATE SPECTRUM command.
 								ADD_OBJECT_TO_MANAGER(Spectrum)(spectrum,
 									command_data->spectrum_manager);
 							}
-							else
-								DESTROY(Spectrum)(&spectrum);
+							DEACCESS(Spectrum)(&spectrum);
 						}
 						else
 						{
@@ -6132,6 +6153,47 @@ Executes a DETACH command.
 } /* execute_command_detach */
 #endif /* defined (SELECT_DESCRIPTORS) */
 
+void export_object_name_parser(const char *path_name, const char **scene_name,
+	const char **rendition_name, const char **graphic_name)
+{
+	const char *slash_pointer, *dot_pointer;
+	int total_length, length;
+	char *temp_name;
+	if (path_name)
+	{
+		total_length = strlen(path_name);
+		slash_pointer = strchr(path_name,'/');
+		dot_pointer = strrchr(path_name, '.');
+		if (dot_pointer)
+		{	
+			if ((dot_pointer - path_name) < total_length)
+			{
+				*graphic_name = duplicate_string(dot_pointer + 1);
+			}
+			total_length = dot_pointer - path_name;
+		}
+		if (slash_pointer)
+		{
+			length = total_length - (slash_pointer + 1 - path_name);
+			if (length > 1)
+			{
+				ALLOCATE(temp_name, char, length+1);
+				strncpy(temp_name, slash_pointer + 1, length);
+				temp_name[length] = '\0';
+				*rendition_name = temp_name;
+				total_length = slash_pointer - path_name;
+			}
+		}
+		if (total_length > 1)
+		{
+			ALLOCATE(temp_name, char, total_length+1);
+			strncpy(temp_name, path_name, total_length);
+			temp_name[total_length] = '\0';
+			*scene_name = temp_name;
+		}
+	}
+}
+
 static int gfx_convert_elements(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
@@ -6298,7 +6360,7 @@ DESCRIPTION :
 Executes a GFX CREATE command.
 ==============================================================================*/
 {
-	char *region_path;
+	char *output_region_path, *path_name;
 	enum Render_to_finite_elements_mode render_mode;
 	int return_code;
 	struct Computed_field *coordinate_field;
@@ -6315,9 +6377,13 @@ Executes a GFX CREATE command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			region_path = Cmiss_region_get_root_region_path();
+			output_region_path = Cmiss_region_get_root_region_path();
 			coordinate_field=(struct Computed_field *)NULL;
+			const char *scene_name = NULL, 
+					       *input_region_path = NULL, 
+					       *graphic_name = NULL;
 			scene = (struct Scene *)NULL;
+			path_name=(char *)NULL;
 			render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
 
 			option_table=CREATE(Option_table)();
@@ -6334,17 +6400,27 @@ Executes a GFX CREATE command.
 			OPTION_TABLE_ADD_ENUMERATOR(Render_to_finite_elements_mode)(option_table,
 				&render_mode);
 			/* region */
-			Option_table_add_entry(option_table, "region", &region_path,
+			Option_table_add_entry(option_table, "region", &output_region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			/* scene */
-			Option_table_add_entry(option_table, "scene", &scene,
-				command_data->scene_manager, set_Scene_including_sub_objects);
-			
+			Option_table_add_string_entry(option_table, "scene",
+				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
 			return_code=Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 
 			if (return_code)
 			{
+				if (path_name)
+				{
+					export_object_name_parser(path_name, &scene_name,
+						&input_region_path, &graphic_name);
+				}
+				if (scene_name)
+				{
+					REACCESS(Scene)(&(scene), 
+						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
+							command_data->scene_manager));
+				}
 				if (!scene)
 				{
 					display_message(ERROR_MESSAGE,
@@ -6360,19 +6436,28 @@ Executes a GFX CREATE command.
 				}
 				fe_region = (struct FE_region *)NULL;
 				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					region_path, &region) &&
+					output_region_path, &region) &&
 					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_convert.  Invalid region");
 					return_code = 0;
 				}
+				region = NULL;
+				region = Cmiss_region_find_subregion_at_path(command_data->root_region,
+						input_region_path);
+				if (input_region_path && !region)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert.  Invalid input_region");
+					return_code = 0;
+				}
 			}
 
 			if (return_code)
 			{
-				 return_code = render_to_finite_elements(scene, fe_region,
-					 render_mode, coordinate_field);
+				render_to_finite_elements(scene, region,
+					graphic_name, fe_region, render_mode, coordinate_field);
 			}
 			if (scene)
 			{
@@ -6382,9 +6467,29 @@ Executes a GFX CREATE command.
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
 			}
-			if (region_path)
+			if (output_region_path)
 			{
-				DEALLOCATE(region_path);
+				DEALLOCATE(output_region_path);
+			}
+			if (scene_name)
+			{
+				DEALLOCATE(scene_name);
+			}
+			if (input_region_path)
+			{
+				DEALLOCATE(input_region_path);
+			}
+			if (graphic_name)
+			{
+				DEALLOCATE(graphic_name);
+			}
+			if (region)
+			{
+				Cmiss_region_destroy(&region);
+			}
+			if (path_name)
+			{
+				DEALLOCATE(path_name);
 			}
 		}
 		else
@@ -7225,6 +7330,11 @@ Removes all instances of the <graphics_object> from <scene>.
 ==============================================================================*/
 {
 	int return_code;
+	return_code = 1;
+	USE_PARAMETER(scene);
+	USE_PARAMETER(graphics_object_void);
+	
+#if defined (USE_GRAPHICS_OBJECT)
 	struct GT_object *graphics_object;
 
 	ENTER(Scene_remove_graphics_object_iterator);
@@ -7243,6 +7353,7 @@ Removes all instances of the <graphics_object> from <scene>.
 		return_code=0;
 	}
 	LEAVE;
+#endif /* defined (USE_GRAPHICS_OBJECT) */
 
 	return (return_code);
 } /* Scene_remove_graphics_object_iterator */
@@ -7936,6 +8047,7 @@ struct Scene_add_graphics_object_iterator_data
 	struct Scene *scene;
 };
 
+#if defined (TO_BE_EDITED)
 static int Scene_add_graphics_object_iterator(struct GT_object *graphics_object,
 	void *data_void)
 /*******************************************************************************
@@ -7944,7 +8056,7 @@ LAST MODIFIED : 15 March 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *name;
+	//char *name;
 	int return_code;
 	struct Scene *scene;
 	struct Scene_add_graphics_object_iterator_data *data;
@@ -7955,6 +8067,7 @@ DESCRIPTION :
 		(data = (struct Scene_add_graphics_object_iterator_data *)data_void )&&
 		(scene = data->scene))
 	{
+#if defined (USE_GRAPHICS_OBJECT)
 		if (Scene_has_graphics_object(scene, graphics_object))
 		{
 			return_code = 1;
@@ -7976,6 +8089,9 @@ DESCRIPTION :
 		{
 			Scene_update_time_behaviour(data->scene, graphics_object);
 		}
+#else
+		return_code = 1;
+#endif
 	}
 	else
 	{
@@ -7986,6 +8102,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Scene_add_graphics_object_iterator */
+#endif /* TO_BE_EDITED */
 
 static int execute_command_gfx_draw(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -7996,14 +8113,12 @@ DESCRIPTION :
 Executes a GFX DRAW command.
 ==============================================================================*/
 {
-	char *region_path, *scene_object_name, *time_object_name;
+	const char *graphic_name, *time_object_name;
 	struct GT_object *graphics_object;
-	int return_code, position;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
-	struct Scene *child_scene, *scene;
-	struct Scene_add_graphics_object_iterator_data data;
 	struct Option_table *option_table;
+	struct Scene *scene;
 
 	ENTER(execute_command_gfx_draw);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -8011,29 +8126,16 @@ Executes a GFX DRAW command.
 	{
 		/* initialize defaults */
 		graphics_object = (struct GT_object *)NULL;
-		region_path = (char *)NULL;
-		scene_object_name = (char *)NULL;
 		time_object_name = (char *)NULL;
-		position = 0;
 		scene = ACCESS(Scene)(command_data->default_scene);
-		child_scene = (struct Scene *)NULL;
-
+		graphic_name = NULL;
 		option_table=CREATE(Option_table)();
 		/* as */
-		Option_table_add_entry(option_table,"as",&scene_object_name,
+		Option_table_add_entry(option_table,"as",&graphic_name,
 			(void *)1,set_name);
-		/* child_scene */
-		Option_table_add_entry(option_table,"child_scene",&child_scene,
-			command_data->scene_manager,set_Scene);
 		/* graphics_object */
-		Option_table_add_entry(option_table,"graphics_object",&graphics_object,
-			command_data->graphics_object_list,set_Graphics_object);
-		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
-		/* position */
-		Option_table_add_entry(option_table,"position",&position,
-			(void *)1,set_int);
+		Option_table_add_entry(option_table,"glyph",&graphics_object,
+			command_data->glyph_list,set_Graphics_object);
 		/* scene */
 		Option_table_add_entry(option_table,"scene",&scene,
 			command_data->scene_manager,set_Scene);
@@ -8042,22 +8144,8 @@ Executes a GFX DRAW command.
 			(void *)1,set_name);
 		/* default when token omitted (graphics_object) */
 		Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
-			command_data->graphics_object_list,set_Graphics_object);
+			command_data->glyph_list,set_Graphics_object);
 		return_code = Option_table_multi_parse(option_table,state);
-		if ((child_scene && graphics_object) ||
-			(graphics_object && region_path) ||
-			(region_path && child_scene))
-		{
-			display_message(ERROR_MESSAGE, "execute_command_gfx_draw.  "
-				"Specify only one of child_scene|graphics_object|group");
-			return_code = 0;
-		}
-		if (child_scene && time_object_name)
-		{
-			display_message(ERROR_MESSAGE, "execute_command_gfx_draw.  "
-				"Time objects may not be associated with a child_scene");
-			return_code = 0;
-		}
 		/* no errors, not asking for help */
 		if (return_code)
 		{
@@ -8065,76 +8153,43 @@ Executes a GFX DRAW command.
 			{
 				if (scene)
 				{
+					set_GT_object_default_material(graphics_object, NULL);
 					return_code = Scene_add_graphics_object(scene, graphics_object,
-						position, scene_object_name, /*fast_changing*/0);
+						graphic_name);
 					if (time_object_name)
 					{
 						/* SAB A new time_object is created and associated with the named
 							 scene_object, the time_keeper is supplied so that the
 							 default could be overridden */
-						Scene_set_time_behaviour(scene,scene_object_name, time_object_name,
-							command_data->default_time_keeper);
+// 						Scene_set_time_behaviour(scene,scene_object_name, time_object_name,
+// 							command_data->default_time_keeper);
 					}
 					if (1<GT_object_get_number_of_times(graphics_object))
 					{
 						/* any scene_objects referring to this graphics_object which do
 							 not already have a time_object all are associated with a
-							 single common time_object */
-						Scene_update_time_behaviour(scene,graphics_object);
+						 	 single common time_object */
+// 						Scene_update_time_behaviour(scene,graphics_object);
 					}
 				}
-			}
-			else if (child_scene)
-			{
-				return_code = Scene_add_child_scene(scene, child_scene, position,
-					scene_object_name, command_data->scene_manager);
-			}
-			else if (region_path)
-			{
-				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					region_path, &region))
-				{
-					if (!scene_object_name)
-					{
-						scene_object_name = duplicate_string(region_path);
-					}
-					return_code = Scene_add_graphical_element_group(scene,
-						region, position, scene_object_name);
-				}
-			}
-			else
-			{
-				data.scene = scene;
-				data.position = position;
-				return_code = FOR_EACH_OBJECT_IN_LIST(GT_object)(
-					Scene_add_graphics_object_iterator, (void *)&data,
-					command_data->graphics_object_list);
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
 		if (scene)
 		{
 			DEACCESS(Scene)(&scene);
-		}
-		if (child_scene)
-		{
-			DEACCESS(Scene)(&child_scene);
 		}
 		if (graphics_object)
 		{
 			DEACCESS(GT_object)(&graphics_object);
 		}
-		if (scene_object_name)
-		{
-			DEALLOCATE(scene_object_name);
-		}
 		if (time_object_name)
 		{
 			DEALLOCATE(time_object_name);
+		}
+		if (graphic_name)
+		{
+			DEALLOCATE(graphic_name);
 		}
 	}
 	else
@@ -8162,6 +8217,7 @@ is the region where the fields are defined (the parent region in this case).
 	struct FE_region *fe_region;
 }; /* struct Apply_transformation_data */
 
+#if defined (TO_BE_EDITED)
 static int apply_transformation_to_node(struct FE_node *node,
 	void *data_void)
 /*******************************************************************************
@@ -8228,6 +8284,7 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 
 	return (return_code);
 } /* apply_transformation_to_node */
+#endif
 
 static int gfx_edit_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -8241,9 +8298,11 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 	char apply_flag, *graphics_object_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
-	struct FE_region *fe_region;
+	//struct Cmiss_region *region;
+	//struct FE_region *fe_region;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
+#endif
 	struct Scene *scene;
 	struct Option_table *option_table;
 
@@ -8271,6 +8330,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 			(void *)0, set_name);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
+#if defined (USE_SCENE_OBJECT)
 			if (scene && graphics_object_name && (scene_object=
 				Scene_get_Scene_object_by_name(scene, graphics_object_name)))
 			{
@@ -8331,10 +8391,13 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 					"Must specify name of graphics object in scene");
 				return_code = 0;
 			}
-			if (graphics_object_name)
+			if (graphics_object_name)			
 			{
-				DEALLOCATE(graphics_object_name);
+				DEALLOCATE(graphics_object_name);			
 			}
+#else
+			return_code = 1;
+#endif /* defined (USE_SCENE_OBJECT) */
 		}
 		DESTROY(Option_table)(&option_table);
 		DEACCESS(Scene)(&scene);
@@ -8497,6 +8560,7 @@ Invokes the graphical spectrum group editor.
 			command_data->spectrum_manager, set_Spectrum);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
+			Cmiss_region *spectrum_region = Cmiss_region_create_region(command_data->root_region);
 			return_code = bring_up_spectrum_editor_dialog(
 				&(command_data->spectrum_editor_dialog),
 #if defined (MOTIF_USER_INTERFACE)
@@ -8505,9 +8569,10 @@ Invokes the graphical spectrum group editor.
 				command_data->spectrum_manager, spectrum,
 				command_data->default_font,
 				command_data->graphics_buffer_package, command_data->user_interface,
-				command_data->glyph_list,
-				Material_package_get_material_manager(command_data->material_package), command_data->light_manager,
-				command_data->texture_manager, command_data->scene_manager);
+				command_data->graphics_module,
+				command_data->scene_manager,
+				spectrum_region);
+			Cmiss_region_destroy(&spectrum_region);
 		} /* parse error, help */
 		DESTROY(Option_table)(&option_table);
 		if (spectrum)
@@ -8923,32 +8988,31 @@ DESCRIPTION :
 Executes a GFX ERASE command.
 ==============================================================================*/
 {
-	char *scene_name, *scene_object_name;
+	char *graphic_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Scene *scene;
-	struct Scene_object *scene_object;
-
 	ENTER(execute_command_gfx_erase);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		scene_object_name = (char *)NULL;
+		graphic_name = (char *)NULL;
 		scene = ACCESS(Scene)(command_data->default_scene);
 		option_table = CREATE(Option_table)();
 		/* scene */
 		Option_table_add_entry(option_table, "scene", &scene,
 			command_data->scene_manager, set_Scene);
 		/* default option: scene object name */
-		Option_table_add_entry(option_table, (char *)NULL, &scene_object_name,
+		Option_table_add_entry(option_table, (char *)NULL, &graphic_name,
 			NULL, set_name);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (scene && scene_object_name)
+			if (scene && graphic_name)
 			{
-				if (scene_object =
-					Scene_get_Scene_object_by_name(scene, scene_object_name))
+#if defined (USE_SCENE_OBJECT)
+				if (graphic =
+					Scene_find_static_graphic_from_root_region_by_name(scene, graphic_name))
 				{
 					if (Scene_remove_Scene_object(scene, scene_object))
 					{
@@ -8973,6 +9037,9 @@ Executes a GFX ERASE command.
 					DEALLOCATE(scene_name);
 					return_code = 0;
 				}
+#else
+				return_code = 1;
+#endif
 			}
 			else
 			{
@@ -8986,9 +9053,9 @@ Executes a GFX ERASE command.
 		{
 			DEACCESS(Scene)(&scene);
 		}
-		if (scene_object_name)
+		if (graphic_name)
 		{
-			DEALLOCATE(scene_object_name);
+			DEALLOCATE(graphic_name);
 		}
 	}
 	else
@@ -9401,7 +9468,7 @@ DESCRIPTION :
 Executes a GFX EXPORT STL command.
 ==============================================================================*/
 {
-	char *file_name;
+	char *file_name, *path_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
@@ -9415,30 +9482,52 @@ Executes a GFX EXPORT STL command.
 		{
 			file_name = (char *)NULL;
 			scene = ACCESS(Scene)(command_data->default_scene);
-
+			const char *scene_name = NULL, 
+					       *region_path = NULL, 
+					       *graphic_name = NULL;
 			option_table = CREATE(Option_table)();
 			/* file */
 			Option_table_add_entry(option_table, "file", &file_name,
 				(void *)1, set_name);
 			/* scene */
-			Option_table_add_entry(option_table, "scene", &scene,
-				command_data->scene_manager, set_Scene_including_sub_objects);
+			Option_table_add_string_entry(option_table, "scene",
+				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
-				if (file_name)
+				if (path_name)
 				{
-					return_code =
-						export_to_stl(file_name, scene, (struct Scene_object *)NULL);
+					export_object_name_parser(path_name, &scene_name,
+						&region_path, &graphic_name);
+					DEALLOCATE(path_name);
 				}
-				else
+				if (scene_name)
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx export stl.  Must specify file name");
-					return_code = 0;
+					REACCESS(Scene)(&(scene), 
+						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
+							command_data->scene_manager));
 				}
+				if (scene)
+				{
+					if (file_name)
+					{
+						return_code = export_to_stl(file_name, scene);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx export stl.  Must specify file name");
+						return_code = 0;
+					}
+					DEACCESS(Scene)(&scene);
+				}
+				if (scene_name)
+					DEALLOCATE(scene_name);
+				if (region_path)
+					DEALLOCATE(region_path);
+				if (graphic_name)
+					DEALLOCATE(graphic_name);
 			}
 			DESTROY(Option_table)(&option_table);
-			DEACCESS(Scene)(&scene);
 			if (file_name)
 			{
 				DEALLOCATE(file_name);
@@ -9470,14 +9559,10 @@ DESCRIPTION :
 Executes a GFX EXPORT VRML command.
 ==============================================================================*/
 {
-	char *file_name;
+	char *file_name, *path_name;
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"file",NULL,(void *)1,set_name},
-		{"scene",NULL,NULL,set_Scene_including_sub_objects},
-		{NULL,NULL,NULL,NULL}
-	};
+	char recursive_flag = 1;
+	struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
 
@@ -9489,12 +9574,19 @@ Executes a GFX EXPORT VRML command.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialize defaults */
+			struct Cmiss_region *region = NULL;
+			const char *scene_name = NULL, 
+					       *region_path = NULL, 
+					       *graphic_name = NULL;
 			file_name=(char *)NULL;
+			path_name=(char *)NULL;
 			scene=ACCESS(Scene)(command_data->default_scene);
-			(option_table[0]).to_be_modified= &file_name;
-			(option_table[1]).to_be_modified= &scene;
-			(option_table[1]).user_data=command_data->scene_manager;
-			return_code=process_multiple_options(state,option_table);
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table, "file", &file_name, (void *)1, set_name);
+			Option_table_add_string_entry(option_table, "scene",
+				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
@@ -9507,15 +9599,63 @@ Executes a GFX EXPORT VRML command.
 #endif /* defined (WX_USER_INTERFACE)*/
 																										);
 				}
-				if (file_name)
+				if (path_name)
 				{
-					if (return_code=check_suffix(&file_name,".wrl"))
+					export_object_name_parser(path_name, &scene_name,
+						&region_path, &graphic_name);
+				}
+				if (scene_name)
+				{
+					REACCESS(Scene)(&(scene), 
+						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
+							command_data->scene_manager));
+				}
+				if (scene)
+				{
+					if (file_name)
 					{
-						return_code=export_to_vrml(file_name,scene);
+						if (return_code=check_suffix(&file_name,".wrl"))
+						{
+							struct Cmiss_region *child_region = NULL;
+							region = ACCESS(Cmiss_region)(Cmiss_scene_get_region(scene));
+							if (region_path)
+							{
+								child_region = Cmiss_region_find_subregion_at_path(region,
+									region_path);
+								recursive_flag = 0;
+							}
+							else
+							{
+								if (graphic_name)
+								{
+									child_region = region;
+									recursive_flag = 0;
+								}
+							}
+							if (child_region)
+							{
+								return_code=export_to_vrml(file_name,scene,region,recursive_flag,graphic_name);
+								DEACCESS(Cmiss_region)(&child_region);
+							}
+						}
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"gfx_export_vrml.  Specified scene not found");
+					return_code = 0;
+				}
 			} /* parse error,help */
+	
 			DEACCESS(Scene)(&scene);
+			if (scene_name)
+				DEALLOCATE(scene_name);
+			if (region_path)
+				DEALLOCATE(region_path);
+			if (graphic_name)
+				DEALLOCATE(graphic_name);
+			if (path_name)
+				DEALLOCATE(path_name);
 			DEALLOCATE(file_name);
 		}
 		else
@@ -9543,19 +9683,18 @@ DESCRIPTION :
 Executes a GFX EXPORT WAVEFRONT command.
 ==============================================================================*/
 {
-	char *file_name,full_comments,*scene_object_name,*temp_filename;
+	char *file_name,full_comments,*temp_filename, *path_name = NULL;
 	int frame_number, number_of_frames, return_code, version;
 	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-	struct Scene_object *scene_object;
+	struct Scene *scene = NULL;
+	struct Cmiss_region *region = NULL;
 	static struct Modifier_entry option_table[]=
 	{
 		{"file",NULL,(void *)1,set_name},
 		{"frame_number",NULL,NULL,set_int_non_negative},
 		{"full_comments",NULL,NULL,set_char_flag},
-		{"graphics_object",NULL,(void *)1,set_name},
  		{"number_of_frames",NULL,NULL,set_int_positive},
-		{"scene",NULL,NULL,set_Scene_including_sub_objects},
+		{"scene",NULL,NULL,set_string},
  		{"version",NULL,NULL,set_int_positive},
 		{NULL,NULL,NULL,NULL}
 	};
@@ -9573,45 +9712,55 @@ Executes a GFX EXPORT WAVEFRONT command.
 			full_comments=0;
  			number_of_frames=100;
 			scene=ACCESS(Scene)(command_data->default_scene);
-			scene_object_name=(char *)NULL;
  			version=3;
 			(option_table[0]).to_be_modified= &file_name;
 			(option_table[1]).to_be_modified= &frame_number;
 			(option_table[2]).to_be_modified= &full_comments;
-			(option_table[3]).to_be_modified= &scene_object_name;
- 			(option_table[4]).to_be_modified= &number_of_frames;
-			(option_table[5]).to_be_modified= &scene;
-			(option_table[5]).user_data=command_data->scene_manager;
- 			(option_table[6]).to_be_modified= &version;
+ 			(option_table[3]).to_be_modified= &number_of_frames;
+			(option_table[4]).to_be_modified= &path_name;
+ 			(option_table[5]).to_be_modified= &version;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
+			const char *scene_name = NULL, 
+				*graphic_name = NULL, 
+				*region_path = NULL;
 			if (return_code)
 			{
-				if (scene_object_name)
+				if (path_name)
 				{
-					if (!(scene_object=Scene_get_Scene_object_by_name(scene,
-						scene_object_name)))
+					return_code = 0;
+					export_object_name_parser(path_name, &scene_name, &region_path, &graphic_name);
+					if (scene_name)
 					{
-						display_message(ERROR_MESSAGE,
-							"gfx_export_wavefront.  Unable to find object '%s' in scene",
-							scene_object_name);
-						return_code=0;						
+						REACCESS(Scene)(&(scene), 
+							FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
+								command_data->scene_manager));
 					}
-				}
-				else
-				{
-					scene_object=(struct Scene_object *)NULL;
+					if (scene)
+					{
+						return_code = 1;
+						if (region_path)
+						{
+							region = Cmiss_region_find_subregion_at_path(Cmiss_scene_get_region(scene),
+								region_path);
+							if (!region)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_export_wavefront.  Region not found");
+							}
+						}
+					}
 				}
 			}
 			if (return_code)
 			{
 				if (!file_name)
 				{
-					if (scene_object_name)
+					if (region_path)
 					{
-						if (ALLOCATE(file_name,char,strlen(scene_object_name)+5))
+						if (ALLOCATE(file_name,char,strlen(region_path)+5))
 						{
-							sprintf(file_name,"%s.obj",scene_object_name);
+							sprintf(file_name,"%s.obj",region_path);
 						}
 					}
 					else
@@ -9628,15 +9777,21 @@ Executes a GFX EXPORT WAVEFRONT command.
 				}
 				if (file_name)
 				{
-					return_code=export_to_wavefront(file_name,scene,scene_object,
+					return_code=export_to_wavefront(file_name,scene,region,graphic_name,
 						full_comments);
 				}
 			} /* parse error,help */
 			DEACCESS(Scene)(&scene);
-			if (scene_object_name)
-			{
-				DEALLOCATE(scene_object_name);
-			}
+			if (scene_name)
+				DEALLOCATE(scene_name);
+			if (region_path)
+				DEALLOCATE(region_path);
+			if (region)
+				DEACCESS(Cmiss_region)(&region);
+			if (graphic_name)
+				DEALLOCATE(graphic_name);
+			if (path_name)
+				DEALLOCATE(path_name);
 			if (file_name)
 			{
 				DEALLOCATE(file_name);
@@ -10903,10 +11058,14 @@ Executes a GFX LIST ALL_COMMANDS.
 					return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
 						list_Graphical_material_commands,(void *)command_prefix, 
 						graphical_material_manager);
-				}	
+				}
+#if defined (TO_BE_EDITED)
 				return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
 					for_each_graphics_object_in_scene_get_command_list, (void*) "false",
 					command_data->scene_manager);
+#else
+				return_code =1;
+#endif
 				/* Command of graphics window */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
@@ -11160,8 +11319,7 @@ Executes a GFX LIST ELEMENT.
 	int return_code, start, stop;
 	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
-	struct FE_region *fe_region;
+	struct Cmiss_region *region = NULL;
 	struct LIST(FE_element) *element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
@@ -11185,7 +11343,7 @@ Executes a GFX LIST ELEMENT.
 		/* all */
 		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
 		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
+		Option_table_add_entry(option_table, "region", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
@@ -11199,14 +11357,38 @@ Executes a GFX LIST ELEMENT.
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-				region_path, &region) &&
-				(fe_region = Cmiss_region_get_FE_region(region)))
+				region_path, &region))
 			{
-				if (element_list =
-					FE_element_list_from_fe_region_selection_ranges_condition(
-						fe_region, cm_element_type, command_data->element_selection,
-						selected_flag, element_ranges,
-						/* conditional_field */(struct Computed_field *)NULL, /*time*/0))
+		  	if (region)
+		  	{
+					struct Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+		  		struct Computed_field *group_field = NULL;
+		  		if (rendition)
+		  		{
+		  			if (Cmiss_rendition_has_selection_group(rendition))
+		  			{
+		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  			}
+						Cmiss_rendition_destroy(&rendition);
+		  		}
+		  		if (selected_flag && group_field)
+		  		{
+		  			element_list = FE_element_list_from_region_and_selection_group(
+		  				region, cm_element_type, element_ranges, group_field, 0);
+		  		}
+		  		else if (selected_flag && !group_field)
+		  		{
+		  			element_list = NULL;
+		  		}
+		  		else
+		  		{
+		  			element_list = FE_element_list_from_region_and_selection_group(
+		  				region, cm_element_type, element_ranges, NULL, 0);
+		  		}
+		  		if (group_field)
+		  			Cmiss_field_destroy(&group_field);
+		  	}
+				if (element_list)
 				{
 					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 					{
@@ -11323,12 +11505,11 @@ use node_manager and node_selection.
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
 	struct FE_node_selection *node_selection;
-	struct FE_region *fe_region;
-	struct LIST(FE_node) *node_list;
+	struct LIST(FE_node) *node_list = NULL;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 
-	ENTER(gfx_list_FE_node);
+ 	ENTER(gfx_list_FE_node);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (use_data)
@@ -11350,7 +11531,7 @@ use node_manager and node_selection.
 		/* all */
 		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
 		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
+		Option_table_add_entry(option_table, "region", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
@@ -11363,77 +11544,97 @@ use node_manager and node_selection.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)
-				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
-				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
-			{
-				if (node_list = FE_node_list_from_fe_region_selection_ranges_condition(
-					fe_region, node_selection, selected_flag, node_ranges,
-					/* conditional_field */(struct Computed_field *)NULL, /*time*/0))
-				{
-					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
+			struct Cmiss_rendition *rendition = NULL;
+		  if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region))
+		  {
+		  	if (region)
+		  	{
+		  		rendition = Cmiss_rendition_get_from_region(region);
+		  		struct Computed_field *group_field = NULL;
+		  		if (rendition)
+		  		{
+		  			if (Cmiss_rendition_has_selection_group(rendition))
+		  			{
+		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  			}
+						Cmiss_rendition_destroy(&rendition);
+		  		}
+		  		if (selected_flag && group_field)
+		  		{
+		  			node_list = FE_node_list_from_region_and_selection_group(
+		  				region, node_ranges, group_field, 0, (use_data != NULL));
+		  		}
+		  		else if (selected_flag && !group_field)
+		  		{
+		  			node_list = NULL;
+		  		}
+		  		else
+		  		{
+		  			node_list = FE_node_list_from_region_and_selection_group(
+		  				region, node_ranges, NULL, 0,(use_data != NULL));
+		  		}
+		  		if (group_field)
+		  			Cmiss_field_destroy(&group_field);
+		  	}
+		  	if (node_list)
+		  	{
+		  		if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 					{
-						/* always write verbose details if single node asked for and
+		  			/* always write verbose details if single node asked for and
 							 neither all_flag nor selected_flag nor region set */
-						if (verbose_flag || ((!all_flag) && (!selected_flag) &&
-							(1 == Multi_range_get_number_of_ranges(node_ranges)) &&
-							(Multi_range_get_range(node_ranges, /*range_number*/0, 
-								&start, &stop)) && (start == stop)))
-						{
-							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
-								(void *)1, node_list);
-						}
-						else
-						{
-							if (use_data)
-							{
-								display_message(INFORMATION_MESSAGE,"Data:\n");
-							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE,"Nodes:\n");
-							}
-							/* write comma separated list of ranges - use existing node
+		  			if (verbose_flag || ((!all_flag) && (!selected_flag) &&
+		  					(1 == Multi_range_get_number_of_ranges(node_ranges)) &&
+		  					(Multi_range_get_range(node_ranges, /*range_number*/0,
+		  							&start, &stop)) && (start == stop)))
+		  			{
+		  				return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
+		  						(void *)1, node_list);
+		  			}
+		  			else
+		  			{
+		  				if (use_data)
+		  				{
+		  					display_message(INFORMATION_MESSAGE,"Data:\n");
+		  				}
+		  				else
+		  				{
+		  					display_message(INFORMATION_MESSAGE,"Nodes:\n");
+		  				}
+		  				/* write comma separated list of ranges - use existing node
 								 ranges structure */
-							Multi_range_clear(node_ranges);
-							if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								add_FE_node_number_to_Multi_range,(void *)node_ranges,
-								node_list))
-							{
-								return_code=Multi_range_display_ranges(node_ranges);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_list_FE_node.  Could not get node ranges");
-								return_code=0;
-							}
-							display_message(INFORMATION_MESSAGE,"Total number = %d\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
-						}
+		  				Multi_range_clear(node_ranges);
+		  				if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
+		  						add_FE_node_number_to_Multi_range,(void *)node_ranges,
+		  						node_list))
+		  				{
+		  					return_code=Multi_range_display_ranges(node_ranges);
+		  				}
+		  				else
+		  				{
+		  					display_message(ERROR_MESSAGE,
+		  							"gfx_list_FE_node.  Could not get node ranges");
+		  					return_code=0;
+		  				}
+		  				display_message(INFORMATION_MESSAGE,"Total number = %d\n",
+		  						NUMBER_IN_LIST(FE_node)(node_list));
+		  			}
+					}
+		  		DESTROY(LIST(FE_node))(&node_list);
+		  	}
+		  	else
+		  	{
+					if (use_data)
+					{
+						display_message(INFORMATION_MESSAGE,
+							"gfx list data:  No data specified\n");
 					}
 					else
 					{
-						if (use_data)
-						{
-							display_message(INFORMATION_MESSAGE,
-								"gfx list data:  No data specified\n");
-						}
-						else
-						{
-							display_message(INFORMATION_MESSAGE,
-								"gfx list nodes:  No nodes specified\n");
-						}
+						display_message(INFORMATION_MESSAGE,
+							"gfx list nodes:  No nodes specified\n");
 					}
-					DESTROY(LIST(FE_node))(&node_list);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_list_FE_node.  Could not make node_list");
-					return_code = 0;
-				}
-			}
+		  	}
+		  }
 			else
 			{
 				display_message(ERROR_MESSAGE, "gfx_list_FE_node.  Invalid region");
@@ -11623,7 +11824,11 @@ Executes a GFX LIST G_ELEMENT.
 	int error, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
+#if defined (TO_BE_EDITED)
 	struct GT_element_group *gt_element_group;
+#else
+	struct Cmiss_rendition *rendition;
+#endif
 	struct Option_table *option_table;
 	struct Scene *scene;
 
@@ -11653,8 +11858,8 @@ Executes a GFX LIST G_ELEMENT.
 			if (GET_NAME(Scene)(scene,&scene_name))
 			{
 				if (region_path && Cmiss_region_get_region_from_path_deprecated(
-					command_data->root_region, region_path, &region) &&
-					(gt_element_group = Scene_get_graphical_element_group(scene, region)))
+							command_data->root_region, region_path, &region) &&
+					(rendition = Cmiss_region_get_rendition(region)))
 				{
 					if (commands_flag)
 					{
@@ -11674,7 +11879,7 @@ Executes a GFX LIST G_ELEMENT.
 						display_message(INFORMATION_MESSAGE,
 							"Commands for reproducing group %s on scene %s:\n",
 							region_path, scene_name);
-						return_code = GT_element_group_list_commands(gt_element_group,
+						return_code = Cmiss_rendition_list_commands(rendition,
 							command_prefix, command_suffix);
 						DEALLOCATE(command_suffix);
 						DEALLOCATE(command_prefix);
@@ -11684,8 +11889,9 @@ Executes a GFX LIST G_ELEMENT.
 						display_message(INFORMATION_MESSAGE,
 							"Contents of group %s on scene %s:\n", region_path,
 							scene_name);
-						return_code=GT_element_group_list_contents(gt_element_group);
+						return_code=Cmiss_rendition_list_contents(rendition);
 					}
+					DEACCESS(Cmiss_rendition)(&rendition);
 				}
 				else
 				{
@@ -12084,7 +12290,11 @@ Executes a GFX LIST SCENE.
 					if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(current_token,
 						scene_manager))
 					{
+#if defined (TO_BE_EDITED)
 						return_code=list_Scene(scene,(void *)NULL);
+#else
+						return_code = 1;
+#endif
 					}
 					else
 					{
@@ -12101,8 +12311,12 @@ Executes a GFX LIST SCENE.
 			}
 			else
 			{
+#if defined (TO_BE_EDITED)
 				return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(list_Scene,(void *)NULL,
 					scene_manager);
+#else
+						return_code = 1;
+#endif
 			}
 		}
 		else
@@ -12295,11 +12509,14 @@ DESCRIPTION :
 Executes a GFX LIST TRANSFORMATION.
 ==============================================================================*/
 {
-	char *command_prefix,commands_flag,*scene_name,*scene_object_name;
+	//char *command_prefix,commands_flag,*scene_name,*scene_object_name;
+	char commands_flag,*scene_name,*scene_object_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
-	struct Scene_object *scene_object = 0;
+#if defined (USE_SCENE_OBJECT)
+	struct Scene_object *scene_object= NULL;
+#endif
 	static struct Modifier_entry option_table[]=
 	{
 		{"commands",NULL,NULL,set_char_flag},
@@ -12329,6 +12546,7 @@ Executes a GFX LIST TRANSFORMATION.
 			{
 				if (GET_NAME(Scene)(scene, &scene_name))
 				{
+#if defined (USE_SCENE_OBJECT)
 					if ((!scene_object_name)||(scene_object=
 						Scene_get_Scene_object_by_name(scene,scene_object_name)))
 					{
@@ -12378,6 +12596,9 @@ Executes a GFX LIST TRANSFORMATION.
 							"No object named '%s' in scene %s",scene_object_name,scene_name);
 						return_code=0;
 					}
+#else
+					return_code = 1;
+#endif /* defined (USE_SCENE_OBJECT) */
 					DEALLOCATE(scene_name);
 				}
 				else
@@ -12906,95 +13127,6 @@ be specified at once.
 	return (return_code);
 } /* gfx_modify_element_group */
 
-int Cmiss_region_modify_g_element(struct Cmiss_region *region,
-	struct Scene *scene, struct GT_element_settings *settings,
-	int delete_flag, int position)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *same_settings;
-
-	ENTER(iterator_modify_g_element);
-	if (region && scene && settings)
-	{
-		if (gt_element_group = Scene_get_graphical_element_group(scene, region))
-		{
-			/* get settings describing same geometry in list */
-			same_settings = first_settings_in_GT_element_group_that(
-				gt_element_group, GT_element_settings_same_name_or_geometry,
-				(void *)settings);
-			if (delete_flag)
-			{
-				/* delete */
-				if (same_settings)
-				{
-					return_code =
-						GT_element_group_remove_settings(gt_element_group, same_settings);
-				}
-				else
-				{
-					return_code = 1;
-				}
-			}
-			else
-			{
-				/* add/modify */
-				if (same_settings)
-				{
-					ACCESS(GT_element_settings)(same_settings);
-					if (-1 != position)
-					{
-						/* move same_settings to new position */
-						GT_element_group_remove_settings(gt_element_group, same_settings);
-						GT_element_group_add_settings(gt_element_group, same_settings,
-							position);
-					}
-					/* modify same_settings to match new ones */
-					return_code = GT_element_group_modify_settings(gt_element_group,
-						same_settings, settings);
-					DEACCESS(GT_element_settings)(&same_settings);
-				}
-				else
-				{
-					return_code = 0;
-					if (same_settings = CREATE(GT_element_settings)(
-						GT_element_settings_get_settings_type(settings)))
-					{
-						ACCESS(GT_element_settings)(same_settings);
-						if (GT_element_settings_copy_without_graphics_object(
-							same_settings, settings))
-						{
-							return_code = GT_element_group_add_settings(gt_element_group,
-								same_settings, position);
-						}
-						DEACCESS(GT_element_settings)(&same_settings);
-					}
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"iterator_modify_g_element.  g_element not in scene");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"iterator_modify_g_element.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* iterator_modify_g_element */
-
 static int gfx_modify_g_element(struct Parse_state *state,
 	void *help_mode,void *command_data_void)
 /*******************************************************************************
@@ -13005,13 +13137,15 @@ Executes a GFX MODIFY G_ELEMENT command.
 Parameter <help_mode> should be NULL when calling this function.
 ==============================================================================*/
 {
-	char *dummy_string, *region_path, *settings_name;
+	//char *dummy_string, *region_path, *settings_name, *graphic_name;
+	char *dummy_string, *region_path, *graphic_name;
 	int previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-	struct GT_element_group *gt_element_group;
-	struct G_element_command_data g_element_command_data;
-	struct Modify_g_element_data modify_g_element_data;
+	struct Cmiss_rendition *rendition;
+	struct Modify_rendition_data modify_rendition_data;
+	struct Rendition_command_data rendition_command_data;
+
 	struct Option_table *option_table;
 
 	ENTER(gfx_modify_g_element);
@@ -13045,129 +13179,127 @@ Parameter <help_mode> should be NULL when calling this function.
 			if (region_path && Cmiss_region_get_region_from_path_deprecated(
 				command_data->root_region, region_path, &region))
 			{
-				/* set defaults */
-				modify_g_element_data.delete_flag = 0;
-				modify_g_element_data.position = -1;
-				modify_g_element_data.scene =
+				modify_rendition_data.delete_flag = 0;
+				modify_rendition_data.position = -1;
+				modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
+				modify_rendition_data.scene =
 					ACCESS(Scene)(command_data->default_scene);
-
-				modify_g_element_data.settings = (struct GT_element_settings *)NULL;
 				/* Look ahead for the "as" option and find the settings with that name
 					if there is one.  Then the modify routines can keep the previous defaults */
 				if (state && (previous_state_index = state->current_index))
 				{
 					option_table = CREATE(Option_table)();
 					/* as */
-					settings_name = (char *)NULL;
-					Option_table_add_name_entry(option_table, "as", &settings_name);
-					/* scene */
+					graphic_name = (char *)NULL;
+					Option_table_add_name_entry(option_table, "as", &graphic_name);	
 					Option_table_add_entry(option_table, "scene",
-						&(modify_g_element_data.scene),
-						command_data->scene_manager, set_Scene);
+						&(modify_rendition_data.scene),
+						command_data->scene_manager, set_Scene);			
 					/* default to absorb everything else */
 					dummy_string = (char *)NULL;
 					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
 					return_code = Option_table_multi_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
-					if (return_code && settings_name)
-					{
-						if (gt_element_group = Scene_get_graphical_element_group(
-							modify_g_element_data.scene, region))
+					if (return_code && graphic_name)
+					{		
+						if (rendition = Cmiss_region_get_rendition(region))
 						{
-							if (modify_g_element_data.settings = first_settings_in_GT_element_group_that(
-								gt_element_group, GT_element_settings_has_name, (void *)settings_name))
+							if (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
+										rendition, Cmiss_graphic_has_name, (void *)graphic_name))
 							{
-								ACCESS(GT_element_settings)(modify_g_element_data.settings);
+								ACCESS(Cmiss_graphic)(modify_rendition_data.graphic);
 							}
+							DEACCESS(Cmiss_rendition)(&rendition);
 						}
 					}
+					
 
 					if (dummy_string)
 					{
 						DEALLOCATE(dummy_string);
 					}
-					if (settings_name)
+					if (graphic_name)
 					{
-						DEALLOCATE(settings_name);
+						DEALLOCATE(graphic_name);
 					}
 					/* Return back to where we were */
 					shift_Parse_state(state, previous_state_index - state->current_index);
 				}					
 
-				g_element_command_data.default_material =
+				rendition_command_data.default_material =
 					Material_package_get_default_material(command_data->material_package);
-				g_element_command_data.graphics_font_package = 
+				rendition_command_data.graphics_font_package = 
 					command_data->graphics_font_package;
-				g_element_command_data.default_font = command_data->default_font;
-				g_element_command_data.glyph_list = command_data->glyph_list;
-				g_element_command_data.computed_field_manager = 
+				rendition_command_data.default_font = command_data->default_font;
+				rendition_command_data.glyph_list = command_data->glyph_list;
+				rendition_command_data.computed_field_manager = 
 					 Cmiss_region_get_Computed_field_manager(region);
-				g_element_command_data.region = region;
-				g_element_command_data.root_region = command_data->root_region;
-				g_element_command_data.graphical_material_manager =
+				rendition_command_data.region = region;
+				rendition_command_data.root_region = command_data->root_region;
+				rendition_command_data.graphical_material_manager =
 					Material_package_get_material_manager(command_data->material_package);
-				g_element_command_data.scene_manager = command_data->scene_manager;
-				g_element_command_data.spectrum_manager =
+				rendition_command_data.scene_manager = command_data->scene_manager;
+				rendition_command_data.spectrum_manager =
 					command_data->spectrum_manager;
-				g_element_command_data.default_spectrum =
+				rendition_command_data.default_spectrum =
 					command_data->default_spectrum;
-				g_element_command_data.user_interface = command_data->user_interface;
-				g_element_command_data.texture_manager = command_data->texture_manager;
-				g_element_command_data.volume_texture_manager =
+				rendition_command_data.user_interface = command_data->user_interface;
+				rendition_command_data.texture_manager = command_data->texture_manager;
+				rendition_command_data.volume_texture_manager =
 					command_data->volume_texture_manager;
 
 				option_table = CREATE(Option_table)();
 				/* cylinders */
 				Option_table_add_entry(option_table, "cylinders",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_cylinders);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_cylinders);
 				/* data_points */
 				Option_table_add_entry(option_table, "data_points",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_data_points);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_data_points);
 				/* element_points */
 				Option_table_add_entry(option_table, "element_points",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_element_points);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_element_points);
 				/* general */
 				Option_table_add_entry(option_table, "general",
 					(void *)region, (void *)(command_data->default_scene),
-					gfx_modify_g_element_general);
+					gfx_modify_rendition_general);
 				/* iso_surfaces */
 				Option_table_add_entry(option_table, "iso_surfaces",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_iso_surfaces);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_iso_surfaces);
 				/* lines */
 				Option_table_add_entry(option_table, "lines",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_lines);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_lines);
 				/* node_points */
 				Option_table_add_entry(option_table, "node_points",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_node_points);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_node_points);
 				/* streamlines */
 				Option_table_add_entry(option_table, "streamlines",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_streamlines);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_streamlines);
 				/* surfaces */
 				Option_table_add_entry(option_table, "surfaces",
-					(void *)&modify_g_element_data, (void *)&g_element_command_data,
-					gfx_modify_g_element_surfaces);
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_surfaces);
 
 				return_code = Option_table_parse(option_table, state);
-				if (return_code && (modify_g_element_data.settings))
+				if (return_code && (modify_rendition_data.graphic))
 				{
-					return_code = Cmiss_region_modify_g_element(region,
-						modify_g_element_data.scene, modify_g_element_data.settings,
-						modify_g_element_data.delete_flag,
-						modify_g_element_data.position);
+					return_code = Cmiss_region_modify_rendition(region,
+						modify_rendition_data.scene, modify_rendition_data.graphic,
+						modify_rendition_data.delete_flag,
+						modify_rendition_data.position);
 				} /* parse error,help */
 				DESTROY(Option_table)(&option_table);
-				if (modify_g_element_data.settings)
+				if (modify_rendition_data.graphic)
 				{
-					DEACCESS(GT_element_settings)(&(modify_g_element_data.settings));
+					DEACCESS(Cmiss_graphic)(&(modify_rendition_data.graphic));
 				}
-				DEACCESS(Scene)(&modify_g_element_data.scene);
+				DEACCESS(Scene)(&modify_rendition_data.scene);
 			}
 			else
 			{
@@ -13201,7 +13333,6 @@ DESCRIPTION :
 Executes a GFX MODIFY GRAPHICS_OBJECT command.
 ==============================================================================*/
 {
-	char glyph_flag;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct GT_object *graphics_object;
@@ -13223,7 +13354,6 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			{
 				shift_Parse_state(state,1);				
 				/* initialise defaults */
-				glyph_flag = 0;
 				if (material = get_GT_object_default_material(graphics_object))
 				{
 					ACCESS(Graphical_material)(material);
@@ -13233,7 +13363,6 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 					ACCESS(Spectrum)(spectrum);
 				}
 				option_table = CREATE(Option_table)();
-				Option_table_add_char_flag_entry(option_table, "glyph", &glyph_flag);
 				Option_table_add_set_Material_entry(option_table, "material",&material,
 					command_data->material_package);
 				Option_table_add_entry(option_table,"spectrum",&spectrum,
@@ -13244,15 +13373,6 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 				{
 					set_GT_object_default_material(graphics_object, material);
 					set_GT_object_Spectrum(graphics_object, spectrum);
-					if (glyph_flag)
-					{
-						if (!(IS_OBJECT_IN_LIST(GT_object)(graphics_object, 
-							command_data->glyph_list)))
-						{
-							ADD_OBJECT_TO_LIST(GT_object)(graphics_object, 
-							command_data->glyph_list);
-						}
-					}
 				}
 				if (material)
 				{
@@ -13284,11 +13404,9 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			display_message(INFORMATION_MESSAGE,
 				"\n      GRAPHICS_OBJECT_NAME");
 
-			glyph_flag = 0;
 			spectrum = (struct Spectrum *)NULL;
 			material = (struct Graphical_material *)NULL;
 			option_table=CREATE(Option_table)();
-			Option_table_add_char_flag_entry(option_table, "glyph", &glyph_flag);
 			Option_table_add_set_Material_entry(option_table, "material",&material,
 				command_data->material_package);
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
@@ -16012,7 +16130,7 @@ otherwise the wavefront obj file is read.
 							graphics_object_name, render_type, time, 
 							Material_package_get_material_manager(command_data->material_package),
 							Material_package_get_default_material(command_data->material_package),
-							command_data->graphics_object_list);
+							command_data->glyph_list);
 					}
 				}
 			}
@@ -16104,6 +16222,99 @@ Executes a GFX READ command.
 
 	return (return_code);
 } /* execute_command_gfx_read */
+
+#if defined (AWU_TESTING)
+
+int Cmiss_select_in_Cmiss_element_selection(Cmiss_element_id element,
+	void *element_selection_void)
+{
+	int return_code = 1;
+
+	USE_PARAMETER(element_selection_void);
+	ENTER(Cmiss_select_in_FE_element_selection);
+	Cmiss_region_id region = Cmiss_element_get_region(element);
+	Cmiss_region_id parent_region=NULL;
+	Cmiss_region_id top_region = region;
+	parent_region = Cmiss_region_get_parent(top_region);
+	top_region = parent_region;
+	while (parent_region)
+	{
+		top_region = parent_region;
+		parent_region = Cmiss_region_get_parent(top_region);
+		if (parent_region)
+			DEACCESS(Cmiss_region)(&top_region);
+	}
+	if (!top_region)
+	{
+		top_region = ACCESS(Cmiss_region)(region);
+	}
+
+	Cmiss_field_id field = NULL;
+	Cmiss_field_module_id field_module = 
+		Cmiss_region_get_field_module(top_region);
+	if (field_module)
+	{
+		if (NULL == (field = Cmiss_field_module_find_field_by_name(
+									 field_module, "cmiss_selection")))
+		{
+			field = Cmiss_field_module_create_group(field_module, top_region);
+			Cmiss_field_set_persistent(field, 1);
+			Cmiss_field_set_name(field, "cmiss_selection");
+		}
+		Cmiss_field_module_destroy(&field_module);
+	}
+	if (field)
+	{
+		Cmiss_field_id element_group = NULL;
+		Cmiss_field_element_group_template_id element_group_id = NULL;
+		Cmiss_field_group_id group_field = Cmiss_field_cast_group(field);
+		if (top_region == region)
+		{
+			element_group = Cmiss_field_group_create_element_group(group_field);
+			element_group_id = Cmiss_field_cast_element_group_template(element_group);
+		}
+		else
+		{
+			Cmiss_field_id sub_group = Cmiss_field_group_create_sub_group(group_field,region);
+			Cmiss_field_group_id sub_group_id = Cmiss_field_cast_group(sub_group);
+			element_group = Cmiss_field_group_create_element_group(sub_group_id);
+			element_group_id = Cmiss_field_cast_element_group_template(element_group);
+			Cmiss_field_id temporary_handle = 
+				reinterpret_cast<Computed_field *>(sub_group_id);
+			Cmiss_field_destroy(&temporary_handle);
+ 			Cmiss_field_destroy(&sub_group);
+		}
+		if (element_group_id)
+		{
+			Cmiss_field_element_group_template_add_element(element_group_id, element);
+			Cmiss_field_id temporary_handle = 
+				reinterpret_cast<Computed_field *>(element_group_id);
+			Cmiss_field_destroy(&temporary_handle);
+		}
+		if (element_group)
+		{
+			
+			Cmiss_field_destroy(&element_group);
+		}
+		if (group_field)
+		{
+			Cmiss_field_id temporary_handle = 
+				reinterpret_cast<Computed_field *>(group_field);
+			Cmiss_field_destroy(&temporary_handle);
+		}
+		Cmiss_field_destroy(&field);
+	}
+	if (top_region)
+	{
+		DEACCESS(Cmiss_region)(&top_region);
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_select_in_FE_node_selection */
+#endif
+
 
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -16320,6 +16531,11 @@ Executes a GFX SELECT command.
 							selected_flag, multi_range, conditional_field, time))
 					{
 						FE_element_selection_begin_cache(command_data->element_selection);
+#if defined (AWU_TESTING)
+						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							Cmiss_select_in_Cmiss_element_selection,
+							(void *)command_data->element_selection, element_list);
+#else
 						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
 							FE_element_select_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
@@ -16336,6 +16552,7 @@ Executes a GFX SELECT command.
 							display_message(ERROR_MESSAGE, 
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
+#endif
 						FE_element_selection_end_cache(command_data->element_selection);
 						DESTROY(LIST(FE_element))(&element_list);
 					}
@@ -16393,6 +16610,11 @@ Executes a GFX SELECT command.
 							selected_flag, multi_range, conditional_field, time))
 					{
 						FE_element_selection_begin_cache(command_data->element_selection);
+#if defined (AWU_TESTING)
+						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							Cmiss_select_in_Cmiss_element_selection,
+							(void *)command_data->element_selection, element_list);
+#else
 						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
 							FE_element_select_in_FE_element_selection,
 							(void *)command_data->element_selection, element_list))
@@ -16409,6 +16631,7 @@ Executes a GFX SELECT command.
 							display_message(ERROR_MESSAGE, 
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
+#endif
 						FE_element_selection_end_cache(command_data->element_selection);
 						DESTROY(LIST(FE_element))(&element_list);
 					}
@@ -16422,6 +16645,15 @@ Executes a GFX SELECT command.
 							multi_range, conditional_field, time))
 					{
 						FE_node_selection_begin_cache(command_data->node_selection);
+#if defined (AWU_TESTING)
+						if (region)
+						{
+							Cmiss_rendition *local_rendition = Cmiss_rendition_get_from_region(region);
+							Cmiss_rendition_create_node_list_selection(local_rendition,
+								node_list);
+							Cmiss_rendition_destroy(&local_rendition);
+						}
+#else
 						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
 							FE_node_select_in_FE_node_selection,
 							(void *)command_data->node_selection, node_list))
@@ -16438,9 +16670,11 @@ Executes a GFX SELECT command.
 							display_message(ERROR_MESSAGE, 
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
+#endif
 						FE_node_selection_end_cache(command_data->node_selection);
 						DESTROY(LIST(FE_node))(&node_list);
 					}
+
 				}
 			}
 			DESTROY(Option_table)(&option_table);
@@ -16994,7 +17228,9 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 	int return_code,position;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
+#endif
 	static struct Modifier_entry option_table[]=
 	{
 		{"object",NULL,(void *)1,set_name},
@@ -17024,6 +17260,7 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 			{
 				if (name)
 				{
+#if defined (USE_SCENE_OBJECT)
 					if (scene_object=Scene_get_Scene_object_by_name(scene,name))
 					{
 						return_code=Scene_set_scene_object_position(scene,scene_object,
@@ -17035,6 +17272,9 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 							"No graphics object named '%s' in scene",name);
 						return_code=0;
 					}
+#else
+					return_code = 1;
+#endif
 				}
 				else
 				{
@@ -17237,19 +17477,13 @@ Sets a transformation matrix from the command line.
 
 static int gfx_set_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Sets the transformation for a graphics object from the command line.
-==============================================================================*/
 {
-	char *scene_object_name;
+	char *region_name;
 	gtMatrix transformation_matrix;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
-	struct Scene_object *scene_object;
+	struct Cmiss_region *region = NULL;
 	static struct Modifier_entry option_table[]=
 	{
 		{"name",NULL,(void *)1,set_name},
@@ -17274,7 +17508,7 @@ Sets the transformation for a graphics object from the command line.
 			set_field_data.computed_field_manager=
 				 Computed_field_package_get_computed_field_manager(
 						command_data->computed_field_package);
-			scene_object_name=(char *)NULL;
+			region_name=(char *)NULL;
 			scene=ACCESS(Scene)(command_data->default_scene);
 			transformation_matrix[0][0]=1;
 			transformation_matrix[0][1]=0;
@@ -17293,7 +17527,7 @@ Sets the transformation for a graphics object from the command line.
 			transformation_matrix[3][2]=0;
 			transformation_matrix[3][3]=1;
 			/* parse the command line */
-			(option_table[0]).to_be_modified= &scene_object_name;
+			(option_table[0]).to_be_modified= &region_name;
 			(option_table[1]).to_be_modified= &scene;
 			(option_table[1]).user_data=command_data->scene_manager;
 			(option_table[2]).to_be_modified= &computed_field;
@@ -17303,41 +17537,45 @@ Sets the transformation for a graphics object from the command line.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (scene_object_name)
+				if (region_name)
 				{
-					if (scene_object=Scene_get_Scene_object_by_name(scene,
-						scene_object_name))
+					if (NULL != (region=Cmiss_region_find_subregion_at_path(
+								 command_data->root_region, region_name)))
 					{
-						 if (computed_field)
-						 {
-								Scene_object_set_transformation_with_time_callback(scene_object,
-									 computed_field);
+						Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+						if (rendition)
+						{
+							if (computed_field)
+							{
+								Cmiss_rendition_set_transformation_with_time_callback(rendition,
+									computed_field);
 								DEACCESS(Computed_field)(&computed_field);
-						 }
-						 else
-						 {
-								Scene_object_remove_time_dependent_transformation(scene_object);
-								Scene_object_set_transformation(scene_object,
-									&transformation_matrix); 
-						 }
+							}
+							else
+							{
+								Cmiss_rendition_remove_time_dependent_transformation(rendition);
+								Cmiss_rendition_set_transformation(rendition,&transformation_matrix);
+							}
+							DEACCESS(Cmiss_rendition)(&rendition);
+						}
+						return_code = 1;
+						DEACCESS(Cmiss_region)(&region);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"No object named '%s' in scene",scene_object_name);return_code=0;
+							"No region named '%s'",region_name);
+						return_code=0;
 					}
+					DEALLOCATE(region_name);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Missing graphics object name");
+					display_message(ERROR_MESSAGE,"Missing region name");
 					return_code=0;
 				}
 			} /* parse error, help */
 			DEACCESS(Scene)(&scene);
-			if (scene_object_name)
-			{
-				DEALLOCATE(scene_object_name);
-			}
 		}
 		else
 		{
@@ -17366,11 +17604,10 @@ Toggles the visibility of graphics objects on scenes from the command line.
 ==============================================================================*/
 {
 	char *name,off_flag,on_flag;
-	enum GT_visibility_type current_visibility,new_visibility;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
-	struct Scene_object *scene_object;
+
 	static struct Modifier_entry
 		off_on_option_table[]=
 		{
@@ -17417,46 +17654,52 @@ Toggles the visibility of graphics objects on scenes from the command line.
 				{
 					if (name)
 					{
-						if (scene_object=Scene_get_Scene_object_by_name(scene,name))
+						Cmiss_rendition *rendition = NULL;
+						Cmiss_region *top_region = Cmiss_scene_get_region(scene);
+						if (top_region)
 						{
-							current_visibility=Scene_object_get_visibility(scene_object);
+							Cmiss_region *child_region = Cmiss_region_find_subregion_at_path(top_region, name);
+							if (child_region)
+							{
+							  rendition = Cmiss_region_get_rendition(child_region);
+							  Cmiss_region_destroy(&child_region);
+							}
+						}
+						if (rendition)
+						{
+							int new_visibility = 0;
+							int current_visibility = Cmiss_rendition_get_visibility(rendition);
 							if (on_flag)
 							{
-								new_visibility=g_VISIBLE;
+								new_visibility=1;
 							}
 							else
 							{
 								if (off_flag)
 								{
-									new_visibility=g_INVISIBLE;
+									new_visibility=0;
 								}
 								else
 								{
-									if (g_VISIBLE == current_visibility)
-									{
-										new_visibility=g_INVISIBLE;
-									}
-									else
-									{
-										new_visibility=g_VISIBLE;
-									}
+									new_visibility = !current_visibility;
 								}
 							}
 							if (new_visibility!=current_visibility)
 							{
-								Scene_object_set_visibility(scene_object,new_visibility);
+								Cmiss_rendition_set_visibility(rendition,new_visibility);
 							}
+							Cmiss_rendition_destroy(&rendition);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"No graphics object named '%s' in scene",name);
+								"No region named '%s' in scene",name);
 							return_code=0;
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Missing graphics object name");
+						display_message(ERROR_MESSAGE,"Missing region name");
 						return_code=0;
 					}
 				}
@@ -18390,9 +18633,13 @@ Can also write individual groups with the <group> option.
 										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
 										 graphical_material_manager);
 							 }
+#if defined (TO_BE_EDITED)
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
 									for_each_graphics_object_in_scene_get_command_list, (void*) "true",
 									command_data->scene_manager);
+#else
+							 return_code =1;
+#endif
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
 									write_Graphics_window_commands_to_comfile,(void *)NULL,
@@ -19462,7 +19709,6 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_set);
 			Option_table_add_entry(option_table, "mesh", NULL,
 				command_data_void, execute_command_gfx_mesh);
-
 			Option_table_add_entry(option_table, "smooth", NULL,
 				command_data_void, execute_command_gfx_smooth);
 			Option_table_add_entry(option_table, "timekeeper", NULL,
@@ -23533,33 +23779,25 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 		/* graphics_module */
 		command_data->default_time_keeper=ACCESS(Time_keeper)(UI_module->default_time_keeper);
+
 		/* scene manager */
 		/*???RC & SAB.   LOTS of managers need to be created before this 
 		  and the User_interface too */
 		if (NULL != (command_data->scene_manager=Cmiss_graphics_module_get_scene_manager(
 									 command_data->graphics_module)))
+		Cmiss_graphics_module_enable_renditions(
+			command_data->graphics_module,command_data->root_region);
 		{
 			command_data->default_scene = Cmiss_graphics_module_get_default_scene(
 				command_data->graphics_module);
 			if (command_data->default_scene)
 			{
-				Scene_enable_graphics(command_data->default_scene,command_data->glyph_list,
-					Material_package_get_material_manager(command_data->material_package),
-					Material_package_get_default_material(command_data->material_package),
-					command_data->default_font, command_data->light_manager,
-					command_data->spectrum_manager,command_data->default_spectrum,
-					command_data->texture_manager);
-				Scene_set_graphical_element_mode(command_data->default_scene,
-					GRAPHICAL_ELEMENT_LINES,
-					command_data->root_region,
-					command_data->element_point_ranges_selection,
-					command_data->element_selection,command_data->node_selection,
-					command_data->data_selection,command_data->user_interface);
-				/*???RC.  May want to use functions to modify default_scene here */
-				/* eg. to add model lights, etc. */
-				/* ACCESS default so can never be destroyed */
-				/*???RC.  Should be able to change: eg. gfx set default scene NAME */
-				/*???DB.  Include default as part of manager ? */
+//			display_message(INFORMATION_MESSAGE,"Cmiss_command_data *CREATE\n");
+				if (Cmiss_scene_set_region(command_data->default_scene, command_data->root_region))
+				{
+// 					display_message(INFORMATION_MESSAGE,"Cmiss_command_data, scene preparing\n");
+					Cmiss_scene_enable_rendition(command_data->default_scene);
+				}
 			}
 		}
 
@@ -23976,7 +24214,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			Computed_field_package_remove_types(command_data->computed_field_package);
 			DESTROY(Computed_field_package)(&command_data->computed_field_package);
 		}
-
 #if defined (SELECT_DESCRIPTORS)
 		DESTROY(LIST(Io_device))(&command_data->device_list);
 #endif /* defined (SELECT_DESCRIPTORS) */

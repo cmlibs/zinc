@@ -1,3 +1,4 @@
+
 /*******************************************************************************
 FILE : render_to_finite_elements.c
 
@@ -1255,9 +1256,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
-int render_to_finite_elements(struct Scene *scene, struct FE_region *fe_region,
-	enum Render_to_finite_elements_mode render_mode, 
-	struct Computed_field *coordinate_field)
+int render_to_finite_elements(struct Scene *scene, struct Cmiss_region *source_region,
+	const char *graphic_name, struct FE_region *fe_region, 
+	enum Render_to_finite_elements_mode render_mode, struct Computed_field *coordinate_field)
 /******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -1331,8 +1332,17 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 
 		if (return_code)
 		{
-			return_code=for_each_graphics_object_in_scene(scene,
-				Graphics_object_render_to_finite_elements_iterator, (void *)&data);
+			if (!source_region)
+			{
+				return_code=for_each_graphics_object_in_scene(scene,
+					Graphics_object_render_to_finite_elements_iterator, (void *)&data);
+			}
+			else
+			{
+				return_code=Scene_export_region_graphics_object(scene, source_region,
+					graphic_name, Graphics_object_render_to_finite_elements_iterator,
+					(void *)&data);
+			}
 		}
 		if (data.template_node)
 		{

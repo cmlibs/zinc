@@ -872,10 +872,12 @@ API_SRCS = \
 	api/cmiss_field.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
+	api/cmiss_graphic.c \
 	api/cmiss_graphics_module.c \
 	api/cmiss_idle.c \
 	api/cmiss_material.c \
 	api/cmiss_node.c \
+	api/cmiss_rendition.c \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c \
@@ -961,6 +963,8 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_function.cpp \
+	computed_field/computed_field_group.cpp \
+	computed_field/computed_field_sub_group_template.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
@@ -1088,6 +1092,7 @@ GENERAL_INTERFACE_SRCS = \
 	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
+	graphics/cmiss_graphic.cpp \
 	graphics/cmiss_rendition.cpp \
 	graphics/colour.c \
 	graphics/complex.c \
@@ -1128,7 +1133,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/light_model.c \
 		graphics/render.cpp \
 		graphics/rendergl.c \
-		graphics/scene.c \
+		graphics/scene.cpp \
 		graphics/scene_viewer.c \
 		graphics/tile_graphics_objects.c
 endif

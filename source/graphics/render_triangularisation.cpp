@@ -39,8 +39,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
+#include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/cmiss_rendition.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
@@ -503,160 +505,28 @@ int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, float time)
 	return (return_code);
 } /* makestl */
 
-int GT_element_settings_graphics_to_triangle_mesh(struct GT_element_settings *settings,
-	void *trimesh_void)
+static int graphics_object_export_to_triangularisation(struct GT_object *gt_object,
+	double time,void *trimesh_void)
 {
-	int return_code;
+	int return_code = 0;
+	USE_PARAMETER(time);
 
-	ENTER(GT_element_settings_graphics_to_triangle_mesh);
-	if (settings && trimesh_void)
+	if (trimesh_void)
 	{
-		return_code = 1;
-		Triangle_mesh& trimesh = *(static_cast<Triangle_mesh*>(trimesh_void));
-		struct GT_object *graphics_object;
-		if (GT_element_settings_get_visibility(settings) &&
-			(graphics_object = GT_element_settings_get_graphics_object(
-			settings)))
-		{
-			return_code = maketriangle_mesh(trimesh, graphics_object, /*time*/0);
-		}
+		Triangle_mesh& trimesh = *(static_cast<Triangle_mesh*>(trimesh_void));	
+		return_code = maketriangle_mesh(trimesh, gt_object, /*time*/0);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_graphics_to_triangle_mesh.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* GT_element_settings_graphics_to_stl */
-
-int write_scene_object_triangle_mesh(Triangle_mesh& trimesh,
-	struct Scene_object *scene_object)
-{
-	int return_code;
-
-	ENTER(write_scene_object_triangle_mesh)
-	if (scene_object)
-	{
-		return_code = 1;
-		if (g_VISIBLE == Scene_object_get_visibility(scene_object))
-		{
-			double time;
-			if (Scene_object_has_time(scene_object))
-			{
-				time = Scene_object_get_time(scene_object);
-			}
-			else
-			{
-				time = 0.0;
-			}
-
-			if (Scene_object_has_gt_object(scene_object,
-				(struct GT_object *)NULL))
-			{
-				return_code = maketriangle_mesh(trimesh,
-					Scene_object_get_gt_object(scene_object), time);
-			}
-			else if (Scene_object_has_graphical_element_group(scene_object,
-				(void *)NULL))
-			{
-				struct GT_element_group *graphical_element_group =
-					Scene_object_get_graphical_element_group(scene_object);
-				return_code = for_each_settings_in_GT_element_group(
-					graphical_element_group, GT_element_settings_graphics_to_triangle_mesh,
-					static_cast<void*>(&trimesh));
-			}
-			else if (Scene_object_has_child_scene(scene_object, (void *)NULL))
-			{
-				return_code = write_scene_triangle_mesh(trimesh,
-					Scene_object_get_child_scene(scene_object));
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_scene_object_triangle_mesh.  Missing scene_object");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_scene_object_triangle_mesh */
-
-int Scene_object_to_triangle_mesh(struct Scene_object *scene_object,
-	void *trimesh_void)
-{
-	int return_code;
-
-	ENTER(Scene_object_to_triangle_mesh);
-	if (scene_object && trimesh_void)
-	{
-		return_code = 1;
-		Triangle_mesh& trimesh = *(static_cast<Triangle_mesh*>(trimesh_void));
-		return_code = write_scene_object_triangle_mesh(trimesh, scene_object);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_to_triangle_mesh.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_to_triangle_mesh */
-
-int write_scene_triangle_mesh(Triangle_mesh& trimesh, struct Scene *scene)
-{
-	int return_code;
-
-	ENTER(write_scene_triangle_mesh)
-	if (scene)
-	{
-
-		return_code = 1;
-		return_code = for_each_Scene_object_in_Scene(scene, Scene_object_to_triangle_mesh,
-			static_cast<void*>(&trimesh));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"write_scene_triangle_mesh.  Missing scene");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_scene_triangle_mesh */
+	return return_code;
+}
 
 int render_scene_triangularisation(struct Scene *scene, Triangle_mesh *trimesh)
 {
-	write_scene_triangle_mesh(*trimesh, scene);
-	return 1;
-}
+	int return_code = 0;
 
-int render_scene_object_triangularisation(struct Scene_object *scene_object)
-{
-	float tolerance = 0.000001;
-	Triangle_mesh trimesh(tolerance);
-	Scene_object_to_triangle_mesh(scene_object,
-		static_cast<void*>(&trimesh));
-	return 1;
-}
+	return_code = for_each_graphics_object_in_scene(scene,
+		graphics_object_export_to_triangularisation,(void *)trimesh);
 
-int render_gt_element_group_triangularisation(GT_element_group *graphical_element_group)
-{
-	float tolerance = 0.000001;
-	Triangle_mesh trimesh(tolerance);
-	int return_code = for_each_settings_in_GT_element_group(
-		graphical_element_group, GT_element_settings_graphics_to_triangle_mesh,
-		static_cast<void*>(&trimesh));
 	return return_code;
 }
 

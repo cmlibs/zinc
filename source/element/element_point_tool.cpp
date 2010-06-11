@@ -303,6 +303,11 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
+	if (device_id && event && element_point_tool_void && graphics_buffer)
+	{}
+
+
+#if defined (TESTING)
 	char *command_string;
 	enum Interactive_event_type event_type;
 	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -473,17 +478,21 @@ release.
 											"element_point_tool_rubber_band",g_POLYLINE,
 											element_point_tool->rubber_band_material);
 										ACCESS(GT_object)(element_point_tool->rubber_band);
+#if defined (USE_SCENE_OBJECTS)
 										Scene_add_graphics_object(scene,
 											element_point_tool->rubber_band,/*position*/0,
 											"element_point_tool_rubber_band",/*fast_changing*/1);
+#endif
 									}
 									Interaction_volume_make_polyline_extents(
 										temp_interaction_volume,element_point_tool->rubber_band);
 								}
 								else
 								{
+#if defined (USE_SCENE_OBJECTS)
 									Scene_remove_graphics_object(scene,
 										element_point_tool->rubber_band);
+#endif
 									DEACCESS(GT_object)(&(element_point_tool->rubber_band));
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
@@ -534,6 +543,8 @@ release.
 			"Element_point_tool_interactive_event_handler.  Invalid argument(s)");
 	}
 	LEAVE;
+
+#endif
 } /* Element_point_tool_interactive_event_handler */
 
 static int Element_point_tool_bring_up_interactive_tool_dialog(

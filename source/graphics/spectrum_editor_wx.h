@@ -64,12 +64,9 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Graphics_font *font,
 	 struct Graphics_buffer_package *graphics_buffer_package,
 	 struct User_interface *user_interface,
-	 struct LIST(GT_object) *glyph_list,
-	 struct MANAGER(Graphical_material) *graphical_material_manager,
-	 struct MANAGER(Light) *light_manager,
-	 struct MANAGER(Spectrum) *spectrum_manager,
-	 struct MANAGER(Texture) *texture_manager,
-	 struct MANAGER(Scene) *scene_manager);
+	 struct Cmiss_graphics_module *graphics_module,
+	 struct MANAGER(Scene) *scene_manager,
+	 struct Cmiss_region *spectrum_region);
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
 

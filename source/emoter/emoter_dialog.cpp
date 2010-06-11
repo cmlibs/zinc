@@ -413,9 +413,11 @@ Updates the node locations for the <emoter_slider>
 								transformation[3][0] = shared_data->weights[0];
 								transformation[3][1] = shared_data->weights[1];
 								transformation[3][2] = shared_data->weights[2];
+#if defined (USE_SCENE_OBJECT)
 								Scene_object_set_transformation(
 									shared_data->transformation_scene_object,
 									&transformation);
+#endif
 							}
 							else
 							{
@@ -6057,7 +6059,9 @@ in existence, then bring it to the front, otherwise create new one.
 	struct FE_region *fe_region;
 	struct Index_list_data index_list_data;
 	struct Option_table *option_table;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *transformation_scene_object;
+#endif
 	struct Scene *transformation_scene;
 	struct Shared_emoter_slider_data *shared_emoter_slider_data;
 	struct EM_Object *em_object;
@@ -6078,7 +6082,9 @@ in existence, then bring it to the front, otherwise create new one.
 		basis_file_name = (char *)NULL;
 		transformation_graphics_object_name=(char *)NULL;
 		transformation_scene=ACCESS(Scene)(create_emoter_slider_data->viewer_scene);
+#if defined (USE_SCENE_OBJECT)
 		transformation_scene_object = (struct Scene_object *)NULL;
+#endif
 		option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table,"basis",&basis_file_name,
 			(void *)1,set_name);
@@ -6125,6 +6131,7 @@ in existence, then bring it to the front, otherwise create new one.
 			{
 				if (transformation_scene && transformation_graphics_object_name)
 				{
+#if defined (USE_SCENE_OBJECT)
 					if (!(transformation_scene_object = Scene_get_Scene_object_by_name(
 						transformation_scene, transformation_graphics_object_name)))
 					{
@@ -6133,6 +6140,9 @@ in existence, then bring it to the front, otherwise create new one.
 							transformation_graphics_object_name);
 						return_code = 0;
 					}
+#else
+					return_code = 0;
+#endif
 				}
 				em_object=(struct EM_Object *)NULL;
 				if (Cmiss_region_get_region_from_path_deprecated(
@@ -6233,8 +6243,10 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->viewer_light;
 								shared_emoter_slider_data->viewer_light_model
 									= create_emoter_slider_data->viewer_light_model;
+#if defined (USE_SCENE_OBJECT)
 								shared_emoter_slider_data->transformation_scene_object
 									= transformation_scene_object;
+#endif
 								shared_emoter_slider_data->io_stream_package
 									= create_emoter_slider_data->io_stream_package;
 								return_code=bring_up_emoter_dialog(

@@ -95,4 +95,21 @@ Note function avoids iterating through FE_region element lists as this is not
 allowed during identifier changes.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Create an element list with the supplied region, group field at a specific time
+ *
+ * @param region  The pointer to a region
+ * @param element_ranges  Multi_range of elements.
+ * @param group_field  Group field of the region
+ * @param time  Time of the group field to be evaluated
+ * @param use_data  Flag indicating either node or data is in used.
+ * @return  Returns element list if successfully create a element list with the given
+ *    arguments, otherwise NULL.
+ */
+struct LIST(FE_element) *
+	FE_element_list_from_region_and_selection_group(
+		struct Cmiss_region *region, enum CM_element_type cm_element_type,
+		struct Multi_range *element_ranges,
+		struct Computed_field *group_field, FE_value time);
+
 #endif /* !defined (ELEMENT_OPERATIONS_H) */

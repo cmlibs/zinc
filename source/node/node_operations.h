@@ -92,4 +92,20 @@ Note function avoids iterating through FE_region node lists as this is not
 allowed during identifier changes.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Create a node list with the supplied region, group field at a specific time
+ *
+ * @param region  The pointer to a region
+ * @param node_ranges  Multi_range of nodes
+ * @param group_field  Group field of the region
+ * @param time  Time of the group field to be evaluated
+ * @param use_data  Flag indicating either node or data is in used.
+ * @return  Returns node list if successfully create a node list with the given
+ *    arguments, otherwise NULL.
+ */
+struct LIST(FE_node) *
+	FE_node_list_from_region_and_selection_group(
+		struct Cmiss_region *region, struct Multi_range *node_ranges,
+		struct Computed_field *group_field, FE_value time, int use_data);
+
 #endif /* !defined (NODE_OPERATIONS_H) */

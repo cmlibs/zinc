@@ -4830,7 +4830,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				if (!buffer->package->hidden_graphics_buffer)
 				{
 					BOOL win32_return_code;
-					static char *class_name="Hidden window";
+					static const char *class_name="Hidden window";
 					WNDCLASS class_information;
 
 					/* check if the class is registered */

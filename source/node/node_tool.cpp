@@ -55,17 +55,20 @@ extern "C" {
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "api/cmiss_rendition.h"
+#include "time/time_keeper.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "api/cmiss_field_sub_group_template.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#include "graphics/scene.h"
 #include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
@@ -73,6 +76,7 @@ extern "C" {
 #include "node/node_operations.h"
 #include "node/node_tool.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #if defined (MOTIF_USER_INTERFACE)
 static char node_tool_uidh[] =
 #include "node/node_tool.uidh"
@@ -80,12 +84,14 @@ static char node_tool_uidh[] =
 #include "motif/image_utilities.h"
 #include "region/cmiss_region_chooser.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "graphics/cmiss_rendition.h"
+#include "graphics/cmiss_graphic.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
-#include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
-
+#include "computed_field/computed_field_private.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -95,6 +101,8 @@ static char node_tool_uidh[] =
 #include "node/node_tool.xrch"
 #include "region/cmiss_region_chooser_wx.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
+#include <map>
+typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
 
 /*
 Module variables
@@ -144,7 +152,7 @@ changes in node position and derivatives etc.
 	struct MANAGER(FE_element) *element_manager;
 	struct FE_node_selection *node_selection;
 	struct Graphical_material *rubber_band_material;
-	struct Time_keeper *time_keeper;
+	struct Cmiss_time_keeper *time_keeper;
 	struct User_interface *user_interface;
 	/* user-settable flags */
 	/* indicates whether node edits can occur with motion_notify events: slower */
@@ -172,6 +180,10 @@ changes in node position and derivatives etc.
 	int motion_detected;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
+
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
+
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 	struct FE_field *FE_coordinate_field;
@@ -1191,7 +1203,7 @@ try to enforce that the node is created on that element.
 ==============================================================================*/
 {
 	double d,LU_transformation_matrix[16],node_coordinates[3];
-	enum GT_element_settings_type gt_element_settings_type;
+	//enum GT_element_settings_type gt_element_settings_type;
 	FE_value coordinates[3];
 	int i,LU_indx[4],node_number,transformation_required;
 	struct Computed_field *rc_coordinate_field,*node_tool_coordinate_field;
@@ -1199,11 +1211,14 @@ try to enforce that the node is created on that element.
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
 	struct Node_tool_element_constraint_function_data constraint_data;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
 	LIST_CONDITIONAL_FUNCTION(Scene_object) *scene_object_conditional_function;
+#endif
 	struct Scene_picked_object *scene_picked_object;
 
 	ENTER(Node_tool_create_node_at_interaction_volume);
+	USE_PARAMETER(scene);
 	merged_node = (struct FE_node *)NULL;
 	scene_picked_object=(struct Scene_picked_object *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
@@ -1228,6 +1243,7 @@ try to enforce that the node is created on that element.
 		else
 		{
 			node_tool_coordinate_field=node_tool->coordinate_field;
+#if defined (USE_SCENE_OBJECT)
 			scene_object_conditional_function=Scene_object_has_Cmiss_region;
 			if (node_tool->use_data)
 			{
@@ -1257,6 +1273,7 @@ try to enforce that the node is created on that element.
 			{
 				scene_picked_object=(struct Scene_picked_object *)NULL;
 			}
+#endif
 			if (rc_coordinate_field=
 				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field))
 			{
@@ -1850,6 +1867,10 @@ Resets current edit. Called on button release or when tool deactivated.
 			(struct GT_element_group *)NULL);
 		REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
 			(struct GT_element_settings *)NULL);
+		REACCESS(Cmiss_rendition)(&(node_tool->rendition),
+			(struct Cmiss_rendition *)NULL);
+		if (node_tool->graphic)
+			Cmiss_graphic_destroy(&node_tool->graphic);
 	}
 	else
 	{
@@ -1882,8 +1903,8 @@ release.
 	struct FE_element *nearest_element;
 	struct FE_node *picked_node;
 	struct FE_node_edit_information edit_info;
-	struct GT_element_group *gt_element_group, *gt_element_group_element;
-	struct GT_element_settings *gt_element_settings, *gt_element_settings_element;
+	struct Cmiss_rendition *rendition = NULL, *rendition_element = NULL;
+	struct Cmiss_graphic *graphic = NULL, *graphic_element = NULL;
 	struct GT_object *glyph;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
 	struct LIST(FE_node) *node_list;
@@ -1921,7 +1942,7 @@ release.
 								picked_node=Scene_picked_object_list_get_nearest_node(
 									scene_picked_object_list,node_tool->use_data,
 									(struct Cmiss_region *)NULL,&scene_picked_object,
-									&gt_element_group,&gt_element_settings);
+									&rendition,&graphic);
 							}
 							if (node_tool->constrain_to_surface)
 							{
@@ -1929,7 +1950,7 @@ release.
 									scene_picked_object_list,(struct Cmiss_region *)NULL,
 									/*select_elements_enabled*/0, /*select_faces_enabled*/1, 
 									/*select_lines_enabled*/0, &scene_picked_object2,
-									&gt_element_group_element,&gt_element_settings_element);
+									&rendition_element,&graphic_element);
 								/* Reject the previously picked node if the element is nearer */
 								if (picked_node && nearest_element)
 								{
@@ -1947,10 +1968,9 @@ release.
 										picked_node);
 								REACCESS(Scene_picked_object)(
 									&(node_tool->scene_picked_object),scene_picked_object);
-								REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-									gt_element_group);
-								REACCESS(GT_element_settings)(
-									&(node_tool->gt_element_settings),gt_element_settings);
+								REACCESS(Cmiss_rendition)(&(node_tool->rendition),
+									rendition);
+								REACCESS(Cmiss_graphic)(&(node_tool->graphic),graphic);
 								if (node_tool->define_enabled)
 								{
 									if (!Computed_field_is_defined_at_node(
@@ -1970,11 +1990,11 @@ release.
 									if (nearest_element)
 									{
 										if (!(nearest_element_coordinate_field = 
-												GT_element_settings_get_coordinate_field(gt_element_settings_element)))
+												Cmiss_graphic_get_coordinate_field(graphic_element)))
 										{
 											nearest_element_coordinate_field = 
-												GT_element_group_get_default_coordinate_field(
-												gt_element_group_element);
+												Cmiss_rendition_get_default_coordinate_field(
+												rendition_element);
 										}
 										
 									}
@@ -2014,17 +2034,79 @@ release.
 								&&((!picked_node)||(node_tool->picked_node_was_unselected))))
 #endif /*defined (OLD_CODE) */
 							{
-								FE_node_selection_begin_cache(node_tool->node_selection);
-								FE_node_selection_clear(node_tool->node_selection);
+								if (node_tool->root_region)
+								{
+									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
+										node_tool->root_region);
+									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+										root_rendition);
+									if (root_group_field)
+									{
+										Cmiss_field_group_id root_group = 
+											Cmiss_field_cast_group(root_group_field);
+										Cmiss_field_group_clear_region_tree_node(root_group);
+										Cmiss_field_destroy(&root_group_field);
+										root_group_field = reinterpret_cast<Computed_field *>(root_group);
+										Cmiss_field_destroy(&root_group_field);			
+									}
+									Cmiss_rendition_destroy(&root_rendition);
+								}
+								//FE_node_selection_begin_cache(node_tool->node_selection);
+								//FE_node_selection_clear(node_tool->node_selection);
 							}
 							if (picked_node)
 							{
-								FE_node_selection_select_node(node_tool->node_selection,
-									picked_node);
+								//FE_node_selection_select_node(node_tool->node_selection,
+								//	picked_node);
+								Cmiss_region *sub_region = NULL;
+								Cmiss_field_group_id sub_group = NULL;
+								Cmiss_field_id sub_group_field = NULL;
+								Cmiss_field_id node_group_field = NULL;
+								Cmiss_field_node_group_template_id node_group = NULL;
+								if (node_tool->rendition)
+								{
+									sub_region = Cmiss_rendition_get_region(node_tool->rendition);
+									sub_group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+									sub_group = Cmiss_field_cast_group(sub_group_field);
+									if (sub_group)
+									{
+										node_group_field = Cmiss_field_group_create_node_group(sub_group);
+										if (node_group_field)
+										{
+											node_group = 
+												Cmiss_field_cast_node_group_template(node_group_field);
+											Cmiss_field_destroy(&node_group_field);
+										}
+									}
+								}
+
+								if (sub_region && sub_group_field && node_group)
+								{
+									Cmiss_field_node_group_template_add_node(node_group,
+										picked_node);
+									Computed_field_changed(sub_group_field);
+								}
+								if (sub_group_field)
+								{
+									Cmiss_field_destroy(&sub_group_field);
+								}
+								if (sub_group)
+								{
+									sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+									Cmiss_field_destroy(&sub_group_field);
+									sub_group = NULL;
+								}
+								if (node_group)
+								{
+									Cmiss_field_id temporary_handle = 
+										reinterpret_cast<Computed_field *>(node_group);
+									Cmiss_field_destroy(&temporary_handle);
+								}
+
 							}
 							if (clear_selection)
 							{
-								FE_node_selection_end_cache(node_tool->node_selection);
+								//FE_node_selection_end_cache(node_tool->node_selection);
 							}
 						}
 					}
@@ -2054,14 +2136,14 @@ release.
 										scene_picked_object_list,(struct Cmiss_region *)NULL,
 										/*select_elements_enabled*/0, /*select_faces_enabled*/1, 
 										/*select_lines_enabled*/0, &scene_picked_object2,
-										&gt_element_group_element,&gt_element_settings_element))
+										&rendition_element,&graphic_element))
 									{
 										if (!(nearest_element_coordinate_field = 
-												GT_element_settings_get_coordinate_field(gt_element_settings_element)))
+												Cmiss_graphic_get_coordinate_field(graphic_element)))
 										{
 											nearest_element_coordinate_field = 
-												GT_element_group_get_default_coordinate_field(
-													gt_element_group_element);
+												Cmiss_rendition_get_default_coordinate_field(
+													rendition_element);
 										}
 									}
 									DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
@@ -2113,12 +2195,12 @@ release.
 									coordinate_field=node_tool->coordinate_field;
 								}
 								else if (!(coordinate_field=
-									GT_element_settings_get_coordinate_field(
-										node_tool->gt_element_settings)))
+									Cmiss_graphic_get_coordinate_field(
+										node_tool->graphic)))
 								{
 									coordinate_field=
-										GT_element_group_get_default_coordinate_field(
-											node_tool->gt_element_group);
+										Cmiss_rendition_get_default_coordinate_field(
+											node_tool->rendition);
 								}
 								edit_info.coordinate_field=coordinate_field;
 								/* get coordinate_field in RC coordinates */
@@ -2127,7 +2209,7 @@ release.
 								edit_info.orientation_scale_field=(struct Computed_field *)NULL;
 								edit_info.wrapper_orientation_scale_field=
 									(struct Computed_field *)NULL;
-								if (!node_tool->gt_element_settings)
+								if (!node_tool->graphic)
 								{
 									edit_info.glyph_centre[0] = 0.0;
 									edit_info.glyph_centre[1] = 0.0;
@@ -2257,16 +2339,20 @@ release.
 											"node_tool_rubber_band",g_POLYLINE,
 											node_tool->rubber_band_material);
 										ACCESS(GT_object)(node_tool->rubber_band);
+#if defined (USE_GRAPHICS_OBJECT)
 										Scene_add_graphics_object(scene,node_tool->rubber_band,
 											/*position*/0,"node_tool_rubber_band",
 											/*fast_changing*/1);
+#endif
 									}
 									Interaction_volume_make_polyline_extents(
 										temp_interaction_volume,node_tool->rubber_band);
 								}
 								else
 								{
+#if defined (USE_GRAPHICS_OBJECT)
 									Scene_remove_graphics_object(scene,node_tool->rubber_band);
+#endif
 									DEACCESS(GT_object)(&(node_tool->rubber_band));
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
@@ -2274,15 +2360,80 @@ release.
 									if (scene_picked_object_list=
 										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer))
 									{
-										if (node_list=Scene_picked_object_list_get_picked_nodes(
-											scene_picked_object_list,node_tool->use_data))
+										Region_node_map *node_map = 
+											(Region_node_map *)Scene_picked_object_list_get_picked_region_sorted_nodes(
+												scene_picked_object_list, node_tool->use_data);
+										if (node_map)
 										{
-											FE_node_selection_begin_cache(node_tool->node_selection);
-											FOR_EACH_OBJECT_IN_LIST(FE_node)(
-												FE_node_select_in_FE_node_selection,
-												(void *)(node_tool->node_selection),node_list);
-											FE_node_selection_end_cache(node_tool->node_selection);
-											DESTROY(LIST(FE_node))(&node_list);
+											Cmiss_region *sub_region = NULL;
+											Cmiss_field_group_id sub_group = NULL;
+											Cmiss_field_id sub_group_field = NULL;
+											Cmiss_field_id node_group_field = NULL;
+											Cmiss_rendition *region_rendition = NULL;
+											Cmiss_field_node_group_template_id node_group = NULL;
+											Region_node_map::iterator pos;
+											for (pos = node_map->begin(); pos != node_map->end(); ++pos)
+											{
+												if (pos->first != sub_region)
+												{
+													if (sub_region && sub_group_field)
+													{
+														Computed_field_changed(sub_group_field);
+														Cmiss_field_destroy(&sub_group_field);
+														sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+														Cmiss_field_destroy(&sub_group_field);
+														sub_group = NULL;
+													}
+													if (node_group_field)
+													{
+														Cmiss_field_destroy(&node_group_field);
+													}
+													if (region_rendition)
+													{
+														Cmiss_rendition_destroy(&region_rendition);
+													}
+													sub_region = pos->first;
+													if (sub_region)
+													{
+														region_rendition= Cmiss_rendition_get_from_region(sub_region);
+														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+														sub_group = Cmiss_field_cast_group(sub_group_field);
+													}
+													if (sub_group)
+													{
+														node_group_field = Cmiss_field_group_create_node_group(sub_group);
+														if (node_group_field)
+														{
+															node_group = 
+																Cmiss_field_cast_node_group_template(node_group_field);
+															Cmiss_field_destroy(&node_group_field);
+															node_group_field = reinterpret_cast<Computed_field *>(node_group);
+														}
+													}
+												}
+												if (sub_region && sub_group_field && node_group)
+												{
+													Cmiss_field_node_group_template_add_node(node_group,
+														pos->second);
+												}
+											}
+											if (sub_region && sub_group_field)
+											{
+												Computed_field_changed(sub_group_field);
+												Cmiss_field_destroy(&sub_group_field);
+												sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+												Cmiss_field_destroy(&sub_group_field);
+												sub_group = NULL;
+											}
+											if (node_group_field)
+											{
+												Cmiss_field_destroy(&node_group_field);
+											}
+											if (region_rendition)
+											{
+												Cmiss_rendition_destroy(&region_rendition);
+											}
+											delete node_map;
 										}
 										DESTROY(LIST(Scene_picked_object))(
 											&(scene_picked_object_list));
@@ -3429,6 +3580,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->last_picked_node=(struct FE_node *)NULL;
 			node_tool->gt_element_group=(struct GT_element_group *)NULL;
 			node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
+
+			node_tool->rendition=(struct Cmiss_rendition *)NULL;
+			node_tool->graphic=(struct Cmiss_graphic *)NULL;
+
 			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 			node_tool->rubber_band=(struct GT_object *)NULL;
 #if defined (MOTIF_USER_INTERFACE)

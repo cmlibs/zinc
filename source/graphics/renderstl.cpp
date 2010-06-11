@@ -887,69 +887,45 @@ int write_scene_stl(Stl_context& stl_context, struct Scene *scene);
  * Renders the visible parts of a scene object to STL.
  * 
  * @param stl_context output STL file and context data
- * @param scene_object the scene object to output
+ * @param graphics_object the graphics object to output
  * @return 1 on success, 0 on failure
  */
-int write_scene_object_stl(Stl_context& stl_context,
-	struct Scene_object *scene_object)
+int write_graphics_object_stl(Stl_context& stl_context,
+	struct GT_object *graphics_object, double time)
 {
 	int return_code;
 
-	ENTER(write_scene_object_stl)
-	if (scene_object)
+	ENTER(write_graphics_object_stl)
+	if (graphics_object)
 	{
 		return_code = 1;
-		if (g_VISIBLE == Scene_object_get_visibility(scene_object))
+#if defined (TO_BE_IMPLEMENTED)
+		int has_transform = Scene_object_has_transformation(scene_object);
+		if (has_transform)
 		{
-			int has_transform = Scene_object_has_transformation(scene_object);
-			if (has_transform)
-			{
-				gtMatrix transformation;
-				Scene_object_get_transformation(scene_object, &transformation);
-				stl_context.push_multiply_transformation(
-					Transformation_matrix(transformation));
-			}
-
-			double time;
-			if (Scene_object_has_time(scene_object))
-			{
-				time = Scene_object_get_time(scene_object);
-			}
-			else
-			{
-				time = 0.0;
-			}
-
-			if (Scene_object_has_gt_object(scene_object,
-				(struct GT_object *)NULL))
-			{
-				return_code = makestl(stl_context,
-					Scene_object_get_gt_object(scene_object), time);
-			}
-			else if (Scene_object_has_graphical_element_group(scene_object,
-				(void *)NULL))
-			{
-				struct GT_element_group *graphical_element_group =
-					Scene_object_get_graphical_element_group(scene_object);
-				return_code = for_each_settings_in_GT_element_group(
-					graphical_element_group, GT_element_settings_graphics_to_stl,
-					static_cast<void*>(&stl_context));
-			}
-			else if (Scene_object_has_child_scene(scene_object, (void *)NULL))
-			{
-				return_code = write_scene_stl(stl_context,
-					Scene_object_get_child_scene(scene_object));
-			}
-			else
-			{
-				return_code = 0;
-			}
-
-			if (has_transform)
-			{
-				stl_context.pop_transformation();
-			}
+			gtMatrix transformation;
+			Scene_object_get_transformation(scene_object, &transformation);
+			stl_context.push_multiply_transformation(
+				Transformation_matrix(transformation));
 		}
+#endif
+
+#if defined (TO_BE_IMPLEMENTED)
+		if (Scene_object_has_time(scene_object))
+		{
+			time = Scene_object_get_time(scene_object);
+		}
+#endif
+
+
+
+		return_code = makestl(stl_context,graphics_object, time);
+#if defined (TO_BE_IMPLEMENTED)
+		if (has_transform)
+		{
+			stl_context.pop_transformation();
+		}
+#endif
 	}
 	else
 	{
@@ -962,17 +938,17 @@ int write_scene_object_stl(Stl_context& stl_context,
 	return (return_code);
 } /* write_scene_object_stl */
 
-int Scene_object_to_stl(struct Scene_object *scene_object,
+int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	void *stl_context_void)
 {
 	int return_code;
 
 	ENTER(Scene_object_to_stl);
-	if (scene_object && stl_context_void)
+	if (graphics_object && stl_context_void)
 	{
 		return_code = 1;
 		Stl_context& stl_context = *(static_cast<Stl_context*>(stl_context_void));
-		return_code = write_scene_object_stl(stl_context, scene_object);
+		return_code = write_graphics_object_stl(stl_context, graphics_object, time);
 	}
 	else
 	{
@@ -980,6 +956,7 @@ int Scene_object_to_stl(struct Scene_object *scene_object,
 			"Scene_object_to_stl.  Invalid argument(s)");
 		return_code=0;
 	}
+
 	LEAVE;
 
 	return (return_code);
@@ -995,12 +972,13 @@ int Scene_object_to_stl(struct Scene_object *scene_object,
 int write_scene_stl(Stl_context& stl_context, struct Scene *scene)
 {
 	int return_code;
+	
+	ENTER(write_scene_stl);
 
-	ENTER(write_scene_stl)
 	if (scene)
 	{
-		return_code = for_each_Scene_object_in_Scene(scene, Scene_object_to_stl,
-			static_cast<void*>(&stl_context));
+		return_code=for_each_graphics_object_in_scene(scene,
+			Graphcis_object_to_stl,(void *)&stl_context);
 	}
 	else
 	{
@@ -1019,8 +997,7 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, struct Scene *scene,
-	struct Scene_object *scene_object)
+int export_to_stl(char *file_name, struct Scene *scene)
 {
 	int return_code;
 
@@ -1029,25 +1006,11 @@ int export_to_stl(char *file_name, struct Scene *scene,
 	{
 		build_Scene(scene);
 		char *solid_name = NULL;
-		if (scene_object)
-		{
-			GET_NAME(Scene_object)(scene_object, &solid_name);
-		}
-		else
-		{
-			GET_NAME(Scene)(scene, &solid_name);
-		}
+		GET_NAME(Scene)(scene, &solid_name);
 		Stl_context stl_context(file_name, solid_name);
 		if (stl_context.is_valid())
 		{
-			if (scene_object)
-			{
-				return_code = write_scene_object_stl(stl_context, scene_object);
-			}
-			else
-			{
-				return_code = write_scene_stl(stl_context, scene);
-			}
+			return_code = write_scene_stl(stl_context, scene);
 		}
 		else
 		{

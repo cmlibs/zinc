@@ -61,6 +61,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
+#include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
 #include "graphics/scene.hpp"
@@ -2589,7 +2590,7 @@ LAST MODIFIED : 21 June 2001
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *dot_pointer, *prototype_name, *material_name;
+	char *dot_pointer, *prototype_name = NULL, *material_name;
 	int group, in_def, return_code;
 	struct GT_object *temp_gt_object;
 	struct VRML_prototype *vrml_prototype;
@@ -2605,16 +2606,28 @@ DESCRIPTION :
 		group = 0;
 		in_def = 0;
 		return_code=1;
+		const char *parsed_name = duplicate_string(gt_object->name+1);
+		char *temp_string = NULL;
+		const char *num_string = "";
+		if ((temp_string = (char *)strrchr(parsed_name, '/')))
+		{
+			num_string = temp_string+1;
+			temp_string[0] = '\0';
+		}
+		while ((temp_string = (char *)strchr(parsed_name, '/')))
+		{
+			temp_string[0] = '_';
+		}
 		if (GET_NAME(Graphical_material)(default_material, &material_name)&&
-			ALLOCATE(prototype_name,char,strlen(gt_object->name)+10+strlen(material_name)))
+			ALLOCATE(prototype_name,char,strlen(parsed_name)+strlen(num_string)+10+strlen(material_name)))
 		{
 			if (object_is_glyph)
 			{
-				sprintf(prototype_name,"glyph_%s_%s",gt_object->name, material_name);
+				sprintf(prototype_name,"glyph_%s%s_%s",parsed_name, num_string, material_name);
 			}
 			else
 			{
-				sprintf(prototype_name,"object_%s_%s",gt_object->name, material_name);
+				sprintf(prototype_name,"object_%s%s_%s",parsed_name, num_string, material_name);
 			}
 			/* Can't have certain characters (.: ) in a name */
 			while ((dot_pointer = strchr(prototype_name, '.'))
@@ -2695,9 +2708,10 @@ DESCRIPTION :
 					fprintf(vrml_file, "#END DEF %s\n", prototype_name);
 				}
 			}
+			DEALLOCATE(prototype_name);
+			DEALLOCATE(material_name);
 		}
-		DEALLOCATE(prototype_name);
-		DEALLOCATE(material_name);
+		DEALLOCATE(parsed_name);
 	}
 	else
 	{
@@ -2777,7 +2791,8 @@ graphics_object_tree_iterator_function
 Global functions
 ----------------
 */
-int export_to_vrml(char *file_name,void *scene_void)
+int export_to_vrml(char *file_name,void *scene_void,void *region_void, 
+	int recursive, const char *graphic_name)
 /******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -2793,9 +2808,11 @@ Renders the visible objects to a VRML file.
 	int return_code;
 	struct Export_to_vrml_data export_to_vrml_data;
 	struct Scene *scene;
+	struct Cmiss_region *region;
 
 	ENTER(export_to_vrml);
-	if (file_name&&(scene=(struct Scene *)scene_void))
+	if (file_name&&(scene=(struct Scene *)scene_void)&&
+		(region=(struct Cmiss_region *)region_void))
 	{
 		build_Scene(scene);
 		/* open file and add header */
@@ -2879,8 +2896,17 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"    } #NavigationInfo\n");
 			export_to_vrml_data.vrml_prototype_list=
 				CREATE(LIST(VRML_prototype))();
-			return_code=for_each_graphics_object_in_scene(scene,
-				graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
+
+			if (recursive)
+			{
+				return_code=for_each_graphics_object_in_scene(scene,
+					graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
+			}
+			else
+			{
+				return_code=Scene_export_region_graphics_object(scene,region,graphic_name,
+					graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
+			}
 			DESTROY(LIST(VRML_prototype))(&export_to_vrml_data.vrml_prototype_list);
 			fprintf(vrml_file,"  ]\n");
 			fprintf(vrml_file,"} #Group\n");

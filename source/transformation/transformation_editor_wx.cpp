@@ -53,7 +53,7 @@ extern "C"{
 }
 
 Transformation_editor::Transformation_editor(wxPanel *parent, const char *panel_name, 
-	 struct Scene_object *scene_object, int *auto_apply)
+	 struct Cmiss_rendition *rendition, int *auto_apply)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2008
 
@@ -64,7 +64,7 @@ transformation_editor;
 {
 	 direction_system_index = 0;
 	 transformation_editor_panel = parent;
-	 current_object = scene_object;
+	 current_rendition = rendition;
 	 auto_apply_flag = auto_apply;
 	 rate_of_change = 0;
 	USE_PARAMETER(panel_name);
@@ -428,7 +428,7 @@ Setup the layout for transformation editor.
 	 transformation_editor_panel->Layout();
 }
 
-int Transformation_editor::transformation_editor_wx_set_transformation(gtMatrix *transformation_matrix)
+int Transformation_editor::set_transformation(gtMatrix *transformation_matrix)
 /*******************************************************************************
 LAST MODIFIED : 29 Feb 2008
 
@@ -516,7 +516,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 				 else
 				 {
 						display_message(ERROR_MESSAGE,
-							 "transformation_editor_wx_set_transformation. Cannot allocate sufficient memory");
+							 "set_transformation. Cannot allocate sufficient memory");
 				 }
 				 transformation_editor_quaternion->matrix_to_quaternion(values, global_quat);
 				 sprintf(temp_str, DOF3_NUM_FORMAT, global_quat[0]);
@@ -562,7 +562,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 	 else
 	 {
 		 display_message(ERROR_MESSAGE,
-			 "transformation_editor_set_transformation.  Invalid argument(s)");
+			 "set_transformation.  Invalid argument(s)");
 		return_code = 0;
 	 }
 	 return (return_code);
@@ -770,9 +770,9 @@ provoked then use this colour editor to do the settings.
 	 LEAVE;
 }
 
-void Transformation_editor::transformation_editor_wx_set_current_object(struct Scene_object *scene_object)
+void Transformation_editor::set_rendition(struct Cmiss_rendition *rendition)
 {
-	 current_object = scene_object;
+	 current_rendition = rendition;
 }
 
 void Transformation_editor::transformation_editor_wx_get_rate_of_change_from_interface_slider()
@@ -884,7 +884,6 @@ Must only call this function from OnTransformationEditor_spin_button_up function
 			}
 			matrix_euler(&gmatrix, &global_direction);
 	 }
-
 	 position_direction_to_transformation_matrix(
 			&global_position, &global_direction,&(transformation_editor_transformation_matrix));
 	 scale_factor_to_transformation_matrix(global_scale_factor,
@@ -937,17 +936,17 @@ provoked then use this colour editor to do the settings.
 void Transformation_editor::ApplyTransformation(int force_apply)
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
-	 if (current_object)
+	 if (current_rendition)
 	 {
 			if (*auto_apply_flag || force_apply)
 			{
-				 Scene_object_set_transformation(current_object,
-						&transformation_editor_transformation_matrix);
+				 Cmiss_rendition_set_transformation(current_rendition,
+					 &transformation_editor_transformation_matrix);
 			}
 			else
 			{
-				 transformation_editor_wx_set_transformation(
-						&(transformation_editor_transformation_matrix));
+				set_transformation(
+					&(transformation_editor_transformation_matrix));
 			}
 	 }
 
@@ -997,8 +996,7 @@ Process choice selected event.
 				 Transformation_editor_wx_direction_text_ctrl_4->SetEditable(0);
 			}
 			transformation_editor_panel->Layout();
-			transformation_editor_wx_set_transformation(
-				 &(transformation_editor_transformation_matrix));
+			set_transformation(&(transformation_editor_transformation_matrix));
 	 }
 	 
 	 LEAVE;

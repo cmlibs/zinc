@@ -596,3 +596,104 @@ allowed during identifier changes.
 	return (return_code);
 } /* FE_region_change_node_identifiers */
 
+struct LIST(FE_node) *
+	FE_node_list_from_region_and_selection_group(
+		struct Cmiss_region *region, struct Multi_range *node_ranges,
+		struct Computed_field *group_field, FE_value time, int use_data)
+{
+	int i, node_number, nodes_in_region, nodes_in_ranges,
+		number_of_ranges, return_code, selected = 1, start, stop;
+	struct FE_node *node;
+	struct FE_node_fe_region_selection_ranges_condition_data data;
+	struct FE_region *fe_region;
+
+	ENTER(FE_node_list_from_fe_region_selection_ranges_condition);
+	data.node_list = (struct LIST(FE_node) *)NULL;
+	if (region)
+	{
+		fe_region = Cmiss_region_get_FE_region(region);
+		if (use_data)
+			fe_region=FE_region_get_data_FE_region(fe_region);
+	}
+	if (fe_region)
+	{
+		if (data.node_list = CREATE(LIST(FE_node))())
+		{
+			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
+			if (node_ranges)
+			{
+				nodes_in_ranges = Multi_range_get_total_number_in_ranges(node_ranges);
+			}
+			data.fe_region = fe_region;
+			data.selected_flag = 0;
+			data.node_selection_list = NULL;
+			/* Seems odd to specify an empty node_ranges but I have
+				maintained the previous behaviour */
+			if (node_ranges &&
+				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(node_ranges))))
+			{
+				data.node_ranges = node_ranges;
+			}
+			else
+			{
+				data.node_ranges = (struct Multi_range *)NULL;
+			}
+			data.conditional_field = group_field;
+			data.conditional_field_time = time;
+
+			if (data.node_ranges
+				&& (nodes_in_ranges < nodes_in_region))
+			{
+				return_code = 1;
+				for (i = 0 ; i < number_of_ranges ; i++)
+				{
+					Multi_range_get_range(node_ranges, i, &start, &stop);
+					for (node_number = start ; node_number <= stop ; node_number++)
+					{
+						if (node = FE_region_get_FE_node_from_identifier(
+								 fe_region, node_number))
+						{
+							if (group_field)
+							{
+								selected = Computed_field_is_true_at_node(group_field,
+									node, time);
+							}
+							if (selected)
+							{
+								ADD_OBJECT_TO_LIST(FE_node)(node, data.node_list);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				return_code =  FE_region_for_each_FE_node(fe_region,
+					FE_node_add_if_selection_ranges_condition, (void *)&data);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_list_from_fe_region_selection_ranges_condition.  "
+					"Error building list");
+				DESTROY(LIST(FE_node))(&data.node_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_list_from_fe_region_selection_ranges_condition.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_list_from_fe_region_selection_ranges_condition.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data.node_list);
+} /* FE_node_list_from_fe_region_selection_ranges_condition */
+

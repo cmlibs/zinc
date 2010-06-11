@@ -134,7 +134,8 @@ a complete copy of <Spectrum>.
 			DEACCESS(Spectrum)(&(spectrum_editor->edit_spectrum));
 		}
 		/* make an empty spectrum */
-		if (spectrum_editor->edit_spectrum=ACCESS(Spectrum)(CREATE(Spectrum)("copy")))
+		spectrum_editor->edit_spectrum=CREATE(Spectrum)("copy");
+		if (spectrum_editor->edit_spectrum)
 		{
 			/* copy general settings into new object */
 			MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
@@ -1234,6 +1235,7 @@ Creates a spectrum_editor widget.
 											spectrum_editor->editor_material, font, light_manager,
 											spectrum_manager, default_scene_spectrum, 
 											texture_manager);
+										DEACCESS(Spectrum)(&default_scene_spectrum);
 										viewer_light = CREATE(Light)("spectrum_editor_light");
 										set_Light_direction(viewer_light, light_direction);
 										viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");
@@ -1535,7 +1537,7 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 			spectrum_editor_settings_set_callback(spectrum_editor->settings_widget,&callback);
 			if (spectrum_editor->edit_spectrum)
 			{
-				DESTROY(Spectrum)(&(spectrum_editor->edit_spectrum));
+				DEACCESS(Spectrum)(&(spectrum_editor->edit_spectrum));
 			}
 		}
 		spectrum_editor_update_scene_viewer(spectrum_editor);

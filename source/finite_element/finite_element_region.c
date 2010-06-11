@@ -1841,22 +1841,25 @@ DESCRIPTION :
 Removes the callback calling <function> with <user_data> from <region>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(FE_region_remove_callback);
 	if (fe_region && function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(FE_region_change)(
-			fe_region->change_callback_list, function, user_data))
+		if (fe_region->change_callback_list)
 		{
-			fe_region->number_of_clients--;
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_remove_callback.  Could not remove callback");
-			return_code = 0;
+			if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(FE_region_change)(
+						fe_region->change_callback_list, function, user_data))
+			{
+				fe_region->number_of_clients--;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_remove_callback.  Could not remove callback");
+				return_code = 0;
+			}
 		}
 	}
 	else

@@ -51,6 +51,7 @@ extern "C" {
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"
 }
+#include "graphics/cmiss_rendition.hpp"
 #include "graphics/graphical_element.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
@@ -64,9 +65,14 @@ int Render_graphics_compile_members::Scene_compile(Scene *scene)
 	return Scene_compile_members(scene, this);
 }
 
-int Render_graphics_compile_members::Scene_object_compile(Scene_object *scene_object)
+int Render_graphics_compile_members::Cmiss_rendition_compile(Cmiss_rendition *cmiss_rendition)
 {
-	return Scene_object_compile_members(scene_object, this);
+	return Cmiss_rendition_compile_rendition(cmiss_rendition, this);
+}
+
+int Render_graphics_compile_members::Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
+{
+	return Cmiss_rendition_compile_members_rendition(cmiss_rendition, this);
 }
 
 int Render_graphics_compile_members::Graphical_element_group_compile(

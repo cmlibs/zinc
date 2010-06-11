@@ -71,6 +71,7 @@ INCLUDE( FunctionDefinitions )
 # Don't build anything unless the version of CMake is high enough.
 # The matching ELSE/ENDIF should be the last lines in the file.
 # AND CMISS_ROOT environment variable is defined to be a directory
+<<<<<<< .working
 
 # This is the project name and shows up in ides
 PROJECT( cmgui_project )
@@ -99,6 +100,7 @@ SET( TARGET_NAME_FORMAT "Verbose" CACHE STRING "Do you want a 'Basic' of 'Verbos
 SET( USER_INTERFACE "wx" CACHE STRING "What type of user interface is required" )
 SET_USER_INTERFACE_DEFINES( )
 SET( CAN_USE_USER_INTERFACE FALSE )
+<<<<<<< .working
 
 SET( CMISS_INSTALL_PREFIX ${CMISS_ROOT_LOCATION}/${ARCHITECTURE_DIR} CACHE PATH "Where are your Cmgui dependent libraries installed?" )
 SET( CMAKE_INSTALL_PREFIX ${CMISS_INSTALL_PREFIX} CACHE INTERNAL "Internalise CMAKE_INSTALL_PREFIX, manipulate via CMISS_INSTALL_PREFIX" FORCE )
@@ -161,6 +163,7 @@ ENDIF( NOT CMGUI_BUILD_EXECUTABLE )
 IF( NOT DEFINED CMGUI_USE_GDCM ) #AND ( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" OR "${CMAKE_SYSTEM_NAME}" MATCHES "Windows" ) )
 	SET( CMGUI_USE_GDCM ON )
 ENDIF( NOT DEFINED CMGUI_USE_GDCM )#AND ( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" OR "${CMAKE_SYSTEM_NAME}" MATCHES "Windows" ) )
+<<<<<<< .working
 
 OPTION( CMGUI_USE_GDCM "Do you want to use libGDCM?" OFF )
 OPTION( CMGUI_USE_GTKMAIN "Do you want to use GTK Main?" ${GTK_USER_INTERFACE} )
@@ -380,6 +383,7 @@ ENDIF( WX_USER_INTERFACE )
 #	MESSAGE( STATUS "JPEG has been found " ${JPEG_LIBRARIES} )
 #	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${JPEG_LIBRARIES} )
 #ENDIF( JPEG_FOUND )
+<<<<<<< .working
 
 # zlib 
 IF( CMGUI_USE_ZLIB )

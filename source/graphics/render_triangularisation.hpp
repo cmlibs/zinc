@@ -71,6 +71,23 @@ public:
 		return 1;
 	}
 
+	virtual int Overlay_graphics_object_execute()
+	{
+		return 1;
+	}
+
+
+	virtual int Overlay_graphics_object_compile()
+	{
+		return 1;
+	}
+
+	virtual int Register_overlay_graphics_object(GT_object *graphics_object)
+	{
+		USE_PARAMETER(graphics_object);
+		return 1;
+	}
+
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */
@@ -78,14 +95,17 @@ public:
 	{
 		USE_PARAMETER(graphics_object);
 		return 1;
-	}		
-	
-	/***************************************************************************//**
-	 * Execute the Scene_object.
-	 */
-	virtual int Scene_object_execute(Scene_object *scene_object)
+	}
+
+	virtual int Cmiss_rendition_execute(Cmiss_rendition *rendition)
 	{
-		USE_PARAMETER(scene_object);
+		USE_PARAMETER(rendition);
+		return 1;
+	}
+
+	virtual int Cmiss_rendition_execute_members(Cmiss_rendition *rendition)
+	{
+		USE_PARAMETER(rendition);
 		return 1;
 	}
 

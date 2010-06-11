@@ -52,9 +52,12 @@ extern "C" {
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "api/cmiss_rendition.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_group.h"
+#include "api/cmiss_field_sub_group_template.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
 #if defined (MOTIF_USER_INTERFACE)
@@ -73,12 +76,14 @@ static char element_tool_uidh[] =
 #if defined (MOTIF_USER_INTERFACE)
 #include "motif/image_utilities.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "graphics/cmiss_rendition.h"
+#include "graphics/cmiss_graphic.h"
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
-
+#include "computed_field/computed_field_private.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -87,7 +92,8 @@ static char element_tool_uidh[] =
 #include "graphics/graphics_window_private.hpp"
 #include "choose/choose_manager_class.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
-
+#include <map>
+typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
 
 /*
 Module variables
@@ -138,6 +144,7 @@ Object storing all the parameters for interactively selecting elements.
 	struct FE_element *last_picked_element;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+	struct Cmiss_rendition *rendition;
 
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
@@ -418,6 +425,8 @@ Resets current edit. Called on button release or when tool deactivated.
 	{
 		REACCESS(FE_element)(&(element_tool->last_picked_element),
 			(struct FE_element *)NULL);
+    REACCESS(Cmiss_rendition)(&(element_tool->rendition),
+      (struct Cmiss_rendition *)NULL);
 		REACCESS(Interaction_volume)(
 			&(element_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
@@ -455,9 +464,9 @@ release.
 	struct FE_element_shape *element_shape;
 	struct Element_tool *element_tool;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
-	struct LIST(FE_element) *element_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *scene;
+	struct Cmiss_rendition *rendition = NULL;
 	FE_value_triple *xi_points;
 
 	ENTER(Element_tool_interactive_event_handler);
@@ -487,8 +496,7 @@ release.
 								element_tool->select_faces_enabled,
 								element_tool->select_lines_enabled,
 								(struct Scene_picked_object **)NULL,
-								(struct GT_element_group **)NULL,
-								(struct GT_element_settings **)NULL))
+								&rendition,	(struct Cmiss_graphic **)NULL))
 							{
 								/* Open command_field of picked_element in browser */
 								if (element_tool->command_field)
@@ -551,18 +559,76 @@ release.
 									(element_tool->picked_element_was_unselected))))
 #endif /*defined (OLD_CODE) */
 							{
-								FE_element_selection_begin_cache(
-									element_tool->element_selection);
-								FE_element_selection_clear(element_tool->element_selection);
+                if (element_tool->region)
+                {
+                  Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
+                    element_tool->region);
+                  Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+                    root_rendition);
+                  if (root_group_field)
+                  {
+                    Cmiss_field_group_id root_group =
+                      Cmiss_field_cast_group(root_group_field);
+                    Cmiss_field_group_clear_region_tree_element(root_group);
+                    Cmiss_field_destroy(&root_group_field);
+                    root_group_field = reinterpret_cast<Computed_field *>(root_group);
+                    Cmiss_field_destroy(&root_group_field);
+                  }
+                  Cmiss_rendition_destroy(&root_rendition);
+                }
 							}
 							if (picked_element)
 							{
-								FE_element_selection_select_element(
-									element_tool->element_selection,picked_element);
+								REACCESS(Cmiss_rendition)(&(element_tool->rendition),
+									rendition);
+                Cmiss_region *sub_region = NULL;
+                Cmiss_field_group_id sub_group = NULL;
+                Cmiss_field_id sub_group_field = NULL;
+                Cmiss_field_id element_group_field = NULL;
+                Cmiss_field_element_group_template_id element_group = NULL;
+                if (element_tool->rendition)
+                {
+                  sub_region = Cmiss_rendition_get_region(element_tool->rendition);
+                  sub_group_field = Cmiss_rendition_get_selection_group(element_tool->rendition);
+                  sub_group = Cmiss_field_cast_group(sub_group_field);
+                  if (sub_group)
+                  {
+                    element_group_field = Cmiss_field_group_create_element_group(sub_group);
+                    if (element_group_field)
+                    {
+                      element_group =
+                        Cmiss_field_cast_element_group_template(element_group_field);
+                      Cmiss_field_destroy(&element_group_field);
+                    }
+                  }
+                }
+
+                if (sub_region && sub_group_field && element_group)
+                {
+                  Cmiss_field_element_group_template_add_element(element_group,
+                    picked_element);
+                  Computed_field_changed(sub_group_field);
+                }
+                if (sub_group_field)
+                {
+                  Cmiss_field_destroy(&sub_group_field);
+                }
+                if (sub_group)
+                {
+                  sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+                  Cmiss_field_destroy(&sub_group_field);
+                  sub_group = NULL;
+                }
+                if (element_group)
+                {
+                  Cmiss_field_id temporary_handle =
+                    reinterpret_cast<Computed_field *>(element_group);
+                  Cmiss_field_destroy(&temporary_handle);
+                }
 							}
 							if (clear_selection)
 							{
-								FE_element_selection_end_cache(element_tool->element_selection);
+								//FE_element_selection_end_cache(element_tool->element_selection);
 							}
 							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
@@ -609,16 +675,20 @@ release.
 											"element_tool_rubber_band",g_POLYLINE,
 											element_tool->rubber_band_material);
 										ACCESS(GT_object)(element_tool->rubber_band);
+#if defined (USE_SCENE_OBJECT)
 										Scene_add_graphics_object(scene,element_tool->rubber_band,
 											/*position*/0,"element_tool_rubber_band",
 											/*fast_changing*/1);
+#endif
 									}
 									Interaction_volume_make_polyline_extents(
 										temp_interaction_volume,element_tool->rubber_band);
 								}
 								else
 								{
+#if defined (USE_SCENE_OBJECT)
 									Scene_remove_graphics_object(scene,element_tool->rubber_band);
+#endif
 									DEACCESS(GT_object)(&(element_tool->rubber_band));
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
@@ -627,21 +697,85 @@ release.
 										Scene_pick_objects(scene,temp_interaction_volume,
 										graphics_buffer))
 									{
-										if (element_list=
-											Scene_picked_object_list_get_picked_elements(
-												scene_picked_object_list,
-												element_tool->select_elements_enabled,
-												element_tool->select_faces_enabled,
-												element_tool->select_lines_enabled))
+										Region_element_map *element_map =
+												(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
+                        scene_picked_object_list,
+                        element_tool->select_elements_enabled,
+                        element_tool->select_faces_enabled,
+                        element_tool->select_lines_enabled);
+										if (element_map)
 										{
-											FE_element_selection_begin_cache(
-												element_tool->element_selection);
-											FOR_EACH_OBJECT_IN_LIST(FE_element)(
-												FE_element_select_in_FE_element_selection,
-												(void *)element_tool->element_selection,element_list);
-											FE_element_selection_end_cache(
-												element_tool->element_selection);
-											DESTROY(LIST(FE_element))(&element_list);
+                      Cmiss_region *sub_region = NULL;
+                      Cmiss_field_group_id sub_group = NULL;
+                      Cmiss_field_id sub_group_field = NULL;
+                      Cmiss_field_id element_group_field = NULL;
+                      Cmiss_rendition *region_rendition = NULL;
+                      Cmiss_field_element_group_template_id element_group = NULL;
+                      Region_element_map::iterator pos;
+                      for (pos = element_map->begin(); pos != element_map->end(); ++pos)
+                      {
+                        if (pos->first != sub_region)
+                        {
+                          if (sub_region && sub_group_field)
+                          {
+                            Computed_field_changed(sub_group_field);
+                            Cmiss_field_destroy(&sub_group_field);
+                            sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+                            Cmiss_field_destroy(&sub_group_field);
+                            sub_group = NULL;
+                          }
+                          if (element_group_field)
+                          {
+                            Cmiss_field_destroy(&element_group_field);
+                          }
+                          if (region_rendition)
+                          {
+                            Cmiss_rendition_begin_cache(region_rendition);
+                            Cmiss_rendition_end_cache(region_rendition);
+                            Cmiss_rendition_destroy(&region_rendition);
+                          }
+                          sub_region = pos->first;
+                          if (sub_region)
+                          {
+                            region_rendition= Cmiss_rendition_get_from_region(sub_region);
+                            sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+                            sub_group = Cmiss_field_cast_group(sub_group_field);
+                          }
+                          if (sub_group)
+                          {
+                            element_group_field = Cmiss_field_group_create_element_group(sub_group);
+                            if (element_group_field)
+                            {
+                              element_group =
+                                Cmiss_field_cast_element_group_template(element_group_field);
+                              Cmiss_field_destroy(&element_group_field);
+                              element_group_field = reinterpret_cast<Computed_field *>(element_group);
+                            }
+                          }
+                        }
+                        if (sub_region && sub_group_field && element_group)
+                        {
+                          Cmiss_field_element_group_template_add_element(element_group,
+                            pos->second);
+                        }
+                      }
+                      if (sub_region && sub_group_field)
+                      {
+                        Computed_field_changed(sub_group_field);
+                        Cmiss_field_destroy(&sub_group_field);
+                        sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+                        Cmiss_field_destroy(&sub_group_field);
+                        sub_group = NULL;
+                      }
+                      if (element_group_field)
+                      {
+                        Cmiss_field_destroy(&element_group_field);
+                      }
+                      if (region_rendition)
+                      {
+                        Cmiss_rendition_destroy(&region_rendition);
+                      }
+											delete element_map;
 										}
 										DESTROY(LIST(Scene_picked_object))(
 											&(scene_picked_object_list));
@@ -1134,6 +1268,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				ACCESS(Graphical_material)(rubber_band_material);
 			element_tool->user_interface=user_interface;
 			element_tool->time_keeper = (struct Time_keeper *)NULL;
+			element_tool->rendition=(struct Cmiss_rendition *)NULL;
 			if (time_keeper)
 			{
 				element_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);

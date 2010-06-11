@@ -83,11 +83,9 @@ static struct Spectrum_editor_dialog *CREATE(Spectrum_editor_dialog)(
 	 struct Graphics_font *font, 
 	 struct Graphics_buffer_package *graphics_buffer_package,
 	 struct User_interface *user_interface,
-	 struct LIST(GT_object) *glyph_list,
-	 struct MANAGER(Graphical_material) *graphical_material_manager,
-	 struct MANAGER(Light) *light_manager,
-	 struct MANAGER(Texture) *texture_manager,
-	 struct MANAGER(Scene) *scene_manager)
+	 struct Cmiss_graphics_module *graphics_module,
+	 struct MANAGER(Scene) *scene_manager,
+	 struct Cmiss_region *spectrum_region)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2007
 
@@ -128,10 +126,10 @@ the spectrums contained in the global list.
 								 spectrum_editor_dialog_address,
 								 init_data, font,
 								 graphics_buffer_package,
-								 user_interface, glyph_list,
-								 graphical_material_manager, light_manager,
-								 spectrum_manager, texture_manager,
-								 scene_manager)))
+								 user_interface,
+								 graphics_module,
+								 scene_manager,
+								 spectrum_region)))
 				{
 									 display_message(ERROR_MESSAGE,
 											"CREATE(Spectrum_editor_dialog).  "
@@ -248,11 +246,10 @@ int bring_up_spectrum_editor_dialog(
 	struct Spectrum *spectrum, 
 	struct Graphics_font *font,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	struct User_interface *user_interface, struct LIST(GT_object) *glyph_list,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(Light) *light_manager,
-	struct MANAGER(Texture) *texture_manager,
-	struct MANAGER(Scene) *scene_manager)
+	struct User_interface *user_interface,
+	struct Cmiss_graphics_module *graphics_module,
+	struct MANAGER(Scene) *scene_manager,
+	struct Cmiss_region *spectrum_region)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -275,10 +272,9 @@ bring it to the front, otherwise create a new one.
 		else
 		{
 			if (CREATE(Spectrum_editor_dialog)(spectrum_editor_dialog_address,
-				spectrum_manager, spectrum, font, graphics_buffer_package,
-				user_interface, glyph_list,
-				graphical_material_manager, light_manager,
-				texture_manager, scene_manager))
+					spectrum_manager, spectrum, font, graphics_buffer_package,
+					user_interface, graphics_module, scene_manager,
+					spectrum_region))
 			{
 				return_code = 1;
 			}

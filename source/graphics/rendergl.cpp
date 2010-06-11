@@ -58,6 +58,7 @@ extern "C" {
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"
 }
+#include "graphics/cmiss_rendition.hpp"
 #include "graphics/graphical_element.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
@@ -103,7 +104,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 
 /***************************************************************************//**
  * Rebuilds the display list for each uncreated graphics object in the
- * graphics_object_list, a simple linked list.
+ * <graphics_object>, a simple linked list.
  */
 static int Graphics_object_render_opengl(GT_object *graphics_object,
 	Render_graphics_opengl *renderer, Graphics_object_rendering_type type);
@@ -126,9 +127,33 @@ int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
 	return Graphics_object_compile_members_opengl(graphics_object, this);
 }
 
+int Render_graphics_opengl::Overlay_graphics_object_compile()
+{
+	int return_code = 0;
+	GT_object_iterator pos;
+	int i = 1;
+	for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+	{
+		if (pos->second) {
+			//			glLoadName((GLuint)i);
+			return_code = Graphics_object_compile_members_opengl(pos->second, this);
+		}
+		i++;
+	}
+	
+	//gt_object_map.clear();
+	return return_code;
+}
+
 int Render_graphics_opengl::Material_compile(Graphical_material *material)
 {
 	return Material_compile_members_opengl(material, this);
+}
+
+int Render_graphics_opengl::Register_overlay_graphics_object(GT_object *graphics_object)
+{
+	gt_object_map.insert(std::make_pair(graphics_object->overlay, graphics_object));
+	return 1;
 }
 
 /***************************************************************************//**
@@ -150,21 +175,51 @@ public:
 		return Scene_render_opengl(scene, this);
 	}
 
+#if defined (USE_SCENE_OBJECT)
 	int Scene_object_execute(Scene_object *scene_object)
 	{
 		return execute_Scene_object(scene_object, this);
 	}
-
+#endif
 	int Graphics_object_execute(GT_object *graphics_object)
 	{
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	}
 
+	int Overlay_graphics_object_execute()
+	{
+		int return_code = 1;
+		GT_object_iterator pos;
+		int i = 1;
+
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_render_opengl(pos->second, this,
+					GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 	int Graphics_object_render_immediate(GT_object *graphics_object)
 	{
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
+	}
+
+	int Cmiss_rendition_execute(Cmiss_rendition *cmiss_rendition)
+	{
+		return execute_Cmiss_rendition(cmiss_rendition, this);
+	}
+
+	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
+	{
+		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
 	}
 
 	int Graphical_element_group_execute(GT_element_group *graphical_element_group)
@@ -283,6 +338,25 @@ public:
 			GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
 	}
 
+	int Overlay_graphics_object_execute()
+	{
+		int return_code = 1;
+		GT_object_iterator pos;
+		int i = 1;
+
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_render_opengl(pos->second, this,
+					GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
@@ -317,6 +391,23 @@ public:
 			graphics_object, this);
 	}
 
+	int Overlay_graphics_object_compile()
+	{
+		int return_code = 0;
+		GT_object_iterator pos;
+		int i = 1;
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_compile(pos->second);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
@@ -325,6 +416,25 @@ public:
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
 	}
+
+	int Overlay_graphics_object_execute()
+	{
+		int return_code = 1;
+		GT_object_iterator pos;
+		int i = 1;
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_render_opengl(pos->second, this,
+					GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
@@ -359,6 +469,23 @@ public:
 			Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
 	}
 
+	int Overlay_graphics_object_compile()
+	{
+		int return_code = 0;
+		GT_object_iterator pos;
+		int i = 1;
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_compile(pos->second);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 }; /* class Render_graphics_opengl_glbeginend */
 
 Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(
@@ -378,10 +505,11 @@ template <class Render_immediate> class Render_graphics_opengl_display_list
 	/* can't have these display lists owned by renderer as they are deleted while still called by graphics object */
    int ndc_display_list, end_ndc_display_list;
 #endif /* defined (OLD_CODE) */
+	GT_object_map gt_object_map;
 	
 public:
 	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
-		Render_immediate(graphics_buffer)
+		Render_immediate(graphics_buffer), gt_object_map()
 	{
 #if defined (OLD_CODE)
 		ndc_display_list = 0;
@@ -449,6 +577,33 @@ public:
 		return Scene_execute_opengl_display_list(scene, this);
 	}
 
+	int Cmiss_rendition_execute_members_parent(Cmiss_rendition *cmiss_rendition)
+	{
+		return Render_immediate::Cmiss_rendition_execute_members(cmiss_rendition);
+	}
+
+	int Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
+	{
+		int return_code;
+		
+		if ((return_code = Render_immediate::Cmiss_rendition_compile_members(cmiss_rendition)))
+		{
+			Callback_member_callback< Cmiss_rendition*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(Cmiss_rendition*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Cmiss_rendition_execute_members_parent);
+			return_code = Cmiss_rendition_compile_opengl_display_list(
+				cmiss_rendition, &execute_method, this);
+		}
+		return (return_code);
+	}
+
+	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
+	{
+		return Cmiss_rendition_execute_opengl_display_list(
+			cmiss_rendition, this);
+	}
+
 	int Graphical_element_group_execute_parent(GT_element_group *graphical_element_group)
 	{
 		return Render_immediate::Graphical_element_group_execute(graphical_element_group);
@@ -499,9 +654,53 @@ public:
 		return (return_code);
 	}
 
+	int Overlay_graphics_object_compile()
+	{
+		int return_code = 0;
+		GT_object_iterator pos;
+		struct GT_object *local_object = NULL;
+		int i = 1;
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			local_object = pos->second;
+			if (local_object) {
+				//				glLoadName((GLuint)i);
+				return_code = Graphics_object_compile(local_object);
+			}
+			i++;
+		}
+		//gt_object_map.clear();
+		return return_code;
+	}
+
 	int Graphics_object_execute(GT_object *graphics_object)
 	{
 	  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
+	}
+
+	int Overlay_graphics_object_execute()
+	{
+		int return_code = 1;
+		GT_object_iterator pos;
+		int i = 1;
+		glPushName(0);
+		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+		{
+			if (pos->second) {
+				//				glLoadName((GLuint)i);
+				return_code = ::Graphics_object_execute_opengl_display_list(pos->second, this);
+			}
+			i++;
+		}
+		glPopName();
+		//gt_object_map.clear();
+		return return_code;
+	}
+
+	int Register_overlay_graphics_object(GT_object *graphics_object)
+	{
+		gt_object_map.insert(std::make_pair(graphics_object->overlay, graphics_object));
+		return 1;
 	}
 
 	int Material_execute_parent(Graphical_material *material)
@@ -630,8 +829,10 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	Triple *label_density_list,
 	struct Graphical_material *material, struct Graphical_material *secondary_material, 
-	struct Spectrum *spectrum, struct Graphics_font *font, int draw_selected, int some_selected,
-	struct Multi_range *selected_name_ranges,	Render_graphics_opengl *renderer)
+	struct Spectrum *spectrum, struct Graphics_font *font,
+	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
+	int draw_selected, GraphicsObjectHighlightBaseFunctor *highlight_functor,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -665,9 +866,11 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	if (((0 == number_of_points) || ((0 < number_of_points) && point_list &&
 		axis1_list && axis2_list && axis3_list && scale_list)) && glyph)
 	{
-		if ((0==number_of_points) ||
+		/*if ((0==number_of_points) ||
 			(draw_selected&&((!names) || (!some_selected)))||
-			((!draw_selected)&&(some_selected && (!selected_name_ranges))))
+			((!draw_selected)&&(some_selected && (!selected_name_ranges))))*/
+	            if ((0==number_of_points) ||
+	                (draw_selected&&((!names) || (!highlight_functor))))
 		{
 			/* nothing to draw */
 			return_code=1;
@@ -688,8 +891,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				(spectrum,material,number_of_data_components)))
 			{
 				draw_all = (!names) ||
-					(draw_selected&&some_selected&&(!selected_name_ranges)) ||
-					((!draw_selected)&&(!some_selected));
+					((!draw_selected)&&(!highlight_functor));
 				point = point_list;
 				axis1 = axis1_list;
 				axis2 = axis2_list;
@@ -727,13 +929,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
 					glPushAttrib(GL_ENABLE_BIT);
 					glDisable(GL_LIGHTING);
-					if (names||labels||selected_name_ranges)
+					if (names||labels||highlight_functor)
 					{
 						/* cannot put glLoadName between glBegin and glEnd */
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=Multi_range_is_value_in_range(
-								selected_name_ranges,*name))&&draw_selected)||
+							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
@@ -803,13 +1004,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
 					glPushAttrib(GL_ENABLE_BIT);
 					glDisable(GL_LIGHTING);
-					if (names||labels||selected_name_ranges)
+					if (names||labels||highlight_functor)
 					{
 						/* cannot put glLoadName between glBegin and glEnd */
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=Multi_range_is_value_in_range(
-								selected_name_ranges,*name))&&draw_selected)||
+							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
@@ -894,13 +1094,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
 					glPushAttrib(GL_ENABLE_BIT);
 					glDisable(GL_LIGHTING);
-					if (names||labels||selected_name_ranges)
+					if (names||labels||highlight_functor)
 					{
 						/* cannot put glLoadName between glBegin and glEnd */
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=Multi_range_is_value_in_range(
-								selected_name_ranges,*name))&&draw_selected)||
+							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
@@ -1033,8 +1232,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					glMatrixMode(GL_MODELVIEW);
 					for (i = 0; i < number_of_points; i++)
 					{
-						if (draw_all||((name_selected=Multi_range_is_value_in_range(
-							selected_name_ranges,*name))&&draw_selected)||
+						if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
 							((!name_selected)&&(!draw_selected)))
 						{
 							if (names)
@@ -1138,8 +1336,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						for (i=0;i<number_of_points;i++)
 						{
 							if ((*label) && (draw_all
-								|| ((name_selected=Multi_range_is_value_in_range(
-									selected_name_ranges,*name)) && draw_selected)
+								|| ((name_selected=highlight_functor->call(*name)) && draw_selected)
 								|| ((!name_selected)&&(!draw_selected))))
 							{
 								if (names)
@@ -3217,7 +3414,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										/* put out name for picking - cast to GLuint */
 										glLoadName((GLuint)interpolate_glyph_set->object_name);
 									}
-									/* work out if subobjects selected */
+									/* work out if subobjects selected  */
 									selected_name_ranges=(struct Multi_range *)NULL;
 									name_selected=GT_object_is_graphic_selected(object,
 										glyph_set->object_name,&selected_name_ranges);
@@ -3236,7 +3433,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										/*label_density*/NULL,
 										material, secondary_material, spectrum, 
 										interpolate_glyph_set->font,
-										draw_selected,name_selected,selected_name_ranges,
+										//draw_selected,name_selected,selected_name_ranges,
+										draw_selected, object->highlight_functor,
 										renderer);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
@@ -3253,7 +3451,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									/* put out name for picking - cast to GLuint */
 									glLoadName((GLuint)glyph_set->object_name);
 								}
-								/* work out if subobjects selected */
+								/* work out if subobjects selected  */
 								selected_name_ranges=(struct Multi_range *)NULL;
 								name_selected=GT_object_is_graphic_selected(object,
 									glyph_set->object_name,&selected_name_ranges);
@@ -3267,7 +3465,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									glyph_set->label_bounds, glyph_set->label_density_list,
 									material, secondary_material, 
 									spectrum, glyph_set->font, 
-									draw_selected, name_selected, selected_name_ranges,
+                                                                        //draw_selected,name_selected,selected_name_ranges,
+                                                                        draw_selected, object->highlight_functor,
 									renderer);
 								glyph_set=glyph_set->ptrnext;
 							}
@@ -3454,9 +3653,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line&&line_2)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											line->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(line->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -3487,9 +3691,17 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											line->object_name,&selected_name_ranges);
+//										selected_name_ranges=(struct Multi_range *)NULL;
+//										name_selected=GT_object_is_graphic_selected(object,
+//											line->object_name,&selected_name_ranges);
+										if (object->highlight_functor)
+										{
+											name_selected=(object->highlight_functor)->call(line->object_name);
+										}
+										else
+										{
+											name_selected = 0;
+										}
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -3531,9 +3743,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line&&line_2)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											line->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(line->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -3563,9 +3780,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											line->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(line->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -3730,9 +3952,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									line_index, 1, &object_name);
 	
 								/* work out if subobjects selected */
-								selected_name_ranges=(struct Multi_range *)NULL;
-								name_selected=GT_object_is_graphic_selected(object,
-									object_name,&selected_name_ranges);
+                if (object->highlight_functor)
+                {
+                  name_selected=(object->highlight_functor)->call(object_name);
+                }
+                else
+                {
+                  name_selected = 0;
+                }
 								if ((name_selected&&draw_selected)||
 									((!name_selected)&&(!draw_selected)))
 								{
@@ -3881,9 +4108,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface&&surface_2)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											surface->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(surface->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -3958,9 +4190,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											surface->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(surface->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -4035,9 +4272,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface&&surface_2)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											surface->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(surface->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -4082,9 +4324,14 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface)
 									{
 										/* work out if subobjects selected */
-										selected_name_ranges=(struct Multi_range *)NULL;
-										name_selected=GT_object_is_graphic_selected(object,
-											surface->object_name,&selected_name_ranges);
+                    if (object->highlight_functor)
+                    {
+                      name_selected=(object->highlight_functor)->call(surface->object_name);
+                    }
+                    else
+                    {
+                      name_selected = 0;
+                    }
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
@@ -4174,7 +4421,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								glLoadName((GLuint)nurbs->object_name);
 							}
 							/* work out if subobjects selected */
-							selected_name_ranges=(struct Multi_range *)NULL;
+							selected_name_ranges = (struct Multi_range *)NULL;
 							name_selected=GT_object_is_graphic_selected(object,
 								nurbs->object_name,&selected_name_ranges);
 							if ((name_selected&&draw_selected)||
@@ -4581,7 +4828,7 @@ switch (graphics_object->object_type)
 							glDisableClientState(GL_VERTEX_ARRAY);							
 						}
 #endif
-				
+
 static int Graphics_object_render_opengl(
 	struct GT_object *graphics_object,
 	Render_graphics_opengl *renderer, Graphics_object_rendering_type rendering_type)
@@ -4596,6 +4843,21 @@ static int Graphics_object_render_opengl(
 		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPushName(0);
+		}
+		if (graphics_object->overlay)
+		{
+			glDisable(GL_DEPTH_TEST);
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadIdentity();
+			glOrtho(-1,1,-1,1,1.0,3.0);
+
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glLoadIdentity();
+			gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+				/*up*/0.0,1.0,0.0);
+			
 		}
 		graphics_object_no=0;
 		for (graphics_object_item=graphics_object;graphics_object_item != NULL;
@@ -4612,9 +4874,12 @@ static int Graphics_object_render_opengl(
 			{
 				if (graphics_object_item->selected_material)
 				{
-					if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
+ /*					if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
 						(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
 						(void *)NULL,graphics_object_item->selected_graphic_list))
+					{ */
+
+					if (graphics_object_item->highlight_functor)
 					{
 						renderer->Material_execute(
 							graphics_object_item->selected_material);
@@ -4643,7 +4908,16 @@ static int Graphics_object_render_opengl(
 					renderer->Material_execute((Graphical_material *)NULL);
 				}
 			}
+		}		
+		if (graphics_object->overlay)
+		{
+			glEnable(GL_DEPTH_TEST);
+			glMatrixMode(GL_MODELVIEW);
+			glPopMatrix();
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
 		}
+
 		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPopName();
@@ -4658,4 +4932,3 @@ static int Graphics_object_render_opengl(
 
 	return (return_code);
 } /* execute_GT_object */
-

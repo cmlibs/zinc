@@ -89,7 +89,7 @@ extern "C"
 #include "graphics/spectrum.h"
 }
 #include "graphics/graphics_object.hpp"
-
+#include "graphics/graphics_object_highlight.hpp"
 /*
 Global types
 ------------
@@ -408,6 +408,7 @@ Graphical object data structure.
 		<times>.  The <times> are in increasing order.  The object varies linearly
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
+	int overlay;
 	float *times;
 
 	Graphics_vertex_array *vertex_array;
@@ -449,7 +450,7 @@ Graphical object data structure.
 
 	/*???temporary*/
 	int glyph_mirror_mode;
-
+	GraphicsObjectHighlightBaseFunctor *highlight_functor;
 	int access_count;
 };
 

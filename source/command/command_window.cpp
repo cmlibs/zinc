@@ -2312,7 +2312,7 @@ Create the structures and retrieve the command window from the uil file.
 	static MrmRegisterArg identifier_list[2];
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	BOOL win32_return_code;
-	static char *class_name="Command_window";
+	static const char *class_name="Command_window";
 	WNDCLASSEX class_information;
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2

@@ -93,6 +93,7 @@ and the functions given their public names.
 #define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
 
 /* Convert the functions that have identical interfaces */
+#define Scene_viewer_set_scene Cmiss_scene_viewer_set_scene
 #define Scene_viewer_get_interact_mode Cmiss_scene_viewer_get_interact_mode
 #define Scene_viewer_set_interact_mode Cmiss_scene_viewer_set_interact_mode
 #define Scene_viewer_set_lookat_parameters_non_skew \

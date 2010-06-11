@@ -114,8 +114,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
 				User_interface_module_destroy(&context->UI_module);
-			if (context->graphics_module)
-				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->any_object_selection)
 			{
 				DESTROY(Any_object_selection)(&context->any_object_selection);
@@ -143,6 +141,8 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
 			}
+			if (context->graphics_module)
+				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->curve_manager)
 			{
 				DESTROY(MANAGER(Curve))(&context->curve_manager);
@@ -188,6 +188,28 @@ struct Context *Cmiss_context_access(struct Context *context)
 	}
 	return context;
 }
+struct Cmiss_graphics_module *Cmiss_context_create_graphics_module(struct Context *context)
+{
+	struct Cmiss_graphics_module *graphics_module = NULL;
+
+	if (context)
+	{
+		graphics_module = Cmiss_graphics_module_create(context);
+		if (graphics_module && context->UI_module &&
+			context->UI_module->default_time_keeper)
+		{
+			Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
+				context->UI_module->default_time_keeper );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_context_create_graphics_module.  Missing context");
+	}
+
+	return graphics_module;
+}
 
 struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct Context *context)
 {	
@@ -195,7 +217,7 @@ struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct C
 	{
 		if (!context->graphics_module)
 		{
-			context->graphics_module = Cmiss_graphics_module_create(context);
+			context->graphics_module = Cmiss_context_create_graphics_module(context);
 		}
 	}
 	else
@@ -205,23 +227,6 @@ struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct C
 	}
 
 	return Cmiss_graphics_module_access(context->graphics_module);
-}
-
-struct Cmiss_graphics_module *Cmiss_context_create_graphics_module(struct Context *context)
-{	
-	struct Cmiss_graphics_module *graphics_module = NULL;
-
-	if (context)
-	{
-		graphics_module = Cmiss_graphics_module_create(context);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_create_graphics_module.  Missing context");
-	}
-
-	return graphics_module;
 }
 
 struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
@@ -313,6 +318,12 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 				context, in_argc, in_argv, current_instance,
 				previous_instance, command_line, initial_main_window_state);
 #endif
+		  if (context->UI_module && context->UI_module->default_time_keeper &&
+			  context->graphics_module)
+		  {
+			Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
+				context->UI_module->default_time_keeper );
+		  }
 		}
 		if (context->UI_module)
 		{

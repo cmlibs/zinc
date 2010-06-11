@@ -48,7 +48,8 @@ Renders gtObjects to VRML file
 Global functions
 ----------------
 */
-int export_to_vrml(char *file_name,void *scene_void);
+int export_to_vrml(char *file_name,void *scene_void,void *region_void, 
+	int recursive, const char *graphic_name);
 /******************************************************************************
 LAST MODIFIED : 5 January 1998
 

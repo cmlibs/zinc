@@ -41,8 +41,12 @@
 #ifndef RENDER_HPP
 #define RENDER_HPP
 
+#include "graphics/scene_filters.hpp"
 struct Scene;
+#if defined (USE_SCENE_OBJECT)
 struct Scene_object;
+#endif
+struct Cmiss_rendition;
 struct GT_element_group;
 struct Texture;
 struct Graphical_material;
@@ -90,6 +94,7 @@ public:
 		return 1;
 	}
 
+#if defined (USE_SCENE_OBJECT)
 	/***************************************************************************//**
 	 * Compile the Scene_object.
 	 */
@@ -99,23 +104,48 @@ public:
 	 * Execute the Scene_object.
 	 */
 	virtual int Scene_object_execute(Scene_object *scene_object) = 0;
+#endif
 
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object) = 0;
 
+	virtual int Overlay_graphics_object_compile() = 0;
+
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
 	virtual int Graphics_object_execute(GT_object *graphics_object) = 0;
+
+	virtual int Overlay_graphics_object_execute() = 0;
 	
+	virtual int Register_overlay_graphics_object(GT_object *graphics_object) = 0;
+
 	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary
 	 * this method suggests to renderers that compile and then render that this object
 	 * should instead render now.
 	 */
 	virtual int Graphics_object_render_immediate(GT_object *graphics_object) = 0;
+
+	/***************************************************************************//**
+	 * Execute the Cmiss rendition.
+	 */
+	virtual int Cmiss_rendition_execute(
+		Cmiss_rendition *cmiss_rendition) = 0;
+
+	/***************************************************************************//**
+	 * Compile the Cmiss rendition.
+	 */
+	virtual int Cmiss_rendition_compile(
+	  Cmiss_rendition *cmiss_rendition) = 0;
+
+	virtual int Cmiss_rendition_execute_members(
+		Cmiss_rendition *cmiss_rendition) = 0;
+
+	virtual int Cmiss_rendition_compile_members(
+		Cmiss_rendition *cmiss_rendition) = 0;
 	
 	/***************************************************************************//**
 	 * Execute the Graphical element group.
@@ -175,23 +205,35 @@ public:
 class Render_graphics_compile_members : public Render_graphics
 {
 public:
-	Render_graphics_compile_members() : time(0.0), name_prefix(NULL)
+	Render_graphics_compile_members() : time(0.0), name_prefix(NULL), filtering_list(NULL)
 	{
 	}
 	
 	FE_value time;
 	/** Passed from scene_objects to graphical_elements for compilation */
 	const char *name_prefix;
+	Filtering_list *filtering_list;
 	
 	/***************************************************************************//**
 	 * Compile the Scene.
 	 */
 	virtual int Scene_compile(Scene *scene);
 
+#if defined (USE_SCENE_OBJECT)
 	/***************************************************************************//**
 	 * Compile the Scene_object.
 	 */
 	virtual int Scene_object_compile(Scene_object *scene_object);
+#endif
+
+	/***************************************************************************//**
+	 * Compile the Cmiss rendition.
+	 */
+	virtual int Cmiss_rendition_compile(
+	  Cmiss_rendition *cmiss_rendition);
+
+	virtual int Cmiss_rendition_compile_members(
+		Cmiss_rendition *cmiss_rendition);
 		
 	/***************************************************************************//**
 	 * Compile the Graphical element group.
@@ -251,6 +293,7 @@ public:
 		return 1;
 	}
 
+#if defined (USE_SCENE_OBJECT)
 	/***************************************************************************//**
 	 * By default this renderer only builds.
 	 */
@@ -258,11 +301,17 @@ public:
 	{
 		return 1;
 	}
+#endif
 
 	/***************************************************************************//**
 	 * Graphics objects are the primitives we are building so don't need to propagate.
 	 */
 	virtual int Graphics_object_compile(GT_object * /*graphics_object*/)
+	{
+		return 1;
+	}
+
+	virtual int Overlay_graphics_object_compile()
 	{
 		return 1;
 	}
@@ -274,13 +323,33 @@ public:
 	{
 		return 1;
 	}
-	
+
+	virtual int Overlay_graphics_object_execute()
+	{
+		return 1;
+	}
+
+	virtual int Register_overlay_graphics_object(GT_object * /*graphics_object*/)
+	{
+		return 1;
+	}
+
 	virtual int Graphics_object_render_immediate(GT_object * /*graphics_object*/)
 	{
 		return 1;
 	}
 	
-	virtual int Graphical_element_group_execute(GT_element_group * /*graphical_element_group*/)
+	virtual int Cmiss_rendition_execute(Cmiss_rendition * /*cmiss_rendition*/)
+	{
+		return 1;
+	}
+
+	virtual int Cmiss_rendition_execute_members(Cmiss_rendition * /*cmiss_rendition*/)
+	{
+		return 1;
+	}
+
+	virtual int Graphical_element_group_execute(GT_element_group * /*graphical_element*/)
 	{
 		return 1;
 	}

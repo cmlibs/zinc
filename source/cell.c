@@ -311,13 +311,12 @@ Main program for cell
     graphics_object_list = CREATE(LIST(GT_object))();
     if (spectrum_manager = CREATE(MANAGER(Spectrum))())
     {
-      if (default_spectrum = CREATE(Spectrum)("default"))
+			default_spectrum = CREATE(Spectrum)("default");
+      if (default_spectrum)
       {
         Spectrum_set_simple_type(default_spectrum,
           BLUE_TO_RED_SPECTRUM);
         Spectrum_set_minimum_and_maximum(default_spectrum,0,1);
-        /* ACCESS so can never be destroyed */
-        ACCESS(Spectrum)(default_spectrum);
         if (!ADD_OBJECT_TO_MANAGER(Spectrum)(default_spectrum,
           spectrum_manager))
         {

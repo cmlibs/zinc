@@ -55,12 +55,15 @@ November 1997. Created from Scene description part of Drawing.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
-#include <string.h>
+#include <string>
+#include <set>
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
+#include "api/cmiss_scene.h"
+#include "api/cmiss_rendition.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -81,6 +84,7 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
+#include "graphics/cmiss_rendition.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.h"
@@ -96,6 +100,7 @@ extern "C" {
 }
 #include "graphics/scene.hpp"
 #include "graphics/rendergl.hpp"
+#include "graphics/scene_filters.hpp"
 
 /*
 Module constants
@@ -117,52 +122,7 @@ static int select_buffer_size=10000;
 Module types
 ------------
 */
-
-FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_object_transformation, \
-	struct Scene_object *, gtMatrix *);
-
-struct Scene_object
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
-
-DESCRIPTION :
-Scenes store a list of these wrappers to GT_objects so that the same
-graphics object may have different visibility on different scenes.
-==============================================================================*/
-{
-	/* identifier for indexed lists */
-	int position;
-	enum Scene_object_type type;
-	/* flag indicating object should be rendered fast at the expense of quality */
-	int fast_changing;
-	/* these are defined for all scene objects */
-	const char *name;
-	gtMatrix *transformation;
-	/* these are defined only for SCENE_OBJECT_GRAPHICS_OBJECT */
-	struct GT_object *gt_object;
-	enum GT_visibility_type visibility;
-	struct Time_object *time_object;
-	/* these are defined only for SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP */
-	struct GT_element_group *gt_element_group;
-	/* this is the child scene for SCENE_OBJECT_SCENE */
-	struct Scene *child_scene;
-	void *scene_manager_callback_id;
-	struct MANAGER(Scene) *scene_manager;
-	/* this is the scene to which the scene_object belongs to. Note it is
-		 never accessed as the scene that owns this object destroys it before
-		 the scene itself is destroyed. */
-	struct Scene *scene;
-	/* callback list for transformation changes */
-	struct LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)) *transformation_callback_list;
-	/* the optional global object which this Scene_object represents */
-	struct Any_object *represented_object;
-	/* transformaiton field for time dependent transformation */
-	struct Computed_field *transformation_field;
-	int transformation_time_callback_flag;
-	int access_count;
-}; /* struct Scene_object */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
+/* new_code */
 
 struct Scene
 /*******************************************************************************
@@ -181,7 +141,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	int manager_change_status;
 
 	/* list of objects in the scene (plus visibility flag) */
-	struct LIST(Scene_object) *scene_object_list;
 	enum Scene_change_status change_status;
  	/* need following info for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
@@ -189,6 +148,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 
 	/*???RC temporary; have root_region until Scenes are
 		incorporated into the regions themselves */
+	struct Cmiss_region *region;
 	struct Cmiss_region *root_region;
 
 	/* global stores of selected objects */
@@ -214,10 +174,12 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* routine to call and data to pass to a module that handles scene input */
 	/* such as picking and mouse drags */
 	struct Scene_input_callback input_callback;
+	std::set<struct Cmiss_rendition *> *list_of_rendition;
 	/* level of cache in effect */
 	int cache;
 	/* flag indicating that graphics objects in scene objects need building */
 	int build;
+	Filtering_list *filters_list;
 #if defined (OPENGL_API)
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
@@ -233,7 +195,10 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* the number of objects accessing this scene. The scene cannot be removed
 		from manager unless it is 1 (ie. only the manager is accessing it) */
 	int access_count;
+	int scene_rendition_show_visibility_on;
 }; /* struct Scene */
+
+
 
 FULL_DECLARE_LIST_TYPE(Scene);
 FULL_DECLARE_MANAGER_TYPE(Scene);
@@ -250,8 +215,8 @@ display hierarchy.
 	/* the number of this picking event */
 	int hit_no;
 	/* path of scene objects to picked graphic in display hierarchy */
-	int number_of_scene_objects;
-	struct Scene_object **scene_objects;
+ 	int number_of_renditions;
+ 	struct Cmiss_rendition **renditions;
 	/* integer names identifying parts of picked graphic, eg. node numbers */
 	int number_of_subobjects;
 	int *subobjects; /*???RC unsigned int instead? */
@@ -268,35 +233,13 @@ Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
-
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation, void)
-
-DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_object_transformation, \
-	struct Scene_object *, gtMatrix *)
-
-
+#if defined (USE_SCENE_OBJECT)
 /* prototype */
 static int Scene_object_set_time_dependent_transformation(struct Time_object *time_object,
 	 double current_time, void *scene_object_void);
-
-static int Scene_object_call_renderer(struct Scene_object *scene_object,
-	void *renderer_void)
-{
-	Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
-	
-	return renderer->Scene_object_execute(scene_object);
-}
-
-static int Scene_object_call_compiler(struct Scene_object *scene_object,
-	void *renderer_void)
-{
-	Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
-	
-	return renderer->Scene_object_compile(scene_object);
-}
+#endif /* defined (USE_SCENE_OBJECT) */
 
 int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 {
@@ -340,7 +283,7 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 				glPopMatrix();
 				glMatrixMode(GL_MODELVIEW);
 				glPopMatrix();
-				glEndList();
+ 				glEndList();
 			}
 			else
 			{
@@ -350,8 +293,29 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 			}
 #endif // defined (NEW_CODE)
 			/* compile objects in the scene */
-			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_compiler,
-				renderer, scene->scene_object_list);
+
+			Render_graphics_compile_members *opengl_renderer =
+				dynamic_cast<Render_graphics_compile_members *>(renderer);
+			if (opengl_renderer)
+				opengl_renderer->filtering_list=scene->filters_list;
+			if (scene->list_of_rendition && 
+				!scene->list_of_rendition->empty())
+			{
+				std::set<struct Cmiss_rendition *>::iterator pos =
+					scene->list_of_rendition->begin();
+				while (pos != scene->list_of_rendition->end())
+				{
+					Cmiss_rendition_call_compiler(*pos, (void *)renderer);
+					++pos;
+				}
+			}
+		// 	Render_graphics_opengl *opengl_renderer = static_cast<Render_graphics_opengl *>(renderer);
+			if (opengl_renderer &&
+					opengl_renderer->Overlay_graphics_object_compile())
+			{
+				scene->compile_status = GRAPHICS_NOT_COMPILED;
+			}
+
 			/* compile lights in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
 				scene->list_of_lights);
@@ -372,6 +336,7 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
+	std::set<struct Cmiss_rendition *>::iterator pos;
 
 	ENTER(compile_Scene);
 	USE_PARAMETER(execute_function);
@@ -391,8 +356,17 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 				 */
 				/* push a dummy name to be overloaded with scene_object identifiers */
 				glPushName(0);
-				FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
-					(void *)renderer, scene->scene_object_list);
+				if (scene->list_of_rendition && 
+					!scene->list_of_rendition->empty())
+				{
+					pos = scene->list_of_rendition->begin();
+					while (pos != scene->list_of_rendition->end())
+					{
+						Cmiss_rendition_call_renderer(*pos, (void *)renderer);
+						++pos;
+					}
+				}
+				renderer->Overlay_graphics_object_execute();
 				glPopName();
 				glEndList();
 			}
@@ -411,8 +385,16 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 					glNewList(scene->fast_changing_display_list, GL_COMPILE);
 					/* push dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
-					FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
-						(void *)renderer, scene->scene_object_list);
+					if (scene->list_of_rendition && 
+						!scene->list_of_rendition->empty())
+					{
+						pos = scene->list_of_rendition->begin();
+						while (pos != scene->list_of_rendition->end())
+						{
+							Cmiss_rendition_call_renderer(*pos, (void *)renderer);
+							++pos;
+						}
+					}
 					glPopName();
 					glEndList();
 					renderer->fast_changing = 0;
@@ -632,1210 +614,6 @@ Private to the Scene and Scene_objects.
 	return (return_code);
 } /* Scene_changed_private */
 
-static int Scene_time_update_callback(struct Time_object *time_object,
-	double current_time, void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 5 October 1998
-
-DESCRIPTION :
-Responds to changes in the time object.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_time_update_callback);
-	USE_PARAMETER(current_time);
-	if (time_object && (scene=(struct Scene *)scene_void))
-	{
-		Scene_notify_object_changed(scene,/*fast_changing*/0);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_time_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_time_update_callback */
-
-static int Scene_object_changed_external(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Called when something changes about the <scene_object>, such that it would
-require a rebuild of the parent scene's display list. If it is in a scene,
-calls its Scene_changed_private function to inform the program about the change.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_changed_external);
-	if (scene_object)
-	{
-		if (scene_object->scene)
-		{
-			Scene_changed_private(scene_object->scene,scene_object->fast_changing);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_changed_external.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_changed_external */
-
-static int Scene_object_changed_internal(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Called when something changes about the <scene_object> such that just its
-display list needs building. If it is in a scene, calls its
-Scene_notify_object_changed function to inform the program about the change.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_changed_internal);
-	if (scene_object)
-	{
-		if (scene_object->scene)
-		{
-			Scene_notify_object_changed(scene_object->scene,
-				scene_object->fast_changing);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_changed_internal.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_changed_internal */
-
-struct Scene *Scene_object_get_parent_scene(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 29 October 2001
-
-DESCRIPTION :
-Returns the <scene> that the <scene_object> is in.
-==============================================================================*/
-{
-	struct Scene *parent_scene;
-
-	ENTER(Scene_object_get_parent_scene);
-	if (scene_object)
-	{
-		parent_scene = scene_object->scene;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_get_parent_scene.  Missing scene_object");
-		parent_scene = (struct Scene *)NULL;
-	}
-	LEAVE;
-
-	return (parent_scene);
-} /* Scene_object_get_parent_scene */
-
-static int Scene_object_set_scene(struct Scene_object *scene_object,
-	struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Sets the <scene> that the <scene_object> is in. This function should only be
-called by the <scene> when the <scene_object> is being added to or removed from
-its <scene_object_list>. This function fails if the the scene_object currently
-has a scene and it is being set to another scene, since scene objects can be
-only be in one scene at a time.
-The scene is never accessed as the scene that owns this object destroys it
-before the scene itself is destroyed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_scene);
-	if (scene_object)
-	{
-		if (scene && (scene_object->scene) && (scene != scene_object->scene))
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_object_set_scene.  Scene_object already has a different scene");
-			return_code=0;
-		}
-		else
-		{
-			if (scene_object->time_object)
-			{
-				/* If setting to NULL we want to clear out the old callback */
-				if (scene_object->scene)
-				{
-					Time_object_remove_callback(scene_object->time_object,
-						Scene_time_update_callback, scene_object->scene);
-				}
-			}
-			scene_object->scene = scene;
-			if (scene_object->time_object)
-			{
-				if (scene_object->scene)
-				{
-					Time_object_add_callback(scene_object->time_object,
-						Scene_time_update_callback, scene_object->scene);
-				}
-			}
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_scene.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_scene */
-
-static int Scene_object_time_update_callback(struct Time_object *time_object,
-	double current_time, void *scene_object_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Responds to changes in the time object.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_object_time_update_callback);
-	USE_PARAMETER(current_time);
-	if (time_object && (scene_object=(struct Scene_object *)scene_object_void))
-	{
-		switch (scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				GT_object_changed(scene_object->gt_object);
-				Scene_object_changed_internal(scene_object);
-				return_code=1;
-			} break;
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				/* The graphical element will callback if affected */
-				GT_element_group_time_changed(scene_object->gt_element_group);
-				return_code = 1;
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				/* Nothing to do currently */
-				return_code=1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Scene_object_time_update_callback.  "
-					"Unknown scene object type");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_time_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_time_update_callback */
-
-static int Scene_object_graphics_object_update_callback(
-	struct GT_object *graphics_object, void *scene_object_void)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Responds to changes in the graphics object.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_object_graphics_object_update_callback);
-	if (graphics_object && (scene_object=(struct Scene_object *)scene_object_void))
-	{
-		if (scene_object->scene)
-		{
-			Scene_update_time_behaviour(scene_object->scene, graphics_object);		
-		}
-		Scene_object_changed_internal(scene_object);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_graphics_object_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_graphics_object_update_callback */
-
-static int Scene_object_element_group_update_callback(
-	struct GT_element_group *gt_element_group, void *scene_object_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Responds to changes in GT_element_groups. Only updates scene if group is
-visible.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_object_element_group_update_callback);
-	if (gt_element_group&&(scene_object=(struct Scene_object *)scene_object_void))
-	{
-		if (g_VISIBLE==scene_object->visibility)
-		{
-			Scene_object_changed_internal(scene_object);
-			if (scene_object->scene)
-			{
-				Scene_update_time_behaviour_with_gt_element_group(
-					scene_object->scene, gt_element_group);
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_element_group_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_element_group_update_callback */
-
-int Scene_object_compile_members(struct Scene_object *scene_object,
-	Render_graphics_compile_members *renderer)
-{
-	int return_code;
-
-	ENTER(compile_Scene_object);
-	if (scene_object)
-	{
-		return_code=1;
-		/* only compile visible objects */
-		if (g_VISIBLE==scene_object->visibility)
-		{
-			switch(scene_object->type)
-			{
-				case SCENE_OBJECT_GRAPHICS_OBJECT:
-				{
-					if(Scene_object_has_time(scene_object))
-					{
-						renderer->time = Scene_object_get_time(scene_object);
-					}
-					else
-					{
-						renderer->time = 0.0;
-					}
-					return_code=renderer->Graphics_object_compile(
-						scene_object->gt_object);
-				} break;
-				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-				{
-					if(Scene_object_has_time(scene_object))
-					{
-						renderer->time = Scene_object_get_time(scene_object);
-					}
-					else
-					{
-						renderer->time = 0.0;
-					}
-					renderer->name_prefix = scene_object->name;
-					return_code=renderer->Graphical_element_group_compile(
-						scene_object->gt_element_group);
-					renderer->name_prefix = NULL;
-				} break;
-				case SCENE_OBJECT_SCENE:
-				{
-					return_code=renderer->Scene_compile(scene_object->child_scene);
-				} break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"compile_Scene_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compile_Scene_object */
-
-int execute_Scene_object(struct Scene_object *scene_object,
-	Render_graphics_opengl *renderer)
-/*******************************************************************************
-LAST MODIFIED : 9 March 2001
-
-DESCRIPTION :
-Calls the display lists of all created graphics_objects in the linked list
-contained in the scene_object, if it is visible.
-???RC  Adding names for scene_objects and graphics_objects attached by the
-linked-list. Scene_object names equal their position in the scene_object_list
-while graphics_objects in graphical finite elements are numbered sequentially
-from 1 to assist conversion back to graphics_object addresses in picking.
-==============================================================================*/
-{
-	float time;
-	int return_code;
-
-	ENTER(execute_Scene_object);
-	if (scene_object)
-	{
-		return_code=1;
-		if ((g_VISIBLE==scene_object->visibility)&&
-			(scene_object->fast_changing == (renderer->fast_changing)))
-		{
-			/* put out the name (position) of the scene_object: */
-			glLoadName((GLuint)scene_object->position);
-
-			/* save a matrix multiply when identity transformation */
-			if(scene_object->transformation)
-			{
-				/* Save starting modelview matrix */
-				glMatrixMode(GL_MODELVIEW);
-				glPushMatrix();
-				glPushAttrib(GL_TRANSFORM_BIT);
-				glEnable(GL_NORMALIZE);
-				/* perform individual object transformation */
-				wrapperMultiplyCurrentMatrix(scene_object->transformation);
-			}
-			switch(scene_object->type)
-			{
-				case SCENE_OBJECT_GRAPHICS_OBJECT:
-				{
-					if(Scene_object_has_time(scene_object))
-					{
-						time = Scene_object_get_time(scene_object);
-					}
-					else
-					{
-						time = 0.0;
-					}
-					return_code=renderer->Graphics_object_execute(scene_object->gt_object);
-				} break;
-				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-				{
-					if(Scene_object_has_time(scene_object))
-					{
-						time = Scene_object_get_time(scene_object);
-					}
-					else
-					{
-						time = 0.0;
-					}
-					renderer->time = time;
-					return_code=renderer->Graphical_element_group_execute(
-						scene_object->gt_element_group);
-				} break;
-				case SCENE_OBJECT_SCENE:
-				{
-					return_code = renderer->Scene_execute(scene_object->child_scene);
-				}
-			}
-			if(scene_object->transformation)	
-			{
-				/* Restore starting modelview matrix */
-				glPopAttrib();
-				glPopMatrix();
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_Scene_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_Scene_object */
-
-static void Scene_object_child_scene_change(
-	struct MANAGER_MESSAGE(Scene) *message,void *scene_object_void)
-/*******************************************************************************
-LAST MODIFIED : 28 May 2001
-
-DESCRIPTION :
-Something has changed globally in the scene manager. If the contents of the
-scene on this window are modified, redraw.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_object_scene_change);
-	if (message && (scene_object = (struct Scene_object *)scene_object_void))
-	{
-		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_object->child_scene);
-		if (change & MANAGER_CHANGE_RESULT(Scene))
-		{
-			Scene_object_changed_internal(scene_object);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_scene_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_object_scene_change */
-
-static struct Scene_object *CREATE(Scene_object)(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
-
-DESCRIPTION :
-Creates a vanilla Scene_object that is able to be DESTROYed, must be properly
-defined by a specific creator. It is given the <name> and the parent <scene>
-and is visible.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(CREATE(Scene_object));
-	if (name)
-	{
-		if (ALLOCATE(scene_object,struct Scene_object,1) &&
-			(scene_object->name=duplicate_string(name)) &&
-			(scene_object->transformation_callback_list =
-				CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)))()))
-		{
-			scene_object->position=0;
-			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
-			scene_object->fast_changing=0;
-			scene_object->gt_object=(struct GT_object *)NULL;
-			scene_object->visibility=g_VISIBLE;
-			scene_object->time_object = (struct Time_object *)NULL;
-			scene_object->transformation = (gtMatrix *)NULL;
-			scene_object->gt_element_group = (struct GT_element_group *)NULL;
-			scene_object->child_scene = (struct Scene *)NULL;	
-			/* the scene is NULL scene_object is added to it. Note also that it is
-				 never accessed as the scene that owns this object destroys it before
-				 the scene itself is destroyed. */
-			scene_object->scene = (struct Scene *)NULL;
-			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
-			scene_object->scene_manager_callback_id = NULL;
-			scene_object->represented_object = (struct Any_object *)NULL;
-			scene_object->transformation_field = (struct Computed_field *)NULL;
-		  scene_object->transformation_time_callback_flag = 0;
-			scene_object->access_count=0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Scene_object).  Insufficient memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Scene_object).  Invalid arguments");
-		scene_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (scene_object);
-} /* CREATE(Scene_object) */
-
-static struct Scene_object *create_Scene_object_with_Graphics_object(
-	const char *name, struct GT_object *gt_object)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Creates a Scene_object with ACCESSed <gt_object> and visibility on.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(CREATE(Scene_object));
-	if (gt_object)
-	{
-		if (scene_object=CREATE(Scene_object)(name))
-		{
-			scene_object->type = SCENE_OBJECT_GRAPHICS_OBJECT;
-			scene_object->gt_object=ACCESS(GT_object)(gt_object);
-			GT_object_add_callback(gt_object,
-				Scene_object_graphics_object_update_callback,(void *)scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_Scene_object_with_Graphics_object.  Failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-			"Missing graphics object");
-		scene_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (scene_object);
-} /* create_Scene_object_with_Graphics_object */
-
-static struct Scene_object *create_Scene_object_with_Graphical_element_group(
-	char *name, struct GT_element_group *gt_element_group)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Creates a Scene_object with <gt_element_group> and visibility on.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(create_Scene_object_with_Graphical_element_group);
-	if (gt_element_group)
-	{
-		if (scene_object=CREATE(Scene_object)(name))
-		{
-			scene_object->type = SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP;
-			scene_object->gt_element_group=
-				ACCESS(GT_element_group)(gt_element_group);
-			GT_element_group_add_callback(gt_element_group,
-				Scene_object_element_group_update_callback,
-				(void *)scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_Scene_object_with_Graphical_element_group.  Failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_Scene_object_with_Graphical_element_group.  "
-			"Missing graphical element group");
-		scene_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (scene_object);
-} /* create_Scene_object_with_Graphical_element_group */
-
-static struct Scene_object *create_Scene_object_with_Scene(
-	const char *name, struct Scene *child_scene,struct MANAGER(Scene) *scene_manager)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Creates a Scene_object with ACCESSed <gt_object> and visibility on.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-
-	ENTER(create_Scene_object_with_Scene);
-	if (child_scene&&scene_manager)
-	{
-		if (scene_object=CREATE(Scene_object)(name))
-		{
-			scene_object->type = SCENE_OBJECT_SCENE;
-			scene_object->child_scene = ACCESS(Scene)(child_scene);
-			/* register for any scene changes */
-			scene_object->scene_manager = scene_manager;
-			scene_object->scene_manager_callback_id=
-				MANAGER_REGISTER(Scene)(Scene_object_child_scene_change,
-					(void *)scene_object, scene_manager);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"create_Scene_object_with_Scene.  Failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_Scene_object_with_Scene.  Missing Scene");
-		scene_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (scene_object);
-} /* create_Scene_object_with_Scene */
-
-static int DESTROY(Scene_object)(struct Scene_object **scene_object_ptr)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
-
-DESCRIPTION :
-DEACCESSes the member GT_object and removes any other dynamic fields.
-==============================================================================*/
-{
-	struct Scene_object *scene_object;
-	int return_code;
-
-	ENTER(DESTROY(Scene_object));
-	if (scene_object_ptr)
-	{
-		return_code=1;
-		if (scene_object= *scene_object_ptr)
-		{
-			if (0==scene_object->access_count)
-			{
-				if (scene_object->transformation_callback_list)
-				{
-					DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)))(
-						&(scene_object->transformation_callback_list));
-				}
-				if (scene_object->transformation)
-				{
-					DEALLOCATE(scene_object->transformation);
-				}
-				if (scene_object->child_scene)
-				{
-					DEACCESS(Scene)(&(scene_object->child_scene));
-				}
-				if (scene_object->scene_manager_callback_id &&
-					scene_object->scene_manager)
-				{
-					MANAGER_DEREGISTER(Scene)(
-						scene_object->scene_manager_callback_id,
-						scene_object->scene_manager);
-					scene_object->scene_manager_callback_id=(void *)NULL;
-				}
-				if(scene_object->gt_object)
-				{
-					GT_object_remove_callback(scene_object->gt_object, 
-						Scene_object_graphics_object_update_callback,
-						(void *)scene_object);
-					DEACCESS(GT_object)(&(scene_object->gt_object));
-				}
-				if(scene_object->gt_element_group)
-				{
-					GT_element_group_remove_callback(scene_object->gt_element_group,
-						Scene_object_element_group_update_callback,
-						(void *)scene_object);
-					DEACCESS(GT_element_group)(&(scene_object->gt_element_group));
-				}
-				if(scene_object->time_object)
-				{
-				  if (scene_object->transformation_time_callback_flag)
-				  {
-					  Time_object_remove_callback(scene_object->time_object,
-						  Scene_object_set_time_dependent_transformation, scene_object);
-					}
-					Time_object_remove_callback(scene_object->time_object, 
-						Scene_object_time_update_callback, scene_object);
-					if (scene_object->scene)
-					{
-						Time_object_remove_callback(scene_object->time_object, 
-							Scene_time_update_callback, scene_object->scene);
-					}
-					DEACCESS(Time_object)(&(scene_object->time_object));
-				}
-				/* The scene_object is not accessing the scene as the
-					scene owns these objects and destroys them all before
-					destroying itself */
-				scene_object->scene = (struct Scene *)NULL;
-				if(scene_object->name)
-				{
-					DEALLOCATE(scene_object->name);
-				}
-				if (scene_object->represented_object)
-				{
-					DEACCESS(Any_object)(&scene_object->represented_object);
-				}
-				if (scene_object->transformation_field)
-				{
-					 DEACCESS(Computed_field)(&(scene_object->transformation_field));
-				}
-				DEALLOCATE(*scene_object_ptr);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"DESTROY(Scene_object).  Non-zero access_count");
-				*scene_object_ptr=(struct Scene_object *)NULL;
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Scene_object).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Scene_object) */
-
-static int Scene_object_get_position(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-Returns the position identifier of <scene_object>, or 0 in case of error.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_get_position);
-	if (scene_object)
-	{
-		return_code=scene_object->position;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_get_position.  Missing scene_object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_get_position */
-
-static int Scene_object_set_position(struct Scene_object *scene_object,
-	int position)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Sets the position identifier of <scene_object>. <position> must be positive.
-Note that the <scene_object> must not be in a scene to change this; hence also,
-no update messages are sent when this value is changed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_position);
-	if (scene_object&&(0<position))
-	{
-		scene_object->position=position;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_position.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_position */
-
-int Scene_object_is_fast_changing(struct Scene_object *scene_object,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Returns true if the fast_changing flag of <scene_object> is set.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_is_fast_changing);
-	USE_PARAMETER(dummy_void);
-	if (scene_object)
-	{
-		return_code = scene_object->fast_changing;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_is_fast_changing.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_is_fast_changing */
-
-int Scene_object_get_fast_changing(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Returns the fast_changing flag of <scene_object>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_get_fast_changing);
-	if (scene_object)
-	{
-		return_code = scene_object->fast_changing;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_get_fast_changing.  Missing scene_object");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_get_fast_changing */
-
-int Scene_object_set_fast_changing(struct Scene_object *scene_object,
-	int fast_changing)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Sets the fast_changing flag of <scene_object>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_fast_changing);
-	if (scene_object)
-	{
-		if (fast_changing)
-		{
-			fast_changing = 1;
-		}
-		if (fast_changing != scene_object->fast_changing)
-		{
-			scene_object->fast_changing = fast_changing;
-			if ((g_VISIBLE==scene_object->visibility)&&scene_object->scene)
-			{
-				Scene_changed_private(scene_object->scene,/*fast_changing*/0);
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_fast_changing.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_fast_changing */
-
-static int Scene_object_copy_to_list(struct Scene_object *scene_object,
-	void *scene_object_list_void)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Scene_object iterator function for duplicating lists of scene_objects.
-Copies the scene_object and adds it to the list.
-==============================================================================*/
-{
-	int i, j, return_code;
-	struct LIST(Scene_object) *scene_object_list;
-	struct Scene_object *scene_object_copy;
-
-	ENTER(Scene_object_copy_to_list);
-	if (scene_object&&(scene_object_list=
-		(struct LIST(Scene_object) *)scene_object_list_void))
-	{
-		return_code=0;
-		switch(scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				if (scene_object_copy=create_Scene_object_with_Graphics_object(
-					scene_object->name, scene_object->gt_object))
-				{
-					return_code = 1;
-				}
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				if (scene_object_copy=create_Scene_object_with_Scene(
-					scene_object->name, scene_object->child_scene,
-					scene_object->scene_manager))
-				{
-					return_code = 1;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_copy_to_list.  Unknown Scene_object type");
-				return_code=0;
-			} break;
-		}
-		if( return_code )
-		{
-			scene_object_copy->type = scene_object->type;
-			scene_object_copy->visibility=scene_object->visibility;
-			if(scene_object->transformation)
-			{
-				if(ALLOCATE(scene_object_copy->transformation, gtMatrix, 1))
-				{
-					for (i=0;i<4;i++)
-					{
-						for (j=0;j<4;j++)
-						{
-							(*scene_object_copy->transformation)[i][j] 
-								= (*scene_object->transformation)[i][j];
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_object_copy_to_list.  Unable to allocate transformation");
-					return_code=0;
-				}
-			}
-			if(scene_object->time_object)
-			{
-				scene_object_copy->time_object = ACCESS(Time_object)
-					(scene_object->time_object);
-			}
-			if(return_code)
-			{
-				return_code=ADD_OBJECT_TO_LIST(Scene_object)(scene_object_copy,
-					scene_object_list);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_copy_to_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_copy_to_list */
-
-static int Scene_add_Scene_object(struct Scene *scene,
-	struct Scene_object *scene_object,int position)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Adds <scene_object> to the list of objects on <scene> at <position>.
-A position of 1 indicates the top of the list, while less than 1 or greater
-than the number of graphics objects in the list puts it at the end.
-The <name> is used for the scene_object and must be unique for the scene.
-These routines are static as modules other than the scene should be using
-functions such as Scene_add_graphics_object rather creating their own scene_object.
-==============================================================================*/
-{
-	int fast_changing,number_in_list,return_code;
-	struct Scene_object *scene_object_in_way;
-	
-	ENTER(Scene_add_Scene_object);
-	if (scene&&scene_object)
-	{
-		if(!IS_OBJECT_IN_LIST(Scene_object)(scene_object, scene->scene_object_list))
-		{
-			fast_changing=Scene_object_get_fast_changing(scene_object);
-			number_in_list=NUMBER_IN_LIST(Scene_object)(scene->scene_object_list);
-			if ((1>position)||(number_in_list<position))
-			{
-				position=number_in_list+1;
-			}
-			ACCESS(Scene_object)(scene_object);
-			return_code=1;
-			while (return_code&&scene_object)
-			{
-				Scene_object_set_position(scene_object,position);
-				/* is there already a scene_object with that position? */
-				if (scene_object_in_way=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,
-					position)(position,scene->scene_object_list))
-				{
-					/* remove the old scene_object to make way for the new */
-					ACCESS(Scene_object)(scene_object_in_way);
-					REMOVE_OBJECT_FROM_LIST(Scene_object)(
-						scene_object_in_way,scene->scene_object_list);
-				}
-				if (ADD_OBJECT_TO_LIST(Scene_object)(scene_object,
-					scene->scene_object_list))
-				{
-					/* give the scene_object its scene to allow change calls */
-					Scene_object_set_scene(scene_object,scene);
-					DEACCESS(Scene_object)(&scene_object);
-					/* the old in-the-way scene_object is now the new scene_object */
-					scene_object=scene_object_in_way;
-					position++;
-				}
-				else
-				{
-					DEACCESS(Scene_object)(&scene_object);
-					if (scene_object_in_way)
-					{
-						DEACCESS(Scene_object)(&scene_object_in_way);
-					}
-					display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
-						"Could not add object - list may have changed");
-					return_code=0;
-				}
-			}
-			/* tell the scene it has changed */
-			Scene_changed_private(scene,fast_changing);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
-				"Object already in list");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_add_Scene_object.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_add_Scene_object */
-
-static int Scene_remove_Scene_object_private(struct Scene *scene,
-	struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2001
-
-DESCRIPTION :
-Removes <scene object> from the list of objects on <scene>. Private because it
-does not restrict the ability to remove some objects as the public version does.
-==============================================================================*/
-{
-	int fast_changing, position, return_code;
-
-	ENTER(Scene_remove_Scene_object_private);
-	if (scene && scene_object)
-	{
-		if (IS_OBJECT_IN_LIST(Scene_object)(scene_object,
-			scene->scene_object_list))
-		{
-			ACCESS(Scene_object)(scene_object);
-			fast_changing = Scene_object_get_fast_changing(scene_object);
-			/* now perform the remove */
-			position = Scene_object_get_position(scene_object);
-			if (return_code = REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
-				scene->scene_object_list))
-			{
-				/* clear its scene member to prevent further change calls */
-				Scene_object_set_scene(scene_object,(struct Scene *)NULL);
-			}
-			DEACCESS(Scene_object)(&scene_object);
-			/* decrement positions of all remaining scene_objects */
-			while (return_code&&(scene_object=FIND_BY_IDENTIFIER_IN_LIST(
-				Scene_object,position)(position+1,scene->scene_object_list)))
-			{
-				ACCESS(Scene_object)(scene_object);
-				REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
-					scene->scene_object_list);
-				Scene_object_set_position(scene_object,position);
-				if (ADD_OBJECT_TO_LIST(Scene_object)(scene_object,
-					scene->scene_object_list))
-				{
-					position++;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Scene_object_list_remove_object.  "
-						"Could not readjust positions - list may have changed");
-					return_code=0;
-				}
-				DEACCESS(Scene_object)(&scene_object);
-			}
-			Scene_changed_private(scene, fast_changing);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_remove_Scene_object_private.  Object not in scene");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_remove_Scene_object_private.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_remove_Scene_object_private */
-
-static int Scene_object_has_removed_Cmiss_region(
-	struct Scene_object *scene_object, void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Returns true if the <scene_object> contains a graphical element for a
-Cmiss region, or data Cmiss_region that no longer exists in the respective
-root region.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_object_has_removed_Cmiss_region);
-	if (scene_object && (scene = (struct Scene *)scene_void))
-	{
-		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) &&
-			(!Cmiss_region_contains_subregion(scene->root_region,
-				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_has_removed_Cmiss_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_has_removed_Cmiss_region */
-
 int Scene_update_graphical_element_groups(struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
@@ -1854,6 +632,7 @@ Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 			Cmiss_region_get_first_child(scene->root_region);
 		while (NULL != child_region)
 		{
+#if defined (TO_BE_EDITED)
 			if (!Scene_has_Cmiss_region(scene, child_region))
 			{
 				char *child_region_name = Cmiss_region_get_name(child_region);
@@ -1862,6 +641,7 @@ Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 				DEALLOCATE(child_region_name);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
+#endif
 		}
 		Scene_end_cache(scene);
 		return_code = 1;
@@ -1877,6 +657,7 @@ Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 	return (return_code);
 } /* Scene_update_graphical_element_groups */
 
+#if defined (TO_BE_EDITED)
 static void Scene_Cmiss_region_change(struct Cmiss_region *root_region,
 	struct Cmiss_region_changes *region_changes, void *scene_void)
 /*******************************************************************************
@@ -1963,62 +744,7 @@ Callback from <root_region> informing of <changes>.
 	}
 	LEAVE;
 } /* Scene_Cmiss_region_change */
-
-static int Scene_object_Graphical_material_change(
-	struct Scene_object *scene_object, void *changed_material_list_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Since spectrums combine their colour with the material at compile time, just
-recompiling the display list of changed materials does not always produce the
-right effect when combined with spectrums. This function tells graphics objects
-in such situations that their display lists need to be updated.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(Graphical_material) *changed_material_list;
-
-	ENTER(Scene_object_Graphical_material_change);
-	if (scene_object && (changed_material_list =
-		(struct LIST(Graphical_material) *)changed_material_list_void))
-	{
-		return_code = 1;
-		switch (scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				GT_element_group_Graphical_material_change(
-					scene_object->gt_element_group, changed_material_list);
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				GT_object_Graphical_material_change(
-					scene_object->gt_object, changed_material_list);
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				/* Do nothing; each scene gets its own change message */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_Graphical_material_change.  "
-					"Unknown scene_object type");
-				return_code = 0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_Graphical_material_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_Graphical_material_change */
+#endif /* defined (TO_BE_EDITED) */
 
 /***************************************************************************//**
  * Something has changed globally in the material manager.
@@ -2037,14 +763,12 @@ static void Scene_Graphical_material_change(
 				MANAGER_CHANGE_RESULT(Graphical_material));
 		if (changed_material_list)
 		{
-			/* cache the following in case more than one changed material in use */
-			Scene_begin_cache(scene);
-			/* let Scene_object deal with the changes */
-			FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-				Scene_object_Graphical_material_change,
-				(void *)changed_material_list, scene->scene_object_list);
-			DESTROY_LIST(Graphical_material)(&changed_material_list);
-			Scene_end_cache(scene);
+			Scene_begin_cache(scene);// 				Cmiss_rendition_Graphical_material_change(Cmiss_region_get_rendition(scene->region),
+// 					message->changed_object_list);
+// 				for_each_rendition_in_Cmiss_rendition(
+// 					Cmiss_region_get_rendition(scene->region),
+// 					&Cmiss_rendition_Graphical_material_change,(void *)message->changed_object_list);
+				Scene_end_cache(scene);
 		}
 	}
 	else
@@ -2054,59 +778,6 @@ static void Scene_Graphical_material_change(
 	}
 	LEAVE;
 } /* Scene_Graphical_material_change */
-
-static int Scene_object_Spectrum_change(
-	struct Scene_object *scene_object, void *changed_spectrum_list_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Marks as g_NOT_CREATED all graphics objects in the linked list starting at
-scene_object->gt_object that use spectrums in the <changed_spectrum_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(Spectrum) *changed_spectrum_list;
-
-	ENTER(Scene_object_Spectrum_change);
-	if (scene_object && (changed_spectrum_list =
-		(struct LIST(Spectrum) *)changed_spectrum_list_void))
-	{
-		return_code = 1;
-		switch (scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				GT_element_group_Spectrum_change(scene_object->gt_element_group,
-					changed_spectrum_list);
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				GT_object_Spectrum_change(Scene_object_get_gt_object(scene_object),
-					changed_spectrum_list);
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				/* Do nothing; each scene gets its own change message */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_Spectrum_change.  Unknown scene_object type");
-				return_code = 0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_Spectrum_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_Spectrum_change */
 
 /***************************************************************************//**
  * Something has changed globally in the spectrum manager. Mark status of all
@@ -2125,10 +796,15 @@ static void Scene_Spectrum_change(
 				MANAGER_CHANGE_RESULT(Spectrum));
 		if (changed_spectrum_list)
 		{
-			/* cache the following in case more than one changed spectrum in use */
 			Scene_begin_cache(scene);
+#if defined (USE_SCENE_OBJECT)
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_Spectrum_change,
-				(void *)changed_spectrum_list, scene->scene_object_list);
+				(void *)(message->changed_object_list), scene->scene_object_list);
+#endif /* defined (USE_SCENE_OBJECT) */
+#if defined (TO_BE_EDITED)
+			GT_element_group_Spectrum_change(scene->gt_element_group,
+				message->changed_spectrum_list);
+#endif
 			DESTROY_LIST(Spectrum)(&changed_spectrum_list);
 			Scene_end_cache(scene);
 		}
@@ -2140,71 +816,6 @@ static void Scene_Spectrum_change(
 	}
 	LEAVE;
 } /* Scene_Spectrum_change */
-
-static int Scene_object_update_time_behaviour(
-	struct Scene_object *scene_object, void *time_object_void)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Time_object *time_object;
-
-	ENTER(Scene_object_update_time_behaviour);
-	/* check arguments */
-	if (scene_object && (time_object = (struct Time_object *)time_object_void))
-	{
-		switch (scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				/* Ensure the Scene object has a time object if the graphics
-					object has more than one time */
-				if(1 < GT_object_get_number_of_times(scene_object->gt_object))
-				{
-					if(!Scene_object_has_time(scene_object))
-					{
-						Scene_object_set_time_object(scene_object, time_object);
-					}
-				}
-				return_code=1;
-			} break;
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				if(GT_element_group_has_multiple_times(scene_object->gt_element_group))
-				{
-					if(!Scene_object_has_time(scene_object))
-					{
-						Scene_object_set_time_object(scene_object, time_object);
-					}
-				}
-				return_code=1;
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				/* Nothing to do currently */
-				return_code=1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Scene_object_update_time_behaviour.  "
-					"Unknown scene object type");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_object_update_time_behaviour.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_update_time_behaviour */
 
 struct Scene_picked_object_get_nearest_any_object_data
 {
@@ -2230,8 +841,10 @@ is stored in the nearest_any_object_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Any_object *any_object;
+	//struct Any_object *any_object;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
+#endif /* defined (USE_SCENE_OBJECT) */
 	struct Scene_picked_object_get_nearest_any_object_data
 		*nearest_any_object_data;
 
@@ -2248,6 +861,7 @@ is stored in the nearest_any_object_data.
 				nearest_any_object_data->nearest))
 		{
 			/* if the last scene_object represents an any_object, add it to list */
+#if defined (USE_SCENE_OBJECT)
 			if ((scene_object=Scene_picked_object_get_Scene_object(
 				scene_picked_object,Scene_picked_object_get_number_of_scene_objects(
 					scene_picked_object)-1))&&
@@ -2258,6 +872,7 @@ is stored in the nearest_any_object_data.
 				nearest_any_object_data->nearest=
 					Scene_picked_object_get_nearest(scene_picked_object);
 			}
+#endif /* defined (USE_SCENE_OBJECT) */
 		}
 	}
 	else
@@ -2283,9 +898,11 @@ an Any_object and added to the <picked_any_objects_list>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Any_object *any_object;
+	//struct Any_object *any_object;
 	struct LIST(Any_object) *any_object_list;
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
+#endif /* defined (USE_SCENE_OBJECT) */
 
 	ENTER(Scene_picked_object_get_picked_any_objects);
 	if (scene_picked_object&&
@@ -2293,12 +910,14 @@ an Any_object and added to the <picked_any_objects_list>.
 	{
 		return_code=1;
 		/* if the last scene_object represents an any_object, add it to list */
+#if defined (USE_SCENE_OBJECT)
 		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
 			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))&&
 			(any_object=Scene_object_get_represented_object(scene_object)))
 		{
 			ADD_OBJECT_TO_LIST(Any_object)(any_object,any_object_list);
 		}
+#endif /* defined (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -2321,8 +940,8 @@ struct Scene_picked_object_get_nearest_element_data
 	struct Cmiss_region *cmiss_region;
 	/* information about the nearest element */
 	struct Scene_picked_object *scene_picked_object;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
 };
 
 static int Scene_picked_object_get_nearest_element(
@@ -2344,9 +963,8 @@ stored in the nearest_element_data.
 	struct FE_element *element;
 	struct FE_region *fe_region;
 	struct Cmiss_region *cmiss_region;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	struct Scene_object *scene_object;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
 	struct Scene_picked_object_get_nearest_element_data	*nearest_element_data;
 
 	ENTER(Scene_picked_object_get_nearest_element);
@@ -2362,17 +980,14 @@ stored in the nearest_element_data.
 		{
 			/* is the last scene_object a Graphical_element wrapper, and does the
 				 settings for the graphic refer to elements? */
-			if ((scene_object=Scene_picked_object_get_Scene_object(
+			if ((NULL != (rendition=Scene_picked_object_get_rendition(
 				scene_picked_object,
-				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-					Scene_object_get_type(scene_object))&&(gt_element_group=
-						Scene_object_get_graphical_element_group(scene_object))&&
-				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group))&&
+				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+				&&(NULL != (cmiss_region = Cmiss_rendition_get_region(rendition)))&&
 				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(settings=get_settings_at_position_in_GT_element_group(gt_element_group,
-					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-				(GT_element_settings_selects_elements(settings)))
+				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+				(Cmiss_graphic_selects_elements(graphic)))
 			{
 				if (CM_element_information_from_graphics_name(&cm,
 					Scene_picked_object_get_subobject(scene_picked_object,1)) &&
@@ -2393,8 +1008,8 @@ stored in the nearest_element_data.
 					{
 						nearest_element_data->nearest_element=element;
 						nearest_element_data->scene_picked_object=scene_picked_object;
-						nearest_element_data->gt_element_group=gt_element_group;
-						nearest_element_data->gt_element_settings=settings;
+						nearest_element_data->rendition = rendition;
+						nearest_element_data->graphic=graphic;
 						nearest_element_data->nearest=
 							Scene_picked_object_get_nearest(scene_picked_object);
 					}
@@ -2407,6 +1022,8 @@ stored in the nearest_element_data.
 					return_code=0;
 				}
 			}
+			if (graphic)
+				Cmiss_graphic_destroy(&graphic);
 		}
 	}
 	else
@@ -2426,83 +1043,14 @@ struct Scene_picked_object_get_picked_elements_data
 	struct LIST(FE_element) *picked_element_list;
 };
 
-static int Scene_picked_object_get_picked_elements(
-	struct Scene_picked_object *scene_picked_object,
-	void *picked_elements_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
+typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
 
-DESCRIPTION :
-If the <scene_picked_object> refers to an element, it is converted into
-an FE_element and added to the <picked_elements_list>.
-==============================================================================*/
+struct Scene_picked_object_region_element_map_data
 {
-	int dimension,return_code;
-	struct CM_element_information cm;
-	struct Cmiss_region *cmiss_region;
-	struct FE_element *element;
-	struct FE_region *fe_region;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	struct Scene_picked_object_get_picked_elements_data *picked_elements_data;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_picked_object_get_picked_elements);
-	if (scene_picked_object&&(picked_elements_data=
-		(struct Scene_picked_object_get_picked_elements_data *)
-		picked_elements_data_void))
-	{
-		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to elements? */
-		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
-			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-				Scene_object_get_type(scene_object))&&(gt_element_group=
-					Scene_object_get_graphical_element_group(scene_object))&&
-			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
-			(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(settings=get_settings_at_position_in_GT_element_group(
-				gt_element_group,
-				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-			(GT_element_settings_selects_elements(settings)))
-		{
-			if (CM_element_information_from_graphics_name(&cm,
-				Scene_picked_object_get_subobject(scene_picked_object,1))&&
-				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
-			{
-				dimension = get_FE_element_dimension(element);
-				if ((picked_elements_data->select_elements_enabled &&
-					((CM_ELEMENT == cm.type) || (3 == dimension))) ||
-					(picked_elements_data->select_faces_enabled &&
-						((CM_FACE == cm.type) || (2 == dimension))) ||
-					(picked_elements_data->select_lines_enabled &&
-						((CM_LINE == cm.type) || (1 == dimension))))
-				{
-					return_code=ensure_FE_element_is_in_list(element,
-						(void *)picked_elements_data->picked_element_list);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_get_picked_elements.  "
-					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_picked_elements.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_picked_elements */
+  Region_element_map *element_list;
+	/* flag set when searching for nearest data point rather than node */
+	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
+};
 
 struct Scene_picked_object_get_nearest_element_point_data
 {
@@ -2513,8 +1061,8 @@ struct Scene_picked_object_get_nearest_element_point_data
 	struct Cmiss_region *cmiss_region;
 	/* information about the nearest element_point */
 	struct Scene_picked_object *scene_picked_object;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
 };
 
 static int Scene_picked_object_get_nearest_element_point(
@@ -2534,22 +1082,21 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
-	int element_point_number,face_number,i,return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct CM_element_information cm;
-	struct Element_discretization element_discretization;
-	struct Element_point_ranges *element_point_ranges;
-	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct FE_element *element,*top_level_element;
-	struct FE_field *native_discretization_field;
-	struct FE_region *fe_region;
-	struct Cmiss_region *cmiss_region;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	struct Scene_object *scene_object;
+ 	int element_point_number,face_number,i,return_code,
+ 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+ 	struct CM_element_information cm;
+ 	struct Element_discretization element_discretization;
+ 	struct Element_point_ranges *element_point_ranges;
+ 	struct Element_point_ranges_identifier element_point_ranges_identifier;
+ 	struct FE_element *element,*top_level_element;
+ 	struct FE_field *native_discretization_field;
+ 	struct FE_region *fe_region;
+ 	struct Cmiss_region *cmiss_region;
+ 	struct Cmiss_rendition *rendition = NULL;
+ 	struct Cmiss_graphic *graphic = NULL;
 	struct Scene_picked_object_get_nearest_element_point_data
 		*nearest_element_point_data;
-	Triple xi;
+ 	Triple xi;
 
 	ENTER(Scene_picked_object_get_nearest_element_point);
 	if (scene_picked_object&&(nearest_element_point_data=
@@ -2565,19 +1112,15 @@ and destroy it once returned.
 		{
 			/* is the last scene_object a Graphical_element wrapper, and does the
 				 settings for the graphic refer to element_points? */
-			if ((scene_object=Scene_picked_object_get_Scene_object(
+			if ((NULL != (rendition=Scene_picked_object_get_rendition(
 				scene_picked_object,
-				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-					Scene_object_get_type(scene_object))&&(gt_element_group=
-						Scene_object_get_graphical_element_group(scene_object))&&
-				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
+				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+				&&(NULL != (cmiss_region = Cmiss_rendition_get_region(rendition)))&&
 				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(settings=get_settings_at_position_in_GT_element_group(
-					gt_element_group,
-					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
-					GT_element_settings_get_settings_type(settings)))
+				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+				(CMISS_GRAPHIC_ELEMENT_POINTS==
+					Cmiss_graphic_get_graphic_type(graphic)))
 			{
 				if (CM_element_information_from_graphics_name(&cm,
 					Scene_picked_object_get_subobject(scene_picked_object,1))&&
@@ -2590,14 +1133,14 @@ and destroy it once returned.
 					{
 						/* determine discretization of element for graphic */
 						top_level_element=(struct FE_element *)NULL;
-						GT_element_settings_get_discretization(settings,
+						Cmiss_graphic_get_discretization(graphic,
 							&element_discretization);
 						top_level_number_in_xi[0]=element_discretization.number_in_xi1;
 						top_level_number_in_xi[1]=element_discretization.number_in_xi2;
 						top_level_number_in_xi[2]=element_discretization.number_in_xi3;
-						GT_element_settings_get_face(settings,&face_number);
+						Cmiss_graphic_get_face(graphic,&face_number);
 						native_discretization_field=
-							GT_element_settings_get_native_discretization_field(settings);
+							Cmiss_graphic_get_native_discretization_field(graphic);
 						if (FE_region_get_FE_element_discretization(fe_region, element,
 							face_number, native_discretization_field, top_level_number_in_xi,
 							&top_level_element, element_point_ranges_identifier.number_in_xi))
@@ -2605,7 +1148,7 @@ and destroy it once returned.
 							element_point_ranges_identifier.element=element;
 							element_point_ranges_identifier.top_level_element=
 								top_level_element;
-							GT_element_settings_get_xi_discretization(settings,
+							Cmiss_graphic_get_xi_discretization(graphic,
 								&(element_point_ranges_identifier.xi_discretization_mode),
 								/*xi_point_density_field*/(struct Computed_field **)NULL);
 							if (XI_DISCRETIZATION_EXACT_XI==
@@ -2616,7 +1159,7 @@ and destroy it once returned.
 									element_point_ranges_identifier.number_in_xi[i]=1;
 								}
 							}
-							GT_element_settings_get_seed_xi(settings,xi);
+							Cmiss_graphic_get_seed_xi(graphic,xi);
 							/*???RC temporary, hopefully */
 							for (i=0;i<3;i++)
 							{
@@ -2639,8 +1182,8 @@ and destroy it once returned.
 										element_point_ranges;
 									nearest_element_point_data->scene_picked_object=
 										scene_picked_object;
-									nearest_element_point_data->gt_element_group=gt_element_group;
-									nearest_element_point_data->gt_element_settings=settings;
+									nearest_element_point_data->rendition = rendition;
+									nearest_element_point_data->graphic=graphic;
 									nearest_element_point_data->nearest=
 										Scene_picked_object_get_nearest(scene_picked_object);
 								}
@@ -2679,6 +1222,10 @@ and destroy it once returned.
 				}
 			}
 		}
+		if (graphic)
+		{
+			Cmiss_graphic_destroy(&graphic);
+		}
 	}
 	else
 	{
@@ -2702,119 +1249,120 @@ If the <scene_picked_object> refers to an element_point, it is converted into
 an Element_point_ranges and added to the <picked_element_points_list>.
 ==============================================================================*/
 {
-	int element_point_number,face_number,i,return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct CM_element_information cm;
-	struct Cmiss_region *cmiss_region;
-	struct Element_discretization element_discretization;
-	struct Element_point_ranges *element_point_ranges;
-	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct FE_element *element,*top_level_element;
-	struct FE_field *native_discretization_field;
-	struct FE_region *fe_region;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	struct Scene_object *scene_object;
-	Triple xi;
+	int return_code;
+
+// 	int element_point_number,face_number,i,return_code,
+// 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+// 	struct CM_element_information cm;
+// 	struct Cmiss_region *cmiss_region;
+// 	struct Element_discretization element_discretization;
+// 	struct Element_point_ranges *element_point_ranges;
+// 	struct Element_point_ranges_identifier element_point_ranges_identifier;
+// 	struct FE_element *element,*top_level_element;
+// 	struct FE_field *native_discretization_field;
+// 	struct FE_region *fe_region;
+//	struct Cmiss_rendition *rendition;
+//	struct Cmiss_graphic *graphic = NULL;
+//	Triple xi;
 
 	ENTER(Scene_picked_object_get_picked_element_points);
 	if (scene_picked_object&&picked_element_points_list_void)
 	{
 		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to element_points? */
-		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
-			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-				Scene_object_get_type(scene_object))&&(gt_element_group=
-					Scene_object_get_graphical_element_group(scene_object))&&
-			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
-			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(settings=get_settings_at_position_in_GT_element_group(
-				gt_element_group,
-				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
-				GT_element_settings_get_settings_type(settings)))
-		{
-			if (CM_element_information_from_graphics_name(&cm,
-				Scene_picked_object_get_subobject(scene_picked_object,1))&&
-				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
-			{
-				/* determine discretization of element for graphic */
-				top_level_element=(struct FE_element *)NULL;
-				GT_element_settings_get_discretization(settings,
-					&element_discretization);
-				top_level_number_in_xi[0]=element_discretization.number_in_xi1;
-				top_level_number_in_xi[1]=element_discretization.number_in_xi2;
-				top_level_number_in_xi[2]=element_discretization.number_in_xi3;
-				GT_element_settings_get_face(settings,&face_number);
-				native_discretization_field=
-					GT_element_settings_get_native_discretization_field(settings);
-				if (FE_region_get_FE_element_discretization(fe_region, element,
-					face_number, native_discretization_field, top_level_number_in_xi,
-					&top_level_element, element_point_ranges_identifier.number_in_xi))
-				{
-					element_point_ranges_identifier.element=element;
-					element_point_ranges_identifier.top_level_element=top_level_element;
-					GT_element_settings_get_xi_discretization(settings,
-						&(element_point_ranges_identifier.xi_discretization_mode),
-						/*xi_point_density_field*/(struct Computed_field **)NULL);
-					if (XI_DISCRETIZATION_EXACT_XI==
-						element_point_ranges_identifier.xi_discretization_mode)
-					{
-						for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
-						{
-							element_point_ranges_identifier.number_in_xi[i]=1;
-						}
-					}
-					GT_element_settings_get_seed_xi(settings,xi);
-					/*???RC temporary, hopefully */
-					for (i=0;i<3;i++)
-					{
-						element_point_ranges_identifier.exact_xi[i]=xi[i];
-					}
-					if (element_point_ranges=CREATE(Element_point_ranges)(
-						&element_point_ranges_identifier))
-					{
-						element_point_number=
-							Scene_picked_object_get_subobject(scene_picked_object,2);
-						if (!(Element_point_ranges_add_range(element_point_ranges,
-							element_point_number,element_point_number)&&
-							Element_point_ranges_add_to_list(element_point_ranges,
-								picked_element_points_list_void)))
-						{
-							display_message(ERROR_MESSAGE,
-								"Scene_picked_object_get_picked_element_points.  "
-								"Could not add element point to picked list");
-							return_code=0;
-						}
-						DESTROY(Element_point_ranges)(&element_point_ranges);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Scene_picked_object_get_picked_element_points.  "
-							"Could not create Element_point_ranges");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_picked_object_get_picked_element_points.  "
-						"Could not get discretization");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_get_picked_element_points.  "
-					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
-				return_code=0;
-			}
-		}
+//		/* is the last scene_object a Graphical_element wrapper, and does the
+//			 settings for the graphic refer to element_points? */
+//		if ((NULL != (rendition=Scene_picked_object_get_rendition(
+//			scene_picked_object,
+//			Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+//			&&(NULL != (cmiss_region = Cmiss_rendition_get_region(rendition)))&&
+//			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+//			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+//					Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+//			(CMISS_GRAPHIC_ELEMENT_POINTS ==
+//				Cmiss_graphic_get_graphic_type(graphic)))
+//		{
+//			if (CM_element_information_from_graphics_name(&cm,
+//				Scene_picked_object_get_subobject(scene_picked_object,1))&&
+//				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+//				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+//			{
+//				/* determine discretization of element for graphic */
+//				top_level_element=(struct FE_element *)NULL;
+//				Cmiss_graphic_get_discretization(graphic, &element_discretization);
+//				top_level_number_in_xi[0]=element_discretization.number_in_xi1;
+//				top_level_number_in_xi[1]=element_discretization.number_in_xi2;
+//				top_level_number_in_xi[2]=element_discretization.number_in_xi3;
+//				Cmiss_graphic_get_face(graphic,&face_number);
+//				native_discretization_field=
+//					GT_element_settings_get_native_discretization_field(settings);
+//				if (FE_region_get_FE_element_discretization(fe_region, element,
+//					face_number, native_discretization_field, top_level_number_in_xi,
+//					&top_level_element, element_point_ranges_identifier.number_in_xi))
+//				{
+//					element_point_ranges_identifier.element=element;
+//					element_point_ranges_identifier.top_level_element=top_level_element;
+//					GT_element_settings_get_xi_discretization(settings,
+//						&(element_point_ranges_identifier.xi_discretization_mode),
+//						/*xi_point_density_field*/(struct Computed_field **)NULL);
+//					if (XI_DISCRETIZATION_EXACT_XI==
+//						element_point_ranges_identifier.xi_discretization_mode)
+//					{
+//						for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+//						{
+//							element_point_ranges_identifier.number_in_xi[i]=1;
+//						}
+//					}
+//					GT_element_settings_get_seed_xi(settings,xi);
+//					/*???RC temporary, hopefully */
+//					for (i=0;i<3;i++)
+//					{
+//						element_point_ranges_identifier.exact_xi[i]=xi[i];
+//					}
+//					if (element_point_ranges=CREATE(Element_point_ranges)(
+//						&element_point_ranges_identifier))
+//					{
+//						element_point_number=
+//							Scene_picked_object_get_subobject(scene_picked_object,2);
+//						if (!(Element_point_ranges_add_range(element_point_ranges,
+//							element_point_number,element_point_number)&&
+//							Element_point_ranges_add_to_list(element_point_ranges,
+//								picked_element_points_list_void)))
+//						{
+//							display_message(ERROR_MESSAGE,
+//								"Scene_picked_object_get_picked_element_points.  "
+//								"Could not add element point to picked list");
+//							return_code=0;
+//						}
+//						DESTROY(Element_point_ranges)(&element_point_ranges);
+//					}
+//					else
+//					{
+//						display_message(ERROR_MESSAGE,
+//							"Scene_picked_object_get_picked_element_points.  "
+//							"Could not create Element_point_ranges");
+//						return_code=0;
+//					}
+//				}
+//				else
+//				{
+//					display_message(ERROR_MESSAGE,
+//						"Scene_picked_object_get_picked_element_points.  "
+//						"Could not get discretization");
+//					return_code=0;
+//				}
+//			}
+//			else
+//			{
+//				display_message(ERROR_MESSAGE,
+//					"Scene_picked_object_get_picked_element_points.  "
+//					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
+//				return_code=0;
+//			}
+//		}
+//		if (graphic)
+//		{
+//			Cmiss_graphic_destroy(&graphic);
+//		}
 	}
 	else
 	{
@@ -2838,8 +1386,8 @@ struct Scene_picked_object_get_nearest_node_data
 	struct Cmiss_region *cmiss_region;
 	/* information about the nearest node */
 	struct Scene_picked_object *scene_picked_object;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
 };
 
 static int Scene_picked_object_get_nearest_node(
@@ -2854,15 +1402,14 @@ no current nearest node or the new node is nearer, it becomes the picked node
 and its "nearest" value is stored in the nearest_node_data.
 ==============================================================================*/
 {
-	enum GT_element_settings_type settings_type;
+	enum Cmiss_graphic_type graphic_type;
 	int node_number,return_code;
 	struct FE_node *node;
 	struct FE_region *fe_region;
-	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_nearest_node_data *nearest_node_data;
 	struct Cmiss_region *cmiss_region;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
 
 	ENTER(Scene_picked_object_get_nearest_node);
 	if (scene_picked_object&&(nearest_node_data=
@@ -2876,22 +1423,18 @@ and its "nearest" value is stored in the nearest_node_data.
 		{
 			/* is the last scene_object a Graphical_element wrapper, and does the
 				 settings for the graphic refer to node_points or data_points? */
-			if ((scene_object=Scene_picked_object_get_Scene_object(
+			if ((NULL != (rendition=Scene_picked_object_get_rendition(
 				scene_picked_object,
-				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-					Scene_object_get_type(scene_object))&&(gt_element_group=
-						Scene_object_get_graphical_element_group(scene_object))&&
-				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-				(settings=get_settings_at_position_in_GT_element_group(
-					gt_element_group,
-					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-				(((GT_ELEMENT_SETTINGS_NODE_POINTS==
-					(settings_type=GT_element_settings_get_settings_type(settings)))&&
+				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+				&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(
+					rendition,Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+				(((CMISS_GRAPHIC_NODE_POINTS==
+					(graphic_type=Cmiss_graphic_get_graphic_type(graphic)))&&
 					(!nearest_node_data->use_data)) ||
-					((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
+					((CMISS_GRAPHIC_DATA_POINTS == graphic_type) &&
 						nearest_node_data->use_data)) &&
-				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)))
+				(cmiss_region = Cmiss_rendition_get_region(rendition)))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
 				fe_region = Cmiss_region_get_FE_region(cmiss_region);
@@ -2916,8 +1459,8 @@ and its "nearest" value is stored in the nearest_node_data.
 					{
 						nearest_node_data->nearest_node=node;
 						nearest_node_data->scene_picked_object=scene_picked_object;
-						nearest_node_data->gt_element_group=gt_element_group;
-						nearest_node_data->gt_element_settings=settings;
+						nearest_node_data->rendition=rendition;
+						nearest_node_data->graphic=graphic;
 						nearest_node_data->nearest=
 							Scene_picked_object_get_nearest(scene_picked_object);
 					}
@@ -2930,6 +1473,8 @@ and its "nearest" value is stored in the nearest_node_data.
 					return_code=0;
 				}
 			}
+			if (graphic)
+				Cmiss_graphic_destroy(&graphic);
 		}
 	}
 	else
@@ -2950,7 +1495,16 @@ struct Scene_picked_object_get_picked_nodes_data
 	int use_data;
 };
 
-static int Scene_picked_object_get_picked_nodes(
+typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
+
+struct Scene_picked_object_region_node_map_data
+{
+  Region_node_map *node_list;
+	/* flag set when searching for nearest data point rather than node */
+	int use_data;
+};
+
+static int Scene_picked_object_get_picked_region_sorted_nodes(
 	struct Scene_picked_object *scene_picked_object,void *picked_nodes_data_void)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2002
@@ -2960,39 +1514,37 @@ If the <scene_picked_object> refers to a node and the node is in the given
 manager, ensures it is in the list.
 ==============================================================================*/
 {
-	enum GT_element_settings_type settings_type;
+	USE_PARAMETER(scene_picked_object);
+	USE_PARAMETER(picked_nodes_data_void);
+
+	enum Cmiss_graphic_type graphic_type;
 	int node_number,return_code;
 	struct Cmiss_region *cmiss_region;
 	struct FE_node *node;
 	struct FE_region *fe_region;
-	struct Scene_object *scene_object;
-	struct Scene_picked_object_get_picked_nodes_data *picked_nodes_data;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
+	struct Scene_picked_object_region_node_map_data *picked_nodes_data;
+
 
 	ENTER(Scene_picked_object_get_picked_nodes);
 	if (scene_picked_object&&(picked_nodes_data=
-		(struct Scene_picked_object_get_picked_nodes_data	*)picked_nodes_data_void))
+		(struct Scene_picked_object_region_node_map_data	*)picked_nodes_data_void))
 	{
 		return_code=1;
 		/* is the last scene_object a Graphical_element wrapper, and does the
 			 settings for the graphic refer to node_points? */
-		if ((scene_object=Scene_picked_object_get_Scene_object(
-			scene_picked_object,
-			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
-			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-				Scene_object_get_type(scene_object))&&(gt_element_group=
-					Scene_object_get_graphical_element_group(scene_object))&&
-			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
-			(settings=get_settings_at_position_in_GT_element_group(
-				gt_element_group,
-				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-			(((GT_ELEMENT_SETTINGS_NODE_POINTS ==
-				(settings_type = GT_element_settings_get_settings_type(settings))) &&
+		if ((NULL != (rendition=Scene_picked_object_get_rendition(scene_picked_object,
+						Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+			&&(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+				Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+			(((CMISS_GRAPHIC_NODE_POINTS ==
+					(graphic_type = Cmiss_graphic_get_graphic_type(graphic))) &&
 				(!picked_nodes_data->use_data)) ||
-			((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
+			((CMISS_GRAPHIC_DATA_POINTS == graphic_type) &&
 				picked_nodes_data->use_data)) &&
-			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)))
+			(cmiss_region = Cmiss_rendition_get_region(rendition)))
 		{
 			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
 			fe_region = Cmiss_region_get_FE_region(cmiss_region);
@@ -3000,10 +1552,10 @@ manager, ensures it is in the list.
 			{
 				fe_region = FE_region_get_data_FE_region(fe_region);
 			}
-			if ((node = FE_region_get_FE_node_from_identifier(fe_region, node_number)))
+			node = FE_region_get_FE_node_from_identifier(fe_region, node_number);
+			if (node)
 			{
-				return_code = ensure_FE_node_is_in_list(node,
-					(void *)(picked_nodes_data->node_list));
+				picked_nodes_data->node_list->insert(std::make_pair(cmiss_region, node));
 			}
 			else
 			{
@@ -3012,6 +1564,8 @@ manager, ensures it is in the list.
 				return_code=0;
 			}
 		}
+		if (graphic)
+			Cmiss_graphic_destroy(&graphic);
 	}
 	else
 	{
@@ -3022,7 +1576,51 @@ manager, ensures it is in the list.
 	LEAVE;
 
 	return (return_code);
+
+	return 1;
 } /* Scene_picked_object_get_picked_nodes */
+
+void *Scene_picked_object_list_get_picked_region_sorted_nodes(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Returns the list of all nodes in the <scene_picked_object_list>. 
+The <use_data> flag indicates that we are searching for data points instead of
+nodes, needed since different settings type used for each.
+==============================================================================*/
+{
+	struct Scene_picked_object_region_node_map_data picked_nodes_data;
+
+	ENTER(Scene_picked_object_list_get_picked_nodes);
+	if (scene_picked_object_list)
+	{	
+		picked_nodes_data.use_data=use_data;
+		picked_nodes_data.node_list=new Region_node_map();
+		if (picked_nodes_data.node_list)
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_region_sorted_nodes,(void *)&picked_nodes_data,
+				scene_picked_object_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_list_get_picked_nodes.  "
+				"Could not create node list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
+		picked_nodes_data.node_list=NULL;
+	}
+	LEAVE;
+
+	return ((void *)picked_nodes_data.node_list);
+} /* Scene_picked_object_list_get_picked_nodes */
 
 /*
 Global functions
@@ -3069,71 +1667,15 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode)
 
+#if defined (USE_SCENE_OBJECT)
 DECLARE_OBJECT_FUNCTIONS(Scene_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene_object)
 DECLARE_INDEXED_LIST_FUNCTIONS(Scene_object)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Scene_object, \
 	position,int,compare_int)
+#endif /* defined (USE_SCENE_OBJECT) */
 
-enum GT_visibility_type Scene_object_get_visibility(
-	struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-Returns the visibility of <scene_object>.
-==============================================================================*/
-{
-	enum GT_visibility_type visibility;
-
-	ENTER(Scene_object_get_visibility);
-	if (scene_object)
-	{
-		visibility=scene_object->visibility;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_get_visibility.  Invalid argument(s)");
-		visibility=g_INVISIBLE;
-	}
-	LEAVE;
-
-	return (visibility);
-} /* Scene_object_get_visibility */
-
-int Scene_object_set_visibility(struct Scene_object *scene_object,
-	enum GT_visibility_type visibility)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Sets the visibility of <scene_object>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_visibility);
-	if (scene_object)
-	{
-		return_code=1;
-		if (visibility != scene_object->visibility)
-		{
-			scene_object->visibility=visibility;
-			Scene_object_changed_external(scene_object);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_visibility.  Missing scene_object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_visibility */
-
+#if defined (USE_SCENE_OBJECT)
 int Scene_object_add_transformation_callback(struct Scene_object *scene_object,
 	CMISS_CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
 /*******************************************************************************
@@ -4452,8 +2994,9 @@ as a command, using the given <command_prefix>.
 
 	return (return_code);
 } /* list_Scene_object_transformation_commands */
+#endif /* defined (USE_SCENE_OBJECT) */
 
-struct Scene *CREATE(Scene)(const char *name)
+struct Scene *CREATE(Scene)(void)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -4467,13 +3010,70 @@ from the default versions of these functions.
 	struct Scene *scene;
 
 	ENTER(CREATE(Scene));
-	if (name)
+
+	/* allocate memory for the scene structure */
+#if defined (USE_SCENE_OBJECT)
+	if (ALLOCATE(scene,struct Scene,1)&&
+		(scene->name=duplicate_string(name))&&
+		(scene->list_of_lights=CREATE(LIST(Light))())&&
+		(scene->scene_object_list=CREATE(LIST(Scene_object))()))
+#else
+	if (ALLOCATE(scene,struct Scene,1)&&
+		(scene->list_of_lights=CREATE(LIST(Light))()))
+#endif /* defined (USE_SCENE_OBJECT) */
 	{
-		/* allocate memory for the scene structure */
-		if (ALLOCATE(scene,struct Scene,1)&&
-			(scene->name=duplicate_string(name))&&
-			(scene->list_of_lights=CREATE(LIST(Light))())&&
-			(scene->scene_object_list=CREATE(LIST(Scene_object))()))
+		/* assign values to the fields */
+		scene->name = NULL;
+		scene->change_status=SCENE_NO_CHANGE;
+		scene->access_count = 1;
+		scene->scene_manager=(struct MANAGER(Scene) *)NULL;
+		/* fields, elements, nodes and data */
+		scene->region = NULL;
+		/*???RC temporary; have root_region and data_root_region until Scenes are
+			incorporated into the regions themselves */
+		scene->root_region = (struct Cmiss_region *)NULL;
+		scene->list_of_rendition = NULL;
+		/* defaults to not adding GFEs - besides, need managers anyway */
+		scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
+		/* global stores of selected objects */
+		scene->element_point_ranges_selection=
+			(struct Element_point_ranges_selection *)NULL;
+		scene->element_selection=(struct FE_element_selection *)NULL;
+		scene->node_selection=(struct FE_node_selection *)NULL;
+		scene->data_selection=(struct FE_node_selection *)NULL;
+		/* attributes: */
+		scene->glyph_list=(struct LIST(GT_object) *)NULL;
+		scene->graphical_material_manager=
+			(struct MANAGER(Graphical_material) *)NULL;
+		scene->graphical_material_manager_callback_id=(void *)NULL;
+		scene->default_material=(struct Graphical_material *)NULL;
+		scene->default_font = (struct Graphics_font *)NULL;
+		scene->light_manager=(struct MANAGER(Light) *)NULL;
+		scene->light_manager_callback_id=(void *)NULL;
+		scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+		scene->spectrum_manager_callback_id=(void *)NULL;
+		scene->default_spectrum=(struct Spectrum *)NULL;
+		scene->texture_manager=(struct MANAGER(Texture) *)NULL;
+		scene->default_time_keeper=(struct Time_keeper *)NULL;
+		scene->user_interface=(struct User_interface *)NULL;
+		scene->filters_list=NULL;
+		scene->cache = 0;
+		scene->build = 1;
+		/* display list index and current flag: */
+		scene->display_list = 0;
+		scene->fast_changing_display_list = 0;
+		scene->ndc_display_list = 0;
+		scene->end_ndc_display_list = 0;
+		scene->compile_status = GRAPHICS_NOT_COMPILED;
+		/* input callback handling information: */
+		scene->input_callback.procedure=(Scene_input_callback_procedure *)NULL;
+		scene->input_callback.data=(void *)NULL;
+		scene->scene_rendition_show_visibility_on = 0;
+		Cmiss_scene_set_rendition_visibility(scene, 1);
+	}
+	else
+	{
+		if (scene)
 		{
 			/* assign values to the fields */
 			scene->change_status=SCENE_NO_CHANGE;
@@ -4525,23 +3125,15 @@ from the default versions of these functions.
 		{
 			if (scene)
 			{
-				if (scene->name)
+				DEALLOCATE(scene->name);
+				if (scene->list_of_lights)
 				{
-					DEALLOCATE(scene->name);
-					if (scene->list_of_lights)
-					{
-						DESTROY(LIST(Light))(&(scene->list_of_lights));
-					}
+					DESTROY(LIST(Light))(&(scene->list_of_lights));
 				}
-				DEALLOCATE(scene);
 			}
-			display_message(ERROR_MESSAGE,"CREATE(Scene).  Not enough memory");
+			DEACCESS(Scene)(&scene);
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(Scene).  Invalid argument(s)");
-		scene=(struct Scene *)NULL;
+		display_message(ERROR_MESSAGE,"CREATE(Scene).  Not enough memory");
 	}
 	LEAVE;
 
@@ -4600,7 +3192,30 @@ Closes the scene and disposes of the scene data structure.
 			{
 				glDeleteLists(scene->end_ndc_display_list,1);
 			}
+			if (scene->list_of_rendition && 
+				!scene->list_of_rendition->empty())
+			{
+				std::set<struct Cmiss_rendition *>::iterator pos =
+					scene->list_of_rendition->begin();
+				while (pos != scene->list_of_rendition->end())
+				{
+					Cmiss_rendition_remove_scene(*pos, scene);
+					++pos;
+				}
+				scene->list_of_rendition->~set();
+			}
+			if (scene->filters_list)
+			{
+				delete scene->filters_list;
+				scene->filters_list = NULL;
+			}
+			if (scene->region)
+			{
+			  DEACCESS(Cmiss_region)(&scene->region);		  
+			}
+#if defined (USE_SCENE_OBJECT)
 			DESTROY(LIST(Scene_object))(&(scene->scene_object_list));
+#endif /* defined (USE_SCENE_OBJECT) */
 			DESTROY(LIST(Light))(&(scene->list_of_lights));
 			DEALLOCATE(*scene_address);
 			return_code=1;
@@ -4772,7 +3387,9 @@ Removes links to all objects required to display graphics.
 	if (scene)
 	{
 		/* remove all Scene_objects */
+#if defined (USE_SCENE_OBJECT)
 		REMOVE_ALL_OBJECTS_FROM_LIST(Scene_object)(scene->scene_object_list);
+#endif /* defined (USE_SCENE_OBJECT) */
 		/* turn off manager messages */
 		if (scene->graphical_material_manager_callback_id)
 		{
@@ -4960,7 +3577,12 @@ material and spectrum.
 ==============================================================================*/
 {
 	int return_code;
+
+	USE_PARAMETER(data_selection);
+	USE_PARAMETER(user_interface);
+#if defined (USE_SCENE_OBJECT)
 	struct Scene_object *scene_object;
+#endif /* (USE_SCENE_OBJECT) */
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
@@ -4972,6 +3594,7 @@ material and spectrum.
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
 		{
 			/* remove all graphical elements from scene */
+#if defined (USE_SCENE_OBJECT)
 			while (return_code && (scene_object =
 				FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 					Scene_object_has_graphical_element_group,(void *)NULL,
@@ -4979,12 +3602,15 @@ material and spectrum.
 			{
 				return_code = Scene_remove_Scene_object_private(scene, scene_object);
 			}
+#endif /* (USE_SCENE_OBJECT) */
 			if (return_code)
 			{
 				if (GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)
 				{
+					#if defined (TO_BE_EDITED)
 					Cmiss_region_remove_callback(scene->root_region,
 						Scene_Cmiss_region_change, (void *)scene);
+					#endif
 				}
 				scene->graphical_element_mode = graphical_element_mode;
 				scene->root_region = (struct Cmiss_region *)NULL;
@@ -5008,37 +3634,18 @@ material and spectrum.
 			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode) || (
 				(root_region == scene->root_region)))
 			{
-				if (scene->graphical_material_manager)
+				if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 				{
-					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
+					if (GRAPHICAL_ELEMENT_MANUAL != graphical_element_mode)
 					{
-						scene->graphical_element_mode = graphical_element_mode;
-						scene->root_region = root_region;
-						scene->element_point_ranges_selection =
-							element_point_ranges_selection;
-						scene->element_selection = element_selection;
-						scene->node_selection = node_selection;
-						scene->data_selection = data_selection;
-						scene->user_interface = user_interface;
-						if (GRAPHICAL_ELEMENT_MANUAL != graphical_element_mode)
-						{
-							/* ensure we have a graphical element for each child region */
-							Scene_update_graphical_element_groups(scene);
-						}
-						/* add region callbacks */
-						Cmiss_region_add_callback(root_region,
-							Scene_Cmiss_region_change, (void *)scene);
+						/* ensure we have a graphical element for each child region */
+						Scene_update_graphical_element_groups(scene);
 					}
-					else
-					{
-						scene->graphical_element_mode=graphical_element_mode;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_set_graphical_element_mode.  Graphics not yet enabled");
-					return_code=0;
+					/* add region callbacks */
+#if defined (TO_BE_EDITED)
+					Cmiss_region_add_callback(root_region,
+						Scene_Cmiss_region_change, (void *)scene);
+#endif
 				}
 			}
 			else
@@ -5126,8 +3733,10 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 {
 	int return_code;
-	struct LIST(Light) *temp_list_of_lights;
+// 	struct LIST(Light) *temp_list_of_lights;
+#if defined (USE_SCENE_OBJECT)
 	struct LIST(Scene_object) *temp_scene_object_list;
+#endif /* defined (USE_SCENE_OBJECT) */
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
@@ -5152,6 +3761,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			source->user_interface);
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
+#if defined (USE_SCENE_OBJECT)
 		if ((temp_list_of_lights=CREATE(LIST(Light))())&&
 			(temp_scene_object_list=CREATE(LIST(Scene_object))())&&
 			(FOR_EACH_OBJECT_IN_LIST(Light)(Light_to_list,
@@ -5181,6 +3791,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name).  Could not copy lists");
 			return_code=0;
 		}
+#endif /* defined (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -5246,32 +3857,7 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene,scene_manager)
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,const char *,scene_manager)
 
-int Scene_get_number_of_scene_objects(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the number of scene_objects in a scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_get_number_of_scene_objects);
-	if (scene)
-	{
-		return_code=NUMBER_IN_LIST(Scene_object)(scene->scene_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_number_of_scene_objects.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_get_number_of_scene_objects */
-
+#if defined (USE_SCENE_OBJECT)
 int for_each_Scene_object_in_Scene(struct Scene *scene,
 	LIST_ITERATOR_FUNCTION(Scene_object) *iterator_function,void *user_data)
 /*******************************************************************************
@@ -5300,35 +3886,7 @@ it. For example, rendervrml.c needs to output all the window objects in a scene.
 
 	return (return_code);
 } /* for_each_Scene_object_in_Scene */
-
-struct Scene_object *first_Scene_object_in_Scene_that(struct Scene *scene,
-	LIST_CONDITIONAL_FUNCTION(Scene_object) *conditional_function,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2000
-
-DESCRIPTION :
-Wrapper for FIRST_OBJECT_IN_LIST_THAT function for Scene_object.
-==============================================================================*/
-{
-	struct Scene_object *return_object;
-
-	ENTER(first_Scene_object_in_Scene_that);
-	if (scene)
-	{
-		return_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(conditional_function,
-			user_data, scene->scene_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"first_Scene_object_in_Scene_that.  Missing scene");
-		return_object=(struct Scene_object *)NULL;
-	}
-	LEAVE;
-
-	return (return_object);
-} /* first_Scene_object_in_Scene_that */
+#endif /* defined (USE_SCENE_OBJECT) */
 
 int Scene_for_each_material(struct Scene *scene,
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
@@ -5343,6 +3901,7 @@ Iterates through every material used by the scene.
 	int return_code;
 
 	ENTER(Scene_for_each_material);
+#if defined (OLD_CODE)
 	if (scene && iterator_function && scene->graphical_material_manager)
 	{
 		/* Could be smarter if there was a reduced number used by the 
@@ -5356,6 +3915,26 @@ Iterates through every material used by the scene.
 			"Scene_for_each_material.  Invalid arguments.");
 		return_code=0;
 	}
+#else
+	if (scene && iterator_function && scene->region)
+	{
+		struct Cmiss_rendition *rendition;
+		/* Could be smarter if there was a reduced number used by the 
+			scene, however for now just do every material in the manager */
+		if (rendition = Cmiss_region_get_rendition(scene->region))
+		{
+			Cmiss_rendition_for_each_material(rendition, iterator_function,
+				user_data);
+			DEACCESS(Cmiss_rendition)(&rendition);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_for_each_material.  Invalid arguments.");
+		return_code=0;
+	}
+#endif
 	LEAVE;
 
 	return (return_code);
@@ -5377,8 +3956,8 @@ must be filled with appropriate data.
 	if (ALLOCATE(scene_picked_object,struct Scene_picked_object,1))
 	{
 		scene_picked_object->hit_no=hit_no;
-		scene_picked_object->number_of_scene_objects=0;
-		scene_picked_object->scene_objects=(struct Scene_object **)NULL;
+		scene_picked_object->number_of_renditions=0;
+		scene_picked_object->renditions=(struct Cmiss_rendition **)NULL;
 		scene_picked_object->number_of_subobjects=0;
 		scene_picked_object->subobjects=(int *)NULL;
 		scene_picked_object->nearest=0;
@@ -5413,11 +3992,11 @@ Destroys the Scene_picked_object.
 	{
 		if (0==scene_picked_object->access_count)
 		{
-			for (i=0;i<scene_picked_object->number_of_scene_objects;i++)
+			for (i=0;i<scene_picked_object->number_of_renditions;i++)
 			{
-				DEACCESS(Scene_object)(&(scene_picked_object->scene_objects[i]));
+				Cmiss_rendition_destroy(&(scene_picked_object->renditions[i]));
 			}
-			DEALLOCATE(scene_picked_object->scene_objects);
+			DEALLOCATE(scene_picked_object->renditions);
 			DEALLOCATE(scene_picked_object->subobjects);
 			DEALLOCATE(*scene_picked_object_address);
 			return_code=1;
@@ -5440,6 +4019,47 @@ Destroys the Scene_picked_object.
 	return (return_code);
 } /* DESTROY(Scene_picked_object) */
 
+int Scene_picked_object_add_rendition(
+	struct Scene_picked_object *scene_picked_object,
+	struct Cmiss_rendition *rendition)
+{
+	int return_code;
+	struct Cmiss_rendition **temp_renditions;
+
+	ENTER(Scene_picked_object_add_Scene_object);
+	if (scene_picked_object&&rendition)
+	{
+		if (REALLOCATE(temp_renditions,scene_picked_object->renditions,
+			struct Cmiss_rendition *,scene_picked_object->number_of_renditions+1))
+		{
+			scene_picked_object->renditions = temp_renditions;
+			scene_picked_object->
+				renditions[scene_picked_object->number_of_renditions]=
+				ACCESS(Cmiss_rendition)(rendition);
+			scene_picked_object->number_of_renditions++;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_add_rendition.  Not enough memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_add_rendition.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_add_rendition */
+
+
+
+#if defined (USE_SCENE_OBJECT)
 int Scene_picked_object_add_Scene_object(
 	struct Scene_picked_object *scene_picked_object,
 	struct Scene_object *scene_object)
@@ -5542,6 +4162,66 @@ in the list of scene_objects in the path of our display heirarchy to the
 
 	return (scene_object);
 } /* Scene_picked_object_get_Scene_object */
+#endif /* defined (USE_SCENE_OBJECT) */
+
+
+int Scene_picked_object_get_number_of_renditions(
+	struct Scene_picked_object *scene_picked_object)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the number of scene objects in the path of our display heirarchy to the
+<scene_picked_object>.
+==============================================================================*/
+{
+	int number_of_renditions;
+
+	ENTER(Scene_picked_object_get_number_of_scene_objects);
+	if (scene_picked_object)
+	{
+		number_of_renditions = scene_picked_object->number_of_renditions;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_number_of_scene_objects.  Invalid argument(s)");
+		number_of_renditions=0;
+	}
+	LEAVE;
+
+	return (number_of_renditions);
+} /* Scene_picked_object_get_number_of_scene_objects */
+
+struct Cmiss_rendition *Scene_picked_object_get_rendition(
+	struct Scene_picked_object *scene_picked_object,int rendition_no)
+/*******************************************************************************
+LAST MODIFIED : 15 July 1999
+
+DESCRIPTION :
+Returns the scene_object at position <scene_object_no> - where 0 is the first -
+in the list of scene_objects in the path of our display heirarchy to the
+<scene_picked_object>.
+==============================================================================*/
+{
+	struct Cmiss_rendition *rendition;
+
+	ENTER(Scene_picked_object_get_rendition);
+	if (scene_picked_object&&(0<=rendition_no)&&
+		(rendition_no<scene_picked_object->number_of_renditions))
+	{
+		rendition = scene_picked_object->renditions[rendition_no];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_rendition.  Invalid argument(s)");
+		rendition=(struct Cmiss_rendition *)NULL;
+	}
+	LEAVE;
+
+	return (rendition);
+} /* Scene_picked_object_get_rendition */
 
 int Scene_picked_object_add_subobject(
 	struct Scene_picked_object *scene_picked_object,int subobject)
@@ -5767,6 +4447,7 @@ hit_no: scene_object_name[.scene_object_name...] subobject_number...
 	if (scene_picked_object)
 	{
 		display_message(INFORMATION_MESSAGE,"%d: ",scene_picked_object->hit_no);
+#if defined (USE_SCENE_OBJECT)
 		for (i=0;i<scene_picked_object->number_of_scene_objects;i++)
 		{
 			if (0<i)
@@ -5776,6 +4457,7 @@ hit_no: scene_object_name[.scene_object_name...] subobject_number...
 			display_message(INFORMATION_MESSAGE,"%s",
 				scene_picked_object->scene_objects[i]->name);
 		}
+#endif /* defined (USE_SCENE_OBJECT) */
 		for (i=0;i<scene_picked_object->number_of_subobjects;i++)
 		{
 			display_message(INFORMATION_MESSAGE," %d",
@@ -5857,14 +4539,16 @@ However, if none of the scene objects have transformations, the flag
 be set to the identity.
 ==============================================================================*/
 {
-	double mat1[16],mat2[16];
-	int i,j,k,number_of_transformations,return_code;
-	gtMatrix gt_transformation;
+// 	double mat1[16],mat2[16];
+//  int i,j,k,number_of_transformations,return_code;
+	int i,j,number_of_transformations,return_code;
+// 	gtMatrix gt_transformation;
 
 	ENTER(Scene_picked_object_get_total_transformation_matrix);
 	if (scene_picked_object&&transformation_required&&transformation_matrix)
 	{
 		number_of_transformations=0;
+#if defined (USE_SCENE_OBJECT)
 		for (k=0;k<scene_picked_object->number_of_scene_objects;k++)
 		{
 			if (Scene_object_has_transformation(
@@ -5899,6 +4583,7 @@ be set to the identity.
 				}
 			}
 		}
+#endif /* defined (USE_SCENE_OBJECT) */
 		if (!((*transformation_required)=(0<number_of_transformations)))
 		{
 			/* return the identity matrix - just in case */
@@ -6018,8 +4703,8 @@ struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct Cmiss_region *cmiss_region,
 	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
 	struct Scene_picked_object **scene_picked_object_address,
-	struct GT_element_group **gt_element_group_address,
-	struct GT_element_settings **gt_element_settings_address)
+	struct Cmiss_rendition **rendition_address,
+	struct Cmiss_graphic **graphic_address)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -6043,8 +4728,8 @@ pertaining to the nearest element.
 	nearest_element_data.select_faces_enabled=select_faces_enabled;
 	nearest_element_data.select_lines_enabled=select_lines_enabled;
 	nearest_element_data.scene_picked_object=(struct Scene_picked_object *)NULL;
-	nearest_element_data.gt_element_group=(struct GT_element_group *)NULL;
-	nearest_element_data.gt_element_settings=(struct GT_element_settings *)NULL;
+	nearest_element_data.rendition=(struct Cmiss_rendition *)NULL;
+	nearest_element_data.graphic=(struct Cmiss_graphic *)NULL;
 	if (scene_picked_object_list)
 	{
 		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
@@ -6060,20 +4745,95 @@ pertaining to the nearest element.
 	{
 		*scene_picked_object_address=nearest_element_data.scene_picked_object;
 	}
-	if (gt_element_group_address)
+	if (rendition_address)
 	{
-		*gt_element_group_address=nearest_element_data.gt_element_group;
+		*rendition_address=nearest_element_data.rendition;
 	}
-	if (gt_element_settings_address)
+	if (graphic_address)
 	{
-		*gt_element_settings_address=nearest_element_data.gt_element_settings;
+		*graphic_address=nearest_element_data.graphic;
 	}
 	LEAVE;
 
 	return (nearest_element_data.nearest_element);
 } /* Scene_picked_object_list_get_nearest_element */
 
-struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
+static int Scene_picked_object_get_picked_region_sorted_elements(
+	struct Scene_picked_object *scene_picked_object,void *picked_elements_data_void)
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+If the <scene_picked_object> refers to a element and the element is in the given
+manager, ensures it is in the list.
+==============================================================================*/
+{
+	int dimension, return_code;
+	struct Cmiss_region *cmiss_region;
+	struct FE_element *element;
+	struct FE_region *fe_region;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
+	struct Scene_picked_object_region_element_map_data *picked_elements_data;
+	struct CM_element_information cm;
+
+	ENTER(Scene_picked_object_get_picked_elements);
+	if (scene_picked_object&&(picked_elements_data=
+		(struct Scene_picked_object_region_element_map_data	*)picked_elements_data_void))
+	{
+		return_code=1;
+		/* is the last scene_object a Graphical_element wrapper, and does the
+			 settings for the graphic refer to element_points? */
+		if ((NULL != (rendition=Scene_picked_object_get_rendition(scene_picked_object,
+			Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+			&&((cmiss_region = Cmiss_rendition_get_region(rendition)))
+			&&(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+			Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+			(Cmiss_graphic_selects_elements(graphic)))
+		{
+			if (CM_element_information_from_graphics_name(&cm,
+				Scene_picked_object_get_subobject(scene_picked_object,1))&&
+				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+			{
+				dimension = get_FE_element_dimension(element);
+				if ((picked_elements_data->select_elements_enabled &&
+					((CM_ELEMENT == cm.type) || (3 == dimension))) ||
+					(picked_elements_data->select_faces_enabled &&
+						((CM_FACE == cm.type) || (2 == dimension))) ||
+					(picked_elements_data->select_lines_enabled &&
+						((CM_LINE == cm.type) || (1 == dimension))))
+				{
+					picked_elements_data->element_list->insert(std::make_pair(cmiss_region, element));
+
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_picked_object_get_picked_elements.  "
+					"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
+				return_code=0;
+			}
+		}
+		if (graphic)
+			Cmiss_graphic_destroy(&graphic);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+
+	return 1;
+} /* Scene_picked_object_get_picked_nodes */
+
+void *Scene_picked_object_list_get_picked_region_sorted_elements(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	int select_elements_enabled,int select_faces_enabled,
 	int select_lines_enabled)
@@ -6081,52 +4841,45 @@ struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
 LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
-Returns the list of all elements identified in the <scene_picked_object_list>. 
+Returns the list of all elements identified in the <scene_picked_object_list>.
 <select_elements_enabled> allows top-level/3-D elements to be selected.
 <select_faces_enabled> allows face and 2-D elements to be selected.
 <select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
 {
-	struct LIST(FE_element) *picked_element_list;
-	struct Scene_picked_object_get_picked_elements_data picked_elements_data;
+	struct Scene_picked_object_region_element_map_data picked_elements_data;
 
 	ENTER(Scene_picked_object_list_get_picked_elements);
 	if (scene_picked_object_list)
-	{	
-		if (picked_element_list=CREATE(LIST(FE_element))())
+	{
+		picked_elements_data.select_elements_enabled=select_elements_enabled;
+		picked_elements_data.select_faces_enabled=select_faces_enabled;
+		picked_elements_data.select_lines_enabled=select_lines_enabled;
+		picked_elements_data.element_list=new Region_element_map();
+		if (picked_elements_data.element_list)
 		{
-			picked_elements_data.select_elements_enabled=select_elements_enabled;
-			picked_elements_data.select_faces_enabled=select_faces_enabled;
-			picked_elements_data.select_lines_enabled=select_lines_enabled;
-			picked_elements_data.picked_element_list=picked_element_list;
 			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_elements,(void *)&picked_elements_data,
+				Scene_picked_object_get_picked_region_sorted_elements,(void *)&picked_elements_data,
 				scene_picked_object_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_list_get_picked_elements.  "
-				"Could not create element list");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_picked_object_list_get_picked_elements.  Invalid argument(s)");
-		picked_element_list=(struct LIST(FE_element) *)NULL;
+		picked_elements_data.element_list = NULL;
 	}
 	LEAVE;
 
-	return (picked_element_list);
+	return ((void *)picked_elements_data.element_list);
 } /* Scene_picked_object_list_get_picked_elements */
 
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
-	struct GT_element_group **gt_element_group_address,
-	struct GT_element_settings **gt_element_settings_address)
+	struct Cmiss_rendition **rendition_address,
+	struct Cmiss_graphic **graphic_address)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2002
 
@@ -6149,9 +4902,9 @@ calling function.
 	nearest_element_point_data.cmiss_region = cmiss_region;
 	nearest_element_point_data.scene_picked_object=
 		(struct Scene_picked_object *)NULL;
-	nearest_element_point_data.gt_element_group=(struct GT_element_group *)NULL;
-	nearest_element_point_data.gt_element_settings=
-		(struct GT_element_settings *)NULL;
+	nearest_element_point_data.rendition=(struct Cmiss_rendition *)NULL;
+	nearest_element_point_data.graphic=
+		(struct Cmiss_graphic *)NULL;
 	if (scene_picked_object_list)
 	{
 		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
@@ -6168,13 +4921,13 @@ calling function.
 	{
 		*scene_picked_object_address=nearest_element_point_data.scene_picked_object;
 	}
-	if (gt_element_group_address)
+	if (rendition_address)
 	{
-		*gt_element_group_address=nearest_element_point_data.gt_element_group;
+		*rendition_address=nearest_element_point_data.rendition;
 	}
-	if (gt_element_settings_address)
+	if (graphic_address)
 	{
-		*gt_element_settings_address=nearest_element_point_data.gt_element_settings;
+		*graphic_address=nearest_element_point_data.graphic;
 	}
 	LEAVE;
 
@@ -6224,8 +4977,8 @@ struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	int use_data, struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
-	struct GT_element_group **gt_element_group_address,
-	struct GT_element_settings **gt_element_settings_address)
+	struct Cmiss_rendition **rendition_address,
+	struct Cmiss_graphic **graphic_address)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2002
 
@@ -6246,8 +4999,8 @@ a node, needed since different settings type used for each.
 	nearest_node_data.use_data=use_data;
 	nearest_node_data.cmiss_region = cmiss_region;
 	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
-	nearest_node_data.gt_element_group=(struct GT_element_group *)NULL;
-	nearest_node_data.gt_element_settings=(struct GT_element_settings *)NULL;
+	nearest_node_data.rendition=(struct Cmiss_rendition *)NULL;
+	nearest_node_data.graphic=(struct Cmiss_graphic *)NULL;
 	if (scene_picked_object_list)
 	{
 		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
@@ -6263,59 +5016,18 @@ a node, needed since different settings type used for each.
 	{
 		*scene_picked_object_address=nearest_node_data.scene_picked_object;
 	}
-	if (gt_element_group_address)
+	if (rendition_address)
 	{
-		*gt_element_group_address=nearest_node_data.gt_element_group;
+		*rendition_address=nearest_node_data.rendition;
 	}
-	if (gt_element_settings_address)
+	if (graphic_address)
 	{
-		*gt_element_settings_address=nearest_node_data.gt_element_settings;
+		*graphic_address=nearest_node_data.graphic;
 	}
 	LEAVE;
 
 	return (nearest_node_data.nearest_node);
 } /* Scene_picked_object_list_get_nearest_node */
-
-struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
-	struct LIST(Scene_picked_object) *scene_picked_object_list,int use_data)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Returns the list of all nodes in the <scene_picked_object_list>. 
-The <use_data> flag indicates that we are searching for data points instead of
-nodes, needed since different settings type used for each.
-==============================================================================*/
-{
-	struct Scene_picked_object_get_picked_nodes_data picked_nodes_data;
-
-	ENTER(Scene_picked_object_list_get_picked_nodes);
-	if (scene_picked_object_list)
-	{	
-		picked_nodes_data.use_data=use_data;
-		if (picked_nodes_data.node_list=CREATE(LIST(FE_node))())
-		{
-			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_nodes,(void *)&picked_nodes_data,
-				scene_picked_object_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_picked_object_list_get_picked_nodes.  "
-				"Could not create node list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
-		picked_nodes_data.node_list=(struct LIST(FE_node) *)NULL;
-	}
-	LEAVE;
-
-	return (picked_nodes_data.node_list);
-} /* Scene_picked_object_list_get_picked_nodes */
 
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback)
@@ -6397,11 +5109,14 @@ this routine is to convert picking information into a list of easy-to-interpret
 Scene_picked_objects to pass to clients of the scene, eg. node editor.
 ==============================================================================*/
 {
-	GLuint *select_buffer_ptr,scene_object_no;
+	GLuint *select_buffer_ptr;
+// 	GLuint *select_buffer_ptr,scene_object_no;
 	int hit_no,number_of_names,return_code;
 	struct Scene_input_callback_data scene_input_data;
 	struct Scene_picked_object *scene_picked_object;
-	struct Scene_object *scene_object;
+#if defined (USE_SCENE_OBJECT)
+ 	struct Scene_object *scene_object;
+#endif /* defined (USE_SCENE_OBJECT) */
 
 	ENTER(Scene_input);
 	if (scene)
@@ -6434,6 +5149,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 							/* first part of names identifies list of scene_objects in path
 								 to picked graphic. Must be at least one; only more that one
 								 if contains child_scene */
+#if defined (USE_SCENE_OBJECT)
 							do
 							{
 								scene_object_no= *select_buffer_ptr;
@@ -6454,7 +5170,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 								}
 							}
 							while (return_code&&(SCENE_OBJECT_SCENE==scene_object->type));
-
+#endif /* defined (USE_SCENE_OBJECT) */
 							if (return_code)
 							{
 								for (;0<number_of_names&&return_code;number_of_names--)
@@ -6533,6 +5249,42 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 	return (return_code);
 } /* Scene_input */
 
+
+Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int position)
+{
+	Cmiss_rendition *rendition = NULL;
+
+	if (scene)
+	{
+		if (scene->list_of_rendition && 
+			!scene->list_of_rendition->empty())
+		{
+			std::set<struct Cmiss_rendition *>::iterator pos =
+				scene->list_of_rendition->begin();
+			while (pos != scene->list_of_rendition->end() && !rendition)
+			{
+				if (position == Cmiss_rendition_get_position(*pos))
+				{
+					rendition = *pos;
+				}
+				++pos;
+				if (rendition)
+					break;
+			}
+		}
+	}
+	else if (position == 0)
+	{
+		return NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_get_rendition_of_position.  Invalid argument(s)");
+	}
+
+	return rendition;
+}
+
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume,
 	struct Graphics_buffer *graphics_buffer)
@@ -6551,12 +5303,11 @@ understood for the type of <interaction_volume> passed.
 	double modelview_matrix[16],projection_matrix[16];
 	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
 	GLuint *select_buffer,*select_buffer_ptr;
-	int hit_no,i,j,num_hits,number_of_names,return_code,scene_object_no;
+	int hit_no,i,j,num_hits,number_of_names,return_code, rendition_no;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *parent_scene;
 	struct Scene_picked_object *scene_picked_object;
-	struct Scene_object *scene_object;
-
+	struct Cmiss_rendition *rendition;
 	ENTER(Scene_pick_objects);
 	scene_picked_object_list=(struct LIST(Scene_picked_object) *)NULL;
 	if (scene&&interaction_volume)
@@ -6566,10 +5317,8 @@ understood for the type of <interaction_volume> passed.
 			Render_graphics_opengl *renderer = 
 				Render_graphics_opengl_create_glbeginend_renderer(graphics_buffer);
 			renderer->picking = 1;
-			
 			if (renderer->Scene_compile(scene))
 			{
-
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;
 				while (0>num_hits)
@@ -6629,58 +5378,21 @@ understood for the type of <interaction_volume> passed.
 									Scene_picked_object_set_farthest(scene_picked_object,
 										(double)(*select_buffer_ptr));
 									select_buffer_ptr++;
-#if defined (OLD_CODE)
-									depth=(double)(*select_buffer_ptr);
-									normalised_z=2.0*depth - 1.0;
-									Scene_picked_object_set_nearest(scene_picked_object,
-										Interaction_volume_get_closeness_from_normalised_z(
-											interaction_volume,normalised_z));
-									select_buffer_ptr++;
-									depth=(double)(*select_buffer_ptr);
-									normalised_z=2.0*depth - 1.0;
-									Scene_picked_object_set_farthest(scene_picked_object,
-										Interaction_volume_get_closeness_from_normalised_z(
-											interaction_volume,normalised_z));
-									select_buffer_ptr++;
-#endif /* defined (OLD_CODE) */
 									/* first part of names identifies list of scene_objects in
 										 path to picked graphic. Must be at least one; only more
 										 than one if contains child_scene, which then becomes the
 										 parent of the next level of scene objects */
 									parent_scene = scene;
-									do
+									
+									rendition_no=(int)(*select_buffer_ptr);
+									select_buffer_ptr++;
+									number_of_names--;
+									if (NULL != (rendition = 
+											Scene_get_rendition_of_position(scene, rendition_no)))
 									{
-										scene_object_no=(int)(*select_buffer_ptr);
-										select_buffer_ptr++;
-										number_of_names--;
-										if (scene_object =
-											FIND_BY_IDENTIFIER_IN_LIST(Scene_object, position)(
-												scene_object_no, parent_scene->scene_object_list))
-										{
-											return_code = Scene_picked_object_add_Scene_object(
-												scene_picked_object, scene_object);
-											if (SCENE_OBJECT_SCENE == scene_object->type)
-											{
-												parent_scene =
-													Scene_object_get_child_scene(scene_object);
-												if (!parent_scene)
-												{
-													display_message(ERROR_MESSAGE,
-														"Scene_pick_objects.  Missing child scene");
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE, "Scene_pick_objects.  "
-												"No object at position %d in scene %s",
-												scene_object_no, parent_scene->name);
-											return_code = 0;
-										}
+											return_code = Scene_picked_object_add_rendition(
+												scene_picked_object, rendition);
 									}
-									while (return_code && (0 < number_of_names) &&
-										(SCENE_OBJECT_SCENE==scene_object->type));
 									if (return_code)
 									{
 										for (;0<number_of_names&&return_code;number_of_names--)
@@ -6898,6 +5610,8 @@ execute_Scene.
 	ENTER(Scene_has_fast_changing_objects);
 	if (scene)
 	{
+		return_code=0;
+#if defined (USE_SCENE_OBJECT)
 		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 			Scene_object_is_fast_changing,(void *)NULL,scene->scene_object_list))
 		{
@@ -6907,6 +5621,7 @@ execute_Scene.
 		{
 			return_code=0;
 		}
+#endif /* defined (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -6946,6 +5661,7 @@ SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
 	return (change_status);
 } /* Scene_get_change_status */
 
+#if defined (TO_BE_EDITED)
 static int Scene_get_data_range_for_autoranging_spectrum_iterator(
 	struct Scene_object *scene_object, void *data_void)
 /*******************************************************************************
@@ -6961,6 +5677,7 @@ in the <scene> which are autoranging and which point to this spectrum.
 	ENTER(Scene_get_data_range_for_spectrum_iterator);
 	if (scene_object && data_void)
 	{
+		for_each_graphic_in_Cmiss_rendition
 		if (g_VISIBLE == Scene_object_get_visibility(scene_object))
 		{
 			switch(scene_object->type)
@@ -6995,6 +5712,7 @@ in the <scene> which are autoranging and which point to this spectrum.
 
 	return (return_code);
 } /* Scene_get_data_range_for_spectrum_iterator */
+#endif
 
 static int Scene_expand_data_range_for_autoranging_spectrum(
 	struct Spectrum *spectrum, void *scene_void)
@@ -7008,45 +5726,40 @@ in the <scene> which are autoranging and which point to this spectrum.
 {
 	int return_code;
 	struct Scene *scene;
-	struct Scene_get_data_range_for_spectrum_data data;
 	struct Spectrum *spectrum_to_be_modified_copy;
 
 	ENTER(Scene_expand_data_range_for_autoranging_spectrum);
 
 	if (spectrum && (scene = (struct Scene *)scene_void))
 	{
-		data.spectrum = spectrum;
-		data.range.first = 1;
-		data.range.minimum = 0;
-		data.range.maximum = 0;
+		float minimum = 0, maximum = 0;
+		int range_set;
+		Scene_get_data_range_for_spectrum(scene,
+			spectrum,&minimum, &maximum, &range_set);
 
-		for_each_Scene_object_in_Scene(scene,
-			Scene_get_data_range_for_autoranging_spectrum_iterator, (void *)&data);
 
-		if ( !data.range.first )
+		if ((minimum != get_Spectrum_minimum(spectrum))
+			|| (maximum != get_Spectrum_maximum(spectrum)))
 		{
-			if ((data.range.minimum != get_Spectrum_minimum(spectrum))
-				|| (data.range.maximum != get_Spectrum_maximum(spectrum)))
+			spectrum_to_be_modified_copy=CREATE(Spectrum)
+				("spectrum_modify_temp");
+			if (spectrum_to_be_modified_copy)
 			{
-				if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-					("spectrum_modify_temp"))
-				{
-					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-						(spectrum_to_be_modified_copy,spectrum);		
-					/*Ensure spectrum is set correctly */
-					Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
-						data.range.minimum, data.range.maximum);		
+				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+					(spectrum_to_be_modified_copy,spectrum);		
+				/*Ensure spectrum is set correctly */
+				Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+					minimum, maximum);		
 				
-					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-						spectrum_to_be_modified_copy,scene->spectrum_manager);
-					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_expand_data_range_for_autoranging_spectrum.  "
-						"Could not create spectrum copy.");				
-				}
+				MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+					spectrum_to_be_modified_copy,scene->spectrum_manager);
+				DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);					
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_expand_data_range_for_autoranging_spectrum.  "
+					"Could not create spectrum copy.");				
 			}
 		}
 		return_code = 1;
@@ -7111,21 +5824,47 @@ int build_Scene(struct Scene *scene)
 int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
 	int return_code;
-
+	std::set<struct Cmiss_rendition *>::iterator pos;
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)
 	{
 		renderer->fast_changing = 0;
 		glPushName(0);
+#if defined (USE_SCENE_OBJECT)
 		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 			(void *)renderer, scene->scene_object_list);
+#else
+		if (scene->list_of_rendition && 
+			!scene->list_of_rendition->empty())
+		{
+			pos = scene->list_of_rendition->begin();
+			while (pos != scene->list_of_rendition->end())
+			{
+				Cmiss_rendition_call_renderer(*pos, (void *)renderer);
+				++pos;
+			}
+		}
+#endif
 		glPopName();
 		if (Scene_has_fast_changing_objects(scene))
 		{
 			renderer->fast_changing = 1;
 			glPushName(0);
-			return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
-				(void *)renderer, scene->scene_object_list);
+#if defined (USE_SCENE_OBJECT)
+		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+			(void *)renderer, scene->scene_object_list);
+#else
+		if (scene->list_of_rendition && 
+			!scene->list_of_rendition->empty())
+		{
+			pos = scene->list_of_rendition->begin();
+			while (pos != scene->list_of_rendition->end())
+			{
+				Cmiss_rendition_call_renderer(*pos, (void *)renderer);
+				++pos;
+			}
+		}
+#endif
 			renderer->fast_changing = 0;
 			glPopName();
 		}
@@ -7140,108 +5879,7 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 	return (return_code);
 } /* build_Scene */
 
-int Scene_remove_Scene_object(struct Scene *scene,
-	struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Removes <scene object> from the list of objects on <scene>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_remove_Scene_object);
-	if (scene && scene_object)
-	{
-		/* can only remove graphical element groups if in "manual" mode */
-		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP != scene_object->type) ||
-			(GRAPHICAL_ELEMENT_MANUAL == scene->graphical_element_mode))
-		{
-			return_code = Scene_remove_Scene_object_private(scene, scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_remove_Scene_object.  Can only remove groups in manual mode");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_remove_Scene_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_remove_Scene_object */
-
-int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object, int position, const char *scene_object_name,
-	int fast_changing)
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Adds <graphics_object> to the list of objects on <scene> at <position>.
-A position of 1 indicates the top of the list, while less than 1 or greater
-than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> allows the scene_object to be given a different
-name from that of the <graphics_object>, and must be unique for the scene.
-Also set the <fast_changing> flag on creation to avoid wrong updates if on.
-==============================================================================*/
-{
-	char *graphics_object_name;
-	int return_code;
-	struct Scene_object *scene_object;
-	
-	ENTER(Scene_add_graphics_object);
-	graphics_object_name = (char *)NULL;
-	if (scene && graphics_object)
-	{
-		if (!scene_object_name)
-		{
-			GET_NAME(GT_object)(graphics_object, &graphics_object_name);
-			scene_object_name = graphics_object_name;
-		}
-		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
-			(void *)scene_object_name, scene->scene_object_list))
-		{
-			if (scene_object = create_Scene_object_with_Graphics_object(
-				scene_object_name, graphics_object))
-			{
-				Scene_object_set_fast_changing(scene_object, fast_changing);
-				return_code = Scene_add_Scene_object(scene, scene_object, position);
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,
-				"Scene_add_graphics_object.  Object with name '%s' already in scene",
-				scene_object_name);
-			return_code = 1;
-		}
-		if (graphics_object_name)
-		{
-			DEALLOCATE(graphics_object_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_add_graphics_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_add_graphics_object */
+#if defined (USE_SCENE_OBJECT)
 
 int Scene_remove_graphics_object(struct Scene *scene,
 	struct GT_object *graphics_object)
@@ -7373,7 +6011,9 @@ Does not complain if <child_scene> is not used in <scene>.
 
 	return (return_code);
 } /* Scene_remove_child_scene */
+#endif /* defined (USE_SCENE_OBJECT) */
 
+#if defined (TO_BE_EDITED)
 int Scene_add_graphical_element_group(struct Scene *scene,
 	struct Cmiss_region *cmiss_region, int position, char *scene_object_name)
 /*******************************************************************************
@@ -7677,6 +6317,7 @@ from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
 	if (scene && cmiss_region)
 	{
 		return_code = 1;
+#if (USE_SCENE_OBJECT)
 		while (return_code && (scene_object =
 			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_Cmiss_region,
 				(void *)cmiss_region, scene->scene_object_list)))
@@ -7688,6 +6329,7 @@ from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
 				return_code = 0;
 			}
 		}
+#endif /* (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -7699,7 +6341,9 @@ from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
 
 	return (return_code);
 } /* Scene_remove_graphical_element_group */
+#endif /* defined (TO_BE_EDITED) */
 
+#if defined (USE_SCENE_OBJECT)
 int Scene_update_time_behaviour(struct Scene *scene,
 	struct GT_object *graphics_object)
 /*******************************************************************************
@@ -7771,7 +6415,9 @@ Scene_object has a Time_object.
 
 	return (return_code);
 } /* Scene_update_time_behaviour */
+#endif /* (USE_SCENE_OBJECT) */
 
+#if defined (USE_SCENE_OBJECT)
 int Scene_update_time_behaviour_with_gt_element_group(struct Scene *scene,
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
@@ -7855,7 +6501,9 @@ Scene_object has a Time_object.
 
 	return (return_code);
 } /* Scene_update_time_behaviour_with_gt_element_group */
+#endif /* (USE_SCENE_OBJECT) */
 
+#if defined (USE_SCENE_OBJECT)
 int Scene_set_time_behaviour(struct Scene *scene, char *scene_object_name,
 	char *time_object_name, struct Time_keeper *time_keeper)
 /*******************************************************************************
@@ -7910,6 +6558,7 @@ object for the scene_object named <scene_object_name>.
 
 	return (return_code);
 } /* Scene_update_time_behaviour */
+#endif /* (USE_SCENE_OBJECT) */
 
 int Scene_get_graphics_range(struct Scene *scene,
 	double *centre_x, double *centre_y, double *centre_z,
@@ -7923,7 +6572,7 @@ Returns 0 without error if scene is empty.
 ==============================================================================*/
 {
 	double max_x, max_y, max_z, min_x, min_y, min_z;
-	int return_code;
+	int return_code = 1;
 	struct Graphics_object_range_struct graphics_object_range;
 
 	ENTER(Scene_get_graphics_range);
@@ -7933,8 +6582,18 @@ Returns 0 without error if scene is empty.
 		build_Scene(scene);
 		/* get range of visible graphics_objects in scene */
 		graphics_object_range.first = 1;
-		return_code = for_each_Scene_object_in_Scene(scene,
-			Scene_object_get_range, (void *)&graphics_object_range);
+		if (scene->list_of_rendition && 
+			!scene->list_of_rendition->empty())
+		{
+			std::set<struct Cmiss_rendition *>::iterator pos =
+				scene->list_of_rendition->begin();
+			while (pos != scene->list_of_rendition->end())
+			{
+				return_code &= Cmiss_rendition_get_range(
+					*pos, (void *)&graphics_object_range);
+				++pos;
+			}
+		}
 		if (graphics_object_range.first)
 		{
 			/* nothing in the scene; return zeros */
@@ -7969,6 +6628,7 @@ Returns 0 without error if scene is empty.
 	return (return_code);
 } /* Scene_get_graphics_range */
 
+#if defined (TO_BE_EDITED)
 int Scene_get_element_group_position(struct Scene *scene,
 	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -8054,7 +6714,9 @@ Scene_object for the group keeps the same name.
 
 	return (return_code);
 } /* Scene_set_element_group_position */
+#endif /* defined (TO_BE_EDITED) */
 
+#if defined (USE_GRAPHICS_OBJECT)
 int Scene_get_graphics_object_position(struct Scene *scene,
 	struct GT_object *graphics_object)
 /*******************************************************************************
@@ -8138,7 +6800,9 @@ objects in the list puts <graphics_object> at the end.
 
 	return (return_code);
 } /* Scene_set_graphics_object_position */
+#endif /* defined (USE_GRAPHICS_OBJECT) */
 
+#if defined (USE_SCENE_OBJECT)
 int Scene_get_scene_object_position(struct Scene *scene,
 	struct Scene_object *scene_object)
 /*******************************************************************************
@@ -8229,8 +6893,11 @@ objects in the list puts <scene_object> at the end.
 	LEAVE;
 
 	return (return_code);
-} /* Scene_set_scene_object_position */
+} /* Scene_set_scene_object_position */ 
+#endif /* defined (USE_SCENE_OBJECT) */
 
+
+#if defined (TO_BE_EDITED)
 enum GT_visibility_type Scene_get_element_group_visibility(
 	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -8269,6 +6936,7 @@ Returns the visibility of the GFE for <cmiss_region> in <scene>.
 
 	return (visibility);
 } /* Scene_get_element_group_visibility */
+#endif /* defined (TO_BE_EDITED) */
 
 struct Element_group_visibility_data
 {
@@ -8276,6 +6944,7 @@ struct Element_group_visibility_data
 	enum GT_visibility_type visibility;
 };
 
+#if defined (USE_SCENE_OBJECT)
 static int Scene_object_set_element_group_visibility_iterator(
 	struct Scene_object *scene_object, void *user_data_void)
 /*******************************************************************************
@@ -8315,7 +6984,9 @@ its <visibility>.
 
 	return (return_code);
 } /* Scene_object_set_element_group_visibility_iterator */
+#endif /* defined (USE_SCENE_OBJECT) */
 
+#if defined (TO_BE_EDITED)
 int Scene_set_element_group_visibility(struct Scene *scene,
 	struct Cmiss_region *cmiss_region,enum GT_visibility_type visibility)
 /*******************************************************************************
@@ -8348,7 +7019,9 @@ Sets the visibility of all scene objects that are graphical element groups for
 
 	return (return_code);
 } /* Scene_set_element_group_visibility */
+#endif /* defined (TO_BE_EDITED) */
 
+#if defined (USE_GRAPHICS_OBJECT)
 enum GT_visibility_type Scene_get_graphics_object_visibility(
 	struct Scene *scene,struct GT_object *graphics_object)
 /*******************************************************************************
@@ -8500,7 +7173,9 @@ Returns true if <graphics object> is in the list of objects on <scene>.
 
 	return (return_code);
 } /* Scene_has_graphics_object */
+#endif /* defined (USE_GRAPHICS_OBJECT) */
 
+#if defined (USE_CHILD_SCENE)
 int Scene_has_child_scene(struct Scene *scene,struct Scene *child_scene)
 /*******************************************************************************
 LAST MODIFIED : 20 November 1998
@@ -8534,7 +7209,9 @@ Returns true if <child_scene> is in the list of scenes in <scene>.
 
 	return (return_code);
 } /* Scene_has_child_scene */
+#endif /* defined (USE_CHILD_SCENE) */
 
+#if defined (USE_SCENE_OBJECT)
 struct Scene_object *Scene_get_Scene_object_by_name(struct Scene *scene,
 	char *name)
 /*******************************************************************************
@@ -8562,7 +7239,9 @@ Returns the Scene_object called <name> in <scene>, or NULL if not found.
 
 	return (scene_object);
 } /* Scene_get_Scene_object_by_name */
+#endif /* defined (USE_SCENE_OBJECT) */
 
+#if defined (TO_BE_EDITED)
 int Scene_has_Cmiss_region(struct Scene *scene,
 	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -8597,7 +7276,9 @@ Returns true if <scene> contains a graphical element for <cmiss_region>.
 
 	return (return_code);
 } /* Scene_has_Cmiss_region */
+#endif
 
+#if defined (TO_BE_EDITED)
 struct GT_element_group *Scene_get_graphical_element_group(
 	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -8634,7 +7315,9 @@ Returns the graphical element_group for <cmiss_region> in <scene>.
 
 	return (gt_element_group);
 } /* Scene_get_graphical_element_group */
+#endif /* defined (TO_BE_EDITED) */
 
+#if defined (USE_SCENE_OBJECT)
 struct Scene_object *Scene_get_scene_object_with_Cmiss_region(
 	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -8663,6 +7346,7 @@ Returns the scene_object for <element_group> in <scene>.
 
 	return (scene_object);
 } /* Scene_get_scene_object_with_Cmiss_region */
+#endif /* defined (USE_SCENE_OBJECT) */
 
 int set_Scene(struct Parse_state *state,
 	void *scene_address_void,void *scene_manager_void)
@@ -8778,8 +7462,10 @@ GT_element_settings or a whole GT_element_settings so that export commands can
 work on these sub_elements.  These created scenes are not added to the manager.
 ==============================================================================*/
 {
+#if defined (TO_BE_EDITED)	
 	const char *current_token;
 	char *index, *next_index, *string_copy;
+	FE_value time;
 	int return_code;
 	gtMatrix transformation;
 	struct GT_element_group *gt_element_group;
@@ -9010,9 +7696,146 @@ work on these sub_elements.  These created scenes are not added to the manager.
 		return_code=0;
 	}
 	LEAVE;
+#else
+	USE_PARAMETER(state);
+	USE_PARAMETER(scene_address_void);
+	USE_PARAMETER(scene_manager_void);
+	int return_code = 0;
+#endif
 
 	return (return_code);
 } /* set_Scene */
+
+/***************************************************************************//**
+ * Edit the current rendition visibility filter in scene. Use this function to
+ * show/hide visibile/invisible rendition.
+ *
+ * @param scene  Scene to be modified.
+ * @param show_visibilit_on  show visible rendition and  hide hidden rendiiton
+ *    if set to 1, or show hidden rendition and hide visible rendition if set to 0.
+ * @return  Returns 1 if successfully edit the filter otherwise 0.
+ */
+int Cmiss_scene_set_rendition_visibility(Scene *scene, int show_visibility_on)
+{
+	int return_code = 0;
+	if (scene)
+	{
+		if (scene->scene_rendition_show_visibility_on != show_visibility_on)
+		{
+			scene->scene_rendition_show_visibility_on = show_visibility_on;
+			if (!scene->filters_list)
+			{
+				(scene->filters_list) = new Filtering_list();
+			}
+			std::string name("rendition_visibility");
+			Filtering_list_iterator pos=(scene->filters_list)->find(name);
+			if (pos != scene->filters_list->end())
+			{
+				SceneFiltersNoValueFunctor<Cmiss_rendition *> *functor =
+					reinterpret_cast<SceneFiltersNoValueFunctor<Cmiss_rendition *>*>(pos->second);
+				scene->filters_list->erase(name);
+				if (functor)
+				{
+					delete functor;
+				}
+			}
+			SceneFiltersNoValueFunctor<Cmiss_rendition *> *filter =
+				new SceneFiltersNoValueFunctor<Cmiss_rendition *>(
+					Cmiss_rendition_get_visibility, scene->scene_rendition_show_visibility_on);
+			(scene->filters_list)->insert(std::make_pair(name, filter));
+			if (scene->list_of_rendition)
+			{
+				scene->build = 1;
+				scene->compile_status = GRAPHICS_NOT_COMPILED;
+				scene->change_status = SCENE_CHANGE;
+				if (scene->scene_manager)
+				{
+					Scene_refresh( scene );
+				}
+			}
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
+
+/***************************************************************************//**
+ * Add a filter criterion which only show graphic with name to the list
+ * of functors.
+ *
+ * @param scene  Scene to be modified.
+ * @param name  Name to be filtered
+ * @param inclusive  include graphic with name if set to 1 or exclude graphic
+ *    with name if set to 0
+ * @return  Returns 1 if successfully add a new filter criterion otherwise 0.
+ */
+int Cmiss_scene_set_show_graphic_name(struct Scene *scene, const char *name, int inclusive)
+{
+  int return_code;
+  if (scene && name)
+  {
+    SceneFiltersValueFunctor<Cmiss_graphic *, void *> *filter =
+      new SceneFiltersValueFunctor<Cmiss_graphic *, void *>(
+        &Cmiss_graphic_has_name, (void *)duplicate_string(name), inclusive);
+    if (!scene->filters_list)
+    {
+      (scene->filters_list) = new Filtering_list();
+    }
+    (scene->filters_list)->insert(std::make_pair("graphic", (void *)filter));
+    if (scene->list_of_rendition)
+    {
+      scene->build = 1;
+      scene->compile_status = GRAPHICS_NOT_COMPILED;
+      scene->change_status = SCENE_CHANGE;
+      if (scene->scene_manager)
+      {
+	Scene_refresh( scene );
+      }
+    }
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Scene_add_filter_option.  Invalid argument(s)");
+    return_code = 0;
+  }
+  return return_code;
+}
+
+/***************************************************************************//**
+ * Create a node list with the supplied region, group field at a specific time
+ *
+ * @param scene  Scene to be modified.
+ * @return  Returns 1 if successfully clear the filters, otherwise 0.
+ */
+int Cmiss_scene_clear_filter_options(struct Scene *scene)
+{
+	int return_code = 1;
+	if (scene)
+	{
+		scene->filters_list->clear();
+		scene->scene_rendition_show_visibility_on = -1;
+		if (scene->list_of_rendition)
+		{
+			scene->build = 1;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			scene->change_status = SCENE_CHANGE;
+			if (scene->scene_manager)
+			{
+				Scene_refresh( scene );
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_clear_filter_options.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+
+}
 
 int modify_Scene(struct Parse_state *state,void *scene_void,
 	void *modify_scene_data_void)
@@ -9020,10 +7843,10 @@ int modify_Scene(struct Parse_state *state,void *scene_void,
 LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Parser commands for modifying scenes - lighting, etc.
 ==============================================================================*/
 {
 	const char *graphical_element_mode_string,**valid_strings;
+	char *region_path;
 	enum Scene_graphical_element_mode graphical_element_mode,
 		old_graphical_element_mode;
 	int number_of_valid_strings,return_code;
@@ -9032,6 +7855,8 @@ Parser commands for modifying scenes - lighting, etc.
 	struct Scene *scene;
 	struct Light *light_to_add,*light_to_remove;
 	struct Modify_scene_data *modify_scene_data;
+	struct Cmiss_region *region;
+	int show_visibility_on;
 
 	ENTER(modify_Scene);
 	if (state)
@@ -9046,7 +7871,29 @@ Parser commands for modifying scenes - lighting, etc.
 					light_to_add=(struct Light *)NULL;
 					light_to_remove=(struct Light *)NULL;
 					old_graphical_element_mode=Scene_get_graphical_element_mode(scene);
-
+					region_path = NULL;
+					Cmiss_region *parent = ACCESS(Cmiss_region)(scene->region);
+					Cmiss_region *child = NULL;
+					Cmiss_region *top_region;
+					char clear_filter = 0;
+					char *with_graphic_name = NULL;
+					char *without_graphic_name = NULL;
+					show_visibility_on = scene->scene_rendition_show_visibility_on;
+					do {
+						if (child)
+							DEACCESS(Cmiss_region)(&child);
+						child = parent;
+						parent = Cmiss_region_get_parent(child);
+					}
+					while (parent != NULL);
+					if (child)
+					{
+						top_region = child;
+					}
+					else
+					{
+						top_region = ACCESS(Cmiss_region)(scene->region);
+					}
 					option_table=CREATE(Option_table)();
 					/* add_light */
 					Option_table_add_entry(option_table,"add_light",&light_to_add,
@@ -9065,6 +7912,19 @@ Parser commands for modifying scenes - lighting, etc.
 					/* remove_light */
 					Option_table_add_entry(option_table,"remove_light",&light_to_remove,
 						modify_scene_data->light_manager,set_Light);
+					/* show_visibility_on */
+					Option_table_add_entry(option_table,"show_visibility_on",
+						&(show_visibility_on), NULL, set_int);
+					/* show graphic name */
+					Option_table_add_entry(option_table,"show_graphic_with_name",
+					  &(with_graphic_name), NULL, set_name);
+					Option_table_add_entry(option_table,"show_graphic_without_name",
+					  &(without_graphic_name), NULL, set_name);
+					Option_table_add_entry(option_table,"clear_filter",
+						&clear_filter,(void *)NULL,set_char_flag);
+					/* region */
+					Option_table_add_entry(option_table, "top_region", &region_path,
+						top_region, set_Cmiss_region_path);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						Scene_begin_cache(scene);
@@ -9089,6 +7949,33 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_remove_light(scene,light_to_remove);
 						}
+						if (region_path)
+						{
+							region = Cmiss_region_find_subregion_at_path(top_region,
+									region_path);
+							if (region)
+							{
+								Cmiss_scene_set_region(scene,region);
+								Cmiss_region_destroy(&region);
+							}
+						}
+						if (clear_filter)
+						{
+							Cmiss_scene_clear_filter_options(scene);
+						}
+						if (scene->scene_rendition_show_visibility_on != show_visibility_on)
+						{
+							Cmiss_scene_set_rendition_visibility(scene, show_visibility_on);
+						}
+						if (with_graphic_name)
+						{
+						  Cmiss_scene_set_show_graphic_name(scene, with_graphic_name, 1);
+						}
+						if (without_graphic_name)
+						{
+						  Cmiss_scene_set_show_graphic_name(
+						    scene, without_graphic_name, 0);
+						}
 						Scene_end_cache(scene);
 					}
 					DESTROY(Option_table)(&option_table);
@@ -9096,9 +7983,25 @@ Parser commands for modifying scenes - lighting, etc.
 					{
 						DEACCESS(Light)(&light_to_add);
 					}
+					if (with_graphic_name)
+					{
+					  DEALLOCATE(with_graphic_name);
+					}
+					if (without_graphic_name)
+					{
+					  DEALLOCATE(without_graphic_name);
+					}
 					if (light_to_remove)
 					{
 						DEACCESS(Light)(&light_to_remove);
+					}
+					if (region_path)
+					{
+						DEALLOCATE(region_path);
+					}
+					if (top_region)
+					{
+						DEACCESS(Cmiss_region)(&top_region);
 					}
 				}
 				else
@@ -9160,6 +8063,7 @@ Parser commands for modifying scenes - lighting, etc.
 	return (return_code);
 } /* modify_Scene */
 
+#if defined (TO_BE_EDITED)
 int list_Scene(struct Scene *scene,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2000
@@ -9204,6 +8108,7 @@ Writes the properties of the <scene> to the command window.
 
 	return (return_code);
 } /* list_Scene */
+#endif /* defined (TO_BE_EDITED) */
 
 int gfx_modify_g_element_general(struct Parse_state *state,
 	void *cmiss_region_void, void *scene_void)
@@ -9223,8 +8128,8 @@ updates graphics of settings affected by the changes (probably all).
 	struct Set_FE_field_conditional_FE_region_data
 		native_discretization_field_conditional_data;
 	struct Element_discretization element_discretization;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
+// 	struct GT_element_group *gt_element_group;
+// 	struct GT_element_settings *settings;
 	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
@@ -9235,6 +8140,9 @@ updates graphics of settings affected by the changes (probably all).
 		/* get default scene */
 		if (scene = (struct Scene *)scene_void)
 		{
+			default_coordinate_field = NULL;
+			native_discretization_field = NULL;
+#if defined (TO_BE_EDITED)
 			/* if possible, get defaults from element_group on default scene */
 			if (gt_element_group=Scene_get_graphical_element_group(scene,
 						cmiss_region))
@@ -9263,6 +8171,7 @@ updates graphics of settings affected by the changes (probably all).
 				default_coordinate_field=(struct Computed_field *)NULL;
 				native_discretization_field=(struct FE_field *)NULL;
 			}
+#endif
 			/* ACCESS scene for use by set_Scene */
 			clear_flag=0;
 			ACCESS(Scene)(scene);
@@ -9304,6 +8213,7 @@ updates graphics of settings affected by the changes (probably all).
 			if (return_code = Option_table_multi_parse(option_table, state))
 			{
 				/* scene may have changed so get gt_element_group again */
+#if defined (TO_BE_EDITED)
 				if (gt_element_group=Scene_get_graphical_element_group(scene,
 					cmiss_region))
 				{
@@ -9340,6 +8250,9 @@ updates graphics of settings affected by the changes (probably all).
 						"gfx_modify_g_element_general.  Missing gt_element_group");
 					return_code=0;
 				}
+#else
+				return_code = 0;
+#endif
 			} /* parse error, help */
 			DESTROY(Option_table)(&option_table);
 			if (default_coordinate_field)
@@ -9375,10 +8288,11 @@ updates graphics of settings affected by the changes (probably all).
 
 struct Scene_graphics_object_iterator_data
 {
+	const char *graphic_name;
 	graphics_object_tree_iterator_function iterator_function;
 	void *user_data;
 };
-
+#if defined (TO_BE_EDITED)
 static int Scene_graphics_objects_in_GT_element_settings_iterator(
 	struct GT_element_settings *settings, void *data_void)
 /*******************************************************************************
@@ -9412,7 +8326,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Scene_graphics_objects_in_GT_element_settings_iterator */
+#endif
 
+#if defined (USE_SCENE_OBJECT)
 static int Scene_graphics_objects_in_Scene_object_iterator(
 	struct Scene_object *scene_object, void *data_void)
 /*******************************************************************************
@@ -9474,6 +8390,40 @@ DESCRIPTION :
 	
 	return (return_code);
 } /* Scene_graphics_objects_in_Scene_object_iterator */
+#endif /* defined (USE_SCENE_OBJECT) */
+
+static int Scene_graphics_objects_in_Cmiss_graphic_iterator(
+	struct Cmiss_graphic *graphic, void *data_void)
+{
+	int return_code;
+	struct GT_object *graphics_object;
+	struct Scene_graphics_object_iterator_data *data;
+ 
+	ENTER(Scene_graphics_objects_in_Cmiss_graphic_iterator);
+	if (graphic && (data = (struct Scene_graphics_object_iterator_data *)data_void))
+	{
+		if (!data->graphic_name || 
+			Cmiss_graphic_has_name(graphic, (void *)data->graphic_name))
+		{
+			if (Cmiss_graphic_get_visibility(graphic) &&
+				(graphics_object = Cmiss_graphic_get_graphics_object(
+					 graphic)))
+			{
+				(data->iterator_function)(graphics_object, 0.0, data->user_data);			
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_graphics_objects_in_GT_element_settings_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_graphics_objects_in_GT_element_settings_iterator */
 
 int for_each_graphics_object_in_scene(struct Scene *scene,
 	graphics_object_tree_iterator_function iterator_function,
@@ -9483,11 +8433,11 @@ LAST MODIFIED : 29 July 1998
 
 DESCRIPTION :
 This function iterates through every graphics object in the scene
-including those in each individual settings of the graphical finite
+including those in each settings of the graphical finite
 elements and those chained together with other graphics objects
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Scene_graphics_object_iterator_data data;
 
 	ENTER(for_each_graphics_object_in_scene);
@@ -9496,10 +8446,16 @@ elements and those chained together with other graphics objects
 	{
 		data.iterator_function = iterator_function;
 		data.user_data = user_data;
-		
-		for_each_Scene_object_in_Scene(scene,
-			Scene_graphics_objects_in_Scene_object_iterator, (void *)&data);
-		return_code = 1;
+		data.graphic_name = NULL;
+		std::set<struct Cmiss_rendition *>::iterator pos =
+			scene->list_of_rendition->begin();
+		while (pos != scene->list_of_rendition->end())
+		{
+			/* pos->second is the visibility of rendition in scene */
+			return_code = for_each_graphic_in_Cmiss_rendition(*pos,
+				Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
+			++pos;
+		}
 	}
 	else
 	{
@@ -9530,7 +8486,7 @@ in the <scene> which point to this spectrum.
 	if (graphics_object &&
 		(data = (struct Scene_get_data_range_for_spectrum_data *)data_void))
 	{
-		if ( get_GT_object_spectrum(graphics_object) == data->spectrum )
+		if (get_GT_object_spectrum(graphics_object) == data->spectrum )
 		{
 			get_graphics_object_data_range(graphics_object,
 				(void *)&(data->range));
@@ -9574,10 +8530,8 @@ in the <scene> which point to this spectrum.
 		data.range.first = 1;
 		data.range.minimum = 0;
 		data.range.maximum = 0;
-
 		for_each_graphics_object_in_scene(scene,
 			Scene_get_data_range_for_spectrum_iterator, (void *)&data);
-
 		if ( data.range.first )
 		{
 			*range_set = 0;
@@ -9608,6 +8562,7 @@ struct Temp_data
 	 const char *name;
 };
 
+#if defined (TO_BE_EDITED)
 int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_object,
 	 void *temp_data_void)
 {
@@ -9670,40 +8625,336 @@ int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_objec
 	return (return_code);
 }
 
-int for_each_graphics_object_in_scene_get_command_list(struct Scene *scene,
-	 void *write_into_comfile_void)
-/*******************************************************************************
-LAST MODIFIED :  13 Aug 2007
+#endif /* defined (TO_BE_EDITED) */
 
-DESCRIPTION :
-This function iterates through every graphics object in the scene
-including those in each individual settings of the graphical finite
-elements and those chained together with other graphics objects
-==============================================================================*/
+int Cmiss_scene_set_name(struct Scene *scene, const char *name)
 {
-	 int return_code;
-	 struct Temp_data *temp_data;
-	 ENTER(for_each_graphics_object_in_scene_get_command_list);
-	 USE_PARAMETER(scene);
-	 if (ALLOCATE(temp_data,struct Temp_data,1))
-	 {
-			temp_data->write_into_comfile = (char *)write_into_comfile_void;
-			temp_data->name = scene->name;
-			
-			if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))
+	int return_code;
+	
+	ENTER(Cmiss_scene_set_name);
+	if (scene && name)
+	{
+		if (scene->name)
+		{
+			DEALLOCATE(scene->name);
+		}
+		if (scene->name=duplicate_string(name))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+			display_message(ERROR_MESSAGE,
+				" Cmiss_scene_set_name. Cannot duplicate name to scene");
+		}
+	}
+	else
+	{
+		return_code = 0;
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_set_name. Invalid argument(s)");
+	}
+	return (return_code);
+}
+
+struct Cmiss_region *Cmiss_scene_get_region(Scene *scene)
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_scene_get_region);
+	if (scene)
+	{
+		region = scene->region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				" Cmiss_scene_get_region. Invalid argument(s)");	
+		region = (struct Cmiss_region *)NULL;
+	}
+	LEAVE;
+
+	return region;
+}
+
+int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
+{
+  int return_code;
+
+	ENTER(Cmiss_scene_set_region);
+	if (scene && region)
+	{
+		if (scene->region != region)
+		{
+			REACCESS(Cmiss_region)(&(scene->region), region);
+
+			if (scene->list_of_rendition)
 			{
-				 FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-						list_scene_object_in_scene_get_command_list, (void *)temp_data,
-						scene->scene_object_list);
-				 return_code = 1;
+				if (!scene->list_of_rendition->empty())
+				{
+					std::set<struct Cmiss_rendition *>::iterator pos =
+						scene->list_of_rendition->begin();
+					while (pos != scene->list_of_rendition->end())
+					{
+						Cmiss_rendition_remove_scene(*pos, scene);
+						++pos;
+					}
+					scene->list_of_rendition->clear();
+				}
 			}
 			else
 			{
-				 return_code = 0;
+				scene->list_of_rendition = new std::set<struct Cmiss_rendition *>;
 			}
-			DEALLOCATE(temp_data);
-	 }
-	 LEAVE;
-	 
-	 return (return_code);
-} /* for_each_graphics_object_in_scene */
+			Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+			if (rendition)
+			{
+				Cmiss_rendition_add_scene(rendition, scene, 1);
+				DEACCESS(Cmiss_rendition)(&rendition);
+			}
+			Scene_changed_private(scene, 0);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_set_region. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+struct Scene *Cmiss_scene_create(void)
+{
+	Scene *scene;
+
+	ENTER(Cmiss_scene_create);
+	if (!(scene = CREATE(Scene)()))
+	{
+		scene = NULL;
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_create. Cannot create scene");
+	}
+	LEAVE;
+
+	return (scene);
+}
+
+static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
+	void *scene_void)
+{
+	int return_code;
+	struct Scene *scene;
+	
+	ENTER(Scene_rendition_update_callback);
+	if (rendition &&(scene = (struct Scene *)scene_void))
+	{
+		Scene_notify_object_changed(scene,0);
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_scene_enable_rendition(Scene *scene)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_enable_rendition);
+	if (scene)
+	{
+		if (scene->region)
+		{
+			struct Cmiss_rendition *rendition;
+			if (rendition = Cmiss_region_get_rendition(scene->region))
+			{
+				Cmiss_rendition_add_scene(rendition,scene,/*hieracrical*/1);
+				Cmiss_rendition_add_callback(rendition,
+					Scene_rendition_update_callback,
+					(void *)scene);
+				Cmiss_rendition_set_graphics_managers_callback(rendition);
+				DEACCESS(Cmiss_rendition)(&rendition);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_enable_rendition. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Scene_rendition_changed(
+	struct Scene *scene,struct Cmiss_rendition *rendition)
+{
+	int return_code;
+
+	ENTER(Scene_rendition_changed);
+	USE_PARAMETER(rendition);
+	if (scene)
+	{
+		return_code = 0;
+		/* mark scene as needing a build */
+		if (scene->list_of_rendition &&	
+			(scene->list_of_rendition->find(rendition)!=scene->list_of_rendition->end()))
+		{
+			scene->build = 1;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			scene->change_status = SCENE_CHANGE;
+			if (scene->scene_manager)
+			{
+				return_code = Scene_refresh( scene );
+			}
+			else
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_changed_private.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_changed_private */
+
+int Cmiss_scene_add_rendition(Scene *scene, struct Cmiss_rendition *rendition)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_add_rendition);
+
+	if (scene && rendition)
+	{
+		if (!scene->list_of_rendition)
+		{
+			scene->list_of_rendition = new std::set<struct Cmiss_rendition *>;
+		}
+		scene->list_of_rendition->insert(rendition);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_add_rendition. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_scene_remove_rendition(Scene *scene, struct Cmiss_rendition *rendition)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_remove_rendition);
+
+	if (scene && scene->list_of_rendition && rendition )
+	{
+		scene->list_of_rendition->erase(rendition);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_remove_rendition. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const char *graphic_name,
+	graphics_object_tree_iterator_function iterator_function, void *user_data)
+{
+	int return_code = 0;
+	struct Scene_graphics_object_iterator_data data;
+	
+	ENTER(Scene_export_region_graphics_object);
+	
+	if (scene && region && iterator_function && user_data)
+	{
+		data.iterator_function = iterator_function;
+		data.user_data = user_data;
+		data.graphic_name = graphic_name;
+		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+		if (rendition)
+		{
+			std::set<struct Cmiss_rendition *>::iterator pos =
+				scene->list_of_rendition->find(rendition);
+			if (pos != scene->list_of_rendition->end())
+			{
+				return_code = for_each_graphic_in_Cmiss_rendition(*pos,
+					Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
+			}
+			DEACCESS(Cmiss_rendition)(&rendition);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_export_region_graphics_object.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Scene_add_graphics_object(struct Scene *scene,
+	struct GT_object *graphics_object, const char *cmiss_graphic_name)
+{
+	char *graphics_object_name = NULL;
+	int return_code = 0;
+	struct Cmiss_rendition *rendition = NULL;
+
+	ENTER(Scene_add_graphics_object);
+	if (scene && graphics_object)
+	{
+		if (scene->region && 
+			(NULL != (rendition = Cmiss_region_get_rendition(scene->region))))
+		{
+			if (!cmiss_graphic_name)
+			{
+				GET_NAME(GT_object)(graphics_object, &graphics_object_name);
+				cmiss_graphic_name = graphics_object_name;
+			}
+			return_code = Cmiss_rendition_add_glyph(rendition, graphics_object, 
+				cmiss_graphic_name);
+			DEACCESS(Cmiss_rendition)(&rendition);
+			if (graphics_object_name)
+			{
+					DEALLOCATE(graphics_object_name);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_add_graphics_object.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* Scene_add_graphics_object */
+
