@@ -4007,14 +4007,17 @@ int DESTROY(Cmiss_rendition)(
 		{
 			DEACCESS(Computed_field)(&(cmiss_rendition->selection_group));
 		}
-		if (cmiss_rendition->list_of_scene && 
-			!cmiss_rendition->list_of_scene->empty())
+		if (cmiss_rendition->list_of_scene)
 		{
-			std::list<struct Scene *>::iterator pos = 
-				cmiss_rendition->list_of_scene->begin();
-			while (pos != cmiss_rendition->list_of_scene->end())			{
-				Cmiss_scene_remove_rendition(*pos,cmiss_rendition);
-				++pos;
+			if (!cmiss_rendition->list_of_scene->empty())
+			{
+				std::list<struct Scene *>::iterator pos =
+					cmiss_rendition->list_of_scene->begin();
+				while (pos != cmiss_rendition->list_of_scene->end())
+				{
+					Cmiss_scene_remove_rendition(*pos,cmiss_rendition);
+					++pos;
+				}
 			}
 			delete cmiss_rendition->list_of_scene;
 		}

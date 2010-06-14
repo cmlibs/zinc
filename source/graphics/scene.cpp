@@ -3192,20 +3192,34 @@ Closes the scene and disposes of the scene data structure.
 			{
 				glDeleteLists(scene->end_ndc_display_list,1);
 			}
-			if (scene->list_of_rendition && 
-				!scene->list_of_rendition->empty())
+			if (scene->list_of_rendition)
 			{
-				std::set<struct Cmiss_rendition *>::iterator pos =
-					scene->list_of_rendition->begin();
-				while (pos != scene->list_of_rendition->end())
+				if (!scene->list_of_rendition->empty())
 				{
-					Cmiss_rendition_remove_scene(*pos, scene);
-					++pos;
+					std::set<struct Cmiss_rendition *>::iterator pos =
+						scene->list_of_rendition->begin();
+					while (pos != scene->list_of_rendition->end())
+					{
+						Cmiss_rendition_remove_scene(*pos, scene);
+						++pos;
+					}
 				}
-				scene->list_of_rendition->~set();
+				delete scene->list_of_rendition;
 			}
 			if (scene->filters_list)
 			{
+				std::string name("rendition_visibility");
+				Filtering_list_iterator pos=(scene->filters_list)->find(name);
+				if (pos != scene->filters_list->end())
+				{
+					SceneFiltersNoValueFunctor<Cmiss_rendition *> *functor =
+						reinterpret_cast<SceneFiltersNoValueFunctor<Cmiss_rendition *>*>(pos->second);
+					scene->filters_list->erase(name);
+					if (functor)
+					{
+						delete functor;
+					}
+				}
 				delete scene->filters_list;
 				scene->filters_list = NULL;
 			}
