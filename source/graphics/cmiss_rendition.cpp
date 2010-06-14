@@ -420,9 +420,10 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 	struct Cmiss_rendition *cmiss_rendition;
 
 	ENTER(CREATE(Cmiss_rendition));
-	if (cmiss_region && (fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-			(data_fe_region = FE_region_get_data_FE_region(fe_region)))
+	data_fe_region = NULL;
+	if (cmiss_region && (fe_region = Cmiss_region_get_FE_region(cmiss_region)))
 	{
+		data_fe_region = FE_region_get_data_FE_region(fe_region);
 		if (ALLOCATE(cmiss_rendition, struct Cmiss_rendition, 1))
 		{
 			cmiss_rendition->list_of_graphic = NULL;
@@ -1072,19 +1073,20 @@ int Cmiss_region_attach_rendition(struct Cmiss_region *region,
 	struct Any_object *any_object;
 
 	ENTER(Cmiss_region_attach_rendition);	
+
 	if (NULL != (any_object = CREATE(ANY_OBJECT(Cmiss_rendition))(rendition)) &&
 		Cmiss_region_private_attach_any_object(region, any_object))
 	{
 		Cmiss_region_add_callback(rendition->region,
 			Cmiss_rendition_region_change, (void *)rendition);
-		FE_region_add_callback(rendition->fe_region,
-			Cmiss_rendition_FE_region_change, (void *)rendition);
-		rendition->fe_region_callback_set = 1;
+		rendition->fe_region_callback_set =
+			FE_region_add_callback(rendition->fe_region,
+				Cmiss_rendition_FE_region_change, (void *)rendition);
 		if (rendition->data_fe_region)
 		{
-			FE_region_add_callback(rendition->data_fe_region,
-				Cmiss_rendition_data_FE_region_change, (void *)rendition);
-		rendition->data_fe_region_callback_set = 1;
+			rendition->data_fe_region_callback_set =
+				FE_region_add_callback(rendition->data_fe_region,
+					Cmiss_rendition_data_FE_region_change, (void *)rendition);
 		}
 		/* request callbacks from any managers supplied */
 		if (rendition->computed_field_manager)
@@ -4061,13 +4063,13 @@ int DESTROY(Cmiss_rendition)(
 			DESTROY(LIST(Cmiss_graphic))(
 				&(cmiss_rendition->list_of_graphic));
 		}
-		if (cmiss_rendition->fe_region)
-		{
-			DEACCESS(FE_region)(&(cmiss_rendition->fe_region));
-		}
 		if (cmiss_rendition->data_fe_region)
 		{
 			DEACCESS(FE_region)(&(cmiss_rendition->data_fe_region));
+		}
+		if (cmiss_rendition->fe_region)
+		{
+			DEACCESS(FE_region)(&(cmiss_rendition->fe_region));
 		}
 		callback_data = cmiss_rendition->update_callback_list;
 		while(callback_data)
