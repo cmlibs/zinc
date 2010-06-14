@@ -67,6 +67,7 @@ public:
 		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
 	{
 		USE_PARAMETER(user_interface);
+		callback = NULL;
 		build_main_menu(number_of_items, items, item_names, current_object);
 
 		Connect(wxEVT_COMMAND_CHOICE_SELECTED,
@@ -80,9 +81,13 @@ public:
 		Show();
 	}
 
-// 	 ~wxChooser()
-// 	 {
-// 	 }
+	~wxChooser()
+ 	 {
+		if (callback)
+		{
+			delete callback;
+		}
+ 	 }
 
 	void OnChoiceSelected(wxCommandEvent& event)
 	{
@@ -100,6 +105,11 @@ public:
 
 	int set_callback(Callback_base< Object > *callback_object)
 	{
+		if (callback)
+		{
+			delete callback;
+			callback = NULL;
+		}
 		callback = callback_object;
 		return (1);
 	}

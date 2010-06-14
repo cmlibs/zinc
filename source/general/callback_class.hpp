@@ -58,8 +58,6 @@ public:
 	}
 	virtual int callback_function(Object object) = 0;
 
-protected:
-
 	virtual ~Callback_base()
 	{
 	}

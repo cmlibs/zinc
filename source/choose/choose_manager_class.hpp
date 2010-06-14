@@ -151,6 +151,10 @@ DESCRIPTION :
 		{
 			manager->deregister_callback(manager_callback_id);
 		}
+		if (update_callback)
+		{
+			delete update_callback;
+		}
 		delete manager;
 
 	} /* Managed_object_chooser::~Managed_object_chooser() */
@@ -228,6 +232,11 @@ DESCRIPTION :
 Changes the callback item.
 ============================================================================*/
 	{
+		if (update_callback)
+		{
+			delete update_callback;
+			update_callback = NULL;
+		}
 		update_callback = new_callback;
 		return(1);
 	} /* Managed_object_chooser::set_callback */
