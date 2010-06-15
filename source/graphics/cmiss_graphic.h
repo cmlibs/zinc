@@ -165,6 +165,10 @@ Structure modified by g_element modify routines.
 {
 	char delete_flag;
 	int position;
+	int circle_discretization;
+	struct FE_field *native_discretization_field;
+	struct Element_discretization element_discretization;
+	struct Computed_field *default_coordinate_field;
 	struct Scene *scene;
 	struct Cmiss_graphic *graphic;
 }; /* struct Modify_graphic_data */

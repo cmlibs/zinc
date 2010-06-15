@@ -840,7 +840,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				element_dimension = get_FE_element_dimension(element);
 				/* g_element renditions use only one time = 0.0. Must take care. */
 				time = 0.0;
-				//printf("%f ",graphic_to_object_data->time);
 				switch (graphic->graphic_type)
 				{
 					case CMISS_GRAPHIC_LINES:
@@ -2332,7 +2331,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			(CMISS_GRAPHIC_ELEMENT_POINTS!=graphic->graphic_type) &&
 			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type))
 		{
-			sprintf(temp_string, " discretization %d*%d*%d", 
+			sprintf(temp_string, " discretization \"%d*%d*%d\"",
 				graphic->discretization.number_in_xi1,
 				graphic->discretization.number_in_xi2,
 				graphic->discretization.number_in_xi3);
@@ -2901,7 +2900,6 @@ int Cmiss_graphic_to_static_graphics_object_at_time(
 
 	return (return_code);
 }
-
 
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
@@ -5174,6 +5172,17 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
+				}
 				if (graphic)
 				{
 					/* access since deaccessed in gfx_modify_rendition */
@@ -5620,6 +5629,17 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
+				}
 				if (graphic)
 				{
 					/* access since deaccessed in gfx_modify_rendition */
@@ -5944,6 +5964,17 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
+				}
 				if (graphic)
 				{
 					/* access since deaccessed in gfx_modify_rendition */
@@ -6261,6 +6292,17 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
+				}
 				if (graphic)
 				{
 					/* access since deaccessed in gfx_modify_rendition */
@@ -6470,6 +6512,17 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
+				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
 				}
 				if (graphic)
 				{
@@ -6707,6 +6760,17 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
+				}
+				else
+				{
+					Cmiss_graphic_set_native_discretization_field(
+						graphic, modify_rendition_data->native_discretization_field);
+					Cmiss_graphic_set_coordinate_field(
+						graphic, modify_rendition_data->default_coordinate_field);
+					Cmiss_graphic_set_circle_discretization(
+						graphic, modify_rendition_data->circle_discretization);
+					Cmiss_graphic_set_discretization(
+						graphic, &(modify_rendition_data->element_discretization));
 				}
 				if (graphic)
 				{
@@ -7026,6 +7090,17 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
 			}
 			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
+		}
+		else
+		{
+			Cmiss_graphic_set_native_discretization_field(
+				graphic, modify_rendition_data->native_discretization_field);
+			Cmiss_graphic_set_coordinate_field(
+				graphic, modify_rendition_data->default_coordinate_field);
+			Cmiss_graphic_set_circle_discretization(
+				graphic, modify_rendition_data->circle_discretization);
+			Cmiss_graphic_set_discretization(
+				graphic, &(modify_rendition_data->element_discretization));
 		}
 		if (graphic)
 		{
@@ -7408,6 +7483,17 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
 			}
 			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
+		}
+		else
+		{
+			Cmiss_graphic_set_native_discretization_field(
+				graphic, modify_rendition_data->native_discretization_field);
+			Cmiss_graphic_set_coordinate_field(
+				graphic, modify_rendition_data->default_coordinate_field);
+			Cmiss_graphic_set_circle_discretization(
+				graphic, modify_rendition_data->circle_discretization);
+			Cmiss_graphic_set_discretization(
+				graphic, &(modify_rendition_data->element_discretization));
 		}
 		if (graphic)
 		{

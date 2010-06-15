@@ -1041,10 +1041,9 @@ a single point in 3-D space with an axes glyph.
 				}
 				else
 				{
-	  display_message(ERROR_MESSAGE,
-	    "Glyph name '%s' not found",
-	    glyph_name);
-	    }
+					display_message(ERROR_MESSAGE,
+						"Glyph name '%s' not found", glyph_name);
+				}
 			}
 
 			if (return_code)
@@ -8154,7 +8153,6 @@ Executes a GFX DRAW command.
 			{
 				if (scene)
 				{
-					set_GT_object_default_material(graphics_object, NULL);
 					return_code = Scene_add_graphics_object(scene, graphics_object,
 						graphic_name);
 					if (time_object_name)
@@ -13193,6 +13191,12 @@ Parameter <help_mode> should be NULL when calling this function.
 				modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
 				modify_rendition_data.scene =
 					ACCESS(Scene)(command_data->default_scene);
+				modify_rendition_data.default_coordinate_field = NULL;
+				modify_rendition_data.circle_discretization = 4;
+				modify_rendition_data.native_discretization_field = NULL;
+				modify_rendition_data.element_discretization.number_in_xi1 = 4;
+				modify_rendition_data.element_discretization.number_in_xi2 = 4;
+				modify_rendition_data.element_discretization.number_in_xi3 = 4;
 				/* Look ahead for the "as" option and find the settings with that name
 					if there is one.  Then the modify routines can keep the previous defaults */
 				if (state && (previous_state_index = state->current_index))
@@ -13209,20 +13213,29 @@ Parameter <help_mode> should be NULL when calling this function.
 					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
 					return_code = Option_table_multi_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
-					if (return_code && graphic_name)
+					if (return_code)
 					{		
 						if (rendition = Cmiss_region_get_rendition(region))
 						{
-							if (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
-										rendition, Cmiss_graphic_has_name, (void *)graphic_name))
+							if (graphic_name && (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
+										rendition, Cmiss_graphic_has_name, (void *)graphic_name)))
 							{
 								ACCESS(Cmiss_graphic)(modify_rendition_data.graphic);
 							}
+							modify_rendition_data.default_coordinate_field =
+								Cmiss_rendition_get_default_coordinate_field(rendition);
+							modify_rendition_data.circle_discretization =
+								Cmiss_rendition_get_circle_discretization(rendition);
+							modify_rendition_data.native_discretization_field =
+									Cmiss_rendition_get_native_discretization_field(rendition);
+							struct Element_discretization element_discretization;
+							Cmiss_rendition_get_element_discretization(rendition,
+								&element_discretization);
+							modify_rendition_data.element_discretization =
+								element_discretization;
 							DEACCESS(Cmiss_rendition)(&rendition);
 						}
 					}
-					
-
 					if (dummy_string)
 					{
 						DEALLOCATE(dummy_string);

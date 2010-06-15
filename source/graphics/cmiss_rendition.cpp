@@ -2674,8 +2674,6 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			element_discretization.number_in_xi1=-1;
 			element_discretization.number_in_xi2=-1;
 			element_discretization.number_in_xi3=-1;
-			default_coordinate_field=(struct Computed_field *)NULL;
-			native_discretization_field=(struct FE_field *)NULL;
 		}
 
 		if (rendition)
@@ -4166,6 +4164,12 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 		{
 			Cmiss_rendition_begin_change(rendition);
 			Cmiss_graphic *graphic = Cmiss_rendition_create_static(rendition);
+			struct Graphical_material *material = get_GT_object_default_material(glyph);
+			if (!material)
+			{
+				material = Material_package_get_default_material(
+						rendition->graphics_module->material_package);
+			}
 			set_GT_object_default_material(glyph, NULL);
 			if (graphic && Cmiss_graphic_set_name(graphic, cmiss_graphic_name))
 			{
@@ -4173,10 +4177,8 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 				struct GT_object *old_glyph;
 				Triple glyph_centre,glyph_scale_factors,glyph_size;
 				enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-				struct Graphical_material *default_material = Material_package_get_default_material(
-						rendition->graphics_module->material_package);
-				if (Cmiss_graphic_set_material(graphic, default_material) &&
-					Cmiss_graphic_set_selected_material(graphic, default_material) &&
+				if (Cmiss_graphic_set_material(graphic, material) &&
+					Cmiss_graphic_set_selected_material(graphic, material) &&
 					Cmiss_graphic_get_glyph_parameters(
 						graphic, &old_glyph, &glyph_scaling_mode,
 						glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
