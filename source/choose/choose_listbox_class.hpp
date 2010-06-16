@@ -61,6 +61,7 @@ public:
 			User_interface *user_interface) :
 			wxListBox(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1), 0, NULL, wxLB_SINGLE)
 	{
+		callback = NULL;
 		USE_PARAMETER(user_interface);
 		build_main_menu(number_of_items, items, item_names, current_object);
 		Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
@@ -71,6 +72,14 @@ public:
 		parent->SetSizer(sizer);
 		Show();
 	}
+
+	 ~wxObjectListBox()
+	 {
+		 if (callback)
+		 {
+			 delete callback;
+		 }
+	 }
 
 	void OnListItemSelected(wxCommandEvent& event)
 	{
@@ -88,6 +97,10 @@ public:
 
 	int set_callback(Callback_base< Object > *callback_object)
 	{
+		 if (callback)
+		 {
+			 delete callback;
+		 }
 		callback = callback_object;
 		return (1);
 	}

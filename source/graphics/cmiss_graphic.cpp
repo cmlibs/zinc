@@ -42,6 +42,9 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 #include <string>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/cmgui_configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
@@ -65,6 +68,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
+#include "finite_element/finite_element_to_iso_surfaces.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/cmiss_graphic.h"
@@ -291,7 +295,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphic_glyph_scaling_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -851,40 +855,20 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					{
 						if (graphic_to_object_data->existing_graphics)
 						{
-							polyline = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_polyline)
-								(graphic_to_object_data->existing_graphics, time,
-									element_graphics_name);
-						}
-						else
-						{
-							polyline = (struct GT_polyline *)NULL;
+							/* So far ignore these */
 						}
 						if (draw_element)
 						{
-							if (polyline ||
-								(polyline = create_GT_polyline_from_FE_element(element,
-									graphic_to_object_data->rc_coordinate_field,
-									graphic->data_field, number_in_xi[0], top_level_element,
-									graphic_to_object_data->time, graphic->line_width)))
-							{
-								if (!GT_OBJECT_ADD(GT_polyline)(
-									graphic->graphics_object, time, polyline))
-								{
-									DESTROY(GT_polyline)(&polyline);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							if (polyline)
-							{
-								DESTROY(GT_polyline)(&polyline);
-							}
+							return_code =
+								FE_element_add_line_to_vertex_array(element,
+								GT_object_get_vertex_set(graphic->graphics_object),
+								graphic_to_object_data->rc_coordinate_field,
+								graphic->data_field,
+								graphic_to_object_data->number_of_data_values,
+								graphic_to_object_data->data_copy_buffer,
+								graphic->texture_coordinate_field,
+								number_in_xi[0], top_level_element,
+								graphic_to_object_data->time);
 						}
 					} break;
 					case CMISS_GRAPHIC_CYLINDERS:
@@ -1057,6 +1041,49 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										if (voltex)
 										{
 											DESTROY(GT_voltex)(&voltex);
+										}
+									}
+								}
+							} break;
+							case g_SURFACE:
+							{
+								if (3 == element_dimension)
+								{
+									if (graphic_to_object_data->existing_graphics)
+									{
+										surface = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_surface)
+											(graphic_to_object_data->existing_graphics, time,
+												element_graphics_name);
+									}
+									else
+									{
+										surface = (struct GT_surface *)NULL;
+									}
+									if (draw_element)
+									{
+										if (NULL != surface)
+										{
+											if (!GT_OBJECT_ADD(GT_surface)(
+												graphic->graphics_object, time, surface))
+											{
+												DESTROY(GT_surface)(&surface);
+												return_code = 0;
+											}
+										}
+										else
+										{
+											return_code = create_iso_surfaces_from_FE_element_new(element,
+												graphic_to_object_data->time, number_in_xi,
+												graphic_to_object_data->iso_surface_specification,
+												graphic->graphics_object,
+												graphic->render_type);
+										}
+									}
+									else
+									{
+										if (surface)
+										{
+											DESTROY(GT_surface)(&surface);
 										}
 									}
 								}
@@ -2978,7 +3005,7 @@ int Cmiss_graphic_to_graphics_object(
 	struct FE_element *first_element;
 	struct FE_region *fe_region;
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data;
-	struct GT_glyph_set *glyph_set;
+	struct GT_glyph_set *glyph_set = NULL;
 	struct Cmiss_graphic_select_graphics_data select_data;
 
 	ENTER(Cmiss_graphic_to_graphics_object);
@@ -3039,7 +3066,7 @@ int Cmiss_graphic_to_graphics_object(
 								strlen(graphic_to_object_data->name_prefix) +
 								strlen(graphic_name) + 4))
 						{
-							sprintf(graphics_object_name, "%s_%s",
+							sprintf(graphics_object_name, "%s.%s",
 								graphic_to_object_data->name_prefix, graphic_name);
 							if (graphic->graphics_object)
 							{
@@ -3069,7 +3096,7 @@ int Cmiss_graphic_to_graphics_object(
 								{
 									case CMISS_GRAPHIC_LINES:
 									{
-										graphics_object_type = g_POLYLINE;
+										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
 									} break;
 									case CMISS_GRAPHIC_CYLINDERS:
 									case CMISS_GRAPHIC_SURFACES:
@@ -3082,7 +3109,8 @@ int Cmiss_graphic_to_graphics_object(
 										{
 											case USE_ELEMENTS:
 											{
-												graphics_object_type = g_VOLTEX;
+												//graphics_object_type = g_VOLTEX; // for old isosurfaces
+												graphics_object_type = g_SURFACE; // for new isosurfaces
 												if (NULL != (first_element = FE_region_get_first_FE_element_that(
 															 fe_region, FE_element_is_top_level, (void *)NULL)))
 												{
@@ -3173,15 +3201,20 @@ int Cmiss_graphic_to_graphics_object(
 						}
 						if (graphic_name)
 							DEALLOCATE(graphic_name);
+						if (graphic->data_field)
+						{
+							graphic_to_object_data->number_of_data_values =
+								Computed_field_get_number_of_components(graphic->data_field);
+							ALLOCATE(graphic_to_object_data->data_copy_buffer,
+								FE_value, graphic_to_object_data->number_of_data_values);
+						}
 						if (graphic->graphics_object)
 						{
 							graphic->selected_graphics_changed=1;
 							coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
-							if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
-							{
-								GT_object_set_coordinate_system(graphic->graphics_object,
-									g_NDC_COORDINATES);
-							}
+							GT_object_set_coordinate_system(graphic->graphics_object,
+								(NORMALISED_WINDOW_COORDINATES == coordinate_system->type) ?
+									g_NDC_COORDINATES : g_MODEL_COORDINATES);
 							/* need graphic for FE_element_to_graphics_object routine */
 							graphic_to_object_data->graphic=graphic;
 							switch (graphic->graphic_type)
@@ -3229,10 +3262,9 @@ int Cmiss_graphic_to_graphics_object(
 									Cmiss_graphic_to_static_graphics_object_at_time(
 										graphic, time);
 								} break;
-								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_LINES:
-#if defined(USE_OPENCASCADE)
 								{
+#if defined(USE_OPENCASCADE)
 									// test here for domain of rc_coordinate_field
 									// if it is a cad_geometry do something about it
 									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
@@ -3255,8 +3287,22 @@ int Cmiss_graphic_to_graphics_object(
 									}
 									if ( domain_field_list )
 										DESTROY_LIST(Computed_field)(&domain_field_list);
-								}
 #endif /* defined(USE_OPENCASCADE) */
+									GT_polyline_vertex_buffers *lines =
+										CREATE(GT_polyline_vertex_buffers)(
+										g_PLAIN, graphic->line_width);
+									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+										graphic->graphics_object, lines))
+									{
+										return_code = FE_region_for_each_FE_element(fe_region,
+											FE_element_to_graphics_object, graphic_to_object_data_void);
+									}
+									else
+									{
+										//DESTROY(GT_polyline_vertex_buffers)(lines);
+										return_code = 0;
+									}
+								}
 								case CMISS_GRAPHIC_SURFACES:
 #if defined(USE_OPENCASCADE)
 								{
@@ -3284,6 +3330,7 @@ int Cmiss_graphic_to_graphics_object(
 										DESTROY_LIST(Computed_field)(&domain_field_list);
 								}
 #endif /* defined(USE_OPENCASCADE) */
+								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_ELEMENT_POINTS:
 								{
 									return_code = FE_region_for_each_FE_element(fe_region,
@@ -3291,22 +3338,46 @@ int Cmiss_graphic_to_graphics_object(
 								} break;
 								case CMISS_GRAPHIC_ISO_SURFACES:
 								{
-									return_code = FE_region_for_each_FE_element(fe_region,
-										FE_element_to_graphics_object, 
-										graphic_to_object_data_void);
-									/* If the isosurface is a volume we can decimate and
-										then normalise, otherwise if it is a polyline
-										representing a isolines, skip over. */
-									if (g_VOLTEX == GT_object_get_type(graphic->graphics_object))
+									if (0 < graphic->number_of_iso_values)
 									{
-										/* Decimate */
-										if (graphic->decimation_threshold > 0.0)
+										if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
 										{
-											GT_object_decimate_GT_voltex(graphic->graphics_object,
-												graphic->decimation_threshold);
+											graphic_to_object_data->iso_surface_specification =
+												Iso_surface_specification_create(
+													graphic->number_of_iso_values, graphic->iso_values,
+													graphic->first_iso_value, graphic->last_iso_value,
+													graphic_to_object_data->rc_coordinate_field,
+													graphic->data_field,
+													graphic->iso_scalar_field,
+													graphic->texture_coordinate_field);
 										}
-										/* Normalise normals now that the entire mesh has been calculated */
-										GT_object_normalise_GT_voltex_normals(graphic->graphics_object);
+										return_code = FE_region_for_each_FE_element(fe_region,
+											FE_element_to_graphics_object,
+											graphic_to_object_data_void);
+										if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
+										{
+											Iso_surface_specification_destroy(&graphic_to_object_data->iso_surface_specification);
+											/* Decimate */
+											if (graphic->decimation_threshold > 0.0)
+											{
+												GT_object_decimate_GT_surface(graphic->graphics_object,
+													graphic->decimation_threshold);
+											}
+										}
+										/* If the isosurface is a volume we can decimate and
+											then normalise, otherwise if it is a polyline
+											representing a isolines, skip over. */
+										if (g_VOLTEX == GT_object_get_type(graphic->graphics_object))
+										{
+											/* Decimate */
+											if (graphic->decimation_threshold > 0.0)
+											{
+												GT_object_decimate_GT_voltex(graphic->graphics_object,
+													graphic->decimation_threshold);
+											}
+											/* Normalise normals now that the entire mesh has been calculated */
+											GT_object_normalise_GT_voltex_normals(graphic->graphics_object);
+										}
 									}
 								} break;
 								case CMISS_GRAPHIC_VOLUMES:
@@ -3421,11 +3492,19 @@ int Cmiss_graphic_to_graphics_object(
 							Computed_field_end_wrap(
 								&(graphic_to_object_data->wrapper_orientation_scale_field));
 						}
+						Computed_field_clear_cache(graphic_to_object_data->rc_coordinate_field);
 						Computed_field_end_wrap(
 							&(graphic_to_object_data->rc_coordinate_field));
 						if (graphic->seed_node_coordinate_field)
 						{
 							Computed_field_clear_cache(graphic->seed_node_coordinate_field);
+						}
+						if (graphic->data_field)
+						{
+							graphic_to_object_data->number_of_data_values = 0;
+							DEALLOCATE(graphic_to_object_data->data_copy_buffer);
+							/* clear Computed_field caches so elements not accessed */
+							Computed_field_clear_cache(graphic->data_field);
 						}
 					}
 					else
@@ -3831,6 +3910,9 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 			(graphic->label_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
 					graphic->label_field, conditional_function, user_data))) ||
+			(graphic->label_density_field &&
+				(Computed_field_or_ancestor_satisfies_condition(
+					graphic->label_density_field, conditional_function, user_data))) ||
 			(graphic->visibility_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
 					graphic->visibility_field, conditional_function, user_data)))))
@@ -4425,9 +4507,11 @@ int Cmiss_graphic_set_iso_surface_parameters(
 		{
 			if (iso_values)
 			{
-				if (REALLOCATE(graphic->iso_values, graphic->iso_values, double,
+				double *temp_values;
+				if (REALLOCATE(temp_values, graphic->iso_values, double,
 						number_of_iso_values))
 				{
+					graphic->iso_values = temp_values;
 					graphic->number_of_iso_values = number_of_iso_values;
 					for (i = 0 ; i < number_of_iso_values ; i++)
 					{
@@ -6943,6 +7027,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						"The <material> is used to render the surface.  "
 						"You can specify the <scene> the graphic is for.  "
 						"You can specify the <position> the graphic has in the graphic list.  "
+						"You can specify the <line_width>, this option only applies when <use_faces> is specified.  "
 						"You can render a mesh as solid <render_shaded> or as a wireframe <render_wireframe>.  "
 						"If <select_on> is active then the element tool will select the elements the iso_surface was generated from.  "
 						"If <no_select> is active then the iso_surface cannot be selected.  "
@@ -7018,6 +7103,8 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 					Option_table_add_int_positive_entry(option_table,
 						"range_number_of_iso_values",
 						&range_number_of_iso_values);
+					Option_table_add_int_non_negative_entry(option_table,"line_width",
+						&(graphic->line_width));
 					/* render_type */
 					render_type = graphic->render_type;
 					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);

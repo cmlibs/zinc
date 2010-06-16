@@ -1239,14 +1239,14 @@ Write the window object to the <wavefront_file_void>.
 				const char *num_string = "";
 				if ((temp_string = (char *)strrchr(parsed_name, '/')))
 				{
-					num_string = temp_string+1;
+					num_string = temp_string+2;
 					temp_string[0] = '\0';
 				}
 				while ((temp_string = (char *)strchr(parsed_name, '/')))
 				{
 					temp_string[0] = '_';
 				}
-				sprintf(filename,"%s%s%s.obj",export_to_wavefront_data->base_filename,
+				sprintf(filename,"%s%s_%s.obj",export_to_wavefront_data->base_filename,
 					parsed_name,num_string);
 
 				DEALLOCATE(parsed_name);

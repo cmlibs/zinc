@@ -9625,10 +9625,14 @@ Executes a GFX EXPORT VRML command.
 							}
 							else
 							{
+								child_region = region;
 								if (graphic_name)
 								{
-									child_region = region;
 									recursive_flag = 0;
+								}
+								else
+								{
+									recursive_flag = 1;
 								}
 							}
 							if (child_region)

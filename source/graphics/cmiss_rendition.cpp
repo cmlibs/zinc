@@ -471,7 +471,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->transformation_time_callback_flag = 0;
 				cmiss_rendition->name_prefix = Cmiss_region_get_path(cmiss_region);
 				cmiss_rendition->selection_group = NULL;
-
  				Cmiss_rendition_update_default_coordinate(cmiss_rendition);
 			}
 			else
@@ -1571,6 +1570,9 @@ static int Cmiss_rendition_build_graphics_objects(
 	ENTER(Cmiss_rendition_build_graphics_object);
 	if (rendition)
 	{
+		// use begin/end cache to avoid field manager messages being sent when
+		// field wrappers are created and destroyed
+		MANAGER_BEGIN_CACHE(Computed_field)(rendition->computed_field_manager);
 		/* update default coordinate field */
 		Cmiss_rendition_update_default_coordinate(rendition);
 		
@@ -1609,6 +1611,7 @@ static int Cmiss_rendition_build_graphics_objects(
 				FE_element_selection_get_element_list(
 					rendition->graphics_module->element_selection);
 			graphic_to_object_data.group_field =	rendition->selection_group;
+			graphic_to_object_data.iso_surface_specification = NULL;
 			return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_to_graphics_object,(void *)&graphic_to_object_data,
 				rendition->list_of_graphic);
@@ -1618,6 +1621,7 @@ static int Cmiss_rendition_build_graphics_objects(
 				Computed_field_end_wrap(
 					&graphic_to_object_data.default_rc_coordinate_field);
 			}
+			MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
 		}
 		else
 		{
@@ -4170,7 +4174,7 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 				material = Material_package_get_default_material(
 						rendition->graphics_module->material_package);
 			}
-			set_GT_object_default_material(glyph, NULL);
+			//set_GT_object_default_material(glyph, NULL);
 			if (graphic && Cmiss_graphic_set_name(graphic, cmiss_graphic_name))
 			{
 				struct Computed_field *orientation_scale_field, *variable_scale_field;
