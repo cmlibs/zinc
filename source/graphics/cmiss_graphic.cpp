@@ -75,6 +75,11 @@ extern "C" {
 #include "user_interface/user_interface.h"
 }
 #include "graphics/rendergl.hpp"
+#if defined(USE_OPENCASCADE)
+#	include "cad/computed_field_cad_geometry.h"
+#	include "cad/computed_field_cad_topology.h"
+#	include "cad/cad_geometry_to_graphics_object.h"
+#endif /* defined(USE_OPENCASCADE) */
 
 struct Cmiss_graphic
 /*******************************************************************************
@@ -2901,6 +2906,64 @@ int Cmiss_graphic_to_static_graphics_object_at_time(
 	return (return_code);
 }
 
+#if defined (USE_OPENCASCADE)
+static int Cad_shape_to_graphics_object(struct Computed_field *field,
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
+{
+	int return_code = 0;
+	float time = 0.0;
+	struct Cmiss_graphic *graphic = graphic_to_object_data->graphic;
+
+	switch (graphic->graphic_type)
+	{
+		case CMISS_GRAPHIC_SURFACES:
+		{
+			//printf( "Building cad geometry surfaces\n" );
+			struct GT_surface *surface = create_surface_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type);
+			if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
+			{
+				//printf( "Surface added to graphics object\n" );
+				return_code = 1;
+			}
+			else
+			{
+				DESTROY(GT_surface)(&surface);
+			}
+			break;
+		}
+		case CMISS_GRAPHIC_LINES:
+		{
+			//struct GT_object *graphics_object = settings->graphics_object;
+			/*
+			GT_polyline_vertex_buffers *lines =
+				CREATE(GT_polyline_vertex_buffers)(
+				g_PLAIN, settings->line_width);
+			*/
+			GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
+			if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+				graphic->graphics_object, lines))
+			{
+				printf("Adding lines for cad shape\n");
+				return_code = 1;
+			}
+			else
+			{
+				//DESTROY(GT_polyline_vertex_buffers)(&lines);
+				return_code = 0;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,"Cad_geometry_to_graphics_object.  "
+				"Can't handle this type of graphic");
+			return_code = 0;
+		}
+	}
+
+	return return_code;
+}
+#endif /* (USE_OPENCASCADE) */
+
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
 {
@@ -3169,6 +3232,32 @@ int Cmiss_graphic_to_graphics_object(
 								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_LINES:
 								case CMISS_GRAPHIC_SURFACES:
+#if defined(USE_OPENCASCADE)
+								{
+									// test here for domain of rc_coordinate_field
+									// if it is a cad_geometry do something about it
+									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
+									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+									int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
+									if ( return_code )
+									{
+										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
+										// so test for topology domain
+										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+										if ( cad_topology_field )
+										{
+											//printf( "hurrah, we have a cad topology domain.\n" );
+											// if topology domain then draw item at location
+											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
+											DESTROY_LIST(Computed_field)(&domain_field_list);
+											break;
+										}
+									}
+									if ( domain_field_list )
+										DESTROY_LIST(Computed_field)(&domain_field_list);
+								}
+#endif /* defined(USE_OPENCASCADE) */
 								case CMISS_GRAPHIC_ELEMENT_POINTS:
 								{
 									return_code = FE_region_for_each_FE_element(fe_region,
@@ -5013,7 +5102,7 @@ int Cmiss_graphic_FE_region_change(
 						GT_object_remove_primitives_at_time(graphic->graphics_object,
 							data->time,
 							(GT_object_primitive_object_name_conditional_function *)NULL,
-							(void *)NULL);
+								(void *)NULL);
 						graphic->graphics_changed = 1;
 						graphic->selected_graphics_changed = 1;
 						data->graphics_changed = 1;
