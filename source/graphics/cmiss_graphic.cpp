@@ -3231,6 +3231,32 @@ int Cmiss_graphic_to_graphics_object(
 								} break;
 								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_LINES:
+#if defined(USE_OPENCASCADE)
+								{
+									// test here for domain of rc_coordinate_field
+									// if it is a cad_geometry do something about it
+									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
+									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+									int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
+									if ( return_code )
+									{
+										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
+										// so test for topology domain
+										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+										if ( cad_topology_field )
+										{
+											//printf( "hurrah, we have a cad topology domain.\n" );
+											// if topology domain then draw item at location
+											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
+											DESTROY_LIST(Computed_field)(&domain_field_list);
+											break;
+										}
+									}
+									if ( domain_field_list )
+										DESTROY_LIST(Computed_field)(&domain_field_list);
+								}
+#endif /* defined(USE_OPENCASCADE) */
 								case CMISS_GRAPHIC_SURFACES:
 #if defined(USE_OPENCASCADE)
 								{
