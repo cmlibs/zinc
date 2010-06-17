@@ -8862,6 +8862,7 @@ int Cmiss_scene_add_rendition(Scene *scene, struct Cmiss_rendition *rendition)
 			scene->list_of_rendition = new std::set<struct Cmiss_rendition *>;
 		}
 		scene->list_of_rendition->insert(rendition);
+		Scene_changed_private(scene, /*fast_changing*/ 0);
 		return_code = 1;
 	}
 	else

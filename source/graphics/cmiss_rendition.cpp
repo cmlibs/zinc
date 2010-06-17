@@ -3911,6 +3911,7 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 {
 	if (rendition && scene)
 	{
+		Scene_begin_cache(scene);
 		if (!rendition->list_of_scene)
 		{
 			rendition->list_of_scene = new std::list<struct Scene *>;
@@ -3935,6 +3936,7 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 			}
 			DEACCESS(Cmiss_region)(&region);
 		}
+		Scene_end_cache(scene);
 		return 1;
 	}
 	else
