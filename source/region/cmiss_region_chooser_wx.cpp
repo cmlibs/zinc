@@ -58,6 +58,7 @@ LAST MODIFIED : 22 February 2007
 DESCRIPTION :
 ==============================================================================*/
 {
+	callback = NULL;
 	build_main_menu(root_region, initial_path);
 	
 	Connect(wxEVT_COMMAND_CHOICE_SELECTED,
@@ -85,6 +86,8 @@ DESCRIPTION :
 	Cmiss_region_remove_callback(root_region,
 		wxRegionChooser::RegionChange, this);
 	DEACCESS(Cmiss_region)(&root_region);
+	if (callback)
+		delete callback;
 }
 
 char *wxRegionChooser::get_path()

@@ -3302,7 +3302,7 @@ int Cmiss_graphic_to_graphics_object(
 										//DESTROY(GT_polyline_vertex_buffers)(lines);
 										return_code = 0;
 									}
-								}
+								} break;
 								case CMISS_GRAPHIC_SURFACES:
 #if defined(USE_OPENCASCADE)
 								{

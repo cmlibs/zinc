@@ -948,14 +948,7 @@ static void Cmiss_rendition_FE_region_change(struct FE_region *fe_region,
 			&data.number_of_fe_element_changes);
 		data.fe_element_changes = changes->fe_element_changes;
 		/*???RC Is there a better way of getting time to here? */
-		if (rendition->time_object)
-		{
-			data.time = Time_object_get_current_time(rendition->time_object);
-		}
-		else
-		{
-			data.time = 0;
-		}
+		data.time = 0;
 		data.graphics_changed = 0;
 		data.fe_region = fe_region;
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
@@ -2636,8 +2629,8 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 {
 	int circle_discretization, clear_flag, return_code = 0;
 	struct Cmiss_region *cmiss_region;
-	struct Computed_field *default_coordinate_field;
-	struct FE_field *native_discretization_field;
+	struct Computed_field *default_coordinate_field = NULL;
+	struct FE_field *native_discretization_field = NULL;
 	struct Set_FE_field_conditional_FE_region_data
 		native_discretization_field_conditional_data;
 	struct Element_discretization element_discretization;
@@ -2651,11 +2644,9 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	USE_PARAMETER(scene_void);
 	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
-		/* get default scene */
-		default_coordinate_field = NULL;
-		native_discretization_field = NULL;
 		/* if possible, get defaults from element_group on default scene */
-		if (NULL != (rendition = Cmiss_region_get_rendition(cmiss_region)))
+		rendition = Cmiss_region_get_rendition(cmiss_region);
+		if (rendition)
 		{
 			if (NULL != (default_coordinate_field=
 					Cmiss_rendition_get_default_coordinate_field(rendition)))
@@ -2671,17 +2662,6 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			{
 				ACCESS(FE_field)(native_discretization_field);
 			}
-		}
-		else
-		{
-			circle_discretization=-1;
-			element_discretization.number_in_xi1=-1;
-			element_discretization.number_in_xi2=-1;
-			element_discretization.number_in_xi3=-1;
-		}
-
-		if (rendition)
-		{
 			clear_flag=0;
 			
 			option_table = CREATE(Option_table)();
@@ -2745,15 +2725,15 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 				return_code=1;
 				
 				DESTROY(Option_table)(&option_table);
-				if (default_coordinate_field)
-				{
-					DEACCESS(Computed_field)(&default_coordinate_field);
-				}
-				if (native_discretization_field)
-				{
-					DEACCESS(FE_field)(&native_discretization_field);
-				}
 				DEACCESS(Cmiss_rendition)(&rendition);
+			}
+			if (default_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&default_coordinate_field);
+			}
+			if (native_discretization_field)
+			{
+				DEACCESS(FE_field)(&native_discretization_field);
 			}
 		}
 		else
@@ -4059,6 +4039,10 @@ int DESTROY(Cmiss_rendition)(
 		if (cmiss_rendition->default_coordinate_field)
 		{
 			DEACCESS(Computed_field)(&(cmiss_rendition->default_coordinate_field));
+		}
+		if (cmiss_rendition->native_discretization_field)
+		{
+			DEACCESS(FE_field)(&(cmiss_rendition->native_discretization_field));
 		}
 		if (cmiss_rendition->list_of_graphic)
 		{

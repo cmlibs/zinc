@@ -72,6 +72,8 @@ DESCRIPTION :
 
 	int set_callback(Callback_base<Cmiss_region*> *callback_object)
 	{
+		if (callback)
+			delete callback;
 		callback = callback_object;
 		return (1);
 	}
