@@ -2606,7 +2606,12 @@ DESCRIPTION :
 		group = 0;
 		in_def = 0;
 		return_code=1;
-		const char *parsed_name = duplicate_string(gt_object->name+1);
+
+		const char *parsed_name = NULL;
+		if (object_is_glyph)
+			parsed_name = duplicate_string(gt_object->name);
+		else
+			parsed_name = duplicate_string(gt_object->name+1);
 		char *temp_string = NULL;
 		const char *num_string = "";
 		if ((temp_string = (char *)strrchr(parsed_name, '/')))
