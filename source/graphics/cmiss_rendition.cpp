@@ -3188,7 +3188,7 @@ int for_each_graphic_in_Cmiss_rendition(
 	int (*cmiss_rendition_graphic_iterator_function)(struct Cmiss_graphic *graphic,
 		void *user_data),	void *user_data)
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER( for_each_graphic_in_Cmiss_rendition);
 	if (rendition&&cmiss_rendition_graphic_iterator_function)

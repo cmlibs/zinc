@@ -9637,7 +9637,7 @@ Executes a GFX EXPORT VRML command.
 							}
 							if (child_region)
 							{
-								return_code=export_to_vrml(file_name,scene,region,recursive_flag,graphic_name);
+								return_code=export_to_vrml(file_name,scene,child_region,recursive_flag,graphic_name);
 								DEACCESS(Cmiss_region)(&child_region);
 							}
 						}
