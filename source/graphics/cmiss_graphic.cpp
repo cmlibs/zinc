@@ -3596,9 +3596,6 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_DATA_POINTS:
 							{
 								GT_object_set_node_highlight_functor(graphic->graphics_object, NULL);
-								display_message(ERROR_MESSAGE,
-									"Cmiss_graphic_to_graphics_object  "
-									"Implement selection chnage code here");
 							} break;
 							case CMISS_GRAPHIC_NODE_POINTS:
 							{
