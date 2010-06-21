@@ -143,6 +143,10 @@ public:
 		{
 			return false;
 		}
+		if (!region1 || !region2)
+		{
+			return false;
+		}
 		if (Cmiss_region_contains_subregion(region1, region2))
 		{
 			return true;
@@ -8989,7 +8993,22 @@ int Cmiss_scene_remove_rendition(Scene *scene, struct Cmiss_rendition *rendition
 
 	if (scene && scene->list_of_rendition && rendition )
 	{
-		scene->list_of_rendition->erase(rendition);
+		/* cannot use erase(renditon) here as our sorting algorithm uses the region
+		 * tree and at this time in the program, the pointer to theregion to be deleted
+		 * may have already been removed from its parent.
+		 * The following code may not be great performance wise but its safe.
+		 */
+		Rendition_set::iterator pos =
+			scene->list_of_rendition->begin();
+		while (pos != scene->list_of_rendition->end())
+		{
+			if (*pos == rendition)
+			{
+				scene->list_of_rendition->erase(pos);
+				break;
+			}
+			++pos;
+		}
 		return_code = 1;
 	}
 	else
