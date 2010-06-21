@@ -124,6 +124,111 @@ Module types
 */
 /* new_code */
 
+/***************************************************************************//**
+ * Functor for comparing/sorting regions in region tree.
+ */
+class Rendition_list_compare
+{
+private:
+
+public:
+	Rendition_list_compare()
+	{
+	}
+
+	int region_sorting(Cmiss_region *region1, Cmiss_region *region2)
+	{
+		int return_code = 0;
+		if (region1 == region2)
+		{
+			return false;
+		}
+		if (Cmiss_region_contains_subregion(region1, region2))
+		{
+			return true;
+		}
+		else if (Cmiss_region_contains_subregion(region2, region1))
+		{
+			return false;
+		}
+		Cmiss_region *parent_region1 = Cmiss_region_get_parent(region1);
+		Cmiss_region *parent_region2 = Cmiss_region_get_parent(region2);
+		Cmiss_region *child_region1 = NULL;
+		Cmiss_region *child_region2 = NULL;
+		if (parent_region1 == parent_region2)
+		{
+			child_region1 = Cmiss_region_access(region1);
+			child_region2 = Cmiss_region_access(region2);
+		}
+		else
+		{
+			while (parent_region2 && (parent_region1 != parent_region2))
+			{
+				child_region2 = parent_region2;
+				parent_region2 =
+					Cmiss_region_get_parent(parent_region2);
+				if (parent_region1 != parent_region2)
+					Cmiss_region_destroy(&child_region2);
+			}
+			if (parent_region1 != parent_region2)
+			{
+				parent_region2 = Cmiss_region_get_parent(region2);
+				child_region2 = Cmiss_region_access(region2);
+				while (parent_region1 &&
+					(parent_region2 != parent_region1))
+				{
+					child_region1 = parent_region1;
+					parent_region1 =
+						Cmiss_region_get_parent(parent_region1);
+					if (parent_region1 != parent_region2)
+						Cmiss_region_destroy(&child_region1);
+				}
+			}
+		}
+		if (child_region1 && child_region2 && parent_region1 == parent_region2)
+		{
+			Cmiss_region *child_region = Cmiss_region_get_first_child(
+				parent_region1);
+			while (child_region)
+			{
+				if (child_region == child_region1)
+				{
+					return_code = 1;
+					break;
+				}
+				else if (child_region == child_region2)
+				{
+					return_code = 0;
+					break;
+				}
+				Cmiss_region_reaccess_next_sibling(&child_region);
+			}
+			if (child_region)
+				Cmiss_region_destroy(&child_region);
+		}
+		if (parent_region1)
+			Cmiss_region_destroy(&parent_region1);
+		if (parent_region2)
+			Cmiss_region_destroy(&parent_region2);
+		if (child_region1)
+			Cmiss_region_destroy(&child_region1);
+		if (child_region2)
+			Cmiss_region_destroy(&child_region2);
+		return return_code;
+	}
+
+	bool operator() (Cmiss_rendition *rendition1, Cmiss_rendition *rendition2)
+	{
+		Cmiss_region *region1 = Cmiss_rendition_get_region(rendition1);
+		Cmiss_region *region2 = Cmiss_rendition_get_region(rendition2);
+		int return_code = region_sorting(region1, region2);
+
+		return return_code;
+	}
+};
+
+typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
+
 struct Scene
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
@@ -174,7 +279,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* routine to call and data to pass to a module that handles scene input */
 	/* such as picking and mouse drags */
 	struct Scene_input_callback input_callback;
-	std::set<struct Cmiss_rendition *> *list_of_rendition;
+	Rendition_set *list_of_rendition;
 	/* level of cache in effect */
 	int cache;
 	/* flag indicating that graphics objects in scene objects need building */
@@ -301,7 +406,7 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 			if (scene->list_of_rendition && 
 				!scene->list_of_rendition->empty())
 			{
-				std::set<struct Cmiss_rendition *>::iterator pos =
+				Rendition_set::iterator pos =
 					scene->list_of_rendition->begin();
 				while (pos != scene->list_of_rendition->end())
 				{
@@ -336,7 +441,7 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
-	std::set<struct Cmiss_rendition *>::iterator pos;
+	Rendition_set::iterator pos;
 
 	ENTER(compile_Scene);
 	USE_PARAMETER(execute_function);
@@ -3196,7 +3301,7 @@ Closes the scene and disposes of the scene data structure.
 			{
 				if (!scene->list_of_rendition->empty())
 				{
-					std::set<struct Cmiss_rendition *>::iterator pos =
+					Rendition_set::iterator pos =
 						scene->list_of_rendition->begin();
 					while (pos != scene->list_of_rendition->end())
 					{
@@ -5273,7 +5378,7 @@ Cmiss_rendition *Scene_get_rendition_of_position(struct Scene *scene, int positi
 		if (scene->list_of_rendition && 
 			!scene->list_of_rendition->empty())
 		{
-			std::set<struct Cmiss_rendition *>::iterator pos =
+			Rendition_set::iterator pos =
 				scene->list_of_rendition->begin();
 			while (pos != scene->list_of_rendition->end() && !rendition)
 			{
@@ -5838,7 +5943,7 @@ int build_Scene(struct Scene *scene)
 int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
 	int return_code;
-	std::set<struct Cmiss_rendition *>::iterator pos;
+	Rendition_set::iterator pos;
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)
 	{
@@ -6599,7 +6704,7 @@ Returns 0 without error if scene is empty.
 		if (scene->list_of_rendition && 
 			!scene->list_of_rendition->empty())
 		{
-			std::set<struct Cmiss_rendition *>::iterator pos =
+			Rendition_set::iterator pos =
 				scene->list_of_rendition->begin();
 			while (pos != scene->list_of_rendition->end())
 			{
@@ -8461,7 +8566,7 @@ elements and those chained together with other graphics objects
 		data.iterator_function = iterator_function;
 		data.user_data = user_data;
 		data.graphic_name = NULL;
-		std::set<struct Cmiss_rendition *>::iterator pos =
+		Rendition_set::iterator pos =
 			scene->list_of_rendition->begin();
 		while (pos != scene->list_of_rendition->end())
 		{
@@ -8707,7 +8812,7 @@ int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
 			{
 				if (!scene->list_of_rendition->empty())
 				{
-					std::set<struct Cmiss_rendition *>::iterator pos =
+					Rendition_set::iterator pos =
 						scene->list_of_rendition->begin();
 					while (pos != scene->list_of_rendition->end())
 					{
@@ -8719,7 +8824,7 @@ int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
 			}
 			else
 			{
-				scene->list_of_rendition = new std::set<struct Cmiss_rendition *>;
+				scene->list_of_rendition = new Rendition_set;
 			}
 			Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
 			if (rendition)
@@ -8859,7 +8964,7 @@ int Cmiss_scene_add_rendition(Scene *scene, struct Cmiss_rendition *rendition)
 	{
 		if (!scene->list_of_rendition)
 		{
-			scene->list_of_rendition = new std::set<struct Cmiss_rendition *>;
+			scene->list_of_rendition = new Rendition_set;
 		}
 		scene->list_of_rendition->insert(rendition);
 		Scene_changed_private(scene, /*fast_changing*/ 0);
@@ -8914,7 +9019,7 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
 		if (rendition)
 		{
-			std::set<struct Cmiss_rendition *>::iterator pos =
+			Rendition_set::iterator pos =
 				scene->list_of_rendition->find(rendition);
 			if (pos != scene->list_of_rendition->end())
 			{

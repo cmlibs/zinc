@@ -17575,7 +17575,6 @@ static int gfx_set_transformation(struct Parse_state *state,
 							{
 								Cmiss_rendition_set_transformation_with_time_callback(rendition,
 									computed_field);
-								DEACCESS(Computed_field)(&computed_field);
 							}
 							else
 							{
@@ -17601,6 +17600,8 @@ static int gfx_set_transformation(struct Parse_state *state,
 					return_code=0;
 				}
 			} /* parse error, help */
+			if (computed_field)
+				DEACCESS(Computed_field)(&computed_field);
 			DEACCESS(Scene)(&scene);
 		}
 		else
