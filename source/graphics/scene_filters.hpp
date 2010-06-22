@@ -51,63 +51,76 @@ template <typename ObjectType>
 class SceneFiltersBaseFunctor
 {
 protected:
-  int inclusive;
-public:
-  virtual int call(ObjectType object) = 0;
+	int inclusive;
 
-  virtual ~SceneFiltersBaseFunctor()
-  {
-  };
+public:
+	SceneFiltersBaseFunctor(int inclusive_in)
+		: inclusive(inclusive_in)
+	{
+	}
+
+	virtual ~SceneFiltersBaseFunctor()
+	{
+	}
+
+	virtual int call(ObjectType object) = 0;
+
 };
 
 template <typename ObjectType>
 class SceneFiltersNoValueFunctor :  public SceneFiltersBaseFunctor<ObjectType>
 {
 private:
-  int(*fpt)(ObjectType);
+	int(*fpt)(ObjectType);
+
 public:
+	SceneFiltersNoValueFunctor(int(*fpt_in)(ObjectType), int inclusive_in)
+		: SceneFiltersBaseFunctor<ObjectType>(inclusive_in)
+		, fpt(fpt_in)
+	{}
 
-  SceneFiltersNoValueFunctor(int(*fpt_in)(ObjectType), int inclusive_in)
-  { fpt=fpt_in; inclusive=inclusive_in;};
+	virtual int call(ObjectType object)
+	{
+		if (fpt)
+			return this->inclusive == (*fpt)(object);
+		else
+			return 0;
+	}
 
-  virtual int call(ObjectType object)
-  {
-  	if (fpt)
-  		return inclusive == (*fpt)(object);
-  	else
-  		return 0;
-  }
+	~SceneFiltersNoValueFunctor()
+	{
+	}
 
-  ~SceneFiltersNoValueFunctor()
-  {
-  };
 };
 
 template <typename ObjectType, typename ValueType> class SceneFiltersValueFunctor :
-  public SceneFiltersBaseFunctor<ObjectType>
+	public SceneFiltersBaseFunctor<ObjectType>
 {
 private:
-  int(*fpt)(ObjectType, ValueType);
-  int inclusive;
-  ValueType value;
+	int(*fpt)(ObjectType, ValueType);
+	ValueType value;
 
 public:
 
-  SceneFiltersValueFunctor(int(*fpt_in)(ObjectType, ValueType),
-  	ValueType value_in, int inclusive_in)
-  { fpt=fpt_in; value=value_in; inclusive=inclusive_in;};
+	SceneFiltersValueFunctor(int(*fpt_in)(ObjectType, ValueType),
+		ValueType value_in, int inclusive_in)
+		: SceneFiltersBaseFunctor<ObjectType>(inclusive_in)
+		, fpt(fpt_in)
+		, value(value_in)
+	{
+	}
 
-  virtual int call(ObjectType object)
-  {
-  	if (fpt)
-  		return inclusive == (*fpt)(object, value);
-  	else
-  		return 0;
-  };             // execute member function
+	virtual int call(ObjectType object)
+	{
+		if (fpt)
+			return this->inclusive == (*fpt)(object, value);
+		else
+			return 0;
+	} // execute member function
 
-  ~SceneFiltersValueFunctor()
-  {
-  };
+	~SceneFiltersValueFunctor()
+	{
+	}
 
 };
 
