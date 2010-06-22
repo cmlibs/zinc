@@ -50,6 +50,8 @@ DESCRIPTION :
 template <typename ObjectType>
 class SceneFiltersBaseFunctor
 {
+protected:
+  int inclusive;
 public:
   virtual int call(ObjectType object) = 0;
 
@@ -63,10 +65,9 @@ class SceneFiltersNoValueFunctor :  public SceneFiltersBaseFunctor<ObjectType>
 {
 private:
   int(*fpt)(ObjectType);
-  bool inclusive;
 public:
 
-  SceneFiltersNoValueFunctor(int(*fpt_in)(ObjectType), bool inclusive_in)
+  SceneFiltersNoValueFunctor(int(*fpt_in)(ObjectType), int inclusive_in)
   { fpt=fpt_in; inclusive=inclusive_in;};
 
   virtual int call(ObjectType object)
@@ -87,13 +88,13 @@ template <typename ObjectType, typename ValueType> class SceneFiltersValueFuncto
 {
 private:
   int(*fpt)(ObjectType, ValueType);
-  bool inclusive;
+  int inclusive;
   ValueType value;
 
 public:
 
   SceneFiltersValueFunctor(int(*fpt_in)(ObjectType, ValueType),
-  	ValueType value_in, bool inclusive_in)
+  	ValueType value_in, int inclusive_in)
   { fpt=fpt_in; value=value_in; inclusive=inclusive_in;};
 
   virtual int call(ObjectType object)
