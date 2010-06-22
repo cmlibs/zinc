@@ -136,9 +136,9 @@ public:
 	{
 	}
 
-	int region_sorting(Cmiss_region *region1, Cmiss_region *region2)
+	bool isRegionPlacedBefore(Cmiss_region *region1, Cmiss_region *region2)
 	{
-		int return_code = 0;
+		bool return_code = false;
 		if (region1 == region2)
 		{
 			return false;
@@ -197,12 +197,12 @@ public:
 			{
 				if (child_region == child_region1)
 				{
-					return_code = 1;
+					return_code = true;
 					break;
 				}
 				else if (child_region == child_region2)
 				{
-					return_code = 0;
+					return_code = false;
 					break;
 				}
 				Cmiss_region_reaccess_next_sibling(&child_region);
@@ -221,13 +221,12 @@ public:
 		return return_code;
 	}
 
-	bool operator() (Cmiss_rendition *rendition1, Cmiss_rendition *rendition2)
+	bool operator() (const Cmiss_rendition *rendition1, const Cmiss_rendition *rendition2)
 	{
-		Cmiss_region *region1 = Cmiss_rendition_get_region(rendition1);
-		Cmiss_region *region2 = Cmiss_rendition_get_region(rendition2);
-		int return_code = region_sorting(region1, region2);
+		Cmiss_region *region1 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition1));
+		Cmiss_region *region2 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition2));
 
-		return return_code;
+		return isRegionPlacedBefore(region1, region2);
 	}
 };
 
