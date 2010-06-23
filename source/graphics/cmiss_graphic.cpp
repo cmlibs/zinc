@@ -9258,3 +9258,80 @@ int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic)
 	return return_code;
 }
 
+int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
+{
+	int return_code = 1;
+	USE_PARAMETER(dummy_void);
+
+	if (graphic)
+	{
+		if (graphic->coordinate_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->coordinate_field));
+		}
+		if (graphic->texture_coordinate_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->texture_coordinate_field));
+		}
+		if (graphic->radius_scalar_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->radius_scalar_field));
+		}
+		if (graphic->iso_scalar_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->iso_scalar_field));
+		}
+		if (graphic->orientation_scale_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->orientation_scale_field));
+		}
+		if (graphic->variable_scale_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->variable_scale_field));
+		}
+		if (graphic->label_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->label_field));
+		}
+		if (graphic->label_density_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->label_density_field));
+		}
+		if (graphic->visibility_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->visibility_field));
+		}
+		if (graphic->displacement_map_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->displacement_map_field));
+		}
+		if (graphic->xi_point_density_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->xi_point_density_field));
+		}
+		if (graphic->native_discretization_field)
+		{
+			DEACCESS(FE_field)(&(graphic->native_discretization_field));
+		}
+		if (graphic->stream_vector_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->stream_vector_field));
+		}
+		if (graphic->data_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->data_field));
+		}
+		if (graphic->seed_node_coordinate_field)
+		{
+			DEACCESS(Computed_field)(&(graphic->seed_node_coordinate_field));
+		}
+	}
+	else
+	{
+		display_message(INFORMATION_MESSAGE,
+			"Cmiss_graphic_detach_fields.  Invalid argument(s)");
+		return_code = 0;
+	}
+
+	return return_code;
+}

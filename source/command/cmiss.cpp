@@ -9621,6 +9621,7 @@ Executes a GFX EXPORT VRML command.
 							{
 								child_region = Cmiss_region_find_subregion_at_path(region,
 									region_path);
+								DEACCESS(Cmiss_region)(&region);
 								recursive_flag = 0;
 							}
 							else
@@ -17508,12 +17509,10 @@ static int gfx_set_transformation(struct Parse_state *state,
 	gtMatrix transformation_matrix;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
 	struct Cmiss_region *region = NULL;
 	static struct Modifier_entry option_table[]=
 	{
 		{"name",NULL,(void *)1,set_name},
-		{"scene",NULL,NULL,set_Scene},
 		{"field",NULL,NULL,set_Computed_field_conditional},
 		{NULL,NULL,NULL,set_transformation_matrix}
 	};
@@ -17535,7 +17534,6 @@ static int gfx_set_transformation(struct Parse_state *state,
 				 Computed_field_package_get_computed_field_manager(
 						command_data->computed_field_package);
 			region_name=(char *)NULL;
-			scene=ACCESS(Scene)(command_data->default_scene);
 			transformation_matrix[0][0]=1;
 			transformation_matrix[0][1]=0;
 			transformation_matrix[0][2]=0;
@@ -17554,11 +17552,9 @@ static int gfx_set_transformation(struct Parse_state *state,
 			transformation_matrix[3][3]=1;
 			/* parse the command line */
 			(option_table[0]).to_be_modified= &region_name;
-			(option_table[1]).to_be_modified= &scene;
-			(option_table[1]).user_data=command_data->scene_manager;
-			(option_table[2]).to_be_modified= &computed_field;
-			(option_table[2]).user_data= &set_field_data;
-			(option_table[3]).to_be_modified= &transformation_matrix;
+			(option_table[1]).to_be_modified= &computed_field;
+			(option_table[1]).user_data= &set_field_data;
+			(option_table[2]).to_be_modified= &transformation_matrix;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
@@ -17592,7 +17588,6 @@ static int gfx_set_transformation(struct Parse_state *state,
 							"No region named '%s'",region_name);
 						return_code=0;
 					}
-					DEALLOCATE(region_name);
 				}
 				else
 				{
@@ -17602,7 +17597,8 @@ static int gfx_set_transformation(struct Parse_state *state,
 			} /* parse error, help */
 			if (computed_field)
 				DEACCESS(Computed_field)(&computed_field);
-			DEACCESS(Scene)(&scene);
+			if (region_name)
+				DEALLOCATE(region_name);
 		}
 		else
 		{

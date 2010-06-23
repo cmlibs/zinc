@@ -523,6 +523,16 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 
 int Cmiss_rendition_remove_scene(struct Cmiss_rendition *rendition, struct Scene *scene);
 
+/***************************************************************************//**
+ * This function will deaccess any computed fields being used by the rendition
+ * when the rendition itself is not present in any scene.
+ *
+ * @param cmiss_rendition  pointer to the cmiss_rendition.
+ *
+ * @return Return 1 if successfully detach fields from rendition otherwise 0.
+ */
+int Cmiss_rendition_detach_fields(struct Cmiss_rendition *rendition);
+
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_rendition);
 
 PROTOTYPE_ANY_OBJECT(Cmiss_rendition);

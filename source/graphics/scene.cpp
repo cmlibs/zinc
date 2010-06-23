@@ -3309,6 +3309,11 @@ Closes the scene and disposes of the scene data structure.
 					while (pos != scene->list_of_rendition->end())
 					{
 						Cmiss_rendition_remove_scene(*pos, scene);
+						/* the following function is to remove any field
+						 * being used by rendition and its graphics as cross
+						 * referecing from field to region may cause meomoryleak.
+						 */
+						Cmiss_rendition_detach_fields(*pos);
 						++pos;
 					}
 				}

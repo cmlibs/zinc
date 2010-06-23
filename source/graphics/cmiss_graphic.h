@@ -938,4 +938,14 @@ int Cmiss_graphic_set_overlay_order(struct Cmiss_graphic *graphic, int order);
 
 int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic);
 
+/***************************************************************************//**
+ * This function will deaccess any computed fields being used by graphic, this
+ * should only be called from Cmiss_rendition_detach_fields.
+ *
+ * @param cmiss_graphic  pointer to the graphic.
+ *
+ * @return Return 1 if successfully detach fields from graphic otherwise 0.
+ */
+int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void);
+
 #endif

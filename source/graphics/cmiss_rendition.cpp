@@ -446,7 +446,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 					(struct Computed_field *)NULL;
 				cmiss_rendition->update_callback_list=
 					(struct Cmiss_rendition_callback_data *)NULL;
-// 				/* managers and callback ids */
+ 				/* managers and callback ids */
 				cmiss_rendition->computed_field_manager=Cmiss_region_get_Computed_field_manager(
 					 cmiss_region);
 				cmiss_rendition->computed_field_manager_callback_id=(void *)NULL;
@@ -1199,13 +1199,23 @@ void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition,
 		Cmiss_rendition_add_callback(child_rendition,
 			Cmiss_rendition_notify_parent_rendition_callback,
 			(void *)rendition->region);
+		temp_region = Cmiss_region_get_first_child(
+			child_region);
+		while (temp_region)
+		{
+			if (!Cmiss_region_has_rendition(temp_region))
+			{
+				Cmiss_rendition_add_child_region(child_rendition,
+					temp_region);
+			}
+			Cmiss_region_reaccess_next_sibling(&temp_region);
+		}
 	}
 }
 
 int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 {
 	int return_code;
-	struct Cmiss_rendition *child_rendition;
 
 	ENTER(Cmiss_rendition_update_child_rendition);
 	if (rendition)
@@ -1215,14 +1225,12 @@ int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 		struct Cmiss_region *child_region = Cmiss_region_get_first_child(rendition->region);
 		while (child_region)
 		{
-			child_rendition = Cmiss_region_get_rendition(child_region);
-			if (!child_rendition)
+			if (!Cmiss_region_has_rendition(child_region))
 			{
 				Cmiss_rendition_add_child_region(rendition, 
 					child_region);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
-			Cmiss_rendition_destroy(&child_rendition);
 		}
 		Cmiss_rendition_end_cache(rendition);
 		return_code = 1;
@@ -1265,18 +1273,6 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 			}
 			else
 			{
-				/* All change case, check everything */
-				/* remove any graphical elements for regions that no longer exist */
-// 				while (return_code &&
-// 					(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-// 						 Scene_object_has_removed_Cmiss_region, scene_void,
-// 						 scene->scene_object_list)))
-// 				{
-// 					return_code =
-// 						Scene_remove_Scene_object_private(scene, scene_object);
-// 				}
-
-					/* ensure we have a graphical element for each child region */
 					Cmiss_rendition_update_child_rendition(rendition);	
 			}
 			Cmiss_rendition_end_cache(rendition);
@@ -1813,6 +1809,29 @@ struct Cmiss_rendition *Cmiss_region_get_rendition(struct Cmiss_region *cmiss_re
 	LEAVE;
 
 	return (rendition);
+}
+
+int Cmiss_region_has_rendition(struct Cmiss_region *cmiss_region)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_region_get_rendition);
+	if (cmiss_region)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
+			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,
+			Cmiss_region_private_get_any_object_list(cmiss_region)))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
 }
 
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
@@ -3647,7 +3666,6 @@ void Cmiss_rendition_remove_time_dependent_transformation(struct Cmiss_rendition
 		 Time_object_remove_callback(rendition->time_object,
 				Cmiss_rendition_set_time_dependent_transformation, rendition);
 		 DEACCESS(Computed_field)(&(rendition->transformation_field));
-		 rendition->transformation_field = NULL;
 		 rendition->transformation_time_callback_flag = 0;
 	}
 
@@ -3976,6 +3994,7 @@ int DESTROY(Cmiss_rendition)(
 	ENTER(DESTROY(Cmiss_rendition));
 	if (cmiss_rendition_address && (cmiss_rendition = *cmiss_rendition_address))
 	{
+		Cmiss_rendition_remove_time_dependent_transformation(cmiss_rendition);
 		if (cmiss_rendition->name_prefix)
 		{
 			DEALLOCATE(cmiss_rendition->name_prefix);
@@ -4019,11 +4038,6 @@ int DESTROY(Cmiss_rendition)(
 		}
 		if (cmiss_rendition->time_object)
 		{
-			if (cmiss_rendition->transformation_time_callback_flag)
-			{
-				Time_object_remove_callback(cmiss_rendition->time_object,
-					Cmiss_rendition_set_time_dependent_transformation, cmiss_rendition);
-			}
 			DEACCESS(Time_object)(&cmiss_rendition->time_object);
 		}
 		if (cmiss_rendition->graphical_material_manager_callback_id)
@@ -4858,6 +4872,45 @@ int Cmiss_graphics_module_set_time_keeper_internal(struct Cmiss_graphics_module 
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphics_module_set_time_keeper_internal.  Invalid argument(s)");
+	}
+
+	return return_code;
+}
+
+int Cmiss_rendition_detach_fields(struct Cmiss_rendition *rendition)
+{
+	int return_code = 1;
+	if (rendition)
+	{
+		if (!rendition->list_of_scene || rendition->list_of_scene->empty())
+		{
+			Cmiss_rendition_remove_time_dependent_transformation(rendition);
+			if (rendition->default_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&(rendition->default_coordinate_field));
+			}
+			if (rendition->native_discretization_field)
+			{
+				DEACCESS(FE_field)(&(rendition->native_discretization_field));
+			}
+			if (rendition->list_of_graphic)
+			{
+				FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+					Cmiss_graphic_detach_fields, (void *)NULL,
+					rendition->list_of_graphic);
+			}
+			if (rendition->transformation_field)
+			{
+				DEACCESS(Computed_field)(&(rendition->transformation_field));
+			}
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_detach_fields.  Invalid argument(s)");
+		return_code = 0;
 	}
 
 	return return_code;

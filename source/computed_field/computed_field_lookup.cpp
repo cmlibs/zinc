@@ -3,7 +3,6 @@ FILE : computed_field_lookup.c
 
 LAST MODIFIED : 25 July 2007
 
-DESCRIPTION :
 Defines fields for looking up values at given locations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -640,13 +639,11 @@ class Computed_field_quaternion_SLERP : public Computed_field_core
 {
 public:
 	FE_node *nodal_lookup_node;
-	Cmiss_region *nodal_lookup_region;
 
 	Computed_field_quaternion_SLERP(
-		FE_node *nodal_lookup_node, Cmiss_region *region) : 
+		FE_node *nodal_lookup_node) :
 		Computed_field_core(),
-		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
-		nodal_lookup_region(ACCESS(Cmiss_region)(region))
+		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node))
 	{
 		normalised_t = 0;
 		quaternion_component = NULL;
@@ -703,21 +700,17 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP);
 	if (field)
 	{
-		 FE_region_remove_callback(Cmiss_region_get_FE_region(nodal_lookup_region),
-				Computed_field_quaternion_SLERP_FE_region_change, 
-				(void *)field);
-		 if (nodal_lookup_region)
-		 {
-				DEACCESS(Cmiss_region)(&(nodal_lookup_region));
-		 }
-		 if (nodal_lookup_node)
-		 {
-				DEACCESS(FE_node)(&(nodal_lookup_node));
-		 }
-		 if (quaternion_component)
-		 {
-				DEALLOCATE(quaternion_component);
-		 }
+		FE_region_remove_callback(FE_node_get_FE_region(nodal_lookup_node),
+			Computed_field_quaternion_SLERP_FE_region_change,
+			(void *)field);
+		if (nodal_lookup_node)
+		{
+			DEACCESS(FE_node)(&(nodal_lookup_node));
+		}
+		if (quaternion_component)
+		{
+			DEALLOCATE(quaternion_component);
+		}
 	}
 	else
 	{
@@ -737,7 +730,7 @@ Copy the type specific data used by this type.
 ==============================================================================*/
 {
 	Computed_field_quaternion_SLERP* core = new Computed_field_quaternion_SLERP(
-		nodal_lookup_node, nodal_lookup_region);
+		nodal_lookup_node);
 
 	return (core);
 } /* Computed_field_quaternion_SLERP::copy */
@@ -756,8 +749,7 @@ Compare the type specific data.
 	ENTER(Computed_field_quaternion_SLERP::compare);
 	if (field && (other = dynamic_cast<Computed_field_quaternion_SLERP*>(other_core)))
 	{
-		if ((nodal_lookup_region == other->nodal_lookup_region) &&
-			(nodal_lookup_node == other->nodal_lookup_node))
+		if (nodal_lookup_node == other->nodal_lookup_node)
 		{
 			return_code = 1;
 		}
@@ -929,7 +921,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(nodal_lookup_node));
-		char *region_path = Cmiss_region_get_path(nodal_lookup_region);
+		Cmiss_region *region = NULL;
+		FE_region_get_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node), &region);
+		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
 			display_message(INFORMATION_MESSAGE, "    region : %s\n", region_path);
@@ -974,7 +968,9 @@ Returns allocated command string for reproducing field. Includes type.
 			 DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " region ", &error);
-		char *region_path = Cmiss_region_get_path(nodal_lookup_region);
+		Cmiss_region *region = NULL;
+		FE_region_get_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node), &region);
+		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
 			make_valid_token(&region_path);
@@ -1085,7 +1081,7 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_quaternion_SLERP(quaternion_SLERP_node, region));
+			new Computed_field_quaternion_SLERP(quaternion_SLERP_node));
 	}
 	else
 	{
@@ -1098,8 +1094,7 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 
 int Computed_field_get_type_quaternion_SLERP(struct Computed_field *field,
 	 struct Computed_field **quaternion_SLERP_field,
-	 struct Cmiss_region **quaternion_SLERP_region,
-	 int *quaternion_SLERP_node_identifier)
+	 struct FE_node **lookup_node)
 /*******************************************************************************
 LAST MODIFIED : 10 October 2007
 
@@ -1116,8 +1111,7 @@ Note that nothing returned has been ACCESSed.
 	if (field && (core = dynamic_cast<Computed_field_quaternion_SLERP*>(field->core)))
 	{
 		 *quaternion_SLERP_field = field->source_fields[0];
-		 *quaternion_SLERP_region = core->nodal_lookup_region;
-		 *quaternion_SLERP_node_identifier = get_FE_node_identifier(core->nodal_lookup_node);
+		 *lookup_node = core->nodal_lookup_node;
 		 return_code = 1;
 	}
 	else
@@ -1150,6 +1144,7 @@ contents to be modified.
 	int node_identifier;
 	char node_flag, *region_path;
 	struct Cmiss_region *region;
+	struct FE_node *lookup_node = NULL;
 	
 	ENTER(define_Computed_field_type_quaternion_SLERP);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
@@ -1167,10 +1162,15 @@ contents to be modified.
 			Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code = Computed_field_get_type_quaternion_SLERP(field_modify->get_field(), 
-				 &source_field, &region, &node_identifier);
+				 &source_field, &lookup_node);
 		}
 		if (return_code)
 		{
+			if (lookup_node)
+			{
+				node_identifier = get_FE_node_identifier(lookup_node);
+				FE_region_get_Cmiss_region(FE_node_get_FE_region(lookup_node), &region);
+			}
 			if (source_field)
 			{
 				 ACCESS(Computed_field)(source_field);

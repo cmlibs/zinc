@@ -156,6 +156,14 @@ Cmiss_field_id Cmiss_rendition_get_default_coordinate_field(
 Cmiss_rendition_id Cmiss_rendition_get_from_region(Cmiss_region_id region);
 
 /***************************************************************************//**
+ * Check either region has rendition or not.
+ *
+ * @param region  The handle to cmiss_region.
+ * @return  Returns 1 if rendition is found in region, otherwise 0.
+ */
+int Cmiss_region_has_rendition(Cmiss_region_id cmiss_region);
+
+/***************************************************************************//**
  * Create a line representation for rendition. This graphical representation can
  * be modified through Cmiss_graphic_set functions.
  *
