@@ -2920,7 +2920,7 @@ int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
 
 int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition)
 {
-	char *name;
+	char *name = 0;
 	int return_code;
 	struct Cmiss_graphic_list_data list_data;
 
@@ -2942,7 +2942,7 @@ int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition)
 		else
 		{
 			display_message(INFORMATION_MESSAGE,
-				"  default coordinate field: NONE\n",name);
+				"  default coordinate field: NONE\n");
 		}
 		display_message(INFORMATION_MESSAGE,"  element discretization: %d*%d*%d\n",
 			rendition->element_discretization.number_in_xi1,
