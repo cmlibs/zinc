@@ -3215,7 +3215,6 @@ int for_each_graphic_in_Cmiss_rendition(
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			*cmiss_rendition_graphic_iterator_function,user_data,
 			rendition->list_of_graphic);
-
 	}
 	else
 	{

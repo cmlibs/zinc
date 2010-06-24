@@ -8119,6 +8119,7 @@ Executes a GFX DRAW command.
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Scene *scene;
+	char *region_path = NULL;
 
 	ENTER(execute_command_gfx_draw);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -8136,6 +8137,9 @@ Executes a GFX DRAW command.
 		/* graphics_object */
 		Option_table_add_entry(option_table,"glyph",&graphics_object,
 			command_data->glyph_list,set_Graphics_object);
+		/* group */
+		Option_table_add_entry(option_table, "group", &region_path,
+			command_data->root_region, set_Cmiss_region_path);
 		/* scene */
 		Option_table_add_entry(option_table,"scene",&scene,
 			command_data->scene_manager,set_Scene);
@@ -8172,11 +8176,21 @@ Executes a GFX DRAW command.
 					}
 				}
 			}
+			else if (region_path)
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_gfx_draw.  gfx draw group command is no "
+					"longer supported, cmgui will always draw graphics for regions");
+			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
 		if (scene)
 		{
 			DEACCESS(Scene)(&scene);
+		}
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
 		}
 		if (graphics_object)
 		{
@@ -13304,6 +13318,10 @@ Parameter <help_mode> should be NULL when calling this function.
 				Option_table_add_entry(option_table, "node_points",
 					(void *)&modify_rendition_data, (void *)&rendition_command_data,
 					gfx_modify_rendition_node_points);
+				/* static_graphic */
+				Option_table_add_entry(option_table, "static_graphic",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_static_graphic);
 				/* streamlines */
 				Option_table_add_entry(option_table, "streamlines",
 					(void *)&modify_rendition_data, (void *)&rendition_command_data,
@@ -13351,7 +13369,7 @@ Parameter <help_mode> should be NULL when calling this function.
 	return (return_code);
 } /* gfx_modify_g_element */
 
-static int gfx_modify_graphics_object(struct Parse_state *state,
+static int gfx_modify_glyph(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 4 June 1999
@@ -13367,7 +13385,7 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 
-	ENTER(gfx_modify_graphics_object);
+	ENTER(gfx_modify_glyph);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
@@ -13377,9 +13395,9 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
 			if(graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)
-				(state->current_token,command_data->graphics_object_list))
+				(state->current_token,command_data->glyph_list))
 			{
-				shift_Parse_state(state,1);				
+				shift_Parse_state(state,1);
 				/* initialise defaults */
 				if (material = get_GT_object_default_material(graphics_object))
 				{
@@ -13426,7 +13444,7 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			}
 		}
 		else
-		{	
+		{
 			/* Help */
 			display_message(INFORMATION_MESSAGE,
 				"\n      GRAPHICS_OBJECT_NAME");
@@ -13445,8 +13463,33 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_modify_graphics_object.  Missing command_data");
+			"gfx_modify_glyph.  Missing command_data");
 		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_glyph */
+
+static int gfx_modify_graphics_object(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 June 1999
+
+DESCRIPTION :
+Executes a GFX MODIFY GRAPHICS_OBJECT command.
+==============================================================================*/
+{
+	int return_code = 0;
+
+	ENTER(gfx_modify_graphics_object);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(command_data_void);
+	if (state)
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_graphics_object.  This function is no longer supported,"
+			" please use gfx modify glyph instead");
 	}
 	LEAVE;
 
@@ -14389,6 +14432,9 @@ Executes a GFX MODIFY command.
 				/* g_element */
 				Option_table_add_entry(option_table,"g_element",NULL, 
 					(void *)command_data, gfx_modify_g_element);
+				/* glyph */
+				Option_table_add_entry(option_table,"glyph",NULL,
+					(void *)command_data, gfx_modify_glyph);
 				/* graphics_object */
 				Option_table_add_entry(option_table,"graphics_object",NULL, 
 					(void *)command_data, gfx_modify_graphics_object);
@@ -15930,7 +15976,7 @@ otherwise the file of graphics objects is read.
 					{
 						return_code=file_read_graphics_objects(file_name, command_data->io_stream_package,
 							Material_package_get_material_manager(command_data->material_package),
-							command_data->graphics_object_list);
+							command_data->glyph_list);
 					}
 				}
 			}

@@ -764,6 +764,9 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 int gfx_modify_rendition_element_points(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
+int gfx_modify_rendition_static_graphic(struct Parse_state *state,
+		void *modify_rendition_data_void,void *rendition_command_data_void);
+
 /***************************************************************************//**
  * Executes a GFX MODIFY RENDITION STREAMLINES command.
  * If return_code is 1, returns the completed Modify_rendition_data with the
