@@ -1879,6 +1879,65 @@ Resets current edit. Called on button release or when tool deactivated.
 	LEAVE;
 } /* Node_tool_reset */
 
+int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picked_node)
+{
+	int return_code =1;
+
+	if (node_tool && picked_node)
+	{
+		Cmiss_region *sub_region = NULL;
+		Cmiss_field_group_id sub_group = NULL;
+		Cmiss_field_id sub_group_field = NULL;
+		Cmiss_field_id node_group_field = NULL;
+		Cmiss_field_node_group_template_id node_group = NULL;
+		if (node_tool->rendition)
+		{
+			sub_region = Cmiss_rendition_get_region(node_tool->rendition);
+			sub_group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+			sub_group = Cmiss_field_cast_group(sub_group_field);
+			if (sub_group)
+			{
+				node_group_field = Cmiss_field_group_create_node_group(sub_group);
+				if (node_group_field)
+				{
+					node_group =
+						Cmiss_field_cast_node_group_template(node_group_field);
+					Cmiss_field_destroy(&node_group_field);
+				}
+			}
+		}
+
+		if (sub_region && sub_group_field && node_group)
+		{
+			Cmiss_field_node_group_template_add_node(node_group,
+				picked_node);
+			Computed_field_changed(sub_group_field);
+		}
+		if (sub_group_field)
+		{
+			Cmiss_field_destroy(&sub_group_field);
+		}
+		if (sub_group)
+		{
+			sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+			Cmiss_field_destroy(&sub_group_field);
+			sub_group = NULL;
+		}
+		if (node_group)
+		{
+			Cmiss_field_id temporary_handle =
+				reinterpret_cast<Computed_field *>(node_group);
+			Cmiss_field_destroy(&temporary_handle);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void,
 	struct Graphics_buffer *graphics_buffer)
@@ -1895,7 +1954,7 @@ release.
 {
 	char *command_string;
 	double d;
-	enum Glyph_scaling_mode glyph_scaling_mode;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	enum Interactive_event_type event_type;
 	FE_value time;
 	int clear_selection,input_modifier,return_code,shift_pressed;
@@ -2051,58 +2110,10 @@ release.
 									}
 									Cmiss_rendition_destroy(&root_rendition);
 								}
-								//FE_node_selection_begin_cache(node_tool->node_selection);
-								//FE_node_selection_clear(node_tool->node_selection);
 							}
 							if (picked_node)
 							{
-								//FE_node_selection_select_node(node_tool->node_selection,
-								//	picked_node);
-								Cmiss_region *sub_region = NULL;
-								Cmiss_field_group_id sub_group = NULL;
-								Cmiss_field_id sub_group_field = NULL;
-								Cmiss_field_id node_group_field = NULL;
-								Cmiss_field_node_group_template_id node_group = NULL;
-								if (node_tool->rendition)
-								{
-									sub_region = Cmiss_rendition_get_region(node_tool->rendition);
-									sub_group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
-									sub_group = Cmiss_field_cast_group(sub_group_field);
-									if (sub_group)
-									{
-										node_group_field = Cmiss_field_group_create_node_group(sub_group);
-										if (node_group_field)
-										{
-											node_group = 
-												Cmiss_field_cast_node_group_template(node_group_field);
-											Cmiss_field_destroy(&node_group_field);
-										}
-									}
-								}
-
-								if (sub_region && sub_group_field && node_group)
-								{
-									Cmiss_field_node_group_template_add_node(node_group,
-										picked_node);
-									Computed_field_changed(sub_group_field);
-								}
-								if (sub_group_field)
-								{
-									Cmiss_field_destroy(&sub_group_field);
-								}
-								if (sub_group)
-								{
-									sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-									Cmiss_field_destroy(&sub_group_field);
-									sub_group = NULL;
-								}
-								if (node_group)
-								{
-									Cmiss_field_id temporary_handle = 
-										reinterpret_cast<Computed_field *>(node_group);
-									Cmiss_field_destroy(&temporary_handle);
-								}
-
+								Node_tool_set_picked_node(node_tool, picked_node);
 							}
 							if (clear_selection)
 							{
@@ -2159,8 +2170,7 @@ release.
 											 node_tool, scene, interaction_volume, nearest_element,
 											 nearest_element_coordinate_field))
 									{
-										FE_node_selection_select_node(node_tool->node_selection,
-											picked_node);
+										Node_tool_set_picked_node(node_tool, picked_node);
 										REACCESS(FE_node)(&(node_tool->last_picked_node),
 											picked_node);
 									}
@@ -2218,8 +2228,8 @@ release.
 									edit_info.glyph_size[1] = 1.0;
 									edit_info.glyph_size[2] = 1.0;
 								}
-								else if (GT_element_settings_get_glyph_parameters(
-									node_tool->gt_element_settings, &glyph, &glyph_scaling_mode,
+								else if (Cmiss_graphic_get_glyph_parameters(
+									node_tool->graphic, &glyph, &glyph_scaling_mode,
 									edit_info.glyph_centre,edit_info.glyph_size,
 									&(edit_info.orientation_scale_field),
 									edit_info.glyph_scale_factors,

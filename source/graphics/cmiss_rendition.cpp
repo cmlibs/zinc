@@ -4265,8 +4265,8 @@ Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition
 					selection_field = Cmiss_field_module_create_group(field_module, region);
 					Cmiss_field_set_name(selection_field, "cmiss_selection");
 					Cmiss_field_set_persistent(selection_field, 0);
-					Cmiss_field_module_destroy(&field_module);
 				}
+				Cmiss_field_module_destroy(&field_module);
 			}
 			if (selection_field)
 			{
