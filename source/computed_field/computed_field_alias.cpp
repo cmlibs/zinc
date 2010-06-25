@@ -106,8 +106,9 @@ public:
 		{
 			if (field && (field->number_of_source_fields > 0) && field->source_fields && original_field())
 			{
-				MANAGER_DEREGISTER(Computed_field)(other_field_manager_callback_id,
-					original_field()->manager);
+				if (original_field()->manager)
+					MANAGER_DEREGISTER(Computed_field)(other_field_manager_callback_id,
+						original_field()->manager);
 			}
 			else
 			{

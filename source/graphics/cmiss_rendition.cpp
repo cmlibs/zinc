@@ -1038,8 +1038,14 @@ static void Cmiss_rendition_Computed_field_change(
 			change_data.graphics_changed = 0;
 			change_data.default_coordinate_field =
 				rendition->default_coordinate_field;
-			change_data.group_field =
-			    rendition->selection_group;
+			if (Cmiss_rendition_has_selection_group(rendition))
+			{
+				change_data.group_field = rendition->selection_group;
+			}
+			else
+			{
+				change_data.group_field = NULL;
+			}
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_Computed_field_change, (void *)&change_data,
 				rendition->list_of_graphic);
@@ -1599,7 +1605,14 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.selected_element_list =
 				FE_element_selection_get_element_list(
 					rendition->graphics_module->element_selection);
-			graphic_to_object_data.group_field =	rendition->selection_group;
+			if (Cmiss_rendition_has_selection_group(rendition))
+			{
+				graphic_to_object_data.group_field = rendition->selection_group;
+			}
+			else
+			{
+				graphic_to_object_data.group_field = NULL;
+			}
 			graphic_to_object_data.iso_surface_specification = NULL;
 			return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_to_graphics_object,(void *)&graphic_to_object_data,
@@ -2180,13 +2193,14 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_compile_members  */
 
-int Cmiss_rendition_is_not_filtered(Cmiss_rendition *rendition,
-		Filtering_list *filtering_list)
+int Cmiss_rendition_is_not_filtered(struct Cmiss_rendition *rendition,
+		void *filtering_list_void)
 {
 	int return_code = 1;
 	if (rendition)
 	{
-		if (!filtering_list->empty())
+		Filtering_list *filtering_list = (Filtering_list *)filtering_list_void;
+		if (filtering_list && !filtering_list->empty())
 		{
 			Filtering_list_iterator pos;
 			pos=filtering_list->find("rendition_visibility");
@@ -2234,7 +2248,7 @@ int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 	{
 		if (renderer->filtering_list)
 		{
-			return_code = Cmiss_rendition_is_not_filtered(cmiss_rendition, (renderer->filtering_list));
+			return_code = Cmiss_rendition_is_not_filtered(cmiss_rendition, (void *)renderer->filtering_list);
 		}
 		if (return_code)
 		{
@@ -4212,9 +4226,29 @@ int Cmiss_rendition_has_selection_group(Cmiss_rendition_id rendition)
 {
 	int return_code = 0;
 
-	if (rendition && rendition->selection_group)
+	if (rendition)
 	{
+		if (rendition->selection_group)
+		{
 			return_code = 1;
+		}
+		else
+		{
+			/* this handles the case when selection is shared between "group" */
+			Cmiss_field_module_id field_module =
+				Cmiss_region_get_field_module(rendition->region);
+			if (field_module)
+			{
+				Computed_field *selection_field = Cmiss_field_module_find_field_by_name(
+					field_module, "cmiss_selection");
+				if (selection_field)
+				{
+					rendition->selection_group = selection_field;
+					return_code = 1;
+				}
+				Cmiss_field_module_destroy(&field_module);
+			}
+		}
 	}
 
 	return return_code;

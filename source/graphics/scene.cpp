@@ -6716,8 +6716,10 @@ Returns 0 without error if scene is empty.
 				scene->list_of_rendition->begin();
 			while (pos != scene->list_of_rendition->end())
 			{
-				return_code &= Cmiss_rendition_get_range(
-					*pos, (void *)&graphics_object_range);
+				if (Cmiss_rendition_is_not_filtered(*pos, (void *)scene->filters_list))
+				{
+					return_code &= Cmiss_rendition_get_range(*pos, (void *)&graphics_object_range);
+				}
 				++pos;
 			}
 		}
@@ -8418,6 +8420,7 @@ struct Scene_graphics_object_iterator_data
 	const char *graphic_name;
 	graphics_object_tree_iterator_function iterator_function;
 	void *user_data;
+	void *filters_list;
 };
 #if defined (TO_BE_EDITED)
 static int Scene_graphics_objects_in_GT_element_settings_iterator(
@@ -8574,13 +8577,17 @@ elements and those chained together with other graphics objects
 		data.iterator_function = iterator_function;
 		data.user_data = user_data;
 		data.graphic_name = NULL;
+		data.filters_list = (void *)scene->filters_list;
 		Rendition_set::iterator pos =
 			scene->list_of_rendition->begin();
 		while (pos != scene->list_of_rendition->end())
 		{
+			if (Cmiss_rendition_is_not_filtered(*pos, data.filters_list))
+			{
 			/* pos->second is the visibility of rendition in scene */
-			return_code = for_each_graphic_in_Cmiss_rendition(*pos,
-				Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
+				return_code = for_each_graphic_in_Cmiss_rendition(*pos,
+					Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
+			}
 			++pos;
 		}
 	}
@@ -9039,6 +9046,7 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 		data.iterator_function = iterator_function;
 		data.user_data = user_data;
 		data.graphic_name = graphic_name;
+		data.filters_list = NULL;
 		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
 		if (rendition)
 		{
@@ -9046,7 +9054,7 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 				scene->list_of_rendition->find(rendition);
 			if (pos != scene->list_of_rendition->end())
 			{
-				return_code = for_each_graphic_in_Cmiss_rendition(*pos,
+				return_code = for_each_graphic_in_Cmiss_rendition(rendition,
 					Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
 			}
 			DEACCESS(Cmiss_rendition)(&rendition);

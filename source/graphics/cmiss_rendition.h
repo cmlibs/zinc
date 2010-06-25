@@ -563,5 +563,8 @@ int Cmiss_rendition_create_node_list_selection(Cmiss_rendition_id rendition,
 
 int Cmiss_graphics_module_set_time_keeper_internal(
 		struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper);
+
+int Cmiss_rendition_is_not_filtered(struct Cmiss_rendition *rendition,
+		void *filtering_list_void);
 #endif /* !defined (CMISS_RENDITION_H) */
 

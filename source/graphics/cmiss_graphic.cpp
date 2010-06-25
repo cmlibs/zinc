@@ -3657,12 +3657,13 @@ int Cmiss_graphic_to_graphics_object(
 }
 
 int Cmiss_graphic_is_not_filtered(struct Cmiss_graphic *graphic,
-		Filtering_list *filtering_list)
+		void *filtering_list_void)
 {
 	int return_code = 1;
 	if (graphic)
 	{
-		if (!filtering_list->empty())
+		Filtering_list *filtering_list = (Filtering_list *)filtering_list_void;
+		if (filtering_list && !filtering_list->empty())
 		{
 			Filtering_list_iterator pos;
 			std::string name("graphic");
@@ -3700,7 +3701,8 @@ int Cmiss_graphic_compile_visible_graphic(
 	{
 		if (renderer->filtering_list)
 		{
-			return_code = Cmiss_graphic_is_not_filtered(graphic, renderer->filtering_list);
+			return_code = Cmiss_graphic_is_not_filtered(graphic,
+				(void *)renderer->filtering_list);
 		}
 		if (return_code)
 		{
