@@ -3742,10 +3742,13 @@ int Cmiss_graphic_glyph_change(
 	struct GT_object *glyph,void *graphic_void)
 {
 	int return_code;
+	Cmiss_graphic *graphic =NULL;
 	
 	ENTER(Cmiss_graphic_glyph_change);
-	if (glyph && graphic_void)
+	graphic = (Cmiss_graphic *)graphic_void;
+	if (glyph && graphic)
 	{
+		graphic->graphics_changed = 1;
 		return_code = 1;
 	}
 	else
