@@ -6056,8 +6056,6 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
-							GT_object_add_callback(graphic->glyph,
-								Cmiss_graphic_glyph_change, (void *)graphic);
 						}
 						else
 						{
@@ -6391,8 +6389,6 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
-							GT_object_add_callback(graphic->glyph,
-								Cmiss_graphic_glyph_change, (void *)graphic);
 						}
 						else
 						{
@@ -6711,8 +6707,6 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
-							GT_object_add_callback(graphic->glyph,
-								Cmiss_graphic_glyph_change, (void *)graphic);
 						}
 						else
 						{
@@ -7913,8 +7907,6 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 						glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 						orientation_scale_field,glyph_scale_factors,
 						variable_scale_field);
-					GT_object_add_callback(graphic->glyph,
-						Cmiss_graphic_glyph_change, (void *)graphic);
 				}
 				else
 				{
