@@ -69,7 +69,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int IO_stream_package_define_memory_block(struct IO_stream_package *stream_class,
-	char *block_name, void *memory_block, int memory_block_length);
+	const char *block_name, const void *memory_block, const int memory_block_length);
 /*******************************************************************************
 LAST MODIFIED : 16 September 2004
 
@@ -77,7 +77,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int IO_stream_package_free_memory_block(struct IO_stream_package *stream_class,
-	char *block_name);
+	const char *block_name);
 /*******************************************************************************
 LAST MODIFIED : 17 September 2004
 
@@ -171,7 +171,7 @@ Returns an allocated string specifying where the stream is currently positioned
 suitable for use in diagnostic messages.
 ==============================================================================*/
 
-int IO_stream_read_to_memory(struct IO_stream *stream, void **stream_data,
+int IO_stream_read_to_memory(struct IO_stream *stream, const void **stream_data,
 	int *stream_data_length);
 /*******************************************************************************
 LAST MODIFIED : 13 September 2004

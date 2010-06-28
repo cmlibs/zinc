@@ -393,4 +393,15 @@ Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
 Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region, 
 	const char *path);
 
+/***************************************************************************//**
+ * Reads region data from a memory buffer into the specified region if compatible.
+ *
+ * @param region  The region into which to read the new data.
+ * @param memory_buffer  The memory block containing the region data.
+ * @param memory_buffer_size  The length of the memory block.
+ * @return  1 if data successfully read and merged into specified region, 0 otherwise.
+ */
+int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
+	const unsigned int memory_buffer_size);
+
 #endif /* __CMISS_REGION_H__ */

@@ -113,8 +113,8 @@ LAST MODIFIED : 23 August 2004
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *name;
-	void *memory_ptr;
+	const char *name;
+	const void *memory_ptr;
 	int data_length;
 	int access_count;
 }; /* struct IO_memory_block */
@@ -189,22 +189,24 @@ Global functions
 ----------------
 */
 
-struct IO_memory_block *CREATE(IO_memory_block)(char *name, void *memory_ptr,
-	int data_length)
+struct IO_memory_block *CREATE(IO_memory_block)(const char *name,
+	const void *memory_ptr, const int data_length)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	char *block_name;
 	struct IO_memory_block *io_memory_block;
 
 	ENTER(CREATE(IO_memory_block));
 
 	if (ALLOCATE(io_memory_block, struct IO_memory_block, 1) &&
-		ALLOCATE(io_memory_block->name, char, strlen(name) + 1))
+		ALLOCATE(block_name, char, strlen(name) + 1))
 	{
-		strcpy(io_memory_block->name, name);
+		strcpy(block_name, name);
+		io_memory_block->name = block_name;
 		io_memory_block->memory_ptr = memory_ptr;
 		io_memory_block->data_length = data_length;
 		io_memory_block->access_count = 0;
@@ -288,7 +290,7 @@ DESCRIPTION :
 } /* CREATE(IO_stream_package) */
 
 int IO_stream_package_define_memory_block(struct IO_stream_package *stream_class,
-	char *block_name, void *memory_block, int memory_block_length)
+	const char *block_name, const void *memory_block, const int memory_block_length)
 /*******************************************************************************
 LAST MODIFIED : 16 September 2004
 
@@ -301,11 +303,12 @@ DESCRIPTION :
 
 	if (stream_class && block_name && memory_block)
 	{
+		struct IO_memory_block *io_memory_block;
 		/* Add object to list */
-		if (memory_block = CREATE(IO_memory_block)(block_name, memory_block,
-				memory_block_length))
+		if (io_memory_block = 
+			CREATE(IO_memory_block)(block_name, memory_block, memory_block_length))
 		{
-			return_code = ADD_OBJECT_TO_LIST(IO_memory_block)(memory_block,
+			return_code = ADD_OBJECT_TO_LIST(IO_memory_block)(io_memory_block,
 				stream_class->memory_block_list);
 		}
 		else
@@ -328,7 +331,7 @@ DESCRIPTION :
 } /* IO_stream_package_define_memory_block */
 
 int IO_stream_package_free_memory_block(struct IO_stream_package *stream_class,
-	char *block_name)
+	const char *block_name)
 /*******************************************************************************
 LAST MODIFIED : 16 September 2004
 
@@ -1450,7 +1453,7 @@ suitable for use in diagnostic messages.
 	return (string);
 } /* IO_stream_get_location_string */
 
-int IO_stream_read_to_memory(struct IO_stream *stream, void **stream_data,
+int IO_stream_read_to_memory(struct IO_stream *stream, const void **stream_data,
 	int *stream_data_length)
 /*******************************************************************************
 LAST MODIFIED : 23 March 2007

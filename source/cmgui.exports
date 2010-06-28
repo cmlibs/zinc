@@ -245,6 +245,7 @@ Cmiss_region_destroy
 Cmiss_region_begin_change
 Cmiss_region_end_change
 Cmiss_region_read_file
+Cmiss_region_read_from_memory
 Cmiss_region_get_parent
 Cmiss_region_get_first_child
 Cmiss_region_get_next_sibling

@@ -395,3 +395,41 @@ Returns the field of <field_name> from <region> if it is defined.
 
 	return (field);
 } /* Cmiss_region_find_field_by_name */
+
+int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
+	const unsigned int memory_buffer_size)
+{
+	const char block_name[] = "dataBlock";
+	const char block_name_uri[] = "memory:dataBlock";
+	int return_code;
+	struct Cmiss_region *temp_region;
+	struct IO_stream_package *io_stream_package;
+
+	ENTER(Cmiss_region_read_file);
+	return_code = 0;
+	if (region && memory_buffer && memory_buffer_size && (io_stream_package=CREATE(IO_stream_package)()))
+	{
+		temp_region = Cmiss_region_create_region(region);
+		//We should add a way to define a memory block without requiring specifying a name. 
+		IO_stream_package_define_memory_block(io_stream_package,
+			block_name, memory_buffer, memory_buffer_size);
+		struct IO_stream *input_stream = CREATE(IO_stream)(io_stream_package);
+		IO_stream_open_for_read(input_stream, block_name_uri);
+		if (read_exregion_file(temp_region, input_stream, (struct FE_import_time_index *)NULL))
+		{
+			if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
+			{
+				return_code=Cmiss_regions_merge_FE_regions(region,temp_region);
+			}
+		}
+		IO_stream_close(input_stream);
+		DESTROY(IO_stream)(&input_stream);
+		IO_stream_package_free_memory_block(io_stream_package,
+			block_name);
+		DEACCESS(Cmiss_region)(&temp_region);
+		DESTROY(IO_stream_package)(&io_stream_package);
+	}
+	LEAVE;
+
+	return(return_code);
+}

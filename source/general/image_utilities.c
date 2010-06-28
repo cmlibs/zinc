@@ -7014,7 +7014,7 @@ and other parameters for formats that require them.
 	long int file_size;
 	struct stat buf;
 	struct IO_stream *image_file;
-	void *image_data;
+	const void *image_data;
 #else /* defined (USE_IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
 	int number_of_bytes_per_component, number_of_components;
