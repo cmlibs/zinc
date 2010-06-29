@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <resource>
 
-  <object class="wxFrame" subclass="wxSceneEditor" name="CmguiSceneEditor" title="Scene Editor">
-	  <title>Scene Editor</title>
+  <object class="wxFrame" subclass="wxRegionTreeViewer" name="CmguiRegionTreeViewer" title="Region Tree Viewer">
+	  <title>Region Tree Viewer</title>
 	  <flag>wxCLIP_CHILDREN</flag>	
 	  <object class = "wxBoxSizer">
 			<orient>wxVERTICAL</orient>
@@ -148,7 +148,7 @@
 				  		  <object class="sizeritem">
 									<flag>wxEXPAND|wxALL</flag>
 									<option>0</option>
-                  <object class = "wxCollapsiblePane" name="SceneEditorTopCollapsiblePane">
+                  <object class = "wxCollapsiblePane" name="RegionTreeViewerTopCollapsiblePane">
 								    <label>Transformation</label>
  				          </object>
  				        </object>
@@ -1009,7 +1009,7 @@
 
 
 	
-  <object class="wxPanel" name="CmguiSceneEditorGeneralSettings">
+  <object class="wxPanel" name="CmguiRegionTreeViewerGeneralSettings">
 
 	  <object class = "wxBoxSizer">
 			<orient>wxVERTICAL</orient>

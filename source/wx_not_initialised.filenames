@@ -31,7 +31,6 @@ graphics/rendergl.cpp
 graphics/rendervrml.cpp
 graphics/renderwavefront.cpp
 graphics/scene.cpp
-graphics/scene_editor_wx.cpp
 graphics/scene_viewer.cpp
 graphics/spectrum.cpp
 graphics/spectrum_editor_wx.cpp

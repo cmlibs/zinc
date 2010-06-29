@@ -1142,7 +1142,7 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/movie_graphics.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 GRAPHICS_SRCS += \
-    graphics/scene_editor_wx.cpp\
+    graphics/region_tree_viewer_wx.cpp\
     graphics/spectrum_editor_wx.cpp \
 	graphics/spectrum_editor_dialog_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE

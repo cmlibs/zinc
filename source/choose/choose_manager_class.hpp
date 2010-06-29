@@ -352,7 +352,8 @@ A manager iterator which adds each object to the chooser.
 		Managed_object_chooser* chooser_object;
 
 		return_code = 1;
-		if (chooser_object = (Managed_object_chooser*)chooser_object_void)
+		chooser_object = (Managed_object_chooser*)chooser_object_void;
+		if (chooser_object)
 		{
 			if (!(chooser_object->conditional_function) || 
 				(chooser_object->conditional_function)(object,

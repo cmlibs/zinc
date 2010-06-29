@@ -171,8 +171,8 @@ update in case it has changed, and writes the new object string in the widget.
 	int return_code; 
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
-
-	if (current_string = const_cast<char *>(GetValue().c_str())) 
+	current_string = const_cast<char *>(GetValue().c_str());
+	if (current_string)
 	{ 
 		 if (new_object && ((!(FE_region_contains_FE_element(
 			 fe_region, new_object)) || 
@@ -254,7 +254,8 @@ Updates the chosen object and text field in response to messages.
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(FE_element));
 
 	USE_PARAMETER(fe_region);
-	if (chooser = static_cast<wxFeElementTextChooser *>(text_choose_object_void))
+	chooser = static_cast<wxFeElementTextChooser *>(text_choose_object_void);
+	if (chooser)
 	{
 		if (chooser->current_object) 
 		{ 

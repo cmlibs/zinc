@@ -91,7 +91,7 @@ struct User_interface_module
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Material_editor_dialog *material_editor_dialog;
-	struct Scene_editor *scene_editor;
+	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Graphics_buffer_package *graphics_buffer_package;

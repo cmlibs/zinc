@@ -202,7 +202,7 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->node_viewer = NULL;
 		UI_module->element_point_viewer = NULL;
 		UI_module->material_editor_dialog = NULL;
-		UI_module->scene_editor = NULL;
+		UI_module->region_tree_viewer = NULL;
 		UI_module->spectrum_editor_dialog = NULL;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 		UI_module->scene_viewer_package = NULL;

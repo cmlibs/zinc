@@ -282,7 +282,8 @@ A list iterator which adds each object to the chooser.
 		List_chooser* chooser_object;
 
 		return_code = 1;
-		if (chooser_object = (List_chooser*)chooser_object_void)
+		chooser_object = (List_chooser*)chooser_object_void;
+		if (chooser_object)
 		{
 			if (!(chooser_object->conditional_function) || 
 				(chooser_object->conditional_function)(object,
@@ -321,9 +322,9 @@ DESCRIPTION :
 Updates the arrays of all the choosable objects and their names.
 ============================================================================*/
 	{
-		char **new_item_names;
+		char **new_item_names = NULL;
 		int i,max_number_of_objects,return_code;
-		Object **new_items;
+		Object **new_items = NULL;
 
 		return_code=0;
 

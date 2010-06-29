@@ -187,7 +187,7 @@ extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
 #include "graphics/scene_editor.h"
 #elif defined (WX_USER_INTERFACE)
-#include "graphics/scene_editor_wx.h"
+#include "graphics/region_tree_viewer_wx.h"
 #endif /* switch(USER_INTERFACE)*/
 #include "graphics/spectrum.h"
 #if defined (MOTIF_USER_INTERFACE)
@@ -404,7 +404,7 @@ DESCRIPTION :
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct Material_editor_dialog *material_editor_dialog;
-	struct Scene_editor *scene_editor;
+	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 #if defined (UNEMAP)
@@ -8434,7 +8434,7 @@ LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 
-Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
+Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 ==============================================================================*/
 {
 	char close_flag;
@@ -8446,9 +8446,9 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data->scene_editor)
+		if (command_data->region_tree_viewer)
 		{
-			scene = Scene_editor_get_scene(command_data->scene_editor);
+			scene = Region_tree_viewer_get_scene(command_data->region_tree_viewer);
 		}
 		else
 		{
@@ -8466,20 +8466,20 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 			NULL, set_char_flag);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (command_data->scene_editor)
+			if (command_data->region_tree_viewer)
 			{
 				if (close_flag)
 				{
-					DESTROY(Scene_editor)(&(command_data->scene_editor));
+					DESTROY(Region_tree_viewer)(&(command_data->region_tree_viewer));
 				}
 				else
 				{
-					if (scene != Scene_editor_get_scene(command_data->scene_editor))
+					if (scene != Region_tree_viewer_get_scene(command_data->region_tree_viewer))
 					{
-						return_code = Scene_editor_set_scene(command_data->scene_editor,
+						return_code = Region_tree_viewer_set_scene(command_data->region_tree_viewer,
 							scene);
 					}
-					Scene_editor_bring_to_front(command_data->scene_editor);
+					Region_tree_viewer_bring_to_front(command_data->region_tree_viewer);
 				}
 			}
 			else if (close_flag)
@@ -8492,8 +8492,8 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 			{
 #if defined (MOTIF_USER_INTERFACE)
 				if ((!command_data->user_interface) ||
-					(!CREATE(Scene_editor)(
-						&(command_data->scene_editor),
+					(!CREATE(Region_tree_viewer)(
+						&(command_data->region_tree_viewer),
 						User_interface_get_application_shell(command_data->user_interface),
 						command_data->scene_manager,
 						scene,
@@ -8508,7 +8508,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 						command_data->user_interface)))
 #elif defined (WX_USER_INTERFACE)
 				if ((!command_data->user_interface) ||
-					(!CREATE(Scene_editor)(	&(command_data->scene_editor),
+					(!CREATE(Region_tree_viewer)(	&(command_data->region_tree_viewer),
 						command_data->scene_manager,
 						scene,
 						command_data->root_region,
@@ -23319,7 +23319,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
-		command_data->scene_editor = (struct Scene_editor *)NULL;
+		command_data->region_tree_viewer = (struct Region_tree_viewer *)NULL;
 		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 		command_data->command_console = (struct Console *)NULL;
@@ -24255,9 +24255,9 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
 		}
-		if (command_data->scene_editor)
+		if (command_data->region_tree_viewer)
 		{
-			DESTROY(Scene_editor)(&(command_data->scene_editor));
+			DESTROY(Region_tree_viewer)(&(command_data->region_tree_viewer));
 		}
 		if (command_data->spectrum_editor_dialog)
 		{
