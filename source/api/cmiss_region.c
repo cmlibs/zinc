@@ -404,6 +404,7 @@ int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memor
 	int return_code;
 	struct Cmiss_region *temp_region;
 	struct IO_stream_package *io_stream_package;
+	struct IO_stream *input_stream;
 
 	ENTER(Cmiss_region_read_file);
 	return_code = 0;
@@ -413,7 +414,7 @@ int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memor
 		//We should add a way to define a memory block without requiring specifying a name. 
 		IO_stream_package_define_memory_block(io_stream_package,
 			block_name, memory_buffer, memory_buffer_size);
-		struct IO_stream *input_stream = CREATE(IO_stream)(io_stream_package);
+		input_stream = CREATE(IO_stream)(io_stream_package);
 		IO_stream_open_for_read(input_stream, block_name_uri);
 		if (read_exregion_file(temp_region, input_stream, (struct FE_import_time_index *)NULL))
 		{
