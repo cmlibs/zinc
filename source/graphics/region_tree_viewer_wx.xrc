@@ -143,23 +143,15 @@
 
 					 <object class ="wxPanel" name="LowerPanel">
 					    <object class = "wxBoxSizer">	
-				   	    <orient>wxVERTICAL</orient>
+				   	   <orient>wxVERTICAL</orient>
 
-				  		  <object class="sizeritem">
-									<flag>wxEXPAND|wxALL</flag>
-									<option>0</option>
-                  <object class = "wxCollapsiblePane" name="RegionTreeViewerTopCollapsiblePane">
-								    <label>Transformation</label>
- 				          </object>
- 				        </object>
-
-			   			  <object class="sizeritem">
-									<flag>wxEXPAND|wxALL</flag>
-									<option>0</option>
-                	<object class = "wxCollapsiblePane" name="CollapsiblePane">
-								  	<label>General Settings</label>
- 				       		</object>
-								</object>
+				  		 	<object class="sizeritem">
+				  		  		<flag>wxEXPAND|wxALL</flag>
+								<option>0</option>
+								<object class = "wxCollapsiblePane" name="RegionTreeViewerTopCollapsiblePane">
+									<label>Transformation</label>
+ 				         	</object>
+ 				       	</object>
 
 								<object class ="sizeritem">
 									<flag>wxEXPAND</flag>
@@ -1007,100 +999,7 @@
     </object>
 	</object>
 
-
-	
-  <object class="wxPanel" name="CmguiRegionTreeViewerGeneralSettings">
-
-	  <object class = "wxBoxSizer">
-			<orient>wxVERTICAL</orient>
-      <object class="sizeritem">
-				<object class = "wxBoxSizer">
-	  			<orient>wxHORIZONTAL</orient>
-					<object class="sizeritem">
-						<flag>wxALIGN_CENTRE</flag>
-						<object class = "wxStaticText">
-   						<label>Default coordinate field:</label>
-						</object>	
-					</object>	
-
-					<object class="sizeritem">
-						<flag>wxEXPAND|wxALIGN_CENTRE</flag>					
-						<option>1</option>
-						<object class = "wxPanel" name="DefaultCoordinateFieldChooser">
-							<size>200,26</size>
-						</object>
-					</object>	
-				</object>													
-			</object>	
-			<object class="sizeritem">
-			  <object class = "wxBoxSizer">	
-			  <orient>wxHORIZONTAL</orient>
-				  <object class="sizeritem">
-				  	<flag>wxALIGN_CENTRE</flag>
-					  <object class = "wxStaticText">
- 						  <label>Element discretisation:</label>
-					  </object>	
-				  </object>	
-				  <object class="sizeritem">
-					  <flag>wxALIGN_CENTRE</flag>
-		 			  <object class = "wxTextCtrl" name="ElementDiscretisationPanel">
-          		<style>wxTE_PROCESS_ENTER</style>
-							<size>-1,26</size>
-						  <option>1</option>
-					  </object>
-				  </object>	
-			   </object>													
-			</object>	
-
-			<object class="sizeritem">	
-				<flag>wxEXPAND</flag>
-				<object class = "wxBoxSizer">
-					<orient>wxHORIZONTAL</orient>
-					<object class="sizeritem">
-			   		   <flag>wxALIGN_CENTER</flag>
-						<object class = "wxStaticText">
-		   							<label>Circle discretisation:</label>
-						</object>	
-					</object>	
-					<object class="sizeritem">
-						<flag>wxALIGN_CENTER</flag>
-						<object class = "wxTextCtrl" name="CircleDiscretisationPanel">
-          					<style>wxTE_PROCESS_ENTER</style>
-							<size>200,26</size>
-							<option>1</option>
-						</object>
-					</object>
-				</object>													
-			</object>	
-	
-			<object class="sizeritem">
-				<flag>wxEXPAND|wxALIGN_CENTRE</flag>
-		    <option>1</option>
-				<object class = "wxBoxSizer">	
-					<orient>wxHORIZONTAL</orient>
-					<object class="sizeritem">
-						<flag>wxALIGN_CENTER</flag>
-						<option>0</option>
-						<object class = "wxCheckBox" name="NativeDiscretisationFieldCheckBox">
-   						<label>Native discretisation field:</label>
-							<size>-1,26</size>
-						</object>	
-					</object>	
-					<object class="sizeritem">
-						<flag>wxEXPAND|wxALIGN_CENTER</flag>
-	          <option>1</option>
-						<object class = "wxPanel" name="NativeDiscretisationFieldChooser">
-							<size>200,26</size>
-							<option>1</option>
-						</object>
-					</object>	
-				</object>													
-			</object>
-
-		</object>	
-	</object>
-
-  <object class="wxPanel" name="CmguiTransformationEditor">
+	<object class="wxPanel" name="CmguiTransformationEditor">
 		<size>500,500</size>
 	</object>		   		
 </resource>

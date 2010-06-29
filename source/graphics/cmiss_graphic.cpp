@@ -379,9 +379,9 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->native_discretization_field=(struct FE_field *)NULL;
 			/* default to 1*1*1 discretization for fastest possible display.
 				 Important since model may have a *lot* of elements */
-			graphic->discretization.number_in_xi1=4;
-			graphic->discretization.number_in_xi2=4;
-			graphic->discretization.number_in_xi3=4;
+			graphic->discretization.number_in_xi1=1;
+			graphic->discretization.number_in_xi2=1;
+			graphic->discretization.number_in_xi3=1;
 			graphic->circle_discretization=6;
 			/* for volumes only */
 			graphic->volume_texture=(struct VT_volume_texture *)NULL;

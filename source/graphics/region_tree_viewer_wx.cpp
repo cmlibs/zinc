@@ -83,7 +83,6 @@ extern "C" {
 }
 #include "graphics/region_tree_viewer_wx.xrch"
 
-#define GENERAL_SETTINGS
 /*
 Module types
 ------------
@@ -339,8 +338,7 @@ DESCRIPTION :
 	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	 struct MANAGER(Computed_field) *field_manager;
 	 struct MANAGER(Graphics_font) *font_manager;
-	 struct FE_field *native_discretization_field;
-	 struct Computed_field *default_coordinate_field, *coordinate_field, *radius_scalar_field ;
+	 struct Computed_field *radius_scalar_field ;
 	struct Cmiss_region *root_region, *current_region;
 	 enum Graphics_select_mode select_mode;
 	 enum Use_element_type use_element_type;
@@ -367,18 +365,9 @@ DESCRIPTION :
 	 wxCheckBox *autocheckbox;
 	 wxButton *applybutton;
 	 wxButton *revertbutton;
-	 wxCollapsiblePane *collpane;
 	 wxCollapsiblePane *top_collpane;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct region_tree_viewer*/
-
-static int set_general_graphic(struct Region_tree_viewer *region_tree_viewer);
-/*******************************************************************************
-LAST MODIFIED : 16 Match 2007
-
-DESCRIPTION :
-Prototype.
-==============================================================================*/
 
 void Region_tree_viewer_wx_transformation_change(struct Cmiss_rendition *rendition,
 	 gtMatrix *transformation_matrix, void *region_tree_viewer_void);
@@ -510,13 +499,13 @@ class wxRegionTreeViewer : public wxFrame
 		*facecheckbox, *seedelementcheckbox;	
 	wxRadioButton *isovaluelistradiobutton, *isovaluesequenceradiobutton;
 	wxPanel *isovalueoptionspane;
-	wxTextCtrl *elementdiscretisationpanel, *nametextfield, *circlediscretisationpanel,
+	wxTextCtrl *nametextfield,
 		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *centretextctrl,
 		*baseglyphsizetextctrl,*glyphscalefactorstextctrl,*discretizationtextctrl,
 		*circlediscretizationtextctrl,*xitextctrl,*lengthtextctrl,*widthtextctrl,
 		*linewidthtextctrl,*isovaluesequencenumbertextctrl, *isovaluesequencefirsttextctrl,
 		*isovaluesequencelasttextctrl;
-	wxPanel  *FE_chooser_panel,	*coordinate_field_chooser_panel, *data_chooser_panel,
+	wxPanel	*coordinate_field_chooser_panel, *data_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
 		 *label_chooser_panel, *font_chooser_panel, *select_mode_chooser_panel,
@@ -533,10 +522,6 @@ class wxRegionTreeViewer : public wxFrame
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
 	DEFINE_MANAGER_CLASS(Computed_field);
-	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *default_coordinate_field_chooser;
-	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *FE_field_chooser;	
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*coordinate_field_chooser;
 	DEFINE_MANAGER_CLASS(Graphical_material);
@@ -616,22 +601,7 @@ public:
 		 region_tree_viewer_size.current_height = 0;
 #endif /* defined (__WXMSW__) */
 
- /* Set the collapsible pane in the secne editor */
-  region_tree_viewer->collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
-  wxPanel *GeneralSettingPanel = new wxPanel;
-  wxWindow *win = region_tree_viewer->collpane->GetPane();
-  wxXmlResource::Get()->LoadPanel(GeneralSettingPanel,
-	  win, _T("CmguiRegionTreeViewerGeneralSettings"));
-  wxSizer *paneSz = new wxBoxSizer(wxVERTICAL);
-  paneSz->Add(GeneralSettingPanel, 1, wxEXPAND|wxALL, 2);
-  win->SetSizer(paneSz);
-  paneSz->SetSizeHints(win);
-  region_tree_viewer->collpane->Collapse(1);
 
-	/* Set the default_coordinate_field_chooser_panel*/
-	default_coordinate_field_chooser = NULL;
-	/* Set the native_discretisation_chooser_panel*/
-	FE_field_chooser = NULL;
 	/* Set the coordinate_field_chooser_panel*/
 	coordinate_field_chooser = NULL;
 	/* Set the graphical_material_chooser_panel*/
@@ -721,12 +691,6 @@ public:
 	seed_element_chooser = NULL;
 	graphicalitemschecklist = NULL;
 
-	XRCCTRL(*this,"CircleDiscretisationPanel", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
-		wxCommandEventHandler(wxRegionTreeViewer::CircleDiscretisationUpdate),
-		NULL, this);
-	XRCCTRL(*this,"ElementDiscretisationPanel", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
-		wxCommandEventHandler(wxRegionTreeViewer::ElementDiscretisationUpdate),
-		NULL, this);
 	XRCCTRL(*this,"NameTextField", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxRegionTreeViewer::GraphicEditorNameText),
 		NULL, this);
@@ -790,10 +754,6 @@ public:
 	 {
 			if (font_chooser)
 				 delete font_chooser;
-			if (default_coordinate_field_chooser)
-				 delete default_coordinate_field_chooser;
-			if (FE_field_chooser)
-				 delete FE_field_chooser;
 			if (coordinate_field_chooser)
 				 delete coordinate_field_chooser;
 			if (graphical_material_chooser)
@@ -851,10 +811,6 @@ public:
 */
 void Region_tree_viewer_wx_set_manager_in_field_choosers(struct Region_tree_viewer *region_tree_viewer)
 {
-	 if (default_coordinate_field_chooser != NULL)
-			default_coordinate_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (FE_field_chooser != NULL)
-			FE_field_chooser->set_manager(region_tree_viewer->field_manager);
 	 if (coordinate_field_chooser != NULL)
 			coordinate_field_chooser->set_manager(region_tree_viewer->field_manager);
 	 if (data_field_chooser != NULL)
@@ -880,71 +836,6 @@ void Region_tree_viewer_wx_set_manager_in_field_choosers(struct Region_tree_view
 	 if (texture_coord_field_chooser != NULL)
 			texture_coord_field_chooser->set_manager(region_tree_viewer->field_manager);
 }
-
-	/***************************************************************************//**
- * Callback from wxChooser<Scene> when choice is made.
- */
-	int default_coordinate_field_callback(Computed_field *default_coordinate_field)
- {
-	if (default_coordinate_field&&region_tree_viewer)
-	{
-		Cmiss_rendition_set_default_coordinate_field(
-			region_tree_viewer->edit_rendition,
-			default_coordinate_field);
-		/* inform the client of the change */
-		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-			region_tree_viewer->edit_rendition);
-		if (region_tree_viewer->current_graphic && coordinate_field_chooser)
-		{
-			coordinate_field_chooser->set_object(
-				Cmiss_graphic_get_coordinate_field(region_tree_viewer->current_graphic));
-			Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-			coordinatefieldcheckbox->SetValue(1);
-			coordinate_field_chooser_panel->Enable();
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"default_coordinate_field_callback.  "
-			"Invalid argument(s)");
-	}
-		return 1;
- } /* graphical_element_editor_update_default_coordinate_field */
-	
-	/***************************************************************************//**
- * Callback from wxChooser<Scene> when choice is made.
- */
-	int native_discretization_field_callback(Computed_field *native_discretization_field)
-	{
-		int return_code = Computed_field_get_type_finite_element(native_discretization_field,
-				&region_tree_viewer->native_discretization_field);
-		if (return_code)
-		{
-			Cmiss_rendition_set_native_discretization_field(
-				region_tree_viewer->edit_rendition,
-				region_tree_viewer->native_discretization_field);
-			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				region_tree_viewer->edit_rendition);
-			if (region_tree_viewer->current_graphic && native_discretization_field_chooser)
-			{
-				native_discretization_field_chooser->set_object(
-					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_read_only_with_fe_field,
-						Cmiss_graphic_get_native_discretization_field(
-							region_tree_viewer->current_graphic), region_tree_viewer->field_manager));
-				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_update_native_discretization_field.  "
-				"Invalid argument(s)");
-		}	
-
-		return (return_code);
-	}
 
 int coordinate_field_callback(Computed_field *coordinate_field)
 /*******************************************************************************
@@ -1927,84 +1818,6 @@ void ResetWindow(wxSplitterEvent& event)
 	 sceneediting->SetScrollbars(10,10,40,40);
 }
 
-	void ElementDiscretisationUpdate(wxCommandEvent &event)
-	{
-		struct Parse_state *temp_state;
-		struct Element_discretization element_discretization, discretization;
-		char *text_entry = NULL, temp_string[20];
-
-	USE_PARAMETER(event);
-		elementdiscretisationpanel=XRCCTRL(*this, "ElementDiscretisationPanel",wxTextCtrl);
-		text_entry = duplicate_string(
-			const_cast<char *>(elementdiscretisationpanel->GetValue().c_str()));
-		if (text_entry)
-		{
-			if (NULL != (temp_state=create_Parse_state(text_entry)))
-			{
-				if (set_Element_discretization(temp_state,
-						(void *)&element_discretization,
-						(void *)region_tree_viewer->user_interface) &&
-					Cmiss_rendition_set_element_discretization(
-						region_tree_viewer->edit_rendition,
-						&element_discretization))
-				{
-					/* inform the client of the changes */
-					if (region_tree_viewer->current_graphic && discretizationtextctrl &&
-						Cmiss_graphic_get_discretization(
-							region_tree_viewer->current_graphic,&discretization))
-					{
-						/* always restore constant_radius to actual value in use */
-						sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
-							discretization.number_in_xi2,discretization.number_in_xi3);
-						discretizationtextctrl->ChangeValue(temp_string);
-						Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-					}
-				}
-				destroy_Parse_state(&temp_state);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"graphical_element_editor_element_disc_text_CB.  "
-					"Could not create parse state");
-			}
-			set_general_graphic(region_tree_viewer);
-			DEALLOCATE(text_entry);
-		}
-		else
-		{
-			 display_message(ERROR_MESSAGE,
-					"graphical_element_editor_element_disc_text_CB.  Invalid argument(s)");
-		}
-		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-			region_tree_viewer->edit_rendition);
-	}
-
-	void NativeDiscretisationFieldChecked(wxCommandEvent &event)
-	{
-		Computed_field *temp_native_discretization_field;
-		FE_field *native_discretization_field;
-	USE_PARAMETER(event);
-		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
-		FE_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
-		if (nativediscretizationcheckbox->IsChecked())
-		{
-			temp_native_discretization_field=FE_field_chooser->get_object();
-			Computed_field_get_type_finite_element(temp_native_discretization_field,
-				 &native_discretization_field);
-			FE_chooser_panel->Enable();
-		}
-		else
-		{
-			FE_chooser_panel->Disable();
-			native_discretization_field=(FE_field *)NULL;
-		}
-	  Cmiss_rendition_set_native_discretization_field(
-	    region_tree_viewer->edit_rendition, native_discretization_field);
-	  Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	    region_tree_viewer->edit_rendition);
-	}
-
 	void AutoChecked(wxCommandEvent &event)
 	{
 	USE_PARAMETER(event);
@@ -2059,41 +1872,6 @@ void ApplyClicked(wxCommandEvent &event)
 	{
 		region_tree_viewer->rendition_callback_flag = 1;
 	}
-}
-
-void CircleDiscretisationUpdate(wxCommandEvent &event)
-{
-	 USE_PARAMETER(event);
-	 int circle_discretization;
-	 circlediscretisationpanel = XRCCTRL(*this, "CircleDiscretisationPanel",wxTextCtrl);
-	 char temp_string[10];
-	 TempText = circlediscretisationpanel->GetValue();
-	 if (TempText)
-	 {
-			circle_discretization = atoi(const_cast<char *>(TempText.c_str()));
-			if (Cmiss_rendition_set_circle_discretization(
-						region_tree_viewer->edit_rendition, circle_discretization))
-			{
-				if (region_tree_viewer->current_graphic && circlediscretizationtextctrl &&
-					CMISS_GRAPHIC_CYLINDERS==region_tree_viewer->current_graphic_type)
-				{
-					sprintf(temp_string,"%d",Cmiss_graphic_get_circle_discretization(
-										region_tree_viewer->current_graphic));
-					circlediscretizationtextctrl->SetValue(temp_string);
-					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-				}
-			}
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "graphical_element_editor_circle_disc_text_CB.  Missing text");
-	 }
-	 /* always redisplay discretization to show assumed values */
-	 set_general_graphic(region_tree_viewer);
-
-	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				region_tree_viewer->edit_rendition);
 }
 
 void Region_tree_viewer_wx_update_graphic_type(Cmiss_graphic *graphic)
@@ -2163,35 +1941,6 @@ void GraphicListBoxChecked(wxCommandEvent &event)
 void GraphicListBoxClicked(wxCommandEvent &event)
 {
 	GraphicListBoxProcessSelection(event.GetInt());
-}
-
-
-void RenewGeneralSettingChooser(Cmiss_rendition *edit_rendition)
-{
-	if (default_coordinate_field_chooser)
-	{
-		default_coordinate_field_chooser->set_object(
-			Cmiss_rendition_get_default_coordinate_field(edit_rendition));
-	}
-	if (FE_field_chooser)
-	{
-		FE_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
-		nativediscretizationcheckbox = XRCCTRL(
-			*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
-		Computed_field *native_discretization_field=FE_field_chooser->get_object();
-		FE_field_chooser->set_object(
-			FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_read_only_with_fe_field, native_discretization_field,
-				region_tree_viewer->field_manager));
-		if (nativediscretizationcheckbox->IsChecked())
-		{
-			FE_chooser_panel->Enable();
-		}
-		else
-		{
-			FE_chooser_panel->Disable();
-		}
-	}
 }
 
 void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_type)
@@ -3649,65 +3398,27 @@ void SetGraphic(Cmiss_graphic *graphic)
 		enum Render_type render_type;
 		struct FE_element *seed_element;
 		struct FE_region *fe_region;
-
-		if (default_coordinate_field_chooser ==NULL)
-		{
-			region_tree_viewer->default_coordinate_field=
-				Cmiss_rendition_get_default_coordinate_field(region_tree_viewer->edit_rendition);
-			wxPanel *default_coordinate_field_chooser_panel =
-				XRCCTRL(*this, "DefaultCoordinateFieldChooser",wxPanel);
-			default_coordinate_field_chooser = 
-				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-				(default_coordinate_field_chooser_panel, region_tree_viewer->default_coordinate_field, region_tree_viewer->field_manager,
-					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL, region_tree_viewer->user_interface);
-			Callback_base< Computed_field* > *default_coordinate_field_callback = 
-				new Callback_member_callback< Computed_field*, 
-				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
-				(this, &wxRegionTreeViewer::default_coordinate_field_callback);
-			default_coordinate_field_chooser->set_callback(default_coordinate_field_callback);
-			default_coordinate_field_chooser_panel->Fit();	
-		}
-
-	if (FE_field_chooser ==NULL)
-	{
-		if (region_tree_viewer->edit_rendition != NULL)
-		{
-			region_tree_viewer->native_discretization_field = Cmiss_rendition_get_native_discretization_field(region_tree_viewer->edit_rendition);
-		}
-		wxPanel *FE_chooser_panel =
-			XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);			
-		FE_field_chooser =
-			new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-			(FE_chooser_panel,(Computed_field*)NULL, region_tree_viewer->field_manager,
-				Computed_field_is_type_finite_element_iterator, (void *)NULL, region_tree_viewer->user_interface);
-		Callback_base< Computed_field* > *native_discretization_field_callback = 
-			new Callback_member_callback< Computed_field*, 
-			wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
-			(this, &wxRegionTreeViewer::native_discretization_field_callback);
-		FE_field_chooser->set_callback(native_discretization_field_callback);
-		FE_chooser_panel->Fit();
-	}
 	
 	coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
 	coordinate_field_chooser_panel =
 		XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 	if (CMISS_GRAPHIC_STATIC != region_tree_viewer->current_graphic_type)
 	{
+		struct Computed_field *temp_coordinate_field = NULL;
 		if (region_tree_viewer->current_graphic != NULL)
 		{
-			region_tree_viewer->coordinate_field=
+			temp_coordinate_field=
 				Cmiss_graphic_get_coordinate_field(region_tree_viewer->current_graphic);
 		}
-		struct Computed_field *temp_coordinate_field;
-		if (region_tree_viewer->coordinate_field)
+		if (temp_coordinate_field)
 		{
-			temp_coordinate_field = region_tree_viewer->coordinate_field;
 			coordinatefieldcheckbox->SetValue(1);
 			coordinate_field_chooser_panel->Enable();
 		}
 		else
 		{
-			temp_coordinate_field = region_tree_viewer->default_coordinate_field;
+			temp_coordinate_field = Cmiss_rendition_get_default_coordinate_field(
+				region_tree_viewer->edit_rendition);
 			coordinatefieldcheckbox->SetValue(0);
 			coordinate_field_chooser_panel->Disable();
 		}
@@ -4864,8 +4575,6 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 		if (rendition)
 		{
 			Region_tree_viewer_set_active_rendition(region_tree_viewer, rendition);
-			region_tree_viewer->collpane->Enable();
-			region_tree_viewer->collpane->Show();
 			region_tree_viewer->lowersplitter->Enable();
 			region_tree_viewer->lowersplitter->Show();
 			Region_tree_viewer_set_graphic_widgets_for_rendition(region_tree_viewer);
@@ -4892,8 +4601,6 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 				*this, "CmissGraphicListBox",wxCheckListBox);
 		region_tree_viewer->graphiclistbox->SetSelection(wxNOT_FOUND);
 		region_tree_viewer->graphiclistbox->Clear();
-		region_tree_viewer->collpane->Disable();
-		region_tree_viewer->collpane->Hide();
 		region_tree_viewer->lowersplitter->Disable();
 		region_tree_viewer->lowersplitter->Hide();
 		region_tree_viewer->sceneediting->Hide();
@@ -5066,11 +4773,7 @@ IMPLEMENT_DYNAMIC_CLASS(wxRegionTreeViewer, wxFrame)
 
 BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_SPLITTER_SASH_POS_CHANGED(XRCID("LowerSplitter"),wxRegionTreeViewer::ResetWindow)
-	EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxRegionTreeViewer::CollapsiblepaneChangedEvent)
 	EVT_COLLAPSIBLEPANE_CHANGED(XRCID("RegionTreeViewerTopCollapsiblePane"), wxRegionTreeViewer::CollapsiblepaneChangedEvent)
-	EVT_TEXT_ENTER(XRCID("CircleDiscretisationPanel"), wxRegionTreeViewer::CircleDiscretisationUpdate)
-	EVT_TEXT_ENTER(XRCID("ElementDiscretisationPanel"), wxRegionTreeViewer::ElementDiscretisationUpdate)
-	EVT_CHECKBOX(XRCID("NativeDiscretisationFieldCheckBox"),wxRegionTreeViewer::NativeDiscretisationFieldChecked)
 	EVT_CHECKBOX(XRCID("AutoCheckBox"),wxRegionTreeViewer::AutoChecked)
 	EVT_BUTTON(XRCID("ApplyButton"),wxRegionTreeViewer::ApplyClicked)
 	EVT_BUTTON(XRCID("RevertButton"),wxRegionTreeViewer::RevertClicked)
@@ -5163,11 +4866,9 @@ int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
 				selection = 0;
 			}
 			region_tree_viewer->graphiclistbox->SetSelection(selection);
-			region_tree_viewer->collpane->Show();
 			region_tree_viewer->lowersplitter->Show();
 			region_tree_viewer->wx_region_tree_viewer->
 				Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
-			set_general_graphic(region_tree_viewer);
 			Cmiss_graphic *temp_graphic = Cmiss_rendition_get_graphic_at_position(
 				region_tree_viewer->edit_rendition, selection+1);
 			region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(temp_graphic);
@@ -5306,8 +5007,6 @@ void Region_tree_viewer_set_active_rendition(
 				 region_tree_viewer->current_graphic_type = Cmiss_graphic_get_graphic_type(
 					 region_tree_viewer->current_graphic);
 			 }
-			 region_tree_viewer->collpane->Enable();
-			 region_tree_viewer->collpane->Show();
 			 region_tree_viewer->lowersplitter->Enable();
 			 region_tree_viewer->lowersplitter->Show();
 			 region_tree_viewer->field_manager = Cmiss_region_get_Computed_field_manager(
@@ -5341,34 +5040,6 @@ void Region_tree_viewer_set_active_rendition(
 		 REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, NULL);
 		 REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic,NULL);
 	 }
-}
-
-static int set_general_graphic(struct Region_tree_viewer *region_tree_viewer)
-/*******************************************************************************
-LAST MODIFIED : 16 Match 2007
-
-DESCRIPTION :
-Renew the display of  the general settings
-==============================================================================*/
-{
-	struct Element_discretization element_discretization;
-	wxTextCtrl *circlediscretisationpanel =	XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
-				"CircleDiscretisationPanel",wxTextCtrl);
-	wxTextCtrl *elementdiscretisationpanel = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
-		 "ElementDiscretisationPanel",wxTextCtrl);
-	char temp_string[80];
-	region_tree_viewer->wx_region_tree_viewer->RenewGeneralSettingChooser(region_tree_viewer->edit_rendition);
-	int temp = Cmiss_rendition_get_circle_discretization(region_tree_viewer->edit_rendition);
-	wxString circle_discretisation = wxString::Format(wxT("%d"), (int)temp);
-	circlediscretisationpanel->SetValue(circle_discretisation);
-	Cmiss_rendition_get_element_discretization(
-	   region_tree_viewer->edit_rendition,&element_discretization);
-	sprintf(temp_string,"%d*%d*%d",
-		element_discretization.number_in_xi1,
-		element_discretization.number_in_xi2,
-		element_discretization.number_in_xi3);
-	 elementdiscretisationpanel->SetValue(temp_string);
-	return 1;
 }
 
 /***************************************************************************//**
@@ -5535,12 +5206,9 @@ DESCRIPTION :
 			 region_tree_viewer->user_interface=user_interface;
 			 region_tree_viewer->current_graphic_type=CMISS_GRAPHIC_LINES;
 			 region_tree_viewer->current_graphic = (Cmiss_graphic *)NULL;
-			 region_tree_viewer->default_coordinate_field=(Computed_field *)NULL;
 			 region_tree_viewer->volume_texture_manager=volume_texture_manager;
 			 region_tree_viewer->field_manager=(MANAGER(Computed_field)*)NULL;
  			 region_tree_viewer->font_manager=Graphics_font_package_get_font_manager(font_package);
-			 region_tree_viewer->native_discretization_field=(FE_field*)NULL ;
-			 region_tree_viewer->coordinate_field=(Computed_field *)NULL;
 			 region_tree_viewer->select_mode=(Graphics_select_mode)NULL;
 			 region_tree_viewer->constant_radius=0.0;
 			 region_tree_viewer->radius_scale_factor=1.0;
@@ -5806,10 +5474,7 @@ void Region_tree_viewer_set_graphic_widgets_for_rendition(Region_tree_viewer *re
 	 {
 		 region_tree_viewer->wx_region_tree_viewer->
 			 Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
-		 set_general_graphic(region_tree_viewer);
 		 get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
-		 region_tree_viewer->collpane->Enable();
-		 region_tree_viewer->collpane->Show();
 		 region_tree_viewer->lowersplitter->Enable();
 		 region_tree_viewer->lowersplitter->Show();
 	 }
