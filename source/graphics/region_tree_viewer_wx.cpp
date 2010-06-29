@@ -5604,14 +5604,17 @@ DESCRIPTION :
 			 region_tree_viewer->lowersplitter->Layout();
 			 region_tree_viewer->lowersplitter->Hide();
 			 region_tree_viewer->topsplitter->Layout();
-			 region_tree_viewer->testing_tree_ctrl = new wxCmguiHierachicalTree(region_tree_viewer->wx_region_tree_viewer,
-				 XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TreeControlPanel",wxPanel));
+			 wxPanel *tree_control_panel =
+					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TreeControlPanel",wxPanel);
+			 region_tree_viewer->testing_tree_ctrl =
+					new wxCmguiHierachicalTree(region_tree_viewer->wx_region_tree_viewer, tree_control_panel);
 			 region_tree_viewer->ImageList = new wxImageList(13,13);
 			 region_tree_viewer->ImageList->Add(wxIcon(tickbox_xpm));
 			 region_tree_viewer->ImageList->Add(wxIcon(unticked_box_xpm));
 			 region_tree_viewer->testing_tree_ctrl->AssignImageList(region_tree_viewer->ImageList);
 			 Region_tree_viewer_setup_region_tree(region_tree_viewer);
 			 region_tree_viewer->testing_tree_ctrl->ExpandAll();
+			 tree_control_panel->Layout();
 		}
 		else
 		{
