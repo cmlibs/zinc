@@ -898,7 +898,8 @@ DESCRIPTION :
 				warning_multiple_normals = 0;
 				/* default material is NULL so that it gets controlled by the graphics_object */
 				scanned_material=(struct Graphical_material *)NULL;
-			
+
+				line_number = 0;
 				number_of_vertices = 0;
 				number_of_triangles = 0;
 				n_obj_coordinate_vertices = 0;
