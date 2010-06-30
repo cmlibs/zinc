@@ -65,6 +65,7 @@ public:
 		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
 	{
 		USE_PARAMETER(user_interface);
+		callback = NULL;
 		build_main_menu(number_of_items, item_names, current_value);
 
 		Connect(wxEVT_COMMAND_CHOICE_SELECTED,
@@ -77,6 +78,12 @@ public:
 
 		Show();
 	}
+
+	~wxEnumeratorChooser<Enumerator>()
+		{
+			if (callback)
+				delete callback;
+		}
 
 	void OnChoiceSelected(wxCommandEvent& event)
 	{
@@ -96,6 +103,8 @@ public:
 	int set_callback(Callback_base< typename Enumerator::Enumerator_type >
 		*callback_object)
 	{
+		if (callback)
+			delete callback;
 		callback = callback_object;
 		return (1);
 	}
@@ -197,7 +206,8 @@ DESCRIPTION :
 		{
 			  chooser->Destroy();
 		}
-		
+		if (update_callback)
+			delete update_callback;
 		delete enumerator;
 		if (item_names)
 		{
@@ -246,6 +256,10 @@ DESCRIPTION :
 Changes the callback item.
 ============================================================================*/
 	{
+		if (update_callback)
+		{
+			delete update_callback;
+		}
 		update_callback = new_callback;
 		return(1);
 	} /* Enumerator_chooser::set_callback */
