@@ -11392,7 +11392,7 @@ Executes a GFX LIST ELEMENT.
 		  		if (selected_flag && group_field)
 		  		{
 		  			element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, group_field, 0);
+		  				region, cm_element_type, element_ranges, group_field, NULL,0);
 		  		}
 		  		else if (selected_flag && !group_field)
 		  		{
@@ -11401,7 +11401,7 @@ Executes a GFX LIST ELEMENT.
 		  		else
 		  		{
 		  			element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, NULL, 0);
+		  				region, cm_element_type, element_ranges, NULL, NULL, 0);
 		  		}
 		  		if (group_field)
 		  			Cmiss_field_destroy(&group_field);
@@ -11580,7 +11580,7 @@ use node_manager and node_selection.
 		  		if (selected_flag && group_field)
 		  		{
 		  			node_list = FE_node_list_from_region_and_selection_group(
-		  				region, node_ranges, group_field, 0, (use_data != NULL));
+		  				region, node_ranges, group_field, NULL, 0, (use_data != NULL));
 		  		}
 		  		else if (selected_flag && !group_field)
 		  		{
@@ -11589,7 +11589,7 @@ use node_manager and node_selection.
 		  		else
 		  		{
 		  			node_list = FE_node_list_from_region_and_selection_group(
-		  				region, node_ranges, NULL, 0,(use_data != NULL));
+		  				region, node_ranges, NULL, NULL, 0,(use_data != NULL));
 		  		}
 		  		if (group_field)
 		  			Cmiss_field_destroy(&group_field);
@@ -12951,7 +12951,7 @@ be specified at once.
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
 	struct Cmiss_region *region;
-	struct FE_region *fe_region, *modify_fe_region;
+	struct FE_region *modify_fe_region;
 	struct LIST(FE_element) *element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
@@ -13063,17 +13063,43 @@ be specified at once.
 					modify_region_path, &region) &&
 					(modify_fe_region = Cmiss_region_get_FE_region(region)))
 				{
-					if ((from_region_path &&
-						Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-							from_region_path, &region) &&
-						(fe_region = Cmiss_region_get_FE_region(region))) ||
-						((!from_region_path) && FE_region_get_ultimate_master_FE_region(
-							modify_fe_region,	&fe_region)))
+					Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+					if ((from_region_path && Cmiss_region_get_region_from_path_deprecated(
+							parent_region, from_region_path, &region)) ||
+							(NULL != (region = parent_region)))
 					{
-						if (element_list =
-							FE_element_list_from_fe_region_selection_ranges_condition(
-								fe_region, cm_element_type, command_data->element_selection,
-								selected_flag, element_ranges, conditional_field, time))
+				  	if (region)
+				  	{
+				  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+				  		struct Computed_field *group_field = NULL;
+				  		if (rendition)
+				  		{
+				  			if (Cmiss_rendition_has_selection_group(rendition))
+				  			{
+				  				group_field = Cmiss_rendition_get_selection_group(rendition);
+				  			}
+								Cmiss_rendition_destroy(&rendition);
+				  		}
+				  		if (selected_flag && group_field)
+				  		{
+				  			element_list = FE_element_list_from_region_and_selection_group(
+				  				region, cm_element_type, element_ranges, group_field, conditional_field,
+				  				time);
+				  		}
+				  		else if (selected_flag && !group_field)
+				  		{
+				  			element_list = NULL;
+				  		}
+				  		else
+				  		{
+				  			element_list = FE_element_list_from_region_and_selection_group(
+				  				region, cm_element_type, element_ranges, NULL, conditional_field,
+				  				time);
+				  		}
+				  		if (group_field)
+				  			Cmiss_field_destroy(&group_field);
+				  	}
+						if (element_list)
 						{
 							if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 							{
@@ -13117,6 +13143,10 @@ be specified at once.
 						display_message(ERROR_MESSAGE,
 							"gfx_modify_element_group.  Invalid source region");
 						return_code = 0;
+					}
+					if (parent_region)
+					{
+						Cmiss_region_destroy(&parent_region);
 					}
 				}
 				else
@@ -13514,10 +13544,10 @@ use node_manager and node_selection.
 	int number_not_removed, return_code = 0;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
-	struct Cmiss_region *region;
+	struct Cmiss_region *region = NULL;
 	struct FE_node_selection *node_selection;
-	struct FE_region *fe_region, *modify_fe_region;
-	struct LIST(FE_node) *node_list;
+	struct FE_region *modify_fe_region;
+	struct LIST(FE_node) *node_list = NULL;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_conditional_field_data;
@@ -13622,18 +13652,44 @@ use node_manager and node_selection.
 					(modify_fe_region = Cmiss_region_get_FE_region(region)) &&
 					((!use_data) || (modify_fe_region=FE_region_get_data_FE_region(modify_fe_region))))
 				{
-					if ((from_region_path &&
-						Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-							from_region_path, &region) &&
-						(fe_region = Cmiss_region_get_FE_region(region)) &&
-						((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))) ||
-						((!from_region_path) && FE_region_get_ultimate_master_FE_region(
-							modify_fe_region,	&fe_region)))
+					Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+					if ((from_region_path && Cmiss_region_get_region_from_path_deprecated(
+							parent_region, from_region_path, &region)) ||
+							(NULL != (region = parent_region)))
 					{
-						if (node_list =
-							FE_node_list_from_fe_region_selection_ranges_condition(
-								fe_region, node_selection, selected_flag, node_ranges,
-								conditional_field, time))
+				  	if (region)
+				  	{
+				  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+				  		struct Computed_field *group_field = NULL;
+				  		if (rendition)
+				  		{
+				  			if (Cmiss_rendition_has_selection_group(rendition))
+				  			{
+				  				group_field = Cmiss_rendition_get_selection_group(rendition);
+				  			}
+								Cmiss_rendition_destroy(&rendition);
+				  		}
+				  		if (selected_flag && group_field)
+				  		{
+				  			node_list = FE_node_list_from_region_and_selection_group(
+				  				region, node_ranges, group_field, conditional_field,
+				  				time, (use_data != NULL));
+				  		}
+				  		else if (selected_flag && !group_field)
+				  		{
+				  			node_list = NULL;
+				  		}
+				  		else
+				  		{
+				  			node_list = FE_node_list_from_region_and_selection_group(
+				  				region, node_ranges, NULL, conditional_field,
+				  				time,(use_data != NULL));
+				  		}
+				  		if (group_field)
+				  			Cmiss_field_destroy(&group_field);
+				  	}
+
+						if (node_list)
 						{
 							if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 							{
@@ -13685,6 +13741,10 @@ use node_manager and node_selection.
 						display_message(ERROR_MESSAGE,
 							"gfx_modify_node_group.  Invalid source region");
 						return_code = 0;
+					}
+					if (parent_region)
+					{
+						Cmiss_region_destroy(&parent_region);
 					}
 				}
 				else

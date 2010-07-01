@@ -106,6 +106,7 @@ allowed during identifier changes.
 struct LIST(FE_node) *
 	FE_node_list_from_region_and_selection_group(
 		struct Cmiss_region *region, struct Multi_range *node_ranges,
-		struct Computed_field *group_field, FE_value time, int use_data);
+		struct Computed_field *group_field, struct Computed_field *conditional_field,
+		FE_value time, int use_data);
 
 #endif /* !defined (NODE_OPERATIONS_H) */

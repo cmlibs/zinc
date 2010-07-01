@@ -64,6 +64,7 @@ DESCRIPTION :
 	int selected_flag;
 	struct LIST(FE_node) *node_selection_list;
 	struct Multi_range *node_ranges;
+	struct Computed_field *group_field;
 	struct Computed_field *conditional_field;
 	FE_value conditional_field_time;
 	struct LIST(FE_node) *node_list;
@@ -97,6 +98,11 @@ DESCRIPTION :
 		if (selected && data->conditional_field)
 		{
 			selected = Computed_field_is_true_at_node(data->conditional_field,
+				node, data->conditional_field_time);
+		}
+		if (selected && data->group_field)
+		{
+			selected = Computed_field_is_true_at_node(data->group_field,
 				node, data->conditional_field_time);
 		}
 		if (selected)
@@ -599,7 +605,8 @@ allowed during identifier changes.
 struct LIST(FE_node) *
 	FE_node_list_from_region_and_selection_group(
 		struct Cmiss_region *region, struct Multi_range *node_ranges,
-		struct Computed_field *group_field, FE_value time, int use_data)
+		struct Computed_field *group_field, struct Computed_field *conditional_field,
+		FE_value time, int use_data)
 {
 	int i, node_number, nodes_in_region, nodes_in_ranges,
 		number_of_ranges, return_code, selected = 1, start, stop;
@@ -638,7 +645,8 @@ struct LIST(FE_node) *
 			{
 				data.node_ranges = (struct Multi_range *)NULL;
 			}
-			data.conditional_field = group_field;
+			data.conditional_field = conditional_field;
+			data.group_field = group_field;
 			data.conditional_field_time = time;
 
 			if (data.node_ranges
@@ -657,6 +665,11 @@ struct LIST(FE_node) *
 							{
 								selected = Computed_field_is_true_at_node(group_field,
 									node, time);
+								if (selected)
+								{
+									selected = Computed_field_is_true_at_node(conditional_field,
+										node, time);
+								}
 							}
 							if (selected)
 							{

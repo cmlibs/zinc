@@ -73,7 +73,7 @@ DESCRIPTION :
 	int selected_flag;
 	struct LIST(FE_element) *element_selection_list;
 	struct Multi_range *element_ranges;
-	struct Computed_field *conditional_field;
+	struct Computed_field *conditional_field, *group_field;
 	FE_value conditional_field_time;
 	struct LIST(FE_element) *element_list;
 }; /* struct FE_element_fe_region_selection_ranges_condition_data */
@@ -699,14 +699,19 @@ DESCRIPTION :
 			{
 				selected = Multi_range_is_value_in_range(data->element_ranges, identifier.number);
 			}
-			if (selected && data->conditional_field)
+			if (selected && data->group_field)
 			{
-				Cmiss_field_id element_group_field = data->conditional_field;
+				Cmiss_field_id element_group_field = data->group_field;
         Cmiss_field_element_group_template_id element_group =
         	Cmiss_field_cast_element_group_template(element_group_field);
 				selected = Cmiss_field_element_group_template_is_element_selected(
 					element_group, element);
         Cmiss_field_destroy(&element_group_field);
+			}
+			if (selected && data->conditional_field)
+			{
+				selected = Computed_field_is_true_in_element(data->conditional_field,
+					element, data->conditional_field_time);
 			}
 			if (selected)
 			{
@@ -729,7 +734,8 @@ struct LIST(FE_element) *
 	FE_element_list_from_region_and_selection_group(
 		struct Cmiss_region *region, enum CM_element_type cm_element_type,
 		struct Multi_range *element_ranges,
-		struct Computed_field *group_field, FE_value time)
+		struct Computed_field *group_field,
+		struct Computed_field *conditional_field, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 3 March 2003
 
@@ -782,7 +788,8 @@ Up to the calling function to destroy the returned element list.
 			{
 				data.element_ranges = (struct Multi_range *)NULL;
 			}
-			data.conditional_field = group_field;
+			data.group_field = group_field;
+			data.conditional_field = conditional_field;
 			data.conditional_field_time = time;
 
 			Cmiss_field_group_id sub_group = NULL;
@@ -835,9 +842,10 @@ Up to the calling function to destroy the returned element list.
 			}
 			else
 			{
-				data.conditional_field = (struct Computed_field *)element_group;
+				data.group_field = (struct Computed_field *)element_group;
+				data.conditional_field = conditional_field;
 				return_code =  FE_region_for_each_FE_element(fe_region,
-						FE_element_add_if_selection_ranges_condition_with_group, (void *)&data);
+					FE_element_add_if_selection_ranges_condition_with_group, (void *)&data);
 			}
       if (element_group)
       {

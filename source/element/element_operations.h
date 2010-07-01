@@ -110,6 +110,7 @@ struct LIST(FE_element) *
 	FE_element_list_from_region_and_selection_group(
 		struct Cmiss_region *region, enum CM_element_type cm_element_type,
 		struct Multi_range *element_ranges,
-		struct Computed_field *group_field, FE_value time);
+		struct Computed_field *group_field,
+		struct Computed_field *conditional_field, FE_value time);
 
 #endif /* !defined (ELEMENT_OPERATIONS_H) */
