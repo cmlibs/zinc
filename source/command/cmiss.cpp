@@ -7583,14 +7583,40 @@ use node_manager and node_selection.
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(node_ranges))) &&
 					(region = command_data->root_region))) &&
-				(fe_region = Cmiss_region_get_FE_region(region)) &&
-				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))) &&
-				FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region))
+					(fe_region = Cmiss_region_get_FE_region(region)) &&
+					((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))) &&
+					FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region))
 			{
-				if (destroy_node_list =
-					FE_node_list_from_fe_region_selection_ranges_condition(
-						fe_region, node_selection, selected_flag, node_ranges,
-						conditional_field, time))
+		  	if (region)
+		  	{
+		  		Cmiss_rendition *rendition= Cmiss_rendition_get_from_region(region);
+		  		struct Computed_field *group_field = NULL;
+		  		if (rendition)
+		  		{
+		  			if (Cmiss_rendition_has_selection_group(rendition))
+		  			{
+		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  			}
+						Cmiss_rendition_destroy(&rendition);
+		  		}
+		  		if (selected_flag && group_field)
+		  		{
+		  			destroy_node_list = FE_node_list_from_region_and_selection_group(
+		  				region, node_ranges, group_field, conditional_field, time, (use_data != NULL));
+		  		}
+		  		else if (selected_flag && !group_field)
+		  		{
+		  			destroy_node_list = NULL;
+		  		}
+		  		else
+		  		{
+		  			destroy_node_list = FE_node_list_from_region_and_selection_group(
+		  				region, node_ranges, NULL, conditional_field, time,(use_data != NULL));
+		  		}
+		  		if (group_field)
+		  			Cmiss_field_destroy(&group_field);
+		  	}
+				if (destroy_node_list)
 				{
 					if (0 < (number_not_destroyed =
 						NUMBER_IN_LIST(FE_node)(destroy_node_list)))
@@ -14249,9 +14275,40 @@ use node_manager and node_selection.
 				(fe_region = Cmiss_region_get_FE_region(region)) &&
 				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
 			{
-				if (node_list = FE_node_list_from_fe_region_selection_ranges_condition(
-					fe_region, node_selection,  selected_flag, node_ranges,
-					conditional_field, time))
+		  	if (region)
+		  	{
+		  		if (selected_flag)
+		  		{
+			  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+			  		struct Computed_field *group_field = NULL;
+			  		if (rendition)
+			  		{
+			  			if (Cmiss_rendition_has_selection_group(rendition))
+			  			{
+			  				group_field = Cmiss_rendition_get_selection_group(rendition);
+			  			}
+							Cmiss_rendition_destroy(&rendition);
+			  		}
+			  		if (group_field)
+			  		{
+			  			node_list = FE_node_list_from_region_and_selection_group(
+			  				region, node_ranges, group_field, conditional_field,
+			  				time, (use_data != NULL));
+			  			Cmiss_field_destroy(&group_field);
+			  		}
+			  		else
+			  		{
+			  			node_list = NULL;
+			  		}
+		  		}
+		  		else
+		  		{
+		  			node_list = FE_node_list_from_region_and_selection_group(
+		  				region, node_ranges, NULL, conditional_field,
+		  				time,(use_data != NULL));
+		  		}
+		  	}
+				if (node_list)
 				{
 					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 					{

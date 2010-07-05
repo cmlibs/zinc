@@ -218,6 +218,7 @@ Up to the calling function to destroy the returned node list.
 				data.node_ranges = (struct Multi_range *)NULL;
 			}
 			data.conditional_field = conditional_field;
+			data.group_field = NULL;
 			data.conditional_field_time = time;
 
 			if (data.node_ranges
@@ -614,7 +615,7 @@ struct LIST(FE_node) *
 	struct FE_node_fe_region_selection_ranges_condition_data data;
 	struct FE_region *fe_region;
 
-	ENTER(FE_node_list_from_fe_region_selection_ranges_condition);
+	ENTER(FE_node_list_from_region_selection_ranges_condition);
 	data.node_list = (struct LIST(FE_node) *)NULL;
 	if (region)
 	{
