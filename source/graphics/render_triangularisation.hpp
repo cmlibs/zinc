@@ -71,23 +71,6 @@ public:
 		return 1;
 	}
 
-	virtual int Overlay_graphics_object_execute()
-	{
-		return 1;
-	}
-
-
-	virtual int Overlay_graphics_object_compile()
-	{
-		return 1;
-	}
-
-	virtual int Register_overlay_graphics_object(GT_object *graphics_object)
-	{
-		USE_PARAMETER(graphics_object);
-		return 1;
-	}
-
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */

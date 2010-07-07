@@ -1488,10 +1488,11 @@ int Cmiss_rendition_add_graphic(struct Cmiss_rendition *rendition,
 	int return_code;
 
 	ENTER(Cmiss_rendition_add_graphic);
-	if (rendition&&graphic)
+	if (rendition && graphic && (NULL == Cmiss_graphic_get_rendition_private(graphic)))
 	{
 		return_code=Cmiss_graphic_add_to_list(graphic,position,
 			rendition->list_of_graphic);
+		Cmiss_graphic_set_rendition_private(graphic, rendition);
 		Cmiss_rendition_changed(rendition);
 	}
 	else
@@ -1511,10 +1512,11 @@ int Cmiss_rendition_remove_graphic(struct Cmiss_rendition *rendition,
 	int return_code;
 
 	ENTER(Cmiss_rendition_remove_graphic);
-	if (rendition&&graphic)
+	if (rendition && graphic && (rendition == Cmiss_graphic_get_rendition_private(graphic)))
 	{
 		return_code=Cmiss_graphic_remove_from_list(graphic,
 			rendition->list_of_graphic);
+		Cmiss_graphic_set_rendition_private(graphic, NULL);
 		Cmiss_rendition_changed(rendition);
 	}
 	else
@@ -1688,30 +1690,29 @@ int Cmiss_rendition_set_position(struct Cmiss_rendition *rendition, unsigned int
 } /* Cmiss_rendition_set_position */
 
 int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
-	void *graphics_object_range_void)
+	struct Cmiss_scene *scene, struct Graphics_object_range_struct *graphics_object_range)
 {
 	float coordinates[4],transformed_coordinates[4];
 	gtMatrix *transformation;
 	int i,j,k,return_code;
-	struct Graphics_object_range_struct *graphics_object_range,
-		temp_graphics_object_range;
+	struct Graphics_object_range_struct temp_graphics_object_range;
 	void *use_range_void;
 
 	ENTER(Cmiss_rendition_get_range);
-	if (rendition && (graphics_object_range =
-		(struct Graphics_object_range_struct *)graphics_object_range_void))
+	if (rendition && graphics_object_range)
 	{
 		/* must first build graphics objects */
 		Render_graphics_build_objects renderer;
+		Render_graphics_push_scene push_scene(renderer, scene);
 		renderer.Cmiss_rendition_compile(rendition);
-		if (NULL != (transformation=rendition->transformation))
+		if (NULL != (transformation = rendition->transformation))
 		{
-			temp_graphics_object_range.first=1;
-			use_range_void=(void *)&temp_graphics_object_range;
+			temp_graphics_object_range.first = 1;
+			use_range_void = (void *)&temp_graphics_object_range;
 		}
 		else
 		{
-			use_range_void=graphics_object_range_void;
+			use_range_void = (void *)graphics_object_range;
 		}
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_get_visible_graphics_object_range, use_range_void,
@@ -2193,51 +2194,6 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_compile_members  */
 
-int Cmiss_rendition_is_not_filtered(struct Cmiss_rendition *rendition,
-		void *filtering_list_void)
-{
-	int return_code = 1;
-	if (rendition)
-	{
-		Filtering_list *filtering_list = (Filtering_list *)filtering_list_void;
-		if (filtering_list && !filtering_list->empty())
-		{
-			Filtering_list_iterator pos;
-			pos=filtering_list->find("rendition_visibility");
-			if (pos != filtering_list->end() )
-			{
-				SceneFiltersBaseFunctor<Cmiss_rendition *> *functor =
-					reinterpret_cast<SceneFiltersBaseFunctor<Cmiss_rendition*>*>(pos->second);
-				if (functor)
-					return_code = functor->call(rendition);
-			}
-			std::string name("rendition");
-			if (return_code)
-			{
-				for (pos = filtering_list->lower_bound(name);
-					pos != filtering_list->upper_bound(name); ++pos)
-				{
-					SceneFiltersBaseFunctor<Cmiss_rendition *> *functor =
-						reinterpret_cast<SceneFiltersBaseFunctor<Cmiss_rendition*>*>(pos->second);
-					if (functor)
-						return_code = functor->call(rendition);
-					if (!return_code)
-						break;
-				}
-			}
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
-
 int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 	Render_graphics_compile_members *renderer)
 {
@@ -2246,25 +2202,17 @@ int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 	ENTER(Cmiss_rendition_compile_members);
 	if (cmiss_rendition)
 	{
-		if (renderer->filtering_list)
+		if (cmiss_rendition->time_object)
 		{
-			return_code = Cmiss_rendition_is_not_filtered(cmiss_rendition, (void *)renderer->filtering_list);
+			renderer->time = Time_object_get_current_time(cmiss_rendition->time_object);
 		}
-		if (return_code)
+		else
 		{
-			/* check whether graphical_element contents need building */
-			if (cmiss_rendition->time_object)
-			{
-				renderer->time = Time_object_get_current_time(cmiss_rendition->time_object);
-			}
-			else
-			{
-				renderer->time = 0;
-			}
-			renderer->name_prefix = cmiss_rendition->name_prefix;
-			return_code = renderer->Cmiss_rendition_compile_members(cmiss_rendition);
-			renderer->name_prefix = NULL;
+			renderer->time = 0;
 		}
+		renderer->name_prefix = cmiss_rendition->name_prefix;
+		return_code = renderer->Cmiss_rendition_compile_members(cmiss_rendition);
+		renderer->name_prefix = NULL;
 	}
 	else
 	{
@@ -2277,6 +2225,7 @@ int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 	return (return_code);
 }
 
+#if defined (OLD_CODE)
 int Cmiss_rendition_call_compiler(struct Cmiss_rendition *rendition, 
 	void *renderer_void)
 {
@@ -2284,6 +2233,7 @@ int Cmiss_rendition_call_compiler(struct Cmiss_rendition *rendition,
 		
 	return renderer->Cmiss_rendition_compile(rendition);
 }
+#endif /* defined (OLD_CODE) */
 
 int Cmiss_rendition_render_opengl(struct Cmiss_rendition *cmiss_rendition,
 	Render_graphics_opengl *renderer)
@@ -2324,16 +2274,8 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 	ENTER(execute_Cmiss_rendition);
 	if (rendition)
 	{
-		return_code=1;
-		if (renderer->filtering_list)
-		{
-			return_code = Cmiss_rendition_is_not_filtered(rendition, (renderer->filtering_list));
-		}
-		else
-		{
-			return_code = rendition->visibility;
-		}
-		if (return_code  && rendition->fast_changing == (renderer->fast_changing))
+		return_code = 1;
+		if (rendition->fast_changing == (renderer->fast_changing))
 		{
 			/* put out the name (position) of the scene_object: */
 			//printf("%i \n", rendition->position);
@@ -4817,6 +4759,11 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 		{
 			if (NULL != (graphics_module->default_scene=(CREATE(Scene)())))
 			{
+				Cmiss_scene_filter *filter;
+				filter = Cmiss_scene_create_filter_rendition_visibility(scene, 0);
+				Cmiss_scene_filter_destroy(&filter);
+				filter = Cmiss_scene_create_filter_graphic_visibility(scene, 0);
+				Cmiss_scene_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
 				struct MANAGER(Scene) *scene_manager = 
 					Cmiss_graphics_module_get_scene_manager(graphics_module);

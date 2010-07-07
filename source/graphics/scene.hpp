@@ -1,18 +1,8 @@
 /*******************************************************************************
-FILE : scene.h
-
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Structure for storing the collections of objects that make up a 3-D graphical
-model - lights, materials, primitives, etc.
-Also contains interface routines for having these converted to display lists,
-and for these to be assembled into a single display list of the whole scene.
-
-HISTORY :
-November 1997. Created from Scene description part of Drawing.
-December 1997. Created MANAGER(Scene).
-==============================================================================*/
+ * scene.hpp
+ * 
+ * Private Cmiss_scene function and object declarations.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -57,7 +47,9 @@ December 1997. Created MANAGER(Scene).
 struct Scene_object;
 #endif
 
-struct Scene;
+struct Cmiss_scene_filter;
+struct Cmiss_scene;
+#define Scene Cmiss_scene // GRC temp
 struct Graphics_buffer;
 class Render_graphics;
 class Render_graphics_compile_members;
@@ -126,5 +118,9 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 int Scene_execute_opengl_display_list(struct Scene *scene,
 	Render_graphics_opengl *renderer);
 
+/***************************************************************************//**
+ * Private function only to be called by Cmiss_scene_filter constructors.
+ */
+int Scene_add_filter(Scene *scene, Cmiss_scene_filter *filter);
 
 #endif /* !defined (SCENE_HPP) */

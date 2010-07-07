@@ -1,10 +1,8 @@
-/*******************************************************************************
-FILE : scene_filters.hpp
-
-LAST MODIFIED : 16 October 2008
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * scene_filters.hpp
+ *
+ * Declaration of scene graphic filter classes and functions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -22,7 +20,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -44,87 +42,68 @@ DESCRIPTION :
 #ifndef SCENE_FILTERS_HPP
 #define SCENE_FILTERS_HPP
 
-#include <map>
-#include <string>
+extern "C" {
+#include "api/cmiss_scene.h"
+}
 
-template <typename ObjectType>
-class SceneFiltersBaseFunctor
-{
-protected:
-	int inclusive;
+struct Cmiss_rendition;
+struct Cmiss_graphic;
 
-public:
-	SceneFiltersBaseFunctor(int inclusive_in)
-		: inclusive(inclusive_in)
-	{
-	}
-
-	virtual ~SceneFiltersBaseFunctor()
-	{
-	}
-
-	virtual int call(ObjectType object) = 0;
-
-};
-
-template <typename ObjectType>
-class SceneFiltersNoValueFunctor :  public SceneFiltersBaseFunctor<ObjectType>
+class Cmiss_scene_filter
 {
 private:
-	int(*fpt)(ObjectType);
-
+	Cmiss_scene_filter_action action;
+	bool active;
+	Cmiss_scene *scene;
+	int access_count;
+	
 public:
-	SceneFiltersNoValueFunctor(int(*fpt_in)(ObjectType), int inclusive_in)
-		: SceneFiltersBaseFunctor<ObjectType>(inclusive_in)
-		, fpt(fpt_in)
-	{}
-
-	virtual int call(ObjectType object)
-	{
-		if (fpt)
-			return this->inclusive == (*fpt)(object);
-		else
-			return 0;
-	}
-
-	~SceneFiltersNoValueFunctor()
+	Cmiss_scene_filter(Cmiss_scene *inScene) :
+		action(CMISS_SCENE_FILTER_HIDE),
+		active(true),
+		scene(inScene),
+		access_count(1)
 	{
 	}
 
+	virtual ~Cmiss_scene_filter()
+	{
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic) = 0;
+	
+	Cmiss_scene_filter_action getAction() const
+	{
+		return action;
+	}
+	
+	bool setAction(Cmiss_scene_filter_action newAction)
+	{
+		action = newAction;
+		return true;
+	}
+
+	bool isActive() const
+	{
+		return active;
+	}
+
+	/** eventually: may fail if filter is only intermediary of an expression */
+	bool setActive(bool newActive)
+	{
+		active = newActive;
+		return true;
+	}
+	
+	int access()
+	{
+		return (++access_count);
+	}
+	
+	int deaccess()
+	{
+		return (--access_count);
+	}
 };
-
-template <typename ObjectType, typename ValueType> class SceneFiltersValueFunctor :
-	public SceneFiltersBaseFunctor<ObjectType>
-{
-private:
-	int(*fpt)(ObjectType, ValueType);
-	ValueType value;
-
-public:
-
-	SceneFiltersValueFunctor(int(*fpt_in)(ObjectType, ValueType),
-		ValueType value_in, int inclusive_in)
-		: SceneFiltersBaseFunctor<ObjectType>(inclusive_in)
-		, fpt(fpt_in)
-		, value(value_in)
-	{
-	}
-
-	virtual int call(ObjectType object)
-	{
-		if (fpt)
-			return this->inclusive == (*fpt)(object, value);
-		else
-			return 0;
-	} // execute member function
-
-	~SceneFiltersValueFunctor()
-	{
-	}
-
-};
-
-typedef std::multimap<std::string, void *> Filtering_list;
-typedef std::multimap<std::string, void *>::iterator Filtering_list_iterator;
 
 #endif /* SCENE_FILTERS_HPP_ */

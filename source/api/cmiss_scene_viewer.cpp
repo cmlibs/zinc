@@ -51,7 +51,7 @@ scenes.
 #endif /* defined (GTK_USER_INTERFACE) */
 extern "C" {
 #include "api/cmiss_scene_viewer.h"
-#include "api/cmiss_scene_viewer_private.h"
+/*#include "api/cmiss_scene_viewer_private.h"*/
 #include "general/debug.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/transform_tool.h"
@@ -976,14 +976,15 @@ by the <scene_viewer>.  You should call Cmiss_deallocate with the returned
 pointer when it is no longer required.
 ==============================================================================*/
 {
-	struct Scene *scene;
+	struct Cmiss_scene *scene;
 	int return_code;
 
 	ENTER(Cmiss_scene_viewer_get_scene_name);
-	if (scene_viewer)
+	if (scene_viewer && scene_name)
 	{
-		if ((scene = Scene_viewer_get_scene(scene_viewer))
-			&&(GET_NAME(Scene)(scene, scene_name)))
+		scene = Scene_viewer_get_scene(scene_viewer);
+		*scene_name = Cmiss_scene_get_name(scene);
+		if (*scene_name)
 		{
 			return_code = 1;
 		}

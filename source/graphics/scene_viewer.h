@@ -60,14 +60,16 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/colour.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include "graphics/scene.h"
 #include "interaction/interactive_tool.h"
 
 struct Graphics_buffer;
 #define Graphics_buffer_input Cmiss_scene_viewer_input
 
+/*
 struct Scene;
 struct MANAGER(Scene);
-
+*/
 struct Cmiss_scene_viewer_package;
 
 /* 
@@ -932,7 +934,7 @@ Returns the Scene_viewer scene.
 ==============================================================================*/
 
 int Scene_viewer_set_scene(struct Scene_viewer *scene_viewer,
-	struct Scene *scene);
+	struct Cmiss_scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 14 February 1998
 

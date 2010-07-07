@@ -22,7 +22,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -272,12 +272,16 @@ int Cmiss_rendition_set_position(struct Cmiss_rendition *rendition, unsigned int
  */
 
 /***************************************************************************//** 
- * Get the range of the rendition and its child renditions
- * @param rendition 
+ * Get the range of coordinates of visible graphics in the rendition and all its
+ * child region renditions.
+ * 
+ * @param rendition  The rendition to get the range of.
+ * @param scene  The scene to filter rendition contents.
  * @param graphics_object_range_void void pointer to graphics_object_range
  * @return If successfully get the range, otherwise NULL
  */
-int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition, void *graphics_object_range_void);
+int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
+	struct Cmiss_scene *scene, struct Graphics_object_range_struct *graphics_object_range);
 
 /***************************************************************************//** 
  * Currently, a Cmiss_region may have at most one cmiss_rendition.
@@ -314,8 +318,10 @@ int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendi
  */
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region);
 
+#if defined (OLD_CODE)
 int Cmiss_rendition_call_compiler(struct Cmiss_rendition *rendition, 
 	void *renderer_void);
+#endif /* defined (OLD_CODE) */
 
 int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition, 
 	void *renderer_void);
@@ -563,8 +569,5 @@ int Cmiss_rendition_create_node_list_selection(Cmiss_rendition_id rendition,
 
 int Cmiss_graphics_module_set_time_keeper_internal(
 		struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper);
-
-int Cmiss_rendition_is_not_filtered(struct Cmiss_rendition *rendition,
-		void *filtering_list_void);
 #endif /* !defined (CMISS_RENDITION_H) */
 

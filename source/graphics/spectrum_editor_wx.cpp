@@ -814,8 +814,8 @@ class wxSpectrumEditor : public wxFrame
 {
 	 Spectrum_editor *spectrum_editor;
 	 wxPanel *spectrum_scene_chooser_panel;
-	 DEFINE_MANAGER_CLASS(Scene);
-	 Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+	 DEFINE_MANAGER_CLASS(Cmiss_scene);
+	 Managed_object_chooser<Cmiss_scene,MANAGER_CLASS(Cmiss_scene)>
 	 *spectrum_scene_chooser;
 	 DEFINE_MANAGER_CLASS(Spectrum);
 	 Managed_object_listbox<Spectrum, MANAGER_CLASS(Spectrum)>
@@ -846,7 +846,7 @@ public:
 			wxPanel *spectrum_scene_chooser_panel = 
 				 XRCCTRL(*this, "wxSpectrumSceneChooserPanel", wxPanel);
 			spectrum_scene_chooser = 
-				 new Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+				 new Managed_object_chooser<Cmiss_scene,MANAGER_CLASS(Cmiss_scene)>
 				 (spectrum_scene_chooser_panel, (struct Scene *)NULL, spectrum_editor->scene_manager,
 						(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, spectrum_editor->user_interface);
 			Callback_base< Scene* > *spectrum_scene_chooser_callback = 
@@ -2358,7 +2358,7 @@ Creates a spectrum_editor widget.
 					 }
 					 if ( return_code )
 					 {
-							spectrum_editor->spectrum_editor_scene = Cmiss_scene_create();
+							spectrum_editor->spectrum_editor_scene = CREATE(Cmiss_scene)();
 							Cmiss_scene_set_name(spectrum_editor->spectrum_editor_scene, "spectrum_editor_scene");
 							/* Create new rendition */
 							spectrum_editor->private_region = Cmiss_region_access(spectrum_region);

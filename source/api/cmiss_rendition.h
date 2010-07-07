@@ -23,7 +23,7 @@ The public interface to the Cmiss_rendition.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -140,11 +140,20 @@ int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
  * Returns the default coordinate field of the <rendition>.
  *
  * @param rendition  The handle to cmiss rendition.
- * @return  Returns the defualt coordinate field of rendition if found, otherise
- *   NULL.
+ * @return  Returns the default coordinate field of rendition if found,
+ * otherwise NULL.
  */
 Cmiss_field_id Cmiss_rendition_get_default_coordinate_field(
  	Cmiss_rendition_id renditon);
+
+/***************************************************************************//**
+ * Returns the status of the rendition's visibility flag. Note this only affects
+ * scene filters that act on the state of this flag.
+ *
+ * @param rendition  The handle to the rendition.
+ * @return  1 for visible, 0 for not visible.  
+ */
+int Cmiss_rendition_get_visibility(struct Cmiss_rendition *rendition);
 
 /***************************************************************************//**
  * Returns the handle to a rendition <region>.

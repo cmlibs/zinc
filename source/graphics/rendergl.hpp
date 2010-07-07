@@ -69,11 +69,11 @@ public:
 	Texture_tiling *texture_tiling;  /** If a given texture is compiled into tiles
 													 then this field is filled in and expected to
 													 be used when compiling graphics that use that material. */
-	GT_object_map gt_object_map;
+	GT_object_map overlay_graphics;
 	
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
-		graphics_buffer(graphics_buffer), gt_object_map()
+		graphics_buffer(graphics_buffer)
 	{
 		fast_changing = 0;
 		picking = 0;
@@ -82,16 +82,11 @@ public:
 	}
 
 	/***************************************************************************//**
-	 * @see Render_graphics::Scene_compile
-	 */
-	virtual int Scene_compile(Scene *scene);
-
-	/***************************************************************************//**
 	 * @see Render_graphics::Graphics_object_compile
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object);
 
-	virtual int Overlay_graphics_object_compile();
+	int Overlay_graphics_execute();
 
 	/***************************************************************************//**
 	 * @see Render_graphics::Material_compile

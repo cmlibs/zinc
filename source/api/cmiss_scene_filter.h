@@ -1,11 +1,9 @@
 /*******************************************************************************
-FILE : renderstl.h
-
-LAST MODIFIED : 3 July 2008
-
-DESCRIPTION :
-Renders gtObjects to STL stereolithography file.
-==============================================================================*/
+ * cmiss_scene_filter.h
+ * 
+ * Public interface to Cmiss_scene_filter objects for filtering graphics
+ * displayed in a Cmiss_scene.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +21,7 @@ Renders gtObjects to STL stereolithography file.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2008
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,26 +39,46 @@ Renders gtObjects to STL stereolithography file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERSTL_H)
-#define RENDERSTL_H
 
-struct Cmiss_scene;
-#define Scene Cmiss_scene // GRC temporary
-struct Scene_object;
+#ifndef __CMISS_SCENE_FILTER_H__
+#define __CMISS_SCENE_FILTER_H__
 
-/*
-Global functions
-----------------
-*/
+struct Cmiss_scene_filter;
 
-/**************************************************************************//**
- * Renders the visible objects to an STL file.
+#ifndef CMISS_SCENE_FILTER_ID_DEFINED
+   typedef struct Cmiss_scene_filter *Cmiss_scene_filter_id;
+   #define CMISS_SCENE_FILTER_ID_DEFINED
+#endif /* CMISS_SCENE_FILTER_ID_DEFINED */
+
+enum Cmiss_scene_filter_action
+{
+  CMISS_SCENE_FILTER_HIDE = 0,
+  CMISS_SCENE_FILTER_SHOW = 1
+};
+
+/*******************************************************************************
+ * Returns a new reference to the filter with reference count incremented.
+ * Caller is responsible for destroying the new reference.
  * 
- * @param file_name The name of the file to write to.
- * @param scene The scene to output
- * @param scene_object A scene object to output; if not specified use scene.
- * @return 1 on success, 0 on failure
+ * @param filter  The filter to obtain a new reference to.
+ * @return  New filter reference with incremented reference count.
  */
-int export_to_stl(char *file_name, struct Scene *scene);
+Cmiss_scene_filter_id Cmiss_scene_filter_access(Cmiss_scene_filter_id filter);
 
-#endif /* !defined (RENDERSTL_H) */
+/*******************************************************************************
+ * Destroys this reference to the filter (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ */
+int Cmiss_scene_filter_destroy(Cmiss_scene_filter_id *filter_address);
+
+/*******************************************************************************
+ * Sets the action - hide or show - performed when this filter has a match.
+ * 
+ * @param filter  The filter to modify.
+ * @param action  The action to set: hide or show.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_scene_filter_set_action(Cmiss_scene_filter_id filter,
+	enum Cmiss_scene_filter_action action);
+
+#endif /*__CMISS_SCENE_FILTER_H__*/

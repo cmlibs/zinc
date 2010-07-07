@@ -55,11 +55,6 @@ Global types
 */
 
 struct Cmiss_region;
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-==============================================================================*/
 
 #ifndef CMISS_REGION_ID_DEFINED
    typedef struct Cmiss_region * Cmiss_region_id;

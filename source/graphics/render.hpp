@@ -41,11 +41,9 @@
 #ifndef RENDER_HPP
 #define RENDER_HPP
 
-#include "graphics/scene_filters.hpp"
-struct Scene;
-#if defined (USE_SCENE_OBJECT)
-struct Scene_object;
-#endif
+struct Cmiss_scene;
+#define Scene Cmiss_scene // GRC temp
+struct Cmiss_graphic;
 struct Cmiss_rendition;
 struct GT_element_group;
 struct Texture;
@@ -63,7 +61,22 @@ struct Light_model;
  */
 class Render_graphics
 {
+	friend class Render_graphics_push_scene;
+
+private:
+	Cmiss_scene *current_scene;
+
+	void set_scene(Cmiss_scene *new_scene)
+	{
+		current_scene = new_scene;
+	}
+
 public:
+	Render_graphics() :
+		current_scene(NULL)
+	{
+	}
+
 	virtual ~Render_graphics()
 	{
 	}
@@ -111,16 +124,20 @@ public:
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object) = 0;
 
-	virtual int Overlay_graphics_object_compile() = 0;
-
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
 	virtual int Graphics_object_execute(GT_object *graphics_object) = 0;
-
-	virtual int Overlay_graphics_object_execute() = 0;
 	
-	virtual int Register_overlay_graphics_object(GT_object *graphics_object) = 0;
+	virtual int Register_overlay_graphics_object(GT_object * /*graphics_object*/)
+	{
+		return 1;
+	}
+
+	virtual int Overlay_graphics_execute()
+	{
+		return 1;
+	}
 
 	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary
@@ -188,7 +205,7 @@ public:
 	 * Execute the Light.
 	 */
 	virtual int Light_execute(Light *light) = 0;
-	
+
 	/***************************************************************************//**
 	 * Compile the Light.
 	 */
@@ -199,20 +216,44 @@ public:
 	 */
 	virtual int Light_model_execute(Light_model *light_model) = 0;
 
+	Cmiss_scene *get_scene()
+	{
+		return current_scene;
+	}
 }; /* class Render_graphics */
 
+/** class which saves the old current scene for a renderer, sets a new current scene &
+ * restores the old current scene when it goes out of scope
+ */
+class Render_graphics_push_scene
+{
+	Render_graphics &renderer;
+	Cmiss_scene *old_scene;
+
+public:
+	Render_graphics_push_scene(Render_graphics &renderer, Cmiss_scene *scene) :
+		renderer(renderer),
+		old_scene(renderer.get_scene())
+	{
+		renderer.set_scene(scene);
+	}
+
+	~Render_graphics_push_scene()
+	{
+		renderer.set_scene(old_scene);
+	}
+};
 
 class Render_graphics_compile_members : public Render_graphics
 {
 public:
-	Render_graphics_compile_members() : time(0.0), name_prefix(NULL), filtering_list(NULL)
+	Render_graphics_compile_members() : time(0.0), name_prefix(NULL)
 	{
 	}
 	
 	FE_value time;
 	/** Passed from scene_objects to graphical_elements for compilation */
 	const char *name_prefix;
-	Filtering_list *filtering_list;
 	
 	/***************************************************************************//**
 	 * Compile the Scene.
@@ -311,25 +352,10 @@ public:
 		return 1;
 	}
 
-	virtual int Overlay_graphics_object_compile()
-	{
-		return 1;
-	}
-
 	/***************************************************************************//**
 	 * By default this renderer only builds.
 	 */
 	virtual int Graphics_object_execute(GT_object * /*graphics_object*/)
-	{
-		return 1;
-	}
-
-	virtual int Overlay_graphics_object_execute()
-	{
-		return 1;
-	}
-
-	virtual int Register_overlay_graphics_object(GT_object * /*graphics_object*/)
 	{
 		return 1;
 	}

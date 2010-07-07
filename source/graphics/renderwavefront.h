@@ -44,7 +44,8 @@ Renders gtObjects to WAVEFRONT file
 #if !defined (RENDERWAVEFRONT_H)
 #define RENDERWAVEFRONT_H
 
-struct Scene;
+struct Cmiss_scene;
+#define Scene Cmiss_scene // GRC temporary
 struct Cmiss_region;
 
 /*

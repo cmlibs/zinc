@@ -117,31 +117,23 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 
 /****************** Render_graphics_opengl method implementations **************/
 
-int Render_graphics_opengl::Scene_compile(Scene *scene)
-{
-	return Scene_compile_members(scene, this);
-}
-
 int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
 {
 	return Graphics_object_compile_members_opengl(graphics_object, this);
 }
 
-int Render_graphics_opengl::Overlay_graphics_object_compile()
+int Render_graphics_opengl::Overlay_graphics_execute()
 {
-	int return_code = 0;
+	int return_code = 1;
 	GT_object_iterator pos;
 	int i = 1;
-	for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
+
+	for (pos = overlay_graphics.begin(); pos != overlay_graphics.end(); ++pos)
 	{
-		if (pos->second) {
-			//			glLoadName((GLuint)i);
-			return_code = Graphics_object_compile_members_opengl(pos->second, this);
-		}
+		// glLoadName((GLuint)i);
+		Graphics_object_execute(pos->second);
 		i++;
 	}
-	
-	//gt_object_map.clear();
 	return return_code;
 }
 
@@ -152,7 +144,7 @@ int Render_graphics_opengl::Material_compile(Graphical_material *material)
 
 int Render_graphics_opengl::Register_overlay_graphics_object(GT_object *graphics_object)
 {
-	gt_object_map.insert(std::make_pair(graphics_object->overlay, graphics_object));
+	overlay_graphics.insert(std::make_pair(graphics_object->overlay, graphics_object));
 	return 1;
 }
 
@@ -185,25 +177,6 @@ public:
 	{
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
-	}
-
-	int Overlay_graphics_object_execute()
-	{
-		int return_code = 1;
-		GT_object_iterator pos;
-		int i = 1;
-
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_render_opengl(pos->second, this,
-					GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
 	}
 
 	int Graphics_object_render_immediate(GT_object *graphics_object)
@@ -338,25 +311,6 @@ public:
 			GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
 	}
 
-	int Overlay_graphics_object_execute()
-	{
-		int return_code = 1;
-		GT_object_iterator pos;
-		int i = 1;
-
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_render_opengl(pos->second, this,
-					GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
-	}
-
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
@@ -391,23 +345,6 @@ public:
 			graphics_object, this);
 	}
 
-	int Overlay_graphics_object_compile()
-	{
-		int return_code = 0;
-		GT_object_iterator pos;
-		int i = 1;
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_compile(pos->second);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
-	}
-
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
@@ -416,25 +353,6 @@ public:
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
 	}
-
-	int Overlay_graphics_object_execute()
-	{
-		int return_code = 1;
-		GT_object_iterator pos;
-		int i = 1;
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_render_opengl(pos->second, this,
-					GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
-	}
-
 
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
@@ -469,23 +387,6 @@ public:
 			Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
 	}
 
-	int Overlay_graphics_object_compile()
-	{
-		int return_code = 0;
-		GT_object_iterator pos;
-		int i = 1;
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_compile(pos->second);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
-	}
-
 }; /* class Render_graphics_opengl_glbeginend */
 
 Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(
@@ -505,11 +406,10 @@ template <class Render_immediate> class Render_graphics_opengl_display_list
 	/* can't have these display lists owned by renderer as they are deleted while still called by graphics object */
    int ndc_display_list, end_ndc_display_list;
 #endif /* defined (OLD_CODE) */
-	GT_object_map gt_object_map;
 	
 public:
 	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
-		Render_immediate(graphics_buffer), gt_object_map()
+		Render_immediate(graphics_buffer)
 	{
 #if defined (OLD_CODE)
 		ndc_display_list = 0;
@@ -654,53 +554,9 @@ public:
 		return (return_code);
 	}
 
-	int Overlay_graphics_object_compile()
-	{
-		int return_code = 0;
-		GT_object_iterator pos;
-		struct GT_object *local_object = NULL;
-		int i = 1;
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			local_object = pos->second;
-			if (local_object) {
-				//				glLoadName((GLuint)i);
-				return_code = Graphics_object_compile(local_object);
-			}
-			i++;
-		}
-		//gt_object_map.clear();
-		return return_code;
-	}
-
 	int Graphics_object_execute(GT_object *graphics_object)
 	{
 	  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
-	}
-
-	int Overlay_graphics_object_execute()
-	{
-		int return_code = 1;
-		GT_object_iterator pos;
-		int i = 1;
-		glPushName(0);
-		for (pos = gt_object_map.begin(); pos != gt_object_map.end(); ++pos)
-		{
-			if (pos->second) {
-				//				glLoadName((GLuint)i);
-				return_code = ::Graphics_object_execute_opengl_display_list(pos->second, this);
-			}
-			i++;
-		}
-		glPopName();
-		//gt_object_map.clear();
-		return return_code;
-	}
-
-	int Register_overlay_graphics_object(GT_object *graphics_object)
-	{
-		gt_object_map.insert(std::make_pair(graphics_object->overlay, graphics_object));
-		return 1;
 	}
 
 	int Material_execute_parent(Graphical_material *material)

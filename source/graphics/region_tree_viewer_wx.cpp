@@ -518,8 +518,8 @@ class wxRegionTreeViewer : public wxFrame
 	wxWindow *glyphbox,*glyphline;
 	wxChoice *facechoice;
 	wxString TempText;
-	DEFINE_MANAGER_CLASS(Scene);
-	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+	DEFINE_MANAGER_CLASS(Cmiss_scene);
+	Managed_object_chooser<Scene,MANAGER_CLASS(Cmiss_scene)>
 		*scene_chooser;
 	DEFINE_MANAGER_CLASS(Computed_field);
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>

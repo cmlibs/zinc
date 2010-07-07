@@ -40,6 +40,7 @@
 #include "api/cmiss_material.h"
 
 struct Cmiss_graphics_module;
+
 #ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
 #define CMISS_GRAPHICS_MODULE_ID_DEFINED
@@ -86,5 +87,17 @@ Cmiss_graphics_module_id Cmiss_graphics_module_access(
  */
 int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
+
+#if defined (FUTURE_CODE)
+/***************************************************************************//** 
+ * Creates a scene with an access_count of 1. Caller is responsible for calling
+ * Cmiss_scene_destroy to destroy the reference to it.
+ *
+ * @param graphics_module  The module to own the new scene.
+ * @return  Reference to the newly created scene.
+ */
+Cmiss_scene_id Cmiss_graphics_module_create_scene(
+	Cmiss_graphics_module_id graphics_module);
+#endif
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

@@ -44,6 +44,7 @@ DESCRIPTION :
 #define COMPUTED_FIELD_SAMPLE_TEXTURE_H
 
 #include "api/cmiss_field_image.h"
+#include "graphics/texture.h"
 
 #define Computed_field_create_image Cmiss_field_module_create_image
 

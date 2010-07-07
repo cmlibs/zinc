@@ -97,6 +97,9 @@ finite element group rendition.
 	/* position identifier for ordering settings in list */
 	int position;
 
+	/* rendition which owns this graphic */
+	struct Cmiss_rendition *rendition;
+	
 	/* name for identifying settings */
 	const char *name;
 
@@ -331,6 +334,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 		if (ALLOCATE(graphic,struct Cmiss_graphic,1))
 		{
 			graphic->position=0;
+			graphic->rendition = NULL;
 			graphic->name = (char *)NULL;
 
 			/* geometry settings defaults */
@@ -3021,6 +3025,7 @@ int Cmiss_graphic_to_graphics_object(
 		coordinate_field = graphic_to_object_data->default_rc_coordinate_field;
 		return_code = 1;
 		/* build only if visible... */
+		// GRC need to ask scene if visible
 		if (graphic->visibility)
 		{
 			/* build only if changed... */
@@ -3656,40 +3661,6 @@ int Cmiss_graphic_to_graphics_object(
 	return (return_code);
 }
 
-int Cmiss_graphic_is_not_filtered(struct Cmiss_graphic *graphic,
-		void *filtering_list_void)
-{
-	int return_code = 1;
-	if (graphic)
-	{
-		Filtering_list *filtering_list = (Filtering_list *)filtering_list_void;
-		if (filtering_list && !filtering_list->empty())
-		{
-			Filtering_list_iterator pos;
-			std::string name("graphic");
-			for (pos = filtering_list->lower_bound(name);
-					pos != filtering_list->upper_bound(name); ++pos)
-			{
-				SceneFiltersBaseFunctor<Cmiss_graphic *> *functor =
-					reinterpret_cast<SceneFiltersBaseFunctor<Cmiss_graphic *>*>(pos->second);
-				if (functor)
-					return_code = functor->call(graphic);
-				if (!return_code)
-					break;
-			}
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
-
 int Cmiss_graphic_compile_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void)
 {
@@ -3699,31 +3670,18 @@ int Cmiss_graphic_compile_visible_graphic(
 	ENTER(Cmiss_graphic_compile_visible_graphic);
 	if (graphic && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
 	{
-		if (renderer->filtering_list)
+		return_code = 1;
+		if (graphic->graphics_object &&
+			Cmiss_scene_shows_graphic(renderer->get_scene(), graphic))
 		{
-			return_code = Cmiss_graphic_is_not_filtered(graphic,
-				(void *)renderer->filtering_list);
-		}
-		if (return_code)
-		{
-			if (graphic->graphics_object && graphic->visibility)
-			{
-				if (!graphic->overlay_flag)
-				{
 #if defined (OPENGL_API)
-					glLoadName((GLuint)graphic->position);
+			glLoadName((GLuint)graphic->position);
 #endif
-					return_code = renderer->Graphics_object_compile(graphic->graphics_object);
-				}
-				else
-				{
-					return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
-				}
+			return_code = renderer->Graphics_object_compile(graphic->graphics_object);
+			if (graphic->overlay_flag)
+			{
+				return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
 			}
-		}
-		else
-		{
-			return_code = 1;
 		}
 	}
 	else
@@ -3772,32 +3730,19 @@ int Cmiss_graphic_execute_visible_graphic(
 	if (graphic && (renderer = static_cast<Render_graphics_opengl *>
 			(renderer_void)))
 	{
-		if (renderer->filtering_list)
+		return_code = 1;
+		if (graphic->graphics_object &&
+			Cmiss_scene_shows_graphic(renderer->get_scene(), graphic))
 		{
-			return_code = Cmiss_graphic_is_not_filtered(graphic, renderer->filtering_list);
-		}
-		if (return_code)
-		{
-			if (graphic->graphics_object && graphic->visibility)
+			if (!graphic->overlay_flag)
 			{
 				//printf("     %i\n", graphic->position);
 #if defined (OPENGL_API)
 				/* use position in list as name for GL picking */
+				glLoadName((GLuint)graphic->position);
 #endif /* defined (OPENGL_API) */
-				if (!graphic->overlay_flag)
-				{
-					glLoadName((GLuint)graphic->position);
-					return_code = renderer->Graphics_object_execute(graphic->graphics_object);
-				}
-				else
-				{
-					return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
-				}
+				return_code = renderer->Graphics_object_execute(graphic->graphics_object);
 			}
-		}
-		else
-		{
-			return_code=1;
 		}
 	}
 	else
@@ -4082,6 +4027,7 @@ int Cmiss_graphic_Computed_field_change(
 	return (return_code);
 } /* Cmiss_graphic_Computed_field_change */
 
+// GRC pass scene and filter list
 int Cmiss_graphic_get_visible_graphics_object_range(
 	struct Cmiss_graphic *graphic,void *graphics_object_range_void)
 {
@@ -9652,4 +9598,27 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 	}
 
 	return return_code;
+}
+
+struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic)
+{
+	if (graphic)
+		return graphic->rendition;
+	return NULL;
+}
+
+int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
+	struct Cmiss_rendition *rendition)
+{
+	if (graphic && ((NULL == rendition) || (NULL == graphic->rendition)))
+	{
+		graphic->rendition = rendition;
+		return 1;
+	}
+	else
+	{
+		display_message(INFORMATION_MESSAGE,
+			"Cmiss_graphic_set_rendition_private.  Invalid argument(s)");
+	}
+	return 0;
 }

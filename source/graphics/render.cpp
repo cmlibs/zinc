@@ -62,6 +62,7 @@ extern "C" {
 
 int Render_graphics_compile_members::Scene_compile(Scene *scene)
 {
+	Render_graphics_push_scene push_scene(*this, scene);
 	return Scene_compile_members(scene, this);
 }
 

@@ -1,12 +1,11 @@
 /*******************************************************************************
-FILE : cmiss_scene.h
-
-LAST MODIFIED : 4 November 2009
-
-DESCRIPTION :
-The public interface to the Cmiss_scene object for rendering cmiss
-scenes.
-==============================================================================*/
+ * cmiss_scene.h
+ * 
+ * Public interface to the Cmiss_scene object which represents a set of graphics
+ * able to be output to the Cmiss_scene_viewer or other outputs/devices.
+ * It broadly comprises a reference to a region sub-tree and filters controlling
+ * which graphics are displayed from its renditions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -24,7 +23,7 @@ scenes.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -46,9 +45,9 @@ scenes.
 #ifndef __CMISS_SCENE_H__
 #define __CMISS_SCENE_H__
 
-#include "api/cmiss_region.h"
+#include "api/cmiss_scene_filter.h"
 
-struct Scene;
+struct Cmiss_scene;
 
 #ifndef CMISS_SCENE_ID_DEFINED
 /***************************************************************************//**
@@ -58,17 +57,18 @@ struct Scene;
  * materials, primitives, etc. Also contains interface rouitines for having 
  * these converted to display lists and assembled into a single display list.
  * This single display list, however it is up to others - ie. the Scene_viewer
- * to dipslay.
+ * to display.
  */
-typedef struct Scene * Cmiss_scene_id;
-#define CMISS_SCENE_ID_DEFINED
+   typedef struct Cmiss_scene * Cmiss_scene_id;
+   #define CMISS_SCENE_ID_DEFINED
 #endif /* CMISS_SCENE_ID_DEFINED */
 
-/***************************************************************************//** 
- * Creates a scene with an access_count of 1; DEACCESS to destroy.
- * @return pointer to the newly created scene
- */
-Cmiss_scene_id Cmiss_scene_create(void);
+struct Cmiss_region;
+
+#ifndef CMISS_REGION_ID_DEFINED
+   typedef struct Cmiss_region * Cmiss_region_id;
+   #define CMISS_REGION_ID_DEFINED
+#endif /* CMISS_REGION_ID_DEFINED */
 
 /***************************************************************************//** 
  * Set the top region of the scene. Rendition from this top region and its child
@@ -79,5 +79,30 @@ Cmiss_scene_id Cmiss_scene_create(void);
  * @return If successfully set region for scene returns 1, otherwise 0
  */
 int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
+
+/***************************************************************************//**
+ * Return the name of the scene. 
+ * 
+ * @param scene  The scene whose name is requested.
+ * @return  On success: allocated string containing scene name.
+ */
+char *Cmiss_scene_get_name(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Removes all filters from the scene.
+ *
+ * @param scene  Scene to clear filters from.
+ * @return  Returns 1 if filters successfully cleared, otherwise 0.
+ */
+int Cmiss_scene_clear_filters(Cmiss_scene_id scene);
+
+Cmiss_scene_filter_id Cmiss_scene_create_filter_graphic_name(
+	Cmiss_scene_id scene, const char *match_name);
+
+Cmiss_scene_filter_id Cmiss_scene_create_filter_graphic_visibility(
+	Cmiss_scene_id scene, int match_visibility);
+
+Cmiss_scene_filter_id Cmiss_scene_create_filter_rendition_visibility(
+	Cmiss_scene_id scene, int match_visibility);
 
 #endif /*__CMISS_SCENE_H__*/

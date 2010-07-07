@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 FILE : graphics_window.cpp
 
@@ -1624,8 +1623,8 @@ class wxGraphicsWindow : public wxFrame
 	 int up_choices;
 	 int choices;
 	 wxPanel *time_editor_panel;
-	 DEFINE_MANAGER_CLASS(Scene);
-	 Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+	 DEFINE_MANAGER_CLASS(Cmiss_scene);
+	 Managed_object_chooser<Cmiss_scene,MANAGER_CLASS(Cmiss_scene)>
 	 *graphics_window_scene_chooser;
 public:
 	 
@@ -1642,7 +1641,7 @@ public:
 			wxPanel *graphics_window_scene_chooser_panel =
 				 XRCCTRL(*this, "GraphicsWindowSceneChooserPanel", wxPanel);
 			graphics_window_scene_chooser =
-				 new Managed_object_chooser<Scene, MANAGER_CLASS(Scene)>
+				 new Managed_object_chooser<Cmiss_scene, MANAGER_CLASS(Cmiss_scene)>
 				 (graphics_window_scene_chooser_panel, graphics_window->scene,
 						graphics_window->scene_manager,
 						(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, 

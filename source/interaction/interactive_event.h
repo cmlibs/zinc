@@ -50,6 +50,7 @@ Structure describing an interactive event containing:
 #define INTERACTIVE_EVENT_H
 
 #include "general/object.h"
+#include "graphics/scene.h"
 #include "interaction/interaction_volume.h"
 
 /*
@@ -64,8 +65,6 @@ Global constants
 Global types
 ------------
 */
-
-struct Scene;
 
 enum Interactive_event_type
 {

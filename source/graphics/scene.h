@@ -55,6 +55,7 @@ December 1997. Created MANAGER(Scene).
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
+#include "api/cmiss_scene.h"
 #include "general/any_object.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
@@ -89,6 +90,7 @@ Global constants
 Global types
 ------------
 */
+
 enum Scene_graphical_element_mode
 /*******************************************************************************
 LAST MODIFIED : 16 March 2001
@@ -161,6 +163,17 @@ The contents of this object are private.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(Scene_picked_object);
+
+/* 
+The Cmiss_scene which is Public is currently the same object as the 
+cmgui internal Scene.  The Public interface is contained in 
+api/cmiss_scene.h however most of the functions come directly from
+this module.  So that these functions match the public declarations the 
+struct Scene is declared to be the same as Cmiss_scene here
+and the functions given their public names.
+*/
+/* Convert the type */
+#define Scene Cmiss_scene
 
 struct Scene;
 /*******************************************************************************
@@ -248,6 +261,9 @@ struct Scene_get_data_range_for_spectrum_data
 	struct Spectrum *spectrum;
 	struct Graphics_object_data_range_struct range;
 };
+
+struct Cmiss_graphic;
+struct Cmiss_rendition;
 
 /*
 Global functions
@@ -1736,20 +1752,19 @@ struct Cmiss_region *Cmiss_scene_get_region(struct Scene *scene);
  */
 int Cmiss_scene_enable_rendition(struct Scene *scene);
 
-int Cmiss_scene_add_rendition(
-	Scene *scene, struct Cmiss_rendition *rendition);
-
+int Cmiss_scene_add_rendition(struct Scene *scene, struct Cmiss_rendition *rendition);
 
 int Scene_rendition_changed(
 	struct Scene *scene,struct Cmiss_rendition *rendition);
 
-int Cmiss_scene_remove_rendition(Scene *scene, 
+int Cmiss_scene_remove_rendition(struct Scene *scene, 
 	struct Cmiss_rendition *rendition);
 
 //int Cmiss_scene_rendition_list_set_show(Scene *scene,
 //	struct Cmiss_rendition *rendition, int visibility_flag);
 
-int Scene_export_region_graphics_object(Scene *scene,Cmiss_region *region,const char* graphic_name,
+int Scene_export_region_graphics_object(struct Scene *scene,
+	struct Cmiss_region *region, const char *graphic_name,
 	graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
 
@@ -1785,7 +1800,14 @@ in the list of scene_objects in the path of our display heirarchy to the
 <scene_picked_object>.
 ==============================================================================*/
 
-int Cmiss_scene_set_rendition_visibility(Scene *scene, int show_visibility_on);
+/***************************************************************************//** 
+ * Query whether graphic is shown on scene.
+ *
+ * @param scene  The scene to query.
+ * @param graphic  The graphic to be queried about.
+ * @return  1 if scene shows graphic, 0 if not.
+ */
+int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene,
+	struct Cmiss_graphic *graphic);
 
-int Scene_add_filter_option(struct Scene *scene, const char *name, int inclusive);
 #endif /* !defined (SCENE_H) */

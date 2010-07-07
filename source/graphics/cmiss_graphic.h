@@ -951,7 +951,9 @@ int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic);
  */
 int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void);
 
-int Cmiss_graphic_is_not_filtered(struct Cmiss_graphic *graphic,
-		void *filtering_list_void);
+struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic);
+
+int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
+	struct Cmiss_rendition *rendition);
 
 #endif

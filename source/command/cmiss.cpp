@@ -66,7 +66,7 @@ extern "C" {
 #include "api/cmiss_rendition.h"
 #include "api/cmiss_scene.h"
 #include "api/cmiss_scene_viewer.h"
-#include "api/cmiss_scene_viewer_private.h"
+/*#include "api/cmiss_scene_viewer_private.h"*/
 #if defined (CELL)
 #include "cell/cell_interface.h"
 #include "cell/cell_window.h"
@@ -3019,7 +3019,7 @@ Executes a GFX CREATE SCENE command.
 						current_token,command_data->scene_manager))
 					{
 						/* new_code */
-						if ((scene=Cmiss_scene_create()))
+						if ((scene = CREATE(Cmiss_scene)()))
 						{
 							if (Cmiss_scene_set_region(scene, command_data->root_region) &&
 								Cmiss_scene_set_name(scene, current_token))
