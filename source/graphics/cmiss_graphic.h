@@ -953,6 +953,9 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 
 struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic);
 
+int Cmiss_graphic_selected_element_points_change(
+	struct Cmiss_graphic *graphic,void *dummy_void);
+
 int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
 	struct Cmiss_rendition *rendition);
 

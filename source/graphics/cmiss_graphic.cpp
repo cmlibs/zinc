@@ -3620,6 +3620,7 @@ int Cmiss_graphic_to_graphics_object(
 							{
 								select_data.fe_region=fe_region;
 								select_data.graphic=graphic;
+
 								FOR_EACH_OBJECT_IN_LIST(FE_element)(
 									FE_element_select_graphics_element_points,
 									(void *)&select_data,
@@ -9600,6 +9601,65 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 
 	return return_code;
 }
+
+int Cmiss_graphic_selected_element_points_change(
+	struct Cmiss_graphic *graphic,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+Tells <graphic> that if the graphics resulting from it depend on the currently
+selected element points, then they should be updated.
+Must call Cmiss_graphic_to_graphics_object afterwards to complete.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_graphic_selected_element_points_change);
+	USE_PARAMETER(dummy_void);
+	if (graphic)
+	{
+		return_code=1;
+		if (graphic->graphics_object&&
+			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))
+		{
+			switch (graphic->select_mode)
+			{
+				case GRAPHICS_SELECT_ON:
+				{
+					/* for efficiency, just request update of selected graphics */
+					Cmiss_graphic_clear_graphics(graphic);
+				} break;
+				case GRAPHICS_NO_SELECT:
+				{
+					/* nothing to do as no names put out with graphic */
+				} break;
+				case GRAPHICS_DRAW_SELECTED:
+				case GRAPHICS_DRAW_UNSELECTED:
+				{
+					/* need to rebuild graphics_object from scratch */
+					Cmiss_graphic_clear_graphics(graphic);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmiss_graphic_selected_element_points_change.  "
+						"Unknown select_mode");
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_selected_element_points_change.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_graphic_selected_element_points_change */
 
 struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic)
 {

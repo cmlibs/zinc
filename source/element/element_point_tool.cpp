@@ -303,11 +303,6 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
-	if (device_id && event && element_point_tool_void && graphics_buffer)
-	{}
-
-
-#if defined (TESTING)
 	char *command_string;
 	enum Interactive_event_type event_type;
 	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -346,8 +341,8 @@ release.
 								Scene_picked_object_list_get_nearest_element_point(
 									scene_picked_object_list,(struct Cmiss_region *)NULL,
 									(struct Scene_picked_object **)NULL,
-									(struct GT_element_group **)NULL,
-									(struct GT_element_settings **)NULL))
+									(struct Cmiss_rendition **)NULL,
+									(struct Cmiss_graphic **)NULL))
 							{
 								/* Execute command_field of picked_element_point */
 								if (element_point_tool->command_field)
@@ -544,7 +539,6 @@ release.
 	}
 	LEAVE;
 
-#endif
 } /* Element_point_tool_interactive_event_handler */
 
 static int Element_point_tool_bring_up_interactive_tool_dialog(
