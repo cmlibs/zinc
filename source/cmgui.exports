@@ -416,7 +416,6 @@ Cmiss_context_get_default_scene_viewer_package
 Cmiss_context_get_node_selection
 Cmiss_context_get_element_selection
 Cmiss_context_get_default_IO_stream_package
-Cmiss_scene_create
 Cmiss_scene_set_region
 
 Cmiss_rendition_get_from_region
