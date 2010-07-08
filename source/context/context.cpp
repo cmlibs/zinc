@@ -114,7 +114,18 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
 				User_interface_module_destroy(&context->UI_module);
-
+			if (context->element_selection)
+			{
+				DESTROY(FE_element_selection)(&context->element_selection);
+			}
+			if (context->node_selection)
+			{
+				DESTROY(FE_node_selection)(&context->node_selection);
+			}
+			if (context->data_selection)
+			{
+				DESTROY(FE_node_selection)(&context->data_selection);
+			}
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;
@@ -131,18 +142,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 			if (context->element_point_ranges_selection)
 			{
 				DESTROY(Element_point_ranges_selection)(&context->element_point_ranges_selection);
-			}
-			if (context->element_selection)
-			{
-				DESTROY(FE_element_selection)(&context->element_selection);
-			}
-			if (context->node_selection)
-			{
-				DESTROY(FE_node_selection)(&context->node_selection);
-			}
-			if (context->data_selection)
-			{
-				DESTROY(FE_node_selection)(&context->data_selection);
 			}
 			if (context->curve_manager)
 			{
