@@ -147,7 +147,7 @@ Structure for maintaining a graphical rendition of region.
 	struct Cmiss_rendition_callback_data *update_callback_list;
 	/* managers for updating graphics in response to global changes */
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct LIST(Cmiss_graphic) *list_of_graphic;
+	struct LIST(Cmiss_graphic) *list_of_graphics;
 	void *computed_field_manager_callback_id;
 	/* global stores of selected objects for automatic highlighting */
 	void *graphical_material_manager_callback_id;
@@ -409,6 +409,49 @@ static int Cmiss_rendition_update_default_coordinate(
 	return (return_code);
 } /* Cmiss_rendition_changed */
 
+static void Cmiss_rendition_element_points_ranges_selection_change(
+	struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Element_point_ranges_selection_changes *changes,
+	void *rendition_void)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+Callback for change in the global element selection.
+==============================================================================*/
+{
+	struct Cmiss_rendition *rendition;
+
+	ENTER(Cmiss_rendition_element_point_ranges_selection_change);
+	if (element_point_ranges_selection && changes &&
+		(rendition = (struct Cmiss_rendition *)rendition_void))
+	{
+		/* find out if any of the changes affect elements in this group */
+		if (FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
+			Element_point_ranges_element_is_in_FE_region,
+			(void *)rendition->fe_region,
+			changes->newly_selected_element_point_ranges_list) ||
+			FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
+				Element_point_ranges_element_is_in_FE_region,
+				(void *)rendition->fe_region,
+				changes->newly_unselected_element_point_ranges_list))
+		{
+			/* update the graphics to match */
+			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+					Cmiss_graphic_selected_element_points_change, (void *)NULL,
+				rendition->list_of_graphics);
+			Cmiss_rendition_changed(rendition);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_element_point_ranges_selection_change.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cmiss_rendition_element_point_ranges_selection_change */
+
 /***************************************************************************//**
  * Allocates memory and assigns fields for a cmiss rendition for the given 
  * cmiss_region. Access count is set to 1.
@@ -426,8 +469,8 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 		data_fe_region = FE_region_get_data_FE_region(fe_region);
 		if (ALLOCATE(cmiss_rendition, struct Cmiss_rendition, 1))
 		{
-			cmiss_rendition->list_of_graphic = NULL;
-			if (NULL != (cmiss_rendition->list_of_graphic =
+			cmiss_rendition->list_of_graphics = NULL;
+			if (NULL != (cmiss_rendition->list_of_graphics =
 					CREATE(LIST(Cmiss_graphic))()))
 			{
 				cmiss_rendition->region = cmiss_region;
@@ -472,11 +515,18 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->name_prefix = Cmiss_region_get_path(cmiss_region);
 				cmiss_rendition->selection_group = NULL;
  				Cmiss_rendition_update_default_coordinate(cmiss_rendition);
+ 				if (graphics_module && graphics_module->element_point_ranges_selection)
+ 				{
+ 					Element_point_ranges_selection_add_callback(
+ 						graphics_module->element_point_ranges_selection,
+ 						Cmiss_rendition_element_points_ranges_selection_change,
+ 						(void *)cmiss_rendition);
+ 				}
 			}
 			else
 			{
 				DESTROY(LIST(Cmiss_graphic))(
-					&(cmiss_rendition->list_of_graphic));
+					&(cmiss_rendition->list_of_graphics));
 				DEALLOCATE(cmiss_rendition);
 				cmiss_rendition = (struct Cmiss_rendition *)NULL;
 			}
@@ -540,7 +590,7 @@ int Cmiss_rendition_set_circle_discretization_private(
 			/* clear graphics for all graphic using circle discretization */
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_circle_discretization_change,(void *)NULL,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 			Cmiss_rendition_changed(rendition);
 		}
 	}
@@ -568,7 +618,7 @@ int Cmiss_rendition_set_circle_discretization(
 		if (FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_set_general_circle_discretization,
 			(void *)&circle_discretization,
-			rendition->list_of_graphic))
+			rendition->list_of_graphics))
 		{
 			redraw = 1;
 		}
@@ -642,7 +692,7 @@ int Cmiss_rendition_set_default_coordinate_field_private(
 			/* clear graphics for all graphic using default coordinate field */
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_default_coordinate_field_change,(void *)NULL,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 			Cmiss_rendition_changed(rendition);
 		}
 	}
@@ -672,7 +722,7 @@ int Cmiss_rendition_set_default_coordinate_field(
 		if (FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_set_general_coordinate_field,
 				(void *)default_coordinate_field,
-				rendition->list_of_graphic))
+				rendition->list_of_graphics))
 		{
 			redraw = 1;
 		}
@@ -758,7 +808,7 @@ int Cmiss_rendition_set_element_discretization_private(
 		/* clear graphics for all settings using element discretization */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_element_discretization_change,(void *)NULL,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		Cmiss_rendition_changed(rendition);
 	}
 	else
@@ -785,7 +835,7 @@ int Cmiss_rendition_set_element_discretization(
 		if (FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 		    Cmiss_graphic_set_general_element_discretization,
 		    (void *)element_discretization,
-		    rendition->list_of_graphic))
+		    rendition->list_of_graphics))
 		{
 			redraw = 1;
 		}
@@ -864,7 +914,7 @@ int Cmiss_rendition_set_native_discretization_field_private(
 			/* clear graphics for all graphic using element discretization */
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_element_discretization_change, (void *)NULL,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 			Cmiss_rendition_changed(rendition);
 		}
 	}
@@ -892,7 +942,7 @@ int Cmiss_rendition_set_native_discretization_field(
 		if (FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_set_general_native_discretization_field, 
 				(void *)native_discretization_field,
-				rendition->list_of_graphic))
+				rendition->list_of_graphics))
 		{
 			redraw = 1;
 		}
@@ -953,7 +1003,7 @@ static void Cmiss_rendition_FE_region_change(struct FE_region *fe_region,
 		data.fe_region = fe_region;
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_FE_region_change, (void *)&data,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		if (data.graphics_changed)
 		{
 			Cmiss_rendition_changed(rendition);
@@ -1004,7 +1054,7 @@ static void Cmiss_rendition_data_FE_region_change(struct FE_region *fe_region,
 		data.fe_region = fe_region;
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_data_FE_region_change, (void *)&data,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		if (data.graphics_changed)
 		{
 			Cmiss_rendition_changed(rendition);
@@ -1048,7 +1098,7 @@ static void Cmiss_rendition_Computed_field_change(
 			}
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_Computed_field_change, (void *)&change_data,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 			if (change_data.graphics_changed)
 			{
 				Cmiss_rendition_changed(rendition);
@@ -1491,7 +1541,7 @@ int Cmiss_rendition_add_graphic(struct Cmiss_rendition *rendition,
 	if (rendition && graphic && (NULL == Cmiss_graphic_get_rendition_private(graphic)))
 	{
 		return_code=Cmiss_graphic_add_to_list(graphic,position,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		Cmiss_graphic_set_rendition_private(graphic, rendition);
 		Cmiss_rendition_changed(rendition);
 	}
@@ -1514,9 +1564,9 @@ int Cmiss_rendition_remove_graphic(struct Cmiss_rendition *rendition,
 	ENTER(Cmiss_rendition_remove_graphic);
 	if (rendition && graphic && (rendition == Cmiss_graphic_get_rendition_private(graphic)))
 	{
-		return_code=Cmiss_graphic_remove_from_list(graphic,
-			rendition->list_of_graphic);
 		Cmiss_graphic_set_rendition_private(graphic, NULL);
+		return_code=Cmiss_graphic_remove_from_list(graphic,
+			rendition->list_of_graphics);
 		Cmiss_rendition_changed(rendition);
 	}
 	else
@@ -1543,7 +1593,7 @@ int Cmiss_rendition_modify_graphic(struct Cmiss_rendition *rendition,
 	if (rendition&&graphic&&new_graphic)
 	{
 		return_code=Cmiss_graphic_modify_in_list(graphic,new_graphic,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		Cmiss_rendition_changed(rendition);
 	}
 	else
@@ -1618,7 +1668,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.iso_surface_specification = NULL;
 			return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_to_graphics_object,(void *)&graphic_to_object_data,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 
 			if (graphic_to_object_data.default_rc_coordinate_field)
 			{
@@ -1716,7 +1766,7 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 		}
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_get_visible_graphics_object_range, use_range_void,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		if (return_code&&transformation&&(!temp_graphics_object_range.first))
 		{
 			coordinates[3]=1.0;
@@ -1995,7 +2045,7 @@ int Cmiss_rendition_Spectrum_change(struct Cmiss_rendition *rendition,
 		spectrum_change_data.changed = 0;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_Spectrum_change, (void *)&spectrum_change_data,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		if (spectrum_change_data.changed)
 		{
 			Cmiss_rendition_changed(rendition);
@@ -2066,7 +2116,7 @@ int Cmiss_rendition_Graphical_material_change(struct Cmiss_rendition *rendition,
 		material_change_data.changed = 0;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_Graphical_material_change,
-			(void *)&material_change_data, rendition->list_of_graphic);
+			(void *)&material_change_data, rendition->list_of_graphics);
 		if (material_change_data.changed)
 		{
 			Cmiss_rendition_changed(rendition);
@@ -2181,7 +2231,7 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
       /* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 	}
 	else
 	{
@@ -2251,7 +2301,7 @@ DESCRIPTION :
 		glPushName(0);
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_execute_visible_graphic,
-			renderer, cmiss_rendition->list_of_graphic);
+			renderer, cmiss_rendition->list_of_graphics);
 		glPopName();
 		return_code = 1;
 	}
@@ -2402,7 +2452,7 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 	if (cmiss_rendition)
 	{
 		graphic=FIRST_OBJECT_IN_LIST_THAT(Cmiss_graphic)(
-			conditional_function,data,cmiss_rendition->list_of_graphic);
+			conditional_function,data,cmiss_rendition->list_of_graphics);
 	}
 	else
 	{
@@ -2840,7 +2890,7 @@ int Cmiss_rendition_process_list_or_write_window_commands(struct Cmiss_rendition
 			 process_temp_data->list_data = &list_data;
 			 return_code=FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 					Cmiss_rendition_process_Cmiss_graphic_list_contents,(void *)process_temp_data,
-					rendition->list_of_graphic);
+					rendition->list_of_graphics);
 			 DEALLOCATE(process_temp_data);
 		}
 		return_code = 1;
@@ -2919,7 +2969,7 @@ int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition)
 			display_message(INFORMATION_MESSAGE,"none\n");
 		}
 		if (0 < NUMBER_IN_LIST(Cmiss_graphic)(
-			rendition->list_of_graphic))
+			rendition->list_of_graphics))
 		{
 			display_message(INFORMATION_MESSAGE,"  graphics objects defined:\n");
 			list_data.graphic_string_detail=GRAPHIC_STRING_COMPLETE_PLUS;
@@ -2927,7 +2977,7 @@ int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition)
 			list_data.line_suffix="";
 			return_code=FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_list_contents,(void *)&list_data,
-				rendition->list_of_graphic);
+				rendition->list_of_graphics);
 		}
 		else
 		{
@@ -2997,7 +3047,7 @@ int Cmiss_rendition_get_graphic_position(
 	if (rendition&&graphic)
 	{
 		position=Cmiss_graphic_get_position_in_list(graphic,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 	}
 	else
 	{
@@ -3036,17 +3086,17 @@ int Cmiss_renditions_match(struct Cmiss_rendition *rendition1,
 			(rendition1->native_discretization_field ==
 				rendition2->native_discretization_field) &&
 			((number_of_graphic = NUMBER_IN_LIST(Cmiss_graphic)(
-				rendition1->list_of_graphic)) ==
+				rendition1->list_of_graphics)) ==
 				NUMBER_IN_LIST(Cmiss_graphic)(
-					rendition2->list_of_graphic)))
+					rendition2->list_of_graphics)))
 		{
 			return_code = 1;
 			for (i = 1; return_code && (i <= number_of_graphic); i++)
 			{
 				graphic1 = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic, position)(
-					i, rendition1->list_of_graphic);
+					i, rendition1->list_of_graphics);
 				graphic2 = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic, position)(
-					i, rendition2->list_of_graphic);
+					i, rendition2->list_of_graphics);
 				return_code = Cmiss_graphic_match(graphic1, graphic2);
 			}
 		}
@@ -3111,11 +3161,11 @@ int Cmiss_rendition_copy(struct Cmiss_rendition *destination,
 			source->native_discretization_field;
 		/* empty original list_of_settings */
 		REMOVE_ALL_OBJECTS_FROM_LIST(Cmiss_graphic)(
-			destination->list_of_graphic);
+			destination->list_of_graphics);
 		/* put copy of each settings in source list in destination list */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_copy_and_put_in_list,
-			(void *)destination->list_of_graphic,source->list_of_graphic);
+			(void *)destination->list_of_graphics,source->list_of_graphics);
 		destination->visibility = source->visibility;
 		return_code=1;
 	}
@@ -3170,7 +3220,7 @@ int for_each_graphic_in_Cmiss_rendition(
 	{
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			*cmiss_rendition_graphic_iterator_function,user_data,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 	}
 	else
 	{
@@ -3191,7 +3241,7 @@ int Cmiss_rendition_get_number_of_graphic(struct Cmiss_rendition *rendition)
 	if (rendition)
 	{
 		number_of_graphic =
-			NUMBER_IN_LIST(Cmiss_graphic)(rendition->list_of_graphic);
+			NUMBER_IN_LIST(Cmiss_graphic)(rendition->list_of_graphics);
 	}
 	else
 	{
@@ -3213,7 +3263,7 @@ struct Cmiss_graphic *Cmiss_rendition_get_graphic_at_position(
 	if (rendition)
 	{
 		graphic=FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic,
-			position)(position,rendition->list_of_graphic);
+			position)(position,rendition->list_of_graphics);
 		if (graphic)
 		{
 			ACCESS(Cmiss_graphic)(graphic);
@@ -3255,12 +3305,12 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 	struct Cmiss_rendition *source)
 {
 	int return_code;
-	struct LIST(Cmiss_graphic) *temp_list_of_graphic;
+	struct LIST(Cmiss_graphic) *temp_list_of_graphics;
 
 	ENTER(Cmiss_rendition_modify);
 	if (destination && source)
 	{
-		if (NULL != (temp_list_of_graphic = CREATE(LIST(Cmiss_graphic))()))
+		if (NULL != (temp_list_of_graphics = CREATE(LIST(Cmiss_graphic))()))
 		{
 			if (source->default_coordinate_field)
 			{
@@ -3276,14 +3326,14 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 			/* make copy of source graphic without graphics objects */
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_copy_and_put_in_list,
-				(void *)temp_list_of_graphic, source->list_of_graphic);
+				(void *)temp_list_of_graphics, source->list_of_graphics);
 			/* extract graphics objects that can be reused from destination list */
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_extract_graphics_object_from_list,
-				(void *)destination->list_of_graphic, temp_list_of_graphic);
-			/* replace the destination list of graphic with temp_list_of_graphic */
-			DESTROY(LIST(Cmiss_graphic))(&(destination->list_of_graphic));
-			destination->list_of_graphic = temp_list_of_graphic;
+				(void *)destination->list_of_graphics, temp_list_of_graphics);
+			/* replace the destination list of graphic with temp_list_of_graphics */
+			DESTROY(LIST(Cmiss_graphic))(&(destination->list_of_graphics));
+			destination->list_of_graphics = temp_list_of_graphics;
 			/* inform the client of the change */
 			Cmiss_rendition_changed(destination);
 			return_code = 1;
@@ -3314,19 +3364,7 @@ int Cmiss_rendition_set_visibility(struct Cmiss_rendition*rendition,
 		if (rendition->visibility != visibility_flag)
 		{
 			rendition->visibility = visibility_flag;
-//			if (rendition->list_of_scene &&
-//				!rendition->list_of_scene->empty())
-//			{
-//				std::list<struct Scene *>::iterator pos =
-//					rendition->list_of_scene->begin();
-//				while (pos != rendition->list_of_scene->end())
-//				{
-//					Cmiss_scene_rendition_list_set_show(
-//						*pos, rendition, visibility_flag);
-//					++pos;
-//				}
-//			}
-			Cmiss_rendition_changed_external(rendition);
+			Cmiss_rendition_changed(rendition);
 		}
 		return 1;
 	}
@@ -3684,7 +3722,7 @@ static int Cmiss_rendition_time_update_callback(struct Time_object *time_object,
 	{
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_time_change,NULL,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		rendition->build = 1;
 		rendition->display_list_current = 0;
 		Cmiss_rendition_changed(rendition);
@@ -3726,7 +3764,7 @@ int Cmiss_rendition_has_multiple_times(
 		}
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_update_time_behaviour, (void *)&data,
-			rendition->list_of_graphic);
+			rendition->list_of_graphics);
 		return_code = data.time_dependent;
 	}
 	else
@@ -3947,9 +3985,18 @@ int DESTROY(Cmiss_rendition)(
 	struct Cmiss_rendition_callback_data *callback_data, *next;
 
 	ENTER(DESTROY(Cmiss_rendition));
+
 	if (cmiss_rendition_address && (cmiss_rendition = *cmiss_rendition_address))
 	{
 		Cmiss_rendition_remove_time_dependent_transformation(cmiss_rendition);
+		if (cmiss_rendition->graphics_module &&
+				cmiss_rendition->graphics_module->element_point_ranges_selection)
+		{
+			Element_point_ranges_selection_add_callback(
+				cmiss_rendition->graphics_module->element_point_ranges_selection,
+				Cmiss_rendition_element_points_ranges_selection_change,
+				(void *)cmiss_rendition);
+		}
 		if (cmiss_rendition->name_prefix)
 		{
 			DEALLOCATE(cmiss_rendition->name_prefix);
@@ -4015,10 +4062,10 @@ int DESTROY(Cmiss_rendition)(
 		{
 			DEACCESS(FE_field)(&(cmiss_rendition->native_discretization_field));
 		}
-		if (cmiss_rendition->list_of_graphic)
+		if (cmiss_rendition->list_of_graphics)
 		{
 			DESTROY(LIST(Cmiss_graphic))(
-				&(cmiss_rendition->list_of_graphic));
+				&(cmiss_rendition->list_of_graphics));
 		}
 		if (cmiss_rendition->data_fe_region)
 		{
@@ -4119,7 +4166,7 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 	if (rendition && glyph)
 	{
 		if (!FIRST_OBJECT_IN_LIST_THAT(Cmiss_graphic)(Cmiss_graphic_has_name,
-				(void *)cmiss_graphic_name, rendition->list_of_graphic))
+				(void *)cmiss_graphic_name, rendition->list_of_graphics))
 		{
 			Cmiss_rendition_begin_change(rendition);
 			Cmiss_graphic *graphic = Cmiss_rendition_create_static(rendition);
@@ -4760,9 +4807,9 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 			if (NULL != (graphics_module->default_scene=(CREATE(Scene)())))
 			{
 				Cmiss_scene_filter *filter;
-				filter = Cmiss_scene_create_filter_rendition_visibility(scene, 0);
+				filter = Cmiss_scene_create_filter_rendition_visibility(graphics_module->default_scene, 0);
 				Cmiss_scene_filter_destroy(&filter);
-				filter = Cmiss_scene_create_filter_graphic_visibility(scene, 0);
+				filter = Cmiss_scene_create_filter_graphic_visibility(graphics_module->default_scene, 0);
 				Cmiss_scene_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
 				struct MANAGER(Scene) *scene_manager = 
@@ -4873,11 +4920,11 @@ int Cmiss_rendition_detach_fields(struct Cmiss_rendition *rendition)
 			{
 				DEACCESS(FE_field)(&(rendition->native_discretization_field));
 			}
-			if (rendition->list_of_graphic)
+			if (rendition->list_of_graphics)
 			{
 				FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 					Cmiss_graphic_detach_fields, (void *)NULL,
-					rendition->list_of_graphic);
+					rendition->list_of_graphics);
 			}
 			if (rendition->transformation_field)
 			{

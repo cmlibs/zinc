@@ -4886,6 +4886,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* for 1-D and 2-D elements only */
 		destination->exterior=source->exterior;
 		destination->face=source->face;
+		destination->rendition=source->rendition;
 		/* for cylinders only */
 		if (CMISS_GRAPHIC_CYLINDERS==source->graphic_type)
 		{
