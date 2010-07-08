@@ -138,7 +138,7 @@ public:
 	{
 	}
 
-	bool isRegionPlacedBefore(Cmiss_region *region1, Cmiss_region *region2)
+	bool isRegionPlacedBefore(Cmiss_region *region1, Cmiss_region *region2) const
 	{
 		bool return_code = false;
 		if (region1 == region2)
@@ -223,7 +223,7 @@ public:
 		return return_code;
 	}
 
-	bool operator() (const Cmiss_rendition *rendition1, const Cmiss_rendition *rendition2)
+	bool operator() (const Cmiss_rendition *rendition1, const Cmiss_rendition *rendition2) const
 	{
 		Cmiss_region *region1 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition1));
 		Cmiss_region *region2 = Cmiss_rendition_get_region(const_cast<Cmiss_rendition *>(rendition2));
