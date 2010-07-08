@@ -114,6 +114,16 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
 				User_interface_module_destroy(&context->UI_module);
+
+			if (context->root_region)
+			{
+				/* need the following due to circular references where field owned by region references region itself;
+				 * when following removed also remove #include "region/cmiss_region_private.h" */
+				Cmiss_region_detach_fields_hierarchical(context->root_region);
+				DEACCESS(Cmiss_region)(&context->root_region);
+			}
+			if (context->graphics_module)
+				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->any_object_selection)
 			{
 				DESTROY(Any_object_selection)(&context->any_object_selection);
@@ -134,15 +144,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 			{
 				DESTROY(FE_node_selection)(&context->data_selection);
 			}
-			if (context->root_region)
-			{
-				/* need the following due to circular references where field owned by region references region itself;
-				 * when following removed also remove #include "region/cmiss_region_private.h" */
-				Cmiss_region_detach_fields_hierarchical(context->root_region);
-				DEACCESS(Cmiss_region)(&context->root_region);
-			}
-			if (context->graphics_module)
-				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->curve_manager)
 			{
 				DESTROY(MANAGER(Curve))(&context->curve_manager);
