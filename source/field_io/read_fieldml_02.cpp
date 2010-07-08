@@ -1109,8 +1109,8 @@ int FieldMLReader::readAggregates()
 			FmlObjectHandle fmlIndexDomain2 = Fieldml_GetIndexDomain(fmlHandle, fmlFieldParametersSource, 2);
 			if (((1 == indexCount) && (1 == componentCount) && (fmlNodesEnsemble == fmlIndexDomain1))
 				|| ((2 == indexCount) &&
-					((fmlNodesEnsemble == fmlIndexDomain1) && (fmlValueDomainComponentEnsemble == fmlIndexDomain2)) ||
-					((fmlNodesEnsemble == fmlIndexDomain2) && (fmlValueDomainComponentEnsemble == fmlIndexDomain1))))
+					(((fmlNodesEnsemble == fmlIndexDomain1) && (fmlValueDomainComponentEnsemble == fmlIndexDomain2)) ||
+					((fmlNodesEnsemble == fmlIndexDomain2) && (fmlValueDomainComponentEnsemble == fmlIndexDomain1)))))
 			{
 				// Read parameters into nodes
 				Cmiss_field_id realParametersField = Cmiss_field_module_find_field_by_name(field_module,
