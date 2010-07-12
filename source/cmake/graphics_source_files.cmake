@@ -36,7 +36,8 @@ SET( GRAPHICS_SRCS
 	source/graphics/volume_texture.c )
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
-	source/graphics/cmiss_rendition.h
+	source/graphics/cmiss_graphic.h
+	source/graphics/cmiss_rendition.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h
 	source/graphics/decimate_voltex.h
@@ -50,6 +51,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
+	source/graphics/graphics_object_highlight.hpp
 	source/graphics/graphics_window.h
 	source/graphics/graphics_window_private.hpp
 	source/graphics/image.h
@@ -71,6 +73,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_triangularisation.hpp
 	source/graphics/robo_window.h
 	source/graphics/scene_editor.h
+	source/graphics/scene_filters.hpp
 	source/graphics/selected_graphic.h
 	source/graphics/settings_editor.h
 	source/graphics/spectrum.h
@@ -119,11 +122,11 @@ ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	
 IF( WX_USER_INTERFACE )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
-		source/graphics/scene_editor_wx.cpp
+		source/graphics/region_tree_viewer_wx.cpp
 		source/graphics/spectrum_editor_wx.cpp
 		source/graphics/spectrum_editor_dialog_wx.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
-		source/graphics/scene_editor_wx.h
+		source/graphics/region_tree_viewer_wx.h
 		source/graphics/spectrum_editor_wx.h
 		source/graphics/spectrum_editor_dialog_wx.h )
 ENDIF( WX_USER_INTERFACE )
