@@ -2726,12 +2726,12 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 				if (clear_flag)
  				{
 					/* remove all graphic from group */
-					while (NULL != (graphic=
+					while (return_code && (NULL != (graphic=
 						first_graphic_in_Cmiss_rendition_that(rendition,
 							(LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *)NULL,
-							(void *)NULL)))
+							(void *)NULL))))
 					{
-						Cmiss_rendition_remove_graphic(rendition, graphic);
+						return_code = Cmiss_rendition_remove_graphic(rendition, graphic);
 					}
 				}
 				Cmiss_rendition_set_circle_discretization(rendition,
