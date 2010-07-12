@@ -8900,6 +8900,7 @@ int Cmiss_scene_clear_filters(Cmiss_scene *scene)
 			Cmiss_scene_filter *filter = scene->filters->at(i);
 			Cmiss_scene_filter_destroy(&filter);
 		}
+		scene->filters->clear();
 		if (scene->list_of_rendition)
 		{
 			scene->build = 1;
