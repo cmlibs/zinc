@@ -3026,14 +3026,13 @@ int Cmiss_graphic_to_graphics_object(
 		return_code = 1;
 		/* build only if visible... */
 		// GRC need to ask scene if visible
-		if (graphic->visibility)
+		if (Cmiss_scene_shows_graphic(graphic_to_object_data->scene, graphic))
 		{
 			/* build only if changed... */
 			if (graphic->graphics_changed)
 			{
 				/* override the default_coordinate_field with one chosen in graphic */
 				if (graphic->coordinate_field)
-
 				{
 					coordinate_field = graphic->coordinate_field;
 				}
@@ -4033,11 +4032,15 @@ int Cmiss_graphic_get_visible_graphics_object_range(
 	struct Cmiss_graphic *graphic,void *graphics_object_range_void)
 {
 	int return_code;
+	struct Graphics_object_range_struct *graphics_object_range =
+		(struct Graphics_object_range_struct *)graphics_object_range_void;
 	
 	ENTER(Cmiss_graphic_get_visible_graphics_object_range);
-	if (graphic)
+
+	if (graphic && graphics_object_range)
 	{
-		if (graphic->graphics_object && graphic->visibility)
+		if (graphic->graphics_object &&
+				Cmiss_scene_shows_graphic(graphics_object_range->scene, graphic))
 		{
 			return_code=get_graphics_object_range(graphic->graphics_object,
 				graphics_object_range_void);
@@ -4693,10 +4696,9 @@ int Cmiss_graphic_set_visibility(struct Cmiss_graphic *graphic,
 	if (graphic)
 	{
 		return_code=1;
-		if ((visibility && !graphic->visibility) ||
-			(!visibility && graphic->visibility))
+		if (visibility != graphic->visibility)
 		{
-			graphic->visibility = !graphic->visibility;
+			graphic->visibility = visibility;
 		}
 	}
 	else
@@ -8308,11 +8310,8 @@ int Cmiss_graphic_Graphical_material_change(
 				GT_object_Graphical_material_change(graphic->graphics_object,
 					(struct LIST(Graphical_material) *)NULL);
 			}
-			/* Cmiss_graphic only changed if graphic are visible */
-			if (graphic->visibility)
-			{
-				material_change_data->changed = 1;
-			}
+			/* need a way to tell either graphic is used in any scene or not */
+			material_change_data->changed = 1;
 		}
 		return_code = 1;
 	}
@@ -9372,11 +9371,8 @@ Second argument is a struct Cmiss_graphic_Spectrum_change_data.
 				GT_object_Spectrum_change(graphic->graphics_object,
 					(struct LIST(Spectrum) *)NULL);
 			}
-			/* Graphic only changed if graphic are visible */
-			if (graphic->visibility)
-			{
-				spectrum_change_data->changed = 1;
-			}
+			/* need a way to tell either graphic is used in any scene or not */
+			spectrum_change_data->changed = 1;
 		}
 		/* The material gets it's own notification of the change, 
 			it should propagate that to the Cmiss_graphic */
@@ -9390,11 +9386,8 @@ Second argument is a struct Cmiss_graphic_Spectrum_change_data.
 				GT_object_Graphical_material_change(graphic->graphics_object,
 					(struct LIST(Graphical_material) *)NULL);
 			}
-			/* Graphic only changed if graphic are visible */
-			if (graphic->visibility)
-			{
-				spectrum_change_data->changed = 1;
-			}
+			/* need a way to tell either graphic is used in any scene or not */
+			spectrum_change_data->changed = 1;
 		}
 		
 		return_code = 1;

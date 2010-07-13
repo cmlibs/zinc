@@ -444,7 +444,7 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 	if (scene)
 	{
 		return_code = 1;
-		if (GRAPHICS_NOT_COMPILED == scene->compile_status)
+		if (GRAPHICS_COMPILED != scene->compile_status)
 		{
 			if (scene->display_list || (scene->display_list = glGenLists(1)))
 			{

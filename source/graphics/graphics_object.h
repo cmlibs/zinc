@@ -91,6 +91,7 @@ Global types
 struct Graphical_material;
 struct Graphics_buffer;
 struct Graphics_font;
+struct Cmiss_scene;
 
 typedef enum
 /*******************************************************************************
@@ -110,7 +111,7 @@ LAST MODIFIED : 13 August 1998
 DESCRIPTION :
 Must ensure all the types defined here are handled by function
 get_GT_object_type_string.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
+Have members BEFORE_FIRST and AFTEGraphics_object_range_structR_LAST to enable iterating through the list
 without knowing which order the types are in.
 ==============================================================================*/
 {
@@ -340,6 +341,7 @@ range valid.
 ==============================================================================*/
 {
 	int first;
+	struct Cmiss_scene *scene;
 	Triple maximum,minimum;
 }; /* Graphics_object_range_struct */
 

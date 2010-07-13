@@ -1608,7 +1608,8 @@ int Cmiss_rendition_modify_graphic(struct Cmiss_rendition *rendition,
 } /* Cmiss_rendition_modify_graphic */
 
 static int Cmiss_rendition_build_graphics_objects(
-	struct Cmiss_rendition *rendition, FE_value time, const char *name_prefix)
+	struct Cmiss_rendition *rendition, struct Cmiss_scene *scene,
+	FE_value time, const char *name_prefix)
 {
 	int return_code;
 	struct Element_discretization element_discretization;
@@ -1640,6 +1641,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.region = rendition->region;
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
+			graphic_to_object_data.scene = scene;
 			element_discretization.number_in_xi1 =
 				rendition->element_discretization.number_in_xi1;
 			element_discretization.number_in_xi2 =
@@ -1650,7 +1652,6 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.circle_discretization =
 				rendition->circle_discretization;
 			graphic_to_object_data.time = time;
-
 			graphic_to_object_data.selected_element_point_ranges_list =
 				Element_point_ranges_selection_get_element_point_ranges_list(
 					rendition->graphics_module->element_point_ranges_selection);
@@ -1758,10 +1759,12 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 		if (NULL != (transformation = rendition->transformation))
 		{
 			temp_graphics_object_range.first = 1;
+			temp_graphics_object_range.scene = scene;
 			use_range_void = (void *)&temp_graphics_object_range;
 		}
 		else
 		{
+			graphics_object_range->scene = scene;
 			use_range_void = (void *)graphics_object_range;
 		}
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
@@ -2221,8 +2224,7 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 		if (rendition->build)
 		{
 			return_code = Cmiss_rendition_build_graphics_objects(rendition,
-				renderer->time, renderer->name_prefix);
-			rendition->build = 0;
+				renderer->get_scene(),renderer->time, renderer->name_prefix);
 		}
 		else
 		{
@@ -2314,7 +2316,7 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* execute_Cmiss_rendition */
+} /* Cmiss_rendition_render_opengl */
 
 int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 	Render_graphics_opengl *renderer)
@@ -2511,6 +2513,8 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 					/* modify same_graphic to match new ones */
 					return_code = Cmiss_rendition_modify_graphic(rendition,
 						same_graphic, graphic);
+					if (!Cmiss_graphic_get_rendition_private(same_graphic))
+						Cmiss_graphic_set_rendition_private(same_graphic, rendition);
 					DEACCESS(Cmiss_graphic)(&same_graphic);
 				}
 				else

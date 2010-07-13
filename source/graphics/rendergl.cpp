@@ -164,6 +164,7 @@ public:
 	 */
 	int Scene_execute(Scene *scene)
 	{
+		Render_graphics_push_scene push_scene(*this, scene);
 		return Scene_render_opengl(scene, this);
 	}
 
@@ -455,7 +456,7 @@ public:
 			glEndList();
 		}
 #endif /* defined (OLD_CODE) */
-		
+		Render_graphics_push_scene push_scene(*this, scene);
 		return_code = Render_immediate::Scene_compile(scene);
 		if (return_code)
 		{
@@ -482,10 +483,12 @@ public:
 		return Render_immediate::Cmiss_rendition_execute_members(cmiss_rendition);
 	}
 
+	/* rendition with display list */
+#if defined (OLD_CODE)
 	int Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
 	{
 		int return_code;
-		
+
 		if ((return_code = Render_immediate::Cmiss_rendition_compile_members(cmiss_rendition)))
 		{
 			Callback_member_callback< Cmiss_rendition*, Render_graphics_opengl_display_list,
@@ -497,11 +500,16 @@ public:
 		}
 		return (return_code);
 	}
+#endif
 
 	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
 	{
+		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
+#if defined (OLD_CODE)
+		/* rendition with display list */
 		return Cmiss_rendition_execute_opengl_display_list(
 			cmiss_rendition, this);
+#endif
 	}
 
 	int Graphical_element_group_execute_parent(GT_element_group *graphical_element_group)

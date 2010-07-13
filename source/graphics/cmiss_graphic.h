@@ -157,7 +157,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	FE_value *data_copy_buffer;
 
 	struct Iso_surface_specification *iso_surface_specification;
-
+	struct Cmiss_scene *scene;
 	/* additional values for passing to element_to_graphics_object */
 	struct Cmiss_graphic *graphic;
 };
