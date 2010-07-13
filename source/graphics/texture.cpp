@@ -44,6 +44,9 @@ The functions for manipulating graphical textures.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/cmgui_configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #if defined (WIN32_SYSTEM)
 #define _USE_MATH_DEFINES
 #endif // defined (WIN32_SYSTEM)
@@ -59,9 +62,6 @@ long lround(double d)
 	return (long)(d>0 ? d+0.5 : ceil(d-0.5));
 }
 #endif // defined (WIN32_SYSTEM)
-#if defined (BUILD_WITH_CMAKE)
-#include "configure/cmgui_configure.h"
-#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
@@ -2932,7 +2932,7 @@ A modifier function to set the texture storage type.
 {
 	const char *current_token, *storage_type_string;
 	enum Texture_storage_type *storage_type_address, storage_type;
-	int storage_type_int, return_code;
+	int storage_type_int, return_code = 0;
 
 	ENTER(set_Texture_storage);
 	if (state && state->current_token && (!dummy_user_data))
@@ -2984,6 +2984,7 @@ A modifier function to set the texture storage type.
 						}
 						storage_type_int++;
 					}
+					return_code = 1;
 				}
 			}
 			else
@@ -6984,7 +6985,7 @@ The command is started with the string pointed to by <command_prefix>.
 int Texture_compile_opengl_texture_object(struct Texture *texture,
 	Render_graphics_opengl *renderer)
 {
-	int return_code;
+	int return_code = 0;
 	GLenum texture_target;
 
 	ENTER(Texture_compile_opengl_texture_object);
@@ -7138,7 +7139,7 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 	Render_graphics_opengl *renderer)
 {
 	GLenum texture_target;
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Texture_execute_opengl_texture_object);
 	USE_PARAMETER(renderer);
