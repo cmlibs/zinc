@@ -2445,7 +2445,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 			else
 			{
-				sprintf(temp_string," number_of_iso_values %d",
+				sprintf(temp_string," range_number_of_iso_values %d",
 					graphic->number_of_iso_values);
 				append_string(&graphic_string,temp_string,&error);				
 				sprintf(temp_string," first_iso_value %g",

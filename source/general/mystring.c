@@ -839,7 +839,7 @@ quotes. Any quotes in the original string are put back in pairs so they are read
 as one quote when parsed, as explained in function extract_token().
 Special characters include token separators (whitespace/,/;/=), comment
 characters (#) and characters that must be "escaped", ie. preceded by a
-backslash in perl, namely \, ", ', $.
+backslash in perl, namely \, ", ', $. String "/" must also be quoted.
 NOTE: the string pointed to by <token_address> must be non-static and allowed
 to be reallocated.
 ==============================================================================*/
@@ -853,6 +853,10 @@ to be reallocated.
 		return_code = 1;
 		/* work out if string contains special characters */
 		special_chars = 0;
+		if (0 == strcmp(*token_address, "/"))
+		{
+			special_chars++;
+		}
 		number_of_escapes = 0;
 		while (*letter)
 		{
