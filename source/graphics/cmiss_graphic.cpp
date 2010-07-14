@@ -1777,7 +1777,6 @@ int Cmiss_graphic_modify_in_list(struct Cmiss_graphic *graphic,
 			/* save the current position */
 			old_position=graphic->position;
 			return_code=Cmiss_graphic_copy_without_graphics_object(graphic,new_graphic);
-			Cmiss_graphic_set_rendition_private(graphic, new_graphic->rendition);
 			graphic->position=old_position;
 		}
 		else
