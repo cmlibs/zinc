@@ -103,6 +103,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render.cpp
 		source/graphics/rendergl.cpp
 		source/graphics/scene.cpp
+		source/graphics/scene_filters.cpp
 		source/graphics/scene_viewer.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
