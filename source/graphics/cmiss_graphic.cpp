@@ -1777,6 +1777,7 @@ int Cmiss_graphic_modify_in_list(struct Cmiss_graphic *graphic,
 			/* save the current position */
 			old_position=graphic->position;
 			return_code=Cmiss_graphic_copy_without_graphics_object(graphic,new_graphic);
+			Cmiss_graphic_set_rendition_private(graphic, new_graphic->rendition);
 			graphic->position=old_position;
 		}
 		else
@@ -4889,7 +4890,6 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* for 1-D and 2-D elements only */
 		destination->exterior=source->exterior;
 		destination->face=source->face;
-		destination->rendition=source->rendition;
 		/* for cylinders only */
 		if (CMISS_GRAPHIC_CYLINDERS==source->graphic_type)
 		{
@@ -5319,7 +5319,8 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_SURFACES ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -5776,7 +5777,8 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_NODE_POINTS ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -6109,7 +6111,8 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_DATA_POINTS ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -6444,6 +6447,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					if (CMISS_GRAPHIC_STATIC ==modify_rendition_data->graphic->graphic_type)
 					{
 						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -6754,7 +6758,8 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_LINES ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -6975,7 +6980,8 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_CYLINDERS ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -7223,7 +7229,8 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 				{
 					if (CMISS_GRAPHIC_ISO_SURFACES ==modify_rendition_data->graphic->graphic_type)
 					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 					}
 					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 				}
@@ -7556,7 +7563,8 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 		{
 			if (CMISS_GRAPHIC_ELEMENT_POINTS ==modify_rendition_data->graphic->graphic_type)
 			{
-				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+				Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 			}
 			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 		}
@@ -7947,7 +7955,8 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 		{
 			if (CMISS_GRAPHIC_STREAMLINES ==modify_rendition_data->graphic->graphic_type)
 			{
-				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic); 
+				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
+				Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
 			}
 			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
 		}
@@ -9675,4 +9684,29 @@ int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
 			"Cmiss_graphic_set_rendition_private.  Invalid argument(s)");
 	}
 	return 0;
+}
+
+int Cmiss_graphic_set_rendition_for_list_private(struct Cmiss_graphic *graphic, void *rendition_void)
+{
+	Cmiss_rendition *rendition = (Cmiss_rendition *)rendition_void;
+	int return_code = 0;
+	if (graphic && rendition)
+	{
+		if (graphic->rendition == rendition)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = Cmiss_graphic_set_rendition_private(graphic, NULL);
+			return_code = Cmiss_graphic_set_rendition_private(graphic, rendition);
+		}
+	}
+	else
+	{
+		display_message(INFORMATION_MESSAGE,
+			"Cmiss_graphic_set_rendition_for_list_private.  Invalid argument(s)");
+	}
+
+	return return_code;
 }

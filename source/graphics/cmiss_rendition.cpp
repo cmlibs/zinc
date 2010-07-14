@@ -156,12 +156,6 @@ Structure for maintaining a graphical rendition of region.
 	std::list<struct Scene *> *list_of_scene;
 	/* level of cache in effect */
 	int cache;
-	/* flag indicating that graphics objects in graphical element need building */
-	int build;
-	/* display list identifier for the graphical_element */
-	GLuint display_list;
-	/* flag indicating the status of the display_list */
-	int display_list_current;
 	int fast_changing;
 	/* for accessing objects */
 	int access_count;
@@ -195,8 +189,6 @@ int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition)
 	if (rendition)
 	{
 		Cmiss_rendition_begin_cache(rendition);
-		rendition->build = 1;
-		rendition->display_list_current = 0;
 		return 1;
 	}
 	else
@@ -219,15 +211,12 @@ static int Cmiss_rendition_inform_clients(
 	ENTER(Cmiss_rendition_inform_clients);
 	if (rendition)
 	{
-		if (rendition->build)
+		callback_data = rendition->update_callback_list;
+		while(callback_data)
 		{
-			callback_data = rendition->update_callback_list;
-			while(callback_data)
-			{
-				(callback_data->callback)(rendition,
+			(callback_data->callback)(rendition,
 					callback_data->callback_user_data);
 				callback_data = callback_data->next;
-			}
 		}
 		return_code = 1;
 	}
@@ -285,10 +274,6 @@ static int Cmiss_rendition_changed(struct Cmiss_rendition *rendition)
 	ENTER(Cmiss_rendition_changed);
 	if (rendition)
 	{
-		/* mark rendition as needing a build */
-		rendition->build = 1;
-		/* mark display list as not current */
-		rendition->display_list_current = 0;
 		/* inform clients only if caching is off */
 		if (0 == rendition->cache)
 		{
@@ -503,10 +488,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->list_of_scene = NULL;
 				cmiss_rendition->fast_changing = 0;
 				cmiss_rendition->cache = 0;
-				cmiss_rendition->build = 1;
-				/* display list index and current flag: */
-				cmiss_rendition->display_list = 0;
-				cmiss_rendition->display_list_current = 0;
 				cmiss_rendition->position = 0;
 				cmiss_rendition->transformation_callback_list =
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)))();
@@ -2221,15 +2202,9 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	if (rendition)
 	{
 		/* check whether graphical_element contents need building */
-		if (rendition->build)
-		{
-			return_code = Cmiss_rendition_build_graphics_objects(rendition,
-				renderer->get_scene(),renderer->time, renderer->name_prefix);
-		}
-		else
-		{
-			return_code = 1;
-		}
+		return_code = Cmiss_rendition_build_graphics_objects(rendition,
+			renderer->get_scene(),renderer->time, renderer->name_prefix);
+
       /* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,
@@ -2370,78 +2345,6 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 
 	return (return_code);
 }
-
-int Cmiss_rendition_compile_opengl_display_list(
-	Cmiss_rendition *cmiss_rendition,
-	Callback_base< Cmiss_rendition* > *execute_function,
-	Render_graphics_opengl *renderer)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_compile_opengl_display_list);
-	USE_PARAMETER(renderer);
-	if (cmiss_rendition)
-	{
-		return_code = 1;
-		if (!cmiss_rendition->display_list_current)
-		{
-			/* compile visible graphics objects in the graphical element */
-			if (cmiss_rendition->display_list ||
-				(cmiss_rendition->display_list = glGenLists(1)))
-			{
-				glNewList(cmiss_rendition->display_list, GL_COMPILE);
-				(*execute_function)(cmiss_rendition);
-				glEndList();
-				cmiss_rendition->display_list_current = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "Cmiss_rendition_compile_opengl_display_list.  Failed");
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_rendition_compile_opengl_display_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_compile_opengl_display_list */
-
-int Cmiss_rendition_execute_opengl_display_list(
-	Cmiss_rendition *cmiss_rendition,
-	Render_graphics_opengl *renderer)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_execute_opengl_display_list);
-	USE_PARAMETER(renderer);
-	if (cmiss_rendition)
-	{
-		return_code = 1;
-		if (cmiss_rendition->display_list_current)
-		{
-			glCallList(cmiss_rendition->display_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_rendition_execute_opengl_display_list.  display list not current");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_rendition_execute_opengl_display_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_execute_opengl_display_list */
 
 struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 	struct Cmiss_rendition *cmiss_rendition,
@@ -3170,6 +3073,9 @@ int Cmiss_rendition_copy(struct Cmiss_rendition *destination,
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_copy_and_put_in_list,
 			(void *)destination->list_of_graphics,source->list_of_graphics);
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_set_rendition_for_list_private,
+			destination, destination->list_of_graphics);
 		destination->visibility = source->visibility;
 		return_code=1;
 	}
@@ -3335,6 +3241,9 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_extract_graphics_object_from_list,
 				(void *)destination->list_of_graphics, temp_list_of_graphics);
+			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+				Cmiss_graphic_set_rendition_for_list_private,
+				destination, temp_list_of_graphics);
 			/* replace the destination list of graphic with temp_list_of_graphics */
 			DESTROY(LIST(Cmiss_graphic))(&(destination->list_of_graphics));
 			destination->list_of_graphics = temp_list_of_graphics;
@@ -3727,8 +3636,6 @@ static int Cmiss_rendition_time_update_callback(struct Time_object *time_object,
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_time_change,NULL,
 			rendition->list_of_graphics);
-		rendition->build = 1;
-		rendition->display_list_current = 0;
 		Cmiss_rendition_changed(rendition);
 		return_code = 1;
 	}

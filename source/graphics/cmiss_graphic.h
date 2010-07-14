@@ -959,4 +959,15 @@ int Cmiss_graphic_selected_element_points_change(
 int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
 	struct Cmiss_rendition *rendition);
 
+/***************************************************************************//**
+ * A function to call set_rendition_private but with a void pointer to the
+ * rendition passing into the function for list macro.
+ *
+ * @param cmiss_graphic  pointer to the graphic.
+ * @param rendition_void  void pointer to the rendition.
+ * @return Return 1 if successfully set the graphic.
+ */
+int Cmiss_graphic_set_rendition_for_list_private(
+		struct Cmiss_graphic *graphic, void *rendition_void);
+
 #endif
