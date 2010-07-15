@@ -65,10 +65,8 @@ IF( WX_USER_INTERFACE )
 	
 	IF(  ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		SET( MATERIAL_INTERFACE_SRCS
-			source/material/material_editor_dialog_wx.cpp
 			source/material/material_editor_wx.cpp )
 		SET( MATERIAL_INTERFACE_HDRS
-			source/material/material_editor_dialog_wx.h
 			source/material/material_editor_wx.h )
 	ENDIF(  ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
