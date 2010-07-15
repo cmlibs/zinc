@@ -92,6 +92,10 @@ extern "C" {
 }
 #if defined (WX_USER_INTERFACE)
 extern "C" {
+#if defined (WIN32)
+#  define WINDOWS_LEAN_AND_MEAN
+#  include <windows.h>
+#endif
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
