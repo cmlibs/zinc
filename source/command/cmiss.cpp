@@ -244,7 +244,7 @@ extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
 #include "material/material_editor_dialog.h"
 #elif defined (WX_USER_INTERFACE)
-#include "material/material_editor_dialog_wx.h"
+#include "material/material_editor_wx.h"
 #endif /* defined (SWITCH_USER_INTERFACE) */
 #include "minimise/minimise.h"
 #include "node/node_operations.h"
@@ -403,7 +403,7 @@ DESCRIPTION :
 	struct Element_point_viewer *element_point_viewer;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-	struct Material_editor_dialog *material_editor_dialog;
+	struct Material_editor *material_editor;
 	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
@@ -2156,10 +2156,9 @@ editor at a time.  This implementation may be changed later.
 					command_data->texture_manager,(struct Graphical_material *)NULL,
 					command_data->graphics_buffer_package,command_data->user_interface);
 #elif defined (WX_USER_INTERFACE)
-				return_code=bring_up_material_editor_dialog_wx(
-					&(command_data->material_editor_dialog),
-					Material_package_get_material_manager(command_data->material_package),
-					command_data->texture_manager,(struct Graphical_material *)NULL,
+				return_code=material_editor_bring_up_editor(
+					&(command_data->material_editor),
+					command_data->graphics_module,
 					command_data->graphics_buffer_package,command_data->user_interface);
 #endif /* defined (SWITCH_USER_INTERFACE) */
 
@@ -23435,7 +23434,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
+		command_data->material_editor = (struct Material_editor *)NULL;
 		command_data->region_tree_viewer = (struct Region_tree_viewer *)NULL;
 		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
@@ -24368,9 +24367,9 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		}
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-		if (command_data->material_editor_dialog)
+		if (command_data->material_editor)
 		{
-			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
+			DESTROY(Material_editor)(&(command_data->material_editor));
 		}
 		if (command_data->region_tree_viewer)
 		{

@@ -1208,7 +1208,6 @@ ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
 		material/material_editor_dialog.c
 else
 	MATERIAL_INTERFACE_SRCS += \
-		material/material_editor_dialog_wx.cpp \
 		material/material_editor_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 endif

@@ -48,38 +48,19 @@ Widgets for editing a graphical material.
 #include "user_interface/user_interface.h"
 
 #define MATERIAL_NUM_FORMAT "%6.4" MATERIAL_PRECISION_STRING
-
+struct Cmiss_graphics_module;
 struct Material_editor;
 
-struct Material_editor *CREATE(Material_editor)(
-	 struct Material_editor_dialog **material_editor_dialog_address,
-	 struct MANAGER(Graphical_material) *graphical_material_manager,
-	 struct MANAGER(Texture) *texture_manager, 
-	 struct Graphical_material *material,
-	 struct Graphics_buffer_package *graphics_buffer_package,
-	 struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 4 May 2004
-
-DESCRIPTION :
-Creates a Material_editor.
-==============================================================================*/
-
-void material_editor_bring_up_editor(struct Material_editor *material_editor);
+int material_editor_bring_up_editor(
+	struct Material_editor **material_editor_address,
+	struct Cmiss_graphics_module *graphics_module,
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 10 Jan 2008
 
 DESCRIPTION :
 bring the material editor to the front.
-==============================================================================*/
-
-int DESTROY(Material_editor)(struct Material_editor **material_editor_address);
-/*******************************************************************************
-LAST MODIFIED : 12 August 2002
-
-DESCRIPTION :
-Destroys the <*material_editor_address> and sets
-<*material_editor_address> to NULL.
 ==============================================================================*/
 
 int material_editor_wx_set_material(
@@ -98,4 +79,6 @@ LAST MODIFIED : 30 November 2007
 DESCRIPTION :
 Update the material colour and settings in the material editor .
 ==============================================================================*/
+
+int DESTROY(Material_editor)(struct Material_editor **material_editor_address);
 #endif /* #define MATERIAL_EDITOR_WX_H */
