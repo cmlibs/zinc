@@ -6275,7 +6275,7 @@ The source_pixels are stored in rows from the bottom to top and from left to
 right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Cmgui_image *cmgui_image;
 #if defined (USE_IMAGEMAGICK)
 	Image *magick_image;
@@ -6558,6 +6558,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					cmgui_image->number_of_bytes_per_component =
 						number_of_bytes_per_component;
 					cmgui_image->number_of_images = 1;
+					return_code = 1;
 				}
 				else
 				{
