@@ -59,7 +59,7 @@ private:
 	
 public:
 	Cmiss_scene_filter(Cmiss_scene *inScene) :
-		action(CMISS_SCENE_FILTER_HIDE),
+		action(CMISS_SCENE_FILTER_SHOW),
 		active(true),
 		scene(inScene),
 		access_count(1)
@@ -104,6 +104,16 @@ public:
 	{
 		return (--access_count);
 	}
+	
+	void list() const
+	{
+		display_message(INFORMATION_MESSAGE, "%s", active ? "active " : "inactive ");
+		display_message(INFORMATION_MESSAGE, "%s", (action == CMISS_SCENE_FILTER_SHOW) ? "show " : "hide ");
+		list_type_specific();
+		display_message(INFORMATION_MESSAGE, "\n");
+	}
+	
+	virtual void list_type_specific() const = 0;
 };
 
 #endif /* SCENE_FILTERS_HPP_ */

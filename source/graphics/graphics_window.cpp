@@ -267,7 +267,7 @@ Contains information for a graphics window.
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
 		 will update it if the current one is destroyed */
 	struct Interactive_tool *interactive_tool;
-	/* the time_slider is attached to the default_time_keeper of the scene,
+	/* the time_slider is attached to the default_time_keeper,
 		the reference is kept so that the callbacks can be undone */
 	struct Time_keeper *time_keeper;
 	struct User_interface *user_interface;
@@ -2459,7 +2459,6 @@ a spaceship/submarine, where:
 	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Scene_viewer *scene_viewer;
-	struct Time_keeper *new_time_keeper;
 	static struct Set_vector_with_help_data
 		rotate_command_data={4," AXIS_X AXIS_Y AXIS_Z ANGLE",0};
 
@@ -2578,12 +2577,12 @@ a spaceship/submarine, where:
 						if (scene)
 						{
 							/* maintain pointer to scene in graphics_window */
-							ACCESS(Scene)(scene);
-							DEACCESS(Scene)(&(window->scene));
-							window->scene=scene;
+							REACCESS(Scene)(&(window->scene), scene);
+#if defined (OLD_CODE)
+							// Scene no longer has a time_keeper member
 							/* if the default_time_keeper of the new scene is different
 								than the old_scene change the callback */
-							new_time_keeper = Scene_get_default_time_keeper(scene);
+							struct Time_keeper *new_time_keeper = Scene_get_default_time_keeper(scene);
 							if(new_time_keeper != window->time_keeper)
 							{
 								if(window->time_keeper)
@@ -2613,6 +2612,7 @@ a spaceship/submarine, where:
 									window->time_keeper = (struct Time_keeper *)NULL;
 								}
 							}
+#endif /* defined (OLD_CODE) */
 						}
 						if (view_all_flag)
 						{
@@ -3759,6 +3759,7 @@ struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Time_keeper *default_time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -3880,7 +3881,7 @@ it.
 			window->scene_manager=scene_manager;
 			window->texture_manager=texture_manager;
 			window->scene=ACCESS(Scene)(scene);
-			window->time_keeper = ACCESS(Time_keeper)(Scene_get_default_time_keeper(scene));
+			window->time_keeper = ACCESS(Time_keeper)(default_time_keeper);
 			window->interactive_tool_manager=interactive_tool_manager;
 			window->interactive_tool=
 				FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(

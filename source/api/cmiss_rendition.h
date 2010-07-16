@@ -153,7 +153,7 @@ Cmiss_field_id Cmiss_rendition_get_default_coordinate_field(
  * @param rendition  The handle to the rendition.
  * @return  1 for visible, 0 for not visible.  
  */
-int Cmiss_rendition_get_visibility(struct Cmiss_rendition *rendition);
+int Cmiss_rendition_get_visibility_flag(struct Cmiss_rendition *rendition);
 
 /***************************************************************************//**
  * Returns the handle to a rendition <region>.

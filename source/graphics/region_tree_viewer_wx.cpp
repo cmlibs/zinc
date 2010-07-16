@@ -1930,7 +1930,7 @@ void GraphicListBoxChecked(wxCommandEvent &event)
 	GraphicListBoxProcessSelection(selection);
 	Cmiss_graphic *temp_graphic = Cmiss_rendition_get_graphic_at_position(
 		region_tree_viewer->edit_rendition, selection+1);
-	Cmiss_graphic_set_visibility(temp_graphic, 
+	Cmiss_graphic_set_visibility_flag(temp_graphic, 
 		graphicalitemschecklist->IsChecked(selection));
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
@@ -1957,7 +1957,7 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 			return_code = Cmiss_graphic_copy_without_graphics_object(graphic,
 				graphic_to_copy);
 			/* make sure new graphic is visible */
-			Cmiss_graphic_set_visibility(graphic,1);
+			Cmiss_graphic_set_visibility_flag(graphic,1);
 		}
 		else
 		{
@@ -4685,12 +4685,12 @@ void SetVisibilityOfTreeId(wxTreeItemId current_item_id, int flag)
 		rendition = Cmiss_region_get_rendition(region);
 		if (rendition)
 		{
-			Cmiss_rendition_set_visibility(rendition,flag);
+			Cmiss_rendition_set_visibility_flag(rendition, flag);
 			SetTreeItemImage(current_item_id, !flag);
 			DEACCESS(Cmiss_rendition)(&rendition);
 			if (region_tree_viewer->edit_rendition)
 			{
-				Cmiss_rendition_set_visibility(
+				Cmiss_rendition_set_visibility_flag(
 					region_tree_viewer->edit_rendition, flag);
 			}
 		}
@@ -4713,20 +4713,9 @@ void PropagateChanges(wxTreeItemId current_item_id, int flag)
 
 void TreeControlImageClicked(wxEvent &event)
 {
-	ENTER(TreeControlImageClicked);
-
 	wxTreeEvent *tree_event = (wxTreeEvent *)&event;  
-
-	if (Cmiss_rendition_get_visibility(
-				region_tree_viewer->edit_rendition))
-	{
-		SetVisibilityOfTreeId(tree_event->GetItem(),0);
-	}
-	else
-	{
-		SetVisibilityOfTreeId(tree_event->GetItem(),1);
-	}
-	LEAVE;
+	SetVisibilityOfTreeId(tree_event->GetItem(),
+		!Cmiss_rendition_get_visibility_flag(region_tree_viewer->edit_rendition));
 }
 
 void OnMenuSelectionOn(wxCommandEvent &event)
@@ -5084,7 +5073,7 @@ static int Region_tree_viewer_add_graphic_item(
 				GRAPHIC_STRING_COMPLETE_PLUS);
 		 wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		 graphicalitemschecklist->Append(graphic_string);
-		 if (  Cmiss_graphic_get_visibility(graphic) ==1)
+		 if (Cmiss_graphic_get_visibility_flag(graphic))
 		 {
 				graphicalitemschecklist->Check((graphicalitemschecklist->GetCount()-1),1);
 		 }
@@ -5533,7 +5522,7 @@ static int Region_tree_viewer_add_graphic(
 				GRAPHIC_STRING_COMPLETE_PLUS);
 		 wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		 graphicchecklist->Append(graphic_string);
-		 if (Cmiss_graphic_get_visibility(graphic) ==1)
+		 if (Cmiss_graphic_get_visibility_flag(graphic))
 		 {
 			graphicchecklist->Check((graphicchecklist->GetCount()-1),1);
 		 }

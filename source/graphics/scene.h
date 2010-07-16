@@ -91,6 +91,7 @@ Global types
 ------------
 */
 
+#if defined (OLD_CODE)
 enum Scene_graphical_element_mode
 /*******************************************************************************
 LAST MODIFIED : 16 March 2001
@@ -109,6 +110,7 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	GRAPHICAL_ELEMENT_MANUAL,
 	GRAPHICAL_ELEMENT_NONE
 }; /* enum Scene_graphical_element_mode */
+#endif /* defined (OLD_CODE) */
 
 #if defined (USE_SCENE_OBJECT)
 enum Scene_object_type
@@ -188,24 +190,23 @@ DECLARE_LIST_TYPES(Scene);
 
 DECLARE_MANAGER_TYPES(Scene);
 
-struct Modify_scene_data
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Structure to pass to modify_Scene.
-==============================================================================*/
+/***************************************************************************//**
+ * Structure to pass to define_Scene.
+ */
+struct Define_scene_data
 {
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
-	/* following used for enabling GFEs */
 	struct Cmiss_region *root_region;
+#if defined (OLD_CODE)
+	/* following used for enabling GFEs */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
 	struct User_interface *user_interface;
-}; /* struct Modify_scene_data */
+#endif /* defined (OLD_CODE) */
+}; /* struct Define_scene_data */
 
 enum Scene_input_type
 {
@@ -270,7 +271,9 @@ Global functions
 ----------------
 */
 
+#if defined (OLD_CODE)
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode);
+#endif /* defined (OLD_CODE) */
 
 #if defined (USE_SCENE_OBJECT)
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_object);
@@ -636,6 +639,7 @@ Call after making changes preceded by a call to Scene_begin_cache to enable a
 final message to be sent to clients.
 ==============================================================================*/
 
+#if defined (OLD_CODE)
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -720,6 +724,7 @@ graphical elements.
 Must be called after Scene_enable_graphics since GFEs require the default
 material and spectrum.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Scene);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene);
@@ -1542,16 +1547,14 @@ GT_element_settings or a whole GT_element_settings so that export commands can
 work on these sub_elements.  These created scenes are not added to the manager.
 ==============================================================================*/
 
-int modify_Scene(struct Parse_state *state,void *scene_void,
-	void *modify_scene_data_void);
-/*******************************************************************************
-LAST MODIFIED : 18 December 1997
+/***************************************************************************//**
+ * Parser commands for defining scenes - filters, lighting, etc.
+ * @param define_scene_data_void  void pointer to a struct Define_scene_data
+ * with contents filled.
+ */
+int define_Scene(struct Parse_state *state, void *scene_void,
+	void *define_scene_data_void);
 
-DESCRIPTION :
-Parser commands for modifying scenes - lighting, etc.
-==============================================================================*/
-
-#if defined (TO_BE_EDITED)
 int list_Scene(struct Scene *scene,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 21 September 1998
@@ -1559,8 +1562,8 @@ LAST MODIFIED : 21 September 1998
 DESCRIPTION :
 Writes the properties of the <scene> to the command window.
 ==============================================================================*/
-#endif
 
+#if defined (OLD_CODE)
 int gfx_modify_g_element_general(struct Parse_state *state,
 	void *cmiss_region_void, void *scene_void);
 /*******************************************************************************
@@ -1571,6 +1574,7 @@ Executes a GFX MODIFY G_ELEMENT GENERAL command.
 Allows general element_group settings to be changed (eg. discretization) and
 updates graphics of settings affected by the changes (probably all).
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 #if !defined (NEW_ALIAS)
 int export_to_alias(struct Scene *scene);
@@ -1735,8 +1739,10 @@ int Cmiss_scene_set_name(struct Scene *scene, const char *name);
 
 /***************************************************************************//** 
  * Get the top region of the scene.
- * @param scene The scene
- * @return The region of the scene
+ * Caller must clean up handle with Cmiss_scene_destroy.
+ * 
+ * @param scene  The scene
+ * @return  Handle to the top region of the scene, or NULL if none.
  */
 struct Cmiss_region *Cmiss_scene_get_region(struct Scene *scene);
 

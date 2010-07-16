@@ -1,10 +1,6 @@
-/*******************************************************************************
-FILE : cmiss_graphic.cpp
-
-LAST MODIFIED : 22 October 2008
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * cmiss_graphic.h
+ */ 
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -284,9 +280,28 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail);
 
 /***************************************************************************//**
- * Returns 1 if the graphics are visible for <graphic>, otherwise 0.
+ * Return status of graphic visibility flag attribute.
+ * 
+ * @param graphic  The graphic to query.
+ * @return  1 if graphic visibility flag is set, 0 if not.
  */
-int Cmiss_graphic_get_visibility(struct Cmiss_graphic *graphic);
+int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
+ * Sets status of graphic visibility flag attribute.
+ * 
+ * @param graphic  The graphic to modify.
+ * @param visibility_flag  1 to set, 0 to clear.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
+	int visibility_flag);
+
+/***************************************************************************//**
+ * @return  1 if both graphic and its rendition visibility flags are set,
+ * otherwise 0. 
+ */
+int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
  * Returns true if the graphics are output with names that identify
@@ -650,13 +665,6 @@ int Cmiss_graphic_get_xi_discretization(
 	struct Computed_field **xi_point_density_field);
 
 /***************************************************************************//**
- *Sets the visibility of the graphics described by the settings, where 1 is
- *visible, 0 is invisible.
- */
-int Cmiss_graphic_set_visibility(struct Cmiss_graphic *graphic,
-	int visibility);
-
-/***************************************************************************//**
  * Sets the xi_discretization_mode controlling where glyphs are displayed for
  * <graphic> of type CMISS_GRAPHIC_ELEMENT_POINTS. Must supply a scalar
  * <xi_point_density_field> if the new mode is XI_DISCRETIZATION_CELL_DENSITY or
@@ -953,11 +961,11 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 
 struct Cmiss_rendition *Cmiss_graphic_get_rendition_private(struct Cmiss_graphic *graphic);
 
-int Cmiss_graphic_selected_element_points_change(
-	struct Cmiss_graphic *graphic,void *dummy_void);
-
 int Cmiss_graphic_set_rendition_private(struct Cmiss_graphic *graphic,
 	struct Cmiss_rendition *rendition);
+
+int Cmiss_graphic_selected_element_points_change(
+	struct Cmiss_graphic *graphic,void *dummy_void);
 
 /***************************************************************************//**
  * A function to call set_rendition_private but with a void pointer to the

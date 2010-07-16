@@ -49,7 +49,6 @@ The public interface to the Cmiss_rendition.
 #include "api/cmiss_material.h"
 
 struct Cmiss_graphic;
-struct Cmiss_rendition;
 
 #ifndef CMISS_GRAPHIC_ID_DEFINED
 /***************************************************************************//**
@@ -60,11 +59,6 @@ struct Cmiss_rendition;
 typedef struct Cmiss_graphic * Cmiss_graphic_id;
 #define CMISS_GRAPHIC_ID_DEFINED
 #endif /* CMISS_GRAPHIC_ID_DEFINED */
-
-#ifndef CMISS_RENDITION_ID_DEFINED
-typedef struct Cmiss_rendition * Cmiss_rendition_id;
-#define CMISS_RENDITION_ID_DEFINED
-#endif /* CMISS_RENDITION_ID_DEFINED */
 
 #ifndef RENDER_TYPE_DEFINED
 /***************************************************************************//**

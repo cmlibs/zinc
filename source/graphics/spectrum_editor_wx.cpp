@@ -2367,6 +2367,9 @@ Creates a spectrum_editor widget.
 							Cmiss_scene_set_region(spectrum_editor->spectrum_editor_scene,
 								spectrum_editor->private_region);
 							Cmiss_scene_enable_rendition(spectrum_editor->spectrum_editor_scene);
+							Cmiss_scene_filter *filter =
+								Cmiss_scene_create_filter_all(spectrum_editor->spectrum_editor_scene);
+							Cmiss_scene_filter_destroy(&filter);
 							spectrum_editor->rendition = Cmiss_rendition_get_from_region(
 								spectrum_editor->private_region);
 							viewer_light = CREATE(Light)("spectrum_editor_light");

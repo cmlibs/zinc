@@ -41,6 +41,7 @@
 
 extern "C" {
 #include "api/cmiss_rendition.h"
+#include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/scene.h"
 #include "graphics/cmiss_graphic.h"
@@ -49,6 +50,27 @@ extern "C" {
 #include "graphics/scene_filters.hpp"
 
 namespace {
+
+class Cmiss_scene_filter_all : public Cmiss_scene_filter
+{
+public:
+	Cmiss_scene_filter_all(Cmiss_scene *inScene) :
+		Cmiss_scene_filter(inScene)
+	{
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic)
+	{
+		USE_PARAMETER(graphic);
+		return true;
+	}
+
+	virtual void list_type_specific() const
+	{
+		display_message(INFORMATION_MESSAGE, "match_all");
+	}
+
+};
 
 class Cmiss_scene_filter_graphic_name : public Cmiss_scene_filter
 {
@@ -65,42 +87,30 @@ public:
 	{
 		return ::Cmiss_graphic_has_name(graphic, (void *)matchName);
 	}
+
+	virtual void list_type_specific() const
+	{
+		display_message(INFORMATION_MESSAGE, "match_graphic_name %s", matchName);
+	}
+
 };
 
-class Cmiss_scene_filter_graphic_visibility : public Cmiss_scene_filter
+class Cmiss_scene_filter_visibility_flags : public Cmiss_scene_filter
 {
-	bool matchVisibility;
-
 public:
-	Cmiss_scene_filter_graphic_visibility(Cmiss_scene *inScene, bool inMatchVisibility) :
-		Cmiss_scene_filter(inScene),
-		matchVisibility(inMatchVisibility)
+	Cmiss_scene_filter_visibility_flags(Cmiss_scene *inScene) :
+		Cmiss_scene_filter(inScene)
 	{
 	}
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		bool visibility = Cmiss_graphic_get_visibility(graphic) != 0;
-		return (matchVisibility == visibility);
-	}
-};
-
-class Cmiss_scene_filter_rendition_visibility : public Cmiss_scene_filter
-{
-	bool matchVisibility;
-
-public:
-	Cmiss_scene_filter_rendition_visibility(Cmiss_scene *inScene, bool inMatchVisibility) :
-		Cmiss_scene_filter(inScene),
-		matchVisibility(inMatchVisibility)
-	{
+		return Cmiss_graphic_and_rendition_visibility_flags_set(graphic);
 	}
 
-	virtual bool match(struct Cmiss_graphic *graphic)
+	virtual void list_type_specific() const
 	{
-		Cmiss_rendition *rendition = Cmiss_graphic_get_rendition_private(graphic);
-		bool visibility = Cmiss_rendition_get_visibility(rendition) != 0;
-		return (matchVisibility == visibility);
+		display_message(INFORMATION_MESSAGE, "match_visibility_flags");
 	}
 };
 
@@ -127,6 +137,21 @@ int Cmiss_scene_filter_destroy(Cmiss_scene_filter **filter_address)
 	return 0;
 }
 
+int Cmiss_scene_filter_set_action(Cmiss_scene_filter *filter,
+	enum Cmiss_scene_filter_action action)
+{
+	if (filter)
+		return filter->setAction(action);
+	return 0;
+}
+
+Cmiss_scene_filter *Cmiss_scene_create_filter_all(Cmiss_scene *scene)
+{
+	Cmiss_scene_filter_all *filter = new Cmiss_scene_filter_all(scene);
+	Scene_add_filter(scene, filter);
+	return filter;
+}
+
 Cmiss_scene_filter *Cmiss_scene_create_filter_graphic_name(Cmiss_scene *scene, const char *match_name)
 {
 	Cmiss_scene_filter_graphic_name *filter = new Cmiss_scene_filter_graphic_name(scene, match_name);
@@ -134,16 +159,9 @@ Cmiss_scene_filter *Cmiss_scene_create_filter_graphic_name(Cmiss_scene *scene, c
 	return filter;
 }
 
-Cmiss_scene_filter *Cmiss_scene_create_filter_graphic_visibility(Cmiss_scene *scene, int match_visibility)
+Cmiss_scene_filter *Cmiss_scene_create_filter_visibility_flags(Cmiss_scene *scene)
 {
-	Cmiss_scene_filter_graphic_visibility *filter = new Cmiss_scene_filter_graphic_visibility(scene, match_visibility);
-	Scene_add_filter(scene, filter);
-	return filter;
-}
-
-Cmiss_scene_filter *Cmiss_scene_create_filter_rendition_visibility(Cmiss_scene *scene, int match_visibility)
-{
-	Cmiss_scene_filter_rendition_visibility *filter = new Cmiss_scene_filter_rendition_visibility(scene, match_visibility);
+	Cmiss_scene_filter_visibility_flags *filter = new Cmiss_scene_filter_visibility_flags(scene);
 	Scene_add_filter(scene, filter);
 	return filter;
 }

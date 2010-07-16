@@ -72,6 +72,7 @@ extern "C" {
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/cmiss_graphic.h"
+#include "graphics/cmiss_rendition.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
@@ -169,7 +170,7 @@ finite element group rendition.
 
 	/* appearance settings */
 	/* for all graphic types */
-	int visibility;
+	bool visibility_flag;
 	struct Graphical_material *material, *selected_material,
 		*secondary_material;
 	struct Computed_field *data_field;
@@ -410,7 +411,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->overlay_order = 1;
 			/* appearance settings defaults */
 			/* for all graphic types */
-			graphic->visibility=1;
+			graphic->visibility_flag = true;
 			graphic->material=(struct Graphical_material *)NULL;
 			graphic->secondary_material=(struct Graphical_material *)NULL;
 			graphic->selected_material=(struct Graphical_material *)NULL;
@@ -1877,25 +1878,79 @@ int Cmiss_graphic_is_graphic_type(struct Cmiss_graphic *graphic,
 	return (return_code);
 }
 
-int Cmiss_graphic_get_visibility(struct Cmiss_graphic *graphic)
+int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphic_get_visibility);
+	ENTER(Cmiss_graphic_get_visibility_flag);
 	if (graphic)
 	{
-		return_code=graphic->visibility;
+		return_code = graphic->visibility_flag;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_visibility.  Invalid argument(s)");
+			"Cmiss_graphic_get_visibility_flag.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
+	int visibility_flag)
+{
+	int return_code;
+
+	ENTER(Cmiss_graphic_set_visibility_flag);
+	if (graphic)
+	{
+		return_code = 1;
+		bool bool_visibility_flag = visibility_flag;
+		if (graphic->visibility_flag != bool_visibility_flag)
+		{
+			graphic->visibility_flag = bool_visibility_flag;
+			// GRC: change message needed here
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_set_visibility_flag.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_graphic_get_visibility */
+}
+
+int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graphic)
+{
+	int return_code;
+
+	ENTER(Cmiss_graphic_and_rendition_visibility_flags_set);
+	if (graphic)
+	{
+		if (graphic->visibility_flag && Cmiss_rendition_get_visibility_flag(graphic->rendition))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_and_rendition_visibility_flags_set.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int Cmiss_graphic_get_glyph_parameters(
 	struct Cmiss_graphic *graphic,
@@ -2748,7 +2803,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		{
 			/* show appearance graphic */
 			/* for all graphic types */
-			if (!graphic->visibility)
+			if (!graphic->visibility_flag)
 			{
 				append_string(&graphic_string," invisible",&error);
 			}
@@ -4687,31 +4742,6 @@ int Cmiss_graphic_set_xi_discretization(
 	return (return_code);
 } /* Cmiss_graphic_set_xi_discretization */
 
-int Cmiss_graphic_set_visibility(struct Cmiss_graphic *graphic,
-	int visibility)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_visibility);
-	if (graphic)
-	{
-		return_code=1;
-		if (visibility != graphic->visibility)
-		{
-			graphic->visibility = visibility;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_visibility.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_visibility */
-
 int Cmiss_graphic_default_coordinate_field_change(
 	struct Cmiss_graphic *graphic,void *dummy_void)
 {
@@ -5012,7 +5042,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 
 		/* copy appearance graphic */
 		/* for all graphic types */
-		destination->visibility=source->visibility;
+		destination->visibility_flag = source->visibility_flag;
 		destination->line_width = source->line_width;
 		REACCESS(Graphical_material)(&(destination->material),source->material);
 		REACCESS(Graphical_material)(&(destination->secondary_material),
@@ -5372,7 +5402,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 								"default_selected",
 								rendition_command_data->graphical_material_manager));
 					}
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(graphic->name),
@@ -5466,7 +5496,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
@@ -5858,7 +5888,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						ACCESS(Computed_field)(variable_scale_field);
 					}
 					number_of_components = 3;
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -5993,7 +6023,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						if (font_name && (new_font = Graphics_font_package_get_font
 								(rendition_command_data->graphics_font_package, font_name)))
 						{
@@ -6192,7 +6222,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						ACCESS(Computed_field)(variable_scale_field);
 					}
 					number_of_components = 3;
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -6327,7 +6357,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						if (font_name && (new_font = Graphics_font_package_get_font
 								(rendition_command_data->graphics_font_package, font_name)))
 						{
@@ -6527,7 +6557,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						ACCESS(Computed_field)(variable_scale_field);
 					}
 					number_of_components = 3;
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -6646,7 +6676,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						if (font_name && (new_font = Graphics_font_package_get_font
 								(rendition_command_data->graphics_font_package, font_name)))
 						{
@@ -6811,7 +6841,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 								"default_selected",
 								rendition_command_data->graphical_material_manager));
 					}
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(graphic->name),
@@ -6904,7 +6934,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
@@ -7033,7 +7063,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 								"default_selected",
 								rendition_command_data->graphical_material_manager));
 					}
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(graphic->name),
@@ -7147,7 +7177,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
@@ -7282,7 +7312,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 								"default_selected",
 								rendition_command_data->graphical_material_manager));
 					}
-					visibility = graphic->visibility;
+					visibility = graphic->visibility_flag;
 					range_number_of_iso_values = 0;
 					option_table=CREATE(Option_table)();
 					Option_table_add_help(option_table,
@@ -7476,7 +7506,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						graphic->visibility = visibility;
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
@@ -7652,7 +7682,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				ACCESS(Computed_field)(xi_point_density_field);
 			}
 			number_of_components = 3;
-			visibility = graphic->visibility;
+			visibility = graphic->visibility_flag;
 
 			option_table=CREATE(Option_table)();
 			/* as */
@@ -7827,7 +7857,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 					graphic->spectrum=ACCESS(Spectrum)(
 						rendition_command_data->default_spectrum);
 				}
-				graphic->visibility = visibility;
+				Cmiss_graphic_set_visibility_flag(graphic, visibility);
 				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
 					xi_discretization_mode_string, &xi_discretization_mode);
 				if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
@@ -8017,7 +8047,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			{
 				reverse_track = 0;
 			}
-			visibility = graphic->visibility;
+			visibility = graphic->visibility_flag;
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(graphic->name),
@@ -8145,7 +8175,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				graphic->seed_xi,&number_of_components,set_float_vector);
 			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
-				graphic->visibility = visibility;
+				Cmiss_graphic_set_visibility_flag(graphic, visibility);
 				if (!(graphic->stream_vector_field))
 				{
 					display_message(ERROR_MESSAGE,"Must specify a vector");
@@ -8373,7 +8403,7 @@ int Cmiss_graphic_match(struct Cmiss_graphic *graphic1,
 	{
 		return_code=
 			Cmiss_graphic_same_geometry(graphic1, (void *)graphic2) &&
-			(graphic1->visibility == graphic2->visibility) &&
+			(graphic1->visibility_flag == graphic2->visibility_flag) &&
 			(graphic1->material == graphic2->material) &&
 			(graphic1->secondary_material == graphic2->secondary_material) &&
 			(graphic1->line_width == graphic2->line_width) &&

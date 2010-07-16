@@ -2975,127 +2975,6 @@ Executes a GFX CREATE REGION command.
 	return (return_code);
 } /* gfx_create_region */
 
-static int gfx_create_scene(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2003
-
-DESCRIPTION :
-Executes a GFX CREATE SCENE command.
-==============================================================================*/
-{
-	const char *current_token = 0;
-	int return_code = 0;
-	struct Cmiss_command_data *command_data;
- 	struct Modify_scene_data modify_scene_data;
-	struct Scene *scene;
-
-	ENTER(gfx_create_scene);
-
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
-			{
-				/* set up data for modify_Scene since called in two places */
-				modify_scene_data.light_manager=command_data->light_manager;
-				modify_scene_data.scene_manager=command_data->scene_manager;
-				modify_scene_data.default_scene=command_data->default_scene;
-				/* following used for enabling GFEs */
-				modify_scene_data.root_region = command_data->root_region;
-				modify_scene_data.element_point_ranges_selection=
-					command_data->element_point_ranges_selection;
-				modify_scene_data.element_selection=command_data->element_selection;
-				modify_scene_data.node_selection=command_data->node_selection;
-				modify_scene_data.data_selection=command_data->data_selection;
-				modify_scene_data.user_interface=command_data->user_interface;
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-						current_token,command_data->scene_manager))
-					{
-						/* new_code */
-						if ((scene = CREATE(Cmiss_scene)()))
-						{
-							if (Cmiss_scene_set_region(scene, command_data->root_region) &&
-								Cmiss_scene_set_name(scene, current_token))
-							{
-								Cmiss_scene_enable_rendition(scene);
-								Scene_enable_time_behaviour(scene,
-									command_data->default_time_keeper);
-								shift_Parse_state(state,1);
-								if (state->current_token)
-								{
- 									return_code=modify_Scene(state,(void *)scene,
- 										(void *)(&modify_scene_data));
-								}
-								else
-								{
-									return_code=1;
-								}
-								if (!ADD_OBJECT_TO_MANAGER(Scene)(scene,
-										command_data->scene_manager))
-								{
-									DEACCESS(Scene)(&scene);
-								}
-								/* Need to deaccess the new scene here as the access count 
-								   is set to 1 when created. */
-								if (scene)
-									DEACCESS(Scene)(&scene);
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_create_scene.  Error creating scene");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Scene already exists: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-/* 					return_code= */
-/* 						modify_Scene(state,(void *)NULL,(void *)(&modify_scene_data)); */
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_scene.  Missing command_data_void");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing scene name");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_scene.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_scene */
-
 static int gfx_create_snake(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5591,6 +5470,7 @@ Executes a GFX CREATE WINDOW command.
 							command_data->scene_manager,command_data->default_scene,
 							command_data->texture_manager,
 							interactive_tool_manager,
+							command_data->default_time_keeper,
 							command_data->user_interface))
 						{
 							if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
@@ -6677,8 +6557,6 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "region", NULL,
 					(void *)command_data->root_region, gfx_create_region);
-				Option_table_add_entry(option_table,"scene",NULL,
-					command_data_void,gfx_create_scene);
 				Option_table_add_entry(option_table, "snake", NULL,
 					command_data_void, gfx_create_snake);
 				Option_table_add_entry(option_table,"spectrum",NULL,
@@ -6913,6 +6791,14 @@ Executes a GFX DEFINE command.
 				/* font */
 				Option_table_add_entry(option_table, "font", NULL,
 					command_data_void, gfx_define_font);
+				/* scene */
+				Define_scene_data define_scene_data;
+				define_scene_data.light_manager=command_data->light_manager;
+				define_scene_data.scene_manager=command_data->scene_manager;
+				define_scene_data.default_scene=command_data->default_scene;
+				define_scene_data.root_region = command_data->root_region;
+				Option_table_add_entry(option_table, "scene", NULL, 
+					(void *)(&define_scene_data), define_Scene);
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -9655,7 +9541,7 @@ Executes a GFX EXPORT VRML command.
 						if (return_code=check_suffix(&file_name,".wrl"))
 						{
 							struct Cmiss_region *child_region = NULL;
-							region = ACCESS(Cmiss_region)(Cmiss_scene_get_region(scene));
+							region = Cmiss_scene_get_region(scene);
 							if (region_path)
 							{
 								child_region = Cmiss_region_find_subregion_at_path(region,
@@ -9784,8 +9670,10 @@ Executes a GFX EXPORT WAVEFRONT command.
 						return_code = 1;
 						if (region_path)
 						{
-							region = Cmiss_region_find_subregion_at_path(Cmiss_scene_get_region(scene),
+							Cmiss_region *scene_top_region = Cmiss_scene_get_region(scene);
+							region = Cmiss_region_find_subregion_at_path(scene_top_region,
 								region_path);
+							Cmiss_region_destroy(&scene_top_region);
 							if (!region)
 							{
 								display_message(ERROR_MESSAGE,
@@ -12333,11 +12221,7 @@ Executes a GFX LIST SCENE.
 					if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(current_token,
 						scene_manager))
 					{
-#if defined (TO_BE_EDITED)
-						return_code=list_Scene(scene,(void *)NULL);
-#else
-						return_code = 1;
-#endif
+						return_code = list_Scene(scene, (void *)NULL);
 					}
 					else
 					{
@@ -14509,7 +14393,6 @@ Executes a GFX MODIFY command.
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
-	struct Modify_scene_data modify_scene_data;
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_modify);
@@ -14576,19 +14459,13 @@ Executes a GFX MODIFY command.
 				Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0, 
 					(void *)command_data, gfx_modify_nodes);
 				/* scene */
-				modify_scene_data.light_manager=command_data->light_manager;
-				modify_scene_data.scene_manager=command_data->scene_manager;
-				modify_scene_data.default_scene=command_data->default_scene;
-				/* following used for enabling GFEs */
-				modify_scene_data.root_region = command_data->root_region;
-				modify_scene_data.element_point_ranges_selection=
-					command_data->element_point_ranges_selection;
-				modify_scene_data.element_selection=command_data->element_selection;
-				modify_scene_data.node_selection=command_data->node_selection;
-				modify_scene_data.data_selection=command_data->data_selection;
-				modify_scene_data.user_interface=command_data->user_interface;
-				Option_table_add_entry(option_table,"scene",NULL, 
-					(void *)(&modify_scene_data), modify_Scene);
+				Define_scene_data define_scene_data;
+				define_scene_data.light_manager=command_data->light_manager;
+				define_scene_data.scene_manager=command_data->scene_manager;
+				define_scene_data.default_scene=command_data->default_scene;
+				define_scene_data.root_region = command_data->root_region;
+				Option_table_add_entry(option_table, "scene", NULL, 
+					(void *)(&define_scene_data), define_Scene);
 				/* spectrum */
 				Option_table_add_entry(option_table,"spectrum",NULL, 
 					(void *)command_data, gfx_modify_Spectrum);
@@ -17844,6 +17721,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 						if (top_region)
 						{
 							Cmiss_region *child_region = Cmiss_region_find_subregion_at_path(top_region, name);
+						  Cmiss_region_destroy(&top_region);
 							if (child_region)
 							{
 							  rendition = Cmiss_region_get_rendition(child_region);
@@ -17853,7 +17731,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 						if (rendition)
 						{
 							int new_visibility = 0;
-							int current_visibility = Cmiss_rendition_get_visibility(rendition);
+							int current_visibility = Cmiss_rendition_get_visibility_flag(rendition);
 							if (on_flag)
 							{
 								new_visibility=1;
@@ -17871,7 +17749,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 							}
 							if (new_visibility!=current_visibility)
 							{
-								Cmiss_rendition_set_visibility(rendition,new_visibility);
+								Cmiss_rendition_set_visibility_flag(rendition, new_visibility);
 							}
 							Cmiss_rendition_destroy(&rendition);
 						}
@@ -23985,11 +23863,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 
+#if defined (OLD_CODE)
 		if(command_data->default_scene)
 		{
 			Scene_enable_time_behaviour(command_data->default_scene,
 				command_data->default_time_keeper);
 		}
+#endif /* defined (OLD_CODE) */
 		if (command_data->computed_field_package && command_data->default_time_keeper)
 		{
 			Computed_field_register_types_time(command_data->computed_field_package,

@@ -1228,6 +1228,7 @@ Creates a spectrum_editor widget.
 									}
 									if ( return_code )
 									{
+#if defined (OLD_CODE)
 										default_scene_spectrum = CREATE(Spectrum)("default_scene_spectrum");
 										spectrum_editor->spectrum_editor_scene = CREATE(Scene)("spectrum_editor_scene");
 										Scene_enable_graphics( spectrum_editor->spectrum_editor_scene,
@@ -1236,6 +1237,7 @@ Creates a spectrum_editor widget.
 											spectrum_manager, default_scene_spectrum, 
 											texture_manager);
 										DEACCESS(Spectrum)(&default_scene_spectrum);
+#endif /* defined (OLD_CODE) */
 										viewer_light = CREATE(Light)("spectrum_editor_light");
 										set_Light_direction(viewer_light, light_direction);
 										viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");

@@ -89,20 +89,49 @@ int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
 char *Cmiss_scene_get_name(Cmiss_scene_id scene);
 
 /***************************************************************************//**
- * Removes all filters from the scene.
+ * Removes all filters from the scene. No graphics will be shown until a filter
+ * showing graphics is created for the scene.
  *
  * @param scene  Scene to clear filters from.
- * @return  Returns 1 if filters successfully cleared, otherwise 0.
+ * @return  1 if filters successfully cleared, otherwise 0.
  */
 int Cmiss_scene_clear_filters(Cmiss_scene_id scene);
 
+/***************************************************************************//**
+ * Creates a Cmiss_scene_filter which matches all graphics.
+ * The new filter defaults to being active with action to show matched graphics.
+ * Caller must call Cmiss_scene_filter_destroy to clean up the returned handle.
+ *
+ * @param scene  Scene to add filter to.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+Cmiss_scene_filter_id Cmiss_scene_create_filter_all(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Creates a Cmiss_scene_filter which matches any graphic with the supplied
+ * name. The new filter is placed last in the scene's filter priority list.
+ * The new filter defaults to being active with action to show matched graphics.
+ * Caller must call Cmiss_scene_filter_destroy to clean up the returned handle. 
+ *
+ * @param scene  Scene to add filter to.
+ * @param match_name  The name a graphic must have to be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
 Cmiss_scene_filter_id Cmiss_scene_create_filter_graphic_name(
 	Cmiss_scene_id scene, const char *match_name);
 
-Cmiss_scene_filter_id Cmiss_scene_create_filter_graphic_visibility(
-	Cmiss_scene_id scene, int match_visibility);
-
-Cmiss_scene_filter_id Cmiss_scene_create_filter_rendition_visibility(
-	Cmiss_scene_id scene, int match_visibility);
+/***************************************************************************//**
+ * Creates a Cmiss_scene_filter which matches any graphic with visibility flag
+ * set AND its owning rendition visibility flag set.
+ * The new filter defaults to being active with action to show matched graphics.
+ * Caller must call Cmiss_scene_filter_destroy to clean up the returned handle.
+ * This filter is present and active in the default scene available through the
+ * command interface.
+ *
+ * @param scene  Scene to add filter to.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+Cmiss_scene_filter_id Cmiss_scene_create_filter_visibility_flags(
+	Cmiss_scene_id scene);
 
 #endif /*__CMISS_SCENE_H__*/

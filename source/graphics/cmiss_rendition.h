@@ -42,8 +42,9 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 
 #if !defined (CMISS_RENDITION_H)
-
 #define CMISS_RENDITION_H
+
+#include "api/cmiss_rendition.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
 #include "general/any_object_prototype.h"
@@ -498,10 +499,10 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 struct GT_element_group *Cmiss_rendition_get_gt_element_group(
 	struct Cmiss_rendition *rendition); 
 
-int Cmiss_rendition_set_visibility(
+int Cmiss_rendition_set_visibility_flag(
 	struct Cmiss_rendition *rendition, int visibility_flag);
 
-int Cmiss_rendition_get_visibility(
+int Cmiss_rendition_get_visibility_flag(
 	struct Cmiss_rendition *rendition);
 
 int Cmiss_rendition_add_transformation_callback(struct Cmiss_rendition *rendition,

@@ -1785,6 +1785,36 @@ clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
 	return(return_code);
 } /* Spectrum_clear_all_fixed_flags */
 
+/*******************************************************************************
+ * Mark spectrum as changed; inform clients of its manager that it has changed
+ */
+static int Spectrum_changed(struct Spectrum *spectrum)
+{
+	int return_code;
+
+	ENTER(Spectrum_changed);
+	if (spectrum)
+	{
+		if (spectrum->manager)
+		{
+			return_code = MANAGED_OBJECT_CHANGE(Spectrum)(spectrum,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum));
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Spectrum_changed.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
 	float minimum, float maximum)
 /*******************************************************************************
@@ -1816,8 +1846,9 @@ it contains.  The ratios of the different settings are preserved.
 				Spectrum_rerange_iterator,
 				(void *)&data, spectrum->list_of_settings);
 			/* Cannot assume that the minimum and maximum are now what was requested
-				as the fix minimum and fix maximum flags may have overrided our rerange. */
+				as the fix minimum and fix maximum flags may have overridden our re-range. */
 			Spectrum_calculate_range(spectrum);
+			Spectrum_changed(spectrum);
 		}
 		return_code = 1;
 	}

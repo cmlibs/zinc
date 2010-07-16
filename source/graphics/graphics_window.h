@@ -190,6 +190,7 @@ struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Time_keeper *default_time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 May 2004

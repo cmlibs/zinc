@@ -124,8 +124,8 @@ struct Cmiss_rendition_callback_data
 static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 	struct Cmiss_region_changes *region_changes, void *rendition_void);
 
- static int Cmiss_rendition_update_callback(
-	 struct Cmiss_rendition *rendition, void *dummy_void);
+static int Cmiss_rendition_update_callback(
+	struct Cmiss_rendition *rendition, void *dummy_void);
 
 struct Cmiss_rendition
 /*******************************************************************************
@@ -160,7 +160,7 @@ Structure for maintaining a graphical rendition of region.
 	/* for accessing objects */
 	int access_count;
 	gtMatrix *transformation;
-	int visibility;
+	bool visibility_flag;
 	/* transformaiton field for time dependent transformation */
 	struct Computed_field *transformation_field;
 	int transformation_time_callback_flag;
@@ -469,7 +469,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->element_discretization.number_in_xi3=4;
 				cmiss_rendition->circle_discretization=6;
 				cmiss_rendition->native_discretization_field=(struct FE_field *)NULL;
-				cmiss_rendition->visibility=1;
+				cmiss_rendition->visibility_flag = true;
 				cmiss_rendition->default_coordinate_field=
 					(struct Computed_field *)NULL;
 				cmiss_rendition->update_callback_list=
@@ -1275,13 +1275,13 @@ int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_update_graphical_element_groups.  Invalid argument(s)");
+			"Cmiss_rendition_update_child_rendition.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_update_graphical_element_groups */
+}
 
 static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 	struct Cmiss_region_changes *region_changes, void *rendition_void)
@@ -3076,7 +3076,7 @@ int Cmiss_rendition_copy(struct Cmiss_rendition *destination,
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_set_rendition_for_list_private,
 			destination, destination->list_of_graphics);
-		destination->visibility = source->visibility;
+		destination->visibility_flag = source->visibility_flag;
 		return_code=1;
 	}
 	else
@@ -3269,14 +3269,15 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 	return (return_code);
 } /* Cmiss_rendition_modify */
 
-int Cmiss_rendition_set_visibility(struct Cmiss_rendition*rendition, 
+int Cmiss_rendition_set_visibility_flag(struct Cmiss_rendition *rendition, 
 	int visibility_flag)
 {
 	if (rendition)
 	{
-		if (rendition->visibility != visibility_flag)
+		bool bool_visibility_flag = visibility_flag;
+		if (rendition->visibility_flag != bool_visibility_flag)
 		{
-			rendition->visibility = visibility_flag;
+			rendition->visibility_flag = bool_visibility_flag;
 			Cmiss_rendition_changed(rendition);
 		}
 		return 1;
@@ -3284,11 +3285,11 @@ int Cmiss_rendition_set_visibility(struct Cmiss_rendition*rendition,
 	return 0;
 }
 
-int Cmiss_rendition_get_visibility(
+int Cmiss_rendition_get_visibility_flag(
 	struct Cmiss_rendition *rendition)
 {
 	if (rendition)
-		return rendition->visibility;
+		return rendition->visibility_flag;
 	else
 		return 0;
 }
@@ -3743,7 +3744,7 @@ int Cmiss_rendition_set_time_object(struct Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_set_time_object */
 
-int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *rendition)
+static int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *rendition)
 {
 // 	char *time_object_name;
 	int return_code;
@@ -3798,7 +3799,7 @@ int Cmiss_rendition_update_time_behaviour(struct Cmiss_rendition *rendition)
 	LEAVE;
 
 	return (return_code);
-} /* Scene_update_time_behavour_with_rendition */
+}
 
 static int Cmiss_rendition_update_callback(
 	struct Cmiss_rendition *rendition, void *dummy_void)
@@ -3809,7 +3810,7 @@ static int Cmiss_rendition_update_callback(
 	ENTER(Cmiss_rendition_update_callback);
 	if (rendition)
 	{
-		if (rendition->visibility)
+		if (rendition->visibility_flag)
 		{
 			//Cmiss_rendition_changed(rendition);
 			Cmiss_rendition_update_time_behaviour(rendition);
@@ -3826,7 +3827,6 @@ static int Cmiss_rendition_update_callback(
 
 	return (return_code);
 } /* Cmiss_rendition_update_callback */
-
 
 int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 	struct Scene *scene, int hierarchical)
@@ -4717,10 +4717,8 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 		{
 			if (NULL != (graphics_module->default_scene=(CREATE(Scene)())))
 			{
-				Cmiss_scene_filter *filter;
-				filter = Cmiss_scene_create_filter_rendition_visibility(graphics_module->default_scene, 0);
-				Cmiss_scene_filter_destroy(&filter);
-				filter = Cmiss_scene_create_filter_graphic_visibility(graphics_module->default_scene, 0);
+				Cmiss_scene_filter *filter =
+					Cmiss_scene_create_filter_visibility_flags(graphics_module->default_scene);
 				Cmiss_scene_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
 				struct MANAGER(Scene) *scene_manager = 

@@ -233,7 +233,7 @@ public:
 };
 
 typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
-typedef std::vector<Cmiss_scene_filter*> Filter_vector;
+typedef std::vector<Cmiss_scene_filter*> Scene_filter_vector;
 
 struct Scene
 /*******************************************************************************
@@ -253,13 +253,18 @@ Stores the collections of objects that make up a 3-D graphical model.
 
 	/* list of objects in the scene (plus visibility flag) */
 	enum Scene_change_status change_status;
- 	/* need following info for autocreation of graphical finite elements, */
+
+	struct Cmiss_region *region;
+	struct MANAGER(Light) *light_manager;
+	void *light_manager_callback_id;
+	struct LIST(Light) *list_of_lights;
+#if defined (OLD_CODE)
+	/* need following info for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
 
 	/*???RC temporary; have root_region until Scenes are
 		incorporated into the regions themselves */
-	struct Cmiss_region *region;
 	struct Cmiss_region *root_region;
 
 	/* global stores of selected objects */
@@ -273,15 +278,13 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct Graphical_material *default_material;
 	struct Graphics_font *default_font;
 	void *graphical_material_manager_callback_id;
-	struct MANAGER(Light) *light_manager;
-	struct LIST(Light) *list_of_lights;
-	void *light_manager_callback_id;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	void *spectrum_manager_callback_id;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Texture) *texture_manager;
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
+#endif /* defined (OLD_CODE) */
 	/* routine to call and data to pass to a module that handles scene input */
 	/* such as picking and mouse drags */
 	struct Scene_input_callback input_callback;
@@ -290,8 +293,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	int cache;
 	/* flag indicating that graphics objects in scene objects need building */
 	int build;
-	enum Cmiss_scene_filter_action default_filter_action;
-	Filter_vector *filters;
+	Scene_filter_vector *filters;
 #if defined (OPENGL_API)
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
@@ -715,6 +717,7 @@ Private to the Scene and Scene_objects.
 	return (return_code);
 } /* Scene_changed_private */
 
+#if defined (OLD_CODE)
 int Scene_update_graphical_element_groups(struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
@@ -757,6 +760,7 @@ Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 
 	return (return_code);
 } /* Scene_update_graphical_element_groups */
+#endif /* defined (OLD_CODE) */
 
 #if defined (TO_BE_EDITED)
 static void Scene_Cmiss_region_change(struct Cmiss_region *root_region,
@@ -847,6 +851,7 @@ Callback from <root_region> informing of <changes>.
 } /* Scene_Cmiss_region_change */
 #endif /* defined (TO_BE_EDITED) */
 
+#if defined (OLD_CODE)
 /***************************************************************************//**
  * Something has changed globally in the material manager.
  * Tell the scene it has changed and it will rebuild affected materials too.
@@ -917,6 +922,7 @@ static void Scene_Spectrum_change(
 	}
 	LEAVE;
 } /* Scene_Spectrum_change */
+#endif /* defined (OLD_CODE) */
 
 struct Scene_picked_object_get_nearest_any_object_data
 {
@@ -1728,6 +1734,7 @@ Global functions
 ----------------
 */
 
+#if defined (OLD_CODE)
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 {
 	const char *enumerator_string;
@@ -1767,6 +1774,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 } /* ENUMERATOR_STRING(Scene_graphical_element_mode) */
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode)
+#endif /* defined (OLD_CODE) */
 
 #if defined (USE_SCENE_OBJECT)
 DECLARE_OBJECT_FUNCTIONS(Scene_object)
@@ -3121,10 +3129,14 @@ from the default versions of these functions.
 		scene->scene_manager=(struct MANAGER(Scene) *)NULL;
 		/* fields, elements, nodes and data */
 		scene->region = NULL;
+		scene->light_manager=(struct MANAGER(Light) *)NULL;
+		scene->light_manager_callback_id=(void *)NULL;
+		scene->list_of_lights=CREATE(LIST(Light))();
+		scene->list_of_rendition = NULL;
+#if defined (OLD_CODE)
 		/*???RC temporary; have root_region and data_root_region until Scenes are
 			incorporated into the regions themselves */
 		scene->root_region = (struct Cmiss_region *)NULL;
-		scene->list_of_rendition = NULL;
 		/* defaults to not adding GFEs - besides, need managers anyway */
 		scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
 		/* global stores of selected objects */
@@ -3134,23 +3146,20 @@ from the default versions of these functions.
 		scene->node_selection=(struct FE_node_selection *)NULL;
 		scene->data_selection=(struct FE_node_selection *)NULL;
 		/* attributes: */
-		scene->list_of_lights=CREATE(LIST(Light))();
 		scene->glyph_list=(struct LIST(GT_object) *)NULL;
 		scene->graphical_material_manager=
 			(struct MANAGER(Graphical_material) *)NULL;
 		scene->graphical_material_manager_callback_id=(void *)NULL;
 		scene->default_material=(struct Graphical_material *)NULL;
 		scene->default_font = (struct Graphics_font *)NULL;
-		scene->light_manager=(struct MANAGER(Light) *)NULL;
-		scene->light_manager_callback_id=(void *)NULL;
 		scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		scene->spectrum_manager_callback_id=(void *)NULL;
 		scene->default_spectrum=(struct Spectrum *)NULL;
 		scene->texture_manager=(struct MANAGER(Texture) *)NULL;
 		scene->default_time_keeper=(struct Time_keeper *)NULL;
 		scene->user_interface=(struct User_interface *)NULL;
-		scene->default_filter_action = CMISS_SCENE_FILTER_SHOW;
-		scene->filters = new Filter_vector();
+#endif /* defined (OLD_CODE) */
+		scene->filters = new Scene_filter_vector();
 		scene->cache = 0;
 		scene->build = 1;
 		/* display list index and current flag: */
@@ -3196,6 +3205,7 @@ Closes the scene and disposes of the scene data structure.
 			}
 			/* mark the cache as on so no messages go out again */
 			(scene->cache)++;
+#if defined (OLD_CODE)
 			Scene_disable_time_behaviour(scene);
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
@@ -3206,6 +3216,7 @@ Closes the scene and disposes of the scene data structure.
 				(struct FE_node_selection *)NULL,
 				(struct User_interface *)NULL);
 			Scene_disable_graphics(scene);
+#endif /* defined (OLD_CODE) */
 			DEALLOCATE(scene->name);
 			/* must destroy the display list */
 			if (scene->display_list)
@@ -3346,6 +3357,7 @@ final message to be sent to clients.
 	return (return_code);
 } /* Scene_end_cache */
 
+#if defined (OLD_CODE)
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -3704,6 +3716,7 @@ material and spectrum.
 
 	return (return_code);
 } /* Scene_set_graphical_element_mode */
+#endif /* defined (OLD_CODE) */
 
 DECLARE_OBJECT_FUNCTIONS(Scene)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene)
@@ -3778,6 +3791,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
 	{
+#if defined (OLD_CODE)
 		Scene_disable_graphics(destination);
 		if (source->graphical_material_manager)
 		{
@@ -3791,11 +3805,11 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			Scene_enable_time_behaviour(destination,
 				source->default_time_keeper);
 		}
-
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
 			source->root_region, source->element_point_ranges_selection,
 			source->element_selection,source->node_selection,source->data_selection,
 			source->user_interface);
+#endif /* defined (OLD_CODE) */
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
 #if defined (USE_SCENE_OBJECT)
@@ -5751,6 +5765,7 @@ in the <scene> which are autoranging and which point to this spectrum.
 } /* Scene_get_data_range_for_spectrum_iterator */
 #endif
 
+#if defined (OLD_CODE)
 static int Scene_expand_data_range_for_autoranging_spectrum(
 	struct Spectrum *spectrum, void *scene_void)
 /*******************************************************************************
@@ -5772,33 +5787,8 @@ in the <scene> which are autoranging and which point to this spectrum.
 		float minimum = 0, maximum = 0;
 		int range_set;
 		Scene_get_data_range_for_spectrum(scene,
-			spectrum,&minimum, &maximum, &range_set);
-
-
-		if ((minimum != get_Spectrum_minimum(spectrum))
-			|| (maximum != get_Spectrum_maximum(spectrum)))
-		{
-			spectrum_to_be_modified_copy=CREATE(Spectrum)
-				("spectrum_modify_temp");
-			if (spectrum_to_be_modified_copy)
-			{
-				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-					(spectrum_to_be_modified_copy,spectrum);		
-				/*Ensure spectrum is set correctly */
-				Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
-					minimum, maximum);		
-				
-				MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-					spectrum_to_be_modified_copy,scene->spectrum_manager);
-				DEACCESS(Spectrum)(&spectrum_to_be_modified_copy);					
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_expand_data_range_for_autoranging_spectrum.  "
-					"Could not create spectrum copy.");				
-			}
-		}
+			spectrum, &minimum, &maximum, &range_set);
+		return_code = Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);		
 		return_code = 1;
 	}
 	else
@@ -5813,6 +5803,7 @@ in the <scene> which are autoranging and which point to this spectrum.
 
 	return (return_code);
 } /* Scene_expand_data_range_for_autoranging_spectrum */
+#endif /* defined (OLD_CODE) */
 
 int build_Scene(struct Scene *scene)
 {
@@ -5828,6 +5819,8 @@ int build_Scene(struct Scene *scene)
 			
 			scene->build = 0;
 			return_code = renderer.Scene_compile(scene);
+#if defined (OLD_CODE)
+			// GRC not sure why this is done here
 			if (return_code && scene->spectrum_manager)
 			{
 				return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
@@ -5842,6 +5835,7 @@ int build_Scene(struct Scene *scene)
 				   infinite loop */
 				return_code = renderer.Scene_compile(scene);
 			}
+#endif /* defined (OLD_CODE) */
 		}
 		else
 		{
@@ -7742,233 +7736,258 @@ work on these sub_elements.  These created scenes are not added to the manager.
 	return (return_code);
 } /* set_Scene */
 
-int modify_Scene(struct Parse_state *state,void *scene_void,
-	void *modify_scene_data_void)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-==============================================================================*/
+struct Define_scene_filter_data
 {
-	const char *graphical_element_mode_string,**valid_strings;
-	char *region_path;
-	enum Scene_graphical_element_mode graphical_element_mode,
-		old_graphical_element_mode;
-	int number_of_valid_strings,return_code;
-	const char *current_token;
-	struct Option_table *option_table;
-	struct Scene *scene;
-	struct Light *light_to_add,*light_to_remove;
-	struct Modify_scene_data *modify_scene_data;
-	struct Cmiss_region *region;
+public:
+	char match_all;
+	char *match_graphic_name;
+	char match_visibility_flags;
+	int show;
 
-	ENTER(modify_Scene);
-	if (state)
+	Define_scene_filter_data() :
+		match_all(0),
+		match_graphic_name(NULL),
+		match_visibility_flags(0),
+		show(1)
+	{	
+	}
+
+	~Define_scene_filter_data()
 	{
-		if ((modify_scene_data=(struct Modify_scene_data *)
-			modify_scene_data_void)&&(modify_scene_data->default_scene))
+		DEALLOCATE(match_graphic_name);
+	}
+};
+
+int define_Scene_filter(struct Parse_state *state, void *define_scene_filter_data_void,
+	void *define_scene_data_void)
+{
+	int return_code;
+
+	ENTER(define_Scene_filter);
+	USE_PARAMETER(define_scene_data_void);
+	Define_scene_filter_data *filter_data =
+		(struct Define_scene_filter_data *)define_scene_filter_data_void;
+	if (state && filter_data)
+	{
+		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_char_flag_entry(option_table, "match_all",
+			&(filter_data->match_all));
+		Option_table_add_string_entry(option_table, "match_graphic_name",
+			&(filter_data->match_graphic_name), " MATCH_NAME");
+		Option_table_add_char_flag_entry(option_table, "match_visibility_flags",
+			&(filter_data->match_visibility_flags));
+		Option_table_add_switch(option_table,
+			"show", "hide", &(filter_data->show));
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (current_token=state->current_token)
-			{
-				if (scene=(struct Scene *)scene_void)
-				{
-					light_to_add=(struct Light *)NULL;
-					light_to_remove=(struct Light *)NULL;
-					old_graphical_element_mode=Scene_get_graphical_element_mode(scene);
-					region_path = NULL;
-					Cmiss_region *parent = ACCESS(Cmiss_region)(scene->region);
-					Cmiss_region *child = NULL;
-					Cmiss_region *top_region;
-					char clear_filters_flag = 0;
-					char *filter_graphic_name = NULL;
-					char filter_non_visible_graphic_flag = 0;
-					char filter_non_visible_rendition_flag = 0;
-					// FUTURE: add option to choose show or hide, also default action for scene
-					//enum Cmiss_scene_filter_action action = CMISS_SCENE_FILTER_HIDE;
-					do {
-						if (child)
-							DEACCESS(Cmiss_region)(&child);
-						child = parent;
-						parent = Cmiss_region_get_parent(child);
-					}
-					while (parent != NULL);
-					if (child)
-					{
-						top_region = child;
-					}
-					else
-					{
-						top_region = ACCESS(Cmiss_region)(scene->region);
-					}
-					option_table=CREATE(Option_table)();
-					/* add_light */
-					Option_table_add_entry(option_table,"add_light",&light_to_add,
-						modify_scene_data->light_manager,set_Light);
-					/* graphical_element_mode */ 
-					graphical_element_mode_string =
-						ENUMERATOR_STRING(Scene_graphical_element_mode)(
-							old_graphical_element_mode);
-					valid_strings =
-						ENUMERATOR_GET_VALID_STRINGS(Scene_graphical_element_mode)(
-							&number_of_valid_strings, (ENUMERATOR_CONDITIONAL_FUNCTION(
-								Scene_graphical_element_mode) *)NULL, (void *)NULL);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&graphical_element_mode_string);
-					DEALLOCATE(valid_strings);
-					Option_table_add_char_flag_entry(option_table, "clear_filters",
-						&clear_filters_flag);
-					Option_table_add_char_flag_entry(option_table, "filter_non_visible_graphic",
-						&filter_non_visible_graphic_flag);
-					Option_table_add_char_flag_entry(option_table, "filter_non_visible_rendition",
-						&filter_non_visible_rendition_flag);
-					Option_table_add_string_entry(option_table, "filter_graphic_name",
-					  &filter_graphic_name, "GRAPHIC_NAME_TO_MATCH");
-					/* remove_light */
-					Option_table_add_entry(option_table,"remove_light",&light_to_remove,
-						modify_scene_data->light_manager,set_Light);
-					/* region */
-					Option_table_add_entry(option_table, "region", &region_path,
-						top_region, set_Cmiss_region_path);
-					if (return_code=Option_table_multi_parse(option_table,state))
-					{
-						Scene_begin_cache(scene);
-						if (light_to_add)
-						{
-							Scene_add_light(scene,light_to_add);
-						}
-						STRING_TO_ENUMERATOR(Scene_graphical_element_mode)(
-							graphical_element_mode_string, &graphical_element_mode);
-						if (graphical_element_mode != old_graphical_element_mode)
-						{
-							Scene_set_graphical_element_mode(scene,
-								graphical_element_mode,
-								modify_scene_data->root_region,
-								modify_scene_data->element_point_ranges_selection,
-								modify_scene_data->element_selection,
-								modify_scene_data->node_selection,
-								modify_scene_data->data_selection,
-								modify_scene_data->user_interface);
-						}
-						if (light_to_remove)
-						{
-							Scene_remove_light(scene,light_to_remove);
-						}
-						if (region_path)
-						{
-							region = Cmiss_region_find_subregion_at_path(top_region,
-									region_path);
-							if (region)
-							{
-								Cmiss_scene_set_region(scene,region);
-								Cmiss_region_destroy(&region);
-							}
-						}
-						if (clear_filters_flag)
-						{
-							Cmiss_scene_clear_filters(scene);
-						}
-						if (filter_non_visible_rendition_flag)
-						{
-							Cmiss_scene_filter_id filter = Cmiss_scene_create_filter_rendition_visibility(scene, 0);
-							//Cmiss_scene_filter_set_action(scene, action);
-							Cmiss_scene_filter_destroy(&filter);
-						}
-						if (filter_non_visible_graphic_flag)
-						{
-							Cmiss_scene_filter_id filter = Cmiss_scene_create_filter_graphic_visibility(scene, 0);
-							//Cmiss_scene_filter_set_action(scene, action);
-							Cmiss_scene_filter_destroy(&filter);
-						}
-						if (filter_graphic_name)
-						{
-							Cmiss_scene_filter_id filter = Cmiss_scene_create_filter_graphic_name(scene, filter_graphic_name);
-							//Cmiss_scene_filter_set_action(scene, action);
-							Cmiss_scene_filter_destroy(&filter);
-						}
-						Scene_end_cache(scene);
-					}
-					DESTROY(Option_table)(&option_table);
-					if (light_to_add)
-					{
-						DEACCESS(Light)(&light_to_add);
-					}
-					if (filter_graphic_name)
-					{
-					  DEALLOCATE(filter_graphic_name);
-					}
-					if (light_to_remove)
-					{
-						DEACCESS(Light)(&light_to_remove);
-					}
-					if (region_path)
-					{
-						DEALLOCATE(region_path);
-					}
-					if (top_region)
-					{
-						DEACCESS(Cmiss_region)(&top_region);
-					}
-				}
-				else
-				{
-					if (strcmp(PARSER_HELP_STRING,current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-					{
-						/* see if current_token is a valid scene name */
-						if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-							current_token,modify_scene_data->scene_manager))
-						{
-							return_code=shift_Parse_state(state,1);
-						}
-						else
-						{
-							scene=modify_scene_data->default_scene;
-							return_code=1;
-						}
-						if (return_code)
-						{
-							return_code=modify_Scene(state,(void *)scene,
-								modify_scene_data_void);
-						}
-					}
-					else
-					{
-						option_table=CREATE(Option_table)();
-						Option_table_add_entry(option_table,"SCENE_NAME",
-							modify_scene_data->default_scene,modify_scene_data_void,
-							modify_Scene);
-						return_code=Option_table_parse(option_table,state);
-						DESTROY(Option_table)(&option_table);
-					}
-				}
-			}
-			else
+			int number_of_match_criteria = 
+				filter_data->match_all +
+				filter_data->match_visibility_flags +
+				(NULL != filter_data->match_graphic_name);
+			if (1 < number_of_match_criteria)
 			{
 				display_message(ERROR_MESSAGE,
-					"Missing scene modifications");
+					"Only one match criterion can be specified per filter.");
 				display_parse_state_location(state);
-				return_code=0;
+				return_code = 0;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"modify_Scene.  Missing modify_scene_data");
-			return_code=0;
-		}
+		DESTROY(Option_table)(&option_table);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"modify_Scene.  Missing state");
-		return_code=0;
+			"define_Scene_filter.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* modify_Scene */
+}
 
-#if defined (TO_BE_EDITED)
+int define_Scene_contents(struct Parse_state *state, void *scene_void,
+	void *define_scene_data_void)
+{
+	int return_code;
+
+	ENTER(define_Scene_contents);
+	struct Define_scene_data *define_scene_data =
+		(struct Define_scene_data *)define_scene_data_void;
+	if (state && define_scene_data)
+	{
+		Cmiss_scene *scene = (Cmiss_scene *)scene_void; // can be NULL;
+		struct Light *light_to_add = NULL;
+		struct Light *light_to_remove = NULL;
+		Cmiss_region *region = NULL;
+		if (scene && scene->region)
+		{
+			region = Cmiss_region_access(scene->region);
+		}
+		else
+		{
+			region = Cmiss_region_access(define_scene_data->root_region);
+		}
+		char clear_filters_flag = 0;
+		Define_scene_filter_data filter_data;
+
+		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, "add_light", &light_to_add,
+			define_scene_data->light_manager, set_Light);
+		Option_table_add_char_flag_entry(option_table, "clear_filters",
+			&clear_filters_flag);
+		Option_table_add_set_Cmiss_region(option_table, "region",
+			define_scene_data->root_region, &region);
+		Option_table_add_entry(option_table, "remove_light", &light_to_remove,
+			define_scene_data->light_manager, set_Light);
+		Option_table_add_entry(option_table, "filter",
+		  (void *)&filter_data, define_scene_data_void, define_Scene_filter);
+
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (scene)
+			{
+				Scene_begin_cache(scene);
+				if (light_to_add)
+				{
+					Scene_add_light(scene,light_to_add);
+				}
+				if (light_to_remove)
+				{
+					Scene_remove_light(scene,light_to_remove);
+				}
+				Cmiss_scene_set_region(scene, region);
+				if (clear_filters_flag)
+				{
+					Cmiss_scene_clear_filters(scene);
+				}
+				Cmiss_scene_filter *filter = NULL; 
+				if (filter_data.match_all)
+				{
+					filter = Cmiss_scene_create_filter_all(scene);
+				}
+				else if (filter_data.match_visibility_flags)
+				{
+					filter = Cmiss_scene_create_filter_visibility_flags(scene);
+				}
+				else if (filter_data.match_graphic_name)
+				{
+					filter = Cmiss_scene_create_filter_graphic_name(scene,
+						filter_data.match_graphic_name);
+				}
+				if (filter)
+				{
+					Cmiss_scene_filter_set_action(filter,
+						filter_data.show ? CMISS_SCENE_FILTER_SHOW : CMISS_SCENE_FILTER_HIDE);
+					Cmiss_scene_filter_destroy(&filter);
+				}
+				Scene_end_cache(scene);
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (light_to_add)
+		{
+			DEACCESS(Light)(&light_to_add);
+		}
+		if (light_to_remove)
+		{
+			DEACCESS(Light)(&light_to_remove);
+		}
+		Cmiss_region_destroy(&region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Scene_contents.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
+	void *define_scene_data_void)
+{
+	int return_code;
+	const char *current_token;
+	struct Option_table *option_table;
+	struct Define_scene_data *define_scene_data;
+
+	ENTER(define_Scene);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (define_scene_data =
+		(struct Define_scene_data *)define_scene_data_void) &&
+		define_scene_data->default_scene)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				return_code = 1;
+				Cmiss_scene *scene = FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+					current_token, define_scene_data->scene_manager);
+				if (scene)
+				{
+					shift_Parse_state(state,1);
+					return_code = define_Scene_contents(state, (void *)scene, define_scene_data_void);
+				}
+				else
+				{
+					scene = CREATE(Cmiss_scene)();
+					if ((!Cmiss_scene_set_region(scene, define_scene_data->root_region)) ||
+						(!Cmiss_scene_enable_rendition(scene)) ||
+						(!Cmiss_scene_set_name(scene, current_token)))
+					{
+						return_code = 0;
+					}
+					shift_Parse_state(state,1);
+					if (state->current_token)
+					{
+						if (!define_Scene_contents(state, (void *)scene, define_scene_data_void))
+						{
+							return_code = 0;
+						}
+					}
+					if (return_code)
+					{
+						ADD_OBJECT_TO_MANAGER(Scene)(scene, define_scene_data->scene_manager);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx define scene:  scene not created due to errors");
+					}
+					DEACCESS(Scene)(&scene);
+				}
+			}
+			else
+			{
+				option_table = CREATE(Option_table)();
+				Option_table_add_entry(option_table, "SCENE_NAME",
+					/*scene*/(void *)NULL, define_scene_data_void,
+					define_Scene_contents);
+				return_code = Option_table_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing scene name");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "define_Scene.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int list_Scene(struct Scene *scene,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2000
@@ -7983,38 +8002,49 @@ Writes the properties of the <scene> to the command window.
 	USE_PARAMETER(dummy_void);
 	if (scene)
 	{
-		display_message(INFORMATION_MESSAGE,"scene : %s\n",scene->name);
-		display_message(INFORMATION_MESSAGE,"  graphical element mode: ");
-		display_message(INFORMATION_MESSAGE,
-			ENUMERATOR_STRING(Scene_graphical_element_mode)(
-				scene->graphical_element_mode));
-		display_message(INFORMATION_MESSAGE,"\n");
-		if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))
+		display_message(INFORMATION_MESSAGE,"Scene : %s\n",scene->name);
+		char *region_path = NULL;
+		if (scene->region)
 		{
-			display_message(INFORMATION_MESSAGE,"  objects in scene:\n");
-			FOR_EACH_OBJECT_IN_LIST(Scene_object)(list_Scene_object,(void *)NULL,
-				scene->scene_object_list);
+			region_path = Cmiss_region_get_path(scene->region);
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE,"  no objects in scene\n");
+			region_path = duplicate_string("none");
+		}
+		display_message(INFORMATION_MESSAGE,"  top region: %s\n", region_path);
+		DEALLOCATE(region_path);
+		int number_of_filters = scene->filters->size();
+		if (0 == number_of_filters)
+		{
+			display_message(INFORMATION_MESSAGE,"  no filters\n");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,"  filters:\n");
+			for (int i = 0; i < number_of_filters; i++)
+			{
+				Cmiss_scene_filter *filter = scene->filters->at(i);
+				display_message(INFORMATION_MESSAGE,"    %d. ", i + 1);
+				filter->list();
+			}
 		}
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			scene->access_count);
-		return_code=1;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Scene.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* list_Scene */
-#endif /* defined (TO_BE_EDITED) */
 
+#if defined (OLD_CODE)
 int gfx_modify_g_element_general(struct Parse_state *state,
 	void *cmiss_region_void, void *scene_void)
 /*******************************************************************************
@@ -8190,6 +8220,7 @@ updates graphics of settings affected by the changes (probably all).
 
 	return (return_code);
 } /* gfx_modify_g_element_general */
+#endif /* defined (OLD_CODE) */
 
 struct Scene_graphics_object_iterator_data
 {
@@ -8580,11 +8611,15 @@ struct Cmiss_region *Cmiss_scene_get_region(Scene *scene)
 	if (scene)
 	{
 		region = scene->region;
+		if (region)
+		{
+			Cmiss_region_access(region);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-				" Cmiss_scene_get_region. Invalid argument(s)");	
+			"Cmiss_scene_get_region.  Invalid argument(s)");	
 		region = (struct Cmiss_region *)NULL;
 	}
 	LEAVE;
@@ -8950,7 +8985,8 @@ int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *g
 	int return_code = 0;
 	if (scene && graphic)
 	{
-		return_code = (scene->default_filter_action == CMISS_SCENE_FILTER_SHOW);
+		/* default for no filters = show nothing */
+		return_code = 0;
 		int number_of_filters = scene->filters->size();
 		for (int i = 0; i < number_of_filters; i++)
 		{
