@@ -1012,6 +1012,7 @@ Callback for change to the time.
 } /* Graphics_window_time_edit_CB */
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
+#if defined (WX_USER_INTERFACE)
 static int Graphics_window_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *graphics_window_void)
 /*******************************************************************************
@@ -1128,6 +1129,7 @@ Updates the time display of the time_slider
 
 	return (return_code);
 } /* Graphics_window_time_keeper_callback */
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_view_all_button_CB(Widget caller,

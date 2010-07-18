@@ -5498,6 +5498,7 @@ Executes a GFX CREATE WINDOW command.
 							command_data->scene_manager,command_data->default_scene,
 							command_data->texture_manager,
 							command_data->interactive_tool_manager,
+							command_data->default_time_keeper,
 							command_data->user_interface))
 						{
 						   if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
