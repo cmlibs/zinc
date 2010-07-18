@@ -2201,7 +2201,7 @@ void RemoveFromGraphicList(wxCommandEvent &event)
 
 	 USE_PARAMETER(event);
 
-	 if 	(region_tree_viewer->edit_rendition)
+	 if (region_tree_viewer->edit_rendition)
 	 {
 			graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
 			position = Cmiss_rendition_get_graphic_position(
@@ -2252,7 +2252,7 @@ void RemoveFromGraphicList(wxCommandEvent &event)
 	 else
 	 {
 			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_delete_button_CB.  Invalid argument(s)");
+				"RemoveFromGraphicList.  Invalid argument(s)");
 	 }
 	 /*check if autoapply*/
 	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -2323,7 +2323,6 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				Cmiss_rendition_add_graphic(region_tree_viewer->edit_rendition,
 					region_tree_viewer->current_graphic, position + 1);
 				DEACCESS(Cmiss_graphic)(&graphic);
-				//		Graphical_element_editor_update_graphic_list(region_tree_viewer);
 				graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
 				graphicalitemschecklist->SetSelection(wxNOT_FOUND);
 				graphicalitemschecklist->Clear();
@@ -5058,7 +5057,7 @@ static int get_and_set_Cmiss_graphic_widgets(void *region_tree_viewer_void)
 }
 
 /***************************************************************************//**
- * Iterator function for Graphical_element_editor_update_Graphic_item.
+ * Iterator function for rendition_editor_update_Graphic_item.
  */
 static int Region_tree_viewer_add_graphic_item(
 	 struct Cmiss_graphic *graphic, void *region_tree_viewer_void)

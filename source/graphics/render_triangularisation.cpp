@@ -43,7 +43,6 @@ extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/cmiss_rendition.h"
-#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 }

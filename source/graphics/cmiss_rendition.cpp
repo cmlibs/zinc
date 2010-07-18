@@ -71,7 +71,6 @@ extern "C" {
 #include "graphics/graphics_object.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/font.h"
-#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
@@ -2201,11 +2200,10 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	ENTER(Cmiss_rendition_compile_members);
 	if (rendition)
 	{
-		/* check whether graphical_element contents need building */
+		/* check whether rendition contents need building */
 		return_code = Cmiss_rendition_build_graphics_objects(rendition,
 			renderer->get_scene(),renderer->time, renderer->name_prefix);
-
-      /* Call the renderer to compile each of the graphics */
+    /* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,
 			rendition->list_of_graphics);
@@ -2251,16 +2249,6 @@ int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 
 	return (return_code);
 }
-
-#if defined (OLD_CODE)
-int Cmiss_rendition_call_compiler(struct Cmiss_rendition *rendition, 
-	void *renderer_void)
-{
-	Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
-		
-	return renderer->Cmiss_rendition_compile(rendition);
-}
-#endif /* defined (OLD_CODE) */
 
 int Cmiss_rendition_render_opengl(struct Cmiss_rendition *cmiss_rendition,
 	Render_graphics_opengl *renderer)

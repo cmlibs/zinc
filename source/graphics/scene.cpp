@@ -85,13 +85,11 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/element_group_settings.h"
 #include "graphics/cmiss_rendition.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
-#include "graphics/graphical_element.h"
 #include "graphics/light.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
@@ -4077,7 +4075,7 @@ int Scene_picked_object_add_rendition(
 	int return_code;
 	struct Cmiss_rendition **temp_renditions;
 
-	ENTER(Scene_picked_object_add_Scene_object);
+	ENTER(Scene_picked_object_add_rendition);
 	if (scene_picked_object&&rendition)
 	{
 		if (REALLOCATE(temp_renditions,scene_picked_object->renditions,

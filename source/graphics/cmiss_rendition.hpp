@@ -57,12 +57,4 @@ int execute_Cmiss_rendition(Cmiss_rendition *cmiss_rendition,
 int Cmiss_rendition_render_opengl(struct Cmiss_rendition *cmiss_rendition,
 	Render_graphics_opengl *renderer);
 
-int Cmiss_rendition_compile_opengl_display_list(
-	Cmiss_rendition *cmiss_rendition,
-	Callback_base< Cmiss_rendition* > *execute_function,
-	Render_graphics_opengl *renderer);
-
-int Cmiss_rendition_execute_opengl_display_list(
-	Cmiss_rendition *cmiss_rendition,
-	Render_graphics_opengl *renderer);
 #endif /* !defined (CMISS_RENDITION_HPP) */

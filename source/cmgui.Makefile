@@ -1098,7 +1098,6 @@ GRAPHICS_SRCS = \
 	graphics/complex.c \
 	graphics/decimate_voltex.c \
 	graphics/defined_graphics_objects.c \
-	graphics/element_group_settings.c \
 	graphics/element_point_ranges.c \
 	graphics/environment_map.c \
 	graphics/glyph.c \
@@ -1126,7 +1125,6 @@ GRAPHICS_SRCS = \
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_SRCS += \
 	   graphics/font.cpp \
-	   graphics/graphical_element.cpp \
 		graphics/graphics_library.c \
 		graphics/graphics_object.c \
 		graphics/light.c \
@@ -1139,7 +1137,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/tile_graphics_objects.c
 endif
 GRAPHICS_INTERFACE_SRCS = \
-	graphics/graphical_element_editor.c \
 	graphics/movie_graphics.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 GRAPHICS_SRCS += \
@@ -1150,8 +1147,6 @@ endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \
 		graphics/graphics_window.cpp \
-		graphics/scene_editor.cpp \
-		graphics/settings_editor.c \
 		graphics/spectrum_editor.c \
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c

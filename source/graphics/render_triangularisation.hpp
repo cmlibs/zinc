@@ -91,16 +91,6 @@ public:
 		USE_PARAMETER(rendition);
 		return 1;
 	}
-
-	/***************************************************************************//**
-	 * Execute the Graphical element group.
-	 */
-	virtual int Graphical_element_group_execute(
-		GT_element_group *graphical_element_group)
-	{
-		USE_PARAMETER(graphical_element_group);
-		return 1;
-	}
 	
 	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary

@@ -157,7 +157,6 @@ extern "C" {
 #include "graphics/defined_graphics_objects.h"
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
-#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
 #include "graphics/import_graphics_object.h"

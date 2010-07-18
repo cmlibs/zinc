@@ -66,8 +66,6 @@ extern "C" {
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "graphics/element_group_settings.h"
-#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
@@ -178,8 +176,6 @@ changes in node position and derivatives etc.
 	struct FE_node *last_picked_node;
 	int picked_node_was_unselected;
 	int motion_detected;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
 
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
@@ -1129,12 +1125,8 @@ object's coordinate field.
 		if (rc_coordinate_field=
 			Computed_field_begin_wrap_coordinate_field(coordinate_field))
 		{
-			if (!(picked_coordinate_field = GT_element_settings_get_coordinate_field(
-				node_tool->gt_element_settings)))
-			{
-				picked_coordinate_field = GT_element_group_get_default_coordinate_field(
-					node_tool->gt_element_group);
-			}
+			picked_coordinate_field = Cmiss_graphic_get_coordinate_field(
+				node_tool->graphic);
 			rc_picked_coordinate_field = Computed_field_begin_wrap_coordinate_field(
 				picked_coordinate_field);
 			if (Computed_field_evaluate_at_node(rc_picked_coordinate_field,
@@ -1203,26 +1195,22 @@ try to enforce that the node is created on that element.
 ==============================================================================*/
 {
 	double d,LU_transformation_matrix[16],node_coordinates[3];
-	//enum GT_element_settings_type gt_element_settings_type;
+	enum  Cmiss_graphic_type cmiss_graphic_type;
 	FE_value coordinates[3];
 	int i,LU_indx[4],node_number,transformation_required;
 	struct Computed_field *rc_coordinate_field,*node_tool_coordinate_field;
 	struct FE_node *merged_node, *node;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *gt_element_settings;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
 	struct Node_tool_element_constraint_function_data constraint_data;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-	LIST_CONDITIONAL_FUNCTION(Scene_object) *scene_object_conditional_function;
-#endif
 	struct Scene_picked_object *scene_picked_object;
 
 	ENTER(Node_tool_create_node_at_interaction_volume);
 	USE_PARAMETER(scene);
 	merged_node = (struct FE_node *)NULL;
 	scene_picked_object=(struct Scene_picked_object *)NULL;
-	gt_element_group=(struct GT_element_group *)NULL;
-	gt_element_settings=(struct GT_element_settings *)NULL;
+	rendition=(struct Cmiss_rendition *)NULL;
+	graphic=(struct Cmiss_graphic *)NULL;
 	if (!node_tool || !interaction_volume)
 	{
 		display_message(ERROR_MESSAGE,
@@ -1242,29 +1230,23 @@ try to enforce that the node is created on that element.
 		}
 		else
 		{
-			node_tool_coordinate_field=node_tool->coordinate_field;
-#if defined (USE_SCENE_OBJECT)
-			scene_object_conditional_function=Scene_object_has_Cmiss_region;
 			if (node_tool->use_data)
 			{
-				gt_element_settings_type=GT_ELEMENT_SETTINGS_DATA_POINTS;
+				cmiss_graphic_type=CMISS_GRAPHIC_DATA_POINTS;
 			}
 			else
 			{
-				gt_element_settings_type=GT_ELEMENT_SETTINGS_NODE_POINTS;
+				cmiss_graphic_type=CMISS_GRAPHIC_NODE_POINTS;
 			}
-			if (scene&&(scene_object=first_Scene_object_in_Scene_that(scene,
-				scene_object_conditional_function,(void *)node_tool->region)))
+			node_tool_coordinate_field=node_tool->coordinate_field;
+			rendition = Cmiss_rendition_get_from_region(node_tool->region);
+			if (scene && rendition)
 			{
-				gt_element_group=Scene_object_get_graphical_element_group(scene_object);
-				gt_element_settings=first_settings_in_GT_element_group_that(
-					gt_element_group,GT_element_settings_type_matches,
-					(void *)gt_element_settings_type);
-				/* return a scene_object with the correct transformation */
+				graphic = first_graphic_in_Cmiss_rendition_that(
+					rendition, Cmiss_graphic_type_matches,	(void*)cmiss_graphic_type);
 				if (scene_picked_object=CREATE(Scene_picked_object)(/*hit_no*/0))
 				{
-					Scene_picked_object_add_Scene_object(scene_picked_object,
-						scene_object);
+					Scene_picked_object_add_rendition(scene_picked_object, rendition);
 					REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
 						scene_picked_object);
 				}
@@ -1273,7 +1255,6 @@ try to enforce that the node is created on that element.
 			{
 				scene_picked_object=(struct Scene_picked_object *)NULL;
 			}
-#endif
 			if (rc_coordinate_field=
 				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field))
 			{
@@ -1345,20 +1326,27 @@ try to enforce that the node is created on that element.
 	if (node_tool)
 	{
 		/* only need following if editing; in which case need all of them */
-		if ((!merged_node) || (!scene_picked_object) || (!gt_element_group) ||
-			(!gt_element_settings))
+		if ((!merged_node) || (!scene_picked_object) || (!rendition) ||
+			(!graphic))
 		{
 			scene_picked_object=(struct Scene_picked_object *)NULL;
-			gt_element_group=(struct GT_element_group *)NULL;
-			gt_element_settings=(struct GT_element_settings *)NULL;
+			if (rendition)
+			{
+				Cmiss_rendition_destroy(&rendition);
+			}
+			graphic=(struct Cmiss_graphic *)NULL;
 		}
 		/* make sure node_tool point at following as found out above */
 		REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
 			scene_picked_object);
-		REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-			gt_element_group);
-		REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-			gt_element_settings);
+		REACCESS(Cmiss_rendition)(&(node_tool->rendition),
+			rendition);
+		REACCESS(Cmiss_graphic)(&(node_tool->graphic),
+			graphic);
+	}
+	if (rendition)
+	{
+		Cmiss_rendition_destroy(&rendition);
 	}
 	LEAVE;
 
@@ -1863,10 +1851,10 @@ Resets current edit. Called on button release or when tool deactivated.
 			(struct Interaction_volume *)NULL);
 		REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
 			(struct Scene_picked_object *)NULL);
-		REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-			(struct GT_element_group *)NULL);
-		REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-			(struct GT_element_settings *)NULL);
+		REACCESS(Cmiss_rendition)(&(node_tool->rendition),
+			(struct Cmiss_rendition *)NULL);
+		REACCESS(Cmiss_graphic)(&(node_tool->graphic),
+			(struct Cmiss_graphic *)NULL);
 		REACCESS(Cmiss_rendition)(&(node_tool->rendition),
 			(struct Cmiss_rendition *)NULL);
 		if (node_tool->graphic)
@@ -3588,8 +3576,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->interactive_tool_manager);
 			node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
 			node_tool->last_picked_node=(struct FE_node *)NULL;
-			node_tool->gt_element_group=(struct GT_element_group *)NULL;
-			node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
 
 			node_tool->rendition=(struct Cmiss_rendition *)NULL;
 			node_tool->graphic=(struct Cmiss_graphic *)NULL;

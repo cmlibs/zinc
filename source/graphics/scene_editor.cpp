@@ -63,8 +63,6 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "graphics/graphical_element.h"
-#include "graphics/graphical_element_editor.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "graphics/scene_editor.h"

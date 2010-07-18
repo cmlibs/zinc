@@ -52,7 +52,6 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "graphics/cmiss_rendition.hpp"
-#include "graphics/graphical_element.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/material.hpp"
@@ -74,11 +73,5 @@ int Render_graphics_compile_members::Cmiss_rendition_compile(Cmiss_rendition *cm
 int Render_graphics_compile_members::Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
 {
 	return Cmiss_rendition_compile_members_rendition(cmiss_rendition, this);
-}
-
-int Render_graphics_compile_members::Graphical_element_group_compile(
-	GT_element_group *graphical_element_group)
-{
-	return Graphical_element_group_compile_members(graphical_element_group, this);
 }
 

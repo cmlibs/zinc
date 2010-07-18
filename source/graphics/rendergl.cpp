@@ -59,7 +59,6 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "graphics/cmiss_rendition.hpp"
-#include "graphics/graphical_element.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/scene.hpp"
@@ -194,12 +193,6 @@ public:
 	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
 	{
 		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
-	}
-
-	int Graphical_element_group_execute(GT_element_group *graphical_element_group)
-	{
-		return GT_element_group_render_opengl(graphical_element_group,
-			this);
 	}
 
 	int Material_execute(Graphical_material *material)
@@ -483,61 +476,9 @@ public:
 		return Render_immediate::Cmiss_rendition_execute_members(cmiss_rendition);
 	}
 
-	/* rendition with display list */
-#if defined (OLD_CODE)
-	int Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
-	{
-		int return_code;
-
-		if ((return_code = Render_immediate::Cmiss_rendition_compile_members(cmiss_rendition)))
-		{
-			Callback_member_callback< Cmiss_rendition*, Render_graphics_opengl_display_list,
-				int (Render_graphics_opengl_display_list::*)(Cmiss_rendition*) >
-				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
-				&Render_graphics_opengl_display_list::Cmiss_rendition_execute_members_parent);
-			return_code = Cmiss_rendition_compile_opengl_display_list(
-				cmiss_rendition, &execute_method, this);
-		}
-		return (return_code);
-	}
-#endif
-
 	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
 	{
 		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
-#if defined (OLD_CODE)
-		/* rendition with display list */
-		return Cmiss_rendition_execute_opengl_display_list(
-			cmiss_rendition, this);
-#endif
-	}
-
-	int Graphical_element_group_execute_parent(GT_element_group *graphical_element_group)
-	{
-		return Render_immediate::Graphical_element_group_execute(graphical_element_group);
-	}
-
-	int Graphical_element_group_compile(GT_element_group *graphical_element_group)
-	{
-		int return_code;
-		
-		return_code = Render_immediate::Graphical_element_group_compile(graphical_element_group);
-		if (return_code)
-		{
-			Callback_member_callback< GT_element_group*, Render_graphics_opengl_display_list,
-				int (Render_graphics_opengl_display_list::*)(GT_element_group*) >
-				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
-				&Render_graphics_opengl_display_list::Graphical_element_group_execute_parent);
-			return_code = Graphical_element_group_compile_opengl_display_list(
-				graphical_element_group, &execute_method, this);
-		}
-		return (return_code);
-	}
-
-	int Graphical_element_group_execute(GT_element_group *graphical_element_group)
-	{
-		return Graphical_element_group_execute_opengl_display_list(
-			graphical_element_group, this);
 	}
 
 	int Graphics_object_execute_parent(GT_object *graphics_object)

@@ -852,35 +852,6 @@ int makestl(Stl_context& stl_context, gtObject *object, float time)
 	return (return_code);
 } /* makestl */
 
-int GT_element_settings_graphics_to_stl(struct GT_element_settings *settings,
-	void *stl_context_void)
-{
-	int return_code;
-
-	ENTER(GT_element_settings_graphics_to_stl);
-	if (settings && stl_context_void)
-	{
-		return_code = 1;
-		Stl_context& stl_context = *(static_cast<Stl_context*>(stl_context_void));
-		struct GT_object *graphics_object;
-		if (GT_element_settings_get_visibility(settings) &&
-			(graphics_object = GT_element_settings_get_graphics_object(
-			settings)))
-		{
-			return_code = makestl(stl_context, graphics_object, /*time*/0);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_graphics_to_stl.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_graphics_to_stl */
-
 int write_scene_stl(Stl_context& stl_context, struct Scene *scene);
 
 /**************************************************************************//**

@@ -39,7 +39,6 @@ extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
-#include "graphics/element_group_settings.h"
 }
 
 #include "graphics/graphics_object.hpp"

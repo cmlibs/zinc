@@ -107,18 +107,6 @@ public:
 		return 1;
 	}
 
-#if defined (USE_SCENE_OBJECT)
-	/***************************************************************************//**
-	 * Compile the Scene_object.
-	 */
-	virtual int Scene_object_compile(Scene_object *scene_object) = 0;
-	
-	/***************************************************************************//**
-	 * Execute the Scene_object.
-	 */
-	virtual int Scene_object_execute(Scene_object *scene_object) = 0;
-#endif
-
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */
@@ -164,18 +152,6 @@ public:
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition) = 0;
 	
-	/***************************************************************************//**
-	 * Execute the Graphical element group.
-	 */
-	virtual int Graphical_element_group_execute(
-		GT_element_group *graphical_element_group) = 0;
-	
-	/***************************************************************************//**
-	 * Compile the Graphical element group.
-	 */
-	virtual int Graphical_element_group_compile(
-		GT_element_group *graphical_element_group) = 0;
-
 	/***************************************************************************//**
 	 * Compile the Material.
 	 */
@@ -252,20 +228,13 @@ public:
 	}
 	
 	FE_value time;
-	/** Passed from scene_objects to graphical_elements for compilation */
+	/** Passed from scene_objects to cmiss_renditions for compilation */
 	const char *name_prefix;
 	
 	/***************************************************************************//**
 	 * Compile the Scene.
 	 */
 	virtual int Scene_compile(Scene *scene);
-
-#if defined (USE_SCENE_OBJECT)
-	/***************************************************************************//**
-	 * Compile the Scene_object.
-	 */
-	virtual int Scene_object_compile(Scene_object *scene_object);
-#endif
 
 	/***************************************************************************//**
 	 * Compile the Cmiss rendition.
@@ -276,12 +245,6 @@ public:
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition);
 		
-	/***************************************************************************//**
-	 * Compile the Graphical element group.
-	 */
-	virtual int Graphical_element_group_compile(
-		GT_element_group *graphical_element_group);
-
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
 	 */
@@ -314,7 +277,7 @@ public:
 
 /***************************************************************************//**
  * This renderer ensures that all the sub-objects are up to date.  In particular
- * this triggers graphical_elements to generate their Graphics_object
+ * this triggers cmiss_renditions to generate their Graphics_object
  * representations.  (Previously this behaviour was build_GT_element_group.)
  * Unless overridden this renderer only builds objects so the execute methods all
  * just return 1. 
@@ -333,16 +296,6 @@ public:
 	{
 		return 1;
 	}
-
-#if defined (USE_SCENE_OBJECT)
-	/***************************************************************************//**
-	 * By default this renderer only builds.
-	 */
-	virtual int Scene_object_execute(Scene_object * /*scene_object*/)
-	{
-		return 1;
-	}
-#endif
 
 	/***************************************************************************//**
 	 * Graphics objects are the primitives we are building so don't need to propagate.
@@ -374,11 +327,6 @@ public:
 	{
 		return 1;
 	}
-
-	virtual int Graphical_element_group_execute(GT_element_group * /*graphical_element*/)
-	{
-		return 1;
-	}
 	
 	virtual int Material_execute(Graphical_material * /*material*/)
 	{
@@ -394,6 +342,12 @@ public:
 	{
 		return 1;
 	}
+#if defined (USE_SCENE_OBJECT)
+	/***************************************************************************//**
+	 * Compile the Scene_object.
+	 */
+	virtual int Scene_object_compile(Scene_object *scene_object);
+#endif
 
 	virtual int Texture_execute(Texture * /*texture*/)
 	{

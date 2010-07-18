@@ -52,7 +52,6 @@ DESCRIPTION :
 #include "graphics/cmiss_graphic.h"
 #include "context/context.h"
 #include "graphics/font.h"
-#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
@@ -318,11 +317,6 @@ int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendi
  * @return If successfully deaccess rendition from region returns 1, otherwise 0
  */
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region);
-
-#if defined (OLD_CODE)
-int Cmiss_rendition_call_compiler(struct Cmiss_rendition *rendition, 
-	void *renderer_void);
-#endif /* defined (OLD_CODE) */
 
 int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition, 
 	void *renderer_void);
