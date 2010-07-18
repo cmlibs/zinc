@@ -465,7 +465,6 @@ GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/colour.c \
 	graphics/complex.c \
-	graphics/element_group_settings.c \
 	graphics/element_point_ranges.c \
 	graphics/environment_map.c \
 	graphics/glyph.c \

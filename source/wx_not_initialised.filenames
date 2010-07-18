@@ -17,9 +17,7 @@ general/matrix_vector.c
 graphics/auxiliary_graphics_types.c
 graphics/decimate_voltex.cpp
 graphics/defined_graphics_objects.c
-graphics/element_group_settings.cpp
 graphics/font.cpp
-graphics/graphical_element.cpp
 graphics/graphics_object.cpp
 graphics/graphics_window.cpp
 graphics/iso_field_calculation.c

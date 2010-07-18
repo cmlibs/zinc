@@ -9,7 +9,6 @@ SET( GRAPHICS_SRCS
 	source/graphics/complex.c
 	source/graphics/decimate_voltex.cpp
 	source/graphics/defined_graphics_objects.c
-	source/graphics/element_group_settings.cpp
 	source/graphics/element_point_ranges.c
 	source/graphics/environment_map.c
 	source/graphics/glyph.cpp
@@ -42,12 +41,9 @@ SET( GRAPHICS_HDRS
 	source/graphics/complex.h
 	source/graphics/decimate_voltex.h
 	source/graphics/defined_graphics_objects.h
-	source/graphics/element_group_settings.h
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
 	source/graphics/glyph.h
-	source/graphics/graphical_element.hpp
-	source/graphics/graphical_element_editor.h
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -75,7 +71,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/scene_editor.h
 	source/graphics/scene_filters.hpp
 	source/graphics/selected_graphic.h
-	source/graphics/settings_editor.h
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
 	source/graphics/spectrum_editor.h
@@ -95,7 +90,6 @@ SET( GRAPHICS_HDRS
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
 		source/graphics/font.cpp
-		source/graphics/graphical_element.cpp
 		source/graphics/graphics_library.c
 		source/graphics/graphics_object.cpp
 		source/graphics/light.c
@@ -108,7 +102,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
 		source/graphics/font.h
-		source/graphics/graphical_element.h
 		source/graphics/graphics_library.h
 		source/graphics/light.h
 		source/graphics/light_model.h

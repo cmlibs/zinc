@@ -51,10 +51,8 @@ finite_element/finite_element_to_streamlines.cpp
 finite_element/import_finite_element.cpp
 general/geometry.cpp
 graphics/decimate_voltex.cpp
-graphics/element_group_settings.cpp
 graphics/font.cpp
 graphics/glyph.cpp
-graphics/graphical_element.cpp
 graphics/graphics_object.cpp
 graphics/graphics_window.cpp
 graphics/light_model.cpp
