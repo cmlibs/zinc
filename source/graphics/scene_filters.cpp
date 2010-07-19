@@ -83,6 +83,11 @@ public:
 	{
 	}
 
+	virtual ~Cmiss_scene_filter_graphic_name()
+	{
+		DEALLOCATE(matchName);
+	}
+
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
 		return ::Cmiss_graphic_has_name(graphic, (void *)matchName);
