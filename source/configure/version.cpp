@@ -9,6 +9,15 @@ int main ( int argc, char *argv[] )
 	struct tm * timeinfo;
 	char buffer [256];
 
+	if ( argc == 1)
+	{
+		time ( &rawtime );
+		timeinfo = localtime ( &rawtime );
+		strftime (buffer,256,"%d/%m/%y %X %Z",timeinfo);
+		printf( "%s\n", buffer );
+		return 0;
+	}
+
 	if ( argc != 10 )
 		return 1;
 
@@ -18,7 +27,7 @@ int main ( int argc, char *argv[] )
 	{
 		time ( &rawtime );
 		timeinfo = localtime ( &rawtime );
-		strftime (buffer,256,"%c %Z",timeinfo);
+		strftime (buffer,256,"%d/%m/%y %X %Z",timeinfo);
 		//
 		// The version string should be something like this:
 		// "CMISS(cmgui) version @CMGUI_MAJOR_VERSION@.@CMGUI_MINOR_VERSION@.@CMGUI_PATCH_VERSION@  [DATE]\nCopyright 1996-[YEAR], Auckland UniServices Ltd."
@@ -33,7 +42,7 @@ int main ( int argc, char *argv[] )
 		fprintf( pFile, "\n#endif\n\n" );
 		fclose (pFile);
 	}
-						  
+
 	return 0;
 }
 
