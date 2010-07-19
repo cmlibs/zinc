@@ -1750,7 +1750,7 @@ works on the node itself, not a local copy. Hence, only pass unmanaged nodes to
 this widget.
 ==============================================================================*/
 {
-	int change_conditional_function,return_code;
+	int change_conditional_function,return_code = 0;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
 	struct Computed_field *field;

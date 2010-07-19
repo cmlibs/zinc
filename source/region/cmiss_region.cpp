@@ -1018,7 +1018,7 @@ Adds an entry to the <option_table> with name <entry_name> that returns a
 region path in <path_address> relative to the <root_region>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Option_table_add_set_Cmiss_region_path);
 	if (option_table && entry_string && root_region && path_address)
@@ -1031,7 +1031,6 @@ region path in <path_address> relative to the <root_region>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Option_table_add_set_Cmiss_region_path.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 

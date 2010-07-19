@@ -436,36 +436,36 @@ DESCRIPTION : \
 Removes a callback = <function> + <user_data> from <callback_list>. \
 ============================================================================*/ \
 { \
-	int return_code; \
-  struct CMISS_CALLBACK_ITEM(callback_type) callback,*existing_callback; \
+	int return_code = 0; \
+	struct CMISS_CALLBACK_ITEM(callback_type) callback,*existing_callback = NULL; \
 \
 	ENTER(CMISS_CALLBACK_LIST_REMOVE_CALLBACK(callback_type)); \
 	if (callback_list&&function) \
 	{ \
 		callback.function=function; \
 		callback.user_data=user_data; \
-		if (NULL != (existing_callback=																					 \
+		if (NULL != (existing_callback= \
 			FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
 				CMISS_CALLBACK_MATCHES(callback_type),(void *)&callback,callback_list))) \
 		{ \
-         if (existing_callback->access_count == 1) \
-         { \
-			   if (REMOVE_OBJECT_FROM_LIST(CMISS_CALLBACK_ITEM(callback_type))( \
-				   existing_callback,callback_list)) \
-			   { \
-				   return_code=1; \
-			   } \
-			   else \
-			   { \
-				   display_message(ERROR_MESSAGE,"CMISS_CALLBACK_LIST_REMOVE_CALLBACK(" \
-					   #callback_type ").  Could not remove callback from list"); \
-				   return_code=0; \
-			   } \
-         } \
-		   else \
-         { \
-            DEACCESS(CMISS_CALLBACK_ITEM(callback_type))(&existing_callback); \
-            return_code = 1; \
+			if (existing_callback->access_count == 1) \
+			{ \
+				if (REMOVE_OBJECT_FROM_LIST(CMISS_CALLBACK_ITEM(callback_type))( \
+					existing_callback,callback_list)) \
+				{ \
+					return_code=1; \
+				} \
+				else \
+				{ \
+					display_message(ERROR_MESSAGE,"CMISS_CALLBACK_LIST_REMOVE_CALLBACK(" \
+						#callback_type ").  Could not remove callback from list"); \
+					return_code=0; \
+				} \
+			} \
+			else \
+			{ \
+				DEACCESS(CMISS_CALLBACK_ITEM(callback_type))(&existing_callback); \
+				return_code = 1; \
 			} \
 		} \
 		else \

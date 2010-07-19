@@ -863,19 +863,19 @@ DESCRIPTION :
 Removes the all the settings from <spectrum>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Spectrum_remove_all_settings);
 	if (spectrum)
 	{
 		REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)
 			(get_Spectrum_settings_list(spectrum));
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Spectrum_remove_all_settings.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
