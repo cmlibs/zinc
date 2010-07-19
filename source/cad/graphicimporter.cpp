@@ -1,6 +1,7 @@
 #include "graphicimporter.h"
 
 #include <string>
+#include <time.h>
 
 #include "occpartfactory.h"
 #include "transformoccmodel.h"

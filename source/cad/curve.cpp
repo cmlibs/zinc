@@ -45,7 +45,9 @@
 #include <ShapeAnalysis_Curve.hxx>
 #include <TopExp.hxx>
 
-#include <general/debug.h>
+extern "C" {
+#include "general/debug.h"
+}
 
 Curve::Curve( Entity* parent )
     : Entity( parent )
@@ -233,13 +235,13 @@ bool Curve::buildOpenGLRep()
 			for ( int i = 0; i < pnts.Length(); i++ )
 			{
 				gp_Pnt pnt = pnts.Value( i + 1 );
-				m_edgeOGLRep[ 3 * i + 0 ] = pnt.X();
-				m_edgeOGLRep[ 3 * i + 1 ] = pnt.Y();
-				m_edgeOGLRep[ 3 * i + 2 ] = pnt.Z();
+				m_edgeOGLRep[ 3 * i + 0 ] = static_cast<float>(pnt.X());
+				m_edgeOGLRep[ 3 * i + 1 ] = static_cast<float>(pnt.Y());
+				m_edgeOGLRep[ 3 * i + 2 ] = static_cast<float>(pnt.Z());
 
-				m_colourOGLRep[ 4 * i + 0 ] = m_colour.Red();
-				m_colourOGLRep[ 4 * i + 1 ] = m_colour.Green();
-				m_colourOGLRep[ 4 * i + 2 ] = m_colour.Blue();
+				m_colourOGLRep[ 4 * i + 0 ] = static_cast<float>(m_colour.Red());
+				m_colourOGLRep[ 4 * i + 1 ] = static_cast<float>(m_colour.Green());
+				m_colourOGLRep[ 4 * i + 2 ] = static_cast<float>(m_colour.Blue());
 				m_colourOGLRep[ 4 * i + 3 ] = 1.0;
 			}
 			success = true;
@@ -260,13 +262,13 @@ bool Curve::buildOpenGLRep()
 				pnts.Value( i + 1 ).Coord( u, v );
 				Handle_Geom_Surface surf = BRep_Tool::Surface( m_face );
 				gp_Pnt pnt = surf->Value( u, v );
-				m_edgeOGLRep[ 3 * i + 0 ] = pnt.X();
-				m_edgeOGLRep[ 3 * i + 1 ] = pnt.Y();
-				m_edgeOGLRep[ 3 * i + 2 ] = pnt.Z();
+				m_edgeOGLRep[ 3 * i + 0 ] = static_cast<float>(pnt.X());
+				m_edgeOGLRep[ 3 * i + 1 ] = static_cast<float>(pnt.Y());
+				m_edgeOGLRep[ 3 * i + 2 ] = static_cast<float>(pnt.Z());
 
-				m_colourOGLRep[ 4 * i + 0 ] = m_colour.Red();
-				m_colourOGLRep[ 4 * i + 1 ] = m_colour.Green();
-				m_colourOGLRep[ 4 * i + 2 ] = m_colour.Blue();
+				m_colourOGLRep[ 4 * i + 0 ] = static_cast<float>(m_colour.Red());
+				m_colourOGLRep[ 4 * i + 1 ] = static_cast<float>(m_colour.Green());
+				m_colourOGLRep[ 4 * i + 2 ] = static_cast<float>(m_colour.Blue());
 				m_colourOGLRep[ 4 * i + 3 ] = 1.0;
 			}
 			if ( &m_edgeOGLRep[0] == 0 )

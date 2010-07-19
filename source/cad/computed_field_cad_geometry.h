@@ -1,4 +1,4 @@
-/*****************************************************************************//**
+/*
  * FILE : computed_field_cad_geometry.h
  *
  * Implements a cmiss field which extracts the geometry of an OpenCascade shape.
@@ -42,7 +42,9 @@
 #if !defined (COMPUTED_FIELD_CAD_GEOMETRY_H)
 #define COMPUTED_FIELD_CAD_GEOMETRY_H
 
+extern "C" {
 #include "api/cmiss_field.h"
+}
 #include "cad/geometricshape.h"
 
 #define Computed_field_create_cad_geometry Cmiss_field_create_cad_geometry
@@ -52,7 +54,7 @@ struct Cmiss_field_cad_geometry;
 typedef struct Cmiss_field_cad_geometry *Cmiss_field_cad_geometry_id;
 
 //Cmiss_field_id Computed_field_create_cad_geometry( Cmiss_field_id field, GeometricShape *shape );
-Cmiss_field_id Computed_field_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_field);
+Cmiss_field_id Computed_field_module_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_field);
 
 Cmiss_field_cad_geometry_id Cmiss_field_cad_geometry_cast(Cmiss_field_id cad_geometry_field);
 

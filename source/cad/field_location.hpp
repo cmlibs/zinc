@@ -37,49 +37,54 @@
 #if !defined(CAD_FIELD_LOCATION_HPP)
 #define CAD_FIELD_LOCATION_HPP
 
+#include "api/cmiss_field_cad.h"
 #include "computed_field/field_location.hpp"
 #include "cad/computed_field_cad_topology.h"
+#include "cad/element_identifier.h"
 
 class Field_cad_geometry_location : public Field_location
 {
 protected:
-	Cmiss_field_cad_topology_id m_id;
-	int m_index;
+	Cmiss_field_cad_topology_id id;
 
 public:
-	Field_cad_geometry_location(Cmiss_field_cad_topology_id id, int index, FE_value time = 0.0, int number_of_derivatives = 0);
-	~Field_cad_geometry_location();
+	Field_cad_geometry_location(Cmiss_field_cad_topology_id id, FE_value time = 0.0, int number_of_derivatives = 0);
+	~Field_cad_geometry_location() = 0;
 
-	inline Cmiss_field_cad_topology_id id() const {return m_id;}
-	inline int index() const {return m_index;}
+	inline Cmiss_field_cad_topology_id get_id() const {return id;}
+	
 
 };
 
 class Field_cad_geometry_surface_location : public Field_cad_geometry_location
 {
 protected:
-	double m_u;
-	double m_v;
+	Cmiss_cad_surface_identifier identifier;
+	double u;
+	double v;
 
 public:
-	Field_cad_geometry_surface_location(Cmiss_field_cad_topology_id id, int index, double u, double v, FE_value time = 0.0, int number_of_derivatives = 0);
+	Field_cad_geometry_surface_location(Cmiss_field_cad_topology_id id, Cmiss_cad_surface_identifier identifier, double u, double v, FE_value time = 0.0, int number_of_derivatives = 0);
 	~Field_cad_geometry_surface_location();
 
-	inline double u() const {return m_u;}
-	inline double v() const {return m_v;}
+	inline Cmiss_cad_surface_identifier get_identifier() const {return identifier;}
+	inline double get_u() const {return u;}
+	inline double get_v() const {return v;}
 
 };
 
 class Field_cad_geometry_curve_location : public Field_cad_geometry_location
 {
 protected:
-	double m_s;
+	Cmiss_cad_curve_identifier identifier;
+	double s;
 
 public:
-	Field_cad_geometry_curve_location(Cmiss_field_cad_topology_id id, int index, double s, FE_value time = 0.0, int number_of_derivatives = 0);
+	Field_cad_geometry_curve_location(Cmiss_field_cad_topology_id id, Cmiss_cad_curve_identifier identifier, double s, FE_value time = 0.0, int number_of_derivatives = 0);
 	~Field_cad_geometry_curve_location();
 
-	inline double  s() const {return m_s;}
+	inline Cmiss_cad_curve_identifier get_identifier() const {return identifier;}
+	inline double get_s() const {return s;}
 };
 
 #endif // !defined(CAD_FIELD_LOCATION_HPP)

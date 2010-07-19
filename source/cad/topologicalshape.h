@@ -9,12 +9,17 @@
 #include <Quantity_Color.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 
+extern "C" {
+#include "api/cmiss_field_cad.h"
+}
+#include "cad/element_identifier.h"
+
 class GeometricShape;
 
 class TopologicalShape
 {
 	public:
-		TopologicalShape( const TopoDS_Shape& s );
+		TopologicalShape( const TopoDS_Shape& s, Cad_colour_map colourMap );
 		~TopologicalShape();
 
 		void shape( const TopoDS_Shape& s ) { m_shape = s; }
@@ -25,6 +30,7 @@ class TopologicalShape
 		TopoDS_Shape shape() const { return m_shape; }
 		Quantity_Color surfaceColour() const { return m_surfaceColour; }
 		int surfaceColour(double *colour) const;
+		int surfaceColour(Cmiss_cad_surface_identifier surface_identifier, double *colour) const;
 		Quantity_Color curveColour() const { return m_curveColour; }
 		const char*  label() const { return m_label.c_str(); }
 
@@ -39,6 +45,7 @@ class TopologicalShape
 	private:
 		std::string m_label;
 		TopoDS_Shape m_shape;
+		Cad_colour_map colourMap;
 		Quantity_Color m_surfaceColour;
 		Quantity_Color m_curveColour;
 

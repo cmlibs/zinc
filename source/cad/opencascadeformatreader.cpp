@@ -42,12 +42,14 @@
 #include <IGESControl_Reader.hxx>
 #include <STEPControl_Reader.hxx>
 #include <FSD_File.hxx>
-#include <ShapeSchema.hxx>
+//#include <ShapeSchema.hxx>
 #include <Storage_Root.hxx>
 #include <Storage_HSeqOfRoot.hxx>
-#include <PTopoDS_HShape.hxx>
+//#include <PTopoDS_HShape.hxx>
 #include <PTColStd_PersistentTransientMap.hxx>
-#include <MgtBRep.hxx>
+//#include <MgtBRep.hxx>
+#include <XCAFApp_Application.hxx>
+#include <XCAFDoc_DocumentTool.hxx>
 #include <IGESCAFControl_Reader.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <TDocStd_Document.hxx>
@@ -155,19 +157,33 @@ bool OpenCascadeFormatReader::importBREP( const std::string& file )
 	if ( result )
 	{
 		m_sequenceOfShapes->Append( aShape );
+		return true;
 	}
 
-	return result;
+	return false;
 }
 
 bool OpenCascadeFormatReader::importIGES( const std::string& file )
 {
 	//IGESControl_Reader reader;
+#if defined (_DEBUG)
 	std::cout << "importIGES( " << file << " )" << std::endl;
+#endif /* defined (_DEBUG) */
 	m_sequenceOfShapes.Nullify();
 	m_doc.Nullify();
-	m_doc = new TDocStd_Document( "MDTV-XCAF" );
+	//m_doc = new TDocStd_Document( "MDTV-XCAF" );
+	XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", m_doc);
 
+#if defined (_DEBUG)
+	if (XCAFDoc_DocumentTool::IsXCAFDocument(m_doc))
+	{
+		std::cout << "Yep She's structured for use with XDE" << std::endl;
+	}
+	else
+	{
+		std::cout << "No way She's not structured for use with XDE" << std::endl;
+	}
+#endif /* defined (_DEBUG) */
 	IGESCAFControl_Reader reader;
 
 	// Should already be set but hey.
@@ -205,8 +221,19 @@ bool OpenCascadeFormatReader::importSTEP( const std::string& file )
 	m_sequenceOfShapes.Nullify();
 	m_doc.Nullify();
 
-	m_doc = new TDocStd_Document( "MDTV-XCAF" );
+	//m_doc = new TDocStd_Document( "MDTV-XCAF" );
+	XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", m_doc);
 
+#if defined (_DEBUG)
+	if (XCAFDoc_DocumentTool::IsXCAFDocument(m_doc))
+	{
+		std::cout << "Yep She's structured for use with XDE" << std::endl;
+	}
+	else
+	{
+		std::cout << "No way She's not structured for use with XDE" << std::endl;
+	}
+#endif /* defined (_DEBUG) */
 	STEPCAFControl_Reader reader;
 
 	// Should already be set but hey.

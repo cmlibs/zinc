@@ -6,9 +6,16 @@
 
 #include <Quantity_Color.hxx>
 
+extern "C" {
+#include "api/cmiss_field_cad.h"
+}
+
 #include "point.h"
 #include "curve.h"
 #include "surface.h"
+
+typedef std::vector<int>::iterator Surface_iterator;
+typedef std::vector<int>::const_iterator Surface_const_iterator;
 
 class GeometricShape
 {
@@ -26,18 +33,22 @@ class GeometricShape
 		int curveCount() const { return m_curves.size(); }
 		int surfaceCount() const { return m_surfaces.size(); }
 
-		const Point* point( int index ) { return m_points.at( index ); }
-		const Curve* curve( int index ) { return m_curves.at( index ); }
-		const Surface* surface( int index ) { return m_surfaces.at( index ); }
+		const Point* point( int index ) const { return m_points.at( index ); }
+		const Curve* curve( int index ) const { return m_curves.at( index ); }
+		const Surface* surface( int index ) const { return m_surfaces.at( index ); }
+
+		Surface_iterator surface_index_iterator() { return m_surfaceIndexes.begin(); }
+		Surface_const_iterator surface_index_iterator() const { return m_surfaceIndexes.begin(); }
 
 		void append( Point* pt ) { m_points.push_back( pt ); }
 		void append( Curve* c ) { m_curves.push_back( c ); }
-		void append( Surface* s ) { m_surfaces.push_back( s ); }
+		void append( Surface* s ) { m_surfaceIndexes.push_back(m_surfaces.size()); m_surfaces.push_back( s ); }
 
 	private:
 		std::vector<Point*> m_points;
 		std::vector<Curve*> m_curves;
 		std::vector<Surface*> m_surfaces;
+		std::vector<Cmiss_cad_surface_identifier> m_surfaceIndexes;
 
 		Quantity_Color m_surfaceColour;
 		Quantity_Color m_curveColour;

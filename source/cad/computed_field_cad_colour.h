@@ -42,16 +42,18 @@
 #ifndef CAD_COMPUTED_FIELD_CAD_COLOUR_H_
 #define CAD_COMPUTED_FIELD_CAD_COLOUR_H_
 
+extern "C" {
 #include "api/cmiss_field.h"
+}
 #include "cad/geometricshape.h"
 
-#define Computed_field_create_cad_colour Cmiss_field_create_cad_colour
+//#define Computed_field_create_cad_colour Cmiss_field_create_cad_colour
 
 struct Cmiss_field_cad_colour;
 
 typedef struct Cmiss_field_cad_colour *Cmiss_field_cad_colour_id;
 
-Cmiss_field_id Computed_field_create_cad_colour(Cmiss_field_module_id field_module, Cmiss_field_id field);
+Cmiss_field_id Computed_field_module_create_cad_colour(Cmiss_field_module_id field_module, Cmiss_field_id field);
 
 Cmiss_field_cad_colour_id Cmiss_field_cast_cad_colour( Cmiss_field_id cad_colour_field );
 

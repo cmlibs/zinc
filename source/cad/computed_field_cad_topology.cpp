@@ -39,46 +39,57 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-extern "C" {
 #include <stdlib.h>
-#include "computed_field/computed_field.h"
-}
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_set.h"
+
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <BRep_Tool.hxx>
+#include <Geom_BezierSurface.hxx>
+#include <Handle_Geom_BezierSurface.hxx>
+#include <Geom_BoundedSurface.hxx>
+#include <Handle_Geom_BoundedSurface.hxx>
+#include <Geom_BSplineSurface.hxx>
+#include <Handle_Geom_BSplineSurface.hxx>
+#include <Geom_ConicalSurface.hxx>
+#include <Handle_Geom_ConicalSurface.hxx>
+#include <Geom_CylindricalSurface.hxx>
+#include <Handle_Geom_CylindricalSurface.hxx>
+#include <Geom_ElementarySurface.hxx>
+#include <Handle_Geom_ElementarySurface.hxx>
+#include <Geom_OffsetSurface.hxx>
+#include <Handle_Geom_OffsetSurface.hxx>
+#include <Geom_Plane.hxx>
+#include <Handle_Geom_Plane.hxx>
+#include <Geom_RectangularTrimmedSurface.hxx>
+#include <Handle_Geom_RectangularTrimmedSurface.hxx>
+#include <Geom_SphericalSurface.hxx>
+#include <Handle_Geom_SphericalSurface.hxx>
+#include <Geom_Surface.hxx>
+#include <Handle_Geom_Surface.hxx>
+#include <Geom_SurfaceOfLinearExtrusion.hxx>
+#include <Handle_Geom_SurfaceOfLinearExtrusion.hxx>
+#include <Geom_SurfaceOfRevolution.hxx>
+#include <Handle_Geom_SurfaceOfRevolution.hxx>
+#include <Geom_SweptSurface.hxx>
+#include <Handle_Geom_SweptSurface.hxx>
+#include <Geom_ToroidalSurface.hxx>
+#include <Handle_Geom_ToroidalSurface.hxx>
+
 extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
+#include "computed_field/computed_field.h"
 }
+
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_set.h"
 
 #include "cad/field_location.hpp"
 #include "cad/computed_field_cad_topology.h"
 #include "cad/computed_field_cad_topology_private.h"
-//#include "cad/topologicalshape.h"
-//#include "cad/geometricshape.h"
-/*
-Module types
-------------
-*/
-/*
-class Computed_field_cad_topology_package : public Computed_field_type_package
-{
-public:
-	Cmiss_region *root_region;
 
-	Computed_field_cad_topology_package(Cmiss_region *root_region)
-		: root_region(root_region)
-	{
-		ACCESS(Cmiss_region)(root_region);
-	}
-
-	~Computed_field_cad_topology_package()
-	{
-		DEACCESS(Cmiss_region)(&root_region);
-	}
-};
-*/
 namespace {
 
 char computed_field_cad_topology_type_string[] = "cad_topology";
@@ -88,6 +99,7 @@ class Computed_field_cad_topology : public Computed_field_core
 protected:
 	TopologicalShape *m_shape;
 	GeometricShape *m_geometric_shape;
+	std::vector<int> surface_identifiers;
 
 public:
 	Computed_field_cad_topology(TopologicalShape *shape)
@@ -109,15 +121,17 @@ public:
 	inline void topological_shape(TopologicalShape *shape) { m_shape = shape; }
 	inline void geometric_shape(GeometricShape *shape) {m_geometric_shape = shape;}
 	int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
-	int surface_point(int surface_index, double u, double v, double *point, double *uDerivative, double *vDerivative);
-	int curve_point(int surface_index, double s, double *point);
-	int surface_colour(int surface_index, double u, double v, double *colour);
-	int surface_uv_point(int surface_index, int point_index, double &u, double &v);
-	int curve_s_parameter(int curve_index, int parameter_index, double &s);
+	int surface_point(Cmiss_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative);
+	int curve_point(Cmiss_cad_curve_identifier identifier, double s, double *point);
+	int surface_colour(Cmiss_cad_surface_identifier identifier, double u, double v, double *colour);
+	int surface_uv_point(Cmiss_cad_surface_identifier identifier, Cmiss_cad_surface_point_identifier point_identifier, double &u, double &v);
+	int curve_s_parameter(Cmiss_cad_curve_identifier identifier, Cmiss_cad_curve_point_identifier s_identifier, double &s);
 	int surface_count() const;
 	int curve_count() const;
 	int surface_point_count(int i) const;
 	int curve_point_count(int i) const;
+
+	void information(int number) const;
 
 private:
 	Computed_field_core* copy();
@@ -155,7 +169,6 @@ int Computed_field_cad_topology::compare(Computed_field_core *other_core)
 {
 	int return_code;
 
-	ENTER(Computed_field_cad_topology::compare);
 	if (field && dynamic_cast<Computed_field_cad_topology*>(other_core))
 	{
 		printf("Comparing computed field cad topology, not really\n" );
@@ -165,7 +178,6 @@ int Computed_field_cad_topology::compare(Computed_field_core *other_core)
 	{
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Computed_field_cad_topology::compare */
@@ -179,10 +191,11 @@ int Computed_field_cad_topology::evaluate_cache_at_location(
 {
 	int return_code = 0;
 
-	ENTER(Computed_field_cad_topology::evaluate_cache_at_location);
 	if (m_geometric_shape && location)
 	{
-		printf("Hi from Computed_field_cad_topology::evaluate_cache_at_location\n");
+#if defined(DEBUG)
+		printf("Hi from Computed_field_cad_topology::evaluate_cache_at_location ...  doing nothing\n");
+#endif /* defined(DEBUG) */
 		//Field_cad_geometry_location *cad_geometry_location = static_cast<Field_cad_geometry_location*>(location);
 		//field->values[0] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 0 );
 		//field->values[1] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 1 );
@@ -195,7 +208,6 @@ int Computed_field_cad_topology::evaluate_cache_at_location(
 		display_message(ERROR_MESSAGE,
 			"Computed_field_cad_topology::evaluate_cache_at_location.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Computed_field_cad_topology::evaluate_cache_at_location */
@@ -208,7 +220,6 @@ int Computed_field_cad_topology::list()
 	//char *field_name;
 	int return_code = 0;
 
-	ENTER(List_Computed_field_cad_topology);
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    Cad Shape field : ");
@@ -219,7 +230,6 @@ int Computed_field_cad_topology::list()
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_cad_topology.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (return_code);
 } /* list_Computed_field_cad_topology */
@@ -232,7 +242,6 @@ char *Computed_field_cad_topology::get_command_string()
 	char *command_string, *field_name;
 	int error;
 
-	ENTER(Computed_field_cad_topology::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
@@ -251,7 +260,6 @@ char *Computed_field_cad_topology::get_command_string()
 		display_message(ERROR_MESSAGE,
 			"Computed_field_cad_topology::get_command_string.  Invalid field");
 	}
-	LEAVE;
 
 	return (command_string);
 } /* Computed_field_cad_topology::get_command_string */
@@ -320,7 +328,7 @@ int Computed_field_cad_topology::surface_point_count(int i) const
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_cad_topology::surface_point_count.  Surface index out of bounds");
+				"Computed_field_cad_topology::surface_point_count.  Surface index out of bounds (%d)", i);
 		}
 	}
 	else
@@ -345,7 +353,7 @@ int Computed_field_cad_topology::curve_point_count(int i) const
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_cad_topology::curve_point_count.  Curve index out of bounds");
+				"Computed_field_cad_topology::curve_point_count.  Curve index out of bounds (%d)", i);
 		}
 	}
 	else
@@ -357,38 +365,38 @@ int Computed_field_cad_topology::curve_point_count(int i) const
 	return point_count;
 }
 
-int Computed_field_cad_topology::surface_uv_point(int surface_index, int point_index, double &u, double &v)
+int Computed_field_cad_topology::surface_uv_point(Cmiss_cad_surface_identifier identifier, Cmiss_cad_surface_point_identifier point_identifier, double &u, double &v)
 {
 	int return_code = 0;
 	if (field)
 	{
 		//u = m_geometric_shape->surface(surface_index)->uvPoints()[2 * point_index + 0];
 		//v = m_geometric_shape->surface(surface_index)->uvPoints()[2 * point_index + 1];
-		return_code = m_geometric_shape->surface(surface_index)->uvPoints(point_index, u, v);
+		return_code = m_geometric_shape->surface(identifier)->uvPoints(point_identifier, u, v);
 	}
 
 	return return_code;
 }
 
-int Computed_field_cad_topology::curve_s_parameter(int curve_index, int parameter_index, double &s)
+int Computed_field_cad_topology::curve_s_parameter(Cmiss_cad_curve_identifier identifier, Cmiss_cad_curve_point_identifier s_identifier, double &s)
 {
 	int return_code = 0;
 	if (field)
 	{
 		//u = m_geometric_shape->surface(surface_index)->uvPoints()[2 * point_index + 0];
 		//v = m_geometric_shape->surface(surface_index)->uvPoints()[2 * point_index + 1];
-		return_code = m_geometric_shape->curve(curve_index)->sParameter(parameter_index, s);
+		return_code = m_geometric_shape->curve(identifier)->sParameter(s_identifier, s);
 	}
 
 	return return_code;
 }
 
-int Computed_field_cad_topology::surface_point(int surface_index, double u, double v, double *point, double *uDerivative, double *vDerivative)
+int Computed_field_cad_topology::surface_point(Cmiss_cad_surface_identifier identifier, double u, double v, double *point, double *uDerivative, double *vDerivative)
 {
 	int return_code = 0;
 	if (field)
 	{
-		return_code = m_geometric_shape->surface(surface_index)->surfacePoint(u, v, point, uDerivative, vDerivative);
+		return_code = m_geometric_shape->surface(identifier)->surfacePoint(u, v, point, uDerivative, vDerivative);
 	}
 	else
 	{
@@ -399,12 +407,12 @@ int Computed_field_cad_topology::surface_point(int surface_index, double u, doub
 	return return_code;
 }
 
-int Computed_field_cad_topology::curve_point(int curve_index, double s, double *point)
+int Computed_field_cad_topology::curve_point(Cmiss_cad_curve_identifier identifier, double s, double *point)
 {
 	int return_code = 0;
 	if (field)
 	{
-		return_code = m_geometric_shape->curve(curve_index)->curvePoint( s, point);
+		return_code = m_geometric_shape->curve(identifier)->curvePoint( s, point);
 	}
 	else
 	{
@@ -415,15 +423,14 @@ int Computed_field_cad_topology::curve_point(int curve_index, double s, double *
 	return return_code;
 }
 
-int Computed_field_cad_topology::surface_colour(int surface_index, double u, double v, double *colour)
+int Computed_field_cad_topology::surface_colour(Cmiss_cad_surface_identifier identifier, double u, double v, double *colour)
 {
-	USE_PARAMETER(surface_index);
 	USE_PARAMETER(u);
 	USE_PARAMETER(v);
 	int return_code = 0;
 	if (field)
 	{
-		return_code = m_shape->surfaceColour(colour);
+		return_code = m_shape->surfaceColour(identifier, colour);
 	}
 	else
 	{
@@ -433,6 +440,230 @@ int Computed_field_cad_topology::surface_colour(int surface_index, double u, dou
 
 	return return_code;
 }
+
+void Computed_field_cad_topology::information(int surface_index) const
+{
+	//String info;
+	display_message(INFORMATION_MESSAGE,
+		"Computed_field_cad_topology %s.  Information\n", Cmiss_field_get_name(field));
+	TopExp_Explorer faceExplorer(m_shape->shape() , TopAbs_FACE);
+	TopoDS_Face face;
+	int count = 0;
+	for (TopExp_Explorer faceExplorer(m_shape->shape() , TopAbs_FACE) ; faceExplorer.More() && count <= surface_index; faceExplorer.Next())
+	{
+		face = TopoDS::Face(faceExplorer.Current());
+		count++;
+	}
+	
+	//Check if <aFace> is the top face of the bottle's neck
+	Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
+
+	if (surface->DynamicType() == STANDARD_TYPE(Geom_BezierSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Bezier surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_BoundedSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Bounded surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  BSpline surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ConicalSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Conical surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface))
+	{
+		Handle_Geom_CylindricalSurface cylinder = Handle_Geom_CylindricalSurface::DownCast(surface);
+		display_message(INFORMATION_MESSAGE, "  Cylinder radius = %.3f\n", cylinder->Radius());
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ElementarySurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Elementary surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Offset surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_Plane))
+	{
+		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(surface);
+		Standard_Real a, b, c, d;
+		plane->Coefficients(a, b, c, d);
+		display_message(INFORMATION_MESSAGE, "  Plane equation: %.3f x + %.3f y + %.3f z + %.3f = 0\n", a, b, c, d);
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_RectangularTrimmedSurface))
+	{
+		//Handle_Geom_RectangularTrimmedSurface rect = Handle_Geom_RectangularTrimmedSurface::DownCast(surface);
+		display_message(INFORMATION_MESSAGE, "  Rectangular trimmed surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface))
+	{
+		Handle_Geom_SphericalSurface sphere = Handle_Geom_SphericalSurface::DownCast(surface);
+		display_message(INFORMATION_MESSAGE, "  Sphere area: %.3f\n", sphere->Area());
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_Surface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))
+	{
+		display_message(INFORMATION_MESSAGE, "  Linear extrusion surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfRevolution))
+	{
+		display_message(INFORMATION_MESSAGE, "  Surface of revolution\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SweptSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Swept surface\n");
+	}
+	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ToroidalSurface))
+	{
+		display_message(INFORMATION_MESSAGE, "  Toroidal surface\n");
+	}
+	else
+	{
+		display_message(INFORMATION_MESSAGE, "  Unknown surface type\n");
+	}
+}
+
+char computed_field_cad_group_type_string[] = "cad_group";
+/**
+ * A group of cad element identifiers
+ * Implemented using a std::list
+ */
+class Field_cad_element_group : public Computed_field_core
+{
+private:
+	Computed_field_cad_topology *topology;
+	std::list<Cad_topology_primitive_identifier> element_identifiers;
+
+private:
+	Computed_field_core* copy();
+
+	char* get_type_string()
+	{
+		return (computed_field_cad_group_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+};
+
+/**
+ * Copy the type specific data used by this type.
+ */
+Computed_field_core* Field_cad_element_group::copy()
+{
+	Field_cad_element_group* core = 
+		new Field_cad_element_group();
+
+	return (core);
+} /* Field_cad_element_group::copy */
+
+/***************************************************************************//**
+ * Compare the type specific data.
+ */
+int Field_cad_element_group::compare(Computed_field_core *other_core)
+{
+	int return_code;
+
+	if (field && dynamic_cast<Field_cad_element_group*>(other_core))
+	{
+		printf("Comparing computed field cad group, not really\n" );
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Field_cad_element_group::compare */
+
+
+/***************************************************************************//**
+ * Evaluate the values of the field at the supplied location.
+ */
+int Field_cad_element_group::evaluate_cache_at_location(
+	Field_location* location)
+{
+	int return_code = 0;
+
+	if (location)
+	{
+		printf("Hi from Field_cad_element_group::evaluate_cache_at_location ...  doing nothing\n");
+		return_code = 0; // always fail this function
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cad_topology::evaluate_cache_at_location.  Invalid argument(s)");
+	}
+
+	return (return_code);
+} /* Field_cad_element_group::evaluate_cache_at_location */
+
+/***************************************************************************//**
+ * Writes type-specific details of the field to the console.
+ */
+int Field_cad_element_group::list()
+{
+	//char *field_name;
+	int return_code = 0;
+
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE, "    Cad Group field : ");
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cad_topology.  Invalid argument(s)");
+	}
+
+	return (return_code);
+} /* Field_cad_element_group::list */
+
+/***************************************************************************//**
+ * Returns allocated command string for reproducing this field. Includes type.
+ */
+char *Field_cad_element_group::get_command_string()
+{
+	char *command_string, *field_name;
+	int error;
+
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string, computed_field_cad_topology_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field, &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cad_topology::get_command_string.  Invalid field");
+	}
+
+	return (command_string);
+} /* Field_cad_element_group::get_command_string */
 
 } //namespace
 
@@ -473,11 +704,10 @@ Cmiss_field_cad_topology_id Cmiss_field_cast_cad_topology(Cmiss_field_id field)
 }
 
 /**
- * @see Cmiss_field_create_cad_topology
+ * @see Cmiss_field_module_create_cad_topology
  */
-Computed_field *Computed_field_create_cad_topology( Cmiss_field_module *field_module, TopologicalShape *shape )
+Computed_field *Cmiss_field_module_create_cad_topology( Cmiss_field_module *field_module, TopologicalShape *shape )
 {
-	ENTER(Computed_field_create_cad_topology);
 	Computed_field *field = (Computed_field *)NULL;
 
 	if ( shape )
@@ -496,10 +726,9 @@ Computed_field *Computed_field_create_cad_topology( Cmiss_field_module *field_mo
 		display_message( ERROR_MESSAGE, "Computed_field_create_image.  "
 			"Invalid argument(s)" );
 	}
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_cad_topology */
+} /* Cmiss_field_module_create_cad_topology */
 
 void Cmiss_field_cad_topology_set_geometric_shape(Cmiss_field_cad_topology_id field, GeometricShape *shape)
 {
@@ -555,14 +784,14 @@ int Cmiss_field_cad_topology_get_curve_count(Cmiss_field_cad_topology_id field)
 }
 
 
-int Cmiss_field_cad_topology_get_surface_point_count( Cmiss_field_cad_topology_id field, int surface_index )
+int Cmiss_field_cad_topology_get_surface_point_count( Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier )
 {
 	int point_count = -1;
 	if (field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		point_count = cad_topology->surface_point_count( surface_index );
+		point_count = cad_topology->surface_point_count( identifier );
 	}
 	else
 	{
@@ -573,14 +802,14 @@ int Cmiss_field_cad_topology_get_surface_point_count( Cmiss_field_cad_topology_i
 	return point_count;
 }
 
-int Cmiss_field_cad_topology_get_curve_point_count( Cmiss_field_cad_topology_id field, int curve_index )
+int Cmiss_field_cad_topology_get_curve_point_count( Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier )
 {
 	int point_count = -1;
 	if (field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		point_count = cad_topology->curve_point_count( curve_index );
+		point_count = cad_topology->curve_point_count( identifier );
 	}
 	else
 	{
@@ -591,7 +820,10 @@ int Cmiss_field_cad_topology_get_curve_point_count( Cmiss_field_cad_topology_id 
 	return point_count;
 }
 
-int Cmiss_field_cad_topology_get_surface_point_uv_coordinates( Cmiss_field_cad_topology_id field, int surface_index, int uvPoint_index, double &u, double &v)
+int Cmiss_field_cad_topology_get_surface_point_uv_coordinates( Cmiss_field_cad_topology_id field,
+	Cmiss_cad_surface_identifier identifier,
+	Cmiss_cad_surface_point_identifier uv_identifier,
+	double &u, double &v)
 {
 	int return_code = 0;
 	u = 0.0;
@@ -600,12 +832,13 @@ int Cmiss_field_cad_topology_get_surface_point_uv_coordinates( Cmiss_field_cad_t
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		return_code = cad_topology->surface_uv_point(surface_index, uvPoint_index, u, v);
+		return_code = cad_topology->surface_uv_point(identifier, uv_identifier, u, v);
 	}
 	return return_code;
 }
 
-int Cmiss_field_cad_topology_get_curve_s_parameter( Cmiss_field_cad_topology_id field, int curve_index, int s_parameter_index, double &s)
+int Cmiss_field_cad_topology_get_curve_point_s_coordinate( Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier,
+	Cmiss_cad_curve_point_identifier s_identifier, double &s)
 {
 	int return_code = 0;
 	s = 0.0;
@@ -613,19 +846,21 @@ int Cmiss_field_cad_topology_get_curve_s_parameter( Cmiss_field_cad_topology_id 
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		return_code = cad_topology->curve_s_parameter(curve_index, s_parameter_index, s);
+		return_code = cad_topology->curve_s_parameter(identifier, s_identifier, s);
 	}
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id field, int surface_index, double u, double v, double *point, double *uDerivative, double *vDerivative)
+int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id field,
+	Cmiss_cad_surface_identifier identifier,
+	double u, double v, double *point, double *uDerivative, double *vDerivative)
 {
 	int return_code = 0;
 	if (field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		return_code = cad_topology->surface_point(surface_index, u, v, point, uDerivative, vDerivative);
+		return_code = cad_topology->surface_point(identifier, u, v, point, uDerivative, vDerivative);
 	}
 	else
 	{
@@ -636,14 +871,14 @@ int Computed_field_cad_topology_get_surface_point(Cmiss_field_cad_topology_id fi
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id field, int curve_index, double s, double *point)
+int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id field, Cmiss_cad_curve_identifier identifier, double s, double *point)
 {
 	int return_code = 0;
 	if (field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		return_code = cad_topology->curve_point(curve_index, s, point);
+		return_code = cad_topology->curve_point(identifier, s, point);
 	}
 	else
 	{
@@ -654,16 +889,25 @@ int Computed_field_cad_topology_get_curve_point(Cmiss_field_cad_topology_id fiel
 	return return_code;
 }
 
-int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id field, int surface_index, double u, double v, double *colour)
+int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id field, Cmiss_cad_surface_identifier identifier, double u, double v, double *colour)
 {
 	int return_code = 0;
 	if (field)
 	{
 		Computed_field *computed_field = reinterpret_cast<Computed_field *>(field);
 		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(computed_field->core);
-		return_code = cad_topology->surface_colour(surface_index, u, v, colour);
+		return_code = cad_topology->surface_colour(identifier, u, v, colour);
 	}
 
 	return return_code;
+}
+
+void Cad_topology_information( Cmiss_field_id cad_topology_field, Cad_primitive_identifier information )
+{
+	if (cad_topology_field)
+	{
+		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(cad_topology_field->core);
+		cad_topology->information(information.number);
+	}
 }
 

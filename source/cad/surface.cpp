@@ -67,6 +67,7 @@ void Surface::tessellate()
 	const Poly_Array1OfTriangle& triangles = triangulation->Triangles();
 	const TColgp_Array1OfPnt2d& uvNodes = triangulation->UVNodes();
 	m_surfaceUVRep.resize( 2 * 3 * num_triangles );
+	m_surfacePointIndecies.resize( 3 * num_triangles );
 	Standard_Integer n1, n2, n3 = 0;
 	Standard_Integer num_invalid_triangles = 0;
 	Standard_Integer current_triangle = 0;
@@ -86,10 +87,13 @@ void Surface::tessellate()
 			gp_Pnt2d uv2 = uvNodes.Value(n2);
 			gp_Pnt2d uv3 = uvNodes.Value(n3);
 
+			m_surfacePointIndecies.push_back( 3 * current_triangle + 0 );
 			m_surfaceUVRep[ 6 * current_triangle + 0 ] = uv1.X();
 			m_surfaceUVRep[ 6 * current_triangle + 1 ] = uv1.Y();
+			m_surfacePointIndecies.push_back( 3 * current_triangle + 1 );
 			m_surfaceUVRep[ 6 * current_triangle + 2 ] = uv2.X();
 			m_surfaceUVRep[ 6 * current_triangle + 3 ] = uv2.Y();
+			m_surfacePointIndecies.push_back( 3 * current_triangle + 2 );
 			m_surfaceUVRep[ 6 * current_triangle + 4 ] = uv3.X();
 			m_surfaceUVRep[ 6 * current_triangle + 5 ] = uv3.Y();
 
@@ -111,8 +115,8 @@ int Surface::surfacePoint(double u, double v, double *point, double *uDerivative
 	int return_code = 0;
 	gp_Vec d1u, d1v;
 	gp_Pnt pnt;
-	// This may raise an exception, but of what type?
-	//try {
+	if (point)
+	{
 		m_surface->D1(u, v, pnt, d1u, d1v );
 		int reverse = 1;
 		if ((m_face.Orientation() == TopAbs_REVERSED))
@@ -131,8 +135,7 @@ int Surface::surfacePoint(double u, double v, double *point, double *uDerivative
 			vDerivative[2] = d1v.Z();
 		}
 		return_code = 1;
-	//} catch {
-	//}
+	}
 
 	return return_code;
 }

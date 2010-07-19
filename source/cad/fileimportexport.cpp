@@ -7,12 +7,12 @@
 #include <IGESControl_Reader.hxx>
 #include <STEPControl_Reader.hxx>
 #include <FSD_File.hxx>
-#include <ShapeSchema.hxx>
+//#include <ShapeSchema.hxx>
 #include <Storage_Root.hxx>
 #include <Storage_HSeqOfRoot.hxx>
-#include <PTopoDS_HShape.hxx>
+//#include <PTopoDS_HShape.hxx>
 #include <PTColStd_PersistentTransientMap.hxx>
-#include <MgtBRep.hxx>
+//#include <MgtBRep.hxx>
 #include <IGESCAFControl_Reader.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <TDocStd_Document.hxx>
@@ -68,7 +68,7 @@ bool FileImportExport::importBREP( const std::string& file )
 		m_sequenceOfShapes->Append( aShape );
 	}
 
-	return result;
+	return (result == (Standard_Boolean)1);
 }
 
 bool FileImportExport::importIGES( const std::string& file )

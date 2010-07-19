@@ -1,5 +1,7 @@
 #include "transformoccmodel.h"
 
+#include <time.h>
+
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Solid.hxx>
@@ -182,7 +184,7 @@ bool TransformOCCModel::hasChildren( const TDF_Label& label )
 {
 	TDF_ChildIterator it( label );
 
-	return it.More();
+	return (it.More() == (Standard_Boolean)1);
 }
 
 void TransformOCCModel::addLabelContents( const TDF_Label& label )
@@ -600,7 +602,8 @@ bool TransformOCCModel::stylePrint( const TDF_Label& aLabel, const TopLoc_Locati
 			" --> si_" << i << ( s.IsVisible() ? "" : " <invisible>" ) << std::endl;
 		i++;
 		// Add styled shape to store
-		TopologicalShape* ts = new TopologicalShape( it.Value() );
+		Cad_colour_map colourMap;
+		TopologicalShape* ts = new TopologicalShape( it.Value(), colourMap );
 
 		ts->label( labelName.ToCString() );
 		if ( s.IsSetColorSurf() )

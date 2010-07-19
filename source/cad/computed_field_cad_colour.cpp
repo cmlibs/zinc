@@ -42,16 +42,14 @@
 
 extern "C" {
 #include <stdlib.h>
-#include "computed_field/computed_field.h"
-}
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_set.h"
-extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
+#include "computed_field/computed_field.h"
 }
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_set.h"
 
 #include "cad/computed_field_cad_colour.h"
 #include "cad/field_location.hpp"
@@ -145,7 +143,11 @@ int Computed_field_cad_colour::evaluate_cache_at_location(
 		//printf("need to populate some values here\n");
 		double colour[3];
 		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-		if (Computed_field_cad_topology_get_surface_colour(cad_topology, cad_colour_location->index(), cad_colour_location->u(), cad_colour_location->v(), colour))
+		if (Computed_field_cad_topology_get_surface_colour(cad_topology,
+				cad_colour_location->get_identifier(),
+				cad_colour_location->get_u(),
+				cad_colour_location->get_v(),
+				colour))
 		{
 			field->values[0] = colour[0];
 			field->values[1] = colour[1];
@@ -153,7 +155,7 @@ int Computed_field_cad_colour::evaluate_cache_at_location(
 			//printf("colour is: (%.2f,%.2f,%.2f)\n", colour[0], colour[1], colour[2]);
 			return_code = 1;
 		}
-		Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
+		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		//Computed_field_cad_colour *cad_colour = static_cast<Computed_field_cad_colour*>(field->core);
 		//field->source_fields[0]->core->evaluate_cache_at_location(location);
 		//field->values[0] = Computed_field_surface_point(field->source_fields[0], cad_colour_location->surface_index(), cad_colour_location->point_index(), 0);
@@ -269,9 +271,8 @@ Cmiss_field_cad_colour_id Cmiss_field_cad_colour_cast(Cmiss_field_id field)
 /**
  * @see Cmiss_field_create_cad_colour
  */
-Cmiss_field_id Computed_field_create_cad_colour(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
+Cmiss_field_id Computed_field_module_create_cad_colour(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
 {
-	ENTER(Computed_field_create_cad_colour);
 	struct Computed_field *field = NULL;
 	Computed_field *source_fields[1];
 
@@ -305,7 +306,6 @@ Cmiss_field_id Computed_field_create_cad_colour(Cmiss_field_module_id field_modu
 		display_message( ERROR_MESSAGE, "Computed_field_create_cad_colour.  "
 			"Invalid argument(s)" );
 	}
-	LEAVE;
 
 	return (field);
 } /* Computed_field_create_cad_colour */

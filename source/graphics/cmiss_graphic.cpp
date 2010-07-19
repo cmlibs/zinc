@@ -2999,51 +2999,69 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 	int return_code = 0;
 	float time = 0.0;
 	struct Cmiss_graphic *graphic = graphic_to_object_data->graphic;
+	Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field);
 
-	switch (graphic->graphic_type)
+	if (cad_topology)
 	{
-		case CMISS_GRAPHIC_SURFACES:
+		switch (graphic->graphic_type)
 		{
-			//printf( "Building cad geometry surfaces\n" );
-			struct GT_surface *surface = create_surface_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type);
-			if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
+			case CMISS_GRAPHIC_SURFACES:
 			{
-				//printf( "Surface added to graphics object\n" );
+				//printf( "Building cad geometry surfaces\n" );
 				return_code = 1;
+				int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
+				printf("creating cad graphic objects with %d surfaces.\n", surface_count);
+				for (int i = 0; i < surface_count && return_code; i++)
+				{
+					Cmiss_cad_surface_identifier identifier = i;
+					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field,
+						graphic->data_field, graphic->render_type, identifier);
+					if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
+					{
+						//printf( "Surface added to graphics object\n" );
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				if (!return_code)
+				{
+					//DESTROY(GT_surface)(&surface);
+					// DESTROY(GT_Surface) for each in graphic
+				}
+				break;
 			}
-			else
+			case CMISS_GRAPHIC_LINES:
 			{
-				DESTROY(GT_surface)(&surface);
-			}
-			break;
-		}
-		case CMISS_GRAPHIC_LINES:
-		{
-			//struct GT_object *graphics_object = settings->graphics_object;
-			/*
-			GT_polyline_vertex_buffers *lines =
-				CREATE(GT_polyline_vertex_buffers)(
-				g_PLAIN, settings->line_width);
-			*/
-			GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
-			if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-				graphic->graphics_object, lines))
+				//struct GT_object *graphics_object = settings->graphics_object;
+				/*
+				GT_polyline_vertex_buffers *lines =
+					CREATE(GT_polyline_vertex_buffers)(
+					g_PLAIN, settings->line_width);
+				*/
+				GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
+				if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+					graphic->graphics_object, lines))
+				{
+					printf("Adding lines for cad shape\n");
+					return_code = 1;
+				}
+				else
+				{
+					//DESTROY(GT_polyline_vertex_buffers)(&lines);
+					return_code = 0;
+				}
+			} break;
+			default:
 			{
-				printf("Adding lines for cad shape\n");
-				return_code = 1;
-			}
-			else
-			{
-				//DESTROY(GT_polyline_vertex_buffers)(&lines);
+				display_message(ERROR_MESSAGE,"Cad_geometry_to_graphics_object.  "
+					"Can't handle this type of graphic");
 				return_code = 0;
 			}
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,"Cad_geometry_to_graphics_object.  "
-				"Can't handle this type of graphic");
-			return_code = 0;
 		}
+		Cmiss_field_destroy((Cmiss_field_id*)&cad_topology);
 	}
 
 	return return_code;
@@ -3664,11 +3682,39 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
 							case CMISS_GRAPHIC_SURFACES:
+#if defined(USE_OPENCASCADE)
+							{
+								// test here for domain of rc_coordinate_field
+								// we are looking here for a cad topology domain
+								if (graphic->coordinate_field)
+								{
+									coordinate_field = graphic->coordinate_field;
+								}
+								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+								int return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
+								if ( return_code )
+								{
+									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+										( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+									if ( cad_topology_field )
+									{
+										// Set cad topology highlight functor
+										Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+										GT_object_set_cad_primitive_highlight_functor(graphic->graphics_object,
+											(void *)graphic_to_object_data->group_field, cad_topology);
+										Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
+										break;
+									}
+								}
+								if ( domain_field_list )
+									DESTROY_LIST(Computed_field)(&domain_field_list);
+							}
+#endif /* defined(USE_OPENCASCADE) */
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							case CMISS_GRAPHIC_VOLUMES:
 							{
-                GT_object_set_element_highlight_functor(graphic->graphics_object,
-                  (void *)graphic_to_object_data->group_field);
+								GT_object_set_element_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field);
 							} break;
 							case CMISS_GRAPHIC_ELEMENT_POINTS:
 							{

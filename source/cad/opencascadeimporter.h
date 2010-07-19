@@ -57,49 +57,66 @@
 #include "cad/cadimporter.h"
 
 /**
-	@author user <hsorby@eggzachary>
-*/
+ * A class to facilitate importing data from files via OpenCASCADE into a region.
+ */
 class OpenCascadeImporter : public CADImporter
 {
 public:
+	/**
+	 * Create an OpenCASCADE importer, optionally given a file name.
+	 * @param fileName a file name to import data from, optionally set here.
+	 */
 	OpenCascadeImporter( const char *fileName = "" );
 	~OpenCascadeImporter();
 
-	bool import( struct Cmiss_region *region );
-	bool import();
-
-	void buildGeometricShapes();
-	const std::vector<GeometricShape*>& geometricShapes() const { return m_geometricShapes; }
-
-private:
-	// Getting topology related functions
-	void mapShapes( Handle_TopTools_HSequenceOfShape shapes );
-	bool RemapDocToRegionsAndFields( Handle_TDocStd_Document doc, struct Cmiss_region *region );
-	bool createGeometricShapes( Handle_TDocStd_Document doc );
-	void mapShape( TopoDS_Shape shape );
-	bool addShapeToRegion( const TDF_Label& label, const TopLoc_Location& aLocation, struct Cmiss_region *parent );
-	bool addGeometricShapeToList( const TDF_Label& label, const TopLoc_Location& aLocation );
-	bool labelTraversal(const TDF_Label& aLabel, const TopLoc_Location& aLocation, struct Cmiss_region *parent );
-	bool labelTraversal(const TDF_Label& aLabel, const TopLoc_Location& aLocation );
-
-	// Getting geometry related functions
-	void healGeometry( TopoDS_Shape shape, double tolerance, bool fixsmalledges,
-		bool fixspotstripfaces, bool sewfaces,
-		bool makesolids = false);
-	void clearMaps();
-	void recurseTopologicalShapesAndBuildGeometricShapes( TopologicalShape* shape );
-	void buildMaps( const TopoDS_Shape& shape );
-	void extractPoints( GeometricShape* geoShape );
-	void extractCurvesAndSurfaces( GeometricShape* geoShape );
+	/**
+	 * Import the file passed to the constructor or set with fileName(const char *name)
+	 * into the given region.
+	 * @param the region to import the data from the file into
+	 * @returns true if successful, false otherwise
+	 * @see #fileName(const char *name)
+	 */
+	bool import( Cmiss_region_id region );
 
 private:
-	std::vector<GeometricShape*> m_geometricShapes;
+	/**
+	 * Convert an OpenCASCADE Extended Data Exchange (XDE) document into regions and fields.
+	 * An XDE document is internally managed as a DOM document, there exists a limited API to
+	 * query, analyse and extract information contained in the document.  New version using
+	 * shape colour search.
+	 * @param xdeDoc a handle to a valid XDE document
+	 * @param region the region to create cad defined regions and fields into
+	 * @returns true if successful, false otherwise
+	 */
+	bool convertDocToRegionsAndFields( Handle_TDocStd_Document xdeDoc, Cmiss_region_id region );
+	/**
+	 * Add a computed field cad topology to the given region.  Here we also add the geometric representation
+	 * of the shape attached to the given label, for displaying, and also we create a colour representation 
+	 * for the shape (if available) so that the shape can be visualised as expected.
+	 * @param xdeDoc a handle to a valid XDE document
+	 * @param label the current document label
+	 * @param location the current location
+	 * @param parent the region to create cad defined regions and fields into
+	 * @returns true if successful, false otherwise
+	 */
+	bool addShapeToRegion( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location , Cmiss_region_id parent );
+	/**
+	 * Traverse the labels in an XDE document.  This is necessary when dealing with assemblies, an assembly doesn't contain any shape 
+	 * information it is only a container for other assemblies or shapes.
+	 * @param xdeDoc a handle to a valid XDE document
+	 * @param label the current document label
+	 * @param location the current location
+	 * @param parent the region to create cad defined regions and fields into
+	 * @returns true if successful, false otherwise
+	 */
+	bool labelTraversal(Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location, Cmiss_region_id parent );
 
-	TopologicalShapeRoot m_rootShape;
-
-	TopTools_IndexedMapOfShape m_cmap, m_csmap, m_somap, m_shmap, m_fmap, m_emap, m_vmap;
-	Handle_TDocStd_Document m_doc;
-
+	/**
+	 * Get the label name if it exists, this may return an empty string ""
+	 * @param label the label to get name attribute from
+	 * @returns a char * that points to the name that has been allocated, must be freed
+	 */
+	char *OpenCascadeImporter::getLabelName(const TDF_Label& label);
 };
 
 #endif

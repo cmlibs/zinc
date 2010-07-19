@@ -18,20 +18,25 @@
 */
 class Surface;
 typedef const Surface *surface_id;
+typedef std::vector<int>::iterator Surface_point_iterator;
+typedef std::vector<int>::const_iterator Surface_point_const_iterator;
 
 class Surface : public Entity
 {
 public:
-    Surface( Entity* parent = 0 );
-    Surface( TopoDS_Face face, Entity* parent = 0 );
-    ~Surface();
+	Surface( Entity* parent = 0 );
+	Surface( TopoDS_Face face, Entity* parent = 0 );
+	~Surface();
 
-    surface_id id() const {return this;}
-    int uvPoints(int point_index, double &u, double &v) const;
-    int surfacePoint(double u, double v, double *point, double *uDerivative = 0, double *vDerivative = 0) const;
+	surface_id id() const {return this;}
+	int uvPoints(int point_index, double &u, double &v) const;
+	int surfacePoint(double u, double v, double *point, double *uDerivative = 0, double *vDerivative = 0) const;
 
-    inline bool isEmpty() const { return m_surfaceUVRep.empty(); }
+	inline bool isEmpty() const { return m_surfaceUVRep.empty(); }
 	inline int pointCount() const { return m_surfaceUVRep.size() / 2; }
+
+	Surface_point_iterator point_index_iterator() { return m_surfacePointIndecies.begin(); }
+	Surface_point_const_iterator point_index_iterator() const { return m_surfacePointIndecies.begin(); }
 
 	void tessellate();
 
@@ -39,12 +44,13 @@ private:
 	Standard_Boolean triangleIsValid(const gp_Pnt& P1, const gp_Pnt& P2, const gp_Pnt& P3);
 
 private:
-    TopoDS_Face m_face;
+	TopoDS_Face m_face;
 	Handle_Geom_Surface m_surface;
 	GeomAPI_ProjectPointOnSurf m_project;
 	Quantity_Color m_colour;
 
-    std::vector<double> m_surfaceUVRep;
+	std::vector<double> m_surfaceUVRep;
+	std::vector<int> m_surfacePointIndecies;
 };
 
 #endif

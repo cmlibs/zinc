@@ -41,16 +41,15 @@
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <stdlib.h>
-#include "computed_field/computed_field.h"
-}
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_set.h"
-extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
+#include "computed_field/computed_field.h"
 }
+
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_set.h"
 
 #include "cad/computed_field_cad_geometry.h"
 #include "cad/computed_field_cad_topology.h"
@@ -167,7 +166,6 @@ int Computed_field_cad_geometry::evaluate_cache_at_location(
 {
 	int return_code = 0;
 
-	ENTER(Computed_field_cad_geometry::evaluate_cache_at_location);
 	if (field && field->source_fields[0])
 	{
 		Field_cad_geometry_surface_location *cad_geometry_surface_location = dynamic_cast<Field_cad_geometry_surface_location*>(location);
@@ -179,8 +177,12 @@ int Computed_field_cad_geometry::evaluate_cache_at_location(
 			//field->source_fields[0]->core->evaluate_cache_at_location(location);
 			double point[3], uDerivative[3], vDerivative[3];
 			Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-			if ((field->source_fields[0] == (Computed_field *)cad_geometry_surface_location->id()) &&
-				Computed_field_cad_topology_get_surface_point(cad_topology, cad_geometry_surface_location->index(), cad_geometry_surface_location->u(), cad_geometry_surface_location->v(), point, uDerivative, vDerivative))
+			if ((field->source_fields[0] == (Computed_field *)cad_geometry_surface_location->get_id()) &&
+				Computed_field_cad_topology_get_surface_point(cad_topology,
+					cad_geometry_surface_location->get_identifier(),
+					cad_geometry_surface_location->get_u(),
+					cad_geometry_surface_location->get_v(),
+					point, uDerivative, vDerivative))
 			{
 				field->values[0] = point[0];
 				field->values[1] = point[1];
@@ -201,14 +203,17 @@ int Computed_field_cad_geometry::evaluate_cache_at_location(
 				//printf( "START[%.2f, %.2f , %.2f] ", field->values[0], field->values[1], field->values[2] );
 				return_code = 1;
 			}
-			Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
+			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		}
 		else if (cad_geometry_curve_location)
 		{
 			double point[3];
 			Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
-			if ((field->source_fields[0] == (Computed_field *)cad_geometry_curve_location->id()) &&
-				Computed_field_cad_topology_get_curve_point(cad_topology, cad_geometry_curve_location->index(), cad_geometry_curve_location->s(), point))
+			if ((field->source_fields[0] == (Computed_field *)cad_geometry_curve_location->get_id()) &&
+				Computed_field_cad_topology_get_curve_point(cad_topology,
+					cad_geometry_curve_location->get_identifier(),
+					cad_geometry_curve_location->get_s(),
+					point))
 			{
 				field->values[0] = point[0];
 				field->values[1] = point[1];
@@ -216,7 +221,7 @@ int Computed_field_cad_geometry::evaluate_cache_at_location(
 				//printf("START: (%.2f,%.2f,%.2f)\n", point[0], point[1], point[2]);
 				return_code = 1;
 			}
-			Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
+			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		}
 	}
 	else
@@ -224,7 +229,6 @@ int Computed_field_cad_geometry::evaluate_cache_at_location(
 		display_message(ERROR_MESSAGE,
 			"Computed_field_cad_geometry::evaluate_cache_at_location.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Computed_field_cad_geometry::evaluate_cache_at_location */
@@ -326,7 +330,7 @@ Cmiss_field_cad_geometry_id Cmiss_field_cad_geometry_cast(Cmiss_field_id field)
 /**
  * @see Cmiss_field_create_cad_geometry
  */
-Cmiss_field_id Computed_field_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
+Cmiss_field_id Computed_field_module_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_source_field)
 //Cmiss_field_id Computed_field_create_cad_geometry( Cmiss_field_id source_field, GeometricShape *shape )
 {
 	ENTER(Computed_field_create_cad_geometry);
