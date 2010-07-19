@@ -1978,6 +1978,109 @@ Uses pack bits compression to compress a stream of bytes to a file.
 	return (return_code);
 } /* pack_bits_compress_to_file */
 
+#if defined (USE_PNG)
+#include <png.h>
+
+int write_png_image_file(char *file_name,
+	int number_of_components, int number_of_bytes_per_component,
+	int number_of_columns, int number_of_rows, int row_padding,
+	unsigned long *image)
+{
+	FILE *output_file = NULL;
+	png_structp png_ptr = NULL;
+	png_infop info_ptr = NULL;
+	png_bytep row = NULL;
+	png_text title_text;
+	unsigned char pixel_char[4];
+	unsigned long *long_pixel;
+	int x, y, return_code = 0;
+
+	if (file_name && (4 == number_of_components) && (0 < number_of_columns) &&
+		(0 < number_of_rows) && image)
+	{
+		if (output_file = fopen(file_name, "wb"))
+		{
+			png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+			info_ptr = png_create_info_struct(png_ptr);
+			if (png_ptr != NULL && info_ptr != NULL )
+			{
+				/* set error handling */
+				if (setjmp(png_ptr->jmpbuf))
+				{
+					display_message(ERROR_MESSAGE, "Error during png creation in write_png_image_file." );
+				}
+				else
+				{
+					/* set up the output control */
+					png_init_io(png_ptr, output_file);
+
+					/* Write header (8 bit colour depth) */
+					png_set_IHDR(png_ptr, info_ptr, number_of_columns, number_of_rows,
+						8 * number_of_bytes_per_component, PNG_COLOR_TYPE_RGBA,
+						PNG_INTERLACE_NONE /* or PNG_INTERLACE_ADAM7 */,
+						PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+					/* Set title */
+					title_text.compression = PNG_TEXT_COMPRESSION_NONE;
+					title_text.key = "Title";
+					title_text.text = "Cmgui png file";
+					png_set_text(png_ptr, info_ptr, &title_text, 1);
+					
+					/* initialize the structures */
+					png_write_info(png_ptr, info_ptr);
+
+					/* Allocate memory for one row (4 bytes per pixel - RGBA) */
+					ALLOCATE(row, png_byte, number_of_components * number_of_columns);
+
+					/* write the image data */
+					for (y = number_of_rows-1; y >= 0; y--)
+					{
+						for (x = 0; x < number_of_columns; x++)
+						{
+							long_pixel=((unsigned long *)image)+y*(number_of_columns+row_padding)+x;
+
+							pixel_char[3] = (unsigned char)(((0xff000000 & *long_pixel)) >> 24);
+							pixel_char[2] = (unsigned char)(((0x00ff0000 & *long_pixel)) >> 16);
+							pixel_char[1] = (unsigned char)(((0x0000ff00 & *long_pixel)) >> 8);
+							pixel_char[0] = (unsigned char)(((0x000000ff & *long_pixel)) >> 0);
+							row[x*number_of_components+0] = pixel_char[0];
+							row[x*number_of_components+1] = pixel_char[1];
+							row[x*number_of_components+2] = pixel_char[2];
+							row[x*number_of_components+3] = pixel_char[3];
+						}
+						png_write_row(png_ptr, row);
+					}
+
+					/* end write */
+					png_write_end(png_ptr, NULL);
+
+					DEALLOCATE(row);
+					return_code = 1;
+				}
+			}
+
+			fclose(output_file);
+			if (info_ptr != NULL)
+				png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+			if (png_ptr != NULL)
+				png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_png_image_file.  Could not open file '%s'", file_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_png_image_file.  Invalid argument(s)");
+	}
+
+	return return_code;
+}
+#endif /* defined (USE_PNG) */
+
 int write_tiff_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
@@ -7601,6 +7704,18 @@ that the images be adjoined in the single file.
 								/*row_padding*/0,
 								(unsigned long *)cmgui_image->image_arrays[i]);
 						} break;
+#if defined (USE_PNG)
+						case PNG_FILE_FORMAT:
+						{
+							return_code = write_png_image_file(file_name,
+								cmgui_image->number_of_components,
+								cmgui_image->number_of_bytes_per_component,
+								cmgui_image->width,
+								cmgui_image->height,
+								/*row_padding*/0,
+								(unsigned long *)cmgui_image->image_arrays[i]);
+						} break;
+#endif /* defined (USE_PNG) */
 						case TIFF_FILE_FORMAT:
 						{
 							return_code = write_tiff_image_file(file_name,
