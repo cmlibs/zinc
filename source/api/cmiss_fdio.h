@@ -76,7 +76,7 @@ DESCRIPTION :
 An identifier for an fdio object.
 ==============================================================================*/
 
-int DESTROY(Cmiss_fdio_package)(Cmiss_fdio_package_id *pkg);
+int Cmiss_fdio_package_destroy(Cmiss_fdio_package_id *pkg);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 
@@ -96,7 +96,7 @@ Creates and Cmiss_fdio object which can be used to add callbacks to the
 <descriptor>.
 ==============================================================================*/
 
-int DESTROY(Cmiss_fdio)(Cmiss_fdio_id* handle);
+int Cmiss_fdio_destroy(Cmiss_fdio_id* handle);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2005
 

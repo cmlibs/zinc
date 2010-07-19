@@ -58,7 +58,7 @@ extern "C" {
 #define Fdio_id Cmiss_fdio_id
 #define destroy_Fdio_package DESTROY(Cmiss_fdio_package)
 #define Fdio_package_create_Fdio Cmiss_fdio_package_create_Cmiss_fdio
-#define destroy_Fdio DESTROY(Cmiss_Fdio)
+#define destroy_Fdio DESTROY(Cmiss_fdio)
 #define Fdio_callback Cmiss_fdio_callback
 #define Fdio_set_read_callback Cmiss_fdio_set_read_callback
 #define Fdio_set_write_callback Cmiss_fdio_set_write_callback
@@ -73,6 +73,8 @@ LAST MODIFIED : 15 February 2005
 DESCRIPTION :
 Creates a new Cmiss_IO_package, given an event dispatcher.
 ==============================================================================*/
+
+int DESTROY(Fdio)(Cmiss_fdio_id* handle);
 
 #ifdef __cplusplus
 }
