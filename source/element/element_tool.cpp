@@ -7,40 +7,40 @@ DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is cmgui.
- *
- * The Initial Developer of the Original Code is
- * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+* Version: MPL 1.1/GPL 2.0/LGPL 2.1
+*
+* The contents of this file are subject to the Mozilla Public License Version
+* 1.1 (the "License"); you may not use this file except in compliance with
+* the License. You may obtain a copy of the License at
+* http://www.mozilla.org/MPL/
+*
+* Software distributed under the License is distributed on an "AS IS" basis,
+* WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+* for the specific language governing rights and limitations under the
+* License.
+*
+* The Original Code is cmgui.
+*
+* The Initial Developer of the Original Code is
+* Auckland Uniservices Ltd, Auckland, New Zealand.
+* Portions created by the Initial Developer are Copyright (C) 2005
+* the Initial Developer. All Rights Reserved.
+*
+* Contributor(s):
+*
+* Alternatively, the contents of this file may be used under the terms of
+* either the GNU General Public License Version 2 or later (the "GPL"), or
+* the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+* in which case the provisions of the GPL or the LGPL are applicable instead
+* of those above. If you wish to allow use of your version of this file only
+* under the terms of either the GPL or the LGPL, and not to allow others to
+* use your version of this file under the terms of the MPL, indicate your
+* decision by deleting the provisions above and replace them with the notice
+* and other provisions required by the GPL or the LGPL. If you do not delete
+* the provisions above, a recipient may use your version of this file under
+* the terms of any one of the MPL, the GPL or the LGPL.
+*
+* ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
@@ -61,9 +61,9 @@ extern "C" {
 #include "element/element_operations.h"
 #include "element/element_tool.h"
 #if defined (MOTIF_USER_INTERFACE)
-static char element_tool_uidh[] =
+	static char element_tool_uidh[] =
 #include "element/element_tool.uidh"
-	;
+		;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
@@ -118,12 +118,12 @@ class wxElementTool;
 
 
 struct Element_tool
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
+	/*******************************************************************************
+	LAST MODIFIED : 20 March 2003
 
-DESCRIPTION :
-Object storing all the parameters for interactively selecting elements.
-==============================================================================*/
+	DESCRIPTION :
+	Object storing all the parameters for interactively selecting elements.
+	==============================================================================*/
 {
 	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -154,8 +154,8 @@ Object storing all the parameters for interactively selecting elements.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
-	 wxElementTool *wx_element_tool;
-	 wxPoint tool_position;
+	wxElementTool *wx_element_tool;
+	wxPoint tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Element_tool */
 
@@ -166,27 +166,27 @@ Module functions
 
 #if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-	select_elements_button)
+select_elements_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-	select_faces_button)
+select_faces_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-	select_lines_button)
+select_lines_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,command_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,command_field_form)
 
 static void Element_tool_close_CB(Widget widget,void *element_tool_void,
-	void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
+								  void *call_data)
+								  /*******************************************************************************
+								  LAST MODIFIED : 20 July 2000
 
-DESCRIPTION :
-Callback when "close" is selected from the window menu, or it is double
-clicked. How this is made to occur is as follows. The dialog has its
-XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-function in response to the close command. See CREATE for more details.
-Function pops down dialog as a response,
-==============================================================================*/
+								  DESCRIPTION :
+								  Callback when "close" is selected from the window menu, or it is double
+								  clicked. How this is made to occur is as follows. The dialog has its
+								  XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+								  WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+								  function in response to the close command. See CREATE for more details.
+								  Function pops down dialog as a response,
+								  ==============================================================================*/
 {
 	struct Element_tool *element_tool;
 
@@ -206,14 +206,14 @@ Function pops down dialog as a response,
 } /* Element_tool_close_CB */
 
 static void Element_tool_select_elements_button_CB(Widget widget,
-	void *element_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
+												   void *element_tool_void,void *call_data)
+												   /*******************************************************************************
+												   LAST MODIFIED : 20 July 2000
 
-DESCRIPTION :
-Callback from toggle button controlling whether top-level & 3-D elements can be
-selected.
-==============================================================================*/
+												   DESCRIPTION :
+												   Callback from toggle button controlling whether top-level & 3-D elements can be
+												   selected.
+												   ==============================================================================*/
 {
 	struct Element_tool *element_tool;
 
@@ -233,14 +233,14 @@ selected.
 } /* Element_tool_select_elements_button_CB */
 
 static void Element_tool_select_faces_button_CB(Widget widget,
-	void *element_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
+												void *element_tool_void,void *call_data)
+												/*******************************************************************************
+												LAST MODIFIED : 20 July 2000
 
-DESCRIPTION :
-Callback from toggle button controlling whether face & 2-D top-level elements
-can be selected.
-==============================================================================*/
+												DESCRIPTION :
+												Callback from toggle button controlling whether face & 2-D top-level elements
+												can be selected.
+												==============================================================================*/
 {
 	struct Element_tool *element_tool;
 
@@ -260,14 +260,14 @@ can be selected.
 } /* Element_tool_select_faces_button_CB */
 
 static void Element_tool_select_lines_button_CB(Widget widget,
-	void *element_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
+												void *element_tool_void,void *call_data)
+												/*******************************************************************************
+												LAST MODIFIED : 20 July 2000
 
-DESCRIPTION :
-Callback from toggle button controlling whether line & 1-D top-level elements
-can be selected.
-==============================================================================*/
+												DESCRIPTION :
+												Callback from toggle button controlling whether line & 1-D top-level elements
+												can be selected.
+												==============================================================================*/
 {
 	struct Element_tool *element_tool;
 
@@ -287,13 +287,13 @@ can be selected.
 } /* Element_tool_select_lines_button_CB */
 
 static void Element_tool_command_field_button_CB(Widget widget,
-	void *element_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
+												 void *element_tool_void,void *call_data)
+												 /*******************************************************************************
+												 LAST MODIFIED : 5 July 2002
 
-DESCRIPTION :
-Callback from toggle button enabling a command_field to be selected.
-==============================================================================*/
+												 DESCRIPTION :
+												 Callback from toggle button enabling a command_field to be selected.
+												 ==============================================================================*/
 {
 	struct Computed_field *command_field;
 	struct Element_tool *element_tool;
@@ -331,13 +331,13 @@ Callback from toggle button enabling a command_field to be selected.
 } /* Element_tool_command_field_button_CB */
 
 static void Element_tool_update_command_field(Widget widget,
-	void *element_tool_void, void *command_field_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
+											  void *element_tool_void, void *command_field_void)
+											  /*******************************************************************************
+											  LAST MODIFIED : 5 July 2002
 
-DESCRIPTION :
-Callback for change of command_field.
-==============================================================================*/
+											  DESCRIPTION :
+											  Callback for change of command_field.
+											  ==============================================================================*/
 {
 	struct Element_tool *element_tool;
 
@@ -361,15 +361,15 @@ Callback for change of command_field.
 } /* Element_tool_update_command_field */
 
 static void Element_tool_destroy_selected_CB(Widget widget,
-	void *element_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
+											 void *element_tool_void,void *call_data)
+											 /*******************************************************************************
+											 LAST MODIFIED : 20 March 2003
 
-DESCRIPTION :
-Attempts to destroy all the top-level elements currently in the global
-selection. ???RC could change to allow faces and lines to be destroyed, but
-need other safeguard controls before allowing this.
-==============================================================================*/
+											 DESCRIPTION :
+											 Attempts to destroy all the top-level elements currently in the global
+											 selection. ???RC could change to allow faces and lines to be destroyed, but
+											 need other safeguard controls before allowing this.
+											 ==============================================================================*/
 {
 	int number_not_destroyed;
 	struct Element_tool *element_tool;
@@ -385,7 +385,7 @@ need other safeguard controls before allowing this.
 		{
 			COPY_LIST(FE_element)(destroy_element_list,
 				FE_element_selection_get_element_list(
-					element_tool->element_selection));
+				element_tool->element_selection));
 			fe_region = Cmiss_region_get_FE_region(element_tool->region);
 			FE_region_begin_change(fe_region);
 			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
@@ -425,8 +425,8 @@ Resets current edit. Called on button release or when tool deactivated.
 	{
 		REACCESS(FE_element)(&(element_tool->last_picked_element),
 			(struct FE_element *)NULL);
-    REACCESS(Cmiss_rendition)(&(element_tool->rendition),
-      (struct Cmiss_rendition *)NULL);
+		REACCESS(Cmiss_rendition)(&(element_tool->rendition),
+			(struct Cmiss_rendition *)NULL);
 		REACCESS(Interaction_volume)(
 			&(element_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
@@ -481,7 +481,7 @@ release.
 			shift_pressed=(INTERACTIVE_EVENT_MODIFIER_SHIFT & input_modifier);
 			switch (event_type)
 			{
-				case INTERACTIVE_EVENT_BUTTON_PRESS:
+			case INTERACTIVE_EVENT_BUTTON_PRESS:
 				{
 					/* interaction only works with first mouse button */
 					if (1==Interactive_event_get_button_number(event))
@@ -513,7 +513,7 @@ release.
 											time = 0;
 										}
 										/* since we don't really have fields constant over an
-											 element, evaluate at its centre */
+										element, evaluate at its centre */
 										element_dimension =
 											get_FE_element_dimension(picked_element);
 										for (i = 0; i < element_dimension; i++)
@@ -533,9 +533,9 @@ release.
 											}
 											/*???debug*/printf("\n");
 											if (element_tool->execute_command && (NULL != (command_string =
-														Computed_field_evaluate_as_string_in_element(
-															element_tool->command_field, /*component_number*/-1,
-															picked_element, xi, time, (struct FE_element *)NULL))))
+												Computed_field_evaluate_as_string_in_element(
+												element_tool->command_field, /*component_number*/-1,
+												picked_element, xi, time, (struct FE_element *)NULL))))
 											{
 												Execute_command_execute_string(element_tool->execute_command,
 													command_string);
@@ -556,75 +556,75 @@ release.
 							if (clear_selection = !shift_pressed)
 #if defined (OLD_CODE)
 								&&((!picked_element)||
-									(element_tool->picked_element_was_unselected))))
+								(element_tool->picked_element_was_unselected))))
 #endif /*defined (OLD_CODE) */
 							{
-                if (element_tool->region)
-                {
-                  Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
-                    element_tool->region);
-                  Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
-                    root_rendition);
-                  if (root_group_field)
-                  {
-                    Cmiss_field_group_id root_group =
-                      Cmiss_field_cast_group(root_group_field);
-                    Cmiss_field_group_clear_region_tree_element(root_group);
-                    Cmiss_field_destroy(&root_group_field);
-                    root_group_field = reinterpret_cast<Computed_field *>(root_group);
-                    Cmiss_field_destroy(&root_group_field);
-                  }
-                  Cmiss_rendition_destroy(&root_rendition);
-                }
+								if (element_tool->region)
+								{
+									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
+										element_tool->region);
+									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+										root_rendition);
+									if (root_group_field)
+									{
+										Cmiss_field_group_id root_group =
+											Cmiss_field_cast_group(root_group_field);
+										Cmiss_field_group_clear_region_tree_element(root_group);
+										Cmiss_field_destroy(&root_group_field);
+										root_group_field = reinterpret_cast<Computed_field *>(root_group);
+										Cmiss_field_destroy(&root_group_field);
+									}
+									Cmiss_rendition_destroy(&root_rendition);
+								}
 							}
 							if (picked_element)
 							{
 								REACCESS(Cmiss_rendition)(&(element_tool->rendition),
 									rendition);
-                Cmiss_region *sub_region = NULL;
-                Cmiss_field_group_id sub_group = NULL;
-                Cmiss_field_id sub_group_field = NULL;
-                Cmiss_field_id element_group_field = NULL;
-                Cmiss_field_element_group_template_id element_group = NULL;
-                if (element_tool->rendition)
-                {
-                  sub_region = Cmiss_rendition_get_region(element_tool->rendition);
-                  sub_group_field = Cmiss_rendition_get_selection_group(element_tool->rendition);
-                  sub_group = Cmiss_field_cast_group(sub_group_field);
-                  if (sub_group)
-                  {
-                    element_group_field = Cmiss_field_group_create_element_group(sub_group);
-                    if (element_group_field)
-                    {
-                      element_group =
-                        Cmiss_field_cast_element_group_template(element_group_field);
-                      Cmiss_field_destroy(&element_group_field);
-                    }
-                  }
-                }
+								Cmiss_region *sub_region = NULL;
+								Cmiss_field_group_id sub_group = NULL;
+								Cmiss_field_id sub_group_field = NULL;
+								Cmiss_field_id element_group_field = NULL;
+								Cmiss_field_element_group_template_id element_group = NULL;
+								if (element_tool->rendition)
+								{
+									sub_region = Cmiss_rendition_get_region(element_tool->rendition);
+									sub_group_field = Cmiss_rendition_get_selection_group(element_tool->rendition);
+									sub_group = Cmiss_field_cast_group(sub_group_field);
+									if (sub_group)
+									{
+										element_group_field = Cmiss_field_group_create_element_group(sub_group);
+										if (element_group_field)
+										{
+											element_group =
+												Cmiss_field_cast_element_group_template(element_group_field);
+											Cmiss_field_destroy(&element_group_field);
+										}
+									}
+								}
 
-                if (sub_region && sub_group_field && element_group)
-                {
-                  Cmiss_field_element_group_template_add_element(element_group,
-                    picked_element);
-                  Computed_field_changed(sub_group_field);
-                }
-                if (sub_group_field)
-                {
-                  Cmiss_field_destroy(&sub_group_field);
-                }
-                if (sub_group)
-                {
-                  sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-                  Cmiss_field_destroy(&sub_group_field);
-                  sub_group = NULL;
-                }
-                if (element_group)
-                {
-                  Cmiss_field_id temporary_handle =
-                    reinterpret_cast<Computed_field *>(element_group);
-                  Cmiss_field_destroy(&temporary_handle);
-                }
+								if (sub_region && sub_group_field && element_group)
+								{
+									Cmiss_field_element_group_template_add_element(element_group,
+										picked_element);
+									Computed_field_changed(sub_group_field);
+								}
+								if (sub_group_field)
+								{
+									Cmiss_field_destroy(&sub_group_field);
+								}
+								if (sub_group)
+								{
+									sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+									Cmiss_field_destroy(&sub_group_field);
+									sub_group = NULL;
+								}
+								if (element_group)
+								{
+									Cmiss_field_id temporary_handle =
+										reinterpret_cast<Computed_field *>(element_group);
+									Cmiss_field_destroy(&temporary_handle);
+								}
 							}
 							if (clear_selection)
 							{
@@ -637,8 +637,8 @@ release.
 							&(element_tool->last_interaction_volume),interaction_volume);
 					}
 				} break;
-				case INTERACTIVE_EVENT_MOTION_NOTIFY:
-				case INTERACTIVE_EVENT_BUTTON_RELEASE:
+			case INTERACTIVE_EVENT_MOTION_NOTIFY:
+			case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
 					if (element_tool->last_interaction_volume&&
 						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
@@ -698,83 +698,83 @@ release.
 										graphics_buffer))
 									{
 										Region_element_map *element_map =
-												(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
-                        scene_picked_object_list,
-                        element_tool->select_elements_enabled,
-                        element_tool->select_faces_enabled,
-                        element_tool->select_lines_enabled);
+											(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
+											scene_picked_object_list,
+											element_tool->select_elements_enabled,
+											element_tool->select_faces_enabled,
+											element_tool->select_lines_enabled);
 										if (element_map)
 										{
-                      Cmiss_region *sub_region = NULL;
-                      Cmiss_field_group_id sub_group = NULL;
-                      Cmiss_field_id sub_group_field = NULL;
-                      Cmiss_field_id element_group_field = NULL;
-                      Cmiss_rendition *region_rendition = NULL;
-                      Cmiss_field_element_group_template_id element_group = NULL;
-                      Region_element_map::iterator pos;
-                      for (pos = element_map->begin(); pos != element_map->end(); ++pos)
-                      {
-                        if (pos->first != sub_region)
-                        {
-                          if (sub_region && sub_group_field)
-                          {
-                            Computed_field_changed(sub_group_field);
-                            Cmiss_field_destroy(&sub_group_field);
-                            sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-                            Cmiss_field_destroy(&sub_group_field);
-                            sub_group = NULL;
-                          }
-                          if (element_group_field)
-                          {
-                            Cmiss_field_destroy(&element_group_field);
-                          }
-                          if (region_rendition)
-                          {
-                            Cmiss_rendition_begin_cache(region_rendition);
-                            Cmiss_rendition_end_cache(region_rendition);
-                            Cmiss_rendition_destroy(&region_rendition);
-                          }
-                          sub_region = pos->first;
-                          if (sub_region)
-                          {
-                            region_rendition= Cmiss_rendition_get_from_region(sub_region);
-                            sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
-                            sub_group = Cmiss_field_cast_group(sub_group_field);
-                          }
-                          if (sub_group)
-                          {
-                            element_group_field = Cmiss_field_group_create_element_group(sub_group);
-                            if (element_group_field)
-                            {
-                              element_group =
-                                Cmiss_field_cast_element_group_template(element_group_field);
-                              Cmiss_field_destroy(&element_group_field);
-                              element_group_field = reinterpret_cast<Computed_field *>(element_group);
-                            }
-                          }
-                        }
-                        if (sub_region && sub_group_field && element_group)
-                        {
-                          Cmiss_field_element_group_template_add_element(element_group,
-                            pos->second);
-                        }
-                      }
-                      if (sub_region && sub_group_field)
-                      {
-                        Computed_field_changed(sub_group_field);
-                        Cmiss_field_destroy(&sub_group_field);
-                        sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-                        Cmiss_field_destroy(&sub_group_field);
-                        sub_group = NULL;
-                      }
-                      if (element_group_field)
-                      {
-                        Cmiss_field_destroy(&element_group_field);
-                      }
-                      if (region_rendition)
-                      {
-                        Cmiss_rendition_destroy(&region_rendition);
-                      }
+											Cmiss_region *sub_region = NULL;
+											Cmiss_field_group_id sub_group = NULL;
+											Cmiss_field_id sub_group_field = NULL;
+											Cmiss_field_id element_group_field = NULL;
+											Cmiss_rendition *region_rendition = NULL;
+											Cmiss_field_element_group_template_id element_group = NULL;
+											Region_element_map::iterator pos;
+											for (pos = element_map->begin(); pos != element_map->end(); ++pos)
+											{
+												if (pos->first != sub_region)
+												{
+													if (sub_region && sub_group_field)
+													{
+														Computed_field_changed(sub_group_field);
+														Cmiss_field_destroy(&sub_group_field);
+														sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+														Cmiss_field_destroy(&sub_group_field);
+														sub_group = NULL;
+													}
+													if (element_group_field)
+													{
+														Cmiss_field_destroy(&element_group_field);
+													}
+													if (region_rendition)
+													{
+														Cmiss_rendition_begin_cache(region_rendition);
+														Cmiss_rendition_end_cache(region_rendition);
+														Cmiss_rendition_destroy(&region_rendition);
+													}
+													sub_region = pos->first;
+													if (sub_region)
+													{
+														region_rendition= Cmiss_rendition_get_from_region(sub_region);
+														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+														sub_group = Cmiss_field_cast_group(sub_group_field);
+													}
+													if (sub_group)
+													{
+														element_group_field = Cmiss_field_group_create_element_group(sub_group);
+														if (element_group_field)
+														{
+															element_group =
+																Cmiss_field_cast_element_group_template(element_group_field);
+															Cmiss_field_destroy(&element_group_field);
+															element_group_field = reinterpret_cast<Computed_field *>(element_group);
+														}
+													}
+												}
+												if (sub_region && sub_group_field && element_group)
+												{
+													Cmiss_field_element_group_template_add_element(element_group,
+														pos->second);
+												}
+											}
+											if (sub_region && sub_group_field)
+											{
+												Computed_field_changed(sub_group_field);
+												Cmiss_field_destroy(&sub_group_field);
+												sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+												Cmiss_field_destroy(&sub_group_field);
+												sub_group = NULL;
+											}
+											if (element_group_field)
+											{
+												Cmiss_field_destroy(&element_group_field);
+											}
+											if (region_rendition)
+											{
+												Cmiss_rendition_destroy(&region_rendition);
+											}
 											delete element_map;
 										}
 										DESTROY(LIST(Scene_picked_object))(
@@ -790,7 +790,7 @@ release.
 						}
 					}
 				} break;
-				default:
+			default:
 				{
 					display_message(ERROR_MESSAGE,
 						"Element_tool_interactive_event_handler.  Unknown event type");
@@ -830,14 +830,14 @@ format for passing to an Interactive_toolbar.
 #endif /* defined (OPENGL_API) */
 
 static struct Cmgui_image *Element_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, void *element_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
+struct Colour *background, void *element_tool_void)
+	/*******************************************************************************
+	LAST MODIFIED : 5 July 2002
 
-DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
-==============================================================================*/
+	DESCRIPTION :
+	Fetches a ToggleButton with an appropriate icon for the interactive tool
+	and as a child of <parent>.
+	==============================================================================*/
 {
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
@@ -858,7 +858,7 @@ and as a child of <parent>.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(element_tool_hierarchy,
-					const_cast<char *>("element_tool_icon"),DefaultScreenOfDisplay(display),display,
+				const_cast<char *>("element_tool_icon"),DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);
@@ -911,7 +911,7 @@ Function to call DESTROY
 
 	if (element_tool = (struct Element_tool *)*element_tool_void)
 	{
-		 return_code = DESTROY(Element_tool)(&element_tool);
+		return_code = DESTROY(Element_tool)(&element_tool);
 	}
 	LEAVE;
 	return (return_code);
@@ -921,210 +921,210 @@ Function to call DESTROY
 #if defined (WX_USER_INTERFACE)
 class wxElementTool : public wxPanel
 {
-	 Element_tool *element_tool;
-	 wxCheckBox *button_element;
-	 wxCheckBox *button_face;
-	 wxCheckBox *button_line;	
-	 wxCheckBox *elementcommandfieldcheckbox;
-	 wxPanel *element_command_field_chooser_panel;
+	Element_tool *element_tool;
+	wxCheckBox *button_element;
+	wxCheckBox *button_face;
+	wxCheckBox *button_line;	
+	wxCheckBox *elementcommandfieldcheckbox;
+	wxPanel *element_command_field_chooser_panel;
 
-	 wxButton *button_destroy;
-	 struct MANAGER(Computed_field) *computed_field_manager;
-	 struct FE_region *fe_region;
-	 struct Computed_field *command_field;
-	 DEFINE_MANAGER_CLASS(Computed_field);
-	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *element_command_field_chooser;
+	wxButton *button_destroy;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct FE_region *fe_region;
+	struct Computed_field *command_field;
+	DEFINE_MANAGER_CLASS(Computed_field);
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+		*element_command_field_chooser;
 
 public:
 
-  wxElementTool(Element_tool *element_tool, wxPanel *parent): 
-    element_tool(element_tool)
-  {	 
-			wxXmlInit_element_tool();
-			wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
-			elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
-			element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
-			if (element_tool->region)
-			{
-				computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(element_tool->region);
-			}
+	wxElementTool(Element_tool *element_tool, wxPanel *parent): 
+	element_tool(element_tool)
+	{	 
+		wxXmlInit_element_tool();
+		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
+		elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
+		element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
+		if (element_tool->region)
+		{
+			computed_field_manager=
+				Cmiss_region_get_Computed_field_manager(element_tool->region);
+		}
+		else
+		{
+			computed_field_manager=NULL;
+		}
+		element_command_field_chooser =
+			new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+			(element_command_field_chooser_panel, element_tool->command_field, computed_field_manager,
+			Computed_field_has_string_value_type, (void *)NULL, element_tool->user_interface);
+		Callback_base< Computed_field* > *element_command_field_callback = 
+			new Callback_member_callback< Computed_field*, 
+			wxElementTool, int (wxElementTool::*)(Computed_field *) >
+			(this, &wxElementTool::element_command_field_callback);
+		element_command_field_chooser->set_callback(element_command_field_callback);
+		if (element_tool != NULL)
+		{
+			command_field = Element_tool_get_command_field(element_tool);
+			element_command_field_chooser->set_object(command_field);
+			if (command_field == NULL)
+				{
+					elementcommandfieldcheckbox->SetValue(0);
+					element_command_field_chooser_panel->Disable();
+				}
 			else
-			{
-				computed_field_manager=NULL;
-			}
-			element_command_field_chooser =
-				 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-				 (element_command_field_chooser_panel, element_tool->command_field, computed_field_manager,
-						Computed_field_has_string_value_type, (void *)NULL, element_tool->user_interface);
-			Callback_base< Computed_field* > *element_command_field_callback = 
-				 new Callback_member_callback< Computed_field*, 
-					wxElementTool, int (wxElementTool::*)(Computed_field *) >
-				 (this, &wxElementTool::element_command_field_callback);
-			element_command_field_chooser->set_callback(element_command_field_callback);
-			if (element_tool != NULL)
-			{
-				 command_field = Element_tool_get_command_field(element_tool);
-				 element_command_field_chooser->set_object(command_field);
-				 if (command_field == NULL)
-				 {
-						elementcommandfieldcheckbox->SetValue(0);
-						element_command_field_chooser_panel->Disable();
-				 }
-				 else
-				 {
-						elementcommandfieldcheckbox->SetValue(1);
-						element_command_field_chooser_panel->Enable();
-				 }
-			}
-			button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
-			button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
-			button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
-			button_element->SetValue(element_tool->select_elements_enabled);
-			button_face->SetValue(element_tool->select_faces_enabled);
-			button_line->SetValue(element_tool->select_lines_enabled);
-  };
+				{
+					elementcommandfieldcheckbox->SetValue(1);
+					element_command_field_chooser_panel->Enable();
+				}
+		}
+		button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+		button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+		button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		button_element->SetValue(element_tool->select_elements_enabled);
+		button_face->SetValue(element_tool->select_faces_enabled);
+		button_line->SetValue(element_tool->select_lines_enabled);
+	};
 
-  wxElementTool()
-  {
-  };
+	wxElementTool()
+	{
+	};
 
- ~ wxElementTool()
- {
-		 //		 delete element_command_field_chooser;
- };
-	 int element_command_field_callback(Computed_field *command_field)
-	 {
-			Element_tool_set_command_field(element_tool, command_field);
-			return 1;
-	 }
+	~ wxElementTool()
+	{
+		//		 delete element_command_field_chooser;
+	};
+	int element_command_field_callback(Computed_field *command_field)
+	{
+		Element_tool_set_command_field(element_tool, command_field);
+		return 1;
+	}
 
 	void OnButtonElementpressed(wxCommandEvent& event)
-	{    
-	USE_PARAMETER(event);
-		 button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
-		 Element_tool_set_select_elements_enabled(element_tool,
-				button_element->IsChecked());
+	{
+		USE_PARAMETER(event);
+		button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+		Element_tool_set_select_elements_enabled(element_tool,
+			button_element->IsChecked());
 	}
 
 	void OnButtonFacepressed(wxCommandEvent& event)
-	{ 
-	USE_PARAMETER(event);
-		 button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
-		 Element_tool_set_select_faces_enabled(element_tool,
-				button_face->IsChecked());
+	{
+		USE_PARAMETER(event);
+		button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+		Element_tool_set_select_faces_enabled(element_tool,
+			button_face->IsChecked());
 	}
 
 	void OnButtonLinepressed(wxCommandEvent& event)
-	{ 
-	USE_PARAMETER(event);
-		 button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
-		 Element_tool_set_select_lines_enabled(element_tool,
-				button_line->IsChecked());
+	{
+		USE_PARAMETER(event);
+		button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		Element_tool_set_select_lines_enabled(element_tool,
+			button_line->IsChecked());
 	}
 
 
- void OnButtonDestroypressed(wxCommandEvent& event)
- { 
-	int number_not_destroyed;
-	struct LIST(FE_element) *destroy_element_list;
-
-	USE_PARAMETER(event);
-	if (destroy_element_list = CREATE(LIST(FE_element))())
+	void OnButtonDestroypressed(wxCommandEvent& event)
 	{
-		COPY_LIST(FE_element)(destroy_element_list,
-			 FE_element_selection_get_element_list(
-			   element_tool->element_selection));
-		fe_region = Cmiss_region_get_FE_region(element_tool->region);
-		FE_region_begin_change(fe_region);
-		FE_region_remove_FE_element_list(fe_region, destroy_element_list);
-		if (0 < (number_not_destroyed =
-		   NUMBER_IN_LIST(FE_element)(destroy_element_list)))
+		int number_not_destroyed;
+		struct LIST(FE_element) *destroy_element_list;
+
+		USE_PARAMETER(event);
+		if (destroy_element_list = CREATE(LIST(FE_element))())
 		{
-			display_message(WARNING_MESSAGE,
-			  "%d of the selected element(s) could not be destroyed",
-			  number_not_destroyed);
+			COPY_LIST(FE_element)(destroy_element_list,
+				FE_element_selection_get_element_list(
+				element_tool->element_selection));
+			fe_region = Cmiss_region_get_FE_region(element_tool->region);
+			FE_region_begin_change(fe_region);
+			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
+			if (0 < (number_not_destroyed =
+				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
+			{
+				display_message(WARNING_MESSAGE,
+					"%d of the selected element(s) could not be destroyed",
+					number_not_destroyed);
+			}
+			FE_region_end_change(fe_region);
+			DESTROY(LIST(FE_element))(&destroy_element_list);
 		}
-		FE_region_end_change(fe_region);
-		DESTROY(LIST(FE_element))(&destroy_element_list);
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_tool_destroy_selected_CB.  Invalid argument(s)");
+		}
 	}
-	else
+
+	void ElementToolInterfaceRenew(Element_tool *destination_element_tool)
 	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_destroy_selected_CB.  Invalid argument(s)");
+		button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+		button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+		button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		button_element->SetValue(destination_element_tool-> select_elements_enabled);
+		button_face->SetValue(destination_element_tool->select_faces_enabled);
+		button_line->SetValue(destination_element_tool->select_lines_enabled);
 	}
- }
 
-void ElementToolInterfaceRenew(Element_tool *destination_element_tool)
-{
-	button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
-	button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
-	button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
-	button_element->SetValue(destination_element_tool-> select_elements_enabled);
-	button_face->SetValue(destination_element_tool->select_faces_enabled);
-	button_line->SetValue(destination_element_tool->select_lines_enabled);
-}
-
-void ElementCommandFieldChecked(wxCommandEvent &event)
-{
-	USE_PARAMETER(event);
-	 struct Computed_field *command_field;
-	 elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
-	 element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
-	 if (elementcommandfieldcheckbox->IsChecked())
-	 {
+	void ElementCommandFieldChecked(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		struct Computed_field *command_field;
+		elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
+		element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
+		if (elementcommandfieldcheckbox->IsChecked())
+		{
 			if (element_tool)
 			{
-				 if (Element_tool_get_command_field(element_tool))
-				 {
-						Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
-						element_command_field_chooser_panel->Enable();
-				 }
-				 else
-				 {
-						/* get label field from widget */
-						if (element_command_field_chooser->get_number_of_object() > 0)
-						{
-							 command_field = element_command_field_chooser->get_object();
-							 if (command_field)
+				if (Element_tool_get_command_field(element_tool))
+				{
+					Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
+					element_command_field_chooser_panel->Enable();
+				}
+				else
+				{
+					/* get label field from widget */
+					if (element_command_field_chooser->get_number_of_object() > 0)
+					{
+						command_field = element_command_field_chooser->get_object();
+						if (command_field)
 							 {
-									Element_tool_set_command_field(element_tool, command_field);
+								 Element_tool_set_command_field(element_tool, command_field);
 							 }
-						}
-						else
-						{
-							 elementcommandfieldcheckbox->SetValue(0);
-							 element_command_field_chooser_panel->Disable();
-						}
-				 }
+					}
+					else
+					{
+						elementcommandfieldcheckbox->SetValue(0);
+						element_command_field_chooser_panel->Disable();
+					}
+				}
 			}
 			else
 			{
-				 display_message(ERROR_MESSAGE,
-						"Elementt_tool_command_field_button_CB.  Invalid argument(s)");
+				display_message(ERROR_MESSAGE,
+					"Elementt_tool_command_field_button_CB.  Invalid argument(s)");
 			}
-	 }
-	 else
-	 {
+		}
+		else
+		{
 			Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
 			elementcommandfieldcheckbox->SetValue(0);
 			element_command_field_chooser_panel->Disable();
-	 }
-}
+		}
+	}
 
-  DECLARE_DYNAMIC_CLASS(wxElementTool);
-  DECLARE_EVENT_TABLE();
+	DECLARE_DYNAMIC_CLASS(wxElementTool);
+	DECLARE_EVENT_TABLE();
 };
 
 IMPLEMENT_DYNAMIC_CLASS(wxElementTool, wxPanel)
 
 BEGIN_EVENT_TABLE(wxElementTool, wxPanel)
-	 EVT_CHECKBOX(XRCID("ButtonElement"),wxElementTool::OnButtonElementpressed)
-	 EVT_CHECKBOX(XRCID("ButtonFace"),wxElementTool::OnButtonFacepressed)
-	 EVT_CHECKBOX(XRCID("ButtonLine"),wxElementTool::OnButtonLinepressed)
-	 EVT_CHECKBOX(XRCID("ElementCommandFieldCheckBox"),wxElementTool::ElementCommandFieldChecked)
-EVT_BUTTON(XRCID("ButtonDestroy"),wxElementTool::OnButtonDestroypressed)
+	EVT_CHECKBOX(XRCID("ButtonElement"),wxElementTool::OnButtonElementpressed)
+	EVT_CHECKBOX(XRCID("ButtonFace"),wxElementTool::OnButtonFacepressed)
+	EVT_CHECKBOX(XRCID("ButtonLine"),wxElementTool::OnButtonLinepressed)
+	EVT_CHECKBOX(XRCID("ElementCommandFieldCheckBox"),wxElementTool::ElementCommandFieldChecked)
+	EVT_BUTTON(XRCID("ButtonDestroy"),wxElementTool::OnButtonDestroypressed)
 END_EVENT_TABLE()
 
 
@@ -1220,25 +1220,25 @@ Selects elements in <element_selection> in response to interactive_events.
 	static MrmRegisterArg callback_list[]=
 	{
 		{const_cast<char *>("elem_tool_id_select_elems_btn"),(XtPointer)
-			DIALOG_IDENTIFY(element_tool,select_elements_button)},
+		DIALOG_IDENTIFY(element_tool,select_elements_button)},
 		{const_cast<char *>("elem_tool_id_select_faces_btn"),(XtPointer)
-			DIALOG_IDENTIFY(element_tool,select_faces_button)},
+		DIALOG_IDENTIFY(element_tool,select_faces_button)},
 		{const_cast<char *>("elem_tool_id_select_lines_btn"),(XtPointer)
-			DIALOG_IDENTIFY(element_tool,select_lines_button)},
+		DIALOG_IDENTIFY(element_tool,select_lines_button)},
 		{const_cast<char *>("elem_tool_id_command_field_btn"),(XtPointer)
-			DIALOG_IDENTIFY(element_tool,command_field_button)},
+		DIALOG_IDENTIFY(element_tool,command_field_button)},
 		{const_cast<char *>("elem_tool_id_command_field_form"),(XtPointer)
-			DIALOG_IDENTIFY(element_tool,command_field_form)},
+		DIALOG_IDENTIFY(element_tool,command_field_form)},
 		{const_cast<char *>("elem_tool_select_elems_btn_CB"),
-		 (XtPointer)Element_tool_select_elements_button_CB},
+		(XtPointer)Element_tool_select_elements_button_CB},
 		{const_cast<char *>("elem_tool_select_faces_btn_CB"),
-		 (XtPointer)Element_tool_select_faces_button_CB},
+		(XtPointer)Element_tool_select_faces_button_CB},
 		{const_cast<char *>("elem_tool_select_lines_btn_CB"),
-		 (XtPointer)Element_tool_select_lines_button_CB},
+		(XtPointer)Element_tool_select_lines_button_CB},
 		{const_cast<char *>("elem_tool_command_field_btn_CB"),
-		 (XtPointer)Element_tool_command_field_button_CB},
+		(XtPointer)Element_tool_command_field_button_CB},
 		{const_cast<char *>("elem_tool_destroy_selected_CB"),
-		 (XtPointer)Element_tool_destroy_selected_CB}
+		(XtPointer)Element_tool_destroy_selected_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1253,7 +1253,7 @@ Selects elements in <element_selection> in response to interactive_events.
 	element_tool=(struct Element_tool *)NULL;
 	if (interactive_tool_manager && region &&
 		element_selection&&(NULL != (computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(region)))
+		Cmiss_region_get_Computed_field_manager(region)))
 		&&rubber_band_material&&user_interface)
 	{
 		if (ALLOCATE(element_tool,struct Element_tool,1))
@@ -1287,7 +1287,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
 				Element_tool_reset,
- 				Element_tool_destroy_element_tool,
+				Element_tool_destroy_element_tool,
 				Element_tool_copy_function,
 				(void *)element_tool);
 #else /* defined (OPENGL_API) */
@@ -1323,20 +1323,20 @@ Selects elements in <element_selection> in response to interactive_events.
 			element_tool->window_shell=(Widget)NULL;
 
 			if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
-					&element_tool_hierarchy,&element_tool_hierarchy_open))
+				&element_tool_hierarchy,&element_tool_hierarchy_open))
 			{
 				/* make the dialog shell */
 				if (element_tool->window_shell=
 					XtVaCreatePopupShell("Element tool",
-						topLevelShellWidgetClass,
-						User_interface_get_application_shell(user_interface),
-						XmNdeleteResponse,XmDO_NOTHING,
-						XmNmwmDecorations,MWM_DECOR_ALL,
-						XmNmwmFunctions,MWM_FUNC_ALL,
-						/*XmNtransient,FALSE,*/
-						XmNallowShellResize,False,
-						XmNtitle,"Element tool",
-						NULL))
+					topLevelShellWidgetClass,
+					User_interface_get_application_shell(user_interface),
+					XmNdeleteResponse,XmDO_NOTHING,
+					XmNmwmDecorations,MWM_DECOR_ALL,
+					XmNmwmFunctions,MWM_FUNC_ALL,
+					/*XmNtransient,FALSE,*/
+					XmNallowShellResize,False,
+					XmNtitle,"Element tool",
+					NULL))
 				{
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_tool->window_shell),
@@ -1347,25 +1347,25 @@ Selects elements in <element_selection> in response to interactive_events.
 					create_Shell_list_item(&(element_tool->window_shell),user_interface);
 					/* register the callbacks */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							 element_tool_hierarchy,callback_list,XtNumber(callback_list)))
+						element_tool_hierarchy,callback_list,XtNumber(callback_list)))
 					{
 						/* assign and register the identifiers */
 						identifier_list[0].value=(XtPointer)element_tool;
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-								 element_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
+							element_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
 						{
 							/* fetch element tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(element_tool_hierarchy,
-									const_cast<char *>("element_tool"),element_tool->window_shell,
-									&(element_tool->widget),&element_tool_dialog_class))
+								const_cast<char *>("element_tool"),element_tool->window_shell,
+								&(element_tool->widget),&element_tool_dialog_class))
 							{
 								init_widgets=1;
 								if (element_tool->command_field_widget =
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-										element_tool->command_field_form,
-										element_tool->command_field, computed_field_manager,
-										Computed_field_has_string_value_type,
-										(void *)NULL, user_interface))
+									element_tool->command_field_form,
+									element_tool->command_field, computed_field_manager,
+									Computed_field_has_string_value_type,
+									(void *)NULL, user_interface))
 								{
 									callback.data = (void *)element_tool;
 									callback.procedure = Element_tool_update_command_field;
@@ -1493,7 +1493,7 @@ structure itself.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		if (element_tool->wx_element_tool)
-			 element_tool->wx_element_tool->Destroy();
+			element_tool->wx_element_tool->Destroy();
 #endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*element_tool_address);
 		return_code=1;
@@ -1530,17 +1530,17 @@ Pops up a dialog for editing settings of the Element_tool.
 		wxPanel *pane;
 		if (!element_tool->wx_element_tool)
 		{
-			 element_tool->wx_element_tool = new wxElementTool(element_tool,
-					Graphics_window_get_interactive_tool_panel(graphics_window));
-			 pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
-			 element_tool->tool_position = pane->GetPosition();
-			 element_tool->wx_element_tool->Show();
+			element_tool->wx_element_tool = new wxElementTool(element_tool,
+				Graphics_window_get_interactive_tool_panel(graphics_window));
+			pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
+			element_tool->tool_position = pane->GetPosition();
+			element_tool->wx_element_tool->Show();
 		}
 		else
 		{
-			 pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
-			 pane->SetPosition(element_tool->tool_position);
-			 element_tool->wx_element_tool->Show();
+			pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
+			pane->SetPosition(element_tool->tool_position);
+			element_tool->wx_element_tool->Show();
 		}
 #else /* switch (USER_INTERFACE) */
 		USE_PARAMETER(graphics_window);
@@ -1836,14 +1836,14 @@ Returns flag controlling whether line & 1-D top-level elements can be selected.
 } /* Element_tool_set_select_lines_enabled */
 
 struct Computed_field *Element_tool_get_command_field(
-	struct Element_tool *element_tool)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
+struct Element_tool *element_tool)
+	/*******************************************************************************
+	LAST MODIFIED : 5 July 2002
 
-DESCRIPTION :
-Returns the command_field to be looked up in a web browser when the element is
-clicked on in the <element_tool>.
-==============================================================================*/
+	DESCRIPTION :
+	Returns the command_field to be looked up in a web browser when the element is
+	clicked on in the <element_tool>.
+	==============================================================================*/
 {
 	struct Computed_field *command_field;
 
@@ -1864,14 +1864,14 @@ clicked on in the <element_tool>.
 } /* Element_tool_get_command_field */
 
 int Element_tool_set_command_field(struct Element_tool *element_tool,
-	struct Computed_field *command_field)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
+struct Computed_field *command_field)
+	/*******************************************************************************
+	LAST MODIFIED : 5 July 2002
 
-DESCRIPTION :
-Sets the command_field to be looked up in a web browser when the element is clicked
-on in the <element_tool>.
-==============================================================================*/
+	DESCRIPTION :
+	Sets the command_field to be looked up in a web browser when the element is clicked
+	on in the <element_tool>.
+	==============================================================================*/
 {
 #if defined (MOTIF_USER_INTERFACE)
 	int field_set;
@@ -1911,13 +1911,13 @@ on in the <element_tool>.
 } /* Element_tool_set_command_field */
 
 struct Interactive_tool *Element_tool_get_interactive_tool(
-	struct Element_tool *element_tool)
-/*******************************************************************************
-LAST MODIFIED : 29 March 2007
+struct Element_tool *element_tool)
+	/*******************************************************************************
+	LAST MODIFIED : 29 March 2007
 
-DESCRIPTION :
-Returns the generic interactive_tool the represents the <element_tool>.
-==============================================================================*/
+	DESCRIPTION :
+	Returns the generic interactive_tool the represents the <element_tool>.
+	==============================================================================*/
 {
 	struct Interactive_tool *interactive_tool;
 
@@ -1938,7 +1938,7 @@ Returns the generic interactive_tool the represents the <element_tool>.
 } /* Element_tool_get_interactive_tool */
 
 int Element_tool_set_execute_command(struct Element_tool *element_tool, 
-	struct Execute_command *execute_command)
+struct Execute_command *execute_command)
 {
 	int return_code = 0;
 	if (element_tool)
@@ -1951,6 +1951,6 @@ int Element_tool_set_execute_command(struct Element_tool *element_tool,
 		display_message(ERROR_MESSAGE,
 			"Element_tool_set_execute_command.  Invalid argument(s)");
 	}
-	
+
 	return return_code;
 }

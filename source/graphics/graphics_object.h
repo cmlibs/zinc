@@ -82,6 +82,11 @@ Used to be gtypes.h
 #include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
+#if defined (USE_OPENCASCADE)
+//extern "C" {
+#include "api/cmiss_field_cad.h"
+//}
+#endif /* defined (USE_OPENCASCADE) */
 
 /*
 Global types
@@ -1303,6 +1308,11 @@ LAST MODIFIED : 18 February 2000
 DESCRIPTION :
 Clears the list of selected primitives and subobjects in <graphics_object>.
 ==============================================================================*/
+
+#if defined (USE_OPENCASCADE)
+int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_object,
+	void *group_field_void, Cmiss_field_cad_topology_id cad_topology_domain);
+#endif /* defined (USE_OPENCASCADE) */
 
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
     void *group_field_void);

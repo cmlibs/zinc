@@ -65,6 +65,9 @@ extern "C" {
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 }
+#if defined (USE_OPENCASCADE)
+#include "cad/cad_tool.h"
+#endif /* defined (USE_OPENCASCADE) */
 #if defined (MOTIF_USER_INTERFACE)
 typedef struct
 /*******************************************************************************
@@ -378,6 +381,16 @@ struct User_interface_module *User_interface_module_create(
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,
 				UI_module->default_time_keeper);
+#if defined (USE_OPENCASCADE)
+			UI_module->cad_tool=CREATE(Cad_tool)(
+				UI_module->interactive_tool_manager,
+				root_region,
+				Cmiss_context_get_element_selection(context),
+				Cmiss_context_get_element_point_ranges_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface,
+				UI_module->default_time_keeper);
+#endif /* defined (USE_OPENCASCADE) */
 			UI_module->element_point_tool=CREATE(Element_point_tool)(
 				UI_module->interactive_tool_manager,
 				root_region,

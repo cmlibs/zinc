@@ -37,9 +37,27 @@
 #if !defined(CAD_CAD_GEOMETRY_TO_GRAPHICS_OBJECT_H)
 #define CAD_CAD_GEOMETRY_TO_GRAPHICS_OBJECT_H
 
-struct GT_surface *create_surface_from_cad_shape(struct Computed_field *domain_field,
-		struct Computed_field *coordinate_field, struct Computed_field *data_field, Render_type render_type);
-struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_field *domain_field,
+#include "cad/computed_field_cad_topology.h"
+#include "cad/cad_element.h"
+
+/**
+ * Create a GT surface from the given surface identifier taken from the cad topology
+ * @param cad_topology a cad topology field upon which the geometry of the cad
+ *        shape is based
+ * @param coordinate_field the coordinate field
+ * @param data_field the data field into which the colour information is placed
+ * @param render_type the render type to be displayed wireframe or surface
+ * @param surface_index the surface identifier of the surface that is to be created from the 
+ *        cad topology
+ * @returns a GT surface for display, or NULL if the surface cannot be created
+ */
+struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
+		struct Computed_field *coordinate_field, struct Computed_field *data_field, Render_type render_type, Cmiss_cad_surface_identifier surface_index);
+
+/**
+ * Carete a curve from the given cad topology
+ */
+struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field, struct GT_object *graphics_object);
 
 #endif /* !defined(CAD_CAD_GEOMETRY_TO_GRAPHICS_OBJECT_H) */

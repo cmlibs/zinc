@@ -60,6 +60,9 @@ struct User_interface_module
 	struct Colour background_colour,foreground_colour;
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
+#if defined (USE_OPENCASCADE)
+	struct Cad_tool *cad_tool;
+#endif /* defined (USE_OPENCASCADE) */
 	struct Interactive_tool *transform_tool;
 	struct Node_tool *data_tool,*node_tool;
 #if defined (CELL)

@@ -293,6 +293,7 @@ extern "C" {
 #include "cad/geometricshape.h"
 #include "graphics/graphics_object.hpp"
 #include "cad/opencascadeimporter.h"
+#include "cad/cad_tool.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 #define AWU_TESTING
@@ -325,6 +326,9 @@ DESCRIPTION :
 	struct Execute_command *execute_command,*set_command;
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
+#if defined (USE_OPENCASCADE)
+	struct Cad_tool *cad_tool;
+#endif /* defined (USE_OPENCASCADE) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Node_tool *data_tool,*node_tool;
 #if defined (MOTIF_USER_INTERFACE)
@@ -5451,6 +5455,17 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper),
 								command_data->execute_command);
+#if defined (USE_OPENCASCADE)
+						Cad_tool_set_execute_command(CREATE(Cad_tool)(
+								interactive_tool_manager,
+								command_data->root_region,
+								command_data->element_selection,
+								command_data->element_point_ranges_selection,
+								Material_package_get_default_material(command_data->material_package),
+								command_data->user_interface,
+								command_data->default_time_keeper),
+								command_data->execute_command);
+#endif /* defined (USE_OPENCASCADE) */
 						Element_point_tool_set_execute_command(CREATE(Element_point_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
@@ -9816,7 +9831,7 @@ static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_v
 }
 
 static int execute_command_gfx_import(struct Parse_state *state,
-  void *dummy_to_be_modified, void *command_data_void )
+	void *dummy_to_be_modified, void *command_data_void )
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
@@ -10316,6 +10331,89 @@ static int execute_command_gfx_import(struct Parse_state *state,
 	}
 	LEAVE;
 	return (return_code);
+}
+
+static int gfx_list_cad_entity(struct Parse_state *state,
+	void *cad_element_type_void, void *root_region_void)
+{
+	int return_code = 0, path_length;
+	struct Cmiss_region *root_region;
+	char commands_flag, *command_prefix_plus_region_path;
+	struct Cmiss_region_path_and_name region_path_and_name;
+	struct Computed_field *field;
+	struct List_Computed_field_commands_data list_commands_data;
+	struct LIST(Computed_field) *list_of_fields;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_import);
+
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
+	{
+		commands_flag = 0;
+		region_path_and_name.region = (struct Cmiss_region *)NULL;
+		region_path_and_name.region_path = (char *)NULL;
+		region_path_and_name.name = (char *)NULL;
+		
+		option_table=CREATE(Option_table)();
+		/* commands */
+		Option_table_add_entry(option_table, "commands", &commands_flag, NULL,
+			set_char_flag);
+		/* default option: region_path and/or field_name */
+		Option_table_add_region_path_and_or_field_name_entry(
+			option_table, (char *)NULL, &region_path_and_name, root_region);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			field = (struct Computed_field *)NULL;
+			if (region_path_and_name.name)
+			{
+				/* following accesses the field, if any */
+				field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+					region_path_and_name.name);
+				if (!field)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx list field:  There is no field or child region called %s in region %s",
+						region_path_and_name.name, region_path_and_name.region_path);
+					return_code = 0;
+				}
+				if (field)
+				{
+					return_code=list_Computed_field(field,(void *)NULL);
+					display_message(INFORMATION_MESSAGE,
+						"gfx_list_cad_entity...have field\n");
+					DEACCESS(Computed_field)(&field);
+					if (!return_code)
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_list_cad_entity.  Failed to list fields");
+					}
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (region_path_and_name.region)
+		{
+			DEACCESS(Cmiss_region)(&region_path_and_name.region);
+		}
+		if (region_path_and_name.region_path)
+		{
+			DEALLOCATE(region_path_and_name.region_path);
+		}
+		if (region_path_and_name.name)
+		{
+			DEALLOCATE(region_path_and_name.name);
+		}
+		display_message(INFORMATION_MESSAGE,
+			"gfx_list_cad_entity...cool\n");
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_list_cad_entity.  Invalid argument(s)\n");
+	}
+	LEAVE;
+
+	return return_code;
 }
 
 #endif /* USE_OPENCASCADE */
@@ -23371,6 +23469,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->transform_tool=(struct Interactive_tool *)NULL;
 		command_data->node_tool=(struct Node_tool *)NULL;
 		command_data->element_tool=(struct Element_tool *)NULL;
+#if defined (USE_OPENCASCADE)
+		command_data->cad_tool = (struct Cad_tool *)NULL;
+#endif /* defined (USE_OPENCASCADE) */
 		command_data->data_tool=(struct Node_tool *)NULL;
 		command_data->element_point_tool=(struct Element_point_tool *)NULL;
 #if defined (MOTIF_USER_INTERFACE)
@@ -23886,6 +23987,11 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->element_tool=UI_module->element_tool;
 			Element_tool_set_execute_command(command_data->element_tool, 
 				command_data->execute_command);
+#if defined (USE_OPENCASCADE)
+			command_data->cad_tool = UI_module->cad_tool;
+			Cad_tool_set_execute_command(command_data->cad_tool,
+				command_data->execute_command);
+#endif /* defined (USE_OPENCASCADE) */
 			command_data->element_point_tool=UI_module->element_point_tool;
 			Element_point_tool_set_execute_command(command_data->element_point_tool, 
 				command_data->execute_command);

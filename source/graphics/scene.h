@@ -75,6 +75,9 @@ December 1997. Created MANAGER(Scene).
 #include "selection/node_selection.h"
 #include "time/time_keeper.h"
 /* #include "graphics/texture.h" */
+#if defined(USE_OPENCASCADE)
+#	include "api/cmiss_field_cad.h"
+#endif /* defined(USE_OPENCASCADE) */
 
 /*
 Global constants
@@ -688,6 +691,16 @@ pertaining to the nearest node.
 The <use_data> flag indicates that we are searching for a data point instead of
 a node, needed since different settings type used for each.
 ==============================================================================*/
+
+#if defined (USE_OPENCASCADE)
+Cmiss_cad_identifier_id Scene_picked_object_list_get_cad_primitive(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct Cmiss_region *cmiss_region,
+	int select_surfaces_enabled, int select_lines_enabled,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct Cmiss_rendition **rendition_address,
+	struct Cmiss_graphic **graphic_address);
+#endif /* defined (USE_OPENCASCADE) */
 
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback);

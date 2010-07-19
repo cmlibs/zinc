@@ -47,12 +47,13 @@
 #if !defined (CMISS_FIELD_GROUP_H)
 #define CMISS_FIELD_GROUP_H
 
-struct Cmiss_field_group;
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
 
+struct Cmiss_field_group;
 typedef struct Cmiss_field_group *Cmiss_field_group_id;
 
 struct Cmiss_field_node_group;
-
 typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
 
 struct Cmiss_field_element_group;
@@ -80,4 +81,14 @@ int Cmiss_field_group_clear_group_if_empty(Cmiss_field_group_id group);
 
 int Cmiss_field_group_add_region(
 	Cmiss_field_group_id group, Cmiss_region_id sub_region);
+
+/**
+ * Get a subgroup of the given group for the specified domain.
+ * 
+ * @param group the group field
+ * @param domain the domain field
+ * @returns the subgroup field for the specified domain, NULL otherwise
+ */
+Cmiss_field_id Cmiss_field_group_get_subgroup_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
+
 #endif /* !defined (CMISS_FIELD_GROUP_H) */

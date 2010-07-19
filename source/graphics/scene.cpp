@@ -102,6 +102,14 @@ extern "C" {
 #include "graphics/scene_filters.hpp"
 #include "graphics/rendergl.hpp"
 
+#if defined(USE_OPENCASCADE)
+#	include "cad/computed_field_cad_geometry.h"
+#	include "cad/computed_field_cad_topology.h"
+#	include "cad/cad_geometry_to_graphics_object.h"
+#	include "cad/cad_element.h"
+//#	include "cad/cad_geometry_to_graphics_object.h"
+#endif /* defined(USE_OPENCASCADE) */
+
 /*
 Module constants
 ----------------
@@ -1049,6 +1057,23 @@ struct Scene_picked_object_get_nearest_element_data
 	struct Cmiss_graphic *graphic;
 };
 
+#if defined (USE_OPENCASCADE)
+struct Scene_picked_object_get_cad_primitive_data
+{
+	int select_surfaces_enabled,select_lines_enabled;
+	/* value from Scene_picked_object for picked_element */
+	Cmiss_cad_identifier_id nearest_cad_element;
+	double nearest;
+	Cad_primitive_type element_type;
+	/* group that the element must be in, or any group if NULL */
+	struct Cmiss_region *cmiss_region;
+	/* information about the nearest element */
+	struct Scene_picked_object *scene_picked_object;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
+};
+#endif /* defined (USE_OPENCASCADE) */
+
 static int Scene_picked_object_get_nearest_element(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_data_void)
@@ -1187,21 +1212,21 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
- 	int element_point_number,face_number,i,return_code,
- 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
- 	struct CM_element_information cm;
- 	struct Element_discretization element_discretization;
- 	struct Element_point_ranges *element_point_ranges;
- 	struct Element_point_ranges_identifier element_point_ranges_identifier;
- 	struct FE_element *element,*top_level_element;
- 	struct FE_field *native_discretization_field;
- 	struct FE_region *fe_region;
- 	struct Cmiss_region *cmiss_region;
- 	struct Cmiss_rendition *rendition = NULL;
- 	struct Cmiss_graphic *graphic = NULL;
+	int element_point_number,face_number,i,return_code,
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct CM_element_information cm;
+	struct Element_discretization element_discretization;
+	struct Element_point_ranges *element_point_ranges;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	struct FE_element *element,*top_level_element;
+	struct FE_field *native_discretization_field;
+	struct FE_region *fe_region;
+	struct Cmiss_region *cmiss_region;
+	struct Cmiss_rendition *rendition = NULL;
+	struct Cmiss_graphic *graphic = NULL;
 	struct Scene_picked_object_get_nearest_element_point_data
 		*nearest_element_point_data;
- 	Triple xi;
+	Triple xi;
 
 	ENTER(Scene_picked_object_get_nearest_element_point);
 	if (scene_picked_object&&(nearest_element_point_data=
@@ -3947,7 +3972,7 @@ DESCRIPTION :
 Iterates through every material used by the scene.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Scene_for_each_material);
 #if defined (OLD_CODE)
@@ -3972,7 +3997,7 @@ Iterates through every material used by the scene.
 			scene, however for now just do every material in the manager */
 		if (rendition = Cmiss_region_get_rendition(scene->region))
 		{
-			Cmiss_rendition_for_each_material(rendition, iterator_function,
+			return_code = Cmiss_rendition_for_each_material(rendition, iterator_function,
 				user_data);
 			DEACCESS(Cmiss_rendition)(&rendition);
 		}
@@ -4806,6 +4831,167 @@ pertaining to the nearest element.
 
 	return (nearest_element_data.nearest_element);
 } /* Scene_picked_object_list_get_nearest_element */
+
+#if defined (USE_OPENCASCADE)
+static int Scene_picked_object_get_nearest_cad_primitive(
+	struct Scene_picked_object *scene_picked_object,
+	void *cad_primitive_data_void)
+/*******************************************************************************
+LAST MODIFIED : 2 December 2002
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an element, the "nearest" value is
+compared with that for the current nearest element in the
+<nearest_element_data>. If there was no current nearest element or the new
+element is nearer, it becomes the nearest element and its "nearest" value is
+stored in the nearest_element_data.
+==============================================================================*/
+{
+	int return_code;
+	struct Cad_primitive_identifier cad;
+	struct Cmiss_region *cmiss_region;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
+	struct Scene_picked_object_get_cad_primitive_data *cad_primitive_data;
+
+	cad_primitive_data = static_cast<struct Scene_picked_object_get_cad_primitive_data *>(cad_primitive_data_void);
+	if (scene_picked_object&&cad_primitive_data)
+	{
+		return_code=1;
+		/* proceed only if there is no picked_element or object is nearer */
+		if (((Cmiss_cad_identifier_id)NULL==cad_primitive_data->nearest_cad_element)||
+			(Scene_picked_object_get_nearest(scene_picked_object) <
+				cad_primitive_data->nearest))
+		{
+			/* is the last scene_object a Graphical_element wrapper, and does the
+				 settings for the graphic refer to elements? */
+			if ((NULL != (rendition=Scene_picked_object_get_rendition(
+				scene_picked_object,
+				Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+				&&(NULL != (cmiss_region = Cmiss_rendition_get_region(rendition)))&&
+				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+				(Cmiss_graphic_selects_elements(graphic)))
+			{
+				cad.number = -1;
+				cad.type = Cad_primitive_INVALID;
+				if (Cmiss_field_is_cad_geometry(Cmiss_graphic_get_coordinate_field(graphic), NULL))
+				{
+					cad.number = Scene_picked_object_get_subobject(scene_picked_object,1);
+					if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_SURFACES)
+					{
+						cad.type = Cad_primitive_SURFACE;
+						struct Computed_field *coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
+						//display_message(INFORMATION_MESSAGE, "CAD element is type %d element %d\n", cad.type, cad.number);
+						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+						return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
+						if	( return_code )
+						{
+							struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+								( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+							if ( cad_topology_field )
+							{
+								Cmiss_cad_identifier_id cad_shape = new Cmiss_cad_identifier();
+								//cad_shape.cad_topology = cad_topology_field;
+								//cad_shape.number = cad.number;
+								//Cmiss_field_access(cad_topology_field);
+								cad_shape->cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+								cad_shape->identifier = cad;
+
+								cad_primitive_data->nearest_cad_element = cad_shape;
+								cad_primitive_data->graphic = graphic;
+								cad_primitive_data->scene_picked_object=scene_picked_object;
+								cad_primitive_data->rendition = rendition;
+								cad_primitive_data->nearest = Scene_picked_object_get_nearest(scene_picked_object);
+								//Cad_topology_information( cad_topology_field, cad );
+							}
+						}
+						if ( domain_field_list )
+							DESTROY_LIST(Computed_field)(&domain_field_list);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_picked_object_get_nearest_cad_primitive.  "
+						"Invalid cad element %s %d",Cad_primitive_type_string(cad.type),cad.number);
+					return_code=0;
+				}
+			}
+			if (graphic)
+				Cmiss_graphic_destroy(&graphic);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest_cad_primitive.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Scene_picked_object_get_nearest_cad_primitive */
+
+Cmiss_cad_identifier_id Scene_picked_object_list_get_cad_primitive(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct Cmiss_region *cmiss_region,
+	int select_surfaces_enabled,int select_lines_enabled,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct Cmiss_rendition **rendition_address,
+	struct Cmiss_graphic **graphic_address)
+/*******************************************************************************
+LAST MODIFIED : 2 December 2002
+
+DESCRIPTION :
+Returns the nearest picked element in <scene_picked_object_list> that is in
+<cmiss_region> (or in root_region if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest element.
+<select_elements_enabled> allows top-level/3-D elements to be selected.
+<select_faces_enabled> allows face and 2-D elements to be selected.
+<select_lines_enabled> allows line and 1-D elements to be selected.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_cad_primitive_data cad_primitive_data;
+
+	ENTER(Scene_picked_object_list_get_cad_primitive);
+	cad_primitive_data.nearest=0.0;
+	cad_primitive_data.nearest_cad_element=(Cmiss_cad_identifier_id)NULL;
+	cad_primitive_data.cmiss_region = cmiss_region;
+	cad_primitive_data.select_surfaces_enabled=select_surfaces_enabled;
+	cad_primitive_data.select_lines_enabled=select_lines_enabled;
+	cad_primitive_data.scene_picked_object=(struct Scene_picked_object *)NULL;
+	cad_primitive_data.rendition=(struct Cmiss_rendition *)NULL;
+	cad_primitive_data.graphic=(struct Cmiss_graphic *)NULL;
+	if (scene_picked_object_list)
+	{
+		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+			Scene_picked_object_get_nearest_cad_primitive,(void *)&cad_primitive_data,
+			scene_picked_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_nearest_cad_primitive.  Invalid argument(s)");
+	}
+	if (scene_picked_object_address)
+	{
+		*scene_picked_object_address=cad_primitive_data.scene_picked_object;
+	}
+	if (rendition_address)
+	{
+		*rendition_address=cad_primitive_data.rendition;
+	}
+	if (graphic_address)
+	{
+		*graphic_address=cad_primitive_data.graphic;
+	}
+	LEAVE;
+
+	return (cad_primitive_data.nearest_cad_element);
+} /* Scene_picked_object_list_get_nearest_cad_primitive */
+#endif /* defined (USE_OPENCASCADE) */
 
 static int Scene_picked_object_get_picked_region_sorted_elements(
 	struct Scene_picked_object *scene_picked_object,void *picked_elements_data_void)
@@ -5852,7 +6038,7 @@ int build_Scene(struct Scene *scene)
 
 int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
-	int return_code;
+	int return_code = 0;
 	Rendition_set::iterator pos;
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)

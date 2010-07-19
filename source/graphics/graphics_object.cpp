@@ -75,6 +75,9 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
+#if defined (USE_OPENCASCADE)
+#include "api/cmiss_field_cad.h"
+#endif /* defined (USE_OPENCASCADE) */
 }
 #include "graphics/rendergl.hpp"
 #include "graphics/graphics_object.hpp"
@@ -6861,6 +6864,56 @@ Clears the list of selected primitives and subobjects in <graphics_object>.
 
 	return (return_code);
 } /* GT_object_clear_selected_graphic_list */
+
+#if defined (USE_OPENCASCADE)
+int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_object,
+	void *group_field_void, Cmiss_field_cad_topology_id cad_topology_domain)
+{
+	struct Computed_field *group_field =
+		(struct Computed_field *)group_field_void;
+	if (graphics_object && graphics_object->highlight_functor)
+	{
+		delete graphics_object->highlight_functor;
+		graphics_object->highlight_functor = NULL;
+	}
+	int return_code = 0;
+	if (graphics_object && group_field)
+	{
+		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+		
+		//Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
+		Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_subgroup_for_domain(sub_group, 
+			reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
+		Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
+		if (cad_primitive_group_field)
+		{
+			cad_primitive_group =
+				Cmiss_field_cast_cad_primitive_group_template(cad_primitive_group_field);
+			Cmiss_field_destroy(&cad_primitive_group_field);
+			if (cad_primitive_group)
+			{
+				Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
+					Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
+					Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+				graphics_object->highlight_functor =
+					new SubGroupHighlightFunctor<Cmiss_cad_identifier_id>(group_core,
+					&Computed_field_sub_group_object<Cmiss_cad_identifier_id>::isIdentifierInList);
+				Cmiss_field_id temporary_handle =
+					reinterpret_cast<Computed_field *>(cad_primitive_group);
+				Cmiss_field_destroy(&temporary_handle);
+			}
+		}
+		if (sub_group)
+		{
+			struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
+			Cmiss_field_destroy(&sub_group_field);
+		}
+		return_code = 1;
+	}
+
+	return (return_code);
+}
+#endif /* defined (USE_OPENCASCADE) */
 
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
     void *group_field_void)

@@ -47,6 +47,9 @@
 #if !defined (CMISS_FIELD_SUB_GROUP_TEMPLATE_H)
 #define CMISS_FIELD_SUB_GROUP_TEMPLATE_H
 
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
+
 struct Cmiss_field_node_group_template;
 typedef struct Cmiss_field_node_group_template *Cmiss_field_node_group_template_id;
 

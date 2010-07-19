@@ -46,138 +46,137 @@ extern "C" {
 #include "cad/cad_geometry_to_graphics_object.h"
 #include "cad/computed_field_cad_topology.h"
 #include "cad/field_location.hpp"
+#include "cad/element_identifier.h"
 
-struct GT_surface *create_surface_from_cad_shape(struct Computed_field *domain_field,
-	struct Computed_field *coordinate_field, struct Computed_field *data_field, Render_type render_type)
+struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
+	struct Computed_field *coordinate_field, struct Computed_field *data_field, Render_type render_type, Cmiss_cad_surface_identifier surface_index)
 {
 	struct GT_surface *surface = 0;
 
-	if (domain_field)
+	int number_of_derivatives = 2;
+	int number_of_components = Computed_field_get_number_of_components(coordinate_field);
+	FE_value *values = 0;
+	FE_value *derivatives = 0;
+	FE_value *data_values = 0;
+	ALLOCATE(values, FE_value, number_of_components);
+	ALLOCATE(derivatives, FE_value, number_of_derivatives * number_of_components);
+	//int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
+	//int surface_point_count_total = 0;
+	//for (int i = 0; i < surface_count; i++)
+	//{
+	//	Cmiss_cad_surface_identifier identifier = i;
+	//	printf( "Surface index for surface count %d\n", identifier);
+	//	surface_point_count_total += Cmiss_field_cad_topology_get_surface_point_count(cad_topology, identifier);
+	//}
+	int surface_point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
+
+	Triple *points = 0;
+	Triple *normals = 0;
+	GTDATA *data = 0;
+	int num_data_field_components = 0;
+	ALLOCATE(points, Triple, surface_point_count);
+	ALLOCATE(normals, Triple, surface_point_count);
+	if (data_field && (Computed_field_get_number_of_components(data_field)==3))
 	{
-		int number_of_derivatives = 2;
-		int number_of_components = Computed_field_get_number_of_components(coordinate_field);
-		FE_value *values = 0;
-		FE_value *derivatives = 0;
-		FE_value *data_values = 0;
-		ALLOCATE(values, FE_value, number_of_components);
-		ALLOCATE(derivatives, FE_value, number_of_derivatives * number_of_components);
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(domain_field);
-		int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
-		int surface_point_count_total = 0;
-		for (int i = 0; i < surface_count; i++)
-		{
-			surface_point_count_total += Cmiss_field_cad_topology_get_surface_point_count(cad_topology, i);
-		}
+		num_data_field_components = 3;
+		ALLOCATE(data, GTDATA, 3 * surface_point_count);
+		ALLOCATE(data_values, FE_value, num_data_field_components);
+	}
 
-		Triple *points = 0;
-		Triple *normals = 0;
-		GTDATA *data = 0;
-		int num_data_field_components = 0;
-		ALLOCATE(points, Triple, surface_point_count_total);
-		ALLOCATE(normals, Triple, surface_point_count_total);
-		if (data_field && (Computed_field_get_number_of_components(data_field)==3))
-		{
-			num_data_field_components = 3;
-			ALLOCATE(data, GTDATA, 3 * surface_point_count_total);
-			ALLOCATE(data_values, FE_value, num_data_field_components);
-		}
-
-		if ( points && normals && values && derivatives && (surface_count > 0) &&
-			(surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS, render_type, g_TRIANGLE, surface_point_count_total / 3,
-			/*npp*/ 3, points, normals, /*tangent*/ (Triple *)NULL, /*texture*/ (Triple *)NULL,
-			num_data_field_components, data)))
-		{
-			int points_index = 0;
-			int return_code = 1;
-#if !defined (OPTIMISED)
-			printf("creating %d surfaces\n", surface_count);
+	if ( points && normals && values && derivatives &&
+		(surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS, render_type, g_TRIANGLE, surface_point_count / 3,
+		/*npp*/ 3, points, normals, /*tangent*/ (Triple *)NULL, /*texture*/ (Triple *)NULL,
+		num_data_field_components, data)))
+	{
+		
+		GT_surface_set_integer_identifier(surface, surface_index);
+		int points_index = 0;
+		int return_code = 1;
+#if defined (DEBUG)
+		printf("creating %d surfaces\n", surface_index);
 #endif
-			for ( int i = 0; i < surface_count && return_code; i++ )
+		//for ( int i = 0; i < surface_count && return_code; i++ )
+		//{
+			//Cmiss_cad_surface_identifier identifier = i;
+			int point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
+			printf("  setting id: %d (surface point count %d)\n", surface_index, point_count);
+#if defined (DEBUG)
+			printf( "  surface %d has %d points\n", surface_index+1, point_count );
+#endif
+			for ( int j = 0; j < point_count && return_code; j++ )
 			{
-				int point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, i);
-#if !defined (OPTIMISED)
-				printf( "  surface %d has %d points\n", i+1, point_count );
-#endif
-				for ( int j = 0; j < point_count && return_code; j++ )
+				double u = 0.0, v = 0.0;
+				Cmiss_cad_surface_point_identifier point_identifier = j;
+				return_code = Cmiss_field_cad_topology_get_surface_point_uv_coordinates(cad_topology, surface_index, point_identifier, u, v);
+				if (return_code)
 				{
-					double u = 0.0, v = 0.0;
-					return_code = Cmiss_field_cad_topology_get_surface_point_uv_coordinates(cad_topology, i, j, u, v);
+					Field_cad_geometry_surface_location loc(cad_topology, surface_index, u, v, 0.0, 2);
+					return_code = Computed_field_evaluate_at_location(coordinate_field, loc, values, derivatives);
 					if (return_code)
 					{
-						Field_cad_geometry_surface_location loc(cad_topology, i, u, v, 0.0, 2);
-						return_code = Computed_field_evaluate_at_location(coordinate_field, loc, values, derivatives);
-						if (return_code)
+						if (data_field && num_data_field_components)
 						{
-							if (data_field && num_data_field_components)
-							{
-								return_code = Computed_field_evaluate_at_location(data_field, loc, data_values);
-								data[num_data_field_components * points_index + 0] = data_values[0];
-								data[num_data_field_components * points_index + 1] = data_values[1];
-								data[num_data_field_components * points_index + 2] = data_values[2];
-							}
-
-							points[points_index][0] = values[0];
-							points[points_index][1] = values[1];
-							points[points_index][2] = values[2];
-							normals[points_index][0] = derivatives[2] * derivatives[5] - derivatives[4] * derivatives[3];
-								normals[points_index][1] = derivatives[4] * derivatives[1] - derivatives[0] * derivatives[5];
-							normals[points_index][2] = derivatives[0] * derivatives[3] - derivatives[2] * derivatives[1];
-							FE_value magnitude = sqrt(normals[points_index][0] * normals[points_index][0] +
-								normals[points_index][1] * normals[points_index][1] +
-								normals[points_index][2] * normals[points_index][2]);
-							if (magnitude > 0.0)
-							{
-								normals[points_index][0] /= magnitude;
-								normals[points_index][1] /= magnitude;
-								normals[points_index][2] /= magnitude;
-							}
-							points_index++;
+							return_code = Computed_field_evaluate_at_location(data_field, loc, data_values);
+							data[num_data_field_components * points_index + 0] = static_cast<GTDATA>(data_values[0]);
+							data[num_data_field_components * points_index + 1] = static_cast<GTDATA>(data_values[1]);
+							data[num_data_field_components * points_index + 2] = static_cast<GTDATA>(data_values[2]);
 						}
 
+						points[points_index][0] = static_cast<float>(values[0]);
+						points[points_index][1] = static_cast<float>(values[1]);
+						points[points_index][2] = static_cast<float>(values[2]);
+						normals[points_index][0] = static_cast<float>(derivatives[2] * derivatives[5] - derivatives[4] * derivatives[3]);
+						normals[points_index][1] = static_cast<float>(derivatives[4] * derivatives[1] - derivatives[0] * derivatives[5]);
+						normals[points_index][2] = static_cast<float>(derivatives[0] * derivatives[3] - derivatives[2] * derivatives[1]);
+						FE_value magnitude = sqrt(normals[points_index][0] * normals[points_index][0] +
+							normals[points_index][1] * normals[points_index][1] +
+							normals[points_index][2] * normals[points_index][2]);
+						if (magnitude > 0.0)
+						{
+							normals[points_index][0] /= static_cast<float>(magnitude);
+							normals[points_index][1] /= static_cast<float>(magnitude);
+							normals[points_index][2] /= static_cast<float>(magnitude);
+						}
+						points_index++;
 					}
 
 				}
-			}
-			if (!return_code || (points_index == 0))
-			{
-				DESTROY(GT_surface)(&surface);
-				surface = (struct GT_surface *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_surface_from_cad_geometry.  Failed to allocate data for surface or create surface");
-			if (points)
-				DEALLOCATE(points);
-			if (normals)
-				DEALLOCATE(normals);
-		}
 
-		Cmiss_field_destroy((Cmiss_field_id*)&cad_topology);
-		if (values)
-			DEALLOCATE(values);
-		if (derivatives)
-			DEALLOCATE(derivatives);
-		if (data_values)
-			DEALLOCATE(data_values);
+			}
+		//}
+		if (!return_code || (points_index == 0))
+		{
+			DESTROY(GT_surface)(&surface);
+			surface = (struct GT_surface *)NULL;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_surface_from_cad_geometry.  Invalid argument");
+			"create_surface_from_cad_geometry.  Failed to allocate data for surface or create surface");
+		if (points)
+			DEALLOCATE(points);
+		if (normals)
+			DEALLOCATE(normals);
 	}
+
+	if (values)
+		DEALLOCATE(values);
+	if (derivatives)
+		DEALLOCATE(derivatives);
+	if (data_values)
+		DEALLOCATE(data_values);
 
 	return surface;
 }
 
-struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_field *domain_field,
+struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field, struct GT_object *graphics_object)
 {
 	GT_polyline_vertex_buffers *curves = 0;
 
 	/* create the lines for the model */
-	if (domain_field && coordinate_field)
+	if (coordinate_field)
 	{
 		Graphics_vertex_array* array = GT_object_get_vertex_set(graphics_object);
 		int graphics_name = 0;
@@ -194,7 +193,6 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_
 			num_data_field_components = 3;
 			ALLOCATE(data_values, double, num_data_field_components);
 		}
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(domain_field);
 		int curve_count = Cmiss_field_cad_topology_get_curve_count(cad_topology);
 		unsigned int number_of_points = 0;
 		unsigned int vertex_start = 0;
@@ -202,7 +200,8 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_
 		for ( int i = 0; i < curve_count && return_code; i++ )
 		{
 			vertex_start = array->get_number_of_vertices(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-			number_of_points = Cmiss_field_cad_topology_get_curve_point_count(cad_topology, i);
+			Cmiss_cad_curve_identifier identifier = i;
+			number_of_points = Cmiss_field_cad_topology_get_curve_point_count(cad_topology, identifier);
 			float *data = 0;
 			float *points = 0;
 			ALLOCATE(points, float, number_of_points * number_of_components);
@@ -214,21 +213,21 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_
 			{
 				//printf("number of points %d\n", number_of_points);
 				double s = 0.0;
-				return_code = Cmiss_field_cad_topology_get_curve_s_parameter(cad_topology, i, j, s);
+				return_code = Cmiss_field_cad_topology_get_curve_point_s_coordinate(cad_topology, identifier, j, s);
 				if (return_code)
 				{
-					Field_cad_geometry_curve_location loc(cad_topology, i, s);
+					Field_cad_geometry_curve_location loc(cad_topology, identifier, s);
 					return_code = Computed_field_evaluate_at_location(coordinate_field, loc, values);
 					if (data && num_data_field_components && return_code)
 					{
 						return_code = Computed_field_evaluate_at_location(data_field, loc, data_values);
-						data[num_data_field_components * j + 0] = data_values[0];
-						data[num_data_field_components * j + 1] = data_values[1];
-						data[num_data_field_components * j + 2] = data_values[2];
+						data[num_data_field_components * j + 0] = static_cast<float>(data_values[0]);
+						data[num_data_field_components * j + 1] = static_cast<float>(data_values[1]);
+						data[num_data_field_components * j + 2] = static_cast<float>(data_values[2]);
 					}
-					points[number_of_components * j + 0] = values[0];
-					points[number_of_components * j + 1] = values[1];
-					points[number_of_components * j + 2] = values[2];
+					points[number_of_components * j + 0] = static_cast<float>(values[0]);
+					points[number_of_components * j + 1] = static_cast<float>(values[1]);
+					points[number_of_components * j + 2] = static_cast<float>(values[2]);
 				}
 			}
 			if (points && return_code)
@@ -251,7 +250,6 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_
 				DEALLOCATE(data);
 		}
 
-		Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
 		if (return_code)
 			curves = CREATE(GT_polyline_vertex_buffers)(g_PLAIN, 1);
 		if (values)
@@ -267,3 +265,4 @@ struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(struct Computed_
 
 	return curves;
 }
+
