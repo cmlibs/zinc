@@ -2108,12 +2108,12 @@ private:
 void Terminate(wxCloseEvent& event)
 {
 	USE_PARAMETER(event);
-	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
-			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-	 if ( dlg->ShowModal() == wxID_YES)
-			Execute_command_execute_string(command_window->execute_command, "QUIT"); 
-	 //else: dialog was cancelled or some another button pressed
-	 dlg->Destroy();
+	wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+		"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+	if ( dlg->ShowModal() == wxID_YES)
+		Execute_command_execute_string(command_window->execute_command, "QUIT"); 
+	//else: dialog was cancelled or some another button pressed
+	dlg->Destroy();
 } 
 
 void Exit(wxCommandEvent& event)
@@ -2234,10 +2234,9 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 void wxCommandLineTextCtrl::OnCommandEntered(wxCommandEvent& event)
 {
 	USE_PARAMETER(event);
-	 wxString command = this->GetValue();
-	 char *new_string = const_cast<char *>(command.c_str());
-	 Execute_command_execute_string(command_window->execute_command,
-			new_string);
+	char *command = duplicate_string(this->GetValue().c_str());
+	Execute_command_execute_string(command_window->execute_command, command);
+	DEALLOCATE(command);
 }
 
 BEGIN_EVENT_TABLE(wxCommandLineTextCtrl, wxTextCtrl)
