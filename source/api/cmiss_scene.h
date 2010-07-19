@@ -70,6 +70,12 @@ struct Cmiss_region;
    #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */
 
+/*******************************************************************************
+ * Destroys this reference to the scene (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ */
+int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
+
 /***************************************************************************//** 
  * Set the top region of the scene. Rendition from this top region and its child
  * region will be compiled into a display list for rendering.
@@ -96,6 +102,60 @@ char *Cmiss_scene_get_name(Cmiss_scene_id scene);
  * @return  1 if filters successfully cleared, otherwise 0.
  */
 int Cmiss_scene_clear_filters(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Removes the filter from the scene.
+ *
+ * @param scene  Scene to remove filter from.
+ * @param filter  A filter that belongs to this scene.
+ * @return  1 if filter is removed, otherwise 0.
+ */
+int Cmiss_scene_remove_filter(Cmiss_scene_id scene, Cmiss_scene_filter_id filter);
+
+/***************************************************************************//**
+ * Returns the number of filters owned by this scene.
+ *
+ * @param scene  Scene to query.
+ * @return  Number of filters in scene (zero or more). 0 if invalid scene.
+ */
+int Cmiss_scene_get_number_of_filters(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Gets the priority for applying the filter in this scene.
+ *
+ * @param scene  Scene to query.
+ * @param filter  A filter that belongs to this scene.
+ * @return  Priority from 1 (first) to number of filters, or 0 on error.
+ */
+int Cmiss_scene_get_filter_priority(Cmiss_scene_id scene,
+	Cmiss_scene_filter_id filter);
+
+/***************************************************************************//**
+ * Sets the priority for applying the filter in this scene, starting from
+ * 1 = first. The first filter matching the graphic is always applied.
+ *
+ * @param scene  Scene to modify.
+ * @param filter  A filter that belongs to this scene.
+ * @param priority  Priority from 1 (first) to number obtained from
+ * Cmiss_scene_get_number_of_filters(). The special value zero also indicates
+ * the last place in filter priority list.
+ * @return  1 on success, otherwise 0.
+ */
+int Cmiss_scene_set_filter_priority(Cmiss_scene_id scene,
+	Cmiss_scene_filter_id filter, int priority);
+
+/***************************************************************************//**
+ * Returns a reference to the scene filter with the supplied priority.
+ * Caller must call Cmiss_scene_filter_destroy to clean up the returned handle.
+ *
+ * @param scene  Scene to modify.
+ * @param priority  Priority from 1 to number obtained from
+ * Cmiss_scene_get_number_of_filters().
+ * @return  Handle to the filter, or NULL if invalid priority or no filter with
+ * supplied priority.
+ */
+Cmiss_scene_filter_id Cmiss_scene_get_filter_at_priority(Cmiss_scene_id scene,
+	int priority);
 
 /***************************************************************************//**
  * Creates a Cmiss_scene_filter which matches all graphics.

@@ -8100,8 +8100,7 @@ int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
 	ENTER(define_Scene);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (define_scene_data =
-		(struct Define_scene_data *)define_scene_data_void) &&
-		define_scene_data->default_scene)
+		(struct Define_scene_data *)define_scene_data_void))
 	{
 		if (current_token=state->current_token)
 		{
@@ -8811,6 +8810,11 @@ struct Cmiss_region *Cmiss_scene_get_region(Scene *scene)
 	return region;
 }
 
+int Cmiss_scene_destroy(Cmiss_scene **scene_address)
+{
+	return DEACCESS(Scene)(scene_address);
+}
+
 int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
 {
   int return_code;
@@ -9140,28 +9144,149 @@ int Cmiss_scene_clear_filters(Cmiss_scene *scene)
 	return return_code;
 }
 
-int Scene_add_filter(Scene *scene, Cmiss_scene_filter *filter)
+int Scene_add_filter_private(Cmiss_scene *scene, Cmiss_scene_filter *filter)
 {
 	int return_code = 1;
 	if (scene && filter)
 	{
 		scene->filters->push_back(Cmiss_scene_filter_access(filter));
-    if (scene->list_of_rendition)
-    {
-      scene->build = 1;
-      scene->compile_status = GRAPHICS_NOT_COMPILED;
-      scene->change_status = SCENE_CHANGE;
-      if (scene->scene_manager)
-      {
-      	Scene_refresh(scene);
-      }
-    }
+		if (return_code && scene->list_of_rendition)
+		{
+			scene->build = 1;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			scene->change_status = SCENE_CHANGE;
+			if (scene->scene_manager)
+			{
+				Scene_refresh(scene);
+			}
+		}
 	}
 	else
 	{
 		return_code = 0;
 	}
 	return return_code;
+}
+
+int Cmiss_scene_remove_filter(Cmiss_scene *scene, Cmiss_scene_filter *filter)
+{
+	int return_code = 0;
+	if (scene && filter && (filter->getScene() == scene))
+	{
+		int number_of_filters = scene->filters->size();
+		for (int i = 0; i < number_of_filters; i++)
+		{
+			Cmiss_scene_filter *temp_filter = scene->filters->at(i);
+			if (temp_filter == filter)
+			{
+				Cmiss_scene_filter_destroy(&temp_filter);
+				scene->filters->erase(scene->filters->begin() + i);
+				return_code = 1;
+				break;
+			}
+		}
+		if (return_code && scene->list_of_rendition)
+		{
+			scene->build = 1;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			scene->change_status = SCENE_CHANGE;
+			if (scene->scene_manager)
+			{
+				Scene_refresh(scene);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_remove_filter.  Invalid argument(s)");
+	}
+	return return_code;
+}
+
+int Cmiss_scene_get_number_of_filters(Cmiss_scene *scene)
+{
+	if (scene)
+		return scene->filters->size();
+	return 0;
+}
+
+int Cmiss_scene_get_filter_priority(Cmiss_scene *scene,
+	Cmiss_scene_filter *filter)
+{
+	int priority = 0;
+	if (scene && filter && (filter->getScene() == scene))
+	{
+		int number_of_filters = scene->filters->size();
+		for (int i = 0; i < number_of_filters; i++)
+		{
+			if (scene->filters->at(i) == filter)
+			{
+				priority = i + 1;
+				break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_get_filter_priority.  Invalid argument(s)");
+	}
+	return priority;
+}
+
+int Cmiss_scene_set_filter_priority(Cmiss_scene *scene,
+	Cmiss_scene_filter_id filter, int priority)
+{
+	int return_code = 0;
+	if (scene && filter && (filter->getScene() == scene) &&
+		(0 <= priority) && (priority <= (int)scene->filters->size()))
+	{
+		int number_of_filters = scene->filters->size();
+		int new_index = (priority ? priority : number_of_filters) - 1;
+		for (int i = 0; i < number_of_filters; i++)
+		{
+			if (scene->filters->at(i) == filter)
+			{
+				scene->filters->erase(scene->filters->begin() + i);
+				scene->filters->insert(scene->filters->begin() + new_index, filter);
+				return_code = 1;
+				break;
+			}
+		}
+		if (return_code && scene->list_of_rendition)
+		{
+			scene->build = 1;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			scene->change_status = SCENE_CHANGE;
+			if (scene->scene_manager)
+			{
+				Scene_refresh(scene);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_set_filter_priority.  Invalid argument(s)");
+	}
+	return return_code;
+}
+
+struct Cmiss_scene_filter *Cmiss_scene_get_filter_at_priority(
+	Cmiss_scene *scene, int priority)
+{
+	Cmiss_scene_filter *filter = NULL;
+	if (scene && (priority > 0) && (priority <= (int)scene->filters->size()))
+	{
+		filter = Cmiss_scene_filter_access(scene->filters->at(priority));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_get_filter_at_priority.  Invalid argument(s)");
+	}
+	return filter;
 }
 
 int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *graphic)

@@ -121,6 +121,6 @@ int Scene_execute_opengl_display_list(struct Scene *scene,
 /***************************************************************************//**
  * Private function only to be called by Cmiss_scene_filter constructors.
  */
-int Scene_add_filter(Scene *scene, Cmiss_scene_filter *filter);
+int Scene_add_filter_private(Scene *scene, Cmiss_scene_filter *filter);
 
 #endif /* !defined (SCENE_HPP) */

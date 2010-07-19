@@ -130,7 +130,6 @@ Cmiss_scene_filter *Cmiss_scene_filter_access(Cmiss_scene_filter *filter)
 	return filter;
 }
 
-
 int Cmiss_scene_filter_destroy(Cmiss_scene_filter **filter_address)
 {
 	if (filter_address && (*filter_address))
@@ -144,6 +143,14 @@ int Cmiss_scene_filter_destroy(Cmiss_scene_filter **filter_address)
 	return 0;
 }
 
+enum Cmiss_scene_filter_action Cmiss_scene_filter_get_action(
+	Cmiss_scene_filter *filter)
+{
+	if (filter)
+		return filter->getAction();
+	return CMISS_SCENE_FILTER_HIDE;
+}
+
 int Cmiss_scene_filter_set_action(Cmiss_scene_filter *filter,
 	enum Cmiss_scene_filter_action action)
 {
@@ -152,23 +159,38 @@ int Cmiss_scene_filter_set_action(Cmiss_scene_filter *filter,
 	return 0;
 }
 
+int Cmiss_scene_filter_is_active(Cmiss_scene_filter *filter)
+{
+	if (filter)
+		return filter->isActive();
+	return 0;
+}
+
+int Cmiss_scene_filter_set_active(Cmiss_scene_filter *filter,
+	int active_flag)
+{
+	if (filter)
+		return filter->setActive(active_flag);
+	return 0;
+}
+
 Cmiss_scene_filter *Cmiss_scene_create_filter_all(Cmiss_scene *scene)
 {
 	Cmiss_scene_filter_all *filter = new Cmiss_scene_filter_all(scene);
-	Scene_add_filter(scene, filter);
+	Scene_add_filter_private(scene, filter);
 	return filter;
 }
 
 Cmiss_scene_filter *Cmiss_scene_create_filter_graphic_name(Cmiss_scene *scene, const char *match_name)
 {
 	Cmiss_scene_filter_graphic_name *filter = new Cmiss_scene_filter_graphic_name(scene, match_name);
-	Scene_add_filter(scene, filter);
+	Scene_add_filter_private(scene, filter);
 	return filter;
 }
 
 Cmiss_scene_filter *Cmiss_scene_create_filter_visibility_flags(Cmiss_scene *scene)
 {
 	Cmiss_scene_filter_visibility_flags *filter = new Cmiss_scene_filter_visibility_flags(scene);
-	Scene_add_filter(scene, filter);
+	Scene_add_filter_private(scene, filter);
 	return filter;
 }

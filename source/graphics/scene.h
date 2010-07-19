@@ -199,7 +199,6 @@ struct Define_scene_data
 {
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Scene) *scene_manager;
-	struct Scene *default_scene;
 	struct Cmiss_region *root_region;
 #if defined (OLD_CODE)
 	/* following used for enabling GFEs */

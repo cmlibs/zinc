@@ -72,6 +72,15 @@ Cmiss_scene_filter_id Cmiss_scene_filter_access(Cmiss_scene_filter_id filter);
 int Cmiss_scene_filter_destroy(Cmiss_scene_filter_id *filter_address);
 
 /*******************************************************************************
+ * Gets the action - hide or show - performed when this filter has a match.
+ * 
+ * @param filter  The filter to query.
+ * @return  Filter action.
+ */
+enum Cmiss_scene_filter_action Cmiss_scene_filter_get_action(
+	Cmiss_scene_filter_id filter);
+
+/*******************************************************************************
  * Sets the action - hide or show - performed when this filter has a match.
  * 
  * @param filter  The filter to modify.
@@ -80,5 +89,23 @@ int Cmiss_scene_filter_destroy(Cmiss_scene_filter_id *filter_address);
  */
 int Cmiss_scene_filter_set_action(Cmiss_scene_filter_id filter,
 	enum Cmiss_scene_filter_action action);
+
+/*******************************************************************************
+ * Query if the filter is active.
+ * 
+ * @param filter  The filter to query.
+ * @return  1 if the filter is active, 0 if not.
+ */
+int Cmiss_scene_filter_is_active(Cmiss_scene_filter_id filter);
+
+/*******************************************************************************
+ * Sets whether the filter is active.
+ * 
+ * @param filter  The filter to modify.
+ * @param active_flag  1 to make the filter active, 0 to make inactive.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_scene_filter_set_active(Cmiss_scene_filter_id filter,
+	int active_flag);
 
 #endif /*__CMISS_SCENE_FILTER_H__*/

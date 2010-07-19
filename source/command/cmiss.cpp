@@ -6811,7 +6811,6 @@ Executes a GFX DEFINE command.
 				Define_scene_data define_scene_data;
 				define_scene_data.light_manager=command_data->light_manager;
 				define_scene_data.scene_manager=command_data->scene_manager;
-				define_scene_data.default_scene=command_data->default_scene;
 				define_scene_data.root_region = command_data->root_region;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);
@@ -12292,70 +12291,45 @@ Executes a GFX LIST LMODEL.
 	return (return_code);
 } /* gfx_list_light_model */
 
+/***************************************************************************//**
+ * Executes a GFX LIST SCENE command.
+ */
 static int gfx_list_scene(struct Parse_state *state,
-	void *dummy_to_be_modified,void *scene_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Executes a GFX LIST SCENE.
-==============================================================================*/
+	void *dummy_to_be_modified, void *scene_manager_void)
 {
-	const char *current_token;
 	int return_code;
-	struct Scene *scene;
-	struct MANAGER(Scene) *scene_manager;
 
 	ENTER(gfx_list_scene);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && scene_manager_void)
 	{
-		if (scene_manager=(struct MANAGER(Scene) *)scene_manager_void)
+		struct MANAGER(Cmiss_scene) *scene_manager =
+			(struct MANAGER(Cmiss_scene) *)scene_manager_void;
+		Cmiss_scene *scene = NULL;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, /*token*/(const char *)NULL,
+			(void *)&scene, scene_manager_void, set_Scene);
+		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (current_token=state->current_token)
+			if (scene)
 			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(current_token,
-						scene_manager))
-					{
-						return_code = list_Scene(scene, (void *)NULL);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Unknown scene: %s",current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," SCENE_NAME");
-					return_code=1;
-				}
+				return_code = list_Scene(scene, (void *)NULL);
 			}
 			else
 			{
-#if defined (TO_BE_EDITED)
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(list_Scene,(void *)NULL,
-					scene_manager);
-#else
-						return_code = 1;
-#endif
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(Scene)(list_Scene,
+					(void *)NULL, scene_manager);
 			}
 		}
-		else
+		if (scene)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_scene.  Missing scene_manager_void");
-			return_code=0;
+			Cmiss_scene_destroy(&scene);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_list_scene.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,"gfx_list_scene.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -14561,7 +14535,6 @@ Executes a GFX MODIFY command.
 				Define_scene_data define_scene_data;
 				define_scene_data.light_manager=command_data->light_manager;
 				define_scene_data.scene_manager=command_data->scene_manager;
-				define_scene_data.default_scene=command_data->default_scene;
 				define_scene_data.root_region = command_data->root_region;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);

@@ -112,7 +112,12 @@ public:
 		list_type_specific();
 		display_message(INFORMATION_MESSAGE, "\n");
 	}
-	
+
+	Cmiss_scene *getScene()
+	{
+		return scene;
+	}
+
 	virtual void list_type_specific() const = 0;
 };
 
