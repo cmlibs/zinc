@@ -36,6 +36,8 @@
 #cmakedefine USE_PERL_INTERPRETER
 #cmakedefine USE_XML2
 #cmakedefine USE_NETGEN
+#cmakedefine USE_PNG
+#cmakedefine USE_TIFF
 
 // Miscellaneous defines
 #cmakedefine NETSCAPE_HELP
