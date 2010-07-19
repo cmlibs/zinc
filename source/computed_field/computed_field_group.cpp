@@ -106,13 +106,13 @@ public:
 	Computed_field_group(Cmiss_region *region)
 		: Computed_field_core()
 		, region(region)
-		, sub_group_map()
 		, selection_on(0)
 		, local_node_group(NULL)
 		, local_element_group(NULL)
 #if defined (USE_OPENCASCADE)
 		, local_cad_primitive_group(NULL)
 #endif /* defined (USE_OPENCASCADE) */
+		, sub_group_map()
 	{		//ACCESS(Cmiss_region)(region);
 	}
 

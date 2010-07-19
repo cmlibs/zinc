@@ -2010,9 +2010,6 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 
 void GraphicsWindowSetInteractiveButtonSelected(wxBitmapButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
 {
-	
-	char *test_string;
-	
 	if (last_button != button)
 	{
 		InteractiveButtonSetClickedBMP(button);
