@@ -38,7 +38,7 @@
 #include "general/debug.h"
 #include "graphics/colour.h"
 #include "graphics/material.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/rendition.h"
 
 int Cmiss_material_set_alpha(
 	Cmiss_material_id material, float alpha)

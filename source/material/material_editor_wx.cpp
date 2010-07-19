@@ -49,7 +49,8 @@ extern "C" {
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphics_module.h"
+#include "graphics/rendition.h"
 #include "api/cmiss_material.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"

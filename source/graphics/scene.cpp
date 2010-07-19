@@ -85,7 +85,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/rendition.h"
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.h"

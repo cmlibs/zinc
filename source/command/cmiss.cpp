@@ -170,8 +170,9 @@ extern "C" {
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#include "graphics/cmiss_graphic.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphic.h"
+#include "graphics/graphics_module.h"
+#include "graphics/rendition.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"

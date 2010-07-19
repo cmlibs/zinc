@@ -41,8 +41,8 @@ to Cmgui.
 
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
-#include "graphics/cmiss_graphic.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphic.h"
+#include "graphics/rendition.h"
 
 Cmiss_rendition_id Cmiss_rendition_get_from_region(Cmiss_region_id root_region)
 {

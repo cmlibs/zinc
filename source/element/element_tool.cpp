@@ -76,8 +76,8 @@ extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
 #include "motif/image_utilities.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#include "graphics/cmiss_rendition.h"
-#include "graphics/cmiss_graphic.h"
+#include "graphics/rendition.h"
+#include "graphics/graphic.h"
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"

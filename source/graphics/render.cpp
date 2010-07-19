@@ -51,7 +51,7 @@ extern "C" {
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"
 }
-#include "graphics/cmiss_rendition.hpp"
+#include "graphics/rendition.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/material.hpp"

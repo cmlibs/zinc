@@ -42,7 +42,7 @@ extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/rendition.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 }

@@ -1092,8 +1092,9 @@ GENERAL_INTERFACE_SRCS = \
 	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
-	graphics/cmiss_graphic.cpp \
-	graphics/cmiss_rendition.cpp \
+	graphics/graphic.cpp \
+	graphics/graphics_module.cpp \
+	graphics/rendition.cpp \
 	graphics/colour.c \
 	graphics/complex.c \
 	graphics/decimate_voltex.c \

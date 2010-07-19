@@ -43,8 +43,10 @@ extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "graphics/element_point_ranges.h"
+#include "graphics/graphic.h"
 #include "graphics/scene.h"
-#include "graphics/cmiss_graphic.h"
+
 }
 #include "graphics/scene.hpp"
 #include "graphics/scene_filters.hpp"

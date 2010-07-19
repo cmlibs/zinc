@@ -78,8 +78,8 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "graphics/region_tree_viewer_wx.h"
 #include "graphics/font.h"
-#include "graphics/cmiss_rendition.h"
-#include "graphics/cmiss_graphic.h"
+#include "graphics/rendition.h"
+#include "graphics/graphic.h"
 }
 #include "graphics/region_tree_viewer_wx.xrch"
 

@@ -48,7 +48,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphics_module.h"
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
 /* following is temporary until circular references are removed for Cmiss_region  */

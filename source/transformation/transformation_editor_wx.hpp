@@ -53,7 +53,7 @@ Create a cpp class that act as a transformation editor for the wx widgets.
 
 extern "C"{
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/rendition.h"
 #include "io_devices/conversion.h"
 #include "graphics/graphics_library.h"
 #include "graphics/quaternion.hpp"

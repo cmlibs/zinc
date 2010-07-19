@@ -37,7 +37,7 @@
 #include "api/cmiss_material.h"
 #include "api/cmiss_graphics_module.h"
 #include "general/debug.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphics_module.h"
 #include "graphics/material.h"
 
 Cmiss_material_id Cmiss_graphics_module_find_material_by_name(

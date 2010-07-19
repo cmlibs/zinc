@@ -41,7 +41,7 @@ to rendition.
 
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
-#include "graphics/cmiss_graphic.h"
+#include "graphics/graphic.h"
 
 
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)

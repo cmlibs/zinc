@@ -56,7 +56,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/colour.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/graphics_module.h"
 #include "graphics/transform_tool.h"
 #include "graphics/scene.h"
 #include "interaction/interactive_tool.h"

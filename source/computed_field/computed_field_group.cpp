@@ -55,7 +55,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "graphics/cmiss_rendition.h"
+#include "graphics/rendition.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
