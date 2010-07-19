@@ -137,227 +137,231 @@ DECLARE_LOCAL_MANAGER_FUNCTIONS(Comfile_window)
 class wxComfileWindow : public wxFrame
 {	
 	Comfile_window *comfile_window;
-	 wxListBox *comfile_listbox;
-	 wxButton *all_button, *selectedbutton, *close_button;
-	 wxFrame *this_frame;
-	 wxString blank;	 
-	 int number;
-	 wxString selectedcommand;
-	 wxFont comfile_font;
-	 wxColour comfile_colour;
+	wxListBox *comfile_listbox;
+	wxButton *all_button, *selectedbutton, *close_button;
+	wxFrame *this_frame;
+	wxString blank;	 
+	int number;
+	wxString selectedcommand;
+	wxFont comfile_font;
+	wxColour comfile_colour;
 public:
 
-	 wxComfileWindow(Comfile_window *comfile_window): 
-			comfile_window(comfile_window)
-	 {
-			wxXmlInit_comfile_window_wx();
-			comfile_window->wx_comfile_window = (wxComfileWindow *)NULL;
-			wxXmlResource::Get()->LoadFrame(this,
-				 (wxWindow *)NULL, _T("CmguiComfileWindow"));
-			this->SetIcon(cmiss_icon_xpm);
-			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
-			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
-			char **command,*line, *temp_string, *command_string;
-			struct IO_stream *comfile;
-			int i,number_of_commands;
-			wxString blank = "";	 
-			if ((comfile_window->file_name)&&
-				 (comfile=CREATE(IO_stream)(comfile_window->io_stream_package))&&
-				 IO_stream_open_for_read(comfile, comfile_window->file_name))
+	wxComfileWindow(Comfile_window *comfile_window): 
+		comfile_window(comfile_window)
+	{
+		wxXmlInit_comfile_window_wx();
+		comfile_window->wx_comfile_window = (wxComfileWindow *)NULL;
+		wxXmlResource::Get()->LoadFrame(this,
+			(wxWindow *)NULL, _T("CmguiComfileWindow"));
+		this->SetIcon(cmiss_icon_xpm);
+		comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
+		this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
+		char **command,*line, *temp_string, *command_string;
+		struct IO_stream *comfile;
+		int i,number_of_commands;
+		wxString blank = "";	 
+		if ((comfile_window->file_name)&&
+			(comfile=CREATE(IO_stream)(comfile_window->io_stream_package))&&
+			IO_stream_open_for_read(comfile, comfile_window->file_name))
+		{
+			number_of_commands=0;
+			while ((EOF!=IO_stream_scan(comfile," "))&&!IO_stream_end_of_stream(comfile)&&
+				IO_stream_read_string(comfile,"[^\n]",&line))
 			{
-				 number_of_commands=0;
-				 while ((EOF!=IO_stream_scan(comfile," "))&&!IO_stream_end_of_stream(comfile)&&
-						IO_stream_read_string(comfile,"[^\n]",&line))
-				 {
-						if (command_string=trim_string(line))
+				if (command_string=trim_string(line))
+				{
+					if (command_string)
+					{
+							number = comfile_listbox->GetCount();
+							if (number == 0)
+								comfile_listbox->InsertItems(1, &blank,number);
+							number = comfile_listbox->GetCount();
+							wxString string(command_string, wxConvUTF8);
+							comfile_listbox->InsertItems(1,&string, number-1);
+							number_of_commands++;
+							DEALLOCATE(command_string);
+					}
+				}
+				DEALLOCATE(line);
+			}
+			if (!IO_stream_end_of_stream(comfile))
+			{
+				display_message(ERROR_MESSAGE,
+					 "identify_command_list.  Error reading comfile");
+			}
+			if (number_of_commands>0)
+			{
+				if (ALLOCATE(command,char *,number_of_commands))
+				{
+					comfile_window->number_of_commands=number_of_commands;
+					comfile_window->commands=command;
+					for (i=number_of_commands;i>0;i--)
+					{
+						*command=(char *)NULL;
+						command++;
+					}
+					temp_string = NULL;
+					if (ALLOCATE(temp_string,char,(strlen(comfile_window->name) + 10)))
+					{
+						strcpy(temp_string, "comfile: ");
+						strcat(temp_string, comfile_window->name);
+						temp_string[(strlen(comfile_window->name) + 9)]='\0';
+						this_frame->SetTitle(temp_string);
+						if (temp_string)
 						{
-							 if (command_string)
-							 {
-									number = comfile_listbox->GetCount();
-									if (number == 0)
-										 comfile_listbox->InsertItems(1, &blank,number);
-									number = comfile_listbox->GetCount();
-									wxString string(command_string, wxConvUTF8);
-									comfile_listbox->InsertItems(1,&string, number-1);
-									number_of_commands++;
-									DEALLOCATE(command_string);
-							 }
+							DEALLOCATE(temp_string);
 						}
-						DEALLOCATE(line);
-				 }
-				 if (!IO_stream_end_of_stream(comfile))
-				 {
-						display_message(ERROR_MESSAGE,
-							 "identify_command_list.  Error reading comfile");
-				 }
-				 if (number_of_commands>0)
-				 {
-						if (ALLOCATE(command,char *,number_of_commands))
-						{
-							 comfile_window->number_of_commands=number_of_commands;
-							 comfile_window->commands=command;
-							 for (i=number_of_commands;i>0;i--)
-							 {
-									*command=(char *)NULL;
-									command++;
-							 }
-							 temp_string = NULL;
-							 if (ALLOCATE(temp_string,char,(strlen(comfile_window->name) + 10)))
-							 {
-									strcpy(temp_string, "comfile: ");
-									strcat(temp_string, comfile_window->name);
-									temp_string[(strlen(comfile_window->name) + 9)]='\0';
-									this_frame->SetTitle(temp_string);
-									if (temp_string)
-									{
-										 DEALLOCATE(temp_string);
-									}	
-							 }	
-						}
-						else
-						{
-							 display_message(ERROR_MESSAGE,
-									"identify_command_list.  Could not allocate memory for commands");
-						}
-				 }
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"identify_command_list.  Could not allocate memory for commands");
+				}
+			}
 			IO_stream_close(comfile);
 			DESTROY(IO_stream)(&comfile);
-			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"identify_command_list.  Could not open file");
-			}
-			this_frame->SetSize(wxSize(800,600));		
-			this_frame->SetMinSize(wxSize(20,20));
-			Show();
-	 };
-	 
-  wxComfileWindow()
-  {
-  };
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"identify_command_list.  Could not open file");
+		}
+		this_frame->SetSize(wxSize(800,600));		
+		this_frame->SetMinSize(wxSize(20,20));
+		Show();
+	};
 
-  ~wxComfileWindow()
-	 {
-			comfile_window->wx_comfile_window = NULL;
-	 }
+	wxComfileWindow()
+	{
+	};
 
-	 void OnFormatFont(wxCommandEvent& event)
-	 {
-			USE_PARAMETER(event);
-			wxFontData fdata;
-			wxFont font;
-			wxColour colour;
-			font = comfile_listbox->GetFont();
-			fdata.SetInitialFont(font);
-			colour = comfile_listbox->GetForegroundColour();
-			fdata.SetColour(colour);
-			fdata.SetShowHelp(true);
-			wxFontDialog *FontDlg = new wxFontDialog(this, fdata);
+	~wxComfileWindow()
+	{
+		comfile_window->wx_comfile_window = NULL;
+	}
 
-			if(FontDlg->ShowModal() == wxID_OK)
-			{
-				 fdata = FontDlg->GetFontData();
-				 font = fdata.GetChosenFont();
-				 comfile_listbox->SetFont(font);
-				 comfile_listbox->SetForegroundColour(fdata.GetColour()); 
-			}
-			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
-	 } 
+	void OnFormatFont(wxCommandEvent& event)
+	{
+		USE_PARAMETER(event);
+		wxFontData fdata;
+		wxFont font;
+		wxColour colour;
+		font = comfile_listbox->GetFont();
+		fdata.SetInitialFont(font);
+		colour = comfile_listbox->GetForegroundColour();
+		fdata.SetColour(colour);
+		fdata.SetShowHelp(true);
+		wxFontDialog *FontDlg = new wxFontDialog(this, fdata);
 
-void SingleClickedOnList(wxCommandEvent &event)
-	 {		
-	USE_PARAMETER(event);
-			int number_of_selected_commands;
-			wxArrayInt selected_commands;
-			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
-			{
-				 /* execute the selected commands */
-				 if (number_of_selected_commands>0)
-				 {
-						/* retrieve the command string */
-						selectedcommand = comfile_listbox->GetString(selected_commands[0]);
-						Execute_command_execute_string(comfile_window->set_command,
-							 const_cast<char *>(selectedcommand.c_str()));
-				 }
-			}
-	 }
+		if(FontDlg->ShowModal() == wxID_OK)
+		{
+			 fdata = FontDlg->GetFontData();
+			 font = fdata.GetChosenFont();
+			 comfile_listbox->SetFont(font);
+			 comfile_listbox->SetForegroundColour(fdata.GetColour()); 
+		}
+		this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
+	}
 
-void DoubleClickedOnList(wxCommandEvent &event)
-	 {
-	USE_PARAMETER(event);
-			int i,number_of_selected_commands;
-			wxArrayInt selected_commands;
-			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
-			{
-				 /* execute the selected commands */
-				 for (i=0;i<number_of_selected_commands;i++)
-				 {
-						/* retrieve the command string */
-						selectedcommand = comfile_listbox->GetString(selected_commands[i]);
-						Execute_command_execute_string(comfile_window->execute_command,					
-							 const_cast<char *>(selectedcommand.c_str())) ;
-				 }
-			}
-	 }
-
-void AllClicked(wxCommandEvent &event)
-{
-	USE_PARAMETER(event);
-	 int i,number_of_selected_commands;
-	 /* get the number of selected commands and their positions */
-	 if (number_of_selected_commands = comfile_listbox->GetCount())
-	 {
+	void SingleClickedOnList(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		int number_of_selected_commands;
+		wxArrayInt selected_commands;
+		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
+		{
 			/* execute the selected commands */
-			for (i=0;i<number_of_selected_commands-1;i++)
+			if (number_of_selected_commands>0)
 			{
-				 /* retrieve the command string */
-				 selectedcommand = comfile_listbox->GetString(i);
-				 Execute_command_execute_string(comfile_window->execute_command,					
-						const_cast<char *>(selectedcommand.c_str())) ;
+				/* retrieve the command string */
+				selectedcommand = comfile_listbox->GetString(selected_commands[0]);
+				char *command = duplicate_string(selectedcommand.c_str());
+				Execute_command_execute_string(comfile_window->set_command, command);
+				DEALLOCATE(command);
 			}
-	 }
-// 	 wx_Display_on_command_list((char)NULL);
-}
+		}
+	}
 
-void SelectedClicked(wxCommandEvent &event)
-{	
-	USE_PARAMETER(event);
-	 wxArrayInt selected_commands;
-	 int i,number_of_selected_commands;
-	 /* get the number of selected commands and their positions */
-	 if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
-	 {
+	void DoubleClickedOnList(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		int i,number_of_selected_commands;
+		wxArrayInt selected_commands;
+		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
+		{
 			/* execute the selected commands */
 			for (i=0;i<number_of_selected_commands;i++)
 			{
-				 /* retrieve the command string */
-				 selectedcommand = comfile_listbox->GetString(selected_commands[i]);
-				 Execute_command_execute_string(comfile_window->execute_command,					
-						const_cast<char *>(selectedcommand.c_str())) ;
+				/* retrieve the command string */
+				selectedcommand = comfile_listbox->GetString(selected_commands[i]);
+				char *command = duplicate_string(selectedcommand.c_str());
+				Execute_command_execute_string(comfile_window->execute_command, command);
+				DEALLOCATE(command);
 			}
-	 }
-}
+		}
+	}
+
+	void AllClicked(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		int i,number_of_selected_commands;
+		/* get the number of selected commands and their positions */
+		if (number_of_selected_commands = comfile_listbox->GetCount())
+		{
+			/* execute the selected commands */
+			for (i=0;i<number_of_selected_commands-1;i++)
+			{
+				/* retrieve the command string */
+				selectedcommand = comfile_listbox->GetString(i);
+				char *command = duplicate_string(selectedcommand.c_str());
+				Execute_command_execute_string(comfile_window->execute_command, command);
+				DEALLOCATE(command);
+			}
+		}
+	// 	 wx_Display_on_command_list((char)NULL);
+	}
+
+	void SelectedClicked(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		wxArrayInt selected_commands;
+		int i,number_of_selected_commands;
+		/* get the number of selected commands and their positions */
+		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
+		{
+			/* execute the selected commands */
+			for (i=0;i<number_of_selected_commands;i++)
+			{
+				/* retrieve the command string */
+				selectedcommand = comfile_listbox->GetString(selected_commands[i]);
+				char *command = duplicate_string(selectedcommand.c_str());
+				Execute_command_execute_string(comfile_window->execute_command, command);
+				DEALLOCATE(command);
+			}
+		}
+	}
 
 
-void CloseClicked(wxCommandEvent &event)
-{
-	USE_PARAMETER(event);
-	 this->Destroy();
-}
+	void CloseClicked(wxCommandEvent &event)
+	{
+		USE_PARAMETER(event);
+		this->Destroy();
+	}
 
-  DECLARE_DYNAMIC_CLASS(wxComfileWindow);
-  DECLARE_EVENT_TABLE();
+	DECLARE_DYNAMIC_CLASS(wxComfileWindow);
+	DECLARE_EVENT_TABLE();
 };
 
 IMPLEMENT_DYNAMIC_CLASS(wxComfileWindow, wxFrame)
 BEGIN_EVENT_TABLE(wxComfileWindow, wxFrame)
-	 EVT_MENU(XRCID("FontSettings"),wxComfileWindow::OnFormatFont)
-	 EVT_LISTBOX(XRCID("ComfileListBox"),wxComfileWindow::SingleClickedOnList)
-	 EVT_LISTBOX_DCLICK(XRCID("ComfileListBox"),wxComfileWindow::DoubleClickedOnList)
-	 EVT_BUTTON(XRCID("AllButton"),wxComfileWindow::AllClicked)
-	 EVT_BUTTON(XRCID("SelectedButton"),wxComfileWindow::SelectedClicked)
-	 EVT_BUTTON(XRCID("CloseButton"),wxComfileWindow::CloseClicked)
+	EVT_MENU(XRCID("FontSettings"),wxComfileWindow::OnFormatFont)
+	EVT_LISTBOX(XRCID("ComfileListBox"),wxComfileWindow::SingleClickedOnList)
+	EVT_LISTBOX_DCLICK(XRCID("ComfileListBox"),wxComfileWindow::DoubleClickedOnList)
+	EVT_BUTTON(XRCID("AllButton"),wxComfileWindow::AllClicked)
+	EVT_BUTTON(XRCID("SelectedButton"),wxComfileWindow::SelectedClicked)
+	EVT_BUTTON(XRCID("CloseButton"),wxComfileWindow::CloseClicked)
 END_EVENT_TABLE()
 #endif /* defined (WX_USER_INTERFACE) */
 /*
