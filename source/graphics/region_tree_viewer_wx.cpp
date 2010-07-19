@@ -2456,8 +2456,8 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 	void EnterIsoScalar(wxCommandEvent &event)
 	{
 		double *current_iso_values = NULL,decimation_threshold, *iso_values = NULL,
-			current_first_iso_value, current_last_iso_value, first_iso_value,
-			last_iso_value;
+			current_first_iso_value, current_last_iso_value, first_iso_value = 0.0,
+			last_iso_value = 0.0;
 		char *text_entry = NULL, temp_string[50], *vector_temp_string = NULL;
 		int allocated_length, changed_value = 0, error, i, length,
 			new_number_of_iso_values, number_of_iso_values,
