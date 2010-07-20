@@ -334,7 +334,7 @@ DESCRIPTION :
 	 struct User_interface *user_interface;
 	 enum Cmiss_graphic_type current_graphic_type;
 	 struct Cmiss_graphic *current_graphic;
-	 struct LIST(GT_object) *glyph_list;	
+	 struct MANAGER(GT_object) *glyph_manager;
 	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	 struct MANAGER(Computed_field) *field_manager;
 	 struct MANAGER(Graphics_font) *font_manager;
@@ -544,8 +544,8 @@ class wxRegionTreeViewer : public wxFrame
 	 *radius_scalar_chooser;	
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	 *iso_scalar_chooser;	
-	DEFINE_LIST_CLASS(GT_object);
-	List_chooser<GT_object,LIST_CLASS(GT_object)>
+	DEFINE_MANAGER_CLASS(GT_object);
+	Managed_object_chooser<GT_object,MANAGER_CLASS(GT_object)>
 	 *glyph_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*orientation_scale_field_chooser;		
@@ -2037,8 +2037,8 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 				Graphic_glyph_scaling_mode glyph_scaling_mode;
 				Triple glyph_centre,glyph_scale_factors,glyph_size;
 				Computed_field *orientation_scale_field, *variable_scale_field; ;
-				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-					region_tree_viewer->glyph_list);
+				glyph=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+					region_tree_viewer->glyph_manager);
 				if (!(Cmiss_graphic_get_glyph_parameters(graphic,
 							&old_glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
 							&orientation_scale_field, glyph_scale_factors,
@@ -3663,8 +3663,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 				if (glyph_chooser == NULL)
 				{
 					 glyph_chooser = 
-							new List_chooser<GT_object, LIST_CLASS(GT_object)>
-							(glyph_chooser_panel, glyph, region_tree_viewer->glyph_list,
+							new Managed_object_chooser<GT_object, MANAGER_CLASS(GT_object)>
+							(glyph_chooser_panel, glyph, region_tree_viewer->glyph_manager,
 								 (LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL, (void *)NULL, 
 								 region_tree_viewer->user_interface);
 					 Callback_base< GT_object* > *glyph_callback = 
@@ -5153,7 +5153,7 @@ struct Region_tree_viewer *CREATE(Region_tree_viewer)(
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct Graphics_font *default_font,
-	struct LIST(GT_object) *glyph_list,
+	struct MANAGER(GT_object) *glyph_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
@@ -5171,7 +5171,7 @@ DESCRIPTION :
 	region_tree_viewer = (struct Region_tree_viewer *)NULL;
 	if (scene_manager && scene && root_region &&
 		graphical_material_manager && default_material &&
-		glyph_list && spectrum_manager && default_spectrum &&
+		glyph_manager && spectrum_manager && default_spectrum &&
 		volume_texture_manager && font_package && user_interface)
 	{
 		if (ALLOCATE(region_tree_viewer,struct Region_tree_viewer,1))
@@ -5189,7 +5189,7 @@ DESCRIPTION :
 			 region_tree_viewer->default_material=default_material;
 			 region_tree_viewer->selected_material=default_material;
 			 region_tree_viewer->default_font=default_font;
-			 region_tree_viewer->glyph_list=glyph_list;
+			 region_tree_viewer->glyph_manager=glyph_manager;
 			 region_tree_viewer->scene_manager = scene_manager;
 			 region_tree_viewer->user_interface=user_interface;
 			 region_tree_viewer->current_graphic_type=CMISS_GRAPHIC_LINES;

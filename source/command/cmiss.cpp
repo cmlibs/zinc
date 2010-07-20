@@ -342,10 +342,8 @@ DESCRIPTION :
 #if defined (SELECT_DESCRIPTORS)
 	struct LIST(Io_device) *device_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
-	/*???RC.  Single list of graphics objects - eventually set up manager ? */
-	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */
-	struct LIST(GT_object) *glyph_list;
+	struct MANAGER(GT_object) *glyph_manager;
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
@@ -808,8 +806,8 @@ a single point in 3-D space with a text string drawn beside it.
 			{
 				if (annotation_text)
 				{
-					graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-						graphics_object_name,command_data->glyph_list);
+					graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+						graphics_object_name,command_data->glyph_manager);
 					if (graphics_object)
 					{
 						if (g_POINTSET==GT_object_get_type(graphics_object))
@@ -837,8 +835,8 @@ a single point in 3-D space with a text string drawn beside it.
 					{
 						graphics_object=CREATE(GT_object)(graphics_object_name,
 							g_POINTSET,material);
-						if (!(graphics_object && ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-									command_data->glyph_list)))
+						if (!(graphics_object && ADD_OBJECT_TO_MANAGER(GT_object)(graphics_object,
+									command_data->glyph_manager)))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_create_points.  Could not create graphics object");
@@ -898,8 +896,8 @@ a single point in 3-D space with a text string drawn beside it.
 							}
 							if (0==GT_object_get_number_of_times(graphics_object))
 							{
-								REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-									command_data->glyph_list);
+								REMOVE_OBJECT_FROM_MANAGER(GT_object)(graphics_object,
+									command_data->glyph_manager);
 							}
 						}
 					}
@@ -960,7 +958,7 @@ a single point in 3-D space with an axes glyph.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		graphics_object_name = duplicate_string("your axes");
+		graphics_object_name = duplicate_string("temp axes");
 		glyph = (struct GT_object *)NULL;
 		glyph_name = duplicate_string("axes_xyz");
 		material =
@@ -995,8 +993,8 @@ a single point in 3-D space with an axes glyph.
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code)
 		{
-			if (graphics_object = FIND_BY_IDENTIFIER_IN_LIST(GT_object, name)(
-				graphics_object_name, command_data->glyph_list))
+			if (graphics_object = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object, name)(
+				graphics_object_name, command_data->glyph_manager))
 			{
 				if (g_GLYPH_SET == GT_object_get_type(graphics_object))
 				{
@@ -1027,8 +1025,8 @@ a single point in 3-D space with an axes glyph.
 			{
 				if (!((graphics_object = CREATE(GT_object)(graphics_object_name,
 								g_GLYPH_SET, material)) &&
-					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-						command_data->glyph_list)))
+					ADD_OBJECT_TO_MANAGER(GT_object)(graphics_object,
+						command_data->glyph_manager)))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_create_points.  Could not create graphics object");
@@ -1038,8 +1036,8 @@ a single point in 3-D space with an axes glyph.
 			}
 			if (return_code)
 			{
-				if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(glyph_name,
-					command_data->glyph_list))
+				if (glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(glyph_name,
+					command_data->glyph_manager))
 				{
 					ACCESS(GT_object)(glyph);
 				}
@@ -1105,8 +1103,8 @@ a single point in 3-D space with an axes glyph.
 				if ((!return_code) &&
 					(0 == GT_object_get_number_of_times(graphics_object)))
 				{
-					REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-						command_data->glyph_list);
+					REMOVE_OBJECT_FROM_MANAGER(GT_object)(graphics_object,
+						command_data->glyph_manager);
 				}
 			}
 		}
@@ -1238,8 +1236,8 @@ with tick marks and labels for showing the scale of a spectrum.
 					font = ACCESS(Graphics_font)(command_data->default_font);
 				}
 				/* try to find existing colour_bar for updating */
-				graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->glyph_list);
+				graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+					graphics_object_name,command_data->glyph_manager);
 				if (create_Spectrum_colour_bar(&graphics_object,
 						graphics_object_name,spectrum,/*component_number*/0,
 						bar_centre,bar_axis,side_axis,
@@ -1247,10 +1245,10 @@ with tick marks and labels for showing the scale of a spectrum.
 						number_format,material,label_material, font))
 				{
 					ACCESS(GT_object)(graphics_object);
-					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
-						command_data->glyph_list) ||
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->glyph_list))
+					if (IS_MANAGED(GT_object)(graphics_object,
+						command_data->glyph_manager) ||
+						ADD_OBJECT_TO_MANAGER(GT_object)(graphics_object,
+							command_data->glyph_manager))
 					{
 						return_code=1;
 					}
@@ -1843,8 +1841,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 		}
 		if (return_code)
 		{
-			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-				graphics_object_name,command_data->graphics_object_list))
+			if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+				graphics_object_name,command_data->glyph_manager))
 			{
 				if (create_more)
 				{
@@ -1879,8 +1877,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				{
 					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
 						g_POINTSET,material))&&
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list))
+						ADD_OBJECT_TO_MANAGER(GT_object)(graphics_object,
+							command_data->glyph_manager))
 					{
 						return_code=1;
 					}
@@ -7283,8 +7281,8 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-						current_token,command_data->graphics_object_list))
+					if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+						current_token,command_data->glyph_manager))
 					{
 						/* remove all instances of the graphics object from all scenes */
 						FOR_EACH_OBJECT_IN_MANAGER(Scene)(
@@ -7292,8 +7290,8 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 							command_data->scene_manager);
 						/* remove graphics object from the global list. Object is destroyed
 							 when deaccessed by list */
-						REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list);
+						REMOVE_OBJECT_FROM_MANAGER(GT_object)(graphics_object,
+							command_data->glyph_manager);
 						return_code=1;
 					}
 					else
@@ -7319,7 +7317,7 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_destroy_graphics_object.  Missing graphics_object_list");
+				"gfx_destroy_graphics_object.  Missing glyph_manager");
 			return_code=0;
 		}
 	}
@@ -8062,7 +8060,7 @@ Executes a GFX DRAW command.
 			(void *)1,set_name);
 		/* graphics_object */
 		Option_table_add_entry(option_table,"glyph",&graphics_object,
-			command_data->glyph_list,set_Graphics_object);
+			command_data->glyph_manager,set_Graphics_object);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
@@ -8074,7 +8072,7 @@ Executes a GFX DRAW command.
 			(void *)1,set_name);
 		/* default when token omitted (graphics_object) */
 		Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
-			command_data->glyph_list,set_Graphics_object);
+			command_data->glyph_manager,set_Graphics_object);
 		return_code = Option_table_multi_parse(option_table,state);
 		/* no errors, not asking for help */
 		if (return_code)
@@ -8427,7 +8425,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 						Material_package_get_material_manager(command_data->material_package),
 						Material_package_get_default_material(command_data->material_package),
 						command_data->default_font,
-						command_data->glyph_list,
+						command_data->glyph_manager,
 						command_data->spectrum_manager,
 						command_data->default_spectrum,
 						command_data->volume_texture_manager,
@@ -8441,7 +8439,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 						Material_package_get_material_manager(command_data->material_package),
 						Material_package_get_default_material(command_data->material_package),
 						command_data->default_font,
-						command_data->glyph_list,
+						command_data->glyph_manager,
 						command_data->spectrum_manager,
 						command_data->default_spectrum,
 						command_data->volume_texture_manager,
@@ -10001,8 +9999,8 @@ static int execute_command_gfx_import(struct Parse_state *state,
 				}
 			}
 #else
-				if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(glyph_name,
-					command_data->glyph_list))
+				if (glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(glyph_name,
+					command_data->glyph_manager))
 				{
 					ACCESS(GT_object)(glyph);
 				}
@@ -11960,20 +11958,20 @@ Executes a GFX LIST GLYPH/GRAPHICS_OBJECT command.
 	const char *current_token;
 	int return_code;
 	struct GT_object *object;
-	struct LIST(GT_object) *list;
+	struct MANAGER(GT_object) *list;
 
 	ENTER(gfx_list_graphics_object);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (list=(struct LIST(GT_object) *)object_list_void)
+		if (list=(struct MANAGER(GT_object) *)object_list_void)
 		{
 			if (current_token=state->current_token)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+					if (object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 						current_token,list))
 					{
 						return_code=GT_object_list_contents(object,(void *)NULL);
@@ -11995,7 +11993,7 @@ Executes a GFX LIST GLYPH/GRAPHICS_OBJECT command.
 			else
 			{
 				/* list contents of all objects in list */
-				return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(GT_object)(
 					GT_object_list_contents,(void *)NULL,list);
 			}
 		}
@@ -12849,10 +12847,7 @@ Executes a GFX LIST command.
 				command_data_void, gfx_list_g_element);
 			/* glyph */
 			Option_table_add_entry(option_table, "glyph", NULL,
-				command_data->glyph_list, gfx_list_graphics_object);
-			/* graphics_object */
-			Option_table_add_entry(option_table, "graphics_object", NULL,
-				command_data->graphics_object_list, gfx_list_graphics_object);
+				command_data->glyph_manager, gfx_list_graphics_object);
 			/* grid_points */
 			Option_table_add_entry(option_table, "grid_points", NULL,
 				command_data_void, gfx_list_grid_points);
@@ -13284,7 +13279,7 @@ Parameter <help_mode> should be NULL when calling this function.
 				rendition_command_data.graphics_font_package = 
 					command_data->graphics_font_package;
 				rendition_command_data.default_font = command_data->default_font;
-				rendition_command_data.glyph_list = command_data->glyph_list;
+				rendition_command_data.glyph_manager = command_data->glyph_manager;
 				rendition_command_data.computed_field_manager = 
 					 Cmiss_region_get_Computed_field_manager(region);
 				rendition_command_data.region = region;
@@ -13406,8 +13401,8 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			(strcmp(PARSER_HELP_STRING,state->current_token)&&
 			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
-			if(graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)
-				(state->current_token,command_data->glyph_list))
+			if(graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)
+				(state->current_token,command_data->glyph_manager))
 			{
 				shift_Parse_state(state,1);
 				/* initialise defaults */
@@ -16041,7 +16036,7 @@ otherwise the file of graphics objects is read.
 					{
 						return_code=file_read_graphics_objects(file_name, command_data->io_stream_package,
 							Material_package_get_material_manager(command_data->material_package),
-							command_data->glyph_list);
+							command_data->glyph_manager);
 					}
 				}
 			}
@@ -16268,7 +16263,7 @@ otherwise the wavefront obj file is read.
 							graphics_object_name, render_type, time, 
 							Material_package_get_material_manager(command_data->material_package),
 							Material_package_get_default_material(command_data->material_package),
-							command_data->glyph_list);
+							command_data->glyph_manager);
 					}
 				}
 			}
@@ -20008,8 +20003,8 @@ Executes a CELL OPEN command.
 						command_data->default_scene,
 						command_data->default_spectrum,
 						command_data->default_time_keeper,
-						command_data->graphics_object_list,
-						command_data->glyph_list,
+						/* command_data->graphics_object_list */ NULL,
+						command_data->glyph_manager,
 						command_data->interactive_tool_manager,
 						command_data->light_manager,
 						command_data->light_model_manager,
@@ -23422,8 +23417,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (SELECT_DESCRIPTORS)
 		command_data->device_list=(struct LIST(Io_device) *)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
-		command_data->graphics_object_list=(struct LIST(GT_object) *)NULL;
-		command_data->glyph_list=(struct LIST(GT_object) *)NULL;	
+		command_data->glyph_manager=(struct MANAGER(GT_object) *)NULL;
 		command_data->any_object_selection=(struct Any_object_selection *)NULL;
 		command_data->element_point_ranges_selection=(struct Element_point_ranges_selection *)NULL;
 		command_data->element_selection=(struct FE_element_selection *)NULL;
@@ -23756,18 +23750,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		command_data->root_region = Cmiss_context_get_default_region(context);
 
-		/* create graphics object list */
-		/*???RC.  Eventually want graphics object manager */
-		command_data->graphics_object_list=Cmiss_graphics_module_get_default_GT_object_list(
-			command_data->graphics_module);
-
 #if defined (SELECT_DESCRIPTORS)
 		/* create device list */
 		/*SAB.  Eventually want device manager */
 		command_data->device_list=CREATE(LIST(Io_device))();
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-		command_data->glyph_list = Cmiss_graphics_module_get_default_glyph_list(
+		command_data->glyph_manager = Cmiss_graphics_module_get_default_glyph_manager(
 			command_data->graphics_module);
 
 		/* global list of selected objects */
@@ -23994,7 +23983,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->node_tool,
 			command_data->transform_tool,
 #endif /* defined (MOTIF_USER_INTERFACE) */
-			command_data->glyph_list,
+			command_data->glyph_manager,
 			command_data->computed_field_package,
 			command_data->basis_manager,
 			command_data->root_region,

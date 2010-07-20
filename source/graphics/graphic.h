@@ -187,7 +187,7 @@ Subset of command data passed to g_element modify routines.
 	struct Graphical_material *default_material;
 	struct Graphics_font *default_font;
 	struct Graphics_font_package *graphics_font_package;
-	struct LIST(GT_object *) glyph_list;
+	struct MANAGER(GT_object *) glyph_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
 	/* root_region used for seeding streamlines from the nodes in a region */

@@ -314,7 +314,7 @@ final message to be sent to clients.
 
 #if defined (OLD_CODE)
 int Scene_enable_graphics(struct Scene *scene,
-	struct LIST(GT_object) *glyph_list,
+	struct MANAGER(GT_object) *glyph_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct Graphics_font *default_font,

@@ -420,6 +420,8 @@ Graphical object data structure.
 	struct Texture_tiling *texture_tiling;
 
 	union GT_primitive_list *primitive_lists;
+	struct MANAGER(GT_object) *manager;
+	int manager_change_status;
 #if defined (OPENGL_API)
 	GLuint display_list;
 

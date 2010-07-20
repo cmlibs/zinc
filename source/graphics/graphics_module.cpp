@@ -66,8 +66,7 @@ struct Startup_material_definition
 struct Cmiss_graphics_module
 {
 	/* attribute managers and defaults: */
-	struct LIST(GT_object) *glyph_list;
-	struct LIST(GT_object) *graphics_object_list;
+	struct MANAGER(GT_object) *glyph_manager;
 	struct Material_package *material_package;
 	struct Graphics_font *default_font;
 	struct Graphics_font_package *graphics_font_package;
@@ -103,11 +102,10 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->spectrum_manager = NULL;
 			module->material_package = NULL;
 			module->list_of_lights = NULL;
-			module->glyph_list = NULL;
+			module->glyph_manager = NULL;
 			module->default_font = NULL;
 			module->default_light = NULL;
 			module->default_spectrum = NULL;
-			module->graphics_object_list=NULL;
 			module->graphics_font_package = NULL;
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
@@ -184,10 +182,8 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Scene)(&graphics_module->default_scene);
  			if (graphics_module->scene_manager)
  				DESTROY(MANAGER(Scene))(&graphics_module->scene_manager);
-			if (graphics_module->graphics_object_list)
-				DESTROY(LIST(GT_object))(&graphics_module->graphics_object_list);
- 			if (graphics_module->glyph_list)
- 				DESTROY(LIST(GT_object))(&graphics_module->glyph_list);
+ 			if (graphics_module->glyph_manager)
+ 				DESTROY(MANAGER(GT_object))(&graphics_module->glyph_manager);
 			if (graphics_module->default_light)
 				DEACCESS(Light)(&graphics_module->default_light);
 			if (graphics_module->light_manager)
@@ -542,28 +538,7 @@ int Cmiss_graphics_module_create_standard_materials(
 		return_code = 0;
 	}
 
-
 	return return_code;
-}
-
-struct LIST(GT_object) * Cmiss_graphics_module_get_default_GT_object_list(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	LIST(GT_object) *graphics_object_list = NULL;
-	if (graphics_module)
-	{
-		if (!graphics_module->graphics_object_list)
-		{
-			graphics_module->graphics_object_list=CREATE(LIST(GT_object))();
-		}
-		graphics_object_list = graphics_module->graphics_object_list;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_GT_object_list.  Invalid argument(s)");
-	}
-	return (graphics_object_list);
 }
 
 struct Graphics_font_package *Cmiss_graphics_module_get_font_package(
@@ -609,25 +584,25 @@ struct Graphics_font *Cmiss_graphics_module_get_default_font(
 	return (default_font);
 }
 
-struct LIST(GT_object) * Cmiss_graphics_module_get_default_glyph_list(
+struct MANAGER(GT_object) * Cmiss_graphics_module_get_default_glyph_manager(
 		struct Cmiss_graphics_module *graphics_module)
 {
-	LIST(GT_object) *glyph_list = NULL;
+	MANAGER(GT_object) *glyph_list = NULL;
 	if (graphics_module)
 	{
-		if (!graphics_module->glyph_list)
+		if (!graphics_module->glyph_manager)
 		{
 			struct Graphics_font *default_font = Cmiss_graphics_module_get_default_font(
 				graphics_module);
-			graphics_module->glyph_list=make_standard_glyphs(default_font);
+			graphics_module->glyph_manager=make_standard_glyphs(default_font);
 			DEACCESS(Graphics_font)(&default_font);
 		}
-		glyph_list = graphics_module->glyph_list;
+		glyph_list = graphics_module->glyph_manager;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_glyph_list.  Invalid argument(s)");
+			"Cmiss_graphics_module_get_default_glyph_manager.  Invalid argument(s)");
 	}
 	return (glyph_list);
 }
@@ -825,28 +800,6 @@ int Cmiss_graphics_module_enable_renditions(
 
 	return (return_code);
 }
-
-struct LIST(GT_object) *Cmiss_graphics_module_get_glyph_list(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct LIST(GT_object) *glyph_list;
-
-	ENTER(Cmiss_graphics_module_get_glyph_list);
-	if (graphics_module)
-	{
-		glyph_list = graphics_module->glyph_list;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_spectrum_manager.  Invalid argument(s)");
-		glyph_list = (struct LIST(GT_object) *)NULL;
-	}
-	LEAVE;
-
-	return (glyph_list);
-}
-
 
 struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 	struct Cmiss_graphics_module *graphics_module)

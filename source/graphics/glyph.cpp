@@ -2049,7 +2049,7 @@ twice <number_of_segments_down> look remotely spherical.
 	return (glyph);
 } /* make_glyph_sphere */
 
-struct LIST(GT_object) *make_standard_glyphs(struct Graphics_font *font)
+struct MANAGER(GT_object) *make_standard_glyphs(struct Graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -2060,145 +2060,145 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 	const char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
 		 *labels_123[] = {"1","2","3"};
 	struct GT_object *glyph, *mirror_glyph;
-	struct LIST(GT_object) *glyph_list;
+	struct MANAGER(GT_object) *glyph_manager;
 
 	ENTER(make_glyph_sphere);
-	if (glyph_list = CREATE(LIST(GT_object))())
+	if (glyph_manager = CREATE(MANAGER(GT_object))())
 	{
 		/* add standard glyphs */
 		if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
 				12,2./3.,1./6.,/*cone_radius*/0.5))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(const char **)NULL, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(const char **)NULL, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025,
 			labels_xyz, 0.1,font))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cone("cone",12))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_cone",mirror_glyph))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cone_solid("cone_solid",12))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cross("cross"))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cube_solid("cube_solid"))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cube_wireframe("cube_wireframe"))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cylinder("cylinder6",6))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cylinder("cylinder",12))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cylinder_solid("cylinder_solid",12))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cylinder("cylinder_hires",48))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_cylinder_solid("cylinder_solid_hires",48))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_sphere("diamond",4,2))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_axes("grid_lines",
 				/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
 				/*labels*/(const char **)NULL, /*label_offset*/0.1, font))
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_line("line"))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_line("line_ticks"))
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_sheet("sheet", /*define_texturepoints*/0))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_sphere("sphere",12,6))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_sphere("sphere_hires",48,24))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		if (glyph=make_glyph_sheet("textured_sheet", /*define_texturepoints*/1))
 		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 	}
 	else
@@ -2208,5 +2208,5 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 	}
 	LEAVE;
 
-	return (glyph_list);
+	return (glyph_manager);
 } /* make_standard_glyphs */

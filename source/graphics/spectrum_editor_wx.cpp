@@ -2394,8 +2394,8 @@ Creates a spectrum_editor widget.
 											spectrum_editor->spectrum_editor_scene,
 											(struct MANAGER(Texture) *)NULL,
 											user_interface );
-								 ADD_OBJECT_TO_LIST(GT_object)(spectrum_editor->graphics_object,
-									 Cmiss_graphics_module_get_glyph_list(graphics_module));
+								 ADD_OBJECT_TO_MANAGER(GT_object)(spectrum_editor->graphics_object,
+									 Cmiss_graphics_module_get_default_glyph_manager(graphics_module));
 								 if (spectrum_editor->rendition && spectrum_editor->graphics_object)
 								 {
 									 return_code = Cmiss_rendition_add_glyph(spectrum_editor->rendition, 

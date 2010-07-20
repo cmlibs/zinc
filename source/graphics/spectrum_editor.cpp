@@ -949,7 +949,7 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	struct Graphics_font *font,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
-	struct LIST(GT_object) *glyph_list,
+	struct MANAGER(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
@@ -1232,7 +1232,7 @@ Creates a spectrum_editor widget.
 										default_scene_spectrum = CREATE(Spectrum)("default_scene_spectrum");
 										spectrum_editor->spectrum_editor_scene = CREATE(Scene)("spectrum_editor_scene");
 										Scene_enable_graphics( spectrum_editor->spectrum_editor_scene,
-											glyph_list, graphical_material_manager, 
+											glyph_manager, graphical_material_manager, 
 											spectrum_editor->editor_material, font, light_manager,
 											spectrum_manager, default_scene_spectrum, 
 											texture_manager);

@@ -64,6 +64,7 @@ extern "C" {
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/octree.h"
@@ -100,6 +101,7 @@ Module types
 #define GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE (50)
 
 FULL_DECLARE_INDEXED_LIST_TYPE(GT_object);
+FULL_DECLARE_MANAGER_TYPE(GT_object);
 
 /*****************************************************************************//**
  * Holds the vertex buffer for a particular vertex_type.
@@ -129,8 +131,6 @@ Module functions
 
 int DESTROY(GT_polyline_vertex_buffers)(struct GT_polyline_vertex_buffers **polyline);
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
-
 PROTOTYPE_DEFAULT_DESTROY_OBJECT_FUNCTION(Graphics_vertex_buffer);
 PROTOTYPE_OBJECT_FUNCTIONS(Graphics_vertex_buffer);
 PROTOTYPE_LIST_FUNCTIONS(Graphics_vertex_buffer);
@@ -143,6 +143,14 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_vertex_buffer,type,
 DECLARE_INDEXED_LIST_FUNCTIONS(Graphics_vertex_buffer)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphics_vertex_buffer,
 	type,Graphics_vertex_array_attribute_type,compare_int)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(GT_object)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,
+	const char *,strcmp)
+
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(GT_object,name)
 
 class Graphics_vertex_array_internal
 {
@@ -2364,11 +2372,15 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 
 DECLARE_OBJECT_FUNCTIONS(GT_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
+DECLARE_LOCAL_MANAGER_FUNCTIONS(GT_object)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(GT_object)
+DECLARE_MANAGER_FUNCTIONS(GT_object, manager)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,const char *, \
-	strcmp)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(GT_object,manager)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(GT_object, name, const char *)
+
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(GT_object, name, manager)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -3782,7 +3794,8 @@ Allocates memory and assigns fields for a graphics object.
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
-			object->highlight_functor= NULL;
+			object->highlight_functor = NULL;
+			object->manager = NULL;
 			return_code = 1;
 			switch (object_type)
 			{
@@ -7402,43 +7415,6 @@ Gets the spectrum of a GT_object.
 	return (spectrum);
 } /* get_GT_object_spectrum */
 
-int set_GT_object_list_Spectrum(struct LIST(GT_object) *graphics_object_list,
-	struct Spectrum *spectrum)
-/*******************************************************************************
-LAST MODIFIED : 18 October 1997
-
-DESCRIPTION :
-Sets the spectrum of all the GT_objects in a list.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_GT_object_list_Spectrum);
-	if (graphics_object_list)
-	{
-		if (spectrum)
-		{
-			return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(set_GT_object_Spectrum,
-				(void *)(spectrum),graphics_object_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_GT_object_Spectrum.  Invalid spectrum object");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_GT_object_Spectrum.  Invalid graphics object list");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_GT_object_list_Spectrum */
-
 enum GT_coordinate_system GT_object_get_coordinate_system(
 	struct GT_object *graphics_object)
 /*******************************************************************************
@@ -7590,7 +7566,7 @@ the range of data values in <graphics_object>.
 #endif /* defined (OLD_CODE) */
 
 int set_Graphics_object(struct Parse_state *state,
-	void *graphics_object_address_void,void *graphics_object_list_void)
+	void *graphics_object_address_void,void *graphics_object_manager_void)
 /*******************************************************************************
 LAST MODIFIED : 26 November 1998
 
@@ -7601,7 +7577,7 @@ Modifier function to set the graphics_object from a command.
 	const char *current_token;
 	int return_code;
 	struct GT_object *graphics_object,**graphics_object_address;
-	struct LIST(GT_object) *graphics_object_list;
+	struct MANAGER(GT_object) *graphics_object_manager;
 
 	ENTER(set_Graphics_Object);
 	if (state)
@@ -7613,8 +7589,8 @@ Modifier function to set the graphics_object from a command.
 			{
 				if ((graphics_object_address=
 					(struct GT_object **)graphics_object_address_void)&&
-					(graphics_object_list=
-					(struct LIST(GT_object)*)graphics_object_list_void ))
+					(graphics_object_manager=
+					(struct MANAGER(GT_object)*)graphics_object_manager_void ))
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
@@ -7627,8 +7603,8 @@ Modifier function to set the graphics_object from a command.
 					}
 					else
 					{
-						if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							current_token,graphics_object_list))
+						if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+							current_token,graphics_object_manager))
 						{
 							if (*graphics_object_address != graphics_object)
 							{

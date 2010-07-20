@@ -156,15 +156,6 @@ int Cmiss_graphics_module_create_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the default list of GT _objects in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  list of the GT_objects if successfully called, otherwise NULL.
- */
-struct LIST(GT_object) * Cmiss_graphics_module_get_default_GT_object_list(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the default font package in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
@@ -189,7 +180,7 @@ struct Graphics_font *Cmiss_graphics_module_get_default_font(
  * @return  the default list of glyphs in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct LIST(GT_object) *Cmiss_graphics_module_get_default_glyph_list(
+struct MANAGER(GT_object) *Cmiss_graphics_module_get_default_glyph_manager(
 		struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -230,9 +221,6 @@ struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
  *    otherwise NULL.
  */
 struct Light_model *Cmiss_graphics_module_get_default_light_model(
-	struct Cmiss_graphics_module *graphics_module);
-
-struct LIST(GT_object) *Cmiss_graphics_module_get_glyph_list(
 	struct Cmiss_graphics_module *graphics_module);
 
 int Cmiss_graphics_module_set_time_keeper_internal(

@@ -77,6 +77,7 @@ Used to be gtypes.h
 
 #include "general/geometry.h"
 #include "general/list.h"
+#include "general/manager.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
@@ -335,6 +336,8 @@ typedef struct GT_object gtObject;
 
 DECLARE_LIST_TYPES(GT_object);
 
+DECLARE_MANAGER_TYPES(GT_object);
+
 struct Graphics_object_range_struct
 /*******************************************************************************
 LAST MODIFIED : 6 August 1997
@@ -562,6 +565,10 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
 
 PROTOTYPE_LIST_FUNCTIONS(GT_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,const char *);
+
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(GT_object,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(GT_object);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(GT_object,name,const char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -1422,15 +1429,6 @@ LAST MODIFIED : 4 June 1999
 
 DESCRIPTION :
 Gets the spectrum of a GT_object.
-==============================================================================*/
-
-int set_GT_object_list_Spectrum(struct LIST(GT_object) *graphics_object_list,
-	struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 18 October 1997
-
-DESCRIPTION :
-Sets the spectrum of all the GT_objects in a list.
 ==============================================================================*/
 
 enum GT_coordinate_system GT_object_get_coordinate_system(

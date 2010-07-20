@@ -204,7 +204,7 @@ into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
 twice <number_of_segments_down> look remotely spherical.
 ==============================================================================*/
 
-struct LIST(GT_object) *make_standard_glyphs(struct Graphics_font *font);
+struct MANAGER(GT_object) *make_standard_glyphs(struct Graphics_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 

@@ -279,7 +279,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct FE_node_selection *data_selection,*node_selection;
 
 	/* attribute managers and defaults: */
-	struct LIST(GT_object) *glyph_list;
+	struct MANAGER(GT_object) *glyph_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_material;
 	struct Graphics_font *default_font;
@@ -3169,7 +3169,7 @@ from the default versions of these functions.
 		scene->node_selection=(struct FE_node_selection *)NULL;
 		scene->data_selection=(struct FE_node_selection *)NULL;
 		/* attributes: */
-		scene->glyph_list=(struct LIST(GT_object) *)NULL;
+		scene->glyph_manager=(struct MANAGER(GT_object) *)NULL;
 		scene->graphical_material_manager=
 			(struct MANAGER(Graphical_material) *)NULL;
 		scene->graphical_material_manager_callback_id=(void *)NULL;
@@ -3382,7 +3382,7 @@ final message to be sent to clients.
 
 #if defined (OLD_CODE)
 int Scene_enable_graphics(struct Scene *scene,
-	struct LIST(GT_object) *glyph_list,
+	struct MANAGER(GT_object) *glyph_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct Graphics_font *default_font,
@@ -3405,7 +3405,7 @@ NOTE: The light_manager is not currently used by the scene.
 	int return_code;
 
 	ENTER(Scene_enable_graphics);
-	if (scene&&glyph_list&&graphical_material_manager&&default_material&&
+	if (scene&&glyph_manager&&graphical_material_manager&&default_material&&
 		default_font&&light_manager&&spectrum_manager&&default_spectrum&&texture_manager)
 	{
 		if (scene->graphical_material_manager)
@@ -3415,7 +3415,7 @@ NOTE: The light_manager is not currently used by the scene.
 		}
 		else
 		{
-			scene->glyph_list=glyph_list;
+			scene->glyph_manager=glyph_manager;
 			scene->graphical_material_manager=graphical_material_manager;
 			scene->default_material=ACCESS(Graphical_material)(default_material);
 			scene->default_font=ACCESS(Graphics_font)(default_font);
@@ -3818,7 +3818,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 		Scene_disable_graphics(destination);
 		if (source->graphical_material_manager)
 		{
-			Scene_enable_graphics(destination,source->glyph_list,
+			Scene_enable_graphics(destination,source->glyph_manager,
 				source->graphical_material_manager,source->default_material,source->default_font,
 				source->light_manager,source->spectrum_manager,source->default_spectrum,
 				source->texture_manager);
@@ -6413,8 +6413,8 @@ GT_element_group and therefore have the same rendition.
 											&glyph, &glyph_scaling_mode, glyph_centre,
 											glyph_size, &orientation_scale_field,
 											glyph_scale_factors, &variable_scale_field);
-										glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-											"point", scene->glyph_list);
+										glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+											"point", scene->glyph_manager);
 										GT_element_settings_set_glyph_parameters(settings,
 											glyph, glyph_scaling_mode, glyph_centre,
 											glyph_size, orientation_scale_field,

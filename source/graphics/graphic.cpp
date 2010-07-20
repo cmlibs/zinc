@@ -5891,8 +5891,8 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					/* default to point glyph for fasest possible display */
 					if (!glyph)
 					{
-						glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							rendition_command_data->glyph_list);
+						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+							rendition_command_data->glyph_manager);
 					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
@@ -5938,7 +5938,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						&font_name);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
-						rendition_command_data->glyph_list,set_Graphics_object);
+						rendition_command_data->glyph_manager,set_Graphics_object);
 					/* label */
 					set_label_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -6225,8 +6225,8 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					/* default to point glyph for fastest possible display */
 					if (!glyph)
 					{
-						glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							rendition_command_data->glyph_list);
+						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+							rendition_command_data->glyph_manager);
 					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
@@ -6272,7 +6272,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						&font_name);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
-						rendition_command_data->glyph_list,set_Graphics_object);
+						rendition_command_data->glyph_manager,set_Graphics_object);
 					/* label */
 					set_label_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -6568,8 +6568,8 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					/* default to point glyph for fasest possible display */
 					if (!glyph)
 					{
-						glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							rendition_command_data->glyph_list);
+						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+							rendition_command_data->glyph_manager);
 					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
@@ -6615,7 +6615,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						&font_name);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
-						rendition_command_data->glyph_list,set_Graphics_object);
+						rendition_command_data->glyph_manager,set_Graphics_object);
 					/* label */
 					set_label_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -7702,8 +7702,8 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			/* default to point glyph for fastest possible display */
 			if (!glyph)
 			{
-				glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-					rendition_command_data->glyph_list);
+				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+					rendition_command_data->glyph_manager);
 			}
 			font_name = (char *)NULL;
 			ACCESS(GT_object)(glyph);
@@ -7786,7 +7786,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				&font_name);
 			/* glyph */
 			Option_table_add_entry(option_table,"glyph",&glyph,
-				rendition_command_data->glyph_list,set_Graphics_object);
+				rendition_command_data->glyph_manager,set_Graphics_object);
 			/* label */
 			set_label_field_data.computed_field_manager=
 				rendition_command_data->computed_field_manager;

@@ -189,7 +189,7 @@ Global functions
 int file_read_graphics_objects(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct LIST(GT_object) *object_list)
+	struct MANAGER(GT_object) *object_list)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -330,7 +330,7 @@ DESCRIPTION :
 									transform[3][3]);
 							}
 						}
-						if (obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+						if (obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 							objname,object_list))
 						{
 							if (GT_object_has_time(obj,time))
@@ -747,10 +747,10 @@ DESCRIPTION :
 						{
 							if (return_code)
 							{
-								if(!FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+								if(!FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 									objname,object_list))
 								{
-									ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
+									ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
 								}
 							}
 							else
@@ -799,7 +799,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	char *graphics_object_name, enum Render_type render_type,
 	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
-	struct LIST(GT_object) *object_list)
+	struct MANAGER(GT_object) *object_list)
 /*******************************************************************************
 LAST MODIFIED : 23 November 2005
 
@@ -838,7 +838,7 @@ DESCRIPTION :
 			{
 				sprintf(objname, "%s", file_name);
 			}
-			if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+			if(obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 					objname, object_list))
 			{
 				next_obj = obj;
@@ -871,7 +871,7 @@ DESCRIPTION :
 				obj=CREATE(GT_object)(objname, g_VOLTEX, default_material);
 				if (obj)
 				{
-					ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
+					ADD_OBJECT_TO_MANAGER(GT_object)(obj, object_list);
 				}
 			}
 			switch (render_type)
