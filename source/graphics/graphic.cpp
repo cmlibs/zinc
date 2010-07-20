@@ -2420,7 +2420,8 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		if ((CMISS_GRAPHIC_DATA_POINTS!=graphic->graphic_type) &&
 			(CMISS_GRAPHIC_NODE_POINTS!=graphic->graphic_type) &&
 			(CMISS_GRAPHIC_ELEMENT_POINTS!=graphic->graphic_type) &&
-			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type))
+			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type) &&
+			(CMISS_GRAPHIC_STATIC!=graphic->graphic_type))
 		{
 			sprintf(temp_string, " discretization \"%d*%d*%d\"",
 				graphic->discretization.number_in_xi1,
@@ -2470,6 +2471,18 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					DEALLOCATE(graphic_string);
 					error=1;
 				}
+			}
+		}
+		if (CMISS_GRAPHIC_STATIC==graphic->graphic_type)
+		{
+			if (graphic->overlay_flag == 0 )
+			{
+				append_string(&graphic_string, " no_overlay ",&error);
+			}
+			else
+			{
+				sprintf(temp_string, " overlay %d", graphic->overlay_order);
+				append_string(&graphic_string,temp_string,&error);
 			}
 		}
 		/* for iso_surfaces only */
@@ -4919,6 +4932,9 @@ int Cmiss_graphic_copy_without_graphics_object(
 		/* for 1-D and 2-D elements only */
 		destination->exterior=source->exterior;
 		destination->face=source->face;
+		/* overlay_flag */
+		destination->overlay_flag = source->overlay_flag;
+		destination->overlay_order = source->overlay_order;
 		/* for cylinders only */
 		if (CMISS_GRAPHIC_CYLINDERS==source->graphic_type)
 		{
@@ -6445,14 +6461,14 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
-		visibility;
+		visibility, overlay_flag = 0;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct Graphics_font *new_font;
 	struct Cmiss_graphic *graphic;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
-	struct Option_table *option_table;
+	struct Option_table *option_table, *overlay_option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
@@ -6495,6 +6511,14 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 				{
 					/* access since deaccessed in gfx_modify_rendition */
 					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
+					if (graphic->overlay_flag)
+					{
+						overlay_flag = graphic->overlay_order;
+					}
+					else
+					{
+						overlay_flag = 0;
+					}
 					/* Set up the coordinate_field */
 					if (!graphic->coordinate_field)
 					{
@@ -6624,6 +6648,13 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					Option_table_add_entry(option_table,"orientation",
 						&orientation_scale_field,&set_orientation_scale_field_data,
 						set_Computed_field_conditional);
+					/* overlay */
+					overlay_option_table=CREATE(Option_table)();
+					Option_table_add_entry(overlay_option_table,"overlay",
+						&overlay_flag,(void *)NULL,set_int);
+					Option_table_add_entry(overlay_option_table,"no_overlay",
+						&overlay_flag,(void *)NULL,unset_int_switch);
+					Option_table_add_suboption_table(option_table,overlay_option_table);
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
@@ -6681,6 +6712,15 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 								(rendition_command_data->graphics_font_package, font_name)))
 						{
 							REACCESS(Graphics_font)(&graphic->font, new_font);
+						}
+						if (overlay_flag ==0)
+						{
+							graphic->overlay_flag = 0;
+						}
+						else
+						{
+							graphic->overlay_flag = 1;
+							graphic->overlay_order = overlay_flag;
 						}
 						if (glyph)
 						{

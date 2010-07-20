@@ -48,8 +48,8 @@
 /***************************************************************************//**
  * Common code for all OpenGL based implementations.
  */
-typedef std::map<int, GT_object*> GT_object_map;
-typedef std::map<int, GT_object*>::iterator GT_object_iterator;
+typedef std::multimap<int, GT_object*> GT_object_map;
+typedef std::multimap<int, GT_object*>::iterator GT_object_iterator;
 
 class Render_graphics_opengl : public Render_graphics_compile_members
 {

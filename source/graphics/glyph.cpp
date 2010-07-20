@@ -639,101 +639,6 @@ Global functions
 ----------------
 */
 
-struct GT_object *make_glyph_annotation(const char *name, struct Graphics_font *font)
-{
-	char *annotation_text,**text;
-	float time;
-	int return_code;
-	struct Graphical_material *material;
-	struct GT_object *graphics_object;
-	struct GT_pointset *point_set;
-	Triple *pointlist,position;
-
-	
-	ENTER(make_glyph_annotation);
-	if (name && font)
-	{
-		/* must access it now, because we deaccess it later */
-		material = CREATE(Graphical_material)("red");
-		position[0]=0.0;
-		position[1]=0.0;
-		position[2]=0.0;
-		annotation_text = duplicate_string("\"annotation text\"");
-		time=0.0;
-		return_code = 1;
-		if (!(graphics_object=CREATE(GT_object)(name,
-					g_POINTSET,material)))
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_points.  Could not create graphics object");
-			DESTROY(GT_object)(&graphics_object);
-			return_code=0;
-		}
-		if (return_code)
-		{
-			/* create the pointset used to display the annotation */
-			pointlist=(Triple *)NULL;
-			text=(char **)NULL;
-			point_set=(struct GT_pointset *)NULL;
-			if (ALLOCATE(pointlist,Triple,1)&&ALLOCATE(text,char *,1))
-			{
-				*text = annotation_text;
-				(*pointlist)[0]=position[0];
-				(*pointlist)[1]=position[1];
-				(*pointlist)[2]=position[2];
-				if ((point_set=CREATE(GT_pointset)(1,pointlist,text,g_NO_MARKER,
-							0.0,g_NO_DATA,(GTDATA *)NULL,(int *)NULL,font))&&
-					GT_OBJECT_ADD(GT_pointset)(graphics_object,time,point_set))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-			if (return_code)
-			{
-				/* annotation string now owned by point set */
-				annotation_text=(char *)NULL;
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"Could not create annotation");
-				if (point_set)
-				{
-					DESTROY(GT_pointset)(&point_set);
-				}
-				else
-				{
-					DEALLOCATE(pointlist);
-					DEALLOCATE(text);
-				}
-			}
-		}
-		if (!graphics_object)
-		{
-			display_message(ERROR_MESSAGE,"make_glyph_annotation.  Error creating glyph");
-		}
-		if (annotation_text)
-		{
-			DEALLOCATE(annotation_text);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_annotation.  Invalid argument(s)");
-		graphics_object=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (graphics_object);
-} /* make_glyph_annotation */
-
 struct GT_object *make_glyph_arrow_line(const char *name,float head_length,
 	float half_head_width)
 /*******************************************************************************
@@ -2243,10 +2148,6 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 	if (glyph_list = CREATE(LIST(GT_object))())
 	{
 		/* add standard glyphs */
-		if (glyph=make_glyph_annotation("annotation",font))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-		}
 		if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);

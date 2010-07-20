@@ -773,7 +773,7 @@ a single point in 3-D space with a text string drawn beside it.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			graphics_object_name = duplicate_string("your_annotation");
+			graphics_object_name = duplicate_string("annotation");
 			/* must access it now, because we deaccess it later */
 			material=
 				ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
@@ -1157,7 +1157,7 @@ with tick marks and labels for showing the scale of a spectrum.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			graphics_object_name = duplicate_string("your_colour_bar");
+			graphics_object_name = duplicate_string("colour_bar");
 			number_format = duplicate_string("%+.4e");
 			/* must access it now, because we deaccess it later */
 			label_material=
