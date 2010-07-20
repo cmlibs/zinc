@@ -439,7 +439,7 @@ Cmiss_field_id Computed_field_group::create_node_group()
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
 		local_node_group = Cmiss_field_module_create_node_group_template(field_module);
-		Cmiss_field_set_name(local_node_group, "node_selection");
+		Cmiss_field_set_name(local_node_group, "cmiss_node_selection");
 		Cmiss_field_module_destroy(&field_module);
 		Cmiss_field_access(local_node_group);
 	}
@@ -468,7 +468,7 @@ Cmiss_field_id Computed_field_group::create_element_group()
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
 		local_element_group = Cmiss_field_module_create_element_group_template(field_module);
-		Cmiss_field_set_name(local_element_group, "element_selection");
+		Cmiss_field_set_name(local_element_group, "cmiss_element_selection");
 		Cmiss_field_module_destroy(&field_module);
 		Cmiss_field_access(local_element_group);
 	}
