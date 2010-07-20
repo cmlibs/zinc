@@ -1043,88 +1043,6 @@ The length and width of the arrow heads are specified by the final parameters.
 	return (glyph);
 } /* make_glyph_axes */
 
-struct GT_object *make_glyph_colour_bar(const char *name, struct Graphics_font *font)
-{
-	char *graphics_object_name,*number_format;
-	float bar_length,bar_radius,extend_length,tick_length;
-	int number_of_components,return_code,tick_divisions;
-	struct Graphical_material *label_material,*material;
-	struct GT_object *graphics_object = NULL;
-	struct Spectrum *spectrum;
-	Triple bar_axis,bar_centre,side_axis;
-	struct Colour colour;
-	
-	ENTER(make_glyph_colour_bar);
-	if (name)
-	{
-		/* initialise defaults */ 
-		graphics_object_name = duplicate_string(name);
-		number_format = duplicate_string("%+.4e");
-		/* must access it now, because we deaccess it later */
-		label_material = CREATE(Graphical_material)("red");
-		colour.red = 1;
-		colour.green = 0;
-		colour.blue = 0;
-		Graphical_material_set_diffuse(label_material, &colour);
-		material = CREATE(Graphical_material)("green");
-		colour.red = 0;
-		colour.green = 1;
-		colour.blue = 0;
-		Graphical_material_set_diffuse(material, &colour);
-		spectrum=CREATE(Spectrum)("spectrum_modify_temp");
-		Spectrum_set_simple_type(spectrum,BLUE_TO_RED_SPECTRUM);
-		Spectrum_set_minimum_and_maximum(spectrum,0,1);
-		number_of_components=3;
-		bar_centre[0]=0.0;
-		bar_centre[1]=0.0;
-		bar_centre[2]=0.0;
-		bar_axis[0]=0.0;
-		bar_axis[1]=1.0;
-		bar_axis[2]=0.0;
-		side_axis[0]=1.0;
-		side_axis[1]=0.0;
-		side_axis[2]=0.0;
-		bar_length=1.6;
-		extend_length=0.06;
-		bar_radius=0.06;
-		tick_length=0.04;
-		tick_divisions=10;
-		
-		if (!create_Spectrum_colour_bar(&graphics_object,
-				graphics_object_name,spectrum,/*component_number*/0,
-				bar_centre,bar_axis,side_axis,
-				bar_length,bar_radius,extend_length,tick_divisions,tick_length,
-				number_format,material,label_material, font))
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_colour_bar.  Could not create colour bar");
-			return_code=0;
-		}
-		DEACCESS(Spectrum)(&spectrum);
-		if (number_format)
-		{
-			DEALLOCATE(number_format);
-		}
-		if (graphics_object_name)
-		{
-			DEALLOCATE(graphics_object_name);
-		}
-
-		if (!graphics_object)
-		{
-			display_message(ERROR_MESSAGE,"make_glyph_colour_bar.  Error creating glyph");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_glyph_axes.  Invalid argument(s)");
-		graphics_object=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (graphics_object);
-} /* make_glyph_colour_bar */
-
 struct GT_object *make_glyph_cone(const char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1998
@@ -2189,10 +2107,6 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		}
 		if (glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025,
 			labels_xyz, 0.1,font))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-		}
-		if (glyph=make_glyph_colour_bar("colour_bar",font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
