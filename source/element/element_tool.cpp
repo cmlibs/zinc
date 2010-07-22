@@ -561,7 +561,7 @@ release.
 							{
 								if (element_tool->region)
 								{
-									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
+									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 										element_tool->region);
 									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
 										root_rendition);
@@ -737,7 +737,7 @@ release.
 													sub_region = pos->first;
 													if (sub_region)
 													{
-														region_rendition= Cmiss_rendition_get_from_region(sub_region);
+														region_rendition= Cmiss_region_get_rendition_internal(sub_region);
 														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
 														sub_group = Cmiss_field_cast_group(sub_group_field);
 													}

@@ -7487,7 +7487,7 @@ use node_manager and node_selection.
 			{
 		  	if (region)
 		  	{
-		  		Cmiss_rendition *rendition= Cmiss_rendition_get_from_region(region);
+		  		Cmiss_rendition *rendition= Cmiss_region_get_rendition_internal(region);
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
@@ -11388,7 +11388,7 @@ Executes a GFX LIST ELEMENT.
 			{
 		  	if (region)
 		  	{
-					struct Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+					struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
@@ -11576,7 +11576,7 @@ use node_manager and node_selection.
 		  {
 		  	if (region)
 		  	{
-		  		rendition = Cmiss_rendition_get_from_region(region);
+		  		rendition = Cmiss_region_get_rendition_internal(region);
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
@@ -11886,7 +11886,7 @@ Executes a GFX LIST G_ELEMENT.
 			{
 				if (region_path && Cmiss_region_get_region_from_path_deprecated(
 							command_data->root_region, region_path, &region) &&
-					(rendition = Cmiss_region_get_rendition(region)))
+					(rendition = Cmiss_region_get_rendition_internal(region)))
 				{
 					if (commands_flag)
 					{
@@ -13047,7 +13047,7 @@ be specified at once.
 					{
 				  	if (region)
 				  	{
-				  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+				  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 				  		struct Computed_field *group_field = NULL;
 				  		if (rendition)
 				  		{
@@ -13241,7 +13241,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					DESTROY(Option_table)(&option_table);
 					if (return_code)
 					{		
-						if (rendition = Cmiss_region_get_rendition(region))
+						if (rendition = Cmiss_region_get_rendition_internal(region))
 						{
 							if (graphic_name && (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
 										rendition, Cmiss_graphic_has_name, (void *)graphic_name)))
@@ -13636,7 +13636,7 @@ use node_manager and node_selection.
 					{
 				  	if (region)
 				  	{
-				  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+				  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 				  		struct Computed_field *group_field = NULL;
 				  		if (rendition)
 				  		{
@@ -14230,7 +14230,7 @@ use node_manager and node_selection.
 		  	{
 		  		if (selected_flag)
 		  		{
-			  		Cmiss_rendition *rendition = Cmiss_rendition_get_from_region(region);
+			  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 			  		struct Computed_field *group_field = NULL;
 			  		if (rendition)
 			  		{
@@ -16781,7 +16781,7 @@ Executes a GFX SELECT command.
 #if defined (AWU_TESTING)
 						if (region)
 						{
-							Cmiss_rendition *local_rendition = Cmiss_rendition_get_from_region(region);
+							Cmiss_rendition *local_rendition = Cmiss_region_get_rendition_internal(region);
 							Cmiss_rendition_create_node_list_selection(local_rendition,
 								node_list);
 							Cmiss_rendition_destroy(&local_rendition);
@@ -17670,7 +17670,7 @@ static int gfx_set_transformation(struct Parse_state *state,
 					if (NULL != (region=Cmiss_region_find_subregion_at_path(
 								 command_data->root_region, region_name)))
 					{
-						Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+						Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 						if (rendition)
 						{
 							if (computed_field)
@@ -17791,7 +17791,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 						  Cmiss_region_destroy(&top_region);
 							if (child_region)
 							{
-							  rendition = Cmiss_region_get_rendition(child_region);
+							  rendition = Cmiss_region_get_rendition_internal(child_region);
 							  Cmiss_region_destroy(&child_region);
 							}
 						}
@@ -23919,11 +23919,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			if (command_data->default_scene)
 			{
 //			display_message(INFORMATION_MESSAGE,"Cmiss_command_data *CREATE\n");
-				if (Cmiss_scene_set_region(command_data->default_scene, command_data->root_region))
-				{
-// 					display_message(INFORMATION_MESSAGE,"Cmiss_command_data, scene preparing\n");
-					Cmiss_scene_enable_rendition(command_data->default_scene);
-				}
+				Cmiss_scene_set_region(command_data->default_scene, command_data->root_region);
 			}
 		}
 

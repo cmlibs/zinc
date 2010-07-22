@@ -4570,7 +4570,7 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 	if (region_tree_viewer->testing_tree_ctrl->GetSelections(array)
 		&& data && (region = data->GetRegion()))
 	{
-		rendition = Cmiss_region_get_rendition(region);
+		rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
 			Region_tree_viewer_set_active_rendition(region_tree_viewer, rendition);
@@ -4681,7 +4681,7 @@ void SetVisibilityOfTreeId(wxTreeItemId current_item_id, int flag)
 			region_tree_viewer->testing_tree_ctrl->GetItemData(current_item_id));
 	if ((region = data->GetRegion()))
 	{
-		rendition = Cmiss_region_get_rendition(region);
+		rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
 			Cmiss_rendition_set_visibility_flag(rendition, flag);
@@ -5131,7 +5131,7 @@ void Region_tree_viewer_setup_region_tree(Region_tree_viewer *region_tree_viewer
 		region_tree_viewer->testing_tree_ctrl->SetTreeIdRegionWithCallback(
 			current, region_tree_viewer->root_region);
 		region_tree_viewer->testing_tree_ctrl->add_all_child_regions_to_tree_item(current);
-		rendition = Cmiss_region_get_rendition(region_tree_viewer->root_region);
+		rendition = Cmiss_region_get_rendition_internal(region_tree_viewer->root_region);
 		REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition,
 			rendition);
 		DEACCESS(Cmiss_rendition)(&rendition);

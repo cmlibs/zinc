@@ -229,16 +229,6 @@ int Cmiss_graphics_module_set_time_keeper_internal(
 struct Time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 	struct Cmiss_graphics_module *module);
 
-/***************************************************************************//**
- * Destroy Cmiss_rendition and clean up the memory it uses.
- *
- * @param  cmiss_rendition_address the address to the pointer of
- *   the cmiss_rendition_address to be deleted
- * @return  1 if successfully destroy cmiss_rendition, otherwise 0
- */
-int DESTROY(Cmiss_rendition)(
-	struct Cmiss_rendition **cmiss_rendition_address);
-
 struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(
 	struct Cmiss_graphics_module *graphics_module);
 

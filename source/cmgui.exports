@@ -399,6 +399,7 @@ Cmiss_graphics_module_create_material
 Cmiss_graphics_module_access
 Cmiss_graphics_module_destroy
 Cmiss_graphics_module_get_texture_manager
+Cmiss_graphics_module_get_rendition
 
 Cmiss_context_create
 Cmiss_context_access
@@ -436,7 +437,7 @@ Cmiss_scene_filter_set_action
 Cmiss_scene_filter_is_active
 Cmiss_scene_filter_set_active
 
-Cmiss_rendition_get_from_region
+Cmiss_rendition_access
 Cmiss_rendition_add_graphic
 Cmiss_rendition_remove_graphic
 Cmiss_rendition_create_surfaces

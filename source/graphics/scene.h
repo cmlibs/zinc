@@ -1389,18 +1389,6 @@ int Cmiss_scene_set_name(struct Scene *scene, const char *name);
  */
 struct Cmiss_region *Cmiss_scene_get_region(struct Scene *scene);
 
-/***************************************************************************//** 
- * Enable rendition on scene. This function will add rendition to top region 
- * and its child regions in scene if they do not already have an rendition.
- * This function will also set appropriate callback to the top region's 
- * rendition to avoid multiple calls of the same callback functions in the same
- * region.
- *
- * @param scene The scene to be set
- * @return If successfully enable rendition returns 1 else 0.
- */
-int Cmiss_scene_enable_rendition(struct Scene *scene);
-
 int Cmiss_scene_add_rendition(struct Scene *scene, struct Cmiss_rendition *rendition);
 
 int Scene_rendition_changed(

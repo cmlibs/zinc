@@ -262,7 +262,7 @@ int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *chi
 	
 	ENTER(Cmiss_rendition_notify_parent_rendition_callback);
 	if (child_rendition &&
-		(parent_rendition = Cmiss_region_get_rendition((struct Cmiss_region *)region_void)))
+		(parent_rendition = Cmiss_region_get_rendition_internal((struct Cmiss_region *)region_void)))
 	{
 		Cmiss_rendition_changed(parent_rendition);
 		DEACCESS(Cmiss_rendition)(&parent_rendition);
@@ -1659,11 +1659,11 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	return (return_code);
 } /* Cmiss_rendition_get_range */
 
-struct Cmiss_rendition *Cmiss_region_get_rendition(struct Cmiss_region *cmiss_region)
+struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region *cmiss_region)
 {
 	struct Cmiss_rendition *rendition = NULL;
 
-	ENTER(Cmiss_region_get_rendition);
+	ENTER(Cmiss_region_get_rendition_internal);
 	if (cmiss_region)
 	{
 		if (!(rendition = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
@@ -1690,7 +1690,7 @@ int Cmiss_region_has_rendition(struct Cmiss_region *cmiss_region)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_region_get_rendition);
+	ENTER(Cmiss_region_get_rendition_internal);
 	if (cmiss_region)
 	{
 		if (FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
@@ -1886,6 +1886,37 @@ static void Cmiss_rendition_Graphical_material_callback(
 	}
 	LEAVE;
 } /* Cmiss_rendition_Graphical_material_callback */
+
+int Cmiss_rendition_unset_graphics_managers_callback(struct Cmiss_rendition *rendition)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_rendition_set_graphics_managers_callback);
+	if (rendition && rendition->graphics_module && rendition->list_of_scene->empty())
+	{
+		struct MANAGER(Graphical_material) *material_manager =
+				Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
+		if (rendition->graphical_material_manager_callback_id &&
+				material_manager)
+		{
+				MANAGER_DEREGISTER(Graphical_material)(rendition->graphical_material_manager_callback_id,
+					material_manager);
+				rendition->graphical_material_manager_callback_id = NULL;
+		}
+		struct MANAGER(Spectrum) *spectrum_manager =
+				Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
+		if (rendition->spectrum_manager_callback_id &&	spectrum_manager)
+		{
+			MANAGER_DEREGISTER(Spectrum)(rendition->spectrum_manager_callback_id,
+				spectrum_manager);
+			rendition->spectrum_manager_callback_id = NULL;
+		}
+		return_code = 1;
+	}
+	LEAVE;
+
+	return return_code;
+}
 
 int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendition)
 {
@@ -2103,7 +2134,7 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 	ENTER(iterator_modify_rendition);
 	if (region && scene && graphic)
 	{
-		if (NULL != (rendition = Cmiss_region_get_rendition(region)))
+		if (NULL != (rendition = Cmiss_region_get_rendition_internal(region)))
 		{
 			/* get graphic describing same geometry in list */
 			same_graphic = first_graphic_in_Cmiss_rendition_that(
@@ -2299,7 +2330,7 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
 		/* if possible, get defaults from element_group on default scene */
-		rendition = Cmiss_region_get_rendition(cmiss_region);
+		rendition = Cmiss_region_get_rendition_internal(cmiss_region);
 		if (rendition)
 		{
 			if (NULL != (default_coordinate_field=
@@ -2644,7 +2675,7 @@ int for_each_rendition_in_Cmiss_rendition(
 			child_region = Cmiss_region_get_first_child(region);
 			while (child_region)
 			{
-				child_rendition = Cmiss_region_get_rendition(child_region);
+				child_rendition = Cmiss_region_get_rendition_internal(child_region);
 				if (child_rendition)
 				{
 					return_code = for_each_rendition_in_Cmiss_rendition(
@@ -3572,7 +3603,7 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 			child_region = Cmiss_region_get_first_child(region);
 			while (child_region)
 			{
-				if (NULL != (child_rendition = Cmiss_region_get_rendition(child_region)))
+				if (NULL != (child_rendition = Cmiss_region_get_rendition_internal(child_region)))
 				{
 					Cmiss_rendition_add_scene(child_rendition,scene, 1);
 					DEACCESS(Cmiss_rendition)(&child_rendition);
@@ -3863,7 +3894,7 @@ Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition
 			if (parent_region)
 			{
 				Cmiss_rendition *parent_rendition =
-					Cmiss_region_get_rendition(parent_region);
+					Cmiss_region_get_rendition_internal(parent_region);
 				if (parent_rendition)
 				{
 					parent_group_field =
@@ -4034,4 +4065,9 @@ int Cmiss_rendition_detach_fields(struct Cmiss_rendition *rendition)
 	}
 
 	return return_code;
+}
+
+Cmiss_rendition *Cmiss_rendition_access(Cmiss_rendition_id rendition)
+{
+	return (ACCESS(Cmiss_rendition)(rendition));
 }

@@ -3992,10 +3992,11 @@ Iterates through every material used by the scene.
 #else
 	if (scene && iterator_function && scene->region)
 	{
-		struct Cmiss_rendition *rendition;
 		/* Could be smarter if there was a reduced number used by the 
 			scene, however for now just do every material in the manager */
-		if (rendition = Cmiss_region_get_rendition(scene->region))
+		struct Cmiss_rendition *rendition =
+			Cmiss_region_get_rendition_internal(scene->region);
+		if (rendition)
 		{
 			return_code = Cmiss_rendition_for_each_material(rendition, iterator_function,
 				user_data);
@@ -8119,7 +8120,6 @@ int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
 				{
 					scene = CREATE(Cmiss_scene)();
 					if ((!Cmiss_scene_set_region(scene, define_scene_data->root_region)) ||
-						(!Cmiss_scene_enable_rendition(scene)) ||
 						(!Cmiss_scene_set_name(scene, current_token)))
 					{
 						return_code = 0;
@@ -8815,50 +8815,156 @@ int Cmiss_scene_destroy(Cmiss_scene **scene_address)
 	return DEACCESS(Scene)(scene_address);
 }
 
-int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
+static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
+	void *scene_void)
 {
-  int return_code;
+	int return_code;
+	struct Scene *scene;
 
-	ENTER(Cmiss_scene_set_region);
-	if (scene && region)
+	ENTER(Scene_rendition_update_callback);
+	if (rendition &&(scene = (struct Scene *)scene_void))
 	{
-		if (scene->region != region)
-		{
-			REACCESS(Cmiss_region)(&(scene->region), region);
+		Scene_notify_object_changed(scene,0);
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
 
-			if (scene->list_of_rendition)
-			{
-				if (!scene->list_of_rendition->empty())
-				{
-					Rendition_set::iterator pos =
-						scene->list_of_rendition->begin();
-					while (pos != scene->list_of_rendition->end())
-					{
-						Cmiss_rendition_remove_scene(*pos, scene);
-						++pos;
-					}
-					scene->list_of_rendition->clear();
-				}
-			}
-			else
-			{
-				scene->list_of_rendition = new Rendition_set;
-			}
-			Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Unset rendition on scene.
+ * @param scene The scene to be set
+ * @return If successfully disable rendition returns 1 else 0.
+ */
+int Cmiss_scene_disable_renditions(Scene *scene)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_disable_renditions);
+	if (scene)
+	{
+		if (scene->region)
+		{
+			struct Cmiss_rendition *rendition =
+				Cmiss_region_get_rendition_internal(scene->region);
 			if (rendition)
 			{
-				Cmiss_rendition_add_scene(rendition, scene, 1);
+				Cmiss_rendition_remove_callback(rendition,
+					Scene_rendition_update_callback,
+					(void *)scene);
+				Cmiss_rendition_unset_graphics_managers_callback(rendition);
 				DEACCESS(Cmiss_rendition)(&rendition);
 			}
-			Scene_changed_private(scene, 0);
 		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" Cmiss_scene_set_region. Invalid argument(s)");
+			" Cmiss_scene_disable_renditions. Invalid argument(s)");
 		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Enable rendition on scene. This function will add rendition to top region
+ * and its child regions in scene if they do not already have an rendition.
+ * This function will also set appropriate callback to the top region's
+ * rendition to avoid multiple calls of the same callback functions in the same
+ * region.
+ *
+ * @param scene The scene to be set
+ * @return If successfully enable rendition returns 1 else 0.
+ */
+int Cmiss_scene_enable_renditions(Scene *scene)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_enable_renditions);
+	if (scene)
+	{
+		if (scene->region)
+		{
+			struct Cmiss_rendition *rendition;
+			if (rendition = Cmiss_region_get_rendition_internal(scene->region))
+			{
+				Cmiss_rendition_add_scene(rendition,scene,/*hieracrical*/1);
+				Cmiss_rendition_add_callback(rendition,
+					Scene_rendition_update_callback, (void *)scene);
+				Cmiss_rendition_set_graphics_managers_callback(rendition);
+				DEACCESS(Cmiss_rendition)(&rendition);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_enable_renditions. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
+{
+  int return_code = 0;
+
+	ENTER(Cmiss_scene_set_region);
+	if (scene && region)
+	{
+		if (scene->region != region)
+		{
+			Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+			if (rendition)
+			{
+				if (scene->list_of_rendition)
+				{
+					if (!scene->list_of_rendition->empty())
+					{
+						Rendition_set::iterator pos =
+							scene->list_of_rendition->begin();
+						while (pos != scene->list_of_rendition->end())
+						{
+							Cmiss_rendition_remove_scene(*pos, scene);
+							++pos;
+						}
+						scene->list_of_rendition->clear();
+					}
+				}
+				else
+				{
+					scene->list_of_rendition = new Rendition_set;
+				}
+				Cmiss_scene_disable_renditions(scene);
+				REACCESS(Cmiss_region)(&(scene->region), region);
+				Cmiss_rendition_add_scene(rendition, scene, 1);
+				DEACCESS(Cmiss_rendition)(&rendition);
+				Scene_changed_private(scene, 0);
+				Cmiss_scene_enable_renditions(scene);
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					" Cmiss_scene_set_region. Region does not have a rendition");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_scene_set_region. Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -8879,60 +8985,6 @@ struct Scene *Cmiss_scene_create(void)
 	LEAVE;
 
 	return (scene);
-}
-
-static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
-	void *scene_void)
-{
-	int return_code;
-	struct Scene *scene;
-	
-	ENTER(Scene_rendition_update_callback);
-	if (rendition &&(scene = (struct Scene *)scene_void))
-	{
-		Scene_notify_object_changed(scene,0);
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_scene_enable_rendition(Scene *scene)
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_enable_rendition);
-	if (scene)
-	{
-		if (scene->region)
-		{
-			struct Cmiss_rendition *rendition;
-			if (rendition = Cmiss_region_get_rendition(scene->region))
-			{
-				Cmiss_rendition_add_scene(rendition,scene,/*hieracrical*/1);
-				Cmiss_rendition_add_callback(rendition,
-					Scene_rendition_update_callback,
-					(void *)scene);
-				Cmiss_rendition_set_graphics_managers_callback(rendition);
-				DEACCESS(Cmiss_rendition)(&rendition);
-			}
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			" Cmiss_scene_enable_rendition. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 int Scene_rendition_changed(
@@ -9050,7 +9102,7 @@ int Scene_export_region_graphics_object(Scene *scene, Cmiss_region *region,const
 		data.user_data = user_data;
 		data.graphic_name = graphic_name;
 		data.scene = scene;
-		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition(region);
+		struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
 			Rendition_set::iterator pos =
@@ -9085,7 +9137,7 @@ int Scene_add_graphics_object(struct Scene *scene,
 	if (scene && graphics_object)
 	{
 		if (scene->region && 
-			(NULL != (rendition = Cmiss_region_get_rendition(scene->region))))
+			(NULL != (rendition = Cmiss_region_get_rendition_internal(scene->region))))
 		{
 			if (!cmiss_graphic_name)
 			{

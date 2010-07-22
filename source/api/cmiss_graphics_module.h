@@ -45,6 +45,16 @@ struct Cmiss_graphics_module;
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
 #define CMISS_GRAPHICS_MODULE_ID_DEFINED
 #endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
+#ifndef CMISS_RENDITION_ID_DEFINED
+struct Cmiss_rendition;
+typedef struct Cmiss_rendition * Cmiss_rendition_id;
+#define CMISS_RENDITION_ID_DEFINED
+#endif
+#ifndef CMISS_REGION_ID_DEFINED
+struct Cmiss_region;
+typedef struct Cmiss_region * Cmiss_region_id;
+#define CMISS_REGION_ID_DEFINED
+#endif
 
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
@@ -99,5 +109,18 @@ int Cmiss_graphics_module_destroy(
 Cmiss_scene_id Cmiss_graphics_module_create_scene(
 	Cmiss_graphics_module_id graphics_module);
 #endif
+
+/***************************************************************************//**
+ * Get a rendition of region from graphics module with an access_count incremented
+ * by 1. Caller is responsible for calling Cmiss_rendition_destroy to destroy the
+ * reference to it.
+ *
+ * @param graphics_module  The module at which the rendition will get its
+ * graphics setting for.
+ * @param region  The region at which the rendition is representing for.
+ * @return  Reference to the rendition.
+ */
+Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

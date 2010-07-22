@@ -640,7 +640,7 @@ int Computed_field_group::add_region(struct Cmiss_region *child_region)
 	int return_code = 0;
 	if (Cmiss_region_contains_subregion(region, child_region))
 	{
-		Cmiss_rendition *child_rendition = Cmiss_region_get_rendition(
+		Cmiss_rendition *child_rendition = Cmiss_region_get_rendition_internal(
 			child_region);
 		if (child_rendition)
 		{
@@ -675,7 +675,7 @@ int Computed_field_group::clear_group_if_empty()
 #endif /* defined (USE_OPENCASCADE) */
 		&& selection_on == 0)
 	{
-		Cmiss_rendition_id rendition = Cmiss_rendition_get_from_region(region);
+		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
 			Cmiss_rendition_remove_selection_group(rendition);
@@ -727,7 +727,7 @@ int Computed_field_group::clear_region_tree_node()
 				{
 					if (pos->first != region)
 					{
-						Cmiss_rendition_id rendition = Cmiss_rendition_get_from_region(pos->first);
+						Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(pos->first);
 						if (rendition)
 						{
 							Cmiss_rendition_remove_selection_group(rendition);
@@ -796,7 +796,7 @@ int Computed_field_group::clear_region_tree_element()
 				{
 					if (pos->first != region)
 					{
-						Cmiss_rendition_id rendition = Cmiss_rendition_get_from_region(pos->first);
+						Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(pos->first);
 						if (rendition)
 						{
 							Cmiss_rendition_remove_selection_group(rendition);

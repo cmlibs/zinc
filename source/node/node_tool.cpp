@@ -1239,7 +1239,7 @@ try to enforce that the node is created on that element.
 				cmiss_graphic_type=CMISS_GRAPHIC_NODE_POINTS;
 			}
 			node_tool_coordinate_field=node_tool->coordinate_field;
-			rendition = Cmiss_rendition_get_from_region(node_tool->region);
+			rendition = Cmiss_region_get_rendition_internal(node_tool->region);
 			if (scene && rendition)
 			{
 				graphic = first_graphic_in_Cmiss_rendition_that(
@@ -2083,7 +2083,7 @@ release.
 							{
 								if (node_tool->root_region)
 								{
-									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
+									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 										node_tool->root_region);
 									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
 										root_rendition);
@@ -2393,7 +2393,7 @@ release.
 													sub_region = pos->first;
 													if (sub_region)
 													{
-														region_rendition= Cmiss_rendition_get_from_region(sub_region);
+														region_rendition= Cmiss_region_get_rendition_internal(sub_region);
 														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
 														sub_group = Cmiss_field_cast_group(sub_group_field);
 													}

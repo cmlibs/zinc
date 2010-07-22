@@ -102,7 +102,7 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
  * @param cmiss_region The region of interest
  * @return If rendition found returns it, otherwise NULL
  */
-struct Cmiss_rendition *Cmiss_region_get_rendition(struct Cmiss_region *cmiss_region);
+struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region *cmiss_region);
 
 /***************************************************************************//**
  * Call before making several changes to the cmiss_rendition so only a single
@@ -118,14 +118,22 @@ int Cmiss_rendition_begin_cache(struct Cmiss_rendition *rendition);
 int Cmiss_rendition_end_cache(struct Cmiss_rendition *rendition);
 
 /***************************************************************************//** 
- * Enable the rendition of the region
- * @param cmiss_region The region to be edited
- * @param graphics_module containing information to enable the rendition
- * @return If successfully enable rendition for region returns 1, otherwise 0
+ * Enable callback to the rendition from changes on graphics
+ * @param rendition The rendition to be edited
+ * @return If successfully ensable callback to rendition for region returns 1,
+ * otherwise 0
  */
 int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendition);
 
 /***************************************************************************//** 
+ * Remove callback to the rendition from changes on graphics
+ * @param rendition The rendition to be edited
+ * @return If successfully disable callback to rendition for region returns 1,
+ * otherwise 0
+ */
+int Cmiss_rendition_unset_graphics_managers_callback(struct Cmiss_rendition *rendition);
+
+/***************************************************************************//**
  * Deaccess the rendition of the region
  * @param region The region to deaccess rendition from
  * @return If successfully deaccess rendition from region returns 1, otherwise 0

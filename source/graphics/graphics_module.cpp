@@ -768,7 +768,7 @@ int Cmiss_graphics_module_enable_renditions(
 		if (return_code)
 		{
 			struct Cmiss_rendition *rendition =
-				Cmiss_region_get_rendition(cmiss_region);
+				Cmiss_region_get_rendition_internal(cmiss_region);
 			Cmiss_rendition_add_callback(rendition, Cmiss_rendition_update_callback,
 				(void *)NULL);
 			child_region = Cmiss_region_get_first_child(cmiss_region);
@@ -778,7 +778,7 @@ int Cmiss_graphics_module_enable_renditions(
 					graphics_module, child_region);
 				/* add callback to call from child rendition to parent rendition */
 				struct Cmiss_rendition *child;
-				if (rendition && (NULL != (child = Cmiss_region_get_rendition(child_region))))
+				if (rendition && (NULL != (child = Cmiss_region_get_rendition_internal(child_region))))
 				{
 					Cmiss_rendition_add_callback(child,
 						Cmiss_rendition_notify_parent_rendition_callback,
@@ -859,3 +859,13 @@ struct FE_element_selection *Cmiss_graphics_module_get_element_selection(
 	return (element_selection);
 }
 
+Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region)
+{
+	struct Cmiss_rendition *rendition = NULL;
+	if (graphics_module && region)
+	{
+		rendition = Cmiss_region_get_rendition_internal(region);
+	}
+	return rendition;
+}

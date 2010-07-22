@@ -44,11 +44,6 @@ to Cmgui.
 #include "graphics/graphic.h"
 #include "graphics/rendition.h"
 
-Cmiss_rendition_id Cmiss_rendition_get_from_region(Cmiss_region_id root_region)
-{
-	return Cmiss_region_get_rendition(root_region);
-}
-
 Cmiss_graphic_id Cmiss_rendition_create_lines(Cmiss_rendition_id rendition)
 {
 	Cmiss_graphic_id graphic = NULL;

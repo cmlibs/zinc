@@ -69,8 +69,6 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
-
 /***************************************************************************//**
  * Creates a field performing ITK binary erode image filter on scalar source
  * field image. Sets number of components to same number as <source_field>.

@@ -60,6 +60,15 @@ typedef struct Cmiss_rendition * Cmiss_rendition_id;
 #define CMISS_RENDITION_ID_DEFINED
 #endif /* CMISS_RENDITION_ID_DEFINED */
 
+/*******************************************************************************
+ * Returns a new reference to the rendition with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ *
+ * @param rendition  The rendition to obtain a new reference to.
+ * @return  New rendition reference with incremented reference count.
+ */
+Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
+
 /***************************************************************************//**
  * Adds the <graphic> to <rendition> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
@@ -154,15 +163,6 @@ Cmiss_field_id Cmiss_rendition_get_default_coordinate_field(
  * @return  1 for visible, 0 for not visible.  
  */
 int Cmiss_rendition_get_visibility_flag(struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
- * Returns the handle to a rendition <region>.
- *
- * @param region  The handle to cmiss region.
- * @return  Returns the handle to rendition if found in region, otherise
- *   NULL.
- */
-Cmiss_rendition_id Cmiss_rendition_get_from_region(Cmiss_region_id region);
 
 /***************************************************************************//**
  * Check either region has rendition or not.

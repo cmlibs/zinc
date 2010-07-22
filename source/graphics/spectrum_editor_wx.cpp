@@ -2367,11 +2367,10 @@ Creates a spectrum_editor widget.
 								graphics_module, spectrum_editor->private_region);
 							Cmiss_scene_set_region(spectrum_editor->spectrum_editor_scene,
 								spectrum_editor->private_region);
-							Cmiss_scene_enable_rendition(spectrum_editor->spectrum_editor_scene);
 							Cmiss_scene_filter *filter =
 								Cmiss_scene_create_filter_all(spectrum_editor->spectrum_editor_scene);
 							Cmiss_scene_filter_destroy(&filter);
-							spectrum_editor->rendition = Cmiss_rendition_get_from_region(
+							spectrum_editor->rendition = Cmiss_region_get_rendition_internal(
 								spectrum_editor->private_region);
 							viewer_light = CREATE(Light)("spectrum_editor_light");
 							set_Light_direction(viewer_light, light_direction);
