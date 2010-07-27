@@ -1954,7 +1954,6 @@ release.
 	struct Cmiss_graphic *graphic = NULL, *graphic_element = NULL;
 	struct GT_object *glyph;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
-	struct LIST(FE_node) *node_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Node_tool *node_tool;
 	struct Scene *scene;
@@ -2010,9 +2009,26 @@ release.
 							}
 							if (picked_node)
 							{
-								node_tool->picked_node_was_unselected=
-									!FE_node_selection_is_node_selected(node_tool->node_selection,
-										picked_node);
+								if (Cmiss_rendition_has_selection_group(rendition))
+								{
+									node_tool->picked_node_was_unselected=1;
+									Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(rendition);
+									Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+									Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+									if (node_group_field)
+									{
+										Cmiss_field_node_group_template_id node_group =
+											Cmiss_field_cast_node_group_template(node_group_field);
+										node_tool->picked_node_was_unselected =
+											!Cmiss_field_node_group_template_is_node_selected(node_group, picked_node);
+										Cmiss_field_destroy(&node_group_field);
+										node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
+										Cmiss_field_destroy(&node_group_field);
+									}
+									Cmiss_field_destroy(&group_field);
+									group_field = reinterpret_cast<Cmiss_field_id>(sub_group);
+									Cmiss_field_destroy(&group_field);
+								}
 								REACCESS(Scene_picked_object)(
 									&(node_tool->scene_picked_object),scene_picked_object);
 								REACCESS(Cmiss_rendition)(&(node_tool->rendition),
@@ -2077,9 +2093,6 @@ release.
 							 * receiving code gets to run: consider it capable of changing the current tool!
 							 */
 							if (clear_selection = !shift_pressed)
-#if defined (OLD_CODE)
-								&&((!picked_node)||(node_tool->picked_node_was_unselected))))
-#endif /*defined (OLD_CODE) */
 							{
 								if (node_tool->root_region)
 								{
@@ -2256,45 +2269,74 @@ release.
 								}
 								if (return_code)
 								{
-									if (node_list=FE_node_selection_get_node_list(
-										node_tool->node_selection))
+									if (node_tool->rendition &&
+											Cmiss_rendition_has_selection_group(node_tool->rendition))
 									{
-										FE_region_begin_change(node_tool->fe_region);
-										/* edit vectors if non-constant orientation_scale field */
-										if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
-											(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
-											edit_info.wrapper_orientation_scale_field&&
-											(!Computed_field_is_constant(
-												edit_info.orientation_scale_field)))
+										Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+										Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+										Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+										if (node_group_field)
 										{
-											/* edit vector */
-											if (FE_node_calculate_delta_vector(
-												node_tool->last_picked_node,(void *)&edit_info))
+											Cmiss_field_node_group_template_id node_group =
+												Cmiss_field_cast_node_group_template(node_group_field);
+											FE_region_begin_change(node_tool->fe_region);
+											/* edit vectors if non-constant orientation_scale field */
+											if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode)
+													|| (NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))
+													&& edit_info.wrapper_orientation_scale_field
+													&& (!Computed_field_is_constant(
+															edit_info.orientation_scale_field)))
 											{
-												FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_edit_vector,
-													(void *)&edit_info,node_list);
-											}
-										}
-										else
-										{
-											if (NODE_TOOL_EDIT_VECTOR != node_tool->edit_mode)
-											{
-												/* edit position */
-												if (FE_node_calculate_delta_position(
-													node_tool->last_picked_node,(void *)&edit_info))
+
+												/* edit vector */
+												if (FE_node_calculate_delta_vector(
+														node_tool->last_picked_node, (void *) &edit_info))
 												{
-													FOR_EACH_OBJECT_IN_LIST(FE_node)(
-														FE_node_edit_position,(void *)&edit_info,node_list);
+													Cmiss_node_id edit_node =
+														Cmiss_field_node_group_template_get_first_node(node_group);
+													while (edit_node)
+													{
+														FE_node_edit_vector(edit_node, (void *)&edit_info);
+														DEACCESS(FE_node)(&edit_node);
+														edit_node =
+															Cmiss_field_node_group_template_get_next_node(node_group);
+													}
 												}
 											}
 											else
 											{
-												display_message(ERROR_MESSAGE,"Cannot edit vector: "
-													"invalid orientation_scale field");
-												return_code=0;
+												if (NODE_TOOL_EDIT_VECTOR != node_tool->edit_mode)
+												{
+													/* edit position */
+													if (FE_node_calculate_delta_position(
+															node_tool->last_picked_node, (void *) &edit_info))
+													{
+														Cmiss_node_id edit_node =
+															Cmiss_field_node_group_template_get_first_node(node_group);
+														while (edit_node)
+														{
+															FE_node_edit_position(edit_node, (void *)&edit_info);
+															DEACCESS(FE_node)(&edit_node);
+															edit_node =
+																Cmiss_field_node_group_template_get_next_node(node_group);
+														}
+													}
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE, "Cannot edit vector: "
+														"invalid orientation_scale field");
+													return_code = 0;
+												}
 											}
+											FE_region_end_change(node_tool->fe_region);
+											Cmiss_field_destroy(&node_group_field);
+											node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
+											Cmiss_field_destroy(&node_group_field);
 										}
-										FE_region_end_change(node_tool->fe_region);
+										Cmiss_field_destroy(&group_field);
+										group_field = reinterpret_cast<Cmiss_field_id>(sub_group);
+										Cmiss_field_destroy(&group_field);
 									}
 									else
 									{

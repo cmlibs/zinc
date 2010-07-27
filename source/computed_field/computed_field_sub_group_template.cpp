@@ -118,6 +118,40 @@ int Cmiss_field_node_group_template_is_node_selected(
 	return return_code;
 }
 
+Cmiss_node_id Cmiss_field_node_group_template_get_first_node(
+	Cmiss_field_node_group_template_id node_group)
+{
+	Cmiss_node_id node = NULL;
+	if (node_group)
+	{
+		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+			Cmiss_field_node_group_template_id>(node_group);
+		node = group_core->getFirstObject();
+		if (node)
+			ACCESS(FE_node)(node);
+	}
+
+	return node;
+}
+
+Cmiss_node_id Cmiss_field_node_group_template_get_next_node(
+	Cmiss_field_node_group_template_id node_group)
+{
+	Cmiss_node_id node = NULL;
+	if (node_group)
+	{
+		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+			Cmiss_field_node_group_template_id>(node_group);
+		node = group_core->getNextObject();
+		if (node)
+			ACCESS(FE_node)(node);
+	}
+
+	return node;
+}
+
 Computed_field *Cmiss_field_module_create_node_group_template(Cmiss_field_module_id field_module)
 {
 	Computed_field *field;

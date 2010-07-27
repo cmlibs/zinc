@@ -65,6 +65,13 @@ int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id nod
 int Cmiss_field_node_group_template_is_node_selected(
 	Cmiss_field_node_group_template_id node_group, Cmiss_node_id node);
 
+Cmiss_node_id Cmiss_field_node_group_template_get_first_node(
+	Cmiss_field_node_group_template_id node_group);
+
+Cmiss_node_id Cmiss_field_node_group_template_get_next_node(
+	Cmiss_field_node_group_template_id node_group);
+
+
 struct Cmiss_field_element_group_template;
 typedef struct Cmiss_field_element_group_template *Cmiss_field_element_group_template_id;
 

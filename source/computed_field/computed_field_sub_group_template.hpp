@@ -55,6 +55,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include <map>
+#include <iterator>
 
 namespace {
 
@@ -67,6 +68,7 @@ namespace {
 
 		Computed_field_sub_group_object() : Computed_field_core(), object_map()
 		{
+			object_pos = object_map.begin();
 		}
 
 		~Computed_field_sub_group_object()
@@ -117,9 +119,32 @@ namespace {
 			return (!(object_map.empty()) && (object_map.find(identifier) != object_map.end()));
 		}
 
+		T getFirstObject()
+		{
+			T return_object = NULL;
+			object_pos = object_map.begin();
+			if (object_pos !=object_map.end())
+			{
+				return_object = object_pos->second;
+			}
+			return return_object;
+		}
+
+		T getNextObject()
+		{
+			T return_object = NULL;
+			object_pos++;
+			if (object_pos !=object_map.end())
+			{
+				return_object = object_pos->second;
+			}
+			return return_object;
+		}
+
 	private:
 
 		std::map<int, T> object_map;
+		typename std::map<int, T>::iterator object_pos;
 
 		Computed_field_core* copy()
 		{
@@ -178,5 +203,8 @@ Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_cor
 	return (static_cast<Computed_field_sub_group_object<ObjectType>*>(
 		reinterpret_cast<Computed_field*>(object_group_field)->core));
 }
+
+
+
 #endif /* COMPUTED_FIELD_SUB_GROUP_TEMPLATE_HPP */
 
