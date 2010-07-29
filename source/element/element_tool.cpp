@@ -992,7 +992,7 @@ public:
 
 	~ wxElementTool()
 	{
-		//		 delete element_command_field_chooser;
+		delete element_command_field_chooser;
 	};
 	int element_command_field_callback(Computed_field *command_field)
 	{

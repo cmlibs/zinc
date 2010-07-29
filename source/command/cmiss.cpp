@@ -7040,56 +7040,95 @@ Executes a GFX DESTROY ELEMENTS command.
 				(fe_region = Cmiss_region_get_FE_region(region)) &&
 				FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region))
 			{
-				if (destroy_element_list =
-					FE_element_list_from_fe_region_selection_ranges_condition(
-						fe_region, cm_element_type,
-						command_data->element_selection, selected_flag,
-						element_ranges, conditional_field, time))
-				{
-					if (0 < NUMBER_IN_LIST(FE_element)(destroy_element_list))
+		  	if (region)
+		  	{
+		  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+		  		struct Computed_field *group_field = NULL;
+		  		if (rendition)
+		  		{
+		  			if (Cmiss_rendition_has_selection_group(rendition))
+		  			{
+		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  			}
+						Cmiss_rendition_destroy(&rendition);
+		  		}
+		  		if (selected_flag && group_field)
+		  		{
+		  			destroy_element_list = FE_element_list_from_region_and_selection_group(
+		  				region, cm_element_type, element_ranges, group_field, conditional_field,
+		  				time);
+		  		}
+		  		else if (selected_flag && !group_field)
+		  		{
+		  			destroy_element_list = NULL;
+		  		}
+		  		else
+		  		{
+		  			destroy_element_list = FE_element_list_from_region_and_selection_group(
+		  				region, cm_element_type, element_ranges, NULL, conditional_field,
+		  				time);
+		  		}
+		  		if (destroy_element_list)
 					{
-						FE_region_begin_change(master_fe_region);
-						FE_region_remove_FE_element_list(master_fe_region,
-							destroy_element_list);
-						if (0 < (number_not_destroyed =
-							NUMBER_IN_LIST(FE_element)(destroy_element_list)))
+						if (0 < NUMBER_IN_LIST(FE_element)(destroy_element_list))
 						{
-							display_message(WARNING_MESSAGE,
-								"%d of the selected element(s) could not be destroyed",
-								number_not_destroyed);
+							FE_region_begin_change(master_fe_region);
+							FE_region_remove_FE_element_list(master_fe_region,
+									destroy_element_list);
+							if (0 < (number_not_destroyed = NUMBER_IN_LIST(FE_element)(
+									destroy_element_list)))
+							{
+								display_message(WARNING_MESSAGE,
+										"%d of the selected element(s) could not be destroyed",
+										number_not_destroyed);
+							}
+							FE_region_end_change(master_fe_region);
 						}
-						FE_region_end_change(master_fe_region);
+						else
+						{
+							switch (cm_element_type)
+							{
+								case CM_ELEMENT:
+								{
+									display_message(INFORMATION_MESSAGE,
+											"gfx destroy elements:  No elements specified\n");
+								}
+									break;
+								case CM_FACE:
+								{
+									display_message(INFORMATION_MESSAGE,
+											"gfx destroy faces:  No faces specified\n");
+								}
+									break;
+								case CM_LINE:
+								{
+									display_message(INFORMATION_MESSAGE,
+											"gfx destroy lines:  No lines specified\n");
+								}
+									break;
+							}
+							return_code = 0;
+						}
+						DESTROY(LIST(FE_element))(&destroy_element_list);
+			  		if (group_field)
+			  		{
+			  			Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
+			  			Cmiss_field_group_clear_region_tree_element(group);
+			  			Cmiss_field_destroy(&group_field);
+			  			group_field = reinterpret_cast<Cmiss_field_id>(group);
+			  		}
 					}
 					else
 					{
-						switch (cm_element_type)
-						{
-							case CM_ELEMENT:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx destroy elements:  No elements specified\n");
-							} break;
-							case CM_FACE:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx destroy faces:  No faces specified\n");
-							} break;
-							case CM_LINE:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx destroy lines:  No lines specified\n");
-							} break;
-						}
+						display_message(ERROR_MESSAGE,
+								"gfx_destroy_elements.  Could not make destroy_element_list");
 						return_code = 0;
 					}
-					DESTROY(LIST(FE_element))(&destroy_element_list);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_destroy_elements.  Could not make destroy_element_list");
-					return_code = 0;
-				}
+		  		if (group_field)
+		  		{
+		  			Cmiss_field_destroy(&group_field);
+		  		}
+		  	}
 			}
 			else
 			{
