@@ -179,7 +179,7 @@ changes in node position and derivatives etc.
 
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
-
+	void *computed_field_manager_callback_id;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 	struct FE_field *FE_coordinate_field;
@@ -206,10 +206,10 @@ changes in node position and derivatives etc.
 #else /* defined (MOTIF_USER_INTERFACE) */
 	/* without cmiss_region_chooser need somewhere to store the region path */
 	char *current_region_path;
+	struct MANAGER(Computed_field) *computed_field_manager;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	 wxPoint tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Node_tool */
@@ -288,14 +288,10 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_form)
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 /* Prototype */
-#if defined (WX_USER_INTERFACE)
 static int Node_tool_end_element_creation(
 	 struct Node_tool *node_tool);
-#endif /*defined (WX_USER_INTERFACE)*/
-#if defined (WX_USER_INTERFACE)
 int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool,
 	 int create_enabled);
-#endif /*defined (WX_USER_INTERFACE)*/
 #if defined (WX_USER_INTERFACE)
 int Node_tool_set_element_dimension(
 	 struct Node_tool *node_tool,int element_dimension);
@@ -3379,6 +3375,273 @@ Copies the state of one node tool to another.
 	return (return_code);
 } /* Node_tool_copy_function */
 
+static int Node_tool_add_element(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Adds the just created element to the fe_region, adding faces as necessary.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(node_tool_add_element);
+	if (node_tool && node_tool->fe_region && node_tool->element)
+	{
+		FE_region_begin_change(node_tool->fe_region);
+		FE_region_begin_define_faces(node_tool->fe_region);
+		return_code = FE_region_merge_FE_element_and_faces_and_nodes(
+			node_tool->fe_region, node_tool->element);
+		FE_region_end_define_faces(node_tool->fe_region);
+		FE_region_end_change(node_tool->fe_region);
+		Node_tool_end_element_creation(node_tool);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool_add_element.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool_add_element */
+
+
+static void Node_tool_Computed_field_change(
+	struct MANAGER_MESSAGE(Computed_field) *message,void *node_tool_void)
+{
+	struct CM_element_information element_identifier;
+	struct Node_tool *node_tool;
+#if defined (WX_USER_INTERFACE)
+	wxString blank;
+	wxListBox *new_element_nodes_list_box;
+	char temp_string[50];
+	int number;
+#endif
+	int number_of_nodes;
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+	struct LIST(Computed_field) *changed_field_list=NULL;
+
+	ENTER(Node_tool_Computed_field_change);
+	node_tool =	(struct Node_tool *)node_tool_void;
+	if (message && node_tool && node_tool->element_create_enabled)
+	{
+		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_tool->region);
+		if (rendition)
+		{
+			struct Computed_field *selection_group_field = NULL;
+			if (Cmiss_rendition_has_selection_group(rendition))
+			{
+			 selection_group_field = Cmiss_rendition_get_selection_group(rendition);
+			}
+			changed_field_list =
+				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
+					MANAGER_CHANGE_RESULT(Computed_field));
+			if (selection_group_field && changed_field_list && Computed_field_or_ancestor_satisfies_condition(
+					selection_group_field,Computed_field_is_in_list, (void *)changed_field_list))
+			{
+				Cmiss_field_group_id group= Cmiss_field_cast_group(selection_group_field);
+				Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
+				Cmiss_field_destroy(&selection_group_field);
+				selection_group_field = reinterpret_cast<Cmiss_field_id>(group);
+				Cmiss_field_node_group_template_id node_group =
+					Cmiss_field_cast_node_group_template(node_group_field);
+				Cmiss_field_destroy(&node_group_field);
+				node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
+				Cmiss_field_destroy(&node_group_field);
+				struct FE_node *node = Cmiss_field_node_group_template_get_first_node(node_group);
+				struct FE_node *next_node = Cmiss_field_node_group_template_get_next_node(node_group);
+				/* make sure there is only one node selected in group */
+				if (node && !next_node)
+				{
+					/* get the last selected node and check it is in the FE_region */
+					if (FE_region_contains_FE_node(node_tool->fe_region, node))
+					{
+						if (!node_tool->element)
+						{
+							/* get next unused element identifier from fe_region */
+							element_identifier.type = CM_ELEMENT;
+							element_identifier.number= FE_region_get_next_FE_element_identifier(
+								node_tool->fe_region, CM_ELEMENT, 1);
+							if (node_tool->coordinate_field && (fe_field_list
+									= Computed_field_get_defining_FE_field_list(
+											node_tool->coordinate_field)))
+							{
+								if ((1 == NUMBER_IN_LIST(FE_field)(fe_field_list)) && (fe_field
+										= FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+												(LIST_CONDITIONAL_FUNCTION(FE_field) *) NULL,
+												(void *) NULL, fe_field_list)) && (3
+														>= get_FE_field_number_of_components(fe_field))
+														&& (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+								{
+									if (node_tool->template_element
+											|| (((node_tool->template_element
+													= create_FE_element_with_line_shape(
+															/*identifier*/1, node_tool->fe_region,
+															node_tool->element_dimension))
+															&& FE_element_define_tensor_product_basis(
+																	node_tool->template_element,
+																	node_tool->element_dimension,/*basis_type*/
+																	LINEAR_LAGRANGE, fe_field))
+																	&& ACCESS(FE_element)(node_tool->template_element)))
+									{
+										if (node_tool->element = CREATE(FE_element)(
+												&element_identifier, (struct FE_element_shape *) NULL,
+												(struct FE_region *) NULL, node_tool->template_element))
+										{
+											ACCESS(FE_element)(node_tool->element);
+											node_tool->number_of_clicked_nodes = 0;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+													"Node_tool_Computed_field_change.  Could not create element");
+										}
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+										"Node_tool_Computed_field_change.  Could not create template element");
+							}
+						}
+						if (node_tool->element)
+						{
+							/* When we make more than linear elements we will need
+							 to check that the derivatives exist and are the correct ones */
+							if (set_FE_element_node(node_tool->element,
+									node_tool->number_of_clicked_nodes, node))
+							{
+#if defined (WX_USER_INTERFACE)
+								if (node_tool->wx_node_tool != NULL)
+								{
+									sprintf(temp_string, "%d. Node %d",
+											node_tool->number_of_clicked_nodes + 1,
+											get_FE_node_identifier(node));
+									wxString string(temp_string, wxConvUTF8);
+									new_element_nodes_list_box = XRCCTRL(
+											*node_tool->wx_node_tool, "NewElementNodesListBox",
+											wxListBox);
+									number = new_element_nodes_list_box->GetCount();
+									if (number == 0)
+									{
+										new_element_nodes_list_box->InsertItems(1, &blank, number);
+									}
+									number = new_element_nodes_list_box->GetCount();
+									new_element_nodes_list_box->InsertItems(1, &string, number
+											- 1);
+								}
+#endif
+								node_tool->number_of_clicked_nodes++;
+								if (get_FE_element_number_of_nodes(node_tool->element,
+										&number_of_nodes) && (node_tool->number_of_clicked_nodes
+												== number_of_nodes))
+								{
+									Node_tool_add_element(node_tool);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+										"Node_tool_Computed_field_change.  Could not set node");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+									"Node_tool_Computed_field_change.  Could not create element");
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+								"Element creator: Selected node not from current region");
+					}
+				}
+				if (node)
+				{
+					Cmiss_node_destroy(&node);
+				}
+				if (next_node)
+				{
+					Cmiss_node_destroy(&next_node);
+				}
+			}
+			Cmiss_rendition_destroy(&rendition);
+			if (selection_group_field)
+			{
+				Cmiss_field_destroy(&selection_group_field);
+			}
+		}
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Node_tool_Computed_field_change.  Invalid argument(s)");
+	}
+	LEAVE;
+}
+
+int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool ,
+	 int element_create_enabled)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Sets flag controlling whether elements are created in response to
+node selection.
+==============================================================================*/
+{
+	int return_code;
+	ENTER(node_tool_set_create_enabled);
+	if (node_tool )
+	{
+		/* make sure value of flag is 1 */
+		if (element_create_enabled)
+		{
+			element_create_enabled=1;
+		}
+		if (element_create_enabled != node_tool ->element_create_enabled)
+		{
+			node_tool->element_create_enabled=element_create_enabled;
+			if (element_create_enabled)
+			{
+				if (node_tool->computed_field_manager)
+				{
+					node_tool->computed_field_manager_callback_id=
+						MANAGER_REGISTER(Computed_field)(
+							Node_tool_Computed_field_change,(void *)node_tool,
+							node_tool->computed_field_manager);
+				}
+			}
+			else
+			{
+				Node_tool_end_element_creation(node_tool);
+				if (node_tool->computed_field_manager_callback_id)
+				{
+					MANAGER_DEREGISTER(Computed_field)(
+						node_tool->computed_field_manager_callback_id,
+						node_tool->computed_field_manager);
+					node_tool->computed_field_manager_callback_id=NULL;
+				}
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool _set_create_enabled.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool _set_create_enabled */
+
 static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
 	struct Cmiss_region *region)
 /*******************************************************************************
@@ -3397,6 +3660,7 @@ in this region only.
 		return_code=1;
 		if (region != node_tool->region)
 		{
+			Node_tool_end_element_creation(node_tool);
 			node_tool->region = region;
 			if (region)
 			{
@@ -3410,36 +3674,23 @@ in this region only.
 			{
 				node_tool->fe_region = (struct FE_region *)NULL;
 			}
-#if defined (WX_USER_INTERFACE)
+			if (node_tool->computed_field_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(Computed_field)(node_tool->computed_field_manager_callback_id,
+					node_tool->computed_field_manager);
+				node_tool->computed_field_manager_callback_id=NULL;
+			}
 			node_tool->computed_field_manager = Cmiss_region_get_Computed_field_manager(
 				node_tool->region);
+			if (node_tool->element_create_enabled && node_tool->computed_field_manager)
+			{
+				node_tool->computed_field_manager_callback_id=
+					MANAGER_REGISTER(Computed_field)(Node_tool_Computed_field_change,(void *)node_tool,
+						node_tool->computed_field_manager);
+			}
+#if defined (WX_USER_INTERFACE)
 			if (node_tool->wx_node_tool)
 				node_tool->wx_node_tool->wx_Node_tool_set_field_chooser_manager();
-#elif defined (MOTIF_USER_INTERFACE)
-			struct MANAGER(Computed_field) *computed_field_manager;
-			computed_field_manager = Cmiss_region_get_Computed_field_manager(
-				node_tool->region);
-			if (computed_field_manager)
-			{
-				if (node_tool->command_field_widget)
-				{
-				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
-					node_tool->command_field_widget, 
-					computed_field_manager, NULL);
-				}
-				if (node_tool->coordinate_field_widget)
-				{
-					CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
-						node_tool->coordinate_field_widget, 
-						computed_field_manager, NULL);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Node_tool_set_Cmiss_region. "
-					"Cannot update field chooser. Invalid field manager");
-			}
 #endif
 		}
 	}
@@ -3554,7 +3805,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				ACCESS(Graphical_material)(rubber_band_material);
 			node_tool->user_interface=user_interface;
 			node_tool->time_keeper = (struct Time_keeper *)NULL;
-
+			node_tool->computed_field_manager_callback_id = NULL;
 			if (time_keeper)
 			{
 				node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
@@ -3593,7 +3844,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				tool_name="node_tool";
 				tool_display_name="Node tool";
 			}
-#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			node_tool->computed_field_manager=Cmiss_region_get_Computed_field_manager(root_region);
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 			/* Set defaults until we have some sort of region chooser */
@@ -3611,7 +3862,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				Node_tool_bring_up_interactive_tool_dialog,
 				Node_tool_reset,
  				Node_tool_destroy_node_tool,
-				Node_tool_copy_function,		
+				Node_tool_copy_function,
 				(void *)node_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				node_tool->interactive_tool,
@@ -3835,6 +4086,13 @@ structure itself.
 		(node_tool= *node_tool_address))
 	{
 		Node_tool_reset((void *)node_tool);
+		if (node_tool->computed_field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(
+				node_tool->computed_field_manager_callback_id,
+				node_tool->computed_field_manager);
+			node_tool->computed_field_manager_callback_id=NULL;
+		}
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		if (node_tool->time_keeper)
@@ -4968,7 +5226,6 @@ Returns the generic interactive_tool the represents the <node_tool>.
 	return (interactive_tool);
 } /* Node_tool_get_interactive_tool */
 
-#if defined (WX_USER_INTERFACE)
 static int Node_tool_end_element_creation(
 	struct Node_tool *node_tool)
 /*******************************************************************************
@@ -4981,7 +5238,6 @@ Call this function whether element is successfully created or not.
 ==============================================================================*/
 {
 	int return_code;
-	wxListBox *new_element_nodes_list_box;
 
 	ENTER(node_tool_end_element_creation);
 	if (node_tool)
@@ -4995,11 +5251,14 @@ Call this function whether element is successfully created or not.
 					"node_tool: destroying incomplete element");
 			}
 			DEACCESS(FE_element)(&(node_tool->element));
+#if defined (WX_USER_INTERFACE)
+			wxListBox *new_element_nodes_list_box;
 			if (node_tool->wx_node_tool != NULL)
 			{
 				 new_element_nodes_list_box = XRCCTRL(*node_tool->wx_node_tool, "NewElementNodesListBox", wxListBox);
 				 new_element_nodes_list_box->Clear();
 			}
+#endif /* defined (WX_USER_INTERFACE)*/
 		}
 		return_code=1;
 	}
@@ -5013,231 +5272,7 @@ Call this function whether element is successfully created or not.
 
 	return (return_code);
 } /* Element_creator_end_element_creation */
-#endif /* defined (WX_USER_INTERFACE)*/
 
-#if defined (WX_USER_INTERFACE)
-static int Node_tool_add_element(struct Node_tool *node_tool)
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Adds the just created element to the fe_region, adding faces as necessary.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(node_tool_add_element);
-	if (node_tool && node_tool->fe_region && node_tool->element)
-	{
-		FE_region_begin_change(node_tool->fe_region);
-		FE_region_begin_define_faces(node_tool->fe_region);
-		return_code = FE_region_merge_FE_element_and_faces_and_nodes(
-			node_tool->fe_region, node_tool->element);
-		FE_region_end_define_faces(node_tool->fe_region);
-		FE_region_end_change(node_tool->fe_region);
-		Node_tool_end_element_creation(node_tool);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"node_tool_add_element.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* node_tool_add_element */
-#endif /* defined (WX_USER_INTERFACE)*/
-
-#if defined (WX_USER_INTERFACE)
-static void Node_tool_node_selection_change(
-	struct FE_node_selection *node_selection,
-	struct FE_node_selection_changes *changes,void *node_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Callback for change in the global node selection.
-==============================================================================*/
-{
-	char temp_string[50];
-	int number_of_nodes, number;
-	struct CM_element_information element_identifier;
-	struct Node_tool *node_tool;
-	struct FE_node *node;
-	wxString blank;
-	wxListBox *new_element_nodes_list_box;
-	struct FE_field *fe_field;
-	struct LIST(FE_field) *fe_field_list;
-
-	ENTER(node_tool_node_selection_change);
-	if (node_selection&&changes&&(node_tool=
-		(struct Node_tool *)node_tool_void))
-	{
-		/* if exactly 1 node selected, add it to element */
-		if (1==NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))
-		{
-			/* get the last selected node and check it is in the FE_region */
-			node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-				changes->newly_selected_node_list);
-			if (FE_region_contains_FE_node(node_tool->fe_region, node))
-			{
-				if (!node_tool->element)
-				{
-					/* get next unused element identifier from fe_region */
-					element_identifier.type = CM_ELEMENT;
-					element_identifier.number = FE_region_get_next_FE_element_identifier(
-						node_tool->fe_region, CM_ELEMENT, 1);
-					if (node_tool->coordinate_field && (fe_field_list=
-						 Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
-					{
-						if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list)) &&
-							(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-								(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-								fe_field_list)) &&
-							(3 >= get_FE_field_number_of_components(fe_field)) &&
-							(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
-						{ 
-							if (node_tool->template_element ||
-								(((node_tool->template_element = create_FE_element_with_line_shape(
-									/*identifier*/1,node_tool->fe_region, node_tool->element_dimension)) &&
-								FE_element_define_tensor_product_basis(node_tool->template_element,
-									node_tool->element_dimension,/*basis_type*/LINEAR_LAGRANGE,
-									fe_field)) &&
-								ACCESS(FE_element)(node_tool->template_element)))
-							{
-								if (node_tool->element = CREATE(FE_element)(&element_identifier,
-									(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
-									node_tool->template_element))
-								{
-									ACCESS(FE_element)(node_tool->element);
-									node_tool->number_of_clicked_nodes=0;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"node_tool_node_selection_change.  Could not create element");
-								}
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-								"node_tool_node_selection_change.  Could not create template element");
-					}
-				}
-				if (node_tool->element)
-				{
-					 /* When we make more than linear elements we will need
-							to check that the derivatives exist and are the correct ones */
-					 if (set_FE_element_node(node_tool->element,
-						node_tool->number_of_clicked_nodes,node))
-					 {
-							if (node_tool->wx_node_tool != NULL)
-							{
-								 sprintf(temp_string,"%d. Node %d",
-										node_tool->number_of_clicked_nodes+1,
-										get_FE_node_identifier(node));
-								 wxString string(temp_string, wxConvUTF8);
-								 new_element_nodes_list_box = XRCCTRL(*node_tool->wx_node_tool, "NewElementNodesListBox", wxListBox);
-								 number = new_element_nodes_list_box->GetCount();
-								 if (number == 0)
-								 {
-										new_element_nodes_list_box->InsertItems(1, &blank ,number);
-								 }
-								 number = new_element_nodes_list_box->GetCount();
-								 new_element_nodes_list_box->InsertItems(1,&string, number-1);
-							}
-							node_tool->number_of_clicked_nodes++;
-							if (get_FE_element_number_of_nodes(node_tool->element,
-										&number_of_nodes) &&
-								 (node_tool->number_of_clicked_nodes == number_of_nodes))
-							{
-								 Node_tool_add_element(node_tool);
-							}
-					 }
-					 else
-					 {
-							display_message(ERROR_MESSAGE,
-							"node_tool_node_selection_change.  Could not set node");
-					 }
-				}
-				else
-				{
-					 display_message(ERROR_MESSAGE,
-							"node_tool_node_selection_change.  Could not create element");
-				}
-			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"Element creator: Selected node not from current region");
-			}
-		}
-	}
-	else
-	{
-		 display_message(ERROR_MESSAGE,
-				"node_tool_node_selection_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* node_tool_node_selection_change */
-#endif /* defined (WX_USER_INTERFACE)*/
-
-#if defined (WX_USER_INTERFACE)
-int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool ,
-	 int element_create_enabled)
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Sets flag controlling whether elements are created in response to
-node selection.
-==============================================================================*/
-{
-	int return_code;
-	ENTER(node_tool_set_create_enabled);
-	if (node_tool )
-	{
-		/* make sure value of flag is 1 */
-		if (element_create_enabled)
-		{
-			element_create_enabled=1;
-		}
-		if (element_create_enabled != node_tool ->element_create_enabled)
-		{
-			node_tool ->element_create_enabled=element_create_enabled;
-			if (element_create_enabled)
-			{
-				/* request callbacks from the global node_selection */
-				FE_node_selection_add_callback(node_tool ->node_selection,
-					Node_tool_node_selection_change,
-					(void *)node_tool);
-			}
-			else
-			{
-				Node_tool_end_element_creation(node_tool);
-				/* end callbacks from the global node_selection */
-				FE_node_selection_remove_callback(node_tool->node_selection,
-					Node_tool_node_selection_change,
-					(void *)node_tool);
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"node_tool _set_create_enabled.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* node_tool _set_create_enabled */
-#endif /* defined (WX_USER_INTERFACE)*/
 
 #if defined (WX_USER_INTERFACE)
 int Node_tool_set_element_dimension(

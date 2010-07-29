@@ -133,10 +133,13 @@ namespace {
 		T getNextObject()
 		{
 			T return_object = NULL;
-			object_pos++;
 			if (object_pos !=object_map.end())
 			{
-				return_object = object_pos->second;
+				object_pos++;
+				if (object_pos !=object_map.end())
+				{
+					return_object = object_pos->second;
+				}
 			}
 			return return_object;
 		}
