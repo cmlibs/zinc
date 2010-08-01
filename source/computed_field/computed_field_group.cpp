@@ -138,6 +138,31 @@ public:
 			//Cmiss_field_destroy(&(it->first)); don't destroy this it is not a reference just a key
 			Cmiss_field_destroy(&(it->second));
 		}
+		/* the child selection is responsible for informing the parent selection that this group is now
+		 * removed */
+		Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+		if (parent_region)
+		{
+			Cmiss_rendition_id parent_rendition = Cmiss_region_get_rendition_internal(parent_region);
+			if (parent_rendition)
+			{
+				if (Cmiss_rendition_has_selection_group(parent_rendition))
+				{
+					Cmiss_field *parent_group_field =
+						Cmiss_rendition_get_selection_group(parent_rendition);
+					Cmiss_field_group *parent_group = Cmiss_field_cast_group(parent_group_field);
+					Cmiss_field_destroy(&parent_group_field);
+					Computed_field_group *group_core = static_cast<Computed_field_group*>(
+							reinterpret_cast<Computed_field*>(parent_group)->core);
+					if (group_core != this)
+						group_core->remove_child_group(region);
+					parent_group_field = reinterpret_cast<Cmiss_field *>(parent_group);
+					Cmiss_field_destroy(&parent_group_field);
+				}
+				Cmiss_rendition_destroy(&parent_rendition);
+			}
+			Cmiss_region_destroy(&parent_region);
+		}
 	}
 
 	Cmiss_field_id create_node_group();
@@ -181,6 +206,8 @@ private:
 	{
 		return (computed_field_group_type_string);
 	}
+
+	void remove_child_group(struct Cmiss_region *child_region);
 
 	int compare(Computed_field_core* other_field);
 
@@ -263,29 +290,7 @@ int Computed_field_group::evaluate_cache_at_location(
 				{
 					field->values[0] = 0;
 				}
-// 				else
-// 				{
-// 					Cmiss_field_id temporary_field_handle = pos->second;
-// 					Cmiss_field_group *temporary_group_field_handle =
-// 						Cmiss_field_cast_group(temporary_field_handle);
-// 					Computed_field_group *group_core = static_cast<Computed_field_group *>(
-// 						reinterpret_cast<Computed_field*>((temporary_group_field_handle)->core));
-// 					if (group_core)
-// 					{
-// 						temporary_handle = group_core->local_node_group;
-// 					}
-// 					if (temporary_handle)
-// 					{
-// 						Cmiss_field_node_group_template_id node_group_id = 
-// 							Cmiss_field_cast_node_group_template(temporary_handle);
-// 						field->values[0] = Cmiss_field_node_group_template_is_node_selected(
-// 							node_group_id, node);
-// 					Cmiss_field_destroy(&temporary_field_handle);
-// 					}
-// 				}
 			}
-
-
 		}
  		else if (dynamic_cast<Field_element_xi_location*>(location))
  		{
@@ -588,15 +593,9 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this)
 			{
+				pos++;
 				Cmiss_field_group_clear_region_tree_cad_primitive(group_field);
-				if (Cmiss_field_group_clear_group_if_empty(group_field))
-				{
-					sub_group_map.erase(pos++);
-				}
-				else
-				{
-					++pos;
-				}
+				Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
@@ -666,6 +665,15 @@ int Computed_field_group::add_region(struct Cmiss_region *child_region)
 	return (return_code);
 }
 
+void Computed_field_group::remove_child_group(struct Cmiss_region *child_region)
+{
+	if (Cmiss_region_contains_subregion(region, child_region))
+	{
+		sub_group_map.erase(child_region);
+	}
+	this->clear_group_if_empty();
+}
+
 int Computed_field_group::clear_group_if_empty()
 {
 	int return_code = 0;
@@ -678,6 +686,29 @@ int Computed_field_group::clear_group_if_empty()
 		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
+//			Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+//			if (parent_region)
+//			{
+//				Cmiss_rendition_id parent_rendition = Cmiss_region_get_rendition_internal(parent_region);
+//				if (parent_rendition)
+//				{
+//					if (Cmiss_rendition_has_selection_group(parent_rendition))
+//					{
+//						Cmiss_field *parent_group_field =
+//							Cmiss_rendition_get_selection_group(parent_rendition);
+//						Cmiss_field_group *parent_group = Cmiss_field_cast_group(parent_group_field);
+//						Cmiss_field_destroy(&parent_group_field);
+//						Computed_field_group *group_core = static_cast<Computed_field_group*>(
+//								reinterpret_cast<Computed_field*>(parent_group)->core);
+//						if (group_core != this)
+//							group_core->remove_child_group(region);
+//						parent_group_field = reinterpret_cast<Cmiss_field *>(parent_group);
+//						Cmiss_field_destroy(&parent_group_field);
+//					}
+//					Cmiss_rendition_destroy(&parent_rendition);
+//				}
+//				Cmiss_region_destroy(&parent_region);
+//			}
 			Cmiss_rendition_remove_selection_group(rendition);
 			Cmiss_rendition_destroy(&rendition);
 		}
@@ -711,15 +742,9 @@ int Computed_field_group::clear_region_tree_node()
 			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this) /* if it is a true region */
 			{
+				pos++;
 				Cmiss_field_group_clear_region_tree_node(group_field);
-				if (Cmiss_field_group_clear_group_if_empty(group_field))
-				{
-					sub_group_map.erase(pos++);
-				}
-				else
-				{
-					++pos;
-				}
+				Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
@@ -780,15 +805,9 @@ int Computed_field_group::clear_region_tree_element()
 			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this)
 			{
+				pos++;
 				Cmiss_field_group_clear_region_tree_element(group_field);
-				if (Cmiss_field_group_clear_group_if_empty(group_field))
-				{
-					sub_group_map.erase(pos++);
-				}
-				else
-				{
-					++pos;
-				}
+				Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
