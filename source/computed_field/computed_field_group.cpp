@@ -686,29 +686,6 @@ int Computed_field_group::clear_group_if_empty()
 		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
 		{
-//			Cmiss_region *parent_region = Cmiss_region_get_parent(region);
-//			if (parent_region)
-//			{
-//				Cmiss_rendition_id parent_rendition = Cmiss_region_get_rendition_internal(parent_region);
-//				if (parent_rendition)
-//				{
-//					if (Cmiss_rendition_has_selection_group(parent_rendition))
-//					{
-//						Cmiss_field *parent_group_field =
-//							Cmiss_rendition_get_selection_group(parent_rendition);
-//						Cmiss_field_group *parent_group = Cmiss_field_cast_group(parent_group_field);
-//						Cmiss_field_destroy(&parent_group_field);
-//						Computed_field_group *group_core = static_cast<Computed_field_group*>(
-//								reinterpret_cast<Computed_field*>(parent_group)->core);
-//						if (group_core != this)
-//							group_core->remove_child_group(region);
-//						parent_group_field = reinterpret_cast<Cmiss_field *>(parent_group);
-//						Cmiss_field_destroy(&parent_group_field);
-//					}
-//					Cmiss_rendition_destroy(&parent_rendition);
-//				}
-//				Cmiss_region_destroy(&parent_region);
-//			}
 			Cmiss_rendition_remove_selection_group(rendition);
 			Cmiss_rendition_destroy(&rendition);
 		}
