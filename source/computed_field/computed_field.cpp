@@ -2655,6 +2655,30 @@ number_of_components.
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
 
+char *Computed_field_evaluate_as_string_without_node(struct Computed_field *field,
+		int component_number, FE_value time)
+{
+	char *return_string;
+
+	ENTER(Computed_field_evaluate_as_string_without_node);
+	return_string=(char *)NULL;
+	 Field_node_location location(NULL, time);
+	if (field)
+	{
+		return_string = Computed_field_evaluate_as_string_at_location(
+			field, component_number, &location);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+}
+
 int Computed_field_evaluate_without_node(struct Computed_field *field,
 	 FE_value time, FE_value *values)
 /*******************************************************************************

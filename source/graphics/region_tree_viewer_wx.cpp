@@ -3804,16 +3804,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 						font_chooser->set_callback(font_callback);
 						font_chooser_panel->Fit();
 				 }
-				 if (CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type)
-				 {
-					 labelcheckbox->Show();
-					 label_chooser_panel->Show();
-				 }
-				 else
-				 {
-					 labelcheckbox->Hide();
-					 label_chooser_panel->Hide();
-				 }
+				 labelcheckbox->Show();
+				 label_chooser_panel->Show();
 				 fonttext->Show();
 				 font_chooser_panel->Show();
 				 if ((struct Computed_field *)NULL!=label_field)

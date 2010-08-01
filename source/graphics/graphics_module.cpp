@@ -571,7 +571,7 @@ struct Graphics_font *Cmiss_graphics_module_get_default_font(
 		if (!graphics_module->default_font)
 		{
 			graphics_module->default_font=ACCESS(Graphics_font)(
-				Graphics_font_package_get_font(graphics_module->graphics_font_package, "default"));
+				Graphics_font_package_get_font(Cmiss_graphics_module_get_font_package(graphics_module), "default"));
 		}
 		default_font = ACCESS(Graphics_font)(graphics_module->default_font);
 	}

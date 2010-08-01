@@ -404,6 +404,18 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns a string describing the value/s of the <field> without a node.
+ * This function expects the field to be a string constand or constant field.
+ *
+ * @param field  The field.
+ * @param component_number  Number to indicate which component to show.
+ * @param time  At which time the value is evaluate.
+ * @return  allocated string if field has valid value without node otherwise NULL.
+ */
+char *Computed_field_evaluate_as_string_without_node(struct Computed_field *field,
+		int component_number, FE_value time);
+
 int Computed_field_evaluate_without_node(struct Computed_field *field,
 	FE_value time, FE_value *values);
 /*******************************************************************************

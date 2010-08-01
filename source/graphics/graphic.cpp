@@ -2192,7 +2192,8 @@ int Cmiss_graphic_set_label_field(
 	if (graphic&&((!label_field)||
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))) &&
+			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
+			(CMISS_GRAPHIC_STATIC==graphic->graphic_type))) &&
 		(!label_field || font))
 	{
 		REACCESS(Computed_field)(&(graphic->label_field), label_field);
@@ -2921,12 +2922,22 @@ int Cmiss_graphic_to_static_graphics_object_at_time(
 	FE_value base_size[3], centre[3], scale_factors[3];
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
-
+	char **labels = NULL;
 	ENTER(Cmiss_graphic_to_static_graphics_object_at_time);
 	if (graphic)
 	{
 		if (!graphic->customised_graphics_object)
 		{
+			if (graphic->label_field)
+			{
+				ALLOCATE(labels, char *, 1);
+				/* evaluate the string for static graphic.
+				   Current check cache at location will always pass, to get
+				   around this, I set the time to -0.1*/
+				*labels = Computed_field_evaluate_as_string_without_node(
+					graphic->label_field, -1, -0.1);
+				//*labels = NULL;
+			}
 			GT_object_remove_primitives_at_time(
 				graphic->graphics_object, time,
 				(GT_object_primitive_object_name_conditional_function *)NULL,
@@ -2950,7 +2961,7 @@ int Cmiss_graphic_to_static_graphics_object_at_time(
 			ALLOCATE(scale_list, Triple, 1);
 			glyph_set = CREATE(GT_glyph_set)(1,
 				point_list, axis1_list, axis2_list, axis3_list, scale_list, graphic->glyph, graphic->font,
-				/*labels*/(char **)NULL, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
+				labels, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
 			/* NOT an error if no glyph_set produced == empty group */
@@ -8805,7 +8816,7 @@ int Cmiss_graphic_set_visibility_field(
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_graphic_set_label_field */
+} /* Cmiss_graphic_set_visibility_field */
 
 enum Use_element_type Cmiss_graphic_get_use_element_type(
 	struct Cmiss_graphic *graphic)
