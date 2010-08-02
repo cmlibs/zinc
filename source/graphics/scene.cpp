@@ -8762,19 +8762,27 @@ int Cmiss_scene_set_name(struct Scene *scene, const char *name)
 	ENTER(Cmiss_scene_set_name);
 	if (scene && name)
 	{
-		if (scene->name)
+		if (scene->scene_manager)
 		{
-			DEALLOCATE(scene->name);
-		}
-		if (scene->name=duplicate_string(name))
-		{
-			return_code = 1;
+			return_code = MANAGER_MODIFY_IDENTIFIER(Scene, name)
+				(scene, name, scene->scene_manager);
 		}
 		else
 		{
-			return_code = 0;
-			display_message(ERROR_MESSAGE,
-				" Cmiss_scene_set_name. Cannot duplicate name to scene");
+			if (scene->name)
+			{
+				DEALLOCATE(scene->name);
+			}
+			if (scene->name=duplicate_string(name))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+				display_message(ERROR_MESSAGE,
+					" Cmiss_scene_set_name. Cannot duplicate name to scene");
+			}
 		}
 	}
 	else

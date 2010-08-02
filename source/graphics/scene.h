@@ -1371,15 +1371,6 @@ struct Scene *Cmiss_scene_get_sub_scene(struct Scene *scene, struct Cmiss_region
 int deaccess_scene(struct Scene *scene);
 #endif
 
-
-/***************************************************************************//** 
- * Set the name of <scene>.
- * @param scene The scene to be edited
- * @param name The name to be assigned
- * @return If successfully changed the name returns 1, otherwise 0
- */ 
-int Cmiss_scene_set_name(struct Scene *scene, const char *name);
-
 /***************************************************************************//** 
  * Get the top region of the scene.
  * Caller must clean up handle with Cmiss_scene_destroy.

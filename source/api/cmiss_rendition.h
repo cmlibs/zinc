@@ -115,6 +115,13 @@ int Cmiss_rendition_get_number_of_graphic(Cmiss_rendition_id rendition);
 int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic);
 
+/*******************************************************************************
+ * Destroys this reference to the rendition (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param rendition Pointer to the handle to the rendition.
+ * @return  Returns 1 if successfully remove rendition, otherwise 0.
+ */
 int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
 
 /***************************************************************************//**

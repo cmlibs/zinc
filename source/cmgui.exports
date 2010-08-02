@@ -400,6 +400,8 @@ Cmiss_graphics_module_access
 Cmiss_graphics_module_destroy
 Cmiss_graphics_module_get_texture_manager
 Cmiss_graphics_module_get_rendition
+Cmiss_graphics_module_enable_renditions
+Cmiss_graphics_module_create_scene
 
 Cmiss_context_create
 Cmiss_context_access
@@ -420,6 +422,7 @@ Cmiss_context_get_default_IO_stream_package
 
 Cmiss_scene_destroy
 Cmiss_scene_set_region
+Cmiss_scene_set_name
 Cmiss_scene_clear_filters
 Cmiss_scene_remove_filter
 Cmiss_scene_get_number_of_filters

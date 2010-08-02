@@ -95,6 +95,15 @@ int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
 char *Cmiss_scene_get_name(Cmiss_scene_id scene);
 
 /***************************************************************************//**
+ * Set the name of the scene.
+ *
+ * @param scene  The scene whose name is requested.
+ * @param name  New name for scene.
+ * @return  On success: Set name for scene.
+ */
+int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
+
+/***************************************************************************//**
  * Removes all filters from the scene. No graphics will be shown until a filter
  * showing graphics is created for the scene.
  *

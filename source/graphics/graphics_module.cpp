@@ -629,6 +629,54 @@ struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
 	return scene_manager;
 }
 
+struct Scene *Cmiss_graphics_module_create_scene(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	Cmiss_scene_id scene = NULL;
+	struct MANAGER(Scene) *scene_manager =
+		Cmiss_graphics_module_get_scene_manager(graphics_module);
+	int i = 0;
+	char *temp_string = NULL;
+	char *num = NULL;
+
+	ENTER(Cmiss_graphics_module_create_scene);
+	do
+	{
+		if (temp_string)
+		{
+			DEALLOCATE(temp_string);
+		}
+		ALLOCATE(temp_string, char, 18);
+		strcpy(temp_string, "temp_scene");
+		num = strrchr(temp_string, 'e') + 1;
+		sprintf(num, "%i", i);
+		strcat(temp_string, "\0");
+		i++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(temp_string,
+		scene_manager));
+
+	if (temp_string)
+	{
+		if (NULL != (scene = CREATE(Scene)()))
+		{
+			Cmiss_scene_set_name(scene, temp_string);
+			if (ADD_OBJECT_TO_MANAGER(Scene)(scene, scene_manager))
+			{
+				ACCESS(Scene)(scene);
+			}
+			else
+			{
+				DESTROY(Scene)(&scene);
+			}
+		}
+		DEALLOCATE(temp_string);
+	}
+	LEAVE;
+
+	return scene;
+}
+
 struct Scene *Cmiss_graphics_module_get_default_scene(
 	struct Cmiss_graphics_module *graphics_module)
 {

@@ -55,6 +55,11 @@ struct Cmiss_region;
 typedef struct Cmiss_region * Cmiss_region_id;
 #define CMISS_REGION_ID_DEFINED
 #endif
+#ifndef CMISS_SCENE_ID_DEFINED
+struct Cmiss_scene;
+typedef struct Cmiss_scene * Cmiss_scene_id;
+#define CMISS_SCENE_ID_DEFINED
+#endif
 
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
@@ -98,7 +103,6 @@ Cmiss_graphics_module_id Cmiss_graphics_module_access(
 int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
 
-#if defined (FUTURE_CODE)
 /***************************************************************************//** 
  * Creates a scene with an access_count of 1. Caller is responsible for calling
  * Cmiss_scene_destroy to destroy the reference to it.
@@ -108,7 +112,6 @@ int Cmiss_graphics_module_destroy(
  */
 Cmiss_scene_id Cmiss_graphics_module_create_scene(
 	Cmiss_graphics_module_id graphics_module);
-#endif
 
 /***************************************************************************//**
  * Get a rendition of region from graphics module with an access_count incremented
@@ -121,6 +124,18 @@ Cmiss_scene_id Cmiss_graphics_module_create_scene(
  * @return  Reference to the rendition.
  */
 Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
+	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Enable rendition of region and all of its children region from graphics
+ * module. This will create rendition for the specified region and all its
+ * children.
+ *
+ * @param graphics_module  The module requires for region to enable rendition.
+ * @param region  The region at which the rendition will be enabled for.
+  * @return  1 if succesfully enable renditions, otherwise 0.
+ */
+int Cmiss_graphics_module_enable_renditions(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

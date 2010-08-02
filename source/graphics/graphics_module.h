@@ -80,10 +80,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *conte
 struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 	struct Cmiss_graphics_module *graphics_module);
 
-int Cmiss_graphics_module_enable_renditions(
-	struct Cmiss_graphics_module *graphics_module,
-	struct Cmiss_region *cmiss_region);
-
 /***************************************************************************//**
  * Return the material package in graphics module.
  *
