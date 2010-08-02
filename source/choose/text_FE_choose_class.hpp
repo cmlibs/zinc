@@ -122,6 +122,17 @@ DESCRIPTION :
 				FE_object_text_chooser::object_change,
 				this);
 	}/* FE_object_text_chooser::~FE_object_text_chooser() */
+
+	int set_region(FE_region *fe_region_in)
+	{
+		int return_code = 1;
+		FE_region_remove_callback(fe_region,
+			FE_object_text_chooser::object_change, this);
+		fe_region = fe_region_in;
+		FE_region_add_callback(fe_region,
+			FE_object_text_chooser::object_change,this);
+		return return_code;
+	}
 	 
 	 int text_chooser_callback(FE_object *object)
 /*****************************************************************************

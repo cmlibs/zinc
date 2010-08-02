@@ -1,10 +1,30 @@
 <?xml version="1.0"?>
 <resource>
   <object class="wxFrame" subclass="wxNodeViewer" name="CmguiNodeViewer">
-	  <title>Cmgui Node Viewer</title>
-	  <flag>wxCLIP_CHILDREN</flag>	
-	  <object class = "wxBoxSizer">
-		  <orient>wxVERTICAL</orient>
+	 <title>Cmgui Node Viewer</title>
+	 <flag>wxCLIP_CHILDREN</flag>	
+	 <object class = "wxBoxSizer">
+		<orient>wxVERTICAL</orient>
+		<object class = "sizeritem">
+	     <flag>wxEXPAND</flag>
+	     <object class = "wxBoxSizer">
+   	    <orient>wxHORIZONTAL</orient>
+		    <object class = "sizeritem">
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<object class = "wxStaticText" name="region-text">
+	   		  <label>Region:</label>
+				</object>
+			 </object>
+		    <object class = "sizeritem">
+			  	<flag>wxEXPAND</flag>
+ 	        	<flag>wxALIGN_CENTER</flag>
+				<option>1</option>
+				<object class = "wxPanel" name="RegionChooserPanel">
+				  <size>-1,30</size>
+				</object>
+			 </object>
+		  </object>
+      </object>	
     	  <object class ="sizeritem">
 				<flag>wxEXPAND</flag>	
 	 			<object class = "wxPanel" name="NodeTextPanel">

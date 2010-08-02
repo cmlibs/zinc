@@ -2310,9 +2310,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 							"Node Viewer",
 							(struct FE_node *)NULL,
 							command_data->root_region, /*use_data*/0,
-							command_data->node_selection,
-							command_data->computed_field_package,
-							time_object, command_data->user_interface))
+							time_object))
 						{
 							return_code=1;
 						}
@@ -2404,9 +2402,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 							"Data Viewer",
 							(struct FE_node *)NULL,
 							command_data->root_region, /*use_data*/1,
-							command_data->data_selection,
-							command_data->computed_field_package,
-							time_object, command_data->user_interface))
+							time_object))
 						{
 							return_code=1;
 						}
