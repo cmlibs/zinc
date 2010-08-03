@@ -250,8 +250,8 @@
 														<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 															<flag>wxALIGN_CENTRE_VERTICAL</flag>
-															<object class	="wxCheckBox" name="CoordinateFieldCheckBox"> 
-																<label>Coordinate field:</label>				  			
+															<object class	="wxStaticText" name="CoordinateFieldStaticText"> 
+																<label>Coordinate field:</label>
 	 														</object>
 														</object>
 														<object class="sizeritem">

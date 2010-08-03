@@ -492,7 +492,7 @@ class wxRegionTreeViewer : public wxFrame
 		*streamtypetext, *streamlengthtext, *streamwidthtext, *streamvectortext, 
 		*linewidthtext, *streamlinedatatypetext, *spectrumtext, *rendertypetext, *fonttext;
 	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton;
-	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,	*coordinatefieldcheckbox,
+	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,
 		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
 		*labelcheckbox,*visibility_field_checkbox,*nativediscretizationfieldcheckbox,
 		*reversecheckbox,*datacheckbox,*texturecoordinatescheckbox,*exteriorcheckbox,
@@ -2392,29 +2392,6 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		}
 	}
 
-	void CoordinateFieldChecked(wxCommandEvent &event)
-	{
-		Computed_field *coordinate_field;
-		USE_PARAMETER(event);
-		coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
-		coordinate_field_chooser_panel = XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
-		if (coordinatefieldcheckbox->IsChecked())
-		{
-			coordinate_field=coordinate_field_chooser->get_object();
-			coordinate_field_chooser_panel->Enable();
-		}
-		else
-		{
-			coordinate_field=(Computed_field *)NULL;
-			coordinate_field_chooser_panel->Disable();
-		}
-		Cmiss_graphic_set_coordinate_field(
-			region_tree_viewer->current_graphic, coordinate_field);
-		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-	}
-
 	void EnterRadius(wxCommandEvent &event)
  	{
 		float constant_radius, scale_factor;
@@ -3398,9 +3375,10 @@ void SetGraphic(Cmiss_graphic *graphic)
 		struct FE_element *seed_element;
 		struct FE_region *fe_region;
 	
-	coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
 	coordinate_field_chooser_panel =
 		XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
+	wxStaticText *coordinatefieldstatictext=
+		XRCCTRL(*this, "CoordinateFieldStaticText",wxStaticText);
 	if (CMISS_GRAPHIC_STATIC != region_tree_viewer->current_graphic_type)
 	{
 		struct Computed_field *temp_coordinate_field = NULL;
@@ -3411,14 +3389,12 @@ void SetGraphic(Cmiss_graphic *graphic)
 		}
 		if (temp_coordinate_field)
 		{
-			coordinatefieldcheckbox->SetValue(1);
 			coordinate_field_chooser_panel->Enable();
 		}
 		else
 		{
 			temp_coordinate_field = Cmiss_rendition_get_default_coordinate_field(
 				region_tree_viewer->edit_rendition);
-			coordinatefieldcheckbox->SetValue(0);
 			coordinate_field_chooser_panel->Disable();
 		}
 		if (coordinate_field_chooser ==NULL)
@@ -3435,13 +3411,13 @@ void SetGraphic(Cmiss_graphic *graphic)
 			coordinate_field_chooser_panel->Fit();
 		}
 		coordinate_field_chooser->set_object(temp_coordinate_field);
-		coordinatefieldcheckbox->Show();
 		coordinate_field_chooser_panel->Show();
+		coordinatefieldstatictext->Show();
 	}
 	else
 	{
-		coordinatefieldcheckbox->Hide();
 		coordinate_field_chooser_panel->Hide();
+		coordinatefieldstatictext->Hide();
 	}
 
 		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
@@ -4764,7 +4740,6 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_BUTTON(XRCID("DelButton"),wxRegionTreeViewer::RemoveFromGraphicList)
 	EVT_BUTTON(XRCID("UpButton"),wxRegionTreeViewer::MoveUpInGraphicList)
 	EVT_BUTTON(XRCID("DownButton"),wxRegionTreeViewer::MoveDownInGraphicList)
-	EVT_CHECKBOX(XRCID("CoordinateFieldCheckBox"),wxRegionTreeViewer::CoordinateFieldChecked)
 	EVT_TEXT_ENTER(XRCID("ConstantRadiusTextCtrl"), wxRegionTreeViewer::EnterRadius)
 	EVT_TEXT_ENTER(XRCID("ScaleFactorsTextCtrl"), wxRegionTreeViewer::EnterRadius)
 	EVT_CHECKBOX(XRCID("RadiusScalarCheckBox"), wxRegionTreeViewer::EnterRadius)
