@@ -1953,6 +1953,32 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 	return (glyph);
 } /* make_glyph_sheet */
 
+struct GT_object *make_glyph_empty(const char *name)
+/*******************************************************************************
+LAST MODIFIED : 19 October 1998
+
+DESCRIPTION :
+Creates a graphics object named <name> with no default glyph.
+==============================================================================*/
+{
+	struct GT_object *glyph;
+
+	ENTER(make_glyph_point);
+	if (name)
+	{
+			glyph=CREATE(GT_object)(name,g_POINTSET, (struct Graphical_material *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_glyph_point.  Invalid argument(s)");
+		glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_point */
+
+
 struct GT_object *make_glyph_sphere(const char *name,int number_of_segments_around,
 	int number_of_segments_down)
 /*******************************************************************************
@@ -2172,6 +2198,10 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		}
 		mirror_glyph = glyph;
 		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		if (glyph=make_glyph_empty("empty"))
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
