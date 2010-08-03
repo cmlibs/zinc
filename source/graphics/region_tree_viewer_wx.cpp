@@ -1969,6 +1969,10 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 			Cmiss_graphic_set_selected_material(graphic,
 				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 					"default_selected",region_tree_viewer->graphical_material_manager));
+			Computed_field *default_coordinate_field=
+				Cmiss_rendition_get_default_coordinate_field(
+					region_tree_viewer->edit_rendition);
+			Cmiss_graphic_set_coordinate_field(graphic, default_coordinate_field);
 			/* for data_points, ensure either there are points with
 				 default_coordinate defined at them. If not, and any have
 				 the element_xi_coordinate field defined over them, use that */
@@ -1978,9 +1982,6 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 					Cmiss_region_get_FE_region(
 						Cmiss_rendition_get_region(
 							region_tree_viewer->edit_rendition)));
-				Computed_field *default_coordinate_field=
-					Cmiss_rendition_get_default_coordinate_field(
-						region_tree_viewer->edit_rendition);
 				if (!FE_region_get_first_FE_node_that(data_fe_region,
 						FE_node_has_Computed_field_defined,
 						(void *)default_coordinate_field))
@@ -5484,8 +5485,7 @@ static int Region_tree_viewer_add_graphic(
 	ENTER(Region_tree_viewer_add_graphic);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		 graphic_string = Cmiss_graphic_string(graphic,
-				GRAPHIC_STRING_COMPLETE_PLUS);
+		 graphic_string = Cmiss_graphic_string(graphic,	GRAPHIC_STRING_COMPLETE_PLUS);
 		 wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		 graphicchecklist->Append(graphic_string);
 		 if (Cmiss_graphic_get_visibility_flag(graphic))
