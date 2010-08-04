@@ -2551,7 +2551,7 @@ Executes a GFX CREATE REGION command.
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
 		path = (char *)NULL;
-		if (set_string(state, (void *)&path, (void *)"PATH"))
+		if (set_string(state, (void *)&path, (void *)" PATH"))
 		{
 			if ((!state->current_token) ||
 				(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -5870,7 +5870,6 @@ Executes a GFX CREATE command.
 	int return_code;
 	struct Computed_field *coordinate_field;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct Scene *scene;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
@@ -5882,6 +5881,7 @@ Executes a GFX CREATE command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
+			struct Cmiss_region *input_region = NULL;
 			output_region_path = Cmiss_region_get_root_region_path();
 			coordinate_field=(struct Computed_field *)NULL;
 			const char *scene_name = NULL, 
@@ -5940,18 +5940,18 @@ Executes a GFX CREATE command.
 					return_code = 0;
 				}
 				fe_region = (struct FE_region *)NULL;
+				Cmiss_region *output_region = NULL;
 				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					output_region_path, &region) &&
-					(fe_region = Cmiss_region_get_FE_region(region))))
+					output_region_path, &output_region) &&
+					(fe_region = Cmiss_region_get_FE_region(output_region))))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_convert.  Invalid region");
 					return_code = 0;
 				}
-				region = NULL;
-				region = Cmiss_region_find_subregion_at_path(command_data->root_region,
+				input_region = Cmiss_region_find_subregion_at_path(command_data->root_region,
 						input_region_path);
-				if (input_region_path && !region)
+				if (input_region_path && !input_region)
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_convert.  Invalid input_region");
@@ -5961,7 +5961,7 @@ Executes a GFX CREATE command.
 
 			if (return_code)
 			{
-				render_to_finite_elements(scene, region,
+				render_to_finite_elements(scene, input_region,
 					graphic_name, fe_region, render_mode, coordinate_field);
 			}
 			if (scene)
@@ -5988,9 +5988,9 @@ Executes a GFX CREATE command.
 			{
 				DEALLOCATE(graphic_name);
 			}
-			if (region)
+			if (input_region)
 			{
-				Cmiss_region_destroy(&region);
+				Cmiss_region_destroy(&input_region);
 			}
 			if (path_name)
 			{
