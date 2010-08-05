@@ -44,7 +44,7 @@ public:
 
 Cmiss_field_node_group_template *Cmiss_field_cast_node_group_template(Cmiss_field_id field)
 {
-	if (dynamic_cast<Computed_field_sub_group_object<Cmiss_node_id>*>(field->core))
+	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_node_id>*>(field->core))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_node_group_template_id>(field));
@@ -178,7 +178,7 @@ Computed_field *Cmiss_field_module_create_node_group_template(Cmiss_field_module
 
 Cmiss_field_element_group_template *Cmiss_field_cast_element_group_template(Cmiss_field_id field)
 {
-	if (dynamic_cast<Computed_field_sub_group_object<Cmiss_element_id>*>(field->core))
+	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_element_id>*>(field->core))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_element_group_template_id>(field));

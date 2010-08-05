@@ -717,33 +717,36 @@ static void Node_viewer_Computed_field_change(
 				Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
 				Cmiss_field_destroy(&selection_group_field);
 				selection_group_field = reinterpret_cast<Cmiss_field_id>(group);
-				Cmiss_field_node_group_template_id node_group =
-					Cmiss_field_cast_node_group_template(node_group_field);
-				Cmiss_field_destroy(&node_group_field);
-				node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
-				Cmiss_field_destroy(&node_group_field);
-				struct FE_node *node = Cmiss_field_node_group_template_get_first_node(node_group);
-				struct FE_node *next_node = Cmiss_field_node_group_template_get_next_node(node_group);
-				/* make sure there is only one node selected in group */
-				if (node && !next_node && node != node_viewer->current_node)
+				if (node_group_field)
 				{
-					if (node_viewer->wx_node_viewer)
+					Cmiss_field_node_group_template_id node_group =
+						Cmiss_field_cast_node_group_template(node_group_field);
+					Cmiss_field_destroy(&node_group_field);
+					node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
+					struct FE_node *node = Cmiss_field_node_group_template_get_first_node(node_group);
+					struct FE_node *next_node = Cmiss_field_node_group_template_get_next_node(node_group);
+					/* make sure there is only one node selected in group */
+					if (node && !next_node && node != node_viewer->current_node)
 					{
-						 node_viewer->wx_node_viewer->set_selected_node(node);
-						 node_viewer->current_node = node;
+						if (node_viewer->wx_node_viewer)
+						{
+							node_viewer->wx_node_viewer->set_selected_node(node);
+							node_viewer->current_node = node;
+						}
+						if (node_viewer->wx_node_viewer && node_viewer->collpane)
+						{
+							Node_viewer_update_collpane(node_viewer);
+						}
 					}
-					if (node_viewer->wx_node_viewer && node_viewer->collpane)
+					Cmiss_field_destroy(&node_group_field);
+					if (node)
 					{
-						Node_viewer_update_collpane(node_viewer);
+						Cmiss_node_destroy(&node);
 					}
-				}
-				if (node)
-				{
-					Cmiss_node_destroy(&node);
-				}
-				if (next_node)
-				{
-					Cmiss_node_destroy(&next_node);
+					if (next_node)
+					{
+						Cmiss_node_destroy(&next_node);
+					}
 				}
 			}
 			Cmiss_rendition_destroy(&rendition);
