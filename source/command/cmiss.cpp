@@ -5865,14 +5865,13 @@ DESCRIPTION :
 Executes a GFX CREATE command.
 ==============================================================================*/
 {
-	char *output_region_path, *path_name;
+	char *output_region_path, *path_name, *coordinate_field_name;
 	enum Render_to_finite_elements_mode render_mode;
 	int return_code;
 	struct Computed_field *coordinate_field;
 	struct Cmiss_command_data *command_data;
 	struct FE_region *fe_region;
 	struct Scene *scene;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 	struct Option_table *option_table;
 
 	ENTER(gfx_convert_graphics);
@@ -5883,6 +5882,7 @@ Executes a GFX CREATE command.
 		{
 			struct Cmiss_region *input_region = NULL;
 			output_region_path = Cmiss_region_get_root_region_path();
+			coordinate_field_name = NULL;
 			coordinate_field=(struct Computed_field *)NULL;
 			const char *scene_name = NULL, 
 					       *input_region_path = NULL, 
@@ -5890,17 +5890,10 @@ Executes a GFX CREATE command.
 			scene = (struct Scene *)NULL;
 			path_name=(char *)NULL;
 			render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
-
 			option_table=CREATE(Option_table)();
 			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-				&set_coordinate_field_data,set_Computed_field_conditional);
+			Option_table_add_entry(option_table,"coordinate", &coordinate_field_name, (void *)1,
+				set_name);
 			/* render_to_finite_elements_mode */
 			OPTION_TABLE_ADD_ENUMERATOR(Render_to_finite_elements_mode)(option_table,
 				&render_mode);
@@ -5932,13 +5925,6 @@ Executes a GFX CREATE command.
 						"gfx_convert.  Must specify a scene.");
 					return_code = 0;
 				}
-				if (!coordinate_field)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert_graphics.  "
-						"Must specify a coordinate field to define on the new nodes and elements.");
-					return_code = 0;
-				}
 				fe_region = (struct FE_region *)NULL;
 				Cmiss_region *output_region = NULL;
 				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
@@ -5949,12 +5935,42 @@ Executes a GFX CREATE command.
 						"gfx_convert.  Invalid region");
 					return_code = 0;
 				}
+				if (output_region && coordinate_field_name &&
+					(coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							coordinate_field_name, Cmiss_region_get_Computed_field_manager(output_region))))
+				{
+					if (Computed_field_has_3_components(coordinate_field, NULL))
+					{
+						Cmiss_field_access(coordinate_field);
+					}
+					else
+					{
+						coordinate_field = NULL;
+						display_message(ERROR_MESSAGE,
+							"gfx_convert_graphics.  "
+							"Field specified is not a coordinate field.");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert_graphics.  "
+						"Field %s does not exist.", coordinate_field_name);
+				}
 				input_region = Cmiss_region_find_subregion_at_path(command_data->root_region,
 						input_region_path);
 				if (input_region_path && !input_region)
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_convert.  Invalid input_region");
+					return_code = 0;
+				}
+				if (!coordinate_field)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_convert_graphics.  "
+						"Must specify a coordinate field to define on the new nodes and elements.");
 					return_code = 0;
 				}
 			}
@@ -5971,6 +5987,10 @@ Executes a GFX CREATE command.
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
+			}
+			if (coordinate_field_name)
+			{
+				DEALLOCATE(coordinate_field_name);
 			}
 			if (output_region_path)
 			{
