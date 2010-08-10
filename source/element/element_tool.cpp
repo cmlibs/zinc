@@ -116,7 +116,6 @@ Module types
 class wxElementTool;
 #endif /* defined (WX_USER_INTERFACE) */
 
-
 struct Element_tool
 	/*******************************************************************************
 	LAST MODIFIED : 20 March 2003
@@ -163,6 +162,72 @@ struct Element_tool
 Module functions
 ----------------
 */
+
+static int Element_tool_remove_region_selected_elements(Cmiss_field_id field)
+{
+	int return_code = 0;
+
+	if (field)
+	{
+		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
+		Cmiss_region_id region = Computed_field_get_region(field);
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		if (group && fe_region)
+		{
+			Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
+			if (element_group_field)
+			{
+				Cmiss_field_element_group_template_id element_group =
+					Cmiss_field_cast_element_group_template(element_group_field);
+				Cmiss_field_destroy(&element_group_field);
+				element_group_field = reinterpret_cast<Computed_field *>(element_group);
+				FE_region_begin_change(fe_region);
+				Cmiss_element_id element =
+					Cmiss_field_element_group_template_get_first_element(element_group);
+				while (element)
+				{
+					FE_region_remove_FE_element(fe_region, element);
+					DEACCESS(FE_element)(&element);
+					element =	Cmiss_field_element_group_template_get_next_element(
+						element_group);
+				}
+				FE_region_end_change(fe_region);
+				Cmiss_field_destroy(&element_group_field);
+			}
+			Cmiss_field_destroy(&field);
+		}
+		return_code = 1;
+	}
+
+	return return_code;
+}
+
+int Element_tool_remove_selected_element(struct Element_tool *element_tool)
+{
+	int return_code = 0;
+	if (element_tool->region)
+	{
+		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
+			element_tool->region);
+		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+			root_rendition);
+		if (root_group_field)
+		{
+			Cmiss_field_group_id root_group =
+				Cmiss_field_cast_group(root_group_field);
+			Cmiss_field_group_for_each_child(root_group, Element_tool_remove_region_selected_elements,1);
+			Element_tool_remove_region_selected_elements(root_group_field);
+			Cmiss_field_group_clear_region_tree_element(root_group);
+			Cmiss_field_destroy(&root_group_field);
+			root_group_field = reinterpret_cast<Computed_field *>(root_group);
+			Cmiss_field_destroy(&root_group_field);
+		}
+		return_code = 1;
+		Cmiss_rendition_destroy(&root_rendition);
+	}
+
+	return return_code;
+}
 
 #if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
@@ -563,16 +628,19 @@ release.
 								{
 									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 										element_tool->region);
-									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
-										root_rendition);
-									if (root_group_field)
+									if (Cmiss_rendition_has_selection_group(root_rendition))
 									{
-										Cmiss_field_group_id root_group =
-											Cmiss_field_cast_group(root_group_field);
-										Cmiss_field_group_clear_region_tree_element(root_group);
-										Cmiss_field_destroy(&root_group_field);
-										root_group_field = reinterpret_cast<Computed_field *>(root_group);
-										Cmiss_field_destroy(&root_group_field);
+										Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+											root_rendition);
+										if (root_group_field)
+										{
+											Cmiss_field_group_id root_group =
+												Cmiss_field_cast_group(root_group_field);
+											Cmiss_field_group_clear_region_tree_element(root_group);
+											Cmiss_field_destroy(&root_group_field);
+											root_group_field = reinterpret_cast<Computed_field *>(root_group);
+											Cmiss_field_destroy(&root_group_field);
+										}
 									}
 									Cmiss_rendition_destroy(&root_rendition);
 								}
@@ -1027,33 +1095,8 @@ public:
 
 	void OnButtonDestroypressed(wxCommandEvent& event)
 	{
-		int number_not_destroyed;
-		struct LIST(FE_element) *destroy_element_list;
-
 		USE_PARAMETER(event);
-		if (destroy_element_list = CREATE(LIST(FE_element))())
-		{
-			COPY_LIST(FE_element)(destroy_element_list,
-				FE_element_selection_get_element_list(
-				element_tool->element_selection));
-			fe_region = Cmiss_region_get_FE_region(element_tool->region);
-			FE_region_begin_change(fe_region);
-			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
-			if (0 < (number_not_destroyed =
-				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
-			{
-				display_message(WARNING_MESSAGE,
-					"%d of the selected element(s) could not be destroyed",
-					number_not_destroyed);
-			}
-			FE_region_end_change(fe_region);
-			DESTROY(LIST(FE_element))(&destroy_element_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Element_tool_destroy_selected_CB.  Invalid argument(s)");
-		}
+		Element_tool_remove_selected_element(element_tool);
 	}
 
 	void ElementToolInterfaceRenew(Element_tool *destination_element_tool)

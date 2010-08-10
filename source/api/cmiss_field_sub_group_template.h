@@ -87,5 +87,10 @@ int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_
 int Cmiss_field_element_group_template_is_element_selected(
 	Cmiss_field_element_group_template_id element_group, Cmiss_element_id element);
 
+Cmiss_element_id Cmiss_field_element_group_template_get_first_element(
+	Cmiss_field_element_group_template_id element_group);
+
+Cmiss_element_id Cmiss_field_element_group_template_get_next_element(
+	Cmiss_field_element_group_template_id element_group);
 
 #endif /* !defined (CMISS_FIELD_GROUP_TEMPLATE_H) */

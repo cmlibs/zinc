@@ -60,14 +60,17 @@ int Computed_field_register_type_group(
 struct Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_module,
 	Cmiss_region *region);
 
-/* int Computed_field_register_type_node_group( */
-/* 	struct Computed_field_package *computed_field_package); */
-
-/* int Computed_field_register_type_data_group( */
-/* 	struct Computed_field_package *computed_field_package); */
-
-/* int Computed_field_register_type_sub_group( */
-/* 	struct Computed_field_package *computed_field_package); */
+/*****************************************************************************//**
+ * A helper function to conveniently calls the same function for each child in
+ * selection group.
+ *
+ * @param group  group field.
+ * @param *function  pointer to the function to be called by each child.
+ * @param recursive  if 1 the function will be called by all children down the tree.
+ * @return 1 on success, 0 on failure.
+ */
+int Cmiss_field_group_for_each_child(Cmiss_field_group_id group,
+		int (*function)(Cmiss_field_id child_field), int recursive);
 
 
 #endif /* !defined (COMPUTED_FIELD_GROUP_H) */

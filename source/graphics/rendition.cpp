@@ -3415,18 +3415,6 @@ int Cmiss_rendition_has_multiple_times(
 	{
 		data.default_coordinate_depends_on_time = 0;
 		data.time_dependent = 0;
-		if (!rendition->default_coordinate_field)
-		{
-			Cmiss_rendition_update_default_coordinate(rendition);
-		}
-		if (rendition->default_coordinate_field)
-		{
-			if (Computed_field_has_multiple_times(
-				rendition->default_coordinate_field))
-			{
-				data.default_coordinate_depends_on_time = 1;
-			}
-		}
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_update_time_behaviour, (void *)&data,
 			rendition->list_of_graphics);
@@ -3859,6 +3847,32 @@ int Cmiss_rendition_has_selection_group(Cmiss_rendition_id rendition)
 				if (selection_field)
 				{
 					rendition->selection_group = selection_field;
+					Cmiss_region *parent_region = Cmiss_region_get_parent(rendition->region);
+					if (parent_region)
+					{
+						Cmiss_rendition *parent_rendition =
+							Cmiss_region_get_rendition_internal(parent_region);
+						Cmiss_field_id parent_group_field = NULL;
+						if (parent_rendition)
+						{
+							parent_group_field =
+								Cmiss_rendition_get_selection_group(parent_rendition);
+							DEACCESS(Cmiss_rendition)(&parent_rendition);
+						}
+						if (parent_group_field)
+						{
+							if (parent_group_field == selection_field)
+							{
+								Cmiss_field_group_id parent_group =
+									Cmiss_field_cast_group(parent_group_field);
+								Cmiss_field_destroy(&parent_group_field);
+								Cmiss_field_group_add_region(parent_group, rendition->region);
+								parent_group_field = reinterpret_cast<Computed_field*>(parent_group);
+							}
+							Cmiss_field_destroy(&parent_group_field);
+						}
+						DEACCESS(Cmiss_region)(&parent_region);
+					}
 					return_code = 1;
 				}
 				Cmiss_field_module_destroy(&field_module);

@@ -749,6 +749,8 @@ static void Node_viewer_Computed_field_change(
 					}
 				}
 			}
+			if (changed_field_list)
+				DESTROY(LIST(Computed_field))(&changed_field_list);
 			Cmiss_rendition_destroy(&rendition);
 			if (selection_group_field)
 			{

@@ -282,6 +282,40 @@ Computed_field *Cmiss_field_module_create_element_group_template(Cmiss_field_mod
 	return (field);
 } /* Cmiss_field_module_create_group */
 
+Cmiss_element_id Cmiss_field_element_group_template_get_first_element(
+	Cmiss_field_element_group_template_id element_group)
+{
+	Cmiss_element_id element = NULL;
+	if (element_group)
+	{
+		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+			Cmiss_field_element_group_template_id>(element_group);
+		element = group_core->getFirstObject();
+		if (element)
+			ACCESS(FE_element)(element);
+	}
+
+	return element;
+}
+
+Cmiss_element_id Cmiss_field_element_group_template_get_next_element(
+	Cmiss_field_element_group_template_id element_group)
+{
+	Cmiss_element_id element = NULL;
+	if (element_group)
+	{
+		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+			Cmiss_field_element_group_template_id>(element_group);
+		element = group_core->getNextObject();
+		if (element)
+			ACCESS(FE_element)(element);
+	}
+
+	return element;
+}
+
 
 #if defined (USE_OPENCASCADE)
 

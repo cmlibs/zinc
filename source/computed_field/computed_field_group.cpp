@@ -102,6 +102,7 @@ public:
 	Computed_field *local_cad_primitive_group;
 #endif /* defined (USE_OPENCASCADE) */
 	Region_field_map sub_group_map;
+	Region_field_map_iterator child_group_pos;
 
 	Computed_field_group(Cmiss_region *region)
 		: Computed_field_core()
@@ -114,6 +115,7 @@ public:
 #endif /* defined (USE_OPENCASCADE) */
 		, sub_group_map()
 	{		//ACCESS(Cmiss_region)(region);
+		child_group_pos = sub_group_map.begin();
 	}
 
 	~Computed_field_group()
@@ -193,6 +195,10 @@ public:
 
 	int clear_group_if_empty();
 
+	Cmiss_field_id getFirstChild();
+
+	Cmiss_field_id getNextChild();
+
 private:
 
 	Computed_field_core* copy()
@@ -226,6 +232,7 @@ private:
 	int contain_region(struct Cmiss_region *child_region);
 
 	int contain_region_tree(struct Cmiss_region *child_region);
+
 };
 
 /***************************************************************************//**
@@ -348,6 +355,31 @@ int Computed_field_group::evaluate_cache_at_location(
 
 	return (return_code);
 } /* Computed_field_group::evaluate_cache_at_location */
+
+Cmiss_field_id Computed_field_group::getFirstChild()
+{
+	Cmiss_field_id child_field= NULL;
+	child_group_pos = sub_group_map.begin();
+	if (child_group_pos !=sub_group_map.end())
+	{
+		child_field = Cmiss_field_access(child_group_pos->second);
+	}
+	return child_field;
+}
+
+Cmiss_field_id Computed_field_group::getNextChild()
+{
+	Cmiss_field_id child_field= NULL;
+	if (child_group_pos !=sub_group_map.end())
+	{
+		child_group_pos++;
+		if (child_group_pos !=sub_group_map.end())
+		{
+			child_field = Cmiss_field_access(child_group_pos->second);
+		}
+	}
+	return child_field;
+}
 
 /***************************************************************************//**
  * Writes type-specific details of the field to the console. 
@@ -681,7 +713,8 @@ int Computed_field_group::clear_group_if_empty()
 #if defined (USE_OPENCASCADE)
 		&& !local_cad_primitive_group
 #endif /* defined (USE_OPENCASCADE) */
-		&& selection_on == 0)
+		&& selection_on == 0 &&
+		sub_group_map.empty())
 	{
 		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
 		if (rendition)
@@ -1058,6 +1091,40 @@ Cmiss_field_id Cmiss_field_group_get_subgroup_for_domain(Cmiss_field_group_id gr
 	return field;
 }
 
+int Cmiss_field_group_for_each_child(Cmiss_field_group_id group,
+		int (*function)(Cmiss_field_id child_field), int recursive)
+{
+	int return_code = 0;
+	Cmiss_field_id group_field = Computed_field_cast(group);
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			Cmiss_field_id child_field = group_core->getFirstChild();
+			while (child_field)
+			{
+				if (child_field != group_field)
+				{
+					function(child_field);
+					if (recursive)
+					{
+						Cmiss_field_group_id child_group = Cmiss_field_cast_group(child_field);
+						Cmiss_field_destroy(&child_field);
+						Cmiss_field_group_for_each_child(child_group, function, recursive);
+						child_field = Computed_field_cast(child_group);
+					}
+				}
+				Cmiss_field_destroy(&child_field);
+				child_field = group_core->getNextChild();
+			}
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
+
 Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_module,
 	Cmiss_region *region)
 {
@@ -1208,3 +1275,4 @@ int Computed_field_register_type_group(
 
 	return (return_code);
 } /* Computed_field_register_type_group */
+
