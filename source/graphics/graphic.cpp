@@ -4408,9 +4408,10 @@ int Cmiss_graphic_set_glyph_parameters(
 	struct Computed_field *variable_scale_field)
 {
 	int return_code;
+	struct GT_object *my_glyph = NULL;
 
 	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && glyph && glyph_centre && glyph_size &&
+	if (graphic && glyph_centre && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -4420,12 +4421,22 @@ int Cmiss_graphic_set_glyph_parameters(
 		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
 			variable_scale_field,(void *)NULL)))
 	{
+		if (!glyph)
+		{
+			my_glyph=ACCESS(GT_object)(
+				CREATE(GT_object)("none",g_POINTSET, (struct Graphical_material *)NULL));
+		}
+		else
+		{
+			my_glyph = glyph;
+		}
+
 		if (graphic->glyph)
 		{
 			GT_object_remove_callback(graphic->glyph,
 				Cmiss_graphic_glyph_change, (void *)graphic);
 		}
-		REACCESS(GT_object)(&(graphic->glyph),glyph);
+		REACCESS(GT_object)(&(graphic->glyph),my_glyph);
 		GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
 				(void *)graphic);
 		graphic->glyph_scaling_mode = glyph_scaling_mode;
