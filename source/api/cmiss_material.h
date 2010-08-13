@@ -197,6 +197,21 @@ int Cmiss_material_set_persistent(Cmiss_material_id material, int persistent_fla
 int Cmiss_material_get_persistent(Cmiss_material_id material);
 
 /***************************************************************************//**
+ * Execute cmgui command as in standalone cmgui application however this execute
+ * command function will apply to the material being passed into this function
+ * only. It takes a string of command as gfx modify material <material> does.
+ *
+ * NOTE: This function may be removed in the future once more API functions are
+ * made available to the users.
+ *
+ * @param material  Handle to a cmiss_material object.
+ * @param command  Command to be executed.
+ * @return  1 if command completed successfully, otherwise 0.
+ */
+int Cmiss_material_execute_command(Cmiss_material_id material,
+	const char *command_string);
+
+/***************************************************************************//**
  * Access the material, increase the access count of the material by one.
  *
  * @param material  handle to the "to be access" cmiss material.

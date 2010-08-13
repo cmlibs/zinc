@@ -172,7 +172,6 @@ Structure modified by g_element modify routines.
 	struct FE_field *native_discretization_field;
 	struct Element_discretization element_discretization;
 	struct Computed_field *default_coordinate_field;
-	struct Scene *scene;
 	struct Cmiss_graphic *graphic;
 }; /* struct Modify_graphic_data */
 
@@ -193,12 +192,9 @@ Subset of command data passed to g_element modify routines.
 	/* root_region used for seeding streamlines from the nodes in a region */
 	struct Cmiss_region *root_region;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct MANAGER(Scene) *scene_manager;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(Texture) *texture_manager;
-	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct User_interface *user_interface;
 }; /* struct Rendition_command_data */
 
 struct Cmiss_graphic_Computed_field_change_data

@@ -75,6 +75,7 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
+#include "graphics/graphics_module.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
@@ -305,7 +306,7 @@ The properties of a material.
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
 
-FULL_DECLARE_MANAGER_TYPE(Graphical_material);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, Cmiss_graphics_module);
 
 struct Material_package
 /*******************************************************************************
@@ -4129,6 +4130,14 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material,manager)
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Graphical_material, name, const char *, manager)
 
+DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct Cmiss_graphics_module)
+
+int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
+	struct Cmiss_graphics_module *graphics_module)
+{
+	return MANAGER_SET_OWNER(Graphical_material)(manager, graphics_module);
+}
+
 const char *Graphical_material_name(struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1997
@@ -7289,4 +7298,33 @@ struct Graphical_material *Cmiss_material_access(struct Graphical_material *mate
 	}
 	
 	return material;
+}
+
+int Cmiss_material_execute_command(struct Graphical_material *material, const char *command_string)
+{
+	int return_code = 0;
+	ENTER(Cmiss_material_execute_command);
+	if (material && command_string)
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		if (state)
+		{
+			struct Cmiss_graphics_module *graphics_module =
+				MANAGER_GET_OWNER(Graphical_material)(material->manager);
+			if(graphics_module)
+			{
+				struct Material_package *package =
+					Cmiss_graphics_module_get_material_package(graphics_module);
+				if (package)
+				{
+					return_code=modify_Graphical_material(state,(void *)material,
+						(void *)package);
+					DEACCESS(Material_package)(&package);
+				}
+			}
+			destroy_Parse_state(&state);
+		}
+	}
+
+	return return_code;
 }

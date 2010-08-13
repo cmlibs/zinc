@@ -77,7 +77,6 @@ extern "C" {
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 }
 #include "graphics/rendergl.hpp"
 #if defined(USE_OPENCASCADE)
@@ -5456,8 +5455,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
 					/* discretization */
 					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),rendition_command_data->user_interface,
-						set_Element_discretization);
+						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -5480,10 +5478,6 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -6004,10 +5998,6 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					/* scale_factors */
 					Option_table_add_special_float3_entry(option_table,"scale_factors",
 						glyph_scale_factors,"*");
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -6338,10 +6328,6 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					/* scale_factors */
 					Option_table_add_special_float3_entry(option_table,"scale_factors",
 						glyph_scale_factors,"*");
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -6672,10 +6658,6 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					/* scale_factors */
 					Option_table_add_special_float3_entry(option_table,"scale_factors",
 						glyph_scale_factors,"*");
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -6919,8 +6901,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
 					/* discretization */
 					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),rendition_command_data->user_interface,
-						set_Element_discretization);
+						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -6942,10 +6923,6 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -7145,8 +7122,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						&set_data_field_data,set_Computed_field_conditional);
 					/* discretization */
 					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),rendition_command_data->user_interface,
-						set_Element_discretization);
+						&(graphic->discretization),NULL,set_Element_discretization);
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
@@ -7185,10 +7161,6 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 					/* scale_factor */
 					Option_table_add_entry(option_table,"scale_factor",
 						&(graphic->radius_scale_factor),NULL,set_float);
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -7417,8 +7389,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
 					/* discretization */
 					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),rendition_command_data->user_interface,
-						set_Element_discretization);
+						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -7468,10 +7439,6 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
-					/* scene */
-					Option_table_add_entry(option_table,"scene",
-						&(modify_rendition_data->scene),
-						rendition_command_data->scene_manager,set_Scene);
 					/* select_mode */
 					select_mode = Cmiss_graphic_get_select_mode(graphic);
 					select_mode_string =
@@ -7784,8 +7751,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				set_Computed_field_conditional);
 			/* discretization */
 			Option_table_add_entry(option_table,"discretization",
-				&(graphic->discretization),rendition_command_data->user_interface,
-				set_Element_discretization);
+				&(graphic->discretization),NULL, set_Element_discretization);
 			/* exterior */
 			Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 				NULL,set_char_flag);
@@ -7848,10 +7814,6 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			/* scale_factors */
 			Option_table_add_special_float3_entry(option_table,"scale_factors",
 				glyph_scale_factors,"*");
-			/* scene */
-			Option_table_add_entry(option_table,"scene",
-				&(modify_rendition_data->scene),
-				rendition_command_data->scene_manager,set_Scene);
 			/* select_mode */
 			select_mode = Cmiss_graphic_get_select_mode(graphic);
 			select_mode_string =
@@ -8125,8 +8087,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				&(modify_rendition_data->delete_flag),NULL,set_char_flag);
 			/* discretization */
 			Option_table_add_entry(option_table,"discretization",
-				&(graphic->discretization),rendition_command_data->user_interface,
-				set_Element_discretization);
+				&(graphic->discretization),NULL, set_Element_discretization);
 			/* ellipse/line/rectangle/ribbon */
 			streamline_type = STREAM_LINE;
 			streamline_type_string =
@@ -8163,10 +8124,6 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			/*???RC use negative length to denote reverse track instead? */
 			Option_table_add_entry(option_table,"reverse_track",
 				&reverse_track,NULL,set_char_flag);
-			/* scene */
-			Option_table_add_entry(option_table,"scene",
-				&(modify_rendition_data->scene),
-				rendition_command_data->scene_manager,set_Scene);
 			/* seed_element */
 			Option_table_add_entry(option_table, "seed_element",
 				&(graphic->seed_element), fe_region,

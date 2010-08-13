@@ -114,6 +114,8 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
 			module->material_package = ACCESS(Material_package)(CREATE(Material_package)
 				(module->texture_manager, module->spectrum_manager));
+			Material_manager_set_owner(
+				Material_package_get_material_manager(module->material_package), module);
 			module->scene_manager = CREATE(MANAGER(Scene)());
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);

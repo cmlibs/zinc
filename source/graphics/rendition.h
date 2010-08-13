@@ -156,8 +156,7 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 	void *data);
 
 int Cmiss_region_modify_rendition(struct Cmiss_region *region,
-	struct Scene *scene, struct Cmiss_graphic *graphic,
-	int delete_flag, int position);
+	struct Cmiss_graphic *graphic, int delete_flag, int position);
 
 /***************************************************************************//**
  * Adds a callback routine which is called whenever a Cmiss_rendition is aware of
@@ -178,7 +177,7 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
  * updates graphics of settings affected by the changes (probably all).
  */
 int gfx_modify_rendition_general(struct Parse_state *state,
-	void *cmiss_region_void, void *scene_void);
+	void *cmiss_region_void, void *dummy_void);
 
 /***************************************************************************//**
  * Returns the circle discretization of the gt_element_group.

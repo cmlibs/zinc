@@ -444,8 +444,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->spectrum_manager_callback_id=(void *)NULL;
 				cmiss_rendition->texture_manager_callback_id=(void *)NULL;
 				cmiss_rendition->transformation = (gtMatrix *)NULL;
-				cmiss_rendition->graphics_module=
-					graphics_module;
+				cmiss_rendition->graphics_module =	graphics_module;
 				cmiss_rendition->time_object = NULL;
 				cmiss_rendition->list_of_scene = NULL;
 				cmiss_rendition->fast_changing = 0;
@@ -2124,15 +2123,14 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 } /* first_graphic_in_Cmiss_rendition_that */
 
 int Cmiss_region_modify_rendition(struct Cmiss_region *region,
-	struct Scene *scene, struct Cmiss_graphic *graphic,
-	int delete_flag, int position)
+	struct Cmiss_graphic *graphic, int delete_flag, int position)
 {
 	int return_code;
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *same_graphic;
 
 	ENTER(iterator_modify_rendition);
-	if (region && scene && graphic)
+	if (region && graphic)
 	{
 		if (NULL != (rendition = Cmiss_region_get_rendition_internal(region)))
 		{
@@ -2195,7 +2193,7 @@ int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_modify_rendition.  Rendition not in scene");
+				"Cmiss_modify_rendition.  Region rendition cannot be found");
 			return_code = 0;
 		}
 	}
@@ -2310,7 +2308,7 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
 } /* Cmiss_rendition_remove_callback */
 
 int gfx_modify_rendition_general(struct Parse_state *state,
-	void *cmiss_region_void, void *scene_void)
+	void *cmiss_region_void, void *dummy_void)
 {
 	int circle_discretization, clear_flag, return_code = 0;
 	struct Cmiss_region *cmiss_region;
@@ -2322,11 +2320,10 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
 	struct Option_table *option_table;
-	//struct Scene *scene;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_modify_rendition_general);
-	USE_PARAMETER(scene_void);
+	USE_PARAMETER(dummy_void);
 	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
 		/* if possible, get defaults from element_group on default scene */
@@ -4085,3 +4082,166 @@ Cmiss_rendition *Cmiss_rendition_access(Cmiss_rendition_id rendition)
 {
 	return (ACCESS(Cmiss_rendition)(rendition));
 }
+
+int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition, const char *command_string)
+{
+	int return_code = 0;
+	if (rendition && command_string)
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		if (state)
+		{
+			struct Cmiss_graphics_module *graphics_module =	rendition->graphics_module;
+			if(graphics_module)
+			{
+				struct Option_table *option_table;
+				struct Modify_rendition_data modify_rendition_data;
+				struct Rendition_command_data rendition_command_data;
+				modify_rendition_data.delete_flag = 0;
+				modify_rendition_data.position = -1;
+				modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
+				modify_rendition_data.default_coordinate_field = NULL;
+				modify_rendition_data.circle_discretization = 4;
+				modify_rendition_data.native_discretization_field = NULL;
+				modify_rendition_data.element_discretization.number_in_xi1 = 4;
+				modify_rendition_data.element_discretization.number_in_xi2 = 4;
+				modify_rendition_data.element_discretization.number_in_xi3 = 4;
+				int previous_state_index;
+				if (state && (previous_state_index = state->current_index))
+				{
+					option_table = CREATE(Option_table)();
+					/* as */
+					char *graphic_name = (char *)NULL;
+					Option_table_add_name_entry(option_table, "as", &graphic_name);
+					/* default to absorb everything else */
+					char *dummy_string = (char *)NULL;
+					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
+					return_code = Option_table_multi_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
+					if (return_code)
+					{
+						if (graphic_name && (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
+									rendition, Cmiss_graphic_has_name, (void *)graphic_name)))
+						{
+							ACCESS(Cmiss_graphic)(modify_rendition_data.graphic);
+						}
+						modify_rendition_data.default_coordinate_field =
+							Cmiss_rendition_get_default_coordinate_field(rendition);
+						modify_rendition_data.circle_discretization =
+							Cmiss_rendition_get_circle_discretization(rendition);
+						modify_rendition_data.native_discretization_field =
+								Cmiss_rendition_get_native_discretization_field(rendition);
+						struct Element_discretization element_discretization;
+						Cmiss_rendition_get_element_discretization(rendition,
+							&element_discretization);
+						modify_rendition_data.element_discretization =
+							element_discretization;
+					}
+					if (dummy_string)
+					{
+						DEALLOCATE(dummy_string);
+					}
+					if (graphic_name)
+					{
+						DEALLOCATE(graphic_name);
+					}
+					/* Return back to where we were */
+					shift_Parse_state(state, previous_state_index - state->current_index);
+				}
+				struct Material_package *material_package =
+					Cmiss_graphics_module_get_material_package(graphics_module);
+				rendition_command_data.default_material =
+					Material_package_get_default_material(material_package);
+				rendition_command_data.graphics_font_package =
+					Cmiss_graphics_module_get_font_package(graphics_module);
+				rendition_command_data.default_font =
+					Cmiss_graphics_module_get_default_font(graphics_module);
+				rendition_command_data.glyph_manager =
+					Cmiss_graphics_module_get_default_glyph_manager(graphics_module);
+				rendition_command_data.computed_field_manager =
+					 Cmiss_region_get_Computed_field_manager(rendition->region);
+				rendition_command_data.region = rendition->region;
+				rendition_command_data.root_region = rendition->region;
+				rendition_command_data.graphical_material_manager =
+					Cmiss_graphics_module_get_material_manager(graphics_module);
+				rendition_command_data.spectrum_manager =
+					Cmiss_graphics_module_get_spectrum_manager(graphics_module);
+				rendition_command_data.default_spectrum =
+						Cmiss_graphics_module_get_default_spectrum(graphics_module);
+				rendition_command_data.texture_manager =
+					Cmiss_graphics_module_get_texture_manager(graphics_module);
+
+				option_table = CREATE(Option_table)();
+				/* cylinders */
+				Option_table_add_entry(option_table, "cylinders",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_cylinders);
+				/* data_points */
+				Option_table_add_entry(option_table, "data_points",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_data_points);
+				/* element_points */
+				Option_table_add_entry(option_table, "element_points",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_element_points);
+				/* general */
+				Option_table_add_entry(option_table, "general",
+					(void *)rendition->region, (void *)NULL,	gfx_modify_rendition_general);
+				/* iso_surfaces */
+				Option_table_add_entry(option_table, "iso_surfaces",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_iso_surfaces);
+				/* lines */
+				Option_table_add_entry(option_table, "lines",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_lines);
+				/* node_points */
+				Option_table_add_entry(option_table, "node_points",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_node_points);
+				/* static_graphic */
+				Option_table_add_entry(option_table, "static_graphic",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_static_graphic);
+				/* streamlines */
+				Option_table_add_entry(option_table, "streamlines",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_streamlines);
+				/* surfaces */
+				Option_table_add_entry(option_table, "surfaces",
+					(void *)&modify_rendition_data, (void *)&rendition_command_data,
+					gfx_modify_rendition_surfaces);
+
+				return_code = Option_table_parse(option_table, state);
+				if (return_code && (modify_rendition_data.graphic))
+				{
+					return_code = Cmiss_region_modify_rendition(rendition->region,
+						modify_rendition_data.graphic,
+						modify_rendition_data.delete_flag,
+						modify_rendition_data.position);
+				} /* parse error,help */
+				DESTROY(Option_table)(&option_table);
+				if (modify_rendition_data.graphic)
+				{
+					DEACCESS(Cmiss_graphic)(&(modify_rendition_data.graphic));
+				}
+				if (material_package)
+				{
+					DEACCESS(Material_package)(&material_package);
+				}
+				if (rendition_command_data.default_font)
+				{
+					DEACCESS(Graphics_font)(&rendition_command_data.default_font);
+				}
+				if (rendition_command_data.default_spectrum)
+				{
+					DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
+				}
+			}
+
+			destroy_Parse_state(&state);
+		}
+	}
+	return return_code;
+}
+

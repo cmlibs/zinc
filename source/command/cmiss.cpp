@@ -12882,8 +12882,6 @@ Parameter <help_mode> should be NULL when calling this function.
 				modify_rendition_data.delete_flag = 0;
 				modify_rendition_data.position = -1;
 				modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
-				modify_rendition_data.scene =
-					ACCESS(Scene)(command_data->default_scene);
 				modify_rendition_data.default_coordinate_field = NULL;
 				modify_rendition_data.circle_discretization = 4;
 				modify_rendition_data.native_discretization_field = NULL;
@@ -12897,10 +12895,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					option_table = CREATE(Option_table)();
 					/* as */
 					graphic_name = (char *)NULL;
-					Option_table_add_name_entry(option_table, "as", &graphic_name);	
-					Option_table_add_entry(option_table, "scene",
-						&(modify_rendition_data.scene),
-						command_data->scene_manager, set_Scene);			
+					Option_table_add_name_entry(option_table, "as", &graphic_name);
 					/* default to absorb everything else */
 					dummy_string = (char *)NULL;
 					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
@@ -12939,7 +12934,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					}
 					/* Return back to where we were */
 					shift_Parse_state(state, previous_state_index - state->current_index);
-				}					
+				}
 
 				rendition_command_data.default_material =
 					Material_package_get_default_material(command_data->material_package);
@@ -12953,15 +12948,11 @@ Parameter <help_mode> should be NULL when calling this function.
 				rendition_command_data.root_region = command_data->root_region;
 				rendition_command_data.graphical_material_manager =
 					Material_package_get_material_manager(command_data->material_package);
-				rendition_command_data.scene_manager = command_data->scene_manager;
 				rendition_command_data.spectrum_manager =
 					command_data->spectrum_manager;
 				rendition_command_data.default_spectrum =
 					command_data->default_spectrum;
-				rendition_command_data.user_interface = command_data->user_interface;
 				rendition_command_data.texture_manager = command_data->texture_manager;
-				rendition_command_data.volume_texture_manager =
-					command_data->volume_texture_manager;
 
 				option_table = CREATE(Option_table)();
 				/* cylinders */
@@ -12978,8 +12969,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					gfx_modify_rendition_element_points);
 				/* general */
 				Option_table_add_entry(option_table, "general",
-					(void *)region, (void *)(command_data->default_scene),
-					gfx_modify_rendition_general);
+					(void *)region, (void *)NULL,	gfx_modify_rendition_general);
 				/* iso_surfaces */
 				Option_table_add_entry(option_table, "iso_surfaces",
 					(void *)&modify_rendition_data, (void *)&rendition_command_data,
@@ -13009,7 +12999,7 @@ Parameter <help_mode> should be NULL when calling this function.
 				if (return_code && (modify_rendition_data.graphic))
 				{
 					return_code = Cmiss_region_modify_rendition(region,
-						modify_rendition_data.scene, modify_rendition_data.graphic,
+						modify_rendition_data.graphic,
 						modify_rendition_data.delete_flag,
 						modify_rendition_data.position);
 				} /* parse error,help */
@@ -13018,7 +13008,6 @@ Parameter <help_mode> should be NULL when calling this function.
 				{
 					DEACCESS(Cmiss_graphic)(&(modify_rendition_data.graphic));
 				}
-				DEACCESS(Scene)(&modify_rendition_data.scene);
 			}
 			else
 			{

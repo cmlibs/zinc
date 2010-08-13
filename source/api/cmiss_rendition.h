@@ -229,4 +229,20 @@ Cmiss_graphic_id Cmiss_rendition_create_node_points(Cmiss_rendition_id rendition
  */
 Cmiss_graphic_id Cmiss_rendition_create_static(Cmiss_rendition_id rendition);
 
+/***************************************************************************//**
+ * Execute cmgui command as in standalone cmgui application however this execute
+ * command function will apply to the rendition being passed into this function
+ * only. It takes the same string of command as gfx modify g_element <region_name>
+ * does. User can use this to quickly create and modify graphics in rendition.
+ *
+ * NOTE: This function may be removed in the future once more API functions are
+ * made available to the users.
+ *
+ * @param material  Handle to a cmiss_rendition object.
+ * @param command  Command to be executed.
+ * @return  1 if command completed successfully, otherwise 0.
+ */
+int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
+	const char *command_string);
+
 #endif /* __CMISS_RENDITION_H__ */

@@ -44,13 +44,13 @@ The data structures used for representing graphical materials.
  * ***** END LICENSE BLOCK ***** */
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
-
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
+#include "api/cmiss_graphics_module.h"
 
 /*
 Global constants
@@ -559,5 +559,15 @@ the <material_package> by name.
  */
 int Material_set_program_uniform_qualifier_variable_value(
 	struct Graphical_material* material, const char *uniform_name, float value);
+
+/***************************************************************************//**
+ * Sets the Graphics_module object which will own this manager.
+ * Private! Only to be called only from Graphics_module object.
+ *
+ * @param manager  Material manager.
+ * @return  The owning Graphics_module object.
+ */
+int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
+	struct Cmiss_graphics_module *graphics_module);
 
 #endif

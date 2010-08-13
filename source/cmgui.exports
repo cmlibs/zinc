@@ -393,6 +393,7 @@ Cmiss_material_set_persistent
 Cmiss_material_get_persistent
 Cmiss_material_access
 Cmiss_material_destroy
+Cmiss_material_execute_command
 
 Cmiss_graphics_module_find_material_by_name
 Cmiss_graphics_module_create_material
@@ -453,6 +454,7 @@ Cmiss_rendition_destroy
 Cmiss_rendition_get_number_of_graphic
 Cmiss_rendition_get_graphic_at_position
 Cmiss_rendition_create_static
+Cmiss_rendition_execute_command
 
 Cmiss_graphic_set_material
 Cmiss_graphic_set_selected_material
