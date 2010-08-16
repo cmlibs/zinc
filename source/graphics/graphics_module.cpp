@@ -992,3 +992,75 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
 	}
 	return rendition;
 }
+
+Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name)
+{
+	Cmiss_material_id material = NULL;
+
+	ENTER(Cmiss_graphics_module_find_material_by_name);
+	if (graphics_module && name)
+	{
+		struct MANAGER(Graphical_material) *material_manager =
+			Cmiss_graphics_module_get_material_manager(graphics_module);
+		if (material_manager)
+		{
+			if (NULL != (material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
+										 name, material_manager)))
+			{
+				ACCESS(Graphical_material)(material);
+			}
+		}
+	}
+	LEAVE;
+
+	return material;
+}
+
+Cmiss_material_id Cmiss_graphics_module_create_material(
+	Cmiss_graphics_module_id graphics_module)
+{
+	Cmiss_material_id material = NULL;
+	struct MANAGER(Graphical_material) *material_manager =
+		Cmiss_graphics_module_get_material_manager(graphics_module);
+	int i = 0;
+	char *temp_string = NULL;
+	char *num = NULL;
+
+	ENTER(Cmiss_graphics_module_create_material);
+	do
+	{
+		if (temp_string)
+		{
+			DEALLOCATE(temp_string);
+		}
+		ALLOCATE(temp_string, char, 18);
+		strcpy(temp_string, "temp_material");
+		num = strrchr(temp_string, 'l') + 1;
+		sprintf(num, "%i", i);
+		strcat(temp_string, "\0");
+		i++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(temp_string,
+			material_manager));
+
+	if (temp_string)
+	{
+		if (NULL != (material = CREATE(Graphical_material)(temp_string)))
+		{
+			if (Material_package_manage_material(graphics_module->material_package,
+					material))
+			{
+				ACCESS(Graphical_material)(material);
+			}
+			else
+			{
+				DESTROY(Graphical_material)(&material);
+			}
+		}
+		DEALLOCATE(temp_string);
+	}
+	LEAVE;
+
+	return material;
+}

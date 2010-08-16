@@ -7,7 +7,6 @@ SET( API_SRCS
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_field.c
 	source/api/cmiss_graphic.c
-	source/api/cmiss_graphics_module.c
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c
 	source/api/cmiss_material.c
