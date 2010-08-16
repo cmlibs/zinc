@@ -346,6 +346,16 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_remove_scene(struct Cmiss_rendition *rendition, struct Scene *scene);
 
 /***************************************************************************//**
+ * This function will remove field manager and its callback to the rendition.
+ *
+ * @param cmiss_rendition  pointer to the cmiss_rendition.
+ *
+ * @return Return 1 if successfully remove field manager and its callback
+ *    from rendition otherwise 0.
+ */
+int Cmiss_rendition_remove_field_manager_and_callback(struct Cmiss_rendition *rendition);
+
+/***************************************************************************//**
  * This function will deaccess any computed fields being used by the rendition
  * when the rendition itself is not present in any scene.
  *

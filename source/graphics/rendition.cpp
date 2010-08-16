@@ -1086,8 +1086,6 @@ int Cmiss_region_attach_rendition(struct Cmiss_region *region,
 					Cmiss_rendition_Computed_field_change,(void *)rendition,
 					rendition->computed_field_manager);
 		}
-		
-// 		ACCESS(Cmiss_rendition)(rendition);
 		Any_object_set_cleanup_function(any_object,
 			Cmiss_rendition_void_detach_from_Cmiss_region);
 		return_code = 1;
@@ -1483,7 +1481,6 @@ static int Cmiss_rendition_build_graphics_objects(
 				Computed_field_end_wrap(
 					&graphic_to_object_data.default_rc_coordinate_field);
 			}
-			MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
 		}
 		else
 		{
@@ -1491,6 +1488,7 @@ static int Cmiss_rendition_build_graphics_objects(
 				"Could not get default_rc_coordinate_field wrapper");
 			return_code = 0;
 		}
+		MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
 	}
 	else
 	{
@@ -3638,10 +3636,19 @@ int DESTROY(Cmiss_rendition)(
 
 	if (cmiss_rendition_address && (cmiss_rendition = *cmiss_rendition_address))
 	{
+		if (cmiss_rendition->computed_field_manager &&
+				cmiss_rendition->computed_field_manager_callback_id)
+		{
+				MANAGER_DEREGISTER(Computed_field)(
+					cmiss_rendition->computed_field_manager_callback_id,
+					cmiss_rendition->computed_field_manager);
+				cmiss_rendition->computed_field_manager_callback_id = NULL;
+				cmiss_rendition->computed_field_manager = NULL;
+		}
 		Cmiss_rendition_remove_time_dependent_transformation(cmiss_rendition);
 		if (cmiss_rendition->graphics_module)
 		{
-			Element_point_ranges_selection_add_callback(
+			Element_point_ranges_selection_remove_callback(
 				Cmiss_graphics_module_get_element_point_ranges_selection(cmiss_rendition->graphics_module),
 				Cmiss_rendition_element_points_ranges_selection_change,
 				(void *)cmiss_rendition);
@@ -4038,6 +4045,22 @@ FE_node iterator version of FE_node_selection_select_node.
 
 	return (return_code);
 } /* FE_node_select_in_FE_node_selection */
+
+int Cmiss_rendition_remove_field_manager_and_callback(struct Cmiss_rendition *rendition)
+{
+	int return_code = 0;
+	if (rendition->computed_field_manager &&
+			rendition->computed_field_manager_callback_id)
+	{
+			MANAGER_DEREGISTER(Computed_field)(
+				rendition->computed_field_manager_callback_id,
+				rendition->computed_field_manager);
+			rendition->computed_field_manager_callback_id = NULL;
+			rendition->computed_field_manager = NULL;
+			return_code = 1;
+	}
+	return return_code;
+}
 
 int Cmiss_rendition_detach_fields(struct Cmiss_rendition *rendition)
 {
