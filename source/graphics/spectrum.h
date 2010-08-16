@@ -50,6 +50,7 @@ Spectrum structures and support code.
 #include "general/manager.h"
 #include "general/object.h"
 #include "command/parser.h"
+#include "api/cmiss_graphics_module.h"
 
 struct Graphical_material;
 struct Spectrum_settings;
@@ -475,5 +476,7 @@ DESCRIPTION :
 Returns the sizes used for the colour lookup spectrums internal texture.
 ==============================================================================*/
 
+int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
+	struct Cmiss_graphics_module *graphics_module);
 
 #endif /* !defined(SPECTRUM_H) */

@@ -60,6 +60,12 @@ struct Cmiss_scene;
 typedef struct Cmiss_scene * Cmiss_scene_id;
 #define CMISS_SCENE_ID_DEFINED
 #endif
+#ifndef CMISS_SPECTRUM_ID_DEFINED
+#define Cmiss_spectrum Spectrum
+struct Cmiss_spectrum;
+typedef struct Cmiss_spectrum * Cmiss_spectrum_id;
+#define CMISS_SCENE_ID_DEFINED
+#endif
 
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
@@ -137,5 +143,26 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
  */
 int Cmiss_graphics_module_enable_renditions(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Find the spectrum with the supplied name in graphics module, if any.
+ *
+ * @param graphics_module  The handle to the graphics module to find the
+ * spectrum in.
+ * @param name  The name of the spectrum.
+ * @return  Handle to the spectrum with that name, or NULL if not found.
+ */
+Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
+
+/***************************************************************************//**
+ * Create and return a handle to a new spectrum.
+ *
+ * @param graphics_module  The handle to the graphics module the spectrum will
+ * belong to.
+ * @return  Handle to the newly created spectrum if successful, otherwise NULL.
+ */
+Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
+	Cmiss_graphics_module_id graphics_module);
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

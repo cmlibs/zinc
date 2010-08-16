@@ -403,6 +403,8 @@ Cmiss_graphics_module_get_texture_manager
 Cmiss_graphics_module_get_rendition
 Cmiss_graphics_module_enable_renditions
 Cmiss_graphics_module_create_scene
+Cmiss_graphics_module_find_spectrum_by_name
+Cmiss_graphics_module_create_spectrum
 
 Cmiss_context_create
 Cmiss_context_access
@@ -463,3 +465,9 @@ Cmiss_graphic_set_texture_coordinate_field
 Cmiss_graphic_set_render_type
 Cmiss_graphic_destroy
 
+Cmiss_spectrum_get_name
+Cmiss_spectrum_set_name
+Cmiss_spectrum_execute_command
+Cmiss_spectrum_set_persistent
+Cmiss_spectrum_get_persistent
+Cmiss_spectrum_destroy

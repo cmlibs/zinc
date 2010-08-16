@@ -47,6 +47,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include "api/cmiss_spectrum.h"
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -54,6 +55,7 @@ extern "C" {
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/graphics_library.h"
+#include "graphics/graphics_module.h"
 #include "graphics/material.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"
@@ -86,7 +88,7 @@ Spectrum type is private.
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Spectrum) *manager;
 	int manager_change_status;
-	
+	int persistent_flag;
 	/* the number of structures that point to this spectrum.  The spectrum
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -94,7 +96,7 @@ Spectrum type is private.
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
-FULL_DECLARE_MANAGER_TYPE(Spectrum);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_graphics_module);
 
 /*
 Module functions
@@ -262,6 +264,13 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *,manager)
 
+DECLARE_MANAGER_OWNER_FUNCTIONS(Spectrum, struct Cmiss_graphics_module)
+
+int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
+	struct Cmiss_graphics_module *graphics_module)
+{
+	return MANAGER_SET_OWNER(Spectrum)(manager, graphics_module);
+}
 /*
 Global functions
 ----------------
@@ -2366,7 +2375,10 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->minimum=0;
 			spectrum->clear_colour_before_settings = 1;
 			spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
-			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);			spectrum->access_count=1;			spectrum->colour_lookup_texture = (struct Texture *)NULL;
+			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
+			spectrum->access_count=1;
+			spectrum->colour_lookup_texture = (struct Texture *)NULL;
+			spectrum->persistent_flag = 0;
 			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())
 			{
 				if (name)
@@ -2782,3 +2794,252 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 	return (return_code);
 } /* Spectrum_get_colour_lookup_sizes */
 
+int Cmiss_spectrum_set_name(
+	Cmiss_spectrum_id spectrum, const char *name)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_spectrum_set_name);
+	if (spectrum && spectrum->manager && name)
+	{
+		return_code = MANAGER_MODIFY_IDENTIFIER(Spectrum, name)(
+			spectrum, name, spectrum->manager);
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum, const char *command_string)
+{
+	int return_code = 0;
+
+	if (spectrum && command_string)
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		if (state)
+		{
+			struct Cmiss_graphics_module *graphics_module =	MANAGER_GET_OWNER(Spectrum)(
+				spectrum->manager);
+			if(graphics_module)
+			{
+				char autorange, blue_to_red, blue_white_red, clear, lg_blue_to_red,
+					lg_red_to_blue, overlay_colour, overwrite_colour, red_to_blue;
+				struct Modify_spectrum_data modify_spectrum_data;
+				float maximum, minimum;
+				struct Scene *autorange_scene;
+				struct Spectrum_command_data spectrum_command_data;
+				struct Option_table *option_table = NULL;
+				int range_set = 0;;
+				autorange = 0;
+				autorange_scene = Cmiss_graphics_module_get_default_scene(graphics_module);
+				blue_to_red = 0;
+				clear = 0;
+				lg_blue_to_red = 0;
+				lg_red_to_blue = 0;
+				overlay_colour = 0;
+				overwrite_colour = 0;
+				red_to_blue = 0;
+				blue_white_red = 0;
+				modify_spectrum_data.position = 0;
+				modify_spectrum_data.settings = (struct Spectrum_settings *)NULL;
+				modify_spectrum_data.spectrum_minimum = get_Spectrum_minimum(
+					spectrum);
+				modify_spectrum_data.spectrum_maximum = get_Spectrum_maximum(
+					spectrum);
+				modify_spectrum_data.computed_field_manager	= NULL;
+				spectrum_command_data.spectrum_manager = spectrum->manager;
+				option_table=CREATE(Option_table)();
+				Option_table_add_entry(option_table,"autorange",&autorange,NULL,
+					set_char_flag);
+				Option_table_add_entry(option_table,"blue_to_red",&blue_to_red,NULL,
+					set_char_flag);
+				Option_table_add_entry(option_table,"blue_white_red",&blue_white_red,NULL,
+					set_char_flag);
+				Option_table_add_entry(option_table,"clear",&clear,NULL,
+					set_char_flag);
+				Option_table_add_entry(option_table,"field",&modify_spectrum_data,
+					&spectrum_command_data,gfx_modify_spectrum_settings_field);
+				Option_table_add_entry(option_table,"linear",&modify_spectrum_data,
+					&spectrum_command_data,gfx_modify_spectrum_settings_linear);
+				Option_table_add_entry(option_table,"log",&modify_spectrum_data,
+					&spectrum_command_data,gfx_modify_spectrum_settings_log);
+				Option_table_add_entry(option_table,"lg_blue_to_red",&lg_blue_to_red,
+					NULL,set_char_flag);
+				Option_table_add_entry(option_table,"lg_red_to_blue",&lg_red_to_blue,
+					NULL,set_char_flag);
+				Option_table_add_entry(option_table,"maximum",&spectrum,
+					NULL,set_Spectrum_maximum_command);
+				Option_table_add_entry(option_table,"minimum",&spectrum,
+					NULL,set_Spectrum_minimum_command);
+				Option_table_add_entry(option_table,"overlay_colour",&overlay_colour,
+					NULL,set_char_flag);
+				Option_table_add_entry(option_table,"overwrite_colour",&overwrite_colour,
+					NULL,set_char_flag);
+				Option_table_add_entry(option_table,"scene_for_autorange",&autorange_scene,
+					Cmiss_graphics_module_get_scene_manager(graphics_module),set_Scene);
+				Option_table_add_entry(option_table,"red_to_blue",&red_to_blue,
+					NULL,set_char_flag);
+				if (return_code=Option_table_multi_parse(option_table,state))
+				{
+					if (return_code)
+					{
+						if ( clear )
+						{
+							Spectrum_remove_all_settings(spectrum);
+						}
+						if (blue_to_red + blue_white_red +red_to_blue + lg_red_to_blue +
+							lg_blue_to_red > 1 )
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_modify_Spectrum.  Specify only one simple spectrum type\n "
+								"   (blue_to_red, blue_white_red, red_to_blue, lg_red_to_blue, lg_blue_to_red)");
+							return_code=0;
+						}
+						else if (red_to_blue)
+						{
+							Spectrum_set_simple_type(spectrum, RED_TO_BLUE_SPECTRUM);
+						}
+						else if (blue_to_red)
+						{
+							Spectrum_set_simple_type(spectrum, BLUE_TO_RED_SPECTRUM);
+						}
+						else if (blue_white_red)
+						{
+							Spectrum_set_simple_type(spectrum, BLUE_WHITE_RED_SPECTRUM);
+						}
+						else if (lg_red_to_blue)
+						{
+							Spectrum_set_simple_type(spectrum, LOG_RED_TO_BLUE_SPECTRUM);
+						}
+						else if (lg_blue_to_red)
+						{
+							Spectrum_set_simple_type(spectrum, LOG_BLUE_TO_RED_SPECTRUM);
+						}
+						if ( modify_spectrum_data.settings )
+						{
+							/* add new settings */
+							return_code=Spectrum_add_settings(spectrum,modify_spectrum_data.settings,
+								modify_spectrum_data.position);
+						}
+						if (overlay_colour && overwrite_colour)
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_modify_Spectrum.  Specify only one colour mode, overwrite_colour or overlay_colour");
+							return_code=0;
+						}
+						else if (overlay_colour)
+						{
+							Spectrum_set_opaque_colour_flag(spectrum,	0);
+						}
+						else if (overwrite_colour)
+						{
+							Spectrum_set_opaque_colour_flag(spectrum,	1);
+						}
+						if (autorange)
+						{
+							/* Could also do all scenes */
+							range_set = 0;
+							Scene_get_data_range_for_spectrum(autorange_scene, spectrum,
+								&minimum, &maximum, &range_set);
+							if ( range_set )
+							{
+								Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum );
+							}
+						}
+					}
+				}
+				if(option_table)
+				{
+					DESTROY(Option_table)(&option_table);
+				}
+				if ( modify_spectrum_data.settings )
+				{
+					DEACCESS(Spectrum_settings)(&(modify_spectrum_data.settings));
+				}
+				DEACCESS(Scene)(&autorange_scene);
+			}
+		}
+	}
+
+	return return_code;
+}
+
+char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum)
+{
+	char *name = NULL;
+	if (spectrum)
+	{
+		name = duplicate_string(spectrum->name);
+	}
+
+	return name;
+}
+
+int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
+{
+	int return_code = 0;
+	struct Spectrum *spectrum;
+
+	ENTER(Cmiss_spectrum_destroy);
+	if (spectrum_address && (spectrum = *spectrum_address))
+	{
+		(spectrum->access_count)--;
+		if (spectrum->access_count <= 0)
+		{
+			return_code = DESTROY(Spectrum)(spectrum_address);
+		}
+		else if ((!spectrum->persistent_flag) && (spectrum->manager) &&
+			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
+				(MANAGER_CHANGE_NONE(Spectrum) != spectrum->manager_change_status))))
+		{
+			return_code = REMOVE_OBJECT_FROM_MANAGER(Spectrum)(spectrum, spectrum->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*spectrum_address = (struct Spectrum *)NULL;
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+int Cmiss_spectrum_get_persistent(Cmiss_spectrum_id spectrum)
+{
+	int return_code;
+
+	ENTER(Cmiss_spectrum_get_persistent);
+	if (spectrum)
+	{
+		return_code= spectrum->persistent_flag;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+int Cmiss_spectrum_set_persistent(
+	Cmiss_spectrum_id spectrum, int persistent_flag)
+{
+	int return_code;
+
+	ENTER(Cmiss_spectrum_set_persistent);
+	if (spectrum)
+	{
+		spectrum->persistent_flag = persistent_flag;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}

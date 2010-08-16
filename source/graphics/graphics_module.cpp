@@ -112,6 +112,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->texture_manager=CREATE(MANAGER(Texture))();
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
+			Spectrum_manager_set_owner(module->spectrum_manager, module);
 			module->material_package = ACCESS(Material_package)(CREATE(Material_package)
 				(module->texture_manager, module->spectrum_manager));
 			Material_manager_set_owner(
@@ -393,6 +394,78 @@ struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphics_module_get_default_spectrum.  Invalid argument(s)");
 	}
+
+	return spectrum;
+}
+
+Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name)
+{
+	Cmiss_spectrum_id spectrum = NULL;
+
+	ENTER(Cmiss_graphics_module_find_spectrum_by_name);
+	if (graphics_module && name)
+	{
+		struct MANAGER(Spectrum) *spectrum_manager =
+			Cmiss_graphics_module_get_spectrum_manager(graphics_module);
+		if (spectrum_manager)
+		{
+			if (NULL != (spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum, name)(
+										 name, spectrum_manager)))
+			{
+				ACCESS(Spectrum)(spectrum);
+			}
+		}
+	}
+	LEAVE;
+
+	return spectrum;
+}
+
+Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
+	Cmiss_graphics_module_id graphics_module)
+{
+	Cmiss_spectrum_id spectrum = NULL;
+	struct MANAGER(Spectrum) *spectrum_manager =
+		Cmiss_graphics_module_get_spectrum_manager(graphics_module);
+	int i = 0;
+	char *temp_string = NULL;
+	char *num = NULL;
+
+	ENTER(Cmiss_graphics_module_create_spectrum);
+	do
+	{
+		if (temp_string)
+		{
+			DEALLOCATE(temp_string);
+		}
+		ALLOCATE(temp_string, char, 18);
+		strcpy(temp_string, "temp_spectrum");
+		num = strrchr(temp_string, 'm') + 1;
+		sprintf(num, "%i", i);
+		strcat(temp_string, "\0");
+		i++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum, name)(temp_string,
+			spectrum_manager));
+
+	if (temp_string)
+	{
+		if (NULL != (spectrum = CREATE(Spectrum)(temp_string)))
+		{
+			if (ADD_OBJECT_TO_MANAGER(Spectrum)(
+						spectrum, spectrum_manager))
+			{
+				ACCESS(Spectrum)(spectrum);
+			}
+			else
+			{
+				DESTROY(Spectrum)(&spectrum);
+			}
+		}
+		DEALLOCATE(temp_string);
+	}
+	LEAVE;
 
 	return spectrum;
 }
