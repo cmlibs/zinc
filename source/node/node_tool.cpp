@@ -301,6 +301,71 @@ static int Node_tool_refresh_element_dimension_text(
 	 struct Node_tool *node_tool);
 #endif /*defined (WX_USER_INTERFACE)*/
 
+static int Node_tool_remove_region_selected_nodes(Cmiss_field_id field)
+{
+	int return_code = 0;
+
+	if (field)
+	{
+		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
+		Cmiss_region_id region = Computed_field_get_region(field);
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		if (group && fe_region)
+		{
+			Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
+			if (node_group_field)
+			{
+				Cmiss_field_node_group_template_id node_group =
+					Cmiss_field_cast_node_group_template(node_group_field);
+				Cmiss_field_destroy(&node_group_field);
+				node_group_field = reinterpret_cast<Computed_field *>(node_group);
+				FE_region_begin_change(fe_region);
+				Cmiss_node_id node =
+					Cmiss_field_node_group_template_get_first_node(node_group);
+				while (node)
+				{
+					FE_region_remove_FE_node(fe_region, node);
+					DEACCESS(FE_node)(&node);
+					node = Cmiss_field_node_group_template_get_next_node(node_group);
+				}
+				FE_region_end_change(fe_region);
+				Cmiss_field_destroy(&node_group_field);
+			}
+			Cmiss_field_destroy(&field);
+		}
+		return_code = 1;
+	}
+
+	return return_code;
+}
+
+int Node_tool_remove_selected_node(struct Node_tool *node_tool)
+{
+	int return_code = 0;
+	if (node_tool->region)
+	{
+		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
+			node_tool->root_region);
+		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+			root_rendition);
+		if (root_group_field)
+		{
+			Cmiss_field_group_id root_group =
+				Cmiss_field_cast_group(root_group_field);
+			Cmiss_field_group_for_each_child(root_group, Node_tool_remove_region_selected_nodes,1);
+			Node_tool_remove_region_selected_nodes(root_group_field);
+			Cmiss_field_group_clear_region_tree_node(root_group);
+			Cmiss_field_destroy(&root_group_field);
+			root_group_field = reinterpret_cast<Computed_field *>(root_group);
+			Cmiss_field_destroy(&root_group_field);
+		}
+		return_code = 1;
+		Cmiss_rendition_destroy(&root_rendition);
+	}
+
+	return return_code;
+}
+
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
 /*******************************************************************************
@@ -2094,16 +2159,19 @@ release.
 								{
 									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 										node_tool->root_region);
-									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
-										root_rendition);
-									if (root_group_field)
+									if (Cmiss_rendition_has_selection_group(root_rendition))
 									{
-										Cmiss_field_group_id root_group = 
-											Cmiss_field_cast_group(root_group_field);
-										Cmiss_field_group_clear_region_tree_node(root_group);
-										Cmiss_field_destroy(&root_group_field);
-										root_group_field = reinterpret_cast<Computed_field *>(root_group);
-										Cmiss_field_destroy(&root_group_field);			
+										Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+											root_rendition);
+										if (root_group_field)
+										{
+											Cmiss_field_group_id root_group =
+												Cmiss_field_cast_group(root_group_field);
+											Cmiss_field_group_clear_region_tree_node(root_group);
+											Cmiss_field_destroy(&root_group_field);
+											root_group_field = reinterpret_cast<Computed_field *>(root_group);
+											Cmiss_field_destroy(&root_group_field);
+										}
 									}
 									Cmiss_rendition_destroy(&root_rendition);
 								}
@@ -2964,30 +3032,8 @@ Set the selected option in the Coordinate Field chooser.
 
 	void OnButtonDestroypressed(wxCommandEvent& event)
 	{    
-		struct LIST(FE_node) *destroy_node_list;	 
-	USE_PARAMETER(event);
-		button_destroy = XRCCTRL(*this, "ButtonDestroy", wxButton);;
-	 if (destroy_node_list=CREATE(LIST(FE_node))())
-	   {
-	     COPY_LIST(FE_node)(destroy_node_list,
-	       FE_node_selection_get_node_list(node_tool->node_selection));
-			/* nodes destroyed only if removed from ultimate master FE_region */
-	     if (FE_region_get_ultimate_master_FE_region(node_tool->fe_region,
-		   &master_fe_region))
-	       {
-		 FE_region_begin_change(master_fe_region);
-		 FE_region_remove_FE_node_list(master_fe_region, destroy_node_list);
-		 FE_region_end_change(master_fe_region);
-	       }
-	     DESTROY(LIST(FE_node))(&destroy_node_list);
-	   }
-	 	
-	 else
-	   {
-	     display_message(ERROR_MESSAGE,
-               "Node_tool_destroy_selected_CB.  Invalid argument(s)");
-	   }
-	 LEAVE;
+		USE_PARAMETER(event);
+		Node_tool_remove_selected_node(node_tool);
 	}
 
 	void OnButtonUndefinepressed(wxCommandEvent& event)

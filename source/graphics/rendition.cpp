@@ -159,7 +159,6 @@ int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition)
 	}
 }
 
-
 /***************************************************************************//**
  * If changes have been made to <rendition>, as indicated by its build flag
  * being set, sends a callback to all registered clients.
@@ -3850,6 +3849,10 @@ int Cmiss_rendition_has_selection_group(Cmiss_rendition_id rendition)
 					field_module, "cmiss_selection");
 				if (selection_field)
 				{
+					if (rendition->selection_group)
+					{
+						DEACCESS(Computed_field)(&rendition->selection_group);
+					}
 					rendition->selection_group = selection_field;
 					Cmiss_region *parent_region = Cmiss_region_get_parent(rendition->region);
 					if (parent_region)
@@ -3937,6 +3940,10 @@ Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition
 			}
 			if (selection_field)
 			{
+				if (rendition->selection_group)
+				{
+					DEACCESS(Computed_field)(&rendition->selection_group);
+				}
 				rendition->selection_group = selection_field;
 				sub_group = Cmiss_field_access(rendition->selection_group);
 				if (parent_group_field)
