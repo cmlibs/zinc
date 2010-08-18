@@ -64,7 +64,7 @@ public:
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
 		USE_PARAMETER(graphic);
-		return (!isInvert());
+		return (!isInverse());
 	}
 
 	virtual void list_type_specific() const
@@ -92,7 +92,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return (::Cmiss_graphic_has_name(graphic, (void *)matchName) == !isInvert());
+		return (::Cmiss_graphic_has_name(graphic, (void *)matchName) == !isInverse());
 	}
 
 	virtual void list_type_specific() const
@@ -112,7 +112,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return (!isInvert() == Cmiss_graphic_and_rendition_visibility_flags_set(graphic));
+		return (!isInverse() == Cmiss_graphic_and_rendition_visibility_flags_set(graphic));
 	}
 
 	virtual void list_type_specific() const
@@ -133,7 +133,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return (!isInvert() == Cmiss_graphic_is_from_region(graphic, matchRegion));
+		return (!isInverse() == Cmiss_graphic_is_from_region(graphic, matchRegion));
 	}
 
 	virtual void list_type_specific() const
@@ -197,18 +197,18 @@ int Cmiss_scene_filter_set_active(Cmiss_scene_filter *filter,
 	return 0;
 }
 
-int Cmiss_scene_filter_is_invert(Cmiss_scene_filter *filter)
+int Cmiss_scene_filter_is_inverse_match(Cmiss_scene_filter *filter)
 {
 	if (filter)
-		return filter->isInvert();
+		return filter->isInverse();
 	return 0;
 }
 
-int Cmiss_scene_filter_set_invert(Cmiss_scene_filter_id filter,
-	int invert_flag)
+int Cmiss_scene_filter_set_inverse_match(Cmiss_scene_filter_id filter,
+	int inverse_match_flag)
 {
 	if (filter)
-		return filter->setInvert(invert_flag);
+		return filter->setInverse(inverse_match_flag);
 	return 0;
 }
 

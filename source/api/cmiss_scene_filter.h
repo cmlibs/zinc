@@ -114,9 +114,7 @@ int Cmiss_scene_filter_set_active(Cmiss_scene_filter_id filter,
  * @param filter  The to to modify.
  * @return  1 if the filter is inverse, 0 if not.
  */
-int Cmiss_scene_filter_is_invert(Cmiss_scene_filter_id filter,
-	int inverse_flag);
-
+int Cmiss_scene_filter_is_inverse_match(Cmiss_scene_filter_id filter);
 
 /*******************************************************************************
  * Sets whether the filter should invert the filter's match criterion or not.
@@ -125,8 +123,8 @@ int Cmiss_scene_filter_is_invert(Cmiss_scene_filter_id filter,
  * @param inverse_flag  1 to make the filter inverse, 0 to make normal.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_scene_filter_set_invert(Cmiss_scene_filter_id filter,
-	int inverse_flag);
+int Cmiss_scene_filter_set_inverse_match(Cmiss_scene_filter_id filter,
+	int inverse_match_flag);
 
 
 #endif /*__CMISS_SCENE_FILTER_H__*/

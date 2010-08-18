@@ -7928,7 +7928,7 @@ public:
 	char *match_graphic_name;
 	char match_visibility_flags;
 	char *match_region_path;
-	char invert;
+	int inverse;
 	int show;
 
 	Define_scene_filter_data() :
@@ -7936,7 +7936,7 @@ public:
 		match_graphic_name(NULL),
 		match_visibility_flags(0),
 		match_region_path(NULL),
-		invert(0),
+		inverse(0),
 		show(1)
 	{	
 	}
@@ -7960,6 +7960,11 @@ int define_Scene_filter(struct Parse_state *state, void *define_scene_filter_dat
 	if (state && filter_data)
 	{
 		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table," Filter to set up what will be and "
+				"what will not be included in a scene. The optional inverse_match "
+				"flag will invert the filter's match criterion. The default "
+				"behaviour is to show matching graphic unless the optional hide flag "
+				"is specified.");
 		Option_table_add_char_flag_entry(option_table, "match_all",
 			&(filter_data->match_all));
 		Option_table_add_string_entry(option_table, "match_graphic_name",
@@ -7968,7 +7973,8 @@ int define_Scene_filter(struct Parse_state *state, void *define_scene_filter_dat
 			&(filter_data->match_visibility_flags));
 		Option_table_add_string_entry(option_table, "match_region_path",
 			&(filter_data->match_region_path), " REGION_PATH");
-		Option_table_add_char_flag_entry(option_table, "invert", &(filter_data->invert));
+		Option_table_add_switch(option_table, "inverse_match", "normal_match",
+			&(filter_data->inverse));
 		Option_table_add_switch(option_table,
 			"show", "hide", &(filter_data->show));
 		if (return_code = Option_table_multi_parse(option_table, state))
@@ -8088,7 +8094,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 				{
 					Cmiss_scene_filter_set_action(filter,
 						filter_data.show ? CMISS_SCENE_FILTER_SHOW : CMISS_SCENE_FILTER_HIDE);
-					Cmiss_scene_filter_set_invert(filter, filter_data.invert);
+					Cmiss_scene_filter_set_inverse_match(filter, filter_data.inverse);
 					Cmiss_scene_filter_destroy(&filter);
 				}
 				Scene_end_cache(scene);
