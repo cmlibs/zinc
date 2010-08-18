@@ -46,7 +46,7 @@ extern "C" {
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphic.h"
 #include "graphics/scene.h"
-
+#include "region/cmiss_region.h"
 }
 #include "graphics/scene.hpp"
 #include "graphics/scene_filters.hpp"
@@ -64,7 +64,7 @@ public:
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
 		USE_PARAMETER(graphic);
-		return true;
+		return (!isInvert());
 	}
 
 	virtual void list_type_specific() const
@@ -92,7 +92,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return ::Cmiss_graphic_has_name(graphic, (void *)matchName);
+		return (::Cmiss_graphic_has_name(graphic, (void *)matchName) == !isInvert());
 	}
 
 	virtual void list_type_specific() const
@@ -112,12 +112,35 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return Cmiss_graphic_and_rendition_visibility_flags_set(graphic);
+		return (!isInvert() == Cmiss_graphic_and_rendition_visibility_flags_set(graphic));
 	}
 
 	virtual void list_type_specific() const
 	{
 		display_message(INFORMATION_MESSAGE, "match_visibility_flags");
+	}
+};
+
+class Cmiss_scene_filter_region : public Cmiss_scene_filter
+{
+	Cmiss_region *matchRegion;
+
+public:
+	Cmiss_scene_filter_region(Cmiss_scene *inScene, Cmiss_region *inRegion) :
+		Cmiss_scene_filter(inScene), matchRegion(inRegion)
+	{
+	}
+
+	virtual bool match(struct Cmiss_graphic *graphic)
+	{
+		return (!isInvert() == Cmiss_graphic_is_from_region(graphic, matchRegion));
+	}
+
+	virtual void list_type_specific() const
+	{
+		char *region_name = Cmiss_region_get_path(matchRegion);
+		display_message(INFORMATION_MESSAGE, "match_region_path %s", region_name);
+		DEALLOCATE(region_name);
 	}
 };
 
@@ -174,6 +197,21 @@ int Cmiss_scene_filter_set_active(Cmiss_scene_filter *filter,
 	return 0;
 }
 
+int Cmiss_scene_filter_is_invert(Cmiss_scene_filter *filter)
+{
+	if (filter)
+		return filter->isInvert();
+	return 0;
+}
+
+int Cmiss_scene_filter_set_invert(Cmiss_scene_filter_id filter,
+	int invert_flag)
+{
+	if (filter)
+		return filter->setInvert(invert_flag);
+	return 0;
+}
+
 Cmiss_scene_filter *Cmiss_scene_create_filter_all(Cmiss_scene *scene)
 {
 	Cmiss_scene_filter_all *filter = new Cmiss_scene_filter_all(scene);
@@ -194,3 +232,11 @@ Cmiss_scene_filter *Cmiss_scene_create_filter_visibility_flags(Cmiss_scene *scen
 	Scene_add_filter_private(scene, filter);
 	return filter;
 }
+
+Cmiss_scene_filter *Cmiss_scene_create_filter_region(Cmiss_scene *scene, Cmiss_region *match_region)
+{
+	Cmiss_scene_filter_region *filter = new Cmiss_scene_filter_region(scene, match_region);
+	Scene_add_filter_private(scene, filter);
+	return filter;
+}
+

@@ -300,6 +300,12 @@ int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
 int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
+ * @return  1 if graphic is one of the graphical representations of region,
+ * otherwise 0.
+ */
+int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_region *region);
+
+/***************************************************************************//**
  * Returns true if the graphics are output with names that identify
  * the elements they are calculated from.
  */

@@ -203,4 +203,18 @@ Cmiss_scene_filter_id Cmiss_scene_create_filter_graphic_name(
 Cmiss_scene_filter_id Cmiss_scene_create_filter_visibility_flags(
 	Cmiss_scene_id scene);
 
+/***************************************************************************//**
+ * Creates a Cmiss_scene_filter which matches any graphic in region.
+ * The new filter defaults to being active with action to show matched graphics.
+ * Caller must call Cmiss_scene_filter_destroy to clean up the returned handle.
+ * This filter is present and active in the default scene available through the
+ * command interface.
+ *
+ * @param scene  Scene to add filter to.
+ * @param match_region  The region must have to be matched by this filter.
+ * @return  Handle to the new filter, or NULL on failure.
+ */
+Cmiss_scene_filter_id Cmiss_scene_create_filter_region(
+		Cmiss_scene_id scene, Cmiss_region_id match_region);
+
 #endif /*__CMISS_SCENE_H__*/

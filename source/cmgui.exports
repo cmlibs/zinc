@@ -435,6 +435,7 @@ Cmiss_scene_get_filter_at_priority
 Cmiss_scene_create_filter_all
 Cmiss_scene_create_filter_graphic_name
 Cmiss_scene_create_filter_visibility_flags
+Cmiss_scene_create_filter_region
 
 Cmiss_scene_filter_access
 Cmiss_scene_filter_destroy
@@ -442,6 +443,8 @@ Cmiss_scene_filter_get_action
 Cmiss_scene_filter_set_action
 Cmiss_scene_filter_is_active
 Cmiss_scene_filter_set_active
+Cmiss_scene_filter_is_invert
+Cmiss_scene_filter_set_invert
 
 Cmiss_rendition_access
 Cmiss_rendition_add_graphic

@@ -54,6 +54,7 @@ class Cmiss_scene_filter
 private:
 	Cmiss_scene_filter_action action;
 	bool active;
+	bool invert;
 	Cmiss_scene *scene;
 	int access_count;
 	
@@ -61,6 +62,7 @@ public:
 	Cmiss_scene_filter(Cmiss_scene *inScene) :
 		action(CMISS_SCENE_FILTER_SHOW),
 		active(true),
+		invert(false),
 		scene(inScene),
 		access_count(1)
 	{
@@ -95,6 +97,17 @@ public:
 		return true;
 	}
 	
+	bool isInvert() const
+	{
+		return invert;
+	}
+
+	bool setInvert(bool newInvert)
+	{
+		invert = newInvert;
+		return true;
+	}
+
 	int access()
 	{
 		return (++access_count);
@@ -109,11 +122,12 @@ public:
 	{
 		display_message(INFORMATION_MESSAGE, "%s", active ? "active " : "inactive ");
 		display_message(INFORMATION_MESSAGE, "%s", (action == CMISS_SCENE_FILTER_SHOW) ? "show " : "hide ");
+		display_message(INFORMATION_MESSAGE, "%s", invert ? "invert " : "");
 		list_type_specific();
 		display_message(INFORMATION_MESSAGE, "\n");
 	}
 
-	Cmiss_scene *getScene()
+	Cmiss_scene *getScene() const
 	{
 		return scene;
 	}

@@ -1951,6 +1951,27 @@ int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graph
 	return (return_code);
 }
 
+int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_region *region)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_graphic_is_from_region);
+	if (graphic && region)
+	{
+		if ((Cmiss_rendition_get_region(graphic->rendition) == region))
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_is_from_region.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
 int Cmiss_graphic_get_glyph_parameters(
 	struct Cmiss_graphic *graphic,
 	struct GT_object **glyph, enum Graphic_glyph_scaling_mode *glyph_scaling_mode,
