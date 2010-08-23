@@ -46,6 +46,9 @@ Functions for interfacing with the graphics library.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (OPENGL_API)
+#if defined (USE_GLEW)
+#		include <GL/glew.h>
+#endif
 #  if defined (UNIX)
 #    include <dlfcn.h>
 #  endif /* defined (UNIX) */
@@ -115,7 +118,6 @@ Sets up the default light, material and light model for the graphics library.
 	{
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
-
 #if defined(GLX_ARB_get_proc_address)
 #if defined (MOTIF_USER_INTERFACE)
 		/* Try and load this function while we have the user_interface connection */
@@ -735,6 +737,7 @@ double buffered context.
 	return (return_code);
 } /* Graphics_library_read_pixels */
 
+#if !defined (USE_GLEW)
 static void *Graphics_library_get_function_ptr(char *function_name)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2004
@@ -791,6 +794,7 @@ Finds and loads gl function symbols at runtime.
 
 	return (function_ptr);
 } /* Graphics_library_get_function_ptr */
+#endif
 
 enum Graphics_library_vendor_id Graphics_library_get_vendor_id()
 /*******************************************************************************
@@ -877,6 +881,7 @@ appropriately.
 #endif /* defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES) */
 
 	ENTER(Graphics_library_load_extension);
+#if !defined (USE_GLEW)
 	if (extension_name)
 	{
 #if defined (OPENGL_API)
@@ -1569,6 +1574,51 @@ appropriately.
 			"Graphics_library_load_extension.  Missing extension name.");
 		return_code = 0;
 	}
+#else
+	return_code = Graphics_library_query_environment_extension(extension_name);
+	static int GLEW_loaded = 0;
+	if (return_code == GLEXTENSION_UNSURE)
+	{
+		const char *real_extension_name = extension_name;
+		if (!strcmp(extension_name, "GL_shading_language"))
+		{
+			real_extension_name = "GL_VERSION_2_0";
+		}
+		else if (!strcmp(extension_name, "GL_display_lists"))
+		{
+			real_extension_name = NULL;
+			return_code = GLEXTENSION_AVAILABLE;
+		}
+		if (!GLEW_loaded)
+		{
+			GLenum err = glewInit();
+			if (GLEW_OK == err)
+			{
+				GLEW_loaded = 1;
+				display_message(INFORMATION_MESSAGE,
+					"loaded. \n");
+			}
+		}
+		if (GLEW_loaded)
+		{
+			if (real_extension_name && glewIsSupported(real_extension_name))
+			{
+				return_code = GLEXTENSION_AVAILABLE;
+			}
+			else if (real_extension_name)
+			{
+				return_code = GLEXTENSION_UNAVAILABLE;
+				display_message(INFORMATION_MESSAGE,
+					"Graphics_library_load_extensions.  Cannot load extension %s\n",
+					extension_name);
+			}
+		}
+		else
+		{
+			return_code = GLEXTENSION_UNSURE;
+		}
+	}
+#endif
 
 	LEAVE;
 

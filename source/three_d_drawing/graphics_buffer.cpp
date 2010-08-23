@@ -97,8 +97,6 @@ extern "C" {
 #  include <windows.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include "graphics/graphics_library.h"
 }
 #include <wx/wx.h>
@@ -1553,8 +1551,7 @@ void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer)
 	 {
 			renderbuffer_height = buffer->framebuffer_height;
 	 }
-	 if (Graphics_library_load_extension("GL_EXT_framebuffer_blit") && 
-			Graphics_library_check_extension(GL_EXT_framebuffer_blit))
+	 if (Graphics_library_check_extension(GL_EXT_framebuffer_blit))
 	 {
 			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, buffer->multi_fbo);
 			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, buffer->fbo);
@@ -1575,8 +1572,7 @@ int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, 
 {
 #ifdef GL_EXT_framebuffer_multisample
 	 int antialias;
-	 if (Graphics_library_load_extension("GL_EXT_framebuffer_multisample") && 
-			Graphics_library_check_extension(GL_EXT_framebuffer_multisample) &&
+	 if (Graphics_library_check_extension(GL_EXT_framebuffer_multisample) &&
 			preferred_antialias > 0)
 	 {
 			int max_samples;

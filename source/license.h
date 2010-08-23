@@ -111,5 +111,12 @@ const char *CMISS_LICENSE_STRING ={
 "\n"
 "Netgen\n"
 "By Joachim Schoberl\n"
+"\n"
+"OpenGL Extension Wrangler Library\n"
+"The OpenGL Extension Wrangler Library\n"
+"Copyright (C) 2002-2008, Milan Ikits <milan ikits[]ieee org>\n"
+"Copyright (C) 2002-2008, Marcelo E. Magallon <mmagallo[]debian org>\n"
+"Copyright (C) 2002, Lev Povalahev\n"
+"All rights reserved.\n"
 };
 #endif /* CMISS_LICENSE_STRING */

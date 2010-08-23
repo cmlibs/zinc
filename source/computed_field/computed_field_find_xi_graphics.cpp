@@ -69,7 +69,11 @@ extern "C" {
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 extern "C" {
+#if defined (USE_GLEW)
+#include <GL/glew.h>
+#else
 #include <GL/gl.h>
+#endif
 }
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 

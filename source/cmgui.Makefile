@@ -57,8 +57,8 @@ LINK_CMISS = false
 USE_PERL_INTERPRETER = true
 USE_IMAGEMAGICK = true
 USE_NETGEN = true
+USE_GLEW = true
 USE_OPENCASCADE = false
-USE_MSAA = false
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
 ifeq ($(SYSNAME),Linux)
@@ -339,11 +339,20 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
     endif # $(OPERATING_SYSTEM) == darwin
     ifeq ($(OPERATING_SYSTEM),win32)
       ifeq ($(COMPILER),msvc)
+        ifeq ($(USE_GLEW), true)
+    		 GRAPHICS_LIB += glew32.lib
+    	  endif
         GRAPHICS_LIB += opengl32.lib glu32.lib
       else
+        ifeq ($(USE_GLEW), true)
+    		 GRAPHICS_LIB += -lglew32
+    	  endif
         GRAPHICS_LIB += -lopengl32 -lglu32
       endif
     else # $(OPERATING_SYSTEM) == win32
+      ifeq ($(USE_GLEW), true)
+    	  GRAPHICS_LIB += -lGLEW
+    	endif
       GRAPHICS_LIB += -lGL -lGLU
     endif # $(OPERATING_SYSTEM) == win32 
 endif
@@ -444,6 +453,14 @@ else # $(USE_ITK) == true
    ITK_INC = 
    ITK_LIB = 
 endif # $(USE_ITK) == true
+ifeq ($(USE_GLEW),true)
+	GLEW_DEFINES = -DUSE_GLEW -DUSE_MSAA
+	ifeq ($(SYSNAME),win32)
+		GLEW_DEFINES += -DGLEW_STATIC
+	endif
+else
+	GLEW_DEFINES =
+endif
 
 ifeq ($(USE_NETGEN),true)
 	NETGEN_LIB_PREFIX = lib
@@ -459,12 +476,6 @@ else
 	NETGEN_INC =
 	NETGEN_LIB =
 	NETGEN_DEFINES =
-endif
-
-ifeq ($(USE_MSAA),true)
-	MSAA_DEFINES = -DUSE_MSAA
-else
-	MSAA_DEFINES =
 endif
 
 ifneq ($(USE_PERL_INTERPRETER),true)
@@ -852,7 +863,7 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	$(UNEMAP_DEFINES) $(ITK_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
-	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES) $(NETGEN_DEFINES) $(MSAA_DEFINES)
+	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES) $(NETGEN_DEFINES) $(MSAA_DEFINES) $(GLEW_DEFINES)
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) $(OPENCASCADE_INC) \

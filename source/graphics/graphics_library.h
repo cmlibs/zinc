@@ -48,16 +48,6 @@ Functions and structures for interfacing with the graphics library.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
-#if defined (GL_API)
-#	if defined (MOTIF_USER_INTERFACE)
-/* needed because X and GL use some of the same names and if X isn't included
-	before GL there are errors */
-#		include <X11/Intrinsic.h>
-#		include <X11/Xlib.h>
-#		include <Mrm/MrmPublic.h>
-#	endif /* defined (MOTIF_USER_INTERFACE) */
-#	include <gl/gl.h>
-#endif
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES
 #	define GLX_GLXEXT_PROTOTYPES
@@ -65,8 +55,12 @@ Functions and structures for interfacing with the graphics library.
 #		if defined (WIN32_SYSTEM)
 #			include <windows.h>
 #		endif
-#		include <GL/gl.h>
-#		include <GL/glu.h>
+#if defined (USE_GLEW)
+#		include <GL/glew.h>
+#else
+#   include <GL/gl.h>
+#   include <GL/glu.h>
+#endif
 #		if defined (WIN32_SYSTEM)
 #			include <GL/glext.h>
 #			undef GL_NV_vertex_program
@@ -432,7 +426,7 @@ yet we just don't know.
  * variable. */
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 /* Extension function handles */
-#if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
+#if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES) && !defined (USE_GLEW)
 #  if defined (APIENTRY)
    /* Testing to see if we are using Mesa like headers (NVIDIA defined APIENTRY and not APIENTRYP) */
 
@@ -581,7 +575,7 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    undef GL_ARB_fragment_program
 #    undef GL_EXT_framebuffer_blit
 #  endif  /* defined (APIENTRY) */
-#endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
+#endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES && !defined (USE_GLEW)*/
 
 #endif /* defined (OPENGL_API) */
 

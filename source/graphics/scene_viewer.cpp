@@ -1824,11 +1824,6 @@ the entire scene.
 		{	
 			glAccum(GL_RETURN,1.001f);
 		}
-		else
-		{
-			display_message(WARNING_MESSAGE, "Framebuffer object does not "
-				"support accumulation buffer, anti-aliasing is not available.\n");
-		}
 		glFlush();
 	}
 	else

@@ -6888,10 +6888,17 @@ graphics window on screen.
 							if (Graphics_buffer_get_type(offscreen_buffer) ==	
 								GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE )
 							{
+#if !defined (USE_MSAA)
 								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
 									/*preferred_antialias*/0, preferred_transparency_layers,
 									/*drawing_offscreen*/1);
+#else
+								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
+									preferred_antialias, preferred_transparency_layers,
+									/*drawing_offscreen*/1);
+#endif
 							}
 							else
 							{
