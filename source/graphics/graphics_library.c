@@ -1595,8 +1595,6 @@ appropriately.
 			if (GLEW_OK == err)
 			{
 				GLEW_loaded = 1;
-				display_message(INFORMATION_MESSAGE,
-					"loaded. \n");
 			}
 		}
 		if (GLEW_loaded)
