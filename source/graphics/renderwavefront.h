@@ -52,8 +52,7 @@ struct Cmiss_region;
 Global functions
 ----------------
 */
-int export_to_wavefront(char *file_name,struct Scene *scene,
-	struct Cmiss_region *region, const char *graphic_name, int full_comments);
+int export_to_wavefront(char *file_name, struct Scene *scene, int full_comments);
 /******************************************************************************
 LAST MODIFIED : 19 October 1998
 

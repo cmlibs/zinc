@@ -9072,7 +9072,7 @@ DESCRIPTION :
 Executes a GFX EXPORT STL command.
 ==============================================================================*/
 {
-	char *file_name, *path_name;
+	char *file_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
@@ -9086,30 +9086,15 @@ Executes a GFX EXPORT STL command.
 		{
 			file_name = (char *)NULL;
 			scene = ACCESS(Scene)(command_data->default_scene);
-			const char *scene_name = NULL, 
-					       *region_path = NULL, 
-					       *graphic_name = NULL;
 			option_table = CREATE(Option_table)();
 			/* file */
 			Option_table_add_entry(option_table, "file", &file_name,
 				(void *)1, set_name);
 			/* scene */
-			Option_table_add_string_entry(option_table, "scene",
-				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
+			Option_table_add_entry(option_table,"scene",&scene,
+				command_data->scene_manager,set_Scene);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
-				if (path_name)
-				{
-					export_object_name_parser(path_name, &scene_name,
-						&region_path, &graphic_name);
-					DEALLOCATE(path_name);
-				}
-				if (scene_name)
-				{
-					REACCESS(Scene)(&(scene), 
-						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
-							command_data->scene_manager));
-				}
 				if (scene)
 				{
 					if (file_name)
@@ -9122,16 +9107,11 @@ Executes a GFX EXPORT STL command.
 							"gfx export stl.  Must specify file name");
 						return_code = 0;
 					}
-					DEACCESS(Scene)(&scene);
 				}
-				if (scene_name)
-					DEALLOCATE(scene_name);
-				if (region_path)
-					DEALLOCATE(region_path);
-				if (graphic_name)
-					DEALLOCATE(graphic_name);
 			}
 			DESTROY(Option_table)(&option_table);
+			if (scene)
+				DEACCESS(Scene)(&scene);
 			if (file_name)
 			{
 				DEALLOCATE(file_name);
@@ -9163,9 +9143,8 @@ DESCRIPTION :
 Executes a GFX EXPORT VRML command.
 ==============================================================================*/
 {
-	char *file_name, *path_name;
+	char *file_name;
 	int return_code;
-	char recursive_flag = 1;
 	struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
@@ -9178,17 +9157,12 @@ Executes a GFX EXPORT VRML command.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialize defaults */
-			struct Cmiss_region *region = NULL;
-			const char *scene_name = NULL, 
-					       *region_path = NULL, 
-					       *graphic_name = NULL;
 			file_name=(char *)NULL;
-			path_name=(char *)NULL;
 			scene=ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "file", &file_name, (void *)1, set_name);
-			Option_table_add_string_entry(option_table, "scene",
-				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
+			Option_table_add_entry(option_table,"scene",&scene,
+				command_data->scene_manager,set_Scene);
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 			/* no errors, not asking for help */
@@ -9203,49 +9177,13 @@ Executes a GFX EXPORT VRML command.
 #endif /* defined (WX_USER_INTERFACE)*/
 																										);
 				}
-				if (path_name)
-				{
-					export_object_name_parser(path_name, &scene_name,
-						&region_path, &graphic_name);
-				}
-				if (scene_name)
-				{
-					REACCESS(Scene)(&(scene), 
-						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
-							command_data->scene_manager));
-				}
 				if (scene)
 				{
 					if (file_name)
 					{
 						if (return_code=check_suffix(&file_name,".wrl"))
 						{
-							struct Cmiss_region *child_region = NULL;
-							region = Cmiss_scene_get_region(scene);
-							if (region_path)
-							{
-								child_region = Cmiss_region_find_subregion_at_path(region,
-									region_path);
-								DEACCESS(Cmiss_region)(&region);
-								recursive_flag = 0;
-							}
-							else
-							{
-								child_region = region;
-								if (graphic_name)
-								{
-									recursive_flag = 0;
-								}
-								else
-								{
-									recursive_flag = 1;
-								}
-							}
-							if (child_region)
-							{
-								return_code=export_to_vrml(file_name,scene,child_region,recursive_flag,graphic_name);
-								DEACCESS(Cmiss_region)(&child_region);
-							}
+							return_code=export_to_vrml(file_name,scene);
 						}
 					}
 				}
@@ -9257,15 +9195,8 @@ Executes a GFX EXPORT VRML command.
 			} /* parse error,help */
 	
 			DEACCESS(Scene)(&scene);
-			if (scene_name)
-				DEALLOCATE(scene_name);
-			if (region_path)
-				DEALLOCATE(region_path);
-			if (graphic_name)
-				DEALLOCATE(graphic_name);
-			if (path_name)
-				DEALLOCATE(path_name);
-			DEALLOCATE(file_name);
+			if (file_name)
+				DEALLOCATE(file_name);
 		}
 		else
 		{
@@ -9292,22 +9223,20 @@ DESCRIPTION :
 Executes a GFX EXPORT WAVEFRONT command.
 ==============================================================================*/
 {
-	char *file_name,full_comments,*temp_filename, *path_name = NULL;
+	char *file_name,full_comments,*temp_filename;
 	int frame_number, number_of_frames, return_code, version;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene = NULL;
-	struct Cmiss_region *region = NULL;
 	static struct Modifier_entry option_table[]=
 	{
 		{"file",NULL,(void *)1,set_name},
 		{"frame_number",NULL,NULL,set_int_non_negative},
 		{"full_comments",NULL,NULL,set_char_flag},
  		{"number_of_frames",NULL,NULL,set_int_positive},
-		{"scene",NULL,NULL,set_string},
+		{"scene",NULL,NULL,set_Scene},
  		{"version",NULL,NULL,set_int_positive},
 		{NULL,NULL,NULL,NULL}
 	};
-
 	ENTER(gfx_export_wavefront);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
@@ -9326,87 +9255,34 @@ Executes a GFX EXPORT WAVEFRONT command.
 			(option_table[1]).to_be_modified= &frame_number;
 			(option_table[2]).to_be_modified= &full_comments;
  			(option_table[3]).to_be_modified= &number_of_frames;
-			(option_table[4]).to_be_modified= &path_name;
+			(option_table[4]).to_be_modified= &scene;
+			(option_table[4]).user_data=command_data->scene_manager;
  			(option_table[5]).to_be_modified= &version;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
-			const char *scene_name = NULL, 
-				*graphic_name = NULL, 
-				*region_path = NULL;
-			if (return_code)
-			{
-				if (path_name)
-				{
-					return_code = 0;
-					export_object_name_parser(path_name, &scene_name, &region_path, &graphic_name);
-					if (scene_name)
-					{
-						REACCESS(Scene)(&(scene), 
-							FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
-								command_data->scene_manager));
-					}
-					if (scene)
-					{
-						return_code = 1;
-						if (region_path)
-						{
-							Cmiss_region *scene_top_region = Cmiss_scene_get_region(scene);
-							region = Cmiss_region_find_subregion_at_path(scene_top_region,
-								region_path);
-							Cmiss_region_destroy(&scene_top_region);
-							if (!region)
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_export_wavefront.  Region not found");
-							}
-						}
-					}
-				}
-			}
+
 			if (return_code)
 			{
 				if (!file_name)
 				{
-					if (region_path)
+					if (GET_NAME(Scene)(scene,&file_name))
 					{
-						if (ALLOCATE(file_name,char,strlen(region_path)+5))
+						if (REALLOCATE(temp_filename,file_name,char,strlen(file_name)+5))
 						{
-							sprintf(file_name,"%s.obj",region_path);
-						}
-					}
-					else
-					{
-						if (GET_NAME(Scene)(scene,&file_name))
-						{
-							if (REALLOCATE(temp_filename,file_name,char,strlen(file_name)+5))
-							{
-								file_name=temp_filename;
-								strcat(file_name,".obj");
-							}
+							file_name=temp_filename;
+							strcat(file_name,".obj");
 						}
 					}
 				}
 				if (file_name)
 				{
-					return_code=export_to_wavefront(file_name,scene,region,graphic_name,
-						full_comments);
+					return_code=export_to_wavefront(file_name,scene,full_comments);
 				}
 			} /* parse error,help */
 			DEACCESS(Scene)(&scene);
-			if (scene_name)
-				DEALLOCATE(scene_name);
-			if (region_path)
-				DEALLOCATE(region_path);
-			if (region)
-				DEACCESS(Cmiss_region)(&region);
-			if (graphic_name)
-				DEALLOCATE(graphic_name);
-			if (path_name)
-				DEALLOCATE(path_name);
+
 			if (file_name)
-			{
 				DEALLOCATE(file_name);
-			}
 		}
 		else
 		{
@@ -10238,7 +10114,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			Option_table_add_entry(option_table, "region", &region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table, "scene", &scene,
-				command_data->scene_manager, set_Scene_including_sub_objects);
+				command_data->scene_manager, set_Scene);
 			Option_table_add_entry(option_table,"clear_region",
 				&clear,(void *)NULL,set_char_flag);
 			Option_table_add_entry(option_table,"mesh_global_size",
@@ -10355,7 +10231,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 			option_table = CREATE(Option_table)();
 			char clear = 0;
 			Option_table_add_entry(option_table, "scene", &scene,
-				command_data->scene_manager, set_Scene_including_sub_objects);
+				command_data->scene_manager, set_Scene);
 			Option_table_add_entry(option_table, "region", &region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table,"clear_region",

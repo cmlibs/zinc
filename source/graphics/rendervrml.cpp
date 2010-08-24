@@ -2796,8 +2796,7 @@ graphics_object_tree_iterator_function
 Global functions
 ----------------
 */
-int export_to_vrml(char *file_name,void *scene_void,void *region_void, 
-	int recursive, const char *graphic_name)
+int export_to_vrml(char *file_name,void *scene_void)
 /******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -2813,11 +2812,9 @@ Renders the visible objects to a VRML file.
 	int return_code;
 	struct Export_to_vrml_data export_to_vrml_data;
 	struct Scene *scene;
-	struct Cmiss_region *region;
 
 	ENTER(export_to_vrml);
-	if (file_name&&(scene=(struct Scene *)scene_void)&&
-		(region=(struct Cmiss_region *)region_void))
+	if (file_name&&(scene=(struct Scene *)scene_void))
 	{
 		build_Scene(scene);
 		/* open file and add header */
@@ -2901,17 +2898,8 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"    } #NavigationInfo\n");
 			export_to_vrml_data.vrml_prototype_list=
 				CREATE(LIST(VRML_prototype))();
-
-			if (recursive)
-			{
-				return_code=for_each_graphics_object_in_scene(scene,
-					graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
-			}
-			else
-			{
-				return_code=Scene_export_region_graphics_object(scene,region,graphic_name,
-					graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
-			}
+			return_code=for_each_graphics_object_in_scene(scene,
+				graphics_object_export_to_vrml,(void *)&export_to_vrml_data);
 			DESTROY(LIST(VRML_prototype))(&export_to_vrml_data.vrml_prototype_list);
 			fprintf(vrml_file,"  ]\n");
 			fprintf(vrml_file,"} #Group\n");

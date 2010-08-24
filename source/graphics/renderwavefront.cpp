@@ -1295,8 +1295,7 @@ Global functions
 ----------------
 */
 
-int export_to_wavefront(char *file_name,struct Scene *scene,
-	struct Cmiss_region *region, const char *graphic_name, int full_comments)
+int export_to_wavefront(char *file_name, struct Scene *scene, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
 
@@ -1336,17 +1335,8 @@ Renders the visible objects to Wavefront object files.
 			export_to_wavefront_data.base_filename = file_name;
 			export_to_wavefront_data.full_comments = full_comments;
 
-			if (!region)
-			{
-				return_code=for_each_graphics_object_in_scene(scene,
-					graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
-			}
-			else
-			{
-				return_code=Scene_export_region_graphics_object(scene,region,graphic_name,
-					graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
-			}
-			/* set lights... */
+			return_code=for_each_graphics_object_in_scene(scene,
+				graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 			
 			fclose (wavefront_global_file);
 			return_code = 1;
