@@ -1606,9 +1606,11 @@ appropriately.
 			else if (real_extension_name)
 			{
 				return_code = GLEXTENSION_UNAVAILABLE;
-				display_message(INFORMATION_MESSAGE,
-					"Graphics_library_load_extensions.  Cannot load extension %s\n",
-					extension_name);
+				/* The following message can be enabled when debugging cmgui.
+					display_message(INFORMATION_MESSAGE,
+						"Graphics_library_load_extensions.  Cannot load extension %s\n",
+						extension_name);
+				 */
 			}
 		}
 		else
