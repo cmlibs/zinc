@@ -340,7 +340,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
     ifeq ($(OPERATING_SYSTEM),win32)
       ifeq ($(COMPILER),msvc)
         ifeq ($(USE_GLEW), true)
-    		 GRAPHICS_LIB += glew32.lib
+    		 GRAPHICS_LIB += $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/glew32s.lib
     	  endif
         GRAPHICS_LIB += opengl32.lib glu32.lib
       else

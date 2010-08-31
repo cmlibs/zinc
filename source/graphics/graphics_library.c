@@ -1576,9 +1576,9 @@ appropriately.
 	}
 #else
 	return_code = Graphics_library_query_environment_extension(extension_name);
-	static int GLEW_loaded = 0;
 	if (return_code == GLEXTENSION_UNSURE)
 	{
+		static int GLEW_loaded = 0;
 		const char *real_extension_name = extension_name;
 		if (!strcmp(extension_name, "GL_shading_language"))
 		{
