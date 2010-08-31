@@ -345,7 +345,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
         GRAPHICS_LIB += opengl32.lib glu32.lib
       else
         ifeq ($(USE_GLEW), true)
-    		 GRAPHICS_LIB += -lglew32
+    		 GRAPHICS_LIB += $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/glew32s.lib
     	  endif
         GRAPHICS_LIB += -lopengl32 -lglu32
       endif
