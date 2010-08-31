@@ -193,9 +193,11 @@ struct Material_program
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 	GLuint vertex_program;
 	GLuint fragment_program;
+	GLuint geometry_program;
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 	GLuint glsl_current_program;
 	char *vertex_program_string;
+	char *geometry_program_string;
 	char *fragment_program_string;
 	enum Material_program_shader_type shader_type;
 	/*! Display list which enables the correct state for this program */
@@ -349,10 +351,12 @@ DESCRIPTION :
 #if defined GL_ARB_vertex_program &&defined GL_ARB_fragment_program
 		material_program->vertex_program = 0;
 		material_program->fragment_program = 0;
+		material_program->geometry_program = 0;
 #endif
 		material_program->shader_type=MATERIAL_PROGRAM_SHADER_NONE;
 		material_program->glsl_current_program = 0;
 		material_program->vertex_program_string = (char *)NULL;
+		material_program->geometry_program_string = (char *)NULL;
 		material_program->fragment_program_string = (char *)NULL;
 		material_program->display_list = 0;
 #endif /* defined (OPENGL_API) */
@@ -374,7 +378,8 @@ DESCRIPTION :
  * strings.
  */
 static struct Material_program *Material_program_create_from_program_strings(
-	const char *vertex_program_string, const char *fragment_program_string)
+	const char *vertex_program_string, const char *fragment_program_string,
+	const char *geometry_program_string)
 {
 	struct Material_program *material_program;
 
@@ -387,9 +392,15 @@ static struct Material_program *Material_program_create_from_program_strings(
 			duplicate_string(vertex_program_string);
 		material_program->fragment_program_string =
 			duplicate_string(fragment_program_string);
+		if (geometry_program_string)
+		{
+			material_program->geometry_program_string =
+				duplicate_string(geometry_program_string);
+		}
 #else /* defined (OPENGL_API) */
 		USE_PARAMETER(vertex_program_string);
 		USE_PARAMETER(fragment_program_string);
+		USE_PARAMETER(geometry_program_string);
 #endif /* defined (OPENGL_API) */
 	}
 	else
@@ -431,6 +442,10 @@ Frees the memory for the material_program.
 				{
 					glDeleteShader(material_program->fragment_program);
 				}
+				if (material_program->geometry_program)
+				{
+					glDeleteShader(material_program->geometry_program);
+				}
 				if (material_program->glsl_current_program)
 				{
 					glDeleteProgram(material_program->glsl_current_program);
@@ -455,6 +470,11 @@ Frees the memory for the material_program.
 			{
 				DEALLOCATE(material_program->vertex_program_string);
 				material_program->vertex_program_string = NULL;
+			}
+			if (material_program->geometry_program_string)
+			{
+				DEALLOCATE(material_program->geometry_program_string);
+				material_program->geometry_program_string = NULL;
 			}
 			if (material_program->fragment_program_string)
 			{
@@ -697,10 +717,11 @@ be shared by multiple materials using the same program.
 				printf ("Compiling program type:%x\n", material_program->type);
 #endif /* defined DEBUG */
 #if defined GL_VERSION_2_0
-				const char *vv, *ff;
+				const char *vv, *ff, *gg;
 #endif
 #if ! defined (TESTING_PROGRAM_STRINGS)
-				char *components_string, *fragment_program_string, *vertex_program_string;
+				char *components_string, *fragment_program_string = NULL,
+						*vertex_program_string = NULL, *geometry_program_string = NULL;
 				enum Graphics_library_vendor_id vendor_id;
 				const char *colour_texture_string[] = {"float", "vec2", "vec3", "vec4"};
 				int colour_texture_dimension, components_error, number_of_inputs,
@@ -714,6 +735,10 @@ be shared by multiple materials using the same program.
 				{
 					vertex_program_string = duplicate_string(material_program->vertex_program_string);
 					fragment_program_string = duplicate_string(material_program->fragment_program_string);
+					if (material_program->geometry_program_string)
+					{
+						geometry_program_string = duplicate_string(material_program->geometry_program_string);
+					}
 					if (vertex_program_string && strstr(vertex_program_string, "!!ARBvp"))
 					{
 						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
@@ -730,10 +755,11 @@ be shared by multiple materials using the same program.
 									"but ARB shading program is not supported.\n");	
 								vertex_program_string = NULL;
 								fragment_program_string = NULL;
+								geometry_program_string = NULL;
 							}
 						}
 					}
-					else if (vertex_program_string && strstr(vertex_program_string, "void main()"))
+					else if (vertex_program_string && strstr(vertex_program_string, "void main("))
 					{
 						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
 						{
@@ -748,6 +774,7 @@ be shared by multiple materials using the same program.
 									"but GLSL is not supported.\n");
 								vertex_program_string = NULL;
 								fragment_program_string = NULL;
+								geometry_program_string = NULL;
 							}
 						}
 					}
@@ -2775,15 +2802,24 @@ be shared by multiple materials using the same program.
 							fprintf(program_file, "%s", vertex_program_string);
 							fclose (program_file);
 						}
-						if (fragment_program_string  && (program_file = fopen("out.frag", "w")))
+						if (fragment_program_string && (program_file = fopen("out.frag", "w")))
 						{
 							fprintf(program_file, "%s", fragment_program_string);
+							fclose (program_file);
+						}
+						if (geometry_program_string && (program_file = fopen("out.geo", "w")))
+						{
+							fprintf(program_file, "%s", geometry_program_string);
 							fclose (program_file);
 						}
 #endif /* defined (WRITE_STRING) */
 #if defined (GL_VERSION_2_0)
 						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
 						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
+						{
+							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER);
+						}
 #endif /* defined (GL_VERSION_2_0) */
 					}
 					else
@@ -2876,6 +2912,10 @@ be shared by multiple materials using the same program.
 #if defined (GL_VERSION_2_0)
 						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
 						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
+						{
+							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER);
+						}
 #endif /* defined (GL_VERSION_2_0) */		 
 					}
 					else
@@ -2912,7 +2952,7 @@ be shared by multiple materials using the same program.
 #endif /* ! defined (TESTING_PROGRAM_STRINGS) */			
 					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					{
-						GLint vertexShaderCompiled, fragmentShaderCompiled;
+						GLint vertexShaderCompiled, fragmentShaderCompiled, geometryShaderCompiled;
 						
 						material_program->glsl_current_program = glCreateProgram();
 						
@@ -2922,7 +2962,25 @@ be shared by multiple materials using the same program.
 						glGetShaderiv(material_program->vertex_program, GL_COMPILE_STATUS, &vertexShaderCompiled);
 						glAttachShader(material_program->glsl_current_program,material_program->vertex_program);
 						DEALLOCATE(vertex_program_string);
-						
+						if (material_program->geometry_program)
+						{
+							gg = geometry_program_string;
+							glShaderSource(material_program->geometry_program,1, &gg, NULL);
+							glCompileShader(material_program->geometry_program);
+							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_INPUT_TYPE_EXT, GL_TRIANGLES);
+							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_TRIANGLE_STRIP);
+							glGetShaderiv(material_program->geometry_program, GL_COMPILE_STATUS, &geometryShaderCompiled);
+							glAttachShader(material_program->glsl_current_program,material_program->geometry_program);
+							int geom_ouput_max_vertices = 0;
+							glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, &geom_ouput_max_vertices);
+							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_VERTICES_OUT_EXT, geom_ouput_max_vertices);
+							DEALLOCATE(geometry_program_string);
+						}
+						else
+						{
+							geometryShaderCompiled = 1;
+						}
+
 						ff = fragment_program_string;
 						glShaderSource(material_program->fragment_program,1, &ff, NULL);
 						glCompileShader(material_program->fragment_program);
@@ -2933,7 +2991,7 @@ be shared by multiple materials using the same program.
 #if !defined (DEBUG)
 						// If DEBUG is defined always write the program info, otherwise
 						// write the program info only when one of the shaders fails to compile.
-						if (!vertexShaderCompiled || !fragmentShaderCompiled)
+						if (!vertexShaderCompiled || !fragmentShaderCompiled || !geometryShaderCompiled)
 #endif // !defined (DEBUG)
 						{
 							int infologLength = 0;
@@ -2946,6 +3004,15 @@ be shared by multiple materials using the same program.
 								glGetShaderInfoLog(material_program->vertex_program,
 									infologLength, &charsWritten, infoLog);
 								display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
+								free(infoLog);
+							}
+							glGetShaderiv(material_program->geometry_program, GL_INFO_LOG_LENGTH,&infologLength);
+							if (infologLength > 0)
+							{
+								infoLog = (char *)malloc(infologLength);
+								glGetShaderInfoLog(material_program->geometry_program,
+									infologLength, &charsWritten, infoLog);
+								display_message(INFORMATION_MESSAGE,"Geometry program info:\n%s\n",infoLog);
 								free(infoLog);
 							}
 							glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
@@ -5455,7 +5522,7 @@ the one in material, it is used for setting up the GUI.
  * for the vertex_program and fragment_program.
  */
 int Material_set_material_program_strings(struct Graphical_material *material_to_be_modified,
-	char *vertex_program_string, char *fragment_program_string)
+	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string)
 {
 	int return_code;
 	struct Material_program *old_program;
@@ -5473,11 +5540,15 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 		{
 			fragment_program_string = old_program->fragment_program_string;
 		}
+		if (!geometry_program_string)
+		{
+			geometry_program_string = old_program->geometry_program_string;
+		}
 #endif /* defined (OPENGL_API) */
 	}
 	if (material_to_be_modified->program = ACCESS(Material_program)(
 		Material_program_create_from_program_strings(
-		vertex_program_string, fragment_program_string)))
+		vertex_program_string, fragment_program_string, geometry_program_string)))
 	{
 		return_code = 1;
 	}
@@ -5540,7 +5611,8 @@ DESCRIPTION :
 		lit_volume_finite_difference_normal_flag,
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag,
-		*fragment_program_string, *vertex_program_string, *uniform_name;
+		*fragment_program_string, *vertex_program_string, *geometry_program_string,
+		*uniform_name;
 	/*	enum Spectrum_colour_components spectrum_colour_components; */
 	int /*dimension,*/ lit_volume_normal_scaling_number,
 		number_of_spectrum_components, number_of_uniform_values,
@@ -5656,6 +5728,7 @@ DESCRIPTION :
 					lit_volume_finite_difference_normal_flag = 0;
 					lit_volume_scale_alpha_flag = 0;
 					vertex_program_string = (char *)NULL;
+					geometry_program_string = (char *)NULL;
 					fragment_program_string = (char *)NULL;
 					uniform_name = (char *)NULL;
 					number_of_uniform_values = 0;
@@ -5731,8 +5804,11 @@ DESCRIPTION :
 						"rules controlled by each textures combine mode (such as modulate or add). "
 						"Specifying a <vertex_program_string> and <fragment_program_string> allows "
 						"any arbitrary program to be loaded, overriding the one that is generated automatically, "
-						"no checks for consistency with textures or inputs are made.  Both must be specified together."
-						"Specifying a <uniform_name> and <uniform_value> allows any uniform qualified variables in"
+						"no checks for consistency with textures or inputs are made.  Both must be specified together. "
+						"Optional <geometry_program_string> is also available, which is only available on "
+						"relatively newer hardware, it must be used with <vertex_program_string> and "
+						"<fragment_program_string> and only works with surface at the moment. Specifying "
+						"a <uniform_name> and <uniform_value> allows any uniform qualified variables in"
 						"any arbitrary program to be set. At the moment only float type is supported.");
 
 					Option_table_add_entry(option_table, "alpha",
@@ -5807,6 +5883,8 @@ DESCRIPTION :
 						set_Texture);
 					Option_table_add_name_entry(option_table, "vertex_program_string",
 						&vertex_program_string);
+					Option_table_add_name_entry(option_table, "geometry_program_string",
+						&geometry_program_string);
 					Option_table_add_name_entry(option_table, "uniform_name",
 						&uniform_name);
 					Option_table_add_variable_length_double_vector_entry(option_table,
@@ -5960,7 +6038,7 @@ DESCRIPTION :
 								{
 									return_code = Material_set_material_program_strings(
 										material_to_be_modified_copy, vertex_program_string,
-										fragment_program_string);
+										fragment_program_string, geometry_program_string);
 								}
 								else if (material_to_be_modified_copy->program &&
 										(0 == material_to_be_modified_copy->program->type))
@@ -6046,6 +6124,10 @@ DESCRIPTION :
 					if (fragment_program_string)
 					{
 						DEALLOCATE(fragment_program_string);
+					}
+					if (geometry_program_string)
+					{
+						DEALLOCATE(geometry_program_string);
 					}
 					if (uniform_name)
 					{
