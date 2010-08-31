@@ -351,7 +351,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       endif
     else # $(OPERATING_SYSTEM) == win32
       ifeq ($(USE_GLEW), true)
-    	  GRAPHICS_LIB += -lGLEW
+    	  GRAPHICS_LIB += $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/libGLEW.a
     	endif
       GRAPHICS_LIB += -lGL -lGLU
     endif # $(OPERATING_SYSTEM) == win32 
