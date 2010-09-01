@@ -37,7 +37,7 @@ SET( FINITE_ELEMENT_GRAPHICS_HDRS
 SET( FINITE_ELEMENT_ADDITIONAL_SRCS
 	source/finite_element/export_cm_files.c
 	source/finite_element/finite_element_adjacent_elements.c
-	source/finite_element/finite_element_conversion.c
+	source/finite_element/finite_element_conversion.cpp
 	source/finite_element/finite_element_to_iges.c
 	source/finite_element/read_fieldml.c
 	source/finite_element/snake.c

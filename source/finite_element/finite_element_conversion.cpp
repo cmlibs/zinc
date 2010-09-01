@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : finite_element_conversion.c
+FILE : finite_element_conversion.cpp
 
 LAST MODIFIED : 5 April 2006
 
@@ -42,6 +42,7 @@ Functions for converting one finite_element representation to another.
  *
  * ***** END LICENSE BLOCK ***** */
 /* for IGES */
+extern "C" {
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
@@ -54,8 +55,11 @@ Functions for converting one finite_element representation to another.
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "user_interface/message.h"
+}
 
 /*
 Module types

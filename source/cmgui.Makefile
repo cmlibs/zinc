@@ -1062,7 +1062,7 @@ FINITE_ELEMENT_SRCS = \
 	$(FINITE_ELEMENT_GRAPHICS_SRCS) \
 	finite_element/export_cm_files.c \
 	finite_element/finite_element_adjacent_elements.c \
-	finite_element/finite_element_conversion.c \
+	finite_element/finite_element_conversion.cpp \
 	finite_element/finite_element_to_iges.c \
 	finite_element/snake.c
 ifeq ($(USE_NETGEN),true)
