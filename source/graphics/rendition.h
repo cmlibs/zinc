@@ -400,5 +400,10 @@ int Cmiss_rendition_update_callback(struct Cmiss_rendition *rendition, void *dum
 
 int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *child_rendition,
 	void *region_void);
+
+int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *rendition,
+	void *command_prefix_void);
+
+int list_Cmiss_rendition_transformation(struct Cmiss_rendition *rendition);
 #endif /* !defined (RENDITION_H) */
 

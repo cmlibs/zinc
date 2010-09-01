@@ -4314,3 +4314,97 @@ int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition, const char *co
 	return return_code;
 }
 
+int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *rendition,
+	void *command_prefix_void)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Iterator function for writing the transformation in effect for <rendition>
+as a command, using the given <command_prefix>.
+==============================================================================*/
+{
+	char *command_prefix, *region_name;
+	int i,j,return_code;
+	gtMatrix transformation_matrix;
+
+	ENTER(list_Cmiss_rendition_transformation_commands);
+	if (rendition&&(command_prefix=(char *)command_prefix_void))
+	{
+		return_code=Cmiss_rendition_get_transformation(rendition,
+			&transformation_matrix);
+		if (return_code)
+		{
+			region_name = Cmiss_region_get_path(rendition->region);
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&region_name);
+			display_message(INFORMATION_MESSAGE, "%s %s", command_prefix,
+					region_name);
+			DEALLOCATE(region_name);
+			for (i=0;i<4;i++)
+			{
+				for (j=0;j<4;j++)
+				{
+					display_message(INFORMATION_MESSAGE," %g",
+						(transformation_matrix)[i][j]);
+				}
+			}
+			display_message(INFORMATION_MESSAGE,";\n");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Cmiss_rendition_transformation_commands.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Cmiss_rendition_transformation_commands */
+
+int list_Cmiss_rendition_transformation(struct Cmiss_rendition *rendition)
+/*******************************************************************************
+LAST MODIFIED : 26 April 1999
+
+DESCRIPTION :
+Iterator function for writing the transformation in effect for <rendition>
+in an easy-to-interpret matrix multiplication form.
+==============================================================================*/
+{
+	const char *coordinate_symbol="xyzh";
+	int i,return_code;
+	gtMatrix transformation_matrix;
+
+	ENTER(list_Cmiss_rendition_transformation);
+	if (rendition)
+	{
+		return_code=Cmiss_rendition_get_transformation(rendition,
+			&transformation_matrix);
+		if (return_code)
+		{
+			char *region_name = Cmiss_region_get_path(rendition->region);
+			display_message(INFORMATION_MESSAGE,"%s transformation:\n",
+				region_name);
+			DEALLOCATE(region_name);
+			for (i=0;i<4;i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
+					coordinate_symbol[i],
+					transformation_matrix[0][i],transformation_matrix[1][i],
+					transformation_matrix[2][i],transformation_matrix[3][i],
+					coordinate_symbol[i]);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Cmiss_rendition_transformation.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Cmiss_rendition_transformation */
