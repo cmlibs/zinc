@@ -2050,22 +2050,20 @@ int Cmiss_rendition_render_child_rendition(struct Cmiss_rendition *rendition,
 	struct Cmiss_rendition *child_rendition;
 
 	ENTER(Cmiss_rendition_execute_child_rendition);
-	if (rendition)
+	if (rendition && rendition->region)
 	{
+		return_code = 1;
 		region = ACCESS(Cmiss_region)(rendition->region);
-		if (return_code)
+		child_region = Cmiss_region_get_first_child(region);
+		while (child_region)
 		{
-			child_region = Cmiss_region_get_first_child(region);
-			while (child_region)
+			child_rendition = Cmiss_region_get_rendition_internal(child_region);
+			if (child_rendition)
 			{
-				child_rendition = Cmiss_region_get_rendition_internal(child_region);
-				if (child_rendition)
-				{
-					return_code = Cmiss_rendition_call_renderer(child_rendition, (void *)renderer);
-					DEACCESS(Cmiss_rendition)(&child_rendition);
-				}
-				Cmiss_region_reaccess_next_sibling(&child_region);
+				return_code = Cmiss_rendition_call_renderer(child_rendition, (void *)renderer);
+				DEACCESS(Cmiss_rendition)(&child_rendition);
 			}
+			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
 		DEACCESS(Cmiss_region)(&region);
 	}
