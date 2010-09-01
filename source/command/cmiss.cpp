@@ -12051,18 +12051,14 @@ Executes a GFX LIST TRANSFORMATION.
 ==============================================================================*/
 {
 	//char *command_prefix,commands_flag,*scene_name,*scene_object_name;
-	char commands_flag,*scene_name,*scene_object_name;
+	char commands_flag,*region_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object= NULL;
-#endif
+	struct Cmiss_region *region = NULL;
 	static struct Modifier_entry option_table[]=
 	{
 		{"commands",NULL,NULL,set_char_flag},
-		{"name",NULL,(void *)1,set_name},
-		{"scene",NULL,NULL,set_Scene},
+		{"region",NULL,(void *)1,set_name},
 		{NULL,NULL,NULL,NULL}
 	};
 
@@ -12074,41 +12070,45 @@ Executes a GFX LIST TRANSFORMATION.
 		{
 			/* initialise defaults */
 			commands_flag=0;
-			scene_object_name=(char *)NULL;
-			scene=ACCESS(Scene)(command_data->default_scene);
 			/* parse the command line */
 			(option_table[0]).to_be_modified= &commands_flag;
-			(option_table[1]).to_be_modified= &scene_object_name;
-			(option_table[2]).to_be_modified= &scene;
-			(option_table[2]).user_data=command_data->scene_manager;
+			(option_table[1]).to_be_modified= &region_name;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (GET_NAME(Scene)(scene, &scene_name))
+				if (region_name)
 				{
-#if defined (USE_SCENE_OBJECT)
-					if ((!scene_object_name)||(scene_object=
-						Scene_get_Scene_object_by_name(scene,scene_object_name)))
+					region = Cmiss_region_find_subregion_at_path(command_data->root_region,
+						region_name);
+					if (!region)
+					{
+						region = NULL;
+						display_message(ERROR_MESSAGE, "No region named '%s'",region_name);
+					}
+				}
+				else
+				{
+					region = ACCESS(Cmiss_region)(command_data->root_region);
+				}
+				if (region)
+				{
+					Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+					if (rendition)
 					{
 						if (commands_flag)
 						{
 							/* quote scene name if it contains special characters */
-							make_valid_token(&scene_name);
-							if (ALLOCATE(command_prefix, char, 40 + strlen(scene_name)))
+							make_valid_token(&region_name);
+							char *command_prefix;
+							if (ALLOCATE(command_prefix, char, 40 + strlen(region_name)))
 							{
-								sprintf(command_prefix, "gfx set transformation scene %s name",
-									scene_name);
-								if (scene_object_name)
+								sprintf(command_prefix, "gfx set transformation name ");
+								if (rendition)
 								{
-									return_code = list_Scene_object_transformation_commands(
-										scene_object,(void *)command_prefix);
-								}
-								else
-								{
-									return_code = for_each_Scene_object_in_Scene(scene,
-										list_Scene_object_transformation_commands,
-										(void *)command_prefix);
+									return_code = list_Cmiss_rendition_transformation_commands(
+										rendition,(void *)command_prefix);
+									DEACCESS(Cmiss_rendition)(&rendition);
 								}
 								DEALLOCATE(command_prefix);
 							}
@@ -12119,38 +12119,20 @@ Executes a GFX LIST TRANSFORMATION.
 						}
 						else
 						{
-							if (scene_object_name)
-							{
-								return_code=
-									list_Scene_object_transformation(scene_object,(void *)NULL);
-							}
-							else
-							{
-								return_code=for_each_Scene_object_in_Scene(scene,
-									list_Scene_object_transformation,(void *)NULL);
-							}
+							return_code = list_Cmiss_rendition_transformation(rendition);
 						}
+						Cmiss_rendition_destroy(&rendition);
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"No object named '%s' in scene %s",scene_object_name,scene_name);
-						return_code=0;
-					}
-#else
-					return_code = 1;
-#endif /* defined (USE_SCENE_OBJECT) */
-					DEALLOCATE(scene_name);
 				}
 				else
 				{
 					return_code=0;
 				}
 			} /* parse error, help */
-			DEACCESS(Scene)(&scene);
-			if (scene_object_name)
+			DEACCESS(Cmiss_region)(&region);
+			if (region_name)
 			{
-				DEALLOCATE(scene_object_name);
+				DEALLOCATE(region_name);
 			}
 		}
 		else
