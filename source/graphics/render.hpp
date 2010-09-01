@@ -149,6 +149,9 @@ public:
 	virtual int Cmiss_rendition_execute_members(
 		Cmiss_rendition *cmiss_rendition) = 0;
 
+	virtual int Cmiss_rendition_execute_child_rendition(
+		Cmiss_rendition *cmiss_rendition) = 0;
+
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition) = 0;
 	
@@ -328,6 +331,11 @@ public:
 		return 1;
 	}
 	
+	virtual int Cmiss_rendition_execute_child_rendition(Cmiss_rendition * /*cmiss_rendition*/)
+	{
+		return 1;
+	}
+
 	virtual int Material_execute(Graphical_material * /*material*/)
 	{
 		return 1;

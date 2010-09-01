@@ -465,14 +465,14 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 				 */
 				/* push a dummy name to be overloaded with scene_object identifiers */
 				glPushName(0);
-				if (scene->list_of_rendition && 
-					!scene->list_of_rendition->empty())
+				if (scene->region)
 				{
-					pos = scene->list_of_rendition->begin();
-					while (pos != scene->list_of_rendition->end())
+					struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
+						scene->region);
+					if (rendition)
 					{
-						Cmiss_rendition_call_renderer(*pos, (void *)renderer);
-						++pos;
+						Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+						Cmiss_rendition_destroy(&rendition);
 					}
 				}
 				renderer->Overlay_graphics_execute();
@@ -494,14 +494,14 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 					glNewList(scene->fast_changing_display_list, GL_COMPILE);
 					/* push dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
-					if (scene->list_of_rendition && 
-						!scene->list_of_rendition->empty())
+					if (scene->region)
 					{
-						pos = scene->list_of_rendition->begin();
-						while (pos != scene->list_of_rendition->end())
+						struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
+							scene->region);
+						if (rendition)
 						{
-							Cmiss_rendition_call_renderer(*pos, (void *)renderer);
-							++pos;
+							Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+							Cmiss_rendition_destroy(&rendition);
 						}
 					}
 					glPopName();
@@ -6050,14 +6050,14 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 			(void *)renderer, scene->scene_object_list);
 #else
-		if (scene->list_of_rendition && 
-			!scene->list_of_rendition->empty())
+		if (scene->region)
 		{
-			pos = scene->list_of_rendition->begin();
-			while (pos != scene->list_of_rendition->end())
+			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
+				scene->region);
+			if (rendition)
 			{
-				Cmiss_rendition_call_renderer(*pos, (void *)renderer);
-				++pos;
+				Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+				Cmiss_rendition_destroy(&rendition);
 			}
 		}
 #endif
@@ -6070,14 +6070,14 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 			(void *)renderer, scene->scene_object_list);
 #else
-		if (scene->list_of_rendition && 
-			!scene->list_of_rendition->empty())
+		if (scene->region)
 		{
-			pos = scene->list_of_rendition->begin();
-			while (pos != scene->list_of_rendition->end())
+			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
+				scene->region);
+			if (rendition)
 			{
-				Cmiss_rendition_call_renderer(*pos, (void *)renderer);
-				++pos;
+				Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+				Cmiss_rendition_destroy(&rendition);
 			}
 		}
 #endif

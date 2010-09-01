@@ -2042,6 +2042,45 @@ DESCRIPTION :
 	return (return_code);
 } /* Cmiss_rendition_render_opengl */
 
+int Cmiss_rendition_render_child_rendition(struct Cmiss_rendition *rendition,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	struct Cmiss_region *region, *child_region = NULL;
+	struct Cmiss_rendition *child_rendition;
+
+	ENTER(Cmiss_rendition_execute_child_rendition);
+	if (rendition)
+	{
+		region = ACCESS(Cmiss_region)(rendition->region);
+		if (return_code)
+		{
+			child_region = Cmiss_region_get_first_child(region);
+			while (child_region)
+			{
+				child_rendition = Cmiss_region_get_rendition_internal(child_region);
+				if (child_rendition)
+				{
+					return_code = Cmiss_rendition_call_renderer(child_rendition, (void *)renderer);
+					DEACCESS(Cmiss_rendition)(&child_rendition);
+				}
+				Cmiss_region_reaccess_next_sibling(&child_region);
+			}
+		}
+		DEACCESS(Cmiss_region)(&region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_rendition_render_child_rendition.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+
+}
+
 int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 	Render_graphics_opengl *renderer)
 {
@@ -2054,6 +2093,7 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 		if (rendition->fast_changing == (renderer->fast_changing))
 		{
 			/* put out the name (position) of the scene_object: */
+			//
 			//printf("%i \n", rendition->position);
 			glLoadName((GLuint)rendition->position);
 			/* save a matrix multiply when identity transformation */
@@ -2076,6 +2116,7 @@ int execute_Cmiss_rendition(struct Cmiss_rendition *rendition,
 				renderer->time = 0;
 			}
 			return_code = renderer->Cmiss_rendition_execute_members(rendition);
+			return_code = renderer->Cmiss_rendition_execute_child_rendition(rendition);
 			if (rendition->transformation)	
 			{
 				/* Restore starting modelview matrix */

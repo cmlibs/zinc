@@ -195,6 +195,11 @@ public:
 		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
 	}
 
+	int Cmiss_rendition_execute_child_rendition(Cmiss_rendition *cmiss_rendition)
+	{
+		return Cmiss_rendition_render_child_rendition(cmiss_rendition, this);
+	}
+
 	int Material_execute(Graphical_material *material)
 	{
 		return Material_render_opengl(material, this);
@@ -479,6 +484,11 @@ public:
 	int Cmiss_rendition_execute_members(Cmiss_rendition *cmiss_rendition)
 	{
 		return Cmiss_rendition_render_opengl(cmiss_rendition, this);
+	}
+
+	int Cmiss_rendition_execute_child_rendition(Cmiss_rendition *cmiss_rendition)
+	{
+		return Cmiss_rendition_render_child_rendition(cmiss_rendition, this);
 	}
 
 	int Graphics_object_execute_parent(GT_object *graphics_object)

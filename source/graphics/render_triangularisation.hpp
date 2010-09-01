@@ -92,6 +92,12 @@ public:
 		return 1;
 	}
 	
+	virtual int Cmiss_rendition_execute_child_rendition(Cmiss_rendition *rendition)
+	{
+		USE_PARAMETER(rendition);
+		return 1;
+	}
+
 	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary
 	 * this method suggests to renderers that compile and then render that this object
