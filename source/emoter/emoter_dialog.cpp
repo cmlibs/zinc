@@ -71,6 +71,7 @@ extern "C" {
 #include "graphics/movie_graphics.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
+#include "graphics/rendition.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/event_dispatcher.h"
@@ -135,8 +136,8 @@ DESCRIPTION :
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct MANAGER(Curve) *curve_manager;
 	struct EM_Object *em_object;
+	int transform_graphics;
 	struct Scene *viewer_scene;
-	struct Scene_object *transformation_scene_object;
 	struct User_interface *user_interface;
 #if defined (MOTIF_USER_INTERFACE)
 	Widget top_level, *curve_editor_dialog_address;
@@ -381,6 +382,19 @@ Updates the node locations for the <emoter_slider>
 				FE_region_begin_change(fe_region);
 				
 				/* perform EM reconstruction */
+				if ( solid_body_motion && shared_data->transform_graphics)
+				{
+					euler_angles[0] = shared_data->weights[5];
+					euler_angles[1] = shared_data->weights[4];
+					euler_angles[2] = shared_data->weights[3];
+					euler_to_gtMatrix(euler_angles, transformation);
+					transformation[3][0] = shared_data->weights[0];
+					transformation[3][1] = shared_data->weights[1];
+					transformation[3][2] = shared_data->weights[2];
+					Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(shared_data->region);
+					Cmiss_rendition_set_transformation(rendition, &transformation);
+					Cmiss_rendition_destroy(&rendition);
+				}
 				i=0;
 				offset=em_object->m;
 				while (return_code&&(i<em_object->n_nodes))
@@ -404,22 +418,7 @@ Updates the node locations for the <emoter_slider>
 
 						if ( solid_body_motion )
 						{
-							if (shared_data->transformation_scene_object)
-							{
-								euler_angles[0] = shared_data->weights[5];
-								euler_angles[1] = shared_data->weights[4];
-								euler_angles[2] = shared_data->weights[3];
-								euler_to_gtMatrix(euler_angles, transformation);
-								transformation[3][0] = shared_data->weights[0];
-								transformation[3][1] = shared_data->weights[1];
-								transformation[3][2] = shared_data->weights[2];
-#if defined (USE_SCENE_OBJECT)
-								Scene_object_set_transformation(
-									shared_data->transformation_scene_object,
-									&transformation);
-#endif
-							}
-							else
+							if (!shared_data->transform_graphics)
 							{
 								/* Need to apply rotations in reverse order */
 								weights = shared_data->weights + 5;
@@ -6036,33 +6035,27 @@ DESCRIPTION :
 
 	return (return_code);
 } /* add_FE_node_number_to_list */
+
 /*
 Global functions
 ----------------
 */
+
+/***************************************************************************//**
+ * Executes a GFX CREATE EMOTER command.
+ * Motif only: If there is a emoter dialog in existence, then bring it to the
+ * front, otherwise create new one.
+ */
 int gfx_create_emoter(struct Parse_state *state,void *dummy_to_be_modified,
 	void *create_emoter_slider_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 May 2004
-
-DESCRIPTION :
-Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
-in existence, then bring it to the front, otherwise create new one.
-==============================================================================*/
 {
-	char *basis_file_name, minimum_nodeset_flag, *region_path,
-		*transformation_graphics_object_name;
+	char *basis_file_name, minimum_nodeset_flag;
 	int i,*index_nodes,number_of_modes,number_of_nodes,number_of_index_nodes,
 		return_code;
 	struct Create_emoter_slider_data *create_emoter_slider_data;
-	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct Index_list_data index_list_data;
 	struct Option_table *option_table;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *transformation_scene_object;
-#endif
-	struct Scene *transformation_scene;
 	struct Shared_emoter_slider_data *shared_emoter_slider_data;
 	struct EM_Object *em_object;
 
@@ -6075,36 +6068,26 @@ in existence, then bring it to the front, otherwise create new one.
 		create_emoter_slider_data_void)&&
 		(create_emoter_slider_data->emoter_dialog_address))
 	{
-		region_path = Cmiss_region_get_root_region_path();
+		struct Cmiss_region *region =
+			ACCESS(Cmiss_region)(create_emoter_slider_data->root_region);
 		index_nodes = (int *)NULL;
 		number_of_index_nodes = 0;
 		minimum_nodeset_flag = 0;
 		basis_file_name = (char *)NULL;
-		transformation_graphics_object_name=(char *)NULL;
-		transformation_scene=ACCESS(Scene)(create_emoter_slider_data->viewer_scene);
-#if defined (USE_SCENE_OBJECT)
-		transformation_scene_object = (struct Scene_object *)NULL;
-#endif
+		int transform_graphics = 0;
+
 		option_table = CREATE(Option_table)();
-		Option_table_add_entry(option_table,"basis",&basis_file_name,
-			(void *)1,set_name);
-		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			create_emoter_slider_data->root_region, set_Cmiss_region_path);
-		/* minimum_nodeset */
-		Option_table_add_entry(option_table,"minimum_nodeset",&minimum_nodeset_flag,
-			NULL,set_char_flag);
-		/* transformation_graphics_object */
-		Option_table_add_entry(option_table,"transformation_graphics_object",
-			&transformation_graphics_object_name,(void *)1,set_name);
-		/* transformation_scene */
-		Option_table_add_entry(option_table,"transformation_scene",
-			&transformation_scene,create_emoter_slider_data->scene_manager,set_Scene);
-		/* default */
-		Option_table_add_entry(option_table,NULL,&basis_file_name,
-			(void *)1,set_name);
+		Option_table_add_string_entry(option_table, "basis", &basis_file_name,
+			" BASIS_FILE_NAME");
+		Option_table_add_char_flag_entry(option_table, "minimum_nodeset",
+			&minimum_nodeset_flag);
+		Option_table_add_set_Cmiss_region(option_table, "region",
+			create_emoter_slider_data->root_region, &region);
+		Option_table_add_switch(option_table, "transform_graphics",
+			"transform_nodes", &transform_graphics);
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
+
 		if (return_code)
 		{
 #if defined (MOTIF_USER_INTERFACE)
@@ -6129,25 +6112,8 @@ in existence, then bring it to the front, otherwise create new one.
 			}
 			if (return_code)
 			{
-				if (transformation_scene && transformation_graphics_object_name)
-				{
-#if defined (USE_SCENE_OBJECT)
-					if (!(transformation_scene_object = Scene_get_Scene_object_by_name(
-						transformation_scene, transformation_graphics_object_name)))
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_emoter.  Unable to find object %s in scene",
-							transformation_graphics_object_name);
-						return_code = 0;
-					}
-#else
-					return_code = 0;
-#endif
-				}
 				em_object=(struct EM_Object *)NULL;
-				if (Cmiss_region_get_region_from_path_deprecated(
-					create_emoter_slider_data->root_region, region_path, &region)&&
-					(fe_region = Cmiss_region_get_FE_region(region)))
+				if (fe_region = Cmiss_region_get_FE_region(region))
 				{
 					number_of_index_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 					if (ALLOCATE(index_nodes, int, number_of_index_nodes))
@@ -6173,7 +6139,7 @@ in existence, then bring it to the front, otherwise create new one.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_create_emoter.  Unable to get region.");
+						"gfx_create_emoter.  Missing fe_region.");
 					return_code = 0;
 				}
 			}
@@ -6243,10 +6209,7 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->viewer_light;
 								shared_emoter_slider_data->viewer_light_model
 									= create_emoter_slider_data->viewer_light_model;
-#if defined (USE_SCENE_OBJECT)
-								shared_emoter_slider_data->transformation_scene_object
-									= transformation_scene_object;
-#endif
+								shared_emoter_slider_data->transform_graphics = transform_graphics;
 								shared_emoter_slider_data->io_stream_package
 									= create_emoter_slider_data->io_stream_package;
 								return_code=bring_up_emoter_dialog(
@@ -6297,15 +6260,7 @@ in existence, then bring it to the front, otherwise create new one.
 		{
 			DEALLOCATE(basis_file_name);
 		}
-		if (transformation_graphics_object_name)
-		{
-			DEALLOCATE(transformation_graphics_object_name);
-		}
-		if (transformation_scene)
-		{
-			DEACCESS(Scene)(&transformation_scene);
-		}
-		DEALLOCATE(region_path);
+		DEACCESS(Cmiss_region)(&region);
 	}
 	else
 	{
