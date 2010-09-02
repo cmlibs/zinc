@@ -2818,7 +2818,7 @@ be shared by multiple materials using the same program.
 						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
 						{
-							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER);
+							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
 						}
 #endif /* defined (GL_VERSION_2_0) */
 					}
@@ -2914,7 +2914,7 @@ be shared by multiple materials using the same program.
 						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
 						{
-							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER);
+							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
 						}
 #endif /* defined (GL_VERSION_2_0) */		 
 					}

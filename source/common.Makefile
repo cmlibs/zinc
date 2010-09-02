@@ -444,8 +444,8 @@ ifeq ($(SYSNAME),win32)
          OPTIMISATION_FLAGS = -O2
          COMPILE_DEFINES = -DOPTIMISED
          COMPILE_FLAGS =
-         STRICT_FLAGS = -Werror
-         CPP_STRICT_FLAGS = -Werror
+         STRICT_FLAGS = 
+         CPP_STRICT_FLAGS = 
          NON_STRICT_FLAGS = 
       	 CPP_NON_STRICT_FLAGS = 
          STRIP = strip --strip-unneeded
@@ -454,8 +454,8 @@ ifeq ($(SYSNAME),win32)
          OPTIMISATION_FLAGS = -g
          COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
          COMPILE_FLAGS =
-         STRICT_FLAGS = -W -Wall -Werror
-         CPP_STRICT_FLAGS = -W -Wall -Werror
+         STRICT_FLAGS = -W -Wall
+         CPP_STRICT_FLAGS = -W -Wall
          NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
          CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
          NON_STRICT_FILENAMES = wx_non_strict_c.filenames
