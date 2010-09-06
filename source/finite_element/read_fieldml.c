@@ -51,7 +51,7 @@ The function for importing finite element data into CMISS.
 #include <math.h>
 
 #include <libxml/parser.h>
-#include <libxml/parserInternals.h>
+/*#include <libxml/parserInternals.h>*/
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
