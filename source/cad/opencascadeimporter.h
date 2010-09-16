@@ -116,7 +116,7 @@ private:
 	 * @param label the label to get name attribute from
 	 * @returns a char * that points to the name that has been allocated, must be freed
 	 */
-	char *OpenCascadeImporter::getLabelName(const TDF_Label& label);
+	char *getLabelName(const TDF_Label& label);
 };
 
 #endif
