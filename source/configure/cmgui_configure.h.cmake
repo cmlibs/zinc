@@ -45,6 +45,7 @@
 #cmakedefine FE_VALUE_IS_DOUBLE
 #cmakedefine HAVE_VFSCANF
 #cmakedefine GLEW_STATIC
+#cmakedefine USE_MSAA
 #cmakedefine OPTIMISED
 #cmakedefine DEBUG
 #cmakedefine MEMORY_CHECKING
