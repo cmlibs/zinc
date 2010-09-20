@@ -36,6 +36,7 @@
 #cmakedefine USE_PERL_INTERPRETER
 #cmakedefine USE_XML2
 #cmakedefine USE_NETGEN
+#cmakedefine USE_GLEW
 #cmakedefine USE_PNG
 #cmakedefine USE_TIFF
 
@@ -43,6 +44,7 @@
 #cmakedefine NETSCAPE_HELP
 #cmakedefine FE_VALUE_IS_DOUBLE
 #cmakedefine HAVE_VFSCANF
+#cmakedefine GLEW_STATIC
 #cmakedefine OPTIMISED
 #cmakedefine DEBUG
 #cmakedefine MEMORY_CHECKING
