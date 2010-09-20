@@ -41,6 +41,7 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <math.h>
 #include "general/debug.h"
 #include "general/octree.h"
 #include "general/list_private.h"
@@ -871,3 +872,62 @@ Destroys an octree.
 	return (return_code);
 } /* DESTROY(Octree_object) */
 
+struct Octree_object_nearest_data
+{
+	FE_value coordinates[3];
+	struct Octree_object *object;
+	FE_value distance;
+};
+
+static int Octree_object_nearest_iterator(
+	struct Octree_object *octree_object, void *Octree_object_nearest_data_void)
+{
+	FE_value distance, temp;
+	int i, return_code;
+	struct Octree_object_nearest_data *nearest_data;
+
+	ENTER(Octree_object_nearest_iterator);
+	distance = 0.0;
+	nearest_data = (struct Octree_object_nearest_data *)Octree_object_nearest_data_void;
+	if (octree_object && nearest_data)
+	{
+		return_code = 1;
+		for (i = 0 ; i < OCTREE_DIMENSION ; i++)
+		{
+			temp = octree_object->coordinates[i] - nearest_data->coordinates[i];
+			distance += temp*temp;
+		}
+		distance = sqrt(distance);
+		if ((NULL == nearest_data->object) || (distance < nearest_data->distance))
+		{
+			nearest_data->object = octree_object;
+			nearest_data->distance = distance;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+struct Octree_object *Octree_object_list_get_nearest(
+	struct LIST(Octree_object) *object_list, FE_value *coordinates)
+{
+	struct Octree_object_nearest_data nearest_data;
+
+	ENTER(Octree_object_list_get_nearest);
+	nearest_data.object = NULL;
+	if (object_list && coordinates)
+	{
+		nearest_data.coordinates[0] = coordinates[0];
+		nearest_data.coordinates[1] = coordinates[1];
+		nearest_data.coordinates[2] = coordinates[2];
+		nearest_data.distance = 0.0;
+		FOR_EACH_OBJECT_IN_LIST(Octree_object)(
+			Octree_object_nearest_iterator, (void *)&nearest_data, object_list);
+	}
+	return nearest_data.object;
+}

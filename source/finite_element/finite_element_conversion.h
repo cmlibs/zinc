@@ -61,7 +61,9 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 ==============================================================================*/
 {
 	/* Convert the surface elements to topologically square cubic hermite 2D elements. */
-	CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT
+	CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT,
+	CONVERT_TO_FINITE_ELEMENTS_TRILINEAR,
+	CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC
 };
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode);
@@ -71,16 +73,14 @@ Global functions
 ----------------
 */
 
-int finite_element_conversion(struct FE_region *source_fe_region, 
-	struct FE_region *destination_fe_region,
+/**************************************************************************//**
+ * Convert the finite_elements in <source_fe_region> to new finite_elements
+ * in <destination_fe_region> according to the <mode> defining the fields
+ * in <field_array>.
+ */
+int finite_element_conversion(struct Cmiss_region *source_region,
+	struct Cmiss_region *destination_region,
 	enum Convert_finite_elements_mode mode, int number_of_fields, 
-	struct Computed_field **field_array);
-/******************************************************************************
-LAST MODIFIED : 5 April 2006
+	struct Computed_field **field_array, FE_value tolerance);
 
-DESCRIPTION :
-Convert the finite_elements in <source_fe_region> to new finite_elements
-in <destination_fe_region> according to the <mode> defining the fields
-in <field_array>.
-==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_CONVERSION_H) */

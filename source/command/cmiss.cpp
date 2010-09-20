@@ -5705,16 +5705,12 @@ static int gfx_convert_elements(struct Parse_state *state,
 LAST MODIFIED : 5 April 2006
 
 DESCRIPTION :
-Executes a GFX CONVERT ELEMENETS command.
+Executes a GFX CONVERT ELEMENTS command.
 ==============================================================================*/
 {
-	char *destination_region_path, *source_region_path;
-	enum Convert_finite_elements_mode conversion_mode;
 	int i, number_of_fields, previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
 	struct Computed_field **fields;
-	struct FE_region *destination_fe_region, *source_fe_region;
 	struct Set_Computed_field_conditional_data set_field_data;
 	struct Set_Computed_field_array_data set_field_array_data;
 	struct Option_table *option_table;
@@ -5725,11 +5721,12 @@ Executes a GFX CONVERT ELEMENETS command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			source_region_path = Cmiss_region_get_root_region_path();
-			destination_region_path = Cmiss_region_get_root_region_path();
+			Cmiss_region *source_region = Cmiss_region_access(command_data->root_region);
+			Cmiss_region *destination_region = NULL;
 			fields = (struct Computed_field **)NULL;
 			number_of_fields = 1;
-			conversion_mode = CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT;
+			Convert_finite_elements_mode conversion_mode = CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT;
+			double tolerance = 1.0E-6;
 			
 			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
@@ -5762,12 +5759,21 @@ Executes a GFX CONVERT ELEMENETS command.
 			{
 				fields = (struct Computed_field **)NULL;
 			}
-		
+
 			option_table=CREATE(Option_table)();
-			/* destination_region */
-			Option_table_add_entry(option_table, "destination_region", &destination_region_path,
-				command_data->root_region, set_Cmiss_region_path);
-			/* fields */
+			Option_table_add_help(option_table,
+				"Convert element fields to specified bases on a new mesh in destination_region. "
+				"Modes \'convert_trilinear\' and \'convert_triquadratic\' ONLY: "
+				"converts element fields on 3-D elements to specified basis. "
+				"The first field specified must be a 3-component coordinate field; "
+				"nodes with values of this field within the specified "
+				"tolerance are merged on the resulting mesh. "
+				"Note: field value versions of non-coordinate fields are not handled"
+				" - the first processed element's versions are assumed. "
+				"Mode \'convert_hermite_2D_product_elements\' ONLY: converts element fields on 2-D elements "
+				"into bicubic hermite basis WITHOUT merging nearby nodes.");
+			Option_table_add_set_Cmiss_region(option_table, "destination_region",
+				command_data->root_region, &destination_region);
 			set_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data = (void *)NULL;
@@ -5778,46 +5784,39 @@ Executes a GFX CONVERT ELEMENETS command.
 			set_field_array_data.conditional_data = &set_field_data;
 			Option_table_add_entry(option_table, "fields", fields,
 				&set_field_array_data, set_Computed_field_array);
-			/* number_of_fields */
 			Option_table_add_entry(option_table, "number_of_fields",
 				&number_of_fields, NULL, set_int_positive);
-			/* conversion_mode */
 			OPTION_TABLE_ADD_ENUMERATOR(Convert_finite_elements_mode)(option_table,
 				&conversion_mode);
-			/* source_region */
-			Option_table_add_entry(option_table, "source_region", &source_region_path,
-				command_data->root_region, set_Cmiss_region_path);
-			
+			Option_table_add_set_Cmiss_region(option_table, "source_region",
+				command_data->root_region, &source_region);
+			Option_table_add_non_negative_double_entry(option_table, "tolerance", &tolerance);
+
 			return_code=Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 
 			if (return_code)
 			{
-				destination_fe_region = (struct FE_region *)NULL;
-				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					destination_region_path, &region) &&
-					(destination_fe_region = Cmiss_region_get_FE_region(region))))
+				if (NULL == destination_region)
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Invalid destination_region");
+						"gfx_convert elements.  destination region must be specified");
 					return_code = 0;
 				}
-				source_fe_region = (struct FE_region *)NULL;
-				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					source_region_path, &region) &&
-					(source_fe_region = Cmiss_region_get_FE_region(region))))
+				else if (Cmiss_region_get_Computed_field_manager(destination_region) ==
+					Cmiss_region_get_Computed_field_manager(source_region))
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Invalid destination_region");
+						"gfx_convert elements.  destination and source regions must be different and not share fields");
 					return_code = 0;
 				}
 			}
 
 			if (return_code)
 			{
-				return_code = finite_element_conversion(source_fe_region,
-					destination_fe_region, conversion_mode,
-					number_of_fields, fields);
+				return_code = finite_element_conversion(
+					source_region, destination_region, conversion_mode,
+					number_of_fields, fields, tolerance);
 			}
 			if (fields)
 			{				
@@ -5830,13 +5829,10 @@ Executes a GFX CONVERT ELEMENETS command.
 				}
 				DEALLOCATE(fields);
 			}
-			if (destination_region_path)
+			Cmiss_region_destroy(&source_region);
+			if (destination_region)
 			{
-				DEALLOCATE(destination_region_path);
-			}
-			if (source_region_path)
-			{
-				DEALLOCATE(source_region_path);
+				Cmiss_region_destroy(&destination_region);
 			}
 		}
 		else

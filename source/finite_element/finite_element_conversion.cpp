@@ -52,12 +52,15 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_helper.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"
+#include "general/octree.h"
 }
 #include "general/enumerator_private_cpp.hpp"
 extern "C" {
+#include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
 
@@ -68,58 +71,70 @@ Module types
 
 struct Convert_finite_elements_data
 {
+	FE_value tolerance;
+	struct Octree *octree;
+	struct LIST(Octree_object) *nearby_nodes;
 	enum Convert_finite_elements_mode mode;
 	struct FE_node *template_node;
 	struct FE_element *template_element;
 	int number_of_fields;
-	struct FE_field **fields;
+	struct Computed_field **field_array;
+	struct FE_field **destination_fe_fields;
 	int maximum_number_of_components;
 	FE_value *temporary_values;
 	struct FE_region *destination_fe_region;
 
 	int node_number; /* Do not to search from beginning for a valid node number each time */
 	int element_number; /* Do not to search from beginning for a valid element number each time */
+
+	Convert_finite_elements_data(FE_value tolerance) :
+		tolerance(tolerance),
+		octree(CREATE(Octree)()),
+		nearby_nodes(CREATE(LIST(Octree_object))()),
+		destination_fe_fields(NULL)
+	{
+	}
+
+	~Convert_finite_elements_data()
+	{
+		DESTROY(LIST(Octree_object))(&nearby_nodes);
+		DESTROY(Octree)(&octree);
+		if (destination_fe_fields)
+		{
+			for (int i = 0; i < number_of_fields; i++)
+			{
+				DEACCESS(FE_field)(&destination_fe_fields[i]);
+			}
+			DEALLOCATE(destination_fe_fields);
+		}
+	}
+
+	FE_node *getNearestNode(FE_value *coordinates)
+	{
+		Octree_add_objects_near_coordinate_to_list(octree,
+			/*dimension*/3, coordinates, tolerance, nearby_nodes);
+		if (0 == NUMBER_IN_LIST(Octree_object)(nearby_nodes))
+		{
+			return NULL;
+		}
+		struct Octree_object *nearest_octree_object =
+			Octree_object_list_get_nearest(nearby_nodes, coordinates);
+		REMOVE_ALL_OBJECTS_FROM_LIST(Octree_object)(nearby_nodes);
+		return (struct FE_node *)Octree_object_get_user_data(nearest_octree_object);
+	}
+
+	int addNode(FE_value *coordinates, FE_node *node)
+	{
+		Octree_object *octree_node = CREATE(Octree_object)(/*dimension*/3, coordinates);
+		Octree_object_set_user_data(octree_node, (void *)node);
+		return Octree_add_object(octree, octree_node);
+	}
 }; /* struct Convert_finite_elements_data */
 
 /*
 Module functions
 ----------------
 */
-
-static int FE_field_initialise_array(struct FE_field *field,
-	void *fe_field_initialise_array_data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 March 2006
-
-DESCRIPTION :
-Iterator function for adding <field> to <field_list> if not currently in it.
-==============================================================================*/
-{
-	int number_of_components, return_code;
-	struct Convert_finite_elements_data *data;
-
-	ENTER(FE_field_initialise_array);
-	if (field && (data = (struct Convert_finite_elements_data *)fe_field_initialise_array_data_void))
-	{
-		data->fields[data->number_of_fields] = field;
-		data->number_of_fields++;
-		number_of_components = get_FE_field_number_of_components(field);
-		if (number_of_components > data->maximum_number_of_components)
-		{
-			data->maximum_number_of_components = number_of_components;
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_initialise_array.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_initialise_array */
 
 static int FE_element_convert_element(struct FE_element *element,
 	void *data_void)
@@ -131,17 +146,16 @@ Converts the element as specified by data->mode and adds it to
 data->destination_fe_field.
 ==============================================================================*/
 {
-#define HERMITE_2D_NUMBER_OF_NODES (4)
-	FE_value xi[HERMITE_2D_NUMBER_OF_NODES][2] = 
-		{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
+	const int HERMITE_2D_NUMBER_OF_NODES = 4;
+	const int TRILINEAR_NUMBER_OF_NODES = 8;
+	const int TRIQUADRATIC_NUMBER_OF_NODES = 27;
+	const int MAX_NUMBER_OF_NODES = 27;
 	FE_value *values, *derivatives, *nodal_values;
 	int dimension, i, j, k, number_of_components, number_of_values, return_code;
 	struct Convert_finite_elements_data *data;
 	struct CM_element_information identifier;
 	struct FE_element *new_element;
-	struct FE_element_field_values *fe_element_field_values;
-	struct FE_field *field;
-	struct FE_node *nodes[HERMITE_2D_NUMBER_OF_NODES];
+	struct FE_node *nodes[MAX_NUMBER_OF_NODES];
 
 	ENTER(FE_element_convert_element);
 
@@ -155,12 +169,14 @@ data->destination_fe_field.
 			{
 				if (2 == dimension)
 				{
+					FE_value xi[HERMITE_2D_NUMBER_OF_NODES][2] =
+						{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
 					for (i = 0 ; return_code && (i < HERMITE_2D_NUMBER_OF_NODES) ; i++)
 					{
 						data->node_number = FE_region_get_next_FE_node_identifier(
 							data->destination_fe_region, data->node_number);
-						if (nodes[i] = CREATE(FE_node)(data->node_number, (struct FE_region *)NULL,
-								data->template_node))
+						if ((nodes[i] = CREATE(FE_node)(data->node_number, (struct FE_region *)NULL,
+								data->template_node)))
 						{
 							if (!FE_region_merge_FE_node(data->destination_fe_region, nodes[i]))
 							{
@@ -179,21 +195,18 @@ data->destination_fe_field.
 					}
 					for (j = 0 ; j < data->number_of_fields ; j++)
 					{
-						field = data->fields[j];
-						number_of_components = get_FE_field_number_of_components(field);
-						if ((fe_element_field_values = CREATE(FE_element_field_values)()) &&
-							calculate_FE_element_field_values(element,
-								field, /*time*/0.0, /*calculate_derivatives*/1,
-								fe_element_field_values, /*top_level_element*/(struct FE_element *)NULL))
+						Computed_field *cfield = data->field_array[j];
+						number_of_components = Computed_field_get_number_of_components(cfield);
+						number_of_values = 4 * number_of_components;
+						values = data->temporary_values;
+						derivatives = data->temporary_values + number_of_components;
+						nodal_values = data->temporary_values + number_of_values;
+						for (i = 0 ; return_code && (i < HERMITE_2D_NUMBER_OF_NODES) ; i++)
 						{
-							number_of_values = 4 * number_of_components;
-							values = data->temporary_values;
-							derivatives = data->temporary_values + number_of_components;
-							nodal_values = data->temporary_values + number_of_values;
-							for (i = 0 ; return_code && (i < HERMITE_2D_NUMBER_OF_NODES) ; i++)
+							if (Computed_field_evaluate_in_element(cfield,
+								element, xi[i], /*time*/0.0, /*top_level_element*/NULL,
+								values, derivatives))
 							{
-								calculate_FE_element_field(/*all components*/-1,
-									fe_element_field_values, xi[i], values, derivatives);
 								/* Reorder the separate lists of values and derivatives into
 									a single mixed list */
 								for (k = 0 ; k < number_of_components ; k++)
@@ -201,27 +214,26 @@ data->destination_fe_field.
 									nodal_values[4 * k] = values[k];
 									nodal_values[4 * k + 1] = derivatives[2 * k];
 									nodal_values[4 * k + 2] = derivatives[2 * k + 1];
-									nodal_values[4 * k + 3] = nodal_values[4 * k + 1] * nodal_values[4 * k + 2];
+									// cannot determine cross derivative from first derivatives, so use zero:
+									nodal_values[4 * k + 3] = 0.0; // nodal_values[4 * k + 1] * nodal_values[4 * k + 2];
 								}
-								set_FE_nodal_field_FE_value_values(data->fields[j],
+								set_FE_nodal_field_FE_value_values(data->destination_fe_fields[j],
 									nodes[i], nodal_values, &number_of_values);
 							}
-							
-							DESTROY(FE_element_field_values)(&fe_element_field_values);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
-								"Unable to calculate_FE_element_field_values.");
-							return_code=0;
+							else
+							{
+								display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
+									"Field not defined.");
+								return_code = 0;
+							}
 						}
 					}
 					identifier.type = CM_ELEMENT;
 					identifier.number =  FE_region_get_next_FE_element_identifier(
 						data->destination_fe_region, identifier.type, data->element_number);
 					data->element_number = identifier.number;
-					if (new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
-							(struct FE_region *)NULL, data->template_element))
+					if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
+							(struct FE_region *)NULL, data->template_element)))
 					{
 						/* The FE_element_define_tensor_product_basis function does not merge the
 							nodes used to make it simple to add and a field to and existing node so
@@ -259,6 +271,148 @@ data->destination_fe_field.
 					}
 				}
 			} break;
+			case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
+			case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+			{
+				if (3 == dimension)
+				{
+					FE_value_triple xi_linear[TRILINEAR_NUMBER_OF_NODES] =
+					{
+						{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 1.0, 0.0},
+						{0.0, 0.0, 1.0}, {1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}, {1.0, 1.0, 1.0}
+					};
+					FE_value_triple xi_quadratic[TRIQUADRATIC_NUMBER_OF_NODES] =
+					{
+						{0.0, 0.0, 0.0}, {0.5, 0.0, 0.0}, {1.0, 0.0, 0.0},
+						{0.0, 0.5, 0.0}, {0.5, 0.5, 0.0}, {1.0, 0.5, 0.0},
+						{0.0, 1.0, 0.0}, {0.5, 1.0, 0.0}, {1.0, 1.0, 0.0},
+
+						{0.0, 0.0, 0.5}, {0.5, 0.0, 0.5}, {1.0, 0.0, 0.5},
+						{0.0, 0.5, 0.5}, {0.5, 0.5, 0.5}, {1.0, 0.5, 0.5},
+						{0.0, 1.0, 0.5}, {0.5, 1.0, 0.5}, {1.0, 1.0, 0.5},
+
+						{0.0, 0.0, 1.0}, {0.5, 0.0, 1.0}, {1.0, 0.0, 1.0},
+						{0.0, 0.5, 1.0}, {0.5, 0.5, 1.0}, {1.0, 0.5, 1.0},
+						{0.0, 1.0, 1.0}, {0.5, 1.0, 1.0}, {1.0, 1.0, 1.0},
+					};
+					FE_value_triple *xi = (data->mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
+						xi_linear : xi_quadratic;
+					const int number_of_local_nodes =
+						(data->mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
+						TRILINEAR_NUMBER_OF_NODES : TRIQUADRATIC_NUMBER_OF_NODES;
+					for (j = 0 ; j < data->number_of_fields ; j++)
+					{
+						Computed_field *cfield = data->field_array[j];
+						number_of_components = Computed_field_get_number_of_components(cfield);
+						number_of_values = number_of_components;
+						values = data->temporary_values;
+						for (i = 0 ; return_code && (i < number_of_local_nodes) ; i++)
+						{
+							if (Computed_field_evaluate_in_element(cfield,
+								element, xi[i], /*time*/0.0, /*top_level_element*/NULL,
+								values, /*derivatives*/NULL))
+							{
+								if (j==0)
+								{
+									// assuming first field is coordinate field, find node with same field value
+									struct FE_node *node = data->getNearestNode(values);
+									if (node)
+									{
+										nodes[i] = node;
+									}
+									else
+									{
+										data->node_number = FE_region_get_next_FE_node_identifier(
+											data->destination_fe_region, data->node_number);
+										node = CREATE(FE_node)(data->node_number, (struct FE_region *)NULL,
+											data->template_node);
+										if (node)
+										{
+											set_FE_nodal_field_FE_value_values(data->destination_fe_fields[j],
+												node, values, &number_of_values);
+											if (FE_region_merge_FE_node(data->destination_fe_region, node))
+											{
+												nodes[i] = node;
+												data->addNode(values, node);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"FE_element_convert_element.  "
+													"Could not merge node into region");
+												return_code = 0;
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
+												"Unable to create node.");
+											return_code=0;
+										}
+									}
+								}
+								else
+								{
+									set_FE_nodal_field_FE_value_values(data->destination_fe_fields[j],
+										nodes[i], values, &number_of_values);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
+									"Field not defined.");
+								return_code = 0;
+							}
+						}
+					}
+					identifier.type = CM_ELEMENT;
+					identifier.number =  FE_region_get_next_FE_element_identifier(
+						data->destination_fe_region, identifier.type, data->element_number);
+					data->element_number = identifier.number;
+					if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
+							(struct FE_region *)NULL, data->template_element)))
+					{
+						/* The FE_element_define_tensor_product_basis function does not merge the
+							nodes used to make it simple to add and a field to and existing node so
+							we have to add the nodes for every field. */
+						j = 0;
+						//for (j = 0 ; return_code && (j < data->number_of_fields) ; j++)
+						{
+							for (i = 0 ; return_code && (i < number_of_local_nodes) ; i++)
+							{
+								if (!set_FE_element_node(new_element, j * number_of_local_nodes + i,
+									nodes[i]))
+								{
+									display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
+										"Unable to set element node.");
+									return_code = 0;
+								}
+							}
+						}
+						if (return_code)
+						{
+							if (!FE_region_merge_FE_element(data->destination_fe_region,
+								new_element))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_convert_element.  "
+									"Could not merge node into region");
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
+							"Unable to create element.");
+						return_code=0;
+					}
+				}
+			} break;
+
+
+
+
 			default:
 			{
 				display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
@@ -289,6 +443,15 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 
 			enumerator_string = "convert_hermite_2D_product_elements";
 		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
+		{
+
+			enumerator_string = "convert_trilinear";
+		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+		{
+			enumerator_string = "convert_triquadratic";
+		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -301,10 +464,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode)
 
-int finite_element_conversion(struct FE_region *source_fe_region, 
-	struct FE_region *destination_fe_region,
+int finite_element_conversion(struct Cmiss_region *source_region,
+	struct Cmiss_region *destination_region,
 	enum Convert_finite_elements_mode mode, int number_of_fields, 
-	struct Computed_field **field_array)
+	struct Computed_field **field_array, FE_value tolerance)
 /******************************************************************************
 LAST MODIFIED : 5 April 2006
 
@@ -317,31 +480,77 @@ in <field_array>.
 	enum FE_nodal_value_type hermite_2d_nodal_value_types[] = {
 		FE_NODAL_D_DS1,  FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2};
 	int i, return_code;
-	struct Convert_finite_elements_data data;
-	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(finite_element_conversion);
-
 	return_code=0;
-	if (source_fe_region && destination_fe_region && (0 < number_of_fields) &&
-		(field_array))
+	if (source_region && destination_region &&
+		(Cmiss_region_get_Computed_field_manager(destination_region) !=
+			Cmiss_region_get_Computed_field_manager(source_region))
+		&& (0 < number_of_fields) && (field_array) && (tolerance >= 0.0))
 	{
-		fe_field_list = Computed_field_array_get_defining_FE_field_list(
-			number_of_fields, field_array);
+		struct FE_region *destination_fe_region = Cmiss_region_get_FE_region(destination_region);
+		struct FE_region *source_fe_region = Cmiss_region_get_FE_region(source_region);
 
+		struct Convert_finite_elements_data data(tolerance);
 		data.mode = mode;
 		data.template_node = (struct FE_node *)NULL;
 		data.template_element = (struct FE_element *)NULL;
-		data.number_of_fields = 0;  /* This will be incremented by the iterator */
-		data.fields = ALLOCATE(data.fields, struct FE_field *, 
-			NUMBER_IN_LIST(FE_field)(fe_field_list));
-		data.maximum_number_of_components = 0; /* Initialised by iterator */
-		data.temporary_values = (FE_value *)NULL; 
-		FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_initialise_array,
-			(void *)&data, fe_field_list);
 		data.destination_fe_region = destination_fe_region;
+		data.temporary_values = (FE_value *)NULL;
+		data.maximum_number_of_components = 0; /* Initialised by iterator */
+		data.field_array = field_array;
 		data.node_number = 1;
 		data.element_number = 1;
+
+		// Create new FE_fields in destination region matching input computed fields
+
+		data.number_of_fields = number_of_fields;
+		ALLOCATE(data.destination_fe_fields, struct FE_field *, number_of_fields);
+		for (int fi = 0; fi < number_of_fields; fi++)
+		{
+			Computed_field *field = field_array[fi];
+			char *name = Cmiss_field_get_name(field);
+			int number_of_components = Computed_field_get_number_of_components(field);
+			if (number_of_components > data.maximum_number_of_components)
+			{
+				data.maximum_number_of_components = number_of_components;
+			}
+			char **component_names = new char*[number_of_components];
+			for (int j = 0; j < number_of_components; j++)
+			{
+				component_names[j] = Computed_field_get_component_name(field, j);
+			}
+			Coordinate_system *coordinate_system = Computed_field_get_coordinate_system(field);
+			enum CM_field_type cm_field_type = CM_GENERAL_FIELD;
+			struct FE_field *fe_field = NULL;
+			if (Computed_field_is_type_finite_element(field) &&
+				Computed_field_get_type_finite_element(field, &fe_field) && (fe_field))
+			{
+				cm_field_type = get_FE_field_CM_field_type(fe_field);
+			}
+			else if (fi == 0)
+			{
+				cm_field_type = CM_COORDINATE_FIELD;
+			}
+			else if (coordinate_system->type == FIBRE)
+			{
+				cm_field_type = CM_ANATOMICAL_FIELD;
+			}
+			data.destination_fe_fields[fi] = FE_region_get_FE_field_with_properties(
+				destination_fe_region, name, GENERAL_FE_FIELD,
+				/*indexer*/NULL, /*number_of_indexed_values*/0,
+				cm_field_type, coordinate_system,
+				/*value_type*/FE_VALUE_VALUE, number_of_components, component_names,
+				/*number_of_times*/0, /*time_value_type*/FE_VALUE_VALUE,
+				/*external*/NULL);
+			ACCESS(FE_field)(data.destination_fe_fields[fi]);
+			for (int j = 0; j < number_of_components; j++)
+			{
+				DEALLOCATE(component_names[j]);
+			}
+			delete[] component_names;
+			DEALLOCATE(name);
+		}
 
 		/* Set up data */
 		switch (mode)
@@ -362,13 +571,13 @@ in <field_array>.
 				if (return_code)
 				{
 					/* Make template node defining all the fields in the field list */
-					if (data.template_node = CREATE(FE_node)(/*node_number*/0, destination_fe_region,
-							/*template_node*/(struct FE_node *)NULL))
+					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, destination_fe_region,
+							/*template_node*/(struct FE_node *)NULL)))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
 						{
 							return_code = define_FE_field_at_node_simple(data.template_node,
-								data.fields[i], /*number_of_derivatives*/3, hermite_2d_nodal_value_types);
+								data.destination_fe_fields[i], /*number_of_derivatives*/3, hermite_2d_nodal_value_types);
 						}
 					}
 					else
@@ -381,19 +590,89 @@ in <field_array>.
 				if (return_code)
 				{
 					/* Make template element defining all the fields in the field list */
-					if (data.template_element = create_FE_element_with_line_shape(/*element_number*/1,
-						destination_fe_region, /*dimension*/2))
+					if ((data.template_element = create_FE_element_with_line_shape(/*element_number*/1,
+						destination_fe_region, /*dimension*/2)))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
 						{
 							return_code = FE_element_define_tensor_product_basis(data.template_element,
-								/*dimension*/2, CUBIC_HERMITE, data.fields[i]);
+								/*dimension*/2, CUBIC_HERMITE, data.destination_fe_fields[i]);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,"finite_element_conversion.  "
 							"Unable to make hermite template node.");
+						return_code=0;
+					}
+				}
+			} break;
+			case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
+			case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+			{
+				Computed_field *coordinate_field = field_array[0];
+				if (coordinate_field && (3 == Computed_field_get_number_of_components(coordinate_field)))
+				{
+					// OK
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"finite_element_conversion.  "
+						"Invalid first/coordinate field.");
+					return_code=0;
+				}
+
+				if (ALLOCATE(data.temporary_values, FE_value,
+						/*dofs*/2 * data.maximum_number_of_components))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"finite_element_conversion.  "
+						"Unable to allocate temporary values.");
+					return_code=0;
+				}
+				if (return_code)
+				{
+					/* Make template node defining all the fields in the field list */
+					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, destination_fe_region,
+							/*template_node*/(struct FE_node *)NULL)))
+					{
+						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
+						{
+							return_code = define_FE_field_at_node_simple(data.template_node,
+								data.destination_fe_fields[i], /*number_of_derivatives*/0, NULL);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"finite_element_conversion.  "
+							"Unable to make hermite template node.");
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					enum FE_basis_type fe_basis_type = (mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
+						LINEAR_LAGRANGE : QUADRATIC_LAGRANGE;
+					const int number_of_nodes =
+						(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ? 8 : 27;
+					/* Make template element defining all the fields in the field list */
+					if ((data.template_element = create_FE_element_with_line_shape(/*element_number*/1,
+						destination_fe_region, /*dimension*/3)) &&
+						set_FE_element_number_of_nodes(data.template_element, number_of_nodes))
+					{
+						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
+						{
+							return_code = FE_element_define_field_simple(data.template_element,
+								data.destination_fe_fields[i], fe_basis_type);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"finite_element_conversion.  "
+							"Unable to make template element.");
 						return_code=0;
 					}
 				}
@@ -408,20 +687,19 @@ in <field_array>.
 
 		FE_region_begin_change(destination_fe_region);
 
-		/* For each node, not done yet as disjoint doesn't need it
-		return_code = FE_region_for_each_FE_node(source_fe_region,
-		   FE_element_convert_node, (void *)&data); */
-
 		if (return_code)
 		{
-			/* For each element */
 			return_code = FE_region_for_each_FE_element(source_fe_region,
-				FE_element_convert_element, (void *)&data); 
+				FE_element_convert_element, (void *)&data);
 		}
 
 		FE_region_end_change(destination_fe_region);
 
 		/* Clean up data */
+		if (data.template_element)
+		{
+			DESTROY(FE_element)(&data.template_element);
+		}
 		if (data.template_node)
 		{
 			DESTROY(FE_node)(&data.template_node);
@@ -430,7 +708,10 @@ in <field_array>.
 		{
 			DEALLOCATE(data.temporary_values);
 		}
-		DESTROY(LIST(FE_field))(&fe_field_list);
+		for (int fi = 0; fi < number_of_fields; fi++)
+		{
+			Computed_field_clear_cache(field_array[fi]);
+		}
 	}
 	else
 	{

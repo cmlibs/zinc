@@ -1419,6 +1419,7 @@ in that region.
 				}
 				/* didn't want vectors and normals anyway */
 				DEALLOCATE(stream_vectors);
+				DEALLOCATE(stream_normals);
 			}
 			else
 			{

@@ -137,4 +137,11 @@ DESCRIPTION :
 Destroys an octree.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * @return Octree_object from <object_list> with coordinates nearest to supplied
+ * <coordinates>, or NULL if empty.
+ */
+struct Octree_object *Octree_object_list_get_nearest(
+	struct LIST(Octree_object) *object_list, FE_value *coordinates);
+
 #endif /* !defined (OCTREE_H) */
