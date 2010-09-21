@@ -679,8 +679,11 @@ IF( CMGUI_BUILD_EXECUTABLE )
 	SET_FILES_COMPILE_FLAGS( "${BASE_SRCS}" )
 	SET_FILES_COMPILE_FLAGS( "${INTERFACE_SRCS}" )
 
-	Subversion_GET_REVISION( ${CMAKE_SOURCE_DIR} CMGUI_REVISION )
-	DBG_MSG(STATUS "Revision is ${CMGUI_REVISION}")
+	# Used in the generate version string cmake script at compile time.
+	# Badly named because it is no longer a file but a directory.
+	SET( FILE_IN_CMGUI_SVN_REPOSITORY ${CMAKE_SOURCE_DIR} )
+	Subversion_GET_REVISION( ${FILE_IN_CMGUI_SVN_REPOSITORY} CMGUI_REVISION )
+	MESSAGE(STATUS "Revision is ${CMGUI_REVISION}")
 
 	# First crack at getting the version string correct
 	SET( VERSION_EXE_NAME "version_generator" )
