@@ -3,8 +3,8 @@
 
 SET( API_SRCS 
 	source/api/cmiss_context.c
+	source/api/cmiss_core.c
 	source/api/cmiss_element.c
-	source/api/cmiss_graphics_window.c
 	source/api/cmiss_field.c
 	source/api/cmiss_graphic.c
 	source/api/cmiss_graphics_window.c
@@ -13,6 +13,8 @@ SET( API_SRCS
 	source/api/cmiss_node.c
 	source/api/cmiss_region.c
 	source/api/cmiss_rendition.c
+	source/api/cmiss_scene_viewer.cpp
+	source/api/cmiss_texture.c
 	source/api/cmiss_time.c
 	source/api/cmiss_time_keeper.c
 	source/api/cmiss_time_sequence.c
