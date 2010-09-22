@@ -1,5 +1,5 @@
 /* XPM */
-static char * Cad_tool_clicked_xpm[] = {
+static const char * Cad_tool_clicked_xpm[] = {
 "36 36 28 1",
 " 	c None",
 ".	c #FF0000",
