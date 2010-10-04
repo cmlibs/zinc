@@ -5647,10 +5647,10 @@ will be requested with handle_windows_event.
 	ENTER(Graphics_buffer_win32_set_window_size);
 	if (buffer)
 	{
-	        if ((buffer->width != width) || (buffer->height != height))
+		if ((buffer->width != width) || (buffer->height != height))
 		{
 		   buffer->offscreen_render_required = 1;
-                }
+		}
 		buffer->width = width;
 		buffer->height = height;
 		buffer->x = x;
@@ -6334,7 +6334,8 @@ DESCRIPTION :
 				/* If this context has been made current then we need to copy the pixels
 				 * before the next paint.
 				 */
-				buffer->offscreen_render_required = 2;
+				if (!buffer->offscreen_render_required)
+					buffer->offscreen_render_required = 2;
 			} /* no break */
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
