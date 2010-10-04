@@ -209,6 +209,9 @@ DESCRIPTION :
 	HWND hidden_accelerated_window;
 	Graphics_buffer *hidden_graphics_buffer;
 	enum Graphics_buffer_pbuffer_support pbuffer_support_available;
+	/* Use a separate package for this hidden graphics buffer so we don't try to
+	 * share lists with it and in the Intel single context version it has a different context. */
+	Graphics_buffer_package *hidden_graphics_package;
 	
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
@@ -3372,6 +3375,7 @@ it to share graphics contexts.
 		package->hidden_accelerated_window = (HWND)NULL;
 		package->hidden_graphics_buffer = (Graphics_buffer *)NULL;
 		package->pbuffer_support_available = GRAPHICS_BUFFER_PBUFFER_SUPPORT_UNKNOWN;
+		package->hidden_graphics_package = (Graphics_buffer_package *)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
@@ -3430,6 +3434,10 @@ Closes the Graphics buffer package
 		if (package->wgl_shared_context)
 		{
 			wglDeleteContext(package->wgl_shared_context);
+		}
+		if (package->hidden_graphics_package)
+		{
+			DESTROY(Graphics_buffer_package)(&package->hidden_graphics_package);
 		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 
@@ -4867,8 +4875,11 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 						0, 0, 100, 100,
 						NULL, NULL, User_interface_get_instance(buffer->package->user_interface), NULL);
 
+					if (!buffer->package->hidden_graphics_package)
+						buffer->package->hidden_graphics_package = CREATE(Graphics_buffer_package)(buffer->package->user_interface);
+					
 					buffer->package->hidden_graphics_buffer = create_Graphics_buffer_win32(
-						buffer->package,
+						buffer->package->hidden_graphics_package,
 						buffer->package->hidden_accelerated_window, (HDC)NULL,
 						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						buffer->minimum_colour_buffer_depth, buffer->minimum_depth_buffer_depth,
@@ -8117,6 +8128,7 @@ x==============================================================================*
 #ifdef WGL_ARB_pbuffer
 			case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
 			{
+				Graphics_buffer_make_current(buffer->package->hidden_graphics_buffer);
 				if (buffer->pbuffer && buffer->hDC)
 				{
 					wglReleasePbufferDCARB(buffer->pbuffer, buffer->hDC);
