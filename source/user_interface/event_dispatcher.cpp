@@ -848,14 +848,14 @@ DESCRIPTION :
 				return_code = -1;
 			}
 #if defined (WIN32_SYSTEM)
-			if (((idle_one->timestamp).dwHighDateTime>
+			else if (((idle_one->timestamp).dwHighDateTime>
 				(idle_two->timestamp).dwHighDateTime)||
 				(((idle_one->timestamp).dwHighDateTime==
 				(idle_two->timestamp).dwHighDateTime)&&
 				((idle_one->timestamp).dwLowDateTime>
 				(idle_two->timestamp).dwLowDateTime)))
 #else /* defined (WIN32_SYSTEM) */
-			if (idle_one->timestamp > idle_two->timestamp)
+			else if (idle_one->timestamp > idle_two->timestamp)
 #endif /* defined (WIN32_SYSTEM) */
 			{
 				return_code = 1;
