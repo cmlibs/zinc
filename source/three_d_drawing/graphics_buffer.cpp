@@ -118,7 +118,7 @@ extern "C" {
 #include "three_d_drawing/window_system_extensions.h"
 
 /* #define DEBUG */
-#if defined DEBUG
+#if defined DEBUG || defined (WIN32_USER_INTERFACE)
 #  include <stdio.h>
 #endif
 }
@@ -212,6 +212,9 @@ DESCRIPTION :
 	/* Use a separate package for this hidden graphics buffer so we don't try to
 	 * share lists with it and in the Intel single context version it has a different context. */
 	Graphics_buffer_package *hidden_graphics_package;
+	/* Flag to enable work around on Intel cards when using a single context the viewport
+	 * isn't updated correctly by forcing a glscissor command to update the viewport size. */
+	int intel_single_context_force_clipping;
 	
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
@@ -345,9 +348,9 @@ DESCRIPTION :
 	void *device_independent_bitmap_pixels;
 	/* So we know how to composite we need to keep the buffering mode */
 	enum Graphics_buffer_buffering_mode buffering_mode;
-        /* Some calls to the scene viewer mean that we will need to rerender
-           the offscreen window (such as resizing) so this flag tells us this. */
-        int offscreen_render_required;
+    /* Some calls to the scene viewer mean that we will need to rerender
+       the offscreen window (such as resizing) so this flag tells us this. */
+    int offscreen_render_required;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
@@ -3376,6 +3379,27 @@ it to share graphics contexts.
 		package->hidden_graphics_buffer = (Graphics_buffer *)NULL;
 		package->pbuffer_support_available = GRAPHICS_BUFFER_PBUFFER_SUPPORT_UNKNOWN;
 		package->hidden_graphics_package = (Graphics_buffer_package *)NULL;
+#if defined (WIN32_SYSTEM)
+		char env_buffer[1024];
+		char *cmiss_intel_single_context_force_clipping = NULL;
+		int force_clipping_int;
+		if (GetEnvironmentVariable("CMISS_INTEL_SINGLE_CONTEXT_FORCE_CLIPPING",
+			env_buffer, sizeof(env_buffer))
+			&& (cmiss_intel_single_context_force_clipping = env_buffer))
+#else /* defined (WIN32_SYSTEM) */
+		cmiss_intel_single_context_force_clipping = getenv("CMISS_INTEL_SINGLE_CONTEXT_FORCE_CLIPPING");
+		if (cmiss_intel_single_context_force_clipping)	
+#endif /* defined (WIN32_SYSTEM) */
+		{
+			if (sscanf(cmiss_intel_single_context_force_clipping, "%d", &force_clipping_int))
+			{
+				package->intel_single_context_force_clipping = force_clipping_int;
+			}
+			else
+				package->intel_single_context_force_clipping = 0;
+		}
+		else
+			package->intel_single_context_force_clipping = 0;
 #endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
@@ -5244,8 +5268,11 @@ mode with zinc.
 
 			  if (buffer->offscreen_render_required == 1)
 			  {
-				  glScissor(0, 0, buffer->width, buffer->height);
-				  glEnable(GL_SCISSOR_TEST);
+				  if (buffer->package->intel_single_context_force_clipping)
+				  {
+					  glScissor(0, 0, buffer->offscreen_width, buffer->offscreen_height);
+					  glEnable(GL_SCISSOR_TEST);
+				  }
 
 				  Graphics_buffer_expose_data expose_data;
 				  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
