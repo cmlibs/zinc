@@ -5838,8 +5838,11 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
 				SelectObject(buffer->hDC, font);
-				wglUseFontBitmaps(buffer->hDC, first_bitmap, number_of_bitmaps,
+				BOOL result = wglUseFontBitmaps(buffer->hDC, first_bitmap, number_of_bitmaps,
 					display_list_offset);
+				if (!result)
+					result = wglUseFontBitmaps(buffer->hDC, first_bitmap, number_of_bitmaps,
+						display_list_offset);
 				return_code = 1;
 			} break;
 			default:
@@ -6336,6 +6339,10 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
+#if defined (DEBUG)
+				printf("Graphics_buffer_make_current %p %p\n",
+					buffer->hDC, buffer->hRC);
+#endif /* defined (DEBUG) */
 				wglMakeCurrent( buffer->hDC, buffer->hRC );
 				return_code = 1;
 			} break;
