@@ -3819,8 +3819,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
 			|| !buffer->offscreen_height || (buffer->offscreen_height < buffer->height))
 		{
-			/* 256x256 is the current minimum, also allocate powers of two just to be
-				conservative with graphics card drivers */
+			/* 256x256 is the current minimum. Also allocate powers of two just to be
+				conservative with graphics card drivers,
+				and ensure we are using 4 byte aligned buffers */
 			int required_width = 256;
 			int required_height = 256;
 			while (required_width < buffer->width)
@@ -4842,8 +4843,11 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
 			|| !buffer->offscreen_height || (buffer->offscreen_height < buffer->height))
 		{
-			/* 64x64 is the current minimum, also allocate powers of two just to be
-				conservative with graphics card drivers */
+			/* 64x64 is the current minimum.  Allocate powers of two just to be
+				conservative with graphics card drivers,
+				and ensure we are using 4 byte aligned buffers and rows.
+				(Also see work around for glReadPixels on ATI graphics.
+				https://tracker.physiomeproject.org/show_bug.cgi?id=2697) */
 			int required_width = 64;
 			int required_height = 64;
 			while (required_width < buffer->width)
@@ -5288,6 +5292,9 @@ mode with zinc.
 				  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
 				  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
 				  {
+					  /* Packing problem below isn't a problem here as pixel packets are all
+					   * 4 bytes so width is necessarily 4 byte aligned.
+					   */
 					  glReadPixels(0, 0,
 						  buffer->width, buffer->height, GL_BGRA,
 						  GL_UNSIGNED_BYTE,
@@ -5297,8 +5304,15 @@ mode with zinc.
 				  }
 				  else
 				  {
+					  /* Avoid a packing bug in ATI graphics.
+					   * https://tracker.physiomeproject.org/show_bug.cgi?id=2697
+					   * Expand the width read to a 4 byte aligned boundary.  This is always
+					   * possible as the offscreen width is a power of two and therefore 4
+					   * byte aligned.  It just results in reading a few extra pixels.
+					   */
+					  int aligned_buffer_width = buffer->width + (4 - (buffer->width % 4)) % 4;
 					  glReadPixels(0, 0,
-						  buffer->width, buffer->height, GL_BGR,
+						  aligned_buffer_width, buffer->height, GL_BGR,
 						  GL_UNSIGNED_BYTE,
 						  (unsigned char *)buffer->device_independent_bitmap_pixels +
 						  3 * buffer->offscreen_width * (buffer->offscreen_height - buffer->height));
@@ -5504,8 +5518,11 @@ mode with zinc.
 						  else
 						  {
 #if defined (DEBUG)
-							  //memset(buffer->device_independent_bitmap_pixels, 128,
-							  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
+#if defined (DRAW_A_TEST_LINE)
+							  for (int i = 0 ; i < 128 ; i++)
+								  memset(((char *)buffer->device_independent_bitmap_pixels) + 10 + i * 3 + i * 3 * buffer->offscreen_width, 128,
+										  10);
+#endif // defined (DRAW_A_TEST_LINE)
 
 							  printf ("Copied pixels %d %d %d %d (rgb %d %d %d)\n",
 								  x - buffer->x, y - buffer->y,
@@ -5519,6 +5536,16 @@ mode with zinc.
 							  printf ("Going to blt %ld %d %d %ld %d %d\n",
 								  drc->left, buffer->x, buffer->width,
 								  drc->top, buffer->y, buffer->height );
+
+#if defined (DRAW_A_TEST_LINE)
+							  {
+								  int i;
+								  for (i = 0 ; i < 50 ; i++)
+									  if (ERROR_INVALID_PARAMETER ==SetPixel(buffer->device_independent_bitmap_hdc,
+										  i, i, RGB(255, 200, 10)))
+										  printf("Error writing pixel to %p", buffer->device_independent_bitmap_hdc);
+							  }
+#endif // defined (DRAW_A_TEST_LINE)
 #endif /* defined (DEBUG) */
 
 							  BitBlt(hdc, x, y, width, height,
