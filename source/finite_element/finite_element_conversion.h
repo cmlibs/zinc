@@ -52,21 +52,24 @@ Global types
 ------------
 */
 
+/**************************************************************************//**
+ * Mode and basis of finite element conversion.
+ */
 enum Convert_finite_elements_mode
-/******************************************************************************
-LAST MODIFIED : 7 December 2005
-
-DESCRIPTION :
-Renders the visible objects as finite elements into the specified <fe_region>.
-==============================================================================*/
 {
 	/* Convert the surface elements to topologically square cubic hermite 2D elements. */
 	CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT,
 	CONVERT_TO_FINITE_ELEMENTS_TRILINEAR,
-	CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC
+	CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC,
+	CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED
 };
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Convert_finite_elements_mode);
+
+struct Element_refinement
+{
+	int count[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+};
 
 /*
 Global functions
@@ -81,6 +84,7 @@ Global functions
 int finite_element_conversion(struct Cmiss_region *source_region,
 	struct Cmiss_region *destination_region,
 	enum Convert_finite_elements_mode mode, int number_of_fields, 
-	struct Computed_field **field_array, FE_value tolerance);
+	struct Computed_field **field_array,
+	struct Element_refinement refinement, FE_value tolerance);
 
 #endif /* !defined (FINITE_ELEMENT_CONVERSION_H) */
