@@ -250,8 +250,8 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 						for (k = 0 ; k < number_of_components ; k++)
 						{
 							nodal_values[4 * k] = values[k];
-							nodal_values[4 * k + 1] = derivatives[2 * k];
-							nodal_values[4 * k + 2] = derivatives[2 * k + 1];
+							nodal_values[4 * k + 1] = delta_xi[0]*derivatives[2 * k];
+							nodal_values[4 * k + 2] = delta_xi[1]*derivatives[2 * k + 1];
 							// cannot determine cross derivative from first derivatives, so use zero:
 							nodal_values[4 * k + 3] = 0.0; // nodal_values[4 * k + 1] * nodal_values[4 * k + 2];
 						}
