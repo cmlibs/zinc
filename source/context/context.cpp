@@ -99,26 +99,6 @@ struct Context *Cmiss_context_create(const char *id)
 	return context;
 }
 
-void Cmiss_region_detach_rendition_field_manager_hierarchical(struct Cmiss_region *region)
-{
-	if (region)
-	{
-		Cmiss_rendition *parent_rendition =
-			Cmiss_region_get_rendition_internal(region);
-		if (parent_rendition)
-		{
-			Cmiss_rendition_remove_field_manager_and_callback(parent_rendition);
-			Cmiss_rendition_destroy(&parent_rendition);
-		}
-		Cmiss_region *child_region = Cmiss_region_get_first_child(region);
-		while (child_region)
-		{
-			Cmiss_region_detach_rendition_field_manager_hierarchical(child_region);
-			Cmiss_region_reaccess_next_sibling(&child_region);
-		}
-	}
-}
-
 int Cmiss_context_destroy(struct Context **context_address)
 {
 	int return_code = 0;
@@ -151,18 +131,16 @@ int Cmiss_context_destroy(struct Context **context_address)
 			 * The problem however can be resolved once we use graphics module to store the
 			 * region-rendition map instead.
 			 */
-
+			if (context->graphics_module)
+				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;
 				 * when following removed also remove #include "region/cmiss_region_private.h". Also rendition
 				 * has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
-				Cmiss_region_detach_rendition_field_manager_hierarchical(context->root_region);
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
 			}
-			if (context->graphics_module)
-				Cmiss_graphics_module_destroy(&context->graphics_module);
 			if (context->any_object_selection)
 			{
 				DESTROY(Any_object_selection)(&context->any_object_selection);

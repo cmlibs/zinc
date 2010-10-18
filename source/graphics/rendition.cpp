@@ -1145,6 +1145,7 @@ struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmi
 					}
 					DEACCESS(Material_package)(&material_package);
 				}
+				Cmiss_graphics_module_add_member_region(graphics_module, cmiss_region);
 			}
 		}
 	}
@@ -1714,7 +1715,8 @@ int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,
 			Cmiss_region_private_get_any_object_list(region))))
 	{
-		DEACCESS(Cmiss_rendition)(&(rendition));
+		REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_rendition))(
+			rendition,Cmiss_region_private_get_any_object_list(region));
 		return_code = 1;
 	}
 	else

@@ -51,6 +51,7 @@ extern "C" {
 #include "time/time_keeper.h"
 #include "user_interface/message.h"
 }
+#include <list>
 
 struct Startup_material_definition
 {
@@ -85,6 +86,7 @@ struct Cmiss_graphics_module
 	struct FE_node_selection *data_selection,*node_selection;
 	struct Time_keeper *default_time_keeper;
 	int access_count;
+	std::list<Cmiss_region*> *member_regions_list;
 };
 
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(
@@ -124,6 +126,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->data_selection = Cmiss_context_get_data_selection(context);
 			module->node_selection = Cmiss_context_get_node_selection(context);
 			module->default_time_keeper = NULL;
+			module->member_regions_list = new std::list<Cmiss_region*>;
 			module->access_count = 1;
 		}
 		else
@@ -170,6 +173,32 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_access(
 	return graphics_module;
 }
 
+int Cmiss_graphics_module_remove_member_regions_rendition(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	int return_code = 0;
+
+	if (graphics_module && graphics_module->member_regions_list)
+	{
+		std::list<Cmiss_region*>::iterator pos;
+		for (pos = graphics_module->member_regions_list->begin();
+				pos != graphics_module->member_regions_list->end(); ++pos)
+		{
+			Cmiss_region_deaccess_rendition(*pos);
+		}
+		graphics_module->member_regions_list->clear();
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_remove_member_regions_rendition.  "
+			"Invalid argument(s)");
+	}
+
+	return return_code;
+}
+
 int Cmiss_graphics_module_destroy(
 	struct Cmiss_graphics_module **graphics_module_address)
 {
@@ -181,6 +210,11 @@ int Cmiss_graphics_module_destroy(
 		graphics_module->access_count--;
 		if (0 == graphics_module->access_count)
 		{
+			if (graphics_module->member_regions_list)
+			{
+				Cmiss_graphics_module_remove_member_regions_rendition(graphics_module);
+				delete graphics_module->member_regions_list;
+			}
 			if (graphics_module->default_scene)
 				DEACCESS(Scene)(&graphics_module->default_scene);
  			if (graphics_module->scene_manager)
@@ -1063,4 +1097,26 @@ Cmiss_material_id Cmiss_graphics_module_create_material(
 	LEAVE;
 
 	return material;
+}
+
+int Cmiss_graphics_module_add_member_region(
+	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region)
+{
+	int return_code = 0;
+
+	if (graphics_module && region)
+	{
+		if (graphics_module->member_regions_list)
+		{
+			graphics_module->member_regions_list->push_back(region);
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_add_member_region.  Invalid argument(s)");
+	}
+
+	return return_code;
 }

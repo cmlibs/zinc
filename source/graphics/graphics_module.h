@@ -50,6 +50,7 @@ DESCRIPTION :
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/light.h"
+#include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "time/time_keeper.h"
 
@@ -230,5 +231,17 @@ struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_r
 
 struct FE_element_selection *Cmiss_graphics_module_get_element_selection(
 	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Add a region with a rendition created by this graphics module object
+ * into a list, so that graphics module can deaccess the rendition of the region
+ * when the graphics module is being destroyed.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @param region  Pointer to a region.
+ * @return  1 if successfully add region into a list, otherwise 0.
+ */
+int Cmiss_graphics_module_add_member_region(
+	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
 
 #endif /* !defined (GRAPHICS_MODULE_H) */
