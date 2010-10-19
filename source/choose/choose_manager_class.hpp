@@ -50,6 +50,7 @@ Calls the client-specified callback routine if a different object is chosen.
 #include "choose/choose_class.hpp"
 extern "C"
 {
+#include "general/mystring.h"
 #include "user_interface/message.h"
 }
 
@@ -71,6 +72,7 @@ private:
    int number_of_items;
    Managed_object **items;
    char **item_names;
+   bool null_item_flag;
 
 	static void global_object_change(typename Manager::Manager_message_type *message,
 		void *class_chooser_void);
@@ -97,6 +99,7 @@ DESCRIPTION :
 		number_of_items = 0;
 		items = (Managed_object **)NULL;
 		item_names = (char **)NULL;
+		null_item_flag = false;
 		if (build_items())
 		{
 			chooser = new wxChooser<Managed_object*>
@@ -178,6 +181,23 @@ Called by the
 		
 		return (return_code);
 	} /* Managed_object_chooser::get_callback */
+
+	/***************************************************************************//**
+	* Set the chooser to include a NULL object as one of the selection.
+	*
+	* @param flag  flag to set this option on or off in the chooser
+	*/
+	int include_null_item(bool flag)
+	{
+		int return_code = 1;
+		null_item_flag = flag;
+		if (null_item_flag != flag && (null_item_flag = flag) && build_items())
+		{
+			return_code=chooser->build_main_menu(
+				 number_of_items, items, item_names, (Managed_object *)NULL);
+		}
+		return return_code;
+	}
 
 /***************************************************************************//**
 * Set the chooser manager to the one in the argument if appropriate. 
@@ -401,6 +421,10 @@ Updates the arrays of all the choosable objects and their names.
 		new_item_names = (char **)NULL;
 
 		max_number_of_objects= manager->number_in_manager();
+		if (null_item_flag)
+		{
+			max_number_of_objects++;
+		}
 		if ((0==max_number_of_objects) ||
 			(ALLOCATE(new_items,Managed_object *,max_number_of_objects) &&
 				ALLOCATE(new_item_names,char *,max_number_of_objects)))
@@ -420,6 +444,12 @@ Updates the arrays of all the choosable objects and their names.
 			items = new_items;
 			item_names = new_item_names;
 			number_of_items = 0;
+			if (null_item_flag)
+			{
+				*(this->item_names)=duplicate_string("-");
+				this->items[0] = NULL;
+				this->number_of_items++;
+			}
 			manager->for_each_object_in_manager(
 				add_object_to_list, this);
 			return_code = 1;
