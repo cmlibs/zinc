@@ -180,6 +180,7 @@ int Cmiss_graphics_module_remove_member_regions_rendition(
 
 	if (graphics_module && graphics_module->member_regions_list)
 	{
+		graphics_module->member_regions_list->remove(NULL);
 		std::list<Cmiss_region*>::iterator pos;
 		for (pos = graphics_module->member_regions_list->begin();
 				pos != graphics_module->member_regions_list->end(); ++pos)
@@ -1119,4 +1120,40 @@ int Cmiss_graphics_module_add_member_region(
 	}
 
 	return return_code;
+}
+
+int Cmiss_graphics_module_remove_member_region(
+		struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_remove_rendition);
+
+	if (graphics_module && graphics_module->member_regions_list && region)
+	{
+		std::list<Cmiss_region*>::iterator pos =
+				graphics_module->member_regions_list->begin();
+		while (pos != graphics_module->member_regions_list->end())
+		{
+			if (*pos == region)
+			{
+				/* Set the value to NULL instead of erasing the element as it
+				 * may be accessed by another function at the same time.
+				 */
+				*pos = NULL;
+				break;
+			}
+			++pos;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			" Cmiss_graphics_module_remove_member_region. Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
 }

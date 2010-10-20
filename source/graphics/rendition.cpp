@@ -284,6 +284,8 @@ static int Cmiss_rendition_void_detach_from_Cmiss_region(void *cmiss_rendition_v
 	ENTER(Cmiss_rendition_void_detach_from_Cmiss_region);
 	if ((rendition = (struct Cmiss_rendition *)cmiss_rendition_void))
 	{
+		Cmiss_graphics_module_remove_member_region(rendition->graphics_module,
+				rendition->region);
 		rendition->region = (struct Cmiss_region *)NULL;
 		return_code = DEACCESS(Cmiss_rendition)(&rendition);
 	}
@@ -1711,13 +1713,19 @@ int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 	int return_code;
 	struct Cmiss_rendition *rendition;
 
-	if (region && (rendition = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
-			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,
-			Cmiss_region_private_get_any_object_list(region))))
+	if (region)
 	{
-		REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_rendition))(
-			rendition,Cmiss_region_private_get_any_object_list(region));
-		return_code = 1;
+		struct LIST(Any_object) *list = Cmiss_region_private_get_any_object_list(region);
+		if (NUMBER_IN_LIST(Any_object)(list) > 0)
+		{
+			rendition = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(Cmiss_rendition))(
+				(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,	list);
+			if (rendition)
+			{
+				REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_rendition))(rendition, list);
+				return_code = 1;
+			}
+		}
 	}
 	else
 	{

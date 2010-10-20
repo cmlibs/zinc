@@ -244,4 +244,14 @@ struct FE_element_selection *Cmiss_graphics_module_get_element_selection(
 int Cmiss_graphics_module_add_member_region(
 	struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
 
+/***************************************************************************//**
+ * Remove a region which rendition is created by this graphics module object
+ * from a list.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @param region  Pointer to a region.
+ * @return  1 if successfully remove region from a list, otherwise 0.
+ */
+int Cmiss_graphics_module_remove_member_region(
+		struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
 #endif /* !defined (GRAPHICS_MODULE_H) */
