@@ -1710,7 +1710,7 @@ int Cmiss_region_has_rendition(struct Cmiss_region *cmiss_region)
 
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 {
-	int return_code;
+	int return_code = 1;
 	struct Cmiss_rendition *rendition;
 
 	if (region)
@@ -1723,7 +1723,6 @@ int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 			if (rendition)
 			{
 				REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_rendition))(rendition, list);
-				return_code = 1;
 			}
 		}
 	}
@@ -3751,6 +3750,7 @@ int DESTROY(Cmiss_rendition)(
 			MANAGER_DEREGISTER(Graphical_material)(
 				cmiss_rendition->graphical_material_manager_callback_id,
 				Cmiss_graphics_module_get_material_manager(cmiss_rendition->graphics_module));
+			cmiss_rendition->graphical_material_manager_callback_id = NULL;
 		}
 		if (cmiss_rendition->spectrum_manager_callback_id)
 		{

@@ -45,6 +45,7 @@ The data structures used for representing graphical materials.
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
 #include "general/list.h"
+#include "api/cmiss_field.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
@@ -96,9 +97,8 @@ DECLARE_MANAGER_TYPES(Graphical_material);
 Global functions
 ----------------
 */
-
 struct Material_package *CREATE(Material_package)(
-	struct MANAGER(Texture) *texture_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Spectrum) *spectrum_manager);
 /*******************************************************************************
 LAST MODIFIED : 20 May 2005
@@ -316,6 +316,18 @@ DESCRIPTION :
 Returns the spectrum member of the material.
 ==============================================================================*/
 
+struct Computed_field *Graphical_material_get_image_field(
+	struct Graphical_material *material);
+
+struct Computed_field *Graphical_material_get_second_image_field(
+	struct Graphical_material *material);
+
+struct Computed_field *Graphical_material_get_third_image_field(
+	struct Graphical_material *material);
+
+struct Computed_field *Graphical_material_get_fourth_image_field(
+	struct Graphical_material *material);
+
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material);
 /*******************************************************************************
@@ -370,41 +382,17 @@ DESCRIPTION :
 Returns the flag set for per_pixel_lighting.
 ==============================================================================*/
 
-int Graphical_material_set_texture(struct Graphical_material *material,
-	struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
+int Graphical_material_set_image_field(struct Graphical_material *material,
+	struct Computed_field *field);
 
-DESCRIPTION :
-Sets the texture member of the material.
-==============================================================================*/
+int Graphical_material_set_second_image_field(struct Graphical_material *material,
+	struct Computed_field *field);
 
-int Graphical_material_set_second_texture(struct Graphical_material *material,
-	 struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
+int Graphical_material_set_third_image_field(struct Graphical_material *material,
+	struct Computed_field *field);
 
-DESCRIPTION :
-Sets the second texture member of the material.
-==============================================================================*/
-
-int Graphical_material_set_third_texture(struct Graphical_material *material,
-	 struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the third texture member of the material.
-==============================================================================*/
-
-int Graphical_material_set_fourth_texture(struct Graphical_material *material,
-	 struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the fourth texture member of the material.
-==============================================================================*/
+int Graphical_material_set_fourth_image_field(struct Graphical_material *material,
+	struct Computed_field *field);
 
 int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
 	void *texture_list_void);

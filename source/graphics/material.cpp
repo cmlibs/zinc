@@ -42,7 +42,6 @@ return to direct rendering, as described with these routines.
  *
  * Contributor(s):
  * Shane Blackett (shane at blackett.co.nz)
- *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
@@ -66,6 +65,8 @@ return to direct rendering, as described with these routines.
 extern "C" {
 #include "api/cmiss_material.h"
 #include "command/parser.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -240,6 +241,19 @@ DECLARE_LIST_TYPES(Material_program_uniform);
 PROTOTYPE_LIST_FUNCTIONS(Material_program_uniform);
 FULL_DECLARE_INDEXED_LIST_TYPE(Material_program_uniform);
 
+/***************************************************************************//**
+ * A structure for storing related object for the texture of a material.
+ * Each material consists four of this (multitexture support).
+ */
+struct Material_image_texture
+{
+	struct Texture *texture;
+	struct MANAGER(Computed_field) *manager;
+	struct Computed_field *field;
+	void *callback_id;
+	struct Graphical_material *material;
+};
+
 struct Graphical_material
 /*******************************************************************************
 LAST MODIFIED : 23 January 2004
@@ -272,13 +286,14 @@ The properties of a material.
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
-	struct Texture *texture;
+	struct Material_image_texture image_texture;
 	/* second stage multitexture (i.e. normals for bump mapping) */
-	struct Texture *second_texture;
+	struct Material_image_texture second_image_texture;
 	/* third stage multitexture */
-	struct Texture *third_texture;
+	struct Material_image_texture third_image_texture;
 	/* fourth stage multitexture */
-	struct Texture *fourth_texture;
+	struct Material_image_texture fourth_image_texture;
+	/* second stage multitexture (i.e. normals for bump mapping) */
 	/* spectrum used to render this material */
 	struct Spectrum *spectrum;
 	/* callback if the spectrum changes */
@@ -320,11 +335,10 @@ Provide an opaque container for shared material information.
 {
 	struct MANAGER(Graphical_material) *material_manager;
 	struct MANAGER(Spectrum) *spectrum_manager;
-	struct MANAGER(Texture) *texture_manager;
-	void *texture_manager_callback_id;
 	struct Graphical_material *default_material;
 	struct Graphical_material *default_selected_material;
 	struct LIST(Material_program) *material_program_list;
+	struct Cmiss_region *root_region;
 	int access_count;
 }; /* struct Material_package */
 
@@ -3187,9 +3201,9 @@ material results.
 		glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
 		glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(material->shininess)*128.);
 
-		if (material->texture)
+		if (material->image_texture.texture)
 		{
-			renderer->Texture_execute(material->texture);
+			renderer->Texture_execute(material->image_texture.texture);
 		}
 
 #if defined (GL_VERSION_1_3)
@@ -3198,10 +3212,10 @@ material results.
 			/* I used to test for the GL_VERSION_1_3 when setting the texture
 				and not here, but at that point the openGL may not have been
 				initialised yet, instead check here at display list compile time. */
-			if (material->second_texture)
+			if (material->second_image_texture.texture)
 			{
 				glActiveTexture(GL_TEXTURE1);
-				renderer->Texture_execute(material->second_texture);
+				renderer->Texture_execute(material->second_image_texture.texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else if (material->spectrum)
@@ -3221,10 +3235,10 @@ material results.
 			/* The colour_lookup_spectrum is specified as the third texture
 				so far, so can't have both a spectrum and an explicit third texture
 				at the moment. */
-			if (material->third_texture)
+			if (material->third_image_texture.texture)
 			{
 				glActiveTexture(GL_TEXTURE2);
-				renderer->Texture_execute(material->third_texture);
+				renderer->Texture_execute(material->third_image_texture.texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -3235,10 +3249,10 @@ material results.
 				glDisable(GL_TEXTURE_3D);
 				glActiveTexture(GL_TEXTURE0);
 			}
-			if (material->fourth_texture)
+			if (material->fourth_image_texture.texture)
 			{
 				glActiveTexture(GL_TEXTURE3);
-				renderer->Texture_execute(material->fourth_texture);
+				renderer->Texture_execute(material->fourth_image_texture.texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -3260,20 +3274,20 @@ material results.
 			 {
 					if (material->program->glsl_current_program)
 					{
-						 if (material->texture)
+						 if (material->image_texture.texture)
 						 {
-								Texture_execute_vertex_program_environment(material->texture,
+								Texture_execute_vertex_program_environment(material->image_texture.texture,
 									 material->program->glsl_current_program);
 						 }
-						 if (material->second_texture)
+						 if (material->second_image_texture.texture)
 						 {
-								Texture_execute_vertex_program_environment(material->second_texture,
+								Texture_execute_vertex_program_environment(material->second_image_texture.texture,
 									 material->program->glsl_current_program);
 								
 						 }
-						 if (material->third_texture)
+						 if (material->third_image_texture.texture)
 						 {
-								Texture_execute_vertex_program_environment(material->third_texture,
+								Texture_execute_vertex_program_environment(material->third_image_texture.texture,
 									 material->program->glsl_current_program);
 						 }
 						 if (glIsProgram(material->program->glsl_current_program))
@@ -3295,7 +3309,7 @@ material results.
 					}
 			 }
 #endif /* defined (GL_VERSION_2_0) */
-			if (material->texture)
+			if (material->image_texture.texture)
 			{
 #if defined(GL_VERSION_2_0) || defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 				 /* Adjust the scaling by the ratio from the original texel
@@ -3304,9 +3318,9 @@ material results.
 				 float normal_scaling[4];
 				 unsigned int original_dimension, *original_sizes,
 						rendered_dimension, *rendered_sizes;
-				 if (Cmiss_texture_get_original_texel_sizes(material->texture,
+				 if (Cmiss_texture_get_original_texel_sizes(material->image_texture.texture,
 							 &original_dimension, &original_sizes) &&
-						Cmiss_texture_get_rendered_texel_sizes(material->texture,
+						Cmiss_texture_get_rendered_texel_sizes(material->image_texture.texture,
 							 &rendered_dimension, &rendered_sizes))
 				 {
 						if ((original_dimension > 0) && (rendered_dimension > 0)
@@ -3419,83 +3433,13 @@ static void Graphical_material_Spectrum_change(
 	LEAVE;
 }
 
-int Graphical_material_Texture_change(struct Graphical_material *material,
-	void *texture_manager_message_void)
-/***************************************************************************//**
- * If the material uses a texture marked as changed in the
- * texture_manager_message, marks the material compile_status as at least
- * CHILD_GRAPHICS_NOT_COMPILED and adds the material and
- * notes the material as MANAGER_CHANGE_DEPENDENCY in its own manager.
- */
-{
-	int return_code;
-	struct MANAGER_MESSAGE(Texture) *texture_manager_message;
-
-	ENTER(Graphical_material_Texture_change);
-	if (material && (texture_manager_message =
-		(struct MANAGER_MESSAGE(Texture) *)texture_manager_message_void))
-	{
-		if (material->texture)
-		{
-			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Texture)(
-				texture_manager_message, material->texture);
-			if (change & MANAGER_CHANGE_RESULT(Texture))
-			{
-				if (material->compile_status != GRAPHICS_NOT_COMPILED)
-				{
-					material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
-				}
-				MANAGED_OBJECT_CHANGE(Graphical_material)(material,
-					MANAGER_CHANGE_DEPENDENCY(Graphical_material));
-			}
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material_Texture_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_material_Texture_change */
-
-/***************************************************************************//**
- * Something has changed globally in the texture manager.
- * Mark materials using changed textures as dependency changed.
- */
-static void Material_manager_Texture_change(
-	struct MANAGER_MESSAGE(Texture) *message, void *material_manager_void)
-{
-	struct MANAGER(Graphical_material) *material_manager;
-	if (message && (material_manager =
-		(struct MANAGER(Graphical_material) *)material_manager_void))
-	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Texture)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Texture))
-		{
-			MANAGER_BEGIN_CACHE(Graphical_material)(material_manager);
-			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-				Graphical_material_Texture_change, (void *)message, material_manager);
-			MANAGER_END_CACHE(Graphical_material)(material_manager);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_manager_Texture_change.  Invalid argument(s)");
-	}
-}
-
 /*
 Global functions
 ----------------
 */
 
 struct Material_package *CREATE(Material_package)(
-	struct MANAGER(Texture) *texture_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Spectrum) *spectrum_manager)
 /*******************************************************************************
 LAST MODIFIED : 20 May 2005
@@ -3539,7 +3483,7 @@ Create a shared information container for Materials.
 		material_package->default_selected_material = (struct Graphical_material *)NULL;
 		material_package->material_program_list = CREATE(LIST(Material_program))();
 		material_package->spectrum_manager = spectrum_manager;
-		material_package->texture_manager = texture_manager;
+		material_package->root_region = root_region;
 		material_package->access_count = 0;
 
 		/* command/cmiss.c overrides the ambient and diffuse colours of the
@@ -3593,10 +3537,6 @@ Create a shared information container for Materials.
 			default_selected.shininess);
 		Material_package_manage_material(material_package,
 			material_package->default_selected_material);
-
-		// register for any texture changes to propagate to materials using them
-		material_package->texture_manager_callback_id = MANAGER_REGISTER(Texture)(
-			Material_manager_Texture_change, (void *)material_package->material_manager, texture_manager);
 
 		/* Reset the access count to zero so as these materials are owned by the package
 			and so should not stop it destroying.  Correspondingly the materials must not
@@ -3662,8 +3602,6 @@ Frees the memory for the material_package.
 	{
 		if (0==material_package->access_count)
 		{
-			MANAGER_DEREGISTER(Texture)(material_package->texture_manager_callback_id,
-				material_package->texture_manager);
 
 			if (material_package->default_material)
 			{
@@ -3672,6 +3610,10 @@ Frees the memory for the material_package.
 			if (material_package->default_selected_material)
 			{
 				DEACCESS(Graphical_material)(&material_package->default_selected_material);
+			}
+			if (material_package->root_region)
+			{
+				DEACCESS(Cmiss_region)(&material_package->root_region);
 			}
 
 			DESTROY(LIST(Material_program))(&material_package->material_program_list);
@@ -3859,10 +3801,26 @@ Allocates memory and assigns fields for a material.
 			material->shininess=0;
 			material->spectrum=(struct Spectrum *)NULL;
 			material->spectrum_manager_callback_id=NULL;
-			material->texture=(struct Texture *)NULL;
-			material->second_texture=(struct Texture *)NULL;
-			material->third_texture=(struct Texture *)NULL;
-			material->fourth_texture=(struct Texture *)NULL;
+			(material->image_texture).texture=(struct Texture *)NULL;
+			(material->image_texture).manager = NULL;
+			(material->image_texture).field  = NULL;
+			(material->image_texture).callback_id = NULL;
+			(material->image_texture).material = material;
+			(material->second_image_texture).texture=(struct Texture *)NULL;
+			(material->second_image_texture).manager = NULL;
+			(material->second_image_texture).field  = NULL;
+			(material->second_image_texture).callback_id = NULL;
+			(material->second_image_texture).material = material;
+			(material->third_image_texture).texture=(struct Texture *)NULL;
+			(material->third_image_texture).manager = NULL;
+			(material->third_image_texture).field  = NULL;
+			(material->third_image_texture).callback_id = NULL;
+			(material->third_image_texture).material = material;
+			(material->fourth_image_texture).texture=(struct Texture *)NULL;
+			(material->fourth_image_texture).manager = NULL;
+			(material->fourth_image_texture).field  = NULL;
+			(material->fourth_image_texture).callback_id = NULL;
+			(material->fourth_image_texture).material = material;
 			material->package = (struct Material_package *)NULL;
 			material->lit_volume_normal_scaling[0] = 1.0;
 			material->lit_volume_normal_scaling[1] = 1.0;
@@ -3899,6 +3857,41 @@ Allocates memory and assigns fields for a material.
 	return (material);
 } /* CREATE(Graphical_material) */
 
+/*******************************************************************************
+ * Reset the material_image_texture to hold NULL object.
+ *
+ * @param image_texture  Pointer to the image_texture object to be reset.
+ * @return  1 if successfully reset, otherwise 0.
+ */
+int Material_image_texture_reset(struct Material_image_texture *image_texture)
+{
+	int return_code = 1;
+	if (image_texture)
+	{
+		if (image_texture->texture)
+			DEACCESS(Texture)(&(image_texture->texture));
+
+		if (image_texture->manager &&
+				image_texture->callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
+				image_texture->manager);
+			image_texture->callback_id = NULL;
+		}
+		if (image_texture->field)
+		{
+			Cmiss_field_destroy(&(image_texture->field));
+		}
+	}
+	else
+	{
+		return_code = 0;
+		display_message(ERROR_MESSAGE,"Material_image_texture_reset.  Invalid argument");
+	}
+
+	return return_code;
+}
+
 int DESTROY(Graphical_material)(struct Graphical_material **material_address)
 /*******************************************************************************
 LAST MODIFIED : 3 August 1998
@@ -3934,22 +3927,10 @@ Frees the memory for the material and sets <*material_address> to NULL.
 					material->package->spectrum_manager);
 				material->spectrum_manager_callback_id=NULL;
 			}
-			if (material->texture)
-			{
-				DEACCESS(Texture)(&(material->texture));
-			}
-			if (material->second_texture)
-			{
-				DEACCESS(Texture)(&(material->second_texture));
-			}
-			if (material->third_texture)
-			{
-				DEACCESS(Texture)(&(material->third_texture));
-			}
-			if (material->fourth_texture)
-			{
-				DEACCESS(Texture)(&(material->fourth_texture));
-			}
+			Material_image_texture_reset(&(material->image_texture));
+			Material_image_texture_reset(&(material->second_image_texture));
+			Material_image_texture_reset(&(material->third_image_texture));
+			Material_image_texture_reset(&(material->fourth_image_texture));
 			if (material->program)
 			{
 				DEACCESS(Material_program)(&(material->program));
@@ -3979,6 +3960,93 @@ Frees the memory for the material and sets <*material_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(Graphical_material) */
+
+/***************************************************************************//**
+ * Something has changed in the regional computed field manager.
+ * Check if the field being used is changed, if so update the material.
+ */
+static void Material_image_field_change(
+	struct MANAGER_MESSAGE(Computed_field) *message, void *material_image_texture_void)
+{
+	struct Material_image_texture *image_texture =
+		(struct Material_image_texture *)material_image_texture_void;
+	if (message && image_texture)
+	{
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(
+				message, image_texture->field);
+		if (change & MANAGER_CHANGE_RESULT(Computed_field))
+		{
+			if (image_texture->material->compile_status != GRAPHICS_NOT_COMPILED)
+			{
+				image_texture->material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+			}
+			if (image_texture->material->manager)
+				MANAGER_BEGIN_CACHE(Graphical_material)(image_texture->material->manager);
+			REACCESS(Texture)(&(image_texture->texture),
+				Computed_field_get_texture(image_texture->field));
+			MANAGED_OBJECT_CHANGE(Graphical_material)(image_texture->material,
+				MANAGER_CHANGE_DEPENDENCY(Graphical_material));
+			if (image_texture->material->manager)
+				MANAGER_END_CACHE(Graphical_material)(image_texture->material->manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_image_field_change.  Invalid argument(s)");
+	}
+}
+
+/***************************************************************************//**
+ * Set the field and update all the related objects in material_image_texture.
+ * This will also create a callback for computed field.
+ */
+int Material_image_texture_set_field(struct Material_image_texture *image_texture,
+	struct Computed_field *field)
+{
+	int return_code = 0;
+	if (image_texture)
+	{
+		return_code = 1;
+		if (image_texture->field)
+		{
+			DEACCESS(Computed_field)(&(image_texture->field));
+			image_texture->field=(struct Computed_field *)NULL;
+			if (image_texture->manager &&	image_texture->callback_id)
+			{
+				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
+						image_texture->manager);
+				image_texture->callback_id = NULL;
+			}
+			if (image_texture->texture)
+				DEACCESS(Texture)(&(image_texture->texture));
+		}
+		if (field)
+		{
+			struct Cmiss_region *temp_region = Computed_field_get_region(field);
+			MANAGER(Computed_field) *field_manager =
+				Cmiss_region_get_Computed_field_manager(temp_region);
+			if (field_manager)
+			{
+				image_texture->callback_id=
+					MANAGER_REGISTER(Computed_field)(Material_image_field_change,
+						(void *)image_texture, field_manager);
+				image_texture->manager = field_manager;
+				image_texture->field = ACCESS(Computed_field)(field);
+				image_texture->texture = ACCESS(Texture)(Computed_field_get_texture(image_texture->field));
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			 "Material_image_texture_set_field.  Missing Material_image_texture");
+		return_code = 0;
+	}
+
+	return return_code;
+}
 
 DECLARE_OBJECT_FUNCTIONS(Graphical_material)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphical_material)
@@ -4105,10 +4173,10 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 				destination->spectrum_manager_callback_id=NULL;
 			}
 		}
-		REACCESS(Texture)(&(destination->texture), source->texture);
-		REACCESS(Texture)(&(destination->second_texture), source->second_texture);
-		REACCESS(Texture)(&(destination->third_texture), source->third_texture);
-		REACCESS(Texture)(&(destination->fourth_texture), source->fourth_texture);
+		Material_image_texture_set_field(&(destination->image_texture), source->image_texture.field);
+		Material_image_texture_set_field(&(destination->second_image_texture), source->second_image_texture.field);
+		Material_image_texture_set_field(&(destination->third_image_texture), source->third_image_texture.field);
+		Material_image_texture_set_field(&(destination->fourth_image_texture), source->fourth_image_texture.field);
 		if (source->program_uniforms)
 		{
 			if (destination->program_uniforms)
@@ -4693,6 +4761,114 @@ Returns the flag set for per_pixel_lighting.
 	return (return_code);
 }
 
+struct Computed_field *Graphical_material_get_image_field(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 12 February 1998
+
+DESCRIPTION :
+Returns the texture member of the material.
+==============================================================================*/
+{
+	struct Computed_field *image_field;
+
+	ENTER(Graphical_material_get_image_field);
+	if (material)
+	{
+		image_field=material->image_texture.field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_image_field.  Missing material");
+		image_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (image_field);
+} /* Graphical_material_get_image_field */
+
+struct Computed_field *Graphical_material_get_second_image_field(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 12 February 1998
+
+DESCRIPTION :
+Returns the texture member of the material.
+==============================================================================*/
+{
+	struct Computed_field *image_field;
+
+	ENTER(Graphical_material_get_second_image_field);
+	if (material)
+	{
+		image_field=material->second_image_texture.field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_second_image_field.  Missing material");
+		image_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (image_field);
+} /* Graphical_material_get_second_image_field */
+
+struct Computed_field *Graphical_material_get_third_image_field(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 12 February 1998
+
+DESCRIPTION :
+Returns the texture member of the material.
+==============================================================================*/
+{
+	struct Computed_field *image_field;
+
+	ENTER(Graphical_material_get_third_image_field);
+	if (material)
+	{
+		image_field=material->third_image_texture.field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_third_image_field.  Missing material");
+		image_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (image_field);
+} /* Graphical_material_get_third_image_field */
+
+struct Computed_field *Graphical_material_get_fourth_image_field(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 12 February 1998
+
+DESCRIPTION :
+Returns the texture member of the material.
+==============================================================================*/
+{
+	struct Computed_field *image_field;
+
+	ENTER(Graphical_material_get_fourth_image_field);
+	if (material)
+	{
+		image_field=material->fourth_image_texture.field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_fourth_image_field.  Missing material");
+		image_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (image_field);
+} /* Graphical_material_get_fourth_image_field */
+
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material)
 /*******************************************************************************
@@ -4707,7 +4883,7 @@ Returns the texture member of the material.
 	ENTER(Graphical_material_get_texture);
 	if (material)
 	{
-		texture=material->texture;
+		texture=material->image_texture.texture;
 	}
 	else
 	{
@@ -4734,7 +4910,7 @@ Returns the second texture of the material.
 	ENTER(Graphical_material_get_second_texture);
 	if (material)
 	{
-		texture=material->second_texture;
+		texture=material->second_image_texture.texture;
 	}
 	else
 	{
@@ -4761,7 +4937,7 @@ Returns the third texture of the material.
 	ENTER(Graphical_material_get_third_texture);
 	if (material)
 	{
-		texture=material->third_texture;
+		texture=material->third_image_texture.texture;
 	}
 	else
 	{
@@ -4788,7 +4964,7 @@ Returns the fourth texture of the material.
 	ENTER(Graphical_material_get_fourth_texture);
 	if (material)
 	{
-		texture=material->fourth_texture;
+		texture=material->fourth_image_texture.texture;
 	}
 	else
 	{
@@ -4876,53 +5052,17 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-int Graphical_material_set_material_texture_to_texture(struct Graphical_material *material,
-	 struct Texture **material_texture_to_be_modified, struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the texture member of the material.
-==============================================================================*/
-{
-	 int return_code;
-
-	 ENTER(Graphical_material_set_texture_with_identifier);
-	 if (texture)
-	 {
-			ACCESS(Texture)(texture);
-	 }
-	 if (material_texture_to_be_modified)
-	 {
-			DEACCESS(Texture)(material_texture_to_be_modified);
-	 }
-	 *material_texture_to_be_modified = texture;
-
-	 /* display list needs to be compiled again */
-	 material->compile_status = GRAPHICS_NOT_COMPILED;
-	 Graphical_material_changed(material);
-	 return_code=1;
-	 LEAVE;
-
-	 return return_code;
-}
-
-int Graphical_material_set_texture(struct Graphical_material *material,
-	struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
-
-DESCRIPTION :
-Sets the texture member of the material.
-==============================================================================*/
+int Graphical_material_set_image_field(struct Graphical_material *material,
+	struct Computed_field *field)
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_texture);
+	ENTER(Graphical_material_set_image_field);
 	if (material)
 	{
-		 Graphical_material_set_material_texture_to_texture(material, &material->texture,
-				texture);
+		Material_image_texture_set_field(&(material->image_texture), field);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 	}
 	else
 	{
@@ -4933,91 +5073,76 @@ Sets the texture member of the material.
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_material_set_texture */
+}
 
-int Graphical_material_set_second_texture(struct Graphical_material *material,
-	struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the second texture member of the material.
-==============================================================================*/
+int Graphical_material_set_second_image_field(struct Graphical_material *material,
+	struct Computed_field *field)
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_second_texture);
+	ENTER(Graphical_material_set_second_image_field);
 	if (material)
 	{
-		 Graphical_material_set_material_texture_to_texture(material, &material->second_texture,
-				texture);
+		Material_image_texture_set_field(&(material->second_image_texture), field);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_second_texture.  Missing material");
+			"Graphical_material_set_second_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_material_set_second_texture */
+}
 
-int Graphical_material_set_third_texture(struct Graphical_material *material,
-	struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the second texture member of the material.
-==============================================================================*/
+int Graphical_material_set_third_image_field(struct Graphical_material *material,
+	struct Computed_field *field)
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_third_texture);
+	ENTER(Graphical_material_set_third_image_field);
 	if (material)
 	{
-		 Graphical_material_set_material_texture_to_texture(material, &material->third_texture,
-				texture);
+		Material_image_texture_set_field(&(material->third_image_texture), field);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_third_texture.  Missing material");
+			"Graphical_material_set_thrid_texture.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_material_set_third_texture */
+}
 
-int Graphical_material_set_fourth_texture(struct Graphical_material *material,
-	struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2007
-
-DESCRIPTION :
-Sets the second texture member of the material.
-==============================================================================*/
+int Graphical_material_set_fourth_image_field(struct Graphical_material *material,
+	struct Computed_field *field)
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_fourth_texture);
+	ENTER(Graphical_material_set_fourth_image_field);
 	if (material)
 	{
-		 Graphical_material_set_material_texture_to_texture(material, &material->fourth_texture,
-				texture);
+		Material_image_texture_set_field(&(material->fourth_image_texture), field);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_fourth_texture.  Missing material");
+			"Graphical_material_set_fourth_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Graphical_material_set_fourth_texture */
+}
 
 int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
 	void *texture_list_void)
@@ -5034,8 +5159,8 @@ Returns true if the <material> uses a texture in the <texture_list>.
 	ENTER(Graphical_material_uses_texture);
 	if (material && (texture_list = (struct LIST(Texture) *)texture_list_void))
 	{
-		return_code = material->texture &&
-			IS_OBJECT_IN_LIST(Texture)(material->texture, texture_list);
+		return_code = material->image_texture.texture &&
+			IS_OBJECT_IN_LIST(Texture)(material->image_texture.texture, texture_list);
 	}
 	else
 	{
@@ -5153,9 +5278,9 @@ int set_material_program_type_texture_mode(struct Graphical_material *material_t
 	 int dimension;
 
 	 ENTER(set_material_program_type_texture_mode);
-	 if (material_to_be_modified->texture)
+	 if (material_to_be_modified->image_texture.texture)
 	 {
-			Texture_get_dimension(material_to_be_modified->texture, &dimension);
+			Texture_get_dimension(material_to_be_modified->image_texture.texture, &dimension);
 			switch (dimension)
 			{
 				 case 1:
@@ -5178,7 +5303,7 @@ int set_material_program_type_texture_mode(struct Graphical_material *material_t
 						return_code = 0;
 				 } break;
 			}
-			switch (Texture_get_number_of_components(material_to_be_modified->texture))
+			switch (Texture_get_number_of_components(material_to_be_modified->image_texture.texture))
 			{
 				 case 1:
 				 {
@@ -5203,7 +5328,7 @@ int set_material_program_type_texture_mode(struct Graphical_material *material_t
 						return_code = 0;
 				 } break;
 			}
-			switch (Texture_get_combine_mode(material_to_be_modified->texture))
+			switch (Texture_get_combine_mode(material_to_be_modified->image_texture.texture))
 			{
 				 case TEXTURE_DECAL:
 				 {
@@ -5233,9 +5358,9 @@ functions are orginally from the modify_graphical_materil.
 	 int dimension;
 
 	 ENTER(set_material_program_type_second_texture);
-	 if (material_to_be_modified->second_texture)
+	 if (material_to_be_modified->second_image_texture.texture)
 	 {
-			Texture_get_dimension(material_to_be_modified->second_texture, &dimension);
+			Texture_get_dimension(material_to_be_modified->second_image_texture.texture, &dimension);
 			switch (dimension)
 			{
 				 case 1:
@@ -5275,7 +5400,7 @@ functions are orginally from the modify_graphical_materil.
 ==============================================================================*/
 {
 	 ENTER(set_material_program_type_bump_mapping);
-	 if (material_to_be_modified->second_texture)
+	 if (material_to_be_modified->second_image_texture.texture)
 	 {
 			*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
 			material_to_be_modified->bump_mapping_flag = 1;
@@ -5597,6 +5722,126 @@ deaccess the material program from the material.
 }
 #endif /* (WX_USER_INTERFACE) */
 
+int set_Material_image_texture(struct Parse_state *state,void *material_image_texture_void,
+		void *root_region_void)
+{
+	const char *current_token;
+	int return_code;
+	struct Cmiss_region *root_region = NULL;
+	struct Computed_field *temp_field;
+	struct Material_image_texture *image_texture;
+
+	ENTER(set_Material_image_field);
+	if (state)
+	{
+		current_token=state->current_token;
+		if (current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				image_texture=(struct Material_image_texture *)material_image_texture_void;
+				root_region = (struct Cmiss_region *)root_region_void;
+				if (image_texture	&& root_region)
+				{
+					if (fuzzy_string_compare(current_token,"NONE"))
+					{
+						if (image_texture->field)
+						{
+							Material_image_texture_set_field(image_texture,	NULL);
+						}
+						return_code=1;
+					}
+					else
+					{
+						struct Cmiss_region *region = NULL;
+						char *region_path = NULL, *field_name = NULL;
+						if (Cmiss_region_get_partial_region_path(root_region,
+							current_token, &region, &region_path, &field_name))
+						{
+							Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
+							if (field_name && (strlen(field_name) > 0) &&
+								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
+							{
+								temp_field = Cmiss_field_module_find_field_by_name(field_module,
+									field_name);
+								if (temp_field &&
+										!Computed_field_is_image_type(temp_field,NULL))
+								{
+									DEACCESS(Computed_field)(&temp_field);
+									display_message(ERROR_MESSAGE,
+										"set_Material_image_field.  Field specify does not contain image "
+										"information.");
+									return_code=0;
+								}
+							}
+							Cmiss_field_module_destroy(&field_module);
+						}
+						if (region_path)
+							DEALLOCATE(region_path);
+						if (field_name)
+							DEALLOCATE(field_name);
+						if (temp_field)
+						{
+							Material_image_texture_set_field(image_texture,	temp_field);
+							return_code=1;
+							DEACCESS(Computed_field)(&temp_field);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"set_Material_image_field.  Image field does not exist");
+							return_code=0;
+						}
+					}
+					shift_Parse_state(state,1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_Material_image_field.  Invalid argument(s)");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," IMAGE_NAME|none");
+				image_texture=(struct Material_image_texture *)material_image_texture_void;
+				if (image_texture)
+				{
+					temp_field= image_texture->field;
+					if (temp_field)
+					{
+						char *temp_name = Cmiss_field_get_name(temp_field);
+						display_message(INFORMATION_MESSAGE,"[%s]",temp_name);
+						DEALLOCATE(temp_name);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"[none]");
+					}
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing field name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Material_image_field.  Missing state");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* set_Material_image_field */
+
+
 int modify_Graphical_material(struct Parse_state *state,void *material_void,
 	void *material_package_void)
 /*******************************************************************************
@@ -5838,9 +6083,9 @@ DESCRIPTION :
 						&(material_to_be_modified_copy->emission), NULL,
 						set_Colour);
 					Option_table_add_entry(option_table, "fourth_texture",
-						&(material_to_be_modified_copy->fourth_texture),
-						material_package->texture_manager,
-						set_Texture);
+						&(material_to_be_modified_copy->fourth_image_texture),
+						material_package->root_region,
+						set_Material_image_texture);
 					Option_table_add_name_entry(option_table, "fragment_program_string",
 						&fragment_program_string);
 					Option_table_add_char_flag_entry(option_table,
@@ -5864,9 +6109,9 @@ DESCRIPTION :
 						"per_pixel_mode", &per_pixel_mode_flag);
 					Option_table_add_suboption_table(option_table, mode_option_table);
 					Option_table_add_entry(option_table, "secondary_texture",
-						&(material_to_be_modified_copy->second_texture),
-						material_package->texture_manager,
-						set_Texture);
+						&(material_to_be_modified_copy->second_image_texture),
+						material_package->root_region,
+						set_Material_image_texture);
 					Option_table_add_entry(option_table, "shininess",
 						&(material_to_be_modified_copy->shininess), NULL,
 						set_float_0_to_1_inclusive);
@@ -5874,13 +6119,13 @@ DESCRIPTION :
 						&(material_to_be_modified_copy->specular), NULL,
 						set_Colour);
 					Option_table_add_entry(option_table, "texture",
-						&(material_to_be_modified_copy->texture),
-						material_package->texture_manager,
-						set_Texture);
+						&(material_to_be_modified_copy->image_texture),
+						material_package->root_region,
+						set_Material_image_texture);
 					Option_table_add_entry(option_table, "third_texture",
-						&(material_to_be_modified_copy->third_texture),
-						material_package->texture_manager,
-						set_Texture);
+						&(material_to_be_modified_copy->third_image_texture),
+						material_package->root_region,
+						set_Material_image_texture);
 					Option_table_add_name_entry(option_table, "vertex_program_string",
 						&vertex_program_string);
 					Option_table_add_name_entry(option_table, "geometry_program_string",
@@ -5968,7 +6213,7 @@ DESCRIPTION :
 						}
 						/* Don't check run time availability yet as we may
 							not have initialised any openGL display yet */
-						if (material_to_be_modified_copy->second_texture)
+						if (material_to_be_modified_copy->second_image_texture.texture)
 						{
 #if defined (GL_VERSION_1_3)
 							if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
@@ -5976,14 +6221,14 @@ DESCRIPTION :
 								display_message(ERROR_MESSAGE,
 									"Multitexture requires OpenGL version 1.3 or better which is "
 									"not available on this display.");
-								DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
+								DEACCESS(Texture)(&material_to_be_modified_copy->second_image_texture.texture);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
 							display_message(ERROR_MESSAGE,
 								"Multitexture requires OpenGL version 1.3 or better which was "
 								"not compiled into this executable.");
-							DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
+							DEACCESS(Texture)(&material_to_be_modified_copy->second_image_texture.texture);
 							return_code = 0;
 #endif /* defined (GL_VERSION_1_3) */
 						}
@@ -6228,28 +6473,28 @@ Writes the properties of the <material> to the command window.
 		display_message(INFORMATION_MESSAGE,line);
 		sprintf(line,"  shininess = %.3g\n",material->shininess);
 		display_message(INFORMATION_MESSAGE,line);
-		if (material->texture&&GET_NAME(Texture)(material->texture,&name))
+		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{
 			display_message(INFORMATION_MESSAGE, "  texture : ");
 			display_message(INFORMATION_MESSAGE, name);
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
 		}
-		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
+		if (material->second_image_texture.texture&&GET_NAME(Texture)(material->second_image_texture.texture,&name))
 		{
 			display_message(INFORMATION_MESSAGE, "  second texture : ");
 			display_message(INFORMATION_MESSAGE, name);
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
 		}
-		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		if (material->third_image_texture.texture&&GET_NAME(Texture)(material->third_image_texture.texture,&name))
 		{
 			display_message(INFORMATION_MESSAGE, "  third texture : ");
 			display_message(INFORMATION_MESSAGE, name);
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
 		}
-		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		if (material->fourth_image_texture.texture&&GET_NAME(Texture)(material->fourth_image_texture.texture,&name))
 		{
 			display_message(INFORMATION_MESSAGE, "  fourth texture : ");
 			display_message(INFORMATION_MESSAGE, name);
@@ -6339,28 +6584,28 @@ The command is started with the string pointed to by <command_prefix>.
 		display_message(INFORMATION_MESSAGE,line);
 		sprintf(line," shininess %g",material->shininess);
 		display_message(INFORMATION_MESSAGE,line);
-		if (material->texture&&GET_NAME(Texture)(material->texture,&name))
+		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			display_message(INFORMATION_MESSAGE," texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
+		if (material->second_image_texture.texture&&GET_NAME(Texture)(material->second_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			display_message(INFORMATION_MESSAGE," secondary_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		if (material->third_image_texture.texture&&GET_NAME(Texture)(material->third_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			display_message(INFORMATION_MESSAGE," third_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		if (material->fourth_image_texture.texture&&GET_NAME(Texture)(material->fourth_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -6451,28 +6696,28 @@ The command is started with the string pointed to by <command_prefix>.
 		write_message_to_file	(INFORMATION_MESSAGE,line);
 		sprintf(line," shininess %g",material->shininess);
 		write_message_to_file(INFORMATION_MESSAGE,line);
-		if (material->texture&&GET_NAME(Texture)(material->texture,&name))
+		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			write_message_to_file(INFORMATION_MESSAGE," texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
+		if (material->second_image_texture.texture&&GET_NAME(Texture)(material->second_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			write_message_to_file(INFORMATION_MESSAGE," secondary_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		if (material->third_image_texture.texture&&GET_NAME(Texture)(material->third_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			write_message_to_file(INFORMATION_MESSAGE," third_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		if (material->fourth_image_texture.texture&&GET_NAME(Texture)(material->fourth_image_texture.texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -6634,9 +6879,9 @@ int Material_compile_members_opengl(Graphical_material *material,
 		if (GRAPHICS_COMPILED != material->compile_status)
 		{
 			/* must compile texture before opening material display list */
-			if (material->texture)
+			if (material->image_texture.texture)
 			{
-				renderer->Texture_compile(material->texture);
+				renderer->Texture_compile(material->image_texture.texture);
 			}
 #if defined (GL_VERSION_1_3)
 			if (Graphics_library_check_extension(GL_VERSION_1_3))
@@ -6644,25 +6889,25 @@ int Material_compile_members_opengl(Graphical_material *material,
 				/* It probably isn't necessary to activate the texture
 					unit only to compile the texture, but seems a discipline
 					that may help avoid graphics driver problems? */
-				if (material->second_texture)
+				if (material->second_image_texture.texture)
 				{
 					glActiveTexture(GL_TEXTURE1);
 					renderer->allow_texture_tiling = 0;
-					renderer->Texture_compile(material->second_texture);
+					renderer->Texture_compile(material->second_image_texture.texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
-				if (material->third_texture)
+				if (material->third_image_texture.texture)
 				{
 					glActiveTexture(GL_TEXTURE2);
 					renderer->allow_texture_tiling = 0;
-					renderer->Texture_compile(material->third_texture);
+					renderer->Texture_compile(material->third_image_texture.texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
-				if (material->fourth_texture)
+				if (material->fourth_image_texture.texture)
 				{
 					glActiveTexture(GL_TEXTURE3);
 					renderer->allow_texture_tiling = 0;
-					renderer->Texture_compile(material->fourth_texture);
+					renderer->Texture_compile(material->fourth_image_texture.texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->spectrum)
@@ -6682,9 +6927,9 @@ int Material_compile_members_opengl(Graphical_material *material,
 		}
 		else
 		{
-			if (renderer->allow_texture_tiling && material->texture)
+			if (renderer->allow_texture_tiling && material->image_texture.texture)
 			{
-				renderer->Texture_compile(material->texture);
+				renderer->Texture_compile(material->image_texture.texture);
 			}
 		}
 	}
@@ -6783,15 +7028,15 @@ will work with order_independent_transparency.
 			else
 			{
 				modified_type = MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING;
-				if (material->texture)
+				if (material->image_texture.texture)
 				{
 					/* Texture should have already been compiled when the
 						scene was compiled before rendering. */
-					if (material->texture)
+					if (material->image_texture.texture)
 					{
-						data->renderer->Texture_compile(material->texture);
+						data->renderer->Texture_compile(material->image_texture.texture);
 					}
-					Texture_get_dimension(material->texture, &dimension);
+					Texture_get_dimension(material->image_texture.texture, &dimension);
 					switch (dimension)
 					{
 						case 1:
@@ -6814,7 +7059,7 @@ will work with order_independent_transparency.
 							return_code = 0;
 						} break;
 					}
-					switch (Texture_get_number_of_components(material->texture))
+					switch (Texture_get_number_of_components(material->image_texture.texture))
 					{
 						case 1:
 						{
@@ -6839,7 +7084,7 @@ will work with order_independent_transparency.
 							return_code = 0;
 						} break;
 					}
-					switch (Texture_get_combine_mode(material->texture))
+					switch (Texture_get_combine_mode(material->image_texture.texture))
 					{
 						case TEXTURE_DECAL:
 						{
@@ -6899,9 +7144,9 @@ will work with order_independent_transparency.
 			if (material->program && 
 				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 			{
-				 if (material->texture)
+				 if (material->image_texture.texture)
 				 {
-						Texture_execute_vertex_program_environment(material->texture,
+						Texture_execute_vertex_program_environment(material->image_texture.texture,
 							 0);
 				 }
 			}
@@ -6976,24 +7221,24 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			/* Load up the texture scaling into the vertex program
 				environment and the texel size into the fragment
 				program environment. */
-			if (material->texture)
+			if (material->image_texture.texture)
 			{
-				Texture_execute_vertex_program_environment(material->texture,
+				Texture_execute_vertex_program_environment(material->image_texture.texture,
 					0);
 			}
-			else if (material->second_texture)
+			else if (material->second_image_texture.texture)
 			{
-				Texture_execute_vertex_program_environment(material->second_texture,
+				Texture_execute_vertex_program_environment(material->second_image_texture.texture,
 					0);
 			}
-			else if (material->third_texture)
+			else if (material->third_image_texture.texture)
 			{
-				Texture_execute_vertex_program_environment(material->third_texture,
+				Texture_execute_vertex_program_environment(material->third_image_texture.texture,
 					0);
 			}
-			else if (material->fourth_texture)
+			else if (material->fourth_image_texture.texture)
 			{
-				Texture_execute_vertex_program_environment(material->fourth_texture,
+				Texture_execute_vertex_program_environment(material->fourth_image_texture.texture,
 					0);
 			}
 		}
@@ -7275,7 +7520,7 @@ int Cmiss_material_set_texture(
 	ENTER(Cmiss_material_set_texture);
 	if (material)
 	{
-		Graphical_material_set_texture(material, texture);
+		REACCESS(Texture)(&(material->image_texture.texture), texture);
 		if (material->manager)
 		{
 			Graphical_material_changed(material);
@@ -7378,7 +7623,7 @@ struct Graphical_material *Cmiss_material_access(struct Graphical_material *mate
 	{
 		material->access_count++;
 	}
-	
+
 	return material;
 }
 
@@ -7410,3 +7655,4 @@ int Cmiss_material_execute_command(struct Graphical_material *material, const ch
 
 	return return_code;
 }
+

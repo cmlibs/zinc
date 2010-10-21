@@ -65,14 +65,21 @@ struct Computed_field *Computed_field_create_image(
 	struct Computed_field *source_field);
 
 int Computed_field_register_type_image(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Texture) *texture_manager);
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
 
+/***************************************************************************//**
+ * A convenient function to get texture out from a computed_field if it is of
+ * type image. This function should not be made available to the external API.
+ *
+ * @param field  Compited_field to get the texture from.
+ * @return  Returns texture if successfully get a texture from the provided
+ *   field, otherwise NULL.
+ */
 struct Texture *Computed_field_get_texture(struct Computed_field *field);
 
 int Computed_field_depends_on_texture(struct Computed_field *field,
@@ -84,4 +91,16 @@ DESCRIPTION :
 Returns true if the field or recursively any source fields are sample
 texture fields which reference <texture>.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * A function to identify an image field.
+ *
+ * @param field  Compited_field to be identified.
+ * @return  Returns 1 if field is an image field, otherwise 0.
+ */
+int Computed_field_is_image_type(struct Computed_field *field,
+	void *dummy_void);
+
+int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
+		struct Texture *texture);
 #endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */

@@ -133,94 +133,80 @@
 	     		  			<flag>wxEXPAND</flag>
       				  		<object class="wxSlider"  name="MaterialEditorAlphaSlider"/>				
 						</object>
-
+						
 						<object class ="sizeritem">
-                     	<option>1</option>
-                     	<flag>wxEXPAND</flag>
+                     <option>1</option>
+                     <flag>wxEXPAND</flag>
 				       	<object class = "wxBoxSizer">
-                     		<orient>wxHORIZONTAL</orient>
+                     	<orient>wxHORIZONTAL</orient>
+ 		           			<object class ="sizeritem">
+                          <option>0</option>
+                          <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
+      				  		  <object class="wxStaticText" name = "Texturetext">
+				    	   		 <label>Texture</label>
+									 <size>-1,26</size>
+				       		  </object>
+								</object>
+ 		           			<object class ="sizeritem">
+ 		           			  <option>0</option>
+                          <flag>wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
+      				  		  <object class="wxChoice" name="MaterialEditorTextureChoice">
+								    <size>-1,26</size>
+								    <selection>0</selection>
+                 				 <content>
+                     			<item>1</item>
+                   				<item>2</item>
+		   							<item>3</item>
+                   				<item>4</item>
+                 				 </content>
+				       		  </object>
+		           			</object>
+							</object>
+						</object>
+						
+						<object class ="sizeritem">
+                   	<option>1</option>
+                    	<flag>wxEXPAND</flag>
+				       	<object class = "wxBoxSizer">
+                    		<orient>wxHORIZONTAL</orient>
  		           			<object class ="sizeritem">
                              	<option>1</option>
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxCheckBox" name = "MaterialEditorTextureCheckBox">
-				    	   				<label>Texture</label>
+      				  		       <object class="wxStaticText" name = "regionstatictext">
+				    	   				<label>Region:</label>
 										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxPanel" name="MaterialEditorTextureChooserPanel">
+      				  		       <object class="wxPanel" name="MaterialEditorRegionChooserPanel">
 										<size>150,26</size>
 				       			</object>
 		           			</object>
 							</object>
 						</object>
-
+						
 						<object class ="sizeritem">
-                     	<option>1</option>
-                     	<flag>wxEXPAND</flag>
+                   	<option>1</option>
+                    	<flag>wxEXPAND</flag>
 				       	<object class = "wxBoxSizer">
-                     		<orient>wxHORIZONTAL</orient>
+                    		<orient>wxHORIZONTAL</orient>
  		           			<object class ="sizeritem">
                              	<option>1</option>
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxCheckBox" name = "MaterialEditorSecondTextureCheckBox">
-				    	   				<label>Second Texture</label>
+      				  		       <object class="wxStaticText" name = "imagefieldtext">
+				    	   				<label>Image Field:</label>
 										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxPanel" name="MaterialEditorSecondTextureChooserPanel">
+      				  		       <object class="wxPanel" name="ImageFieldChooserPanel">
 										<size>150,26</size>
 				       			</object>
 		           			</object>
-			           	</object>		
+							</object>
 						</object>
-
-						<object class ="sizeritem">
-                     	<option>1</option>
-                     	<flag>wxEXPAND</flag>
-				       	<object class = "wxBoxSizer">
-                     		<orient>wxHORIZONTAL</orient>
- 		           			<object class ="sizeritem">
-                             	<option>1</option>
-                            	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxCheckBox" name = "MaterialEditorThirdTextureCheckBox">
-				    	   				<label>Third Texture</label>
-										<size>-1,26</size>
-				       			</object>
-								</object>
- 		           			<object class ="sizeritem">
-                            	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxPanel" name="MaterialEditorThirdTextureChooserPanel">
-										<size>150,26</size>
-				       			</object>
-		           			</object>
-			           	</object>		
-						</object>	
-
-						<object class ="sizeritem">
-                     	<option>1</option>
-                     	<flag>wxEXPAND</flag>
-				       	<object class = "wxBoxSizer">
-                     		<orient>wxHORIZONTAL</orient>
- 		           			<object class ="sizeritem">
-                             	<option>1</option>
-                            	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxCheckBox" name = "MaterialEditorFourthTextureCheckBox">
-				    	   				<label>Fourth Texture</label>
-										<size>-1,26</size>
-				       			</object>
-								</object>
- 		           			<object class ="sizeritem">
-                            	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-      				  		       <object class="wxPanel" name="MaterialEditorFourthTextureChooserPanel">
-										<size>150,26</size>
-				       			</object>
-		           			</object>
-			           	</object>		
-						</object>	
 
 					</object>
 				</object>

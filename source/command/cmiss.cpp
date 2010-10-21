@@ -1766,21 +1766,13 @@ editor at a time.  This implementation may be changed later.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				return_code=bring_up_material_editor_dialog(
-					&(command_data->material_editor_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					Material_package_get_material_manager(command_data->material_package),
-					command_data->texture_manager,(struct Graphical_material *)NULL,
-					command_data->graphics_buffer_package,command_data->user_interface);
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				return_code=material_editor_bring_up_editor(
 					&(command_data->material_editor),
+					command_data->root_region,
 					command_data->graphics_module,
-					command_data->graphics_buffer_package,command_data->user_interface);
-#endif /* defined (SWITCH_USER_INTERFACE) */
-
-
+					command_data->graphics_buffer_package, command_data->user_interface);
+#endif /* defined (WX_USER_INTERFACE) */
 			}
 			else
 			{
@@ -4042,7 +4034,7 @@ Modifies the properties of a texture.
 		distortion_factor_k1, height, mipmap_level_of_detail_bias, width;
 	int file_number, i, number_of_file_names, number_of_valid_strings, process,
 		return_code, specify_depth, specify_height,
-		specify_number_of_bytes_per_component, specify_width, texture_is_managed;
+		specify_number_of_bytes_per_component, specify_width, texture_is_managed = 0;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -4056,6 +4048,8 @@ Modifies the properties of a texture.
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_distortion_data=
 		{3," DISTORTION_CENTRE_X DISTORTION_CENTRE_Y DISTORTION_FACTOR_K1",0};
+	struct MANAGER(Computed_field) *field_manager = NULL;
+	struct Computed_field *image_field = NULL;
 #if defined (SGI_MOVIE_FILE)
 	struct Movie_graphics *movie, *old_movie;
 	struct X3d_movie *x3d_movie;
@@ -4072,8 +4066,6 @@ Modifies the properties of a texture.
 				process = 0;
 				if (texture = (struct Texture *)texture_void)
 				{
-					texture_is_managed =
-						IS_MANAGED(Texture)(texture, command_data->texture_manager);
 					process = 1;
 				}
 				else
@@ -4081,10 +4073,35 @@ Modifies the properties of a texture.
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
-							current_token, command_data->texture_manager))
+						struct Cmiss_region *region = NULL;
+						char *region_path, *field_name;
+						if (Cmiss_region_get_partial_region_path(command_data->root_region,
+							current_token, &region, &region_path, &field_name))
 						{
-							texture_is_managed = 1;
+							if (field_name && (strlen(field_name) > 0) &&
+								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
+							{
+								field_manager = Cmiss_region_get_Computed_field_manager(region);
+								Computed_field *existing_field =
+									FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+										field_name, field_manager);
+								if (existing_field)
+								{
+									Cmiss_field_image_id image = Cmiss_field_cast_image(existing_field);
+									if (image)
+									{
+										texture = Cmiss_field_image_get_texture(image);
+										texture_is_managed = 1;
+										image_field = Cmiss_field_access(existing_field);
+									}
+									Cmiss_field_destroy(&existing_field);
+								}
+							}
+							DEALLOCATE(region_path);
+							DEALLOCATE(field_name);
+						}
+						if (texture)
+						{
 							process = 1;
 							return_code = shift_Parse_state(state, 1);
 						}
@@ -4337,9 +4354,9 @@ Modifies the properties of a texture.
 					{
 						if (texture_is_managed)
 						{
-							MANAGER_BEGIN_CACHE(Texture)(command_data->texture_manager);
-							MANAGED_OBJECT_CHANGE(Texture)(texture,
-								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
+							MANAGER_BEGIN_CACHE(Computed_field)(field_manager);
+							MANAGED_OBJECT_CHANGE(Computed_field)(image_field,
+								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
 						}
 						/* must change filter modes etc. before reading new images since
 							 some of them will apply immediately to the new images */
@@ -4580,7 +4597,7 @@ Modifies the properties of a texture.
 						}
 						if (texture_is_managed)
 						{
-							MANAGER_END_CACHE(Texture)(command_data->texture_manager);
+							MANAGER_END_CACHE(Computed_field)(field_manager);
 						}
 					}
 					if (image_data.image_file_name)
@@ -4643,6 +4660,8 @@ Modifies the properties of a texture.
 		display_message(ERROR_MESSAGE,"gfx_modify_Texture.  Missing state");
 		return_code=0;
 	}
+	if (image_field)
+		Cmiss_field_destroy(&image_field);
 	LEAVE;
 
 	return (return_code);
@@ -4658,7 +4677,7 @@ Executes a GFX CREATE TEXTURE command.
 ==============================================================================*/ 
 {
 	const char *current_token;
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_command_data *command_data;
 	struct Texture *texture;
 
@@ -4673,58 +4692,81 @@ Executes a GFX CREATE TEXTURE command.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (command_data->texture_manager)
+					struct Cmiss_region *region = NULL;
+					char *region_path, *field_name;
+					if (Cmiss_region_get_partial_region_path(command_data->root_region,
+						current_token, &region, &region_path, &field_name))
 					{
-						if (!FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(current_token,
-							command_data->texture_manager))
+						Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
+						if (field_name && (strlen(field_name) > 0) &&
+							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
-							if (texture=CREATE(Texture)(current_token))
+							Computed_field *existing_field =
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+									field_name, Cmiss_region_get_Computed_field_manager(region));
+							if (existing_field)
 							{
-								shift_Parse_state(state,1);
-								if (state->current_token)
-								{
-									return_code=gfx_modify_Texture(state,(void *)texture,
-										command_data_void);
-								}
-								else
-								{
-									return_code=1;
-								}
-								if (return_code)
-								{
-									ADD_OBJECT_TO_MANAGER(Texture)(texture,
-										command_data->texture_manager);
-								}
-								else
-								{
-									DESTROY(Texture)(&texture);
-								}
+								display_message(ERROR_MESSAGE,
+									"gfx_create_texture: Field already exists");
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"gfx_create_texture.  Error creating texture");
-								return_code=0;
+								texture=CREATE(Texture)(field_name);
+								if (texture)
+								{
+									shift_Parse_state(state,1);
+									if (state->current_token)
+									{
+										return_code=gfx_modify_Texture(state,(void *)texture,
+											command_data_void);
+									}
+									else
+									{
+										return_code=1;
+									}
+									if (return_code)
+									{
+										Cmiss_field_id image_field =	Cmiss_field_module_create_image(
+											field_module, NULL, NULL);
+										Cmiss_field_set_name(image_field, field_name);
+										Computed_field_set_managed_status(image_field,
+											COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
+										Cmiss_field_image_id image = Cmiss_field_cast_image(image_field);
+										Cmiss_field_image_set_texture(image, texture);
+										Cmiss_field_destroy(&image_field);
+										image_field = reinterpret_cast<Cmiss_field_id>(image);
+										Cmiss_field_destroy(&image_field);
+									}
+									else
+									{
+										DESTROY(Texture)(&texture);
+									}
+								}
 							}
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,"Texture '%s' already exists",
-								current_token);
-							return_code=0;
+							if (field_name)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_create_texture:  Invalid region path or field name '%s'", field_name);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_create_texture:  Missing field name or name matches child region '%s'", current_token);
+							}
+							display_parse_state_location(state);
+							return_code = 0;
 						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_texture.  Missing texture_manager");
-						return_code=0;
+						Cmiss_field_module_destroy(&field_module);
+						DEALLOCATE(region_path);
+						DEALLOCATE(field_name);
 					}
 				}
 				else
 				{
-					return_code=gfx_modify_Texture(state,(void *)NULL,
-						command_data_void);
+					return_code=gfx_modify_Texture(state,(void *)NULL, command_data_void);
 					return_code=1;
 				}
 			}
@@ -23380,8 +23422,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			if (command_data->texture_manager)
 			{
 				Computed_field_register_type_image(
-					command_data->computed_field_package, 
-					command_data->texture_manager);
+					command_data->computed_field_package);
 			}
 			if (command_data->root_region)
 			{
@@ -24376,3 +24417,4 @@ int Cmiss_command_data_set_cmgui_string(Cmiss_command_data *command_data, const 
 
 	return return_code;
 }
+

@@ -54,6 +54,8 @@ extern "C" {
 #include "api/cmiss_material.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_image.h"
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
@@ -66,6 +68,7 @@ extern "C" {
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_manager_class.hpp"
 #include "choose/choose_manager_listbox_class.hpp"
+#include "region/cmiss_region_chooser_wx.hpp"
 #include "colour/colour_editor_wx.hpp"
 #include "icon/cmiss_icon.xpm"
 #include "material/material_editor_wx.xrch"
@@ -88,29 +91,26 @@ Note that we just hold a pointer to the material_editor, and must access and
 deaccess it.
 ==============================================================================*/
 {
-	 int background;
-	 /* edit_material is always a local copy of what is passed to the editor */
-	 struct Graphical_material *edit_material, *current_material;
-	 struct Graphics_buffer *graphics_buffer;
-	 struct MANAGER(Graphical_material) *graphical_material_manager;
-	 struct MANAGER(Texture) *texture_manager;
-	 struct User_interface *user_interface;
-	 wxMaterialEditor *wx_material_editor;
-	 //wxListBox *material_editor_list_box;
-	 wxCheckBox *material_editor_texture_check_box, *material_editor_second_texture_check_box,
-			*material_editor_third_texture_check_box, *material_editor_fourth_texture_check_box,
-			*material_editor_per_pixel_checkbox, *material_editor_bump_mapping_checkbox;
-	 wxPanel *material_editor_ambient_colour_panel, *material_editor_diffuse_colour_panel,
-			*material_editor_emitted_colour_panel, *material_editor_specular_colour_panel,
-			*material_editor_sample_panel, *material_editor_texture_chooser_panel,
-			*material_editor_second_texture_chooser_panel,
-			*material_editor_third_texture_chooser_panel,
-			*material_editor_fourth_texture_chooser_panel, *material_list_panel;
-	 wxSlider *material_editor_alpha_slider, *material_editor_shininess_slider;
-	 wxTextCtrl *material_editor_alpha_text_ctrl, *material_editor_shininess_text_ctrl;
-	 Colour_editor *ambient_colour_editor, *diffuse_colour_editor, *emitted_colour_editor,
-			*specular_colour_editor;
- 	 void *material_manager_callback_id;
+	int background;
+	/* edit_material is always a local copy of what is passed to the editor */
+	struct Graphical_material *edit_material, *current_material;
+	struct Graphics_buffer *graphics_buffer;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct MANAGER(Texture) *texture_manager;
+	struct User_interface *user_interface;
+	wxMaterialEditor *wx_material_editor;
+	//wxListBox *material_editor_list_box;
+	wxCheckBox *material_editor_per_pixel_checkbox, *material_editor_bump_mapping_checkbox;
+	wxPanel *material_editor_ambient_colour_panel, *material_editor_diffuse_colour_panel,
+		*material_editor_emitted_colour_panel, *material_editor_specular_colour_panel,
+		*material_editor_sample_panel, *material_list_panel;
+	wxSlider *material_editor_alpha_slider, *material_editor_shininess_slider;
+	wxTextCtrl *material_editor_alpha_text_ctrl, *material_editor_shininess_text_ctrl;
+	Colour_editor *ambient_colour_editor, *diffuse_colour_editor, *emitted_colour_editor,
+		*specular_colour_editor;
+	void *material_manager_callback_id;
+ 	Cmiss_graphics_module *graphics_module;
+  Cmiss_region *root_region;
 }; /* Material_editor */
 
 /*
@@ -386,6 +386,8 @@ Destroys the <*material_editor_address> and sets
 		(material_editor = *material_editor_address))
 	{
 		Material_editor_remove_widgets(material_editor);
+		Cmiss_graphics_module_destroy(&material_editor->graphics_module);
+		Cmiss_region_destroy(&material_editor->root_region);
 		DEALLOCATE(*material_editor_address);
 		*material_editor_address = (struct Material_editor *)NULL;
 		return_code = 1;
@@ -468,49 +470,42 @@ void material_editor_wx_update_shininess(Material_editor *material_editor, float
 			(MATERIAL_PRECISION) shininess);
 }
 
-void material_editor_wx_update_texture(Material_editor *material_editor, Texture *texture)
+void material_editor_wx_update_image_field(Material_editor *material_editor,
+	struct Computed_field *field, int selection)
 {
-	 Graphical_material_set_texture(material_editor->edit_material,
-			texture);
-	 material_editor_update_picture(material_editor);
-}
-
-void material_editor_wx_update_second_texture(Material_editor *material_editor, Texture *texture)
-{
-	 Graphical_material_set_second_texture(material_editor->edit_material,
-			texture);
-	 material_editor_update_picture(material_editor);
-}
-
-void material_editor_wx_update_third_texture(Material_editor *material_editor, Texture *texture)
-{
-	 Graphical_material_set_third_texture(material_editor->edit_material,
-			texture);
-	 material_editor_update_picture(material_editor);
-}
-
-void material_editor_wx_update_fourth_texture(Material_editor *material_editor, Texture *texture)
-{
-	 Graphical_material_set_fourth_texture(material_editor->edit_material,
-			texture);
+	if (selection == 0)
+	{
+		Graphical_material_set_image_field(material_editor->edit_material,
+			field);
+	}
+	else if (selection == 1)
+	{
+		Graphical_material_set_second_image_field(material_editor->edit_material,
+			field);
+	}
+	else if (selection == 2)
+	{
+		Graphical_material_set_third_image_field(material_editor->edit_material,
+			field);
+	}
+	else if (selection == 3)
+	{
+		Graphical_material_set_fourth_image_field(material_editor->edit_material,
+			field);
+	}
 	 material_editor_update_picture(material_editor);
 }
 
 class wxMaterialEditor : public wxFrame
 {
 	 Material_editor *material_editor;
-	 DEFINE_MANAGER_CLASS(Texture);
-	 Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-	 *material_editor_texture_chooser;
-	 Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-	 *material_editor_second_texture_chooser;
-	 Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-	 *material_editor_third_texture_chooser;
-	 Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-	 *material_editor_fourth_texture_chooser;
 	 DEFINE_MANAGER_CLASS(Graphical_material);
 	 Managed_object_listbox<Graphical_material, MANAGER_CLASS(Graphical_material)>
 	 *graphical_material_object_listbox;
+	 wxRegionChooser *region_chooser;
+	 DEFINE_MANAGER_CLASS(Computed_field);
+	 Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
+	 *image_field_chooser;
 
 public:
 
@@ -522,9 +517,7 @@ public:
 				 (wxWindow *)NULL, _T("CmguiMaterialEditor"));
 			this->SetIcon(cmiss_icon_xpm);
 
-
-			material_editor->material_list_panel = XRCCTRL(*this,
-				 "MaterialListPanel", wxPanel);
+			material_editor->material_list_panel = XRCCTRL(*this, "MaterialListPanel", wxPanel);
 			material_editor->material_list_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
 				 400, 200);
 			material_editor->material_list_panel->SetMinSize(wxSize(-1,100));
@@ -539,62 +532,39 @@ public:
 				 (this, &wxMaterialEditor::material_editor_graphical_material_list_callback);
 			graphical_material_object_listbox->set_callback(material_editor_graphical_material_list_callback);
 
-			material_editor->material_editor_texture_chooser_panel = 
-				 XRCCTRL(*this, "MaterialEditorTextureChooserPanel", wxPanel);
-			material_editor_texture_chooser =
-				 new Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-				 (material_editor->material_editor_texture_chooser_panel, (struct Texture*)NULL, material_editor->texture_manager,
-						(MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL, (void *)NULL, material_editor->user_interface);
-			Callback_base<Texture* > *material_editor_texture_callback = 
-				 new Callback_member_callback< Texture*,
-				 wxMaterialEditor, int (wxMaterialEditor::*)(Texture *) >
-				 (this, &wxMaterialEditor::material_editor_texture_callback);
-			material_editor_texture_chooser->set_callback(material_editor_texture_callback);
-
-			material_editor->material_editor_second_texture_chooser_panel = 
-				 XRCCTRL(*this, "MaterialEditorSecondTextureChooserPanel", wxPanel);
-			material_editor_second_texture_chooser =
-				 new Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-				 (material_editor->material_editor_second_texture_chooser_panel, (struct Texture*)NULL, 
-						material_editor->texture_manager, (MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL, 
-						(void *)NULL, material_editor->user_interface);
-			Callback_base<Texture* > *material_editor_second_texture_callback = 
-				 new Callback_member_callback< Texture*,
-				 wxMaterialEditor, int (wxMaterialEditor::*)(Texture *) >
-				 (this, &wxMaterialEditor::material_editor_second_texture_callback);
-			material_editor_second_texture_chooser->set_callback(material_editor_second_texture_callback);
-
-			material_editor->material_editor_third_texture_chooser_panel = 
-				 XRCCTRL(*this, "MaterialEditorThirdTextureChooserPanel", wxPanel);
-			material_editor_third_texture_chooser =
-				 new Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-				 (material_editor->material_editor_third_texture_chooser_panel, (struct Texture*)NULL, 
-						material_editor->texture_manager, (MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL, 
-						(void *)NULL, material_editor->user_interface);
-			Callback_base<Texture* > *material_editor_third_texture_callback = 
-				 new Callback_member_callback< Texture*,
-				 wxMaterialEditor, int (wxMaterialEditor::*)(Texture *) >
-				 (this, &wxMaterialEditor::material_editor_third_texture_callback);
-			material_editor_third_texture_chooser->set_callback(material_editor_third_texture_callback);
-
-			material_editor->material_editor_fourth_texture_chooser_panel = 
-				 XRCCTRL(*this, "MaterialEditorFourthTextureChooserPanel", wxPanel);
-			material_editor_fourth_texture_chooser =
-				 new Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
-				 (material_editor->material_editor_fourth_texture_chooser_panel, (struct Texture*)NULL, 
-						material_editor->texture_manager, (MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL, 
-						(void *)NULL, material_editor->user_interface);
-			Callback_base<Texture* > *material_editor_fourth_texture_callback = 
-				 new Callback_member_callback< Texture*,
-				 wxMaterialEditor, int (wxMaterialEditor::*)(Texture *) >
-				 (this, &wxMaterialEditor::material_editor_fourth_texture_callback);
-			material_editor_fourth_texture_chooser->set_callback(material_editor_fourth_texture_callback);
 			XRCCTRL(*this, "MaterialEditorAlphaTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 				 wxCommandEventHandler(wxMaterialEditor::OnMaterialEditorAlphaTextEntered),
 				 NULL, this);
 			XRCCTRL(*this, "MaterialEditorShininessTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 				 wxCommandEventHandler(wxMaterialEditor::OnMaterialEditorShininessTextEntered),
 				 NULL, this);
+
+		  wxPanel *region_chooser_panel =
+			 XRCCTRL(*this, "MaterialEditorRegionChooserPanel", wxPanel);
+		  char *initial_path;
+		  initial_path = Cmiss_region_get_root_region_path();
+		  region_chooser = new wxRegionChooser(region_chooser_panel,
+			  material_editor->root_region, initial_path);
+		  DEALLOCATE(initial_path);
+		  Callback_base<Cmiss_region* > *Material_editor_wx_region_callback =
+			  new Callback_member_callback< Cmiss_region*,
+			  wxMaterialEditor, int (wxMaterialEditor::*)(Cmiss_region *) >
+			  (this, &wxMaterialEditor::Material_editor_wx_region_callback);
+		  region_chooser->set_callback(Material_editor_wx_region_callback);
+
+		  struct MANAGER(Computed_field) *field_manager =
+		  	Cmiss_region_get_Computed_field_manager(material_editor->root_region);
+		  wxPanel *image_field_chooser_panel = XRCCTRL(*this, "ImageFieldChooserPanel", wxPanel);
+			image_field_chooser =
+				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+				(image_field_chooser_panel, NULL, field_manager,
+				Computed_field_is_image_type, (void *)NULL, NULL);
+			Callback_base< Computed_field* > *image_field_callback =
+				new Callback_member_callback< Computed_field*,
+				wxMaterialEditor, int (wxMaterialEditor::*)(Computed_field *) >
+				(this, &wxMaterialEditor::image_field_callback);
+			image_field_chooser->set_callback(image_field_callback);
+			image_field_chooser->include_null_item(true);
 	 };
 
 	 wxMaterialEditor()
@@ -604,11 +574,47 @@ public:
 	 ~wxMaterialEditor()
 	 {
 			delete graphical_material_object_listbox;
-			delete material_editor_texture_chooser;
-			delete material_editor_second_texture_chooser;
-			delete material_editor_third_texture_chooser;
-			delete material_editor_fourth_texture_chooser;
+			delete region_chooser;
+			delete image_field_chooser;
 	 };
+
+		int Material_editor_wx_region_callback(Cmiss_region *region)
+		{
+			struct MANAGER(Computed_field) *field_manager =
+				Cmiss_region_get_Computed_field_manager(region);
+			image_field_chooser->set_manager(field_manager);
+			return 1;
+		}
+
+		int image_field_callback(Cmiss_field *field)
+		{
+			wxChoice *texture_choice = XRCCTRL(*this, "MaterialEditorTextureChoice", wxChoice);
+			int selection = texture_choice->GetCurrentSelection();
+			material_editor_wx_update_image_field(material_editor, field, selection);
+			return 1;
+		}
+
+		void Set_region_and_image_field_chooser(struct Computed_field *field)
+		{
+			struct Cmiss_region *region =NULL;
+			if (field)
+			{
+				region = Computed_field_get_region(field);
+			}
+			else
+			{
+				region = material_editor->root_region;
+			}
+			const char *path = Cmiss_region_get_path(region);
+			if (region_chooser->set_path(path))
+			{
+				MANAGER(Computed_field) *field_manager =
+					Cmiss_region_get_Computed_field_manager(region);
+				image_field_chooser->set_manager(field_manager);
+				image_field_chooser->set_object(field);
+			}
+			DEALLOCATE(path);
+		}
 
 int material_editor_graphical_material_list_callback(Graphical_material *material)
 {
@@ -644,102 +650,6 @@ struct Graphical_material *material_editor_graphical_material_list_get_selected(
 			return ((Graphical_material *)NULL);
 	 }
 }
-
-int material_editor_texture_callback(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 29 November  2007
-
-DESCRIPTION :
-Callback for the texture chooser.
-==============================================================================*/
-{
-	 if (texture != NULL)
-			material_editor_wx_update_texture(material_editor, texture);
-	 return 1;
-}
-
-int material_editor_second_texture_callback(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 Dec  2007
-
-DESCRIPTION :
-Callback for the second texture chooser.
-==============================================================================*/
-{
-	 if (texture != NULL)
-			material_editor_wx_update_second_texture(material_editor, texture);
-	 return 1;
-}
-
-int material_editor_third_texture_callback(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 Dec  2007
-
-DESCRIPTION :
-Callback for the third texture chooser.
-==============================================================================*/
-{
-	 if (texture != NULL)
-			material_editor_wx_update_third_texture(material_editor, texture);
-	 return 1;
-}
-
-int material_editor_fourth_texture_callback(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 5 Dec  2007
-
-DESCRIPTION :
-Callback for the fourth texture chooser.
-==============================================================================*/
-{
-	 if (texture != NULL)
-			material_editor_wx_update_fourth_texture(material_editor, texture);
-	 return 1;
-}
-
-	 void material_editor_set_texture_object(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Set the selected option in the testyre chooser.
-==============================================================================*/
-	 {
-			material_editor_texture_chooser->set_object(texture);
-	 }
-
-	 void material_editor_set_second_texture_object(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Set the selected option in the testyre chooser.
-==============================================================================*/
-	 {
-			material_editor_second_texture_chooser->set_object(texture);
-	 }
-
-	 void material_editor_set_third_texture_object(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Set the selected option in the testyre chooser.
-==============================================================================*/
-	 {
-			material_editor_third_texture_chooser->set_object(texture);
-	 }
-
-	 void material_editor_set_fourth_texture_object(Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Set the selected option in the testyre chooser.
-==============================================================================*/
-	 {
-			material_editor_fourth_texture_chooser->set_object(texture);
-	 }
 
 void OnMaterialEditorAlphaTextEntered(wxCommandEvent &event)
 /*******************************************************************************
@@ -849,171 +759,19 @@ Callback for the shininess slider.
 		LEAVE;
  }
 
-void OnMaterialEditorTextureCheckBoxChecked(wxCommandEvent& event)
-/*******************************************************************************
-LAST MODIFIED : 28 November 2007
-
-DESCRIPTION :
-Callback for the texture check box
-==============================================================================*/
+void OnMaterialEditorTextureChoice(wxCommandEvent& event)
 {
-	 Texture *texture;
-	 int return_code;
-
-	 ENTER(OnMaterialEditorTextureCheckBoxChecked);
-	USE_PARAMETER(event);
-	 texture = (struct Texture *)NULL;
-	 if (material_editor->material_editor_texture_check_box)
-	 {
-			return_code = 0;
-			if (material_editor->material_editor_texture_check_box->IsChecked())
-			{
-				 return_code = material_editor_texture_chooser->get_number_of_object();				 
-			}
-			if (return_code  == 0 )
-			{
-				 material_editor->material_editor_texture_check_box->SetValue(0);
-				 material_editor->material_editor_texture_chooser_panel->Enable(false);
-			}
-			else
-			{
-				 material_editor->material_editor_texture_chooser_panel->Enable();
-				 texture = material_editor_texture_chooser->get_object();
-			}
-			material_editor_wx_update_texture(material_editor, texture);
-	 }
-
-	 LEAVE;
-}
-
-void OnMaterialEditorSecondTextureCheckBoxChecked(wxCommandEvent& event)
-/*******************************************************************************
-LAST MODIFIED : 28 November 2007
-
-DESCRIPTION :
-Callback for the texture check box
-==============================================================================*/
-{
-	 Texture *texture;
-	 int return_code;
-
-	 ENTER(OnMaterialEditorSecondTextureCheckBoxChecked);
-	USE_PARAMETER(event);
-	 texture = (struct Texture *)NULL;
-	 if (material_editor->material_editor_second_texture_check_box)
-	 {
-			return_code = 0;
-			if (material_editor->material_editor_second_texture_check_box->IsChecked())
-			{
-				 return_code = material_editor_second_texture_chooser->get_number_of_object();
-				 if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
-				 {
-						material_editor->material_editor_bump_mapping_checkbox->Enable(true);
-				 }
-			}
-			else
-			{
-				 material_editor->material_editor_bump_mapping_checkbox->SetValue(false);
-				 material_editor->material_editor_bump_mapping_checkbox->Enable(false);
-				 if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
-				 {
-						set_material_program_type(material_editor->edit_material,
-							 /*bump_mapping_flag */ 0, 
-							 0, 0, 0, 0, 0, 0, 0, 1);
-				 }
-				 else
-				 {
-						material_deaccess_material_program(material_editor->edit_material);
-				 }
-			}
-			if (return_code  == 0 )
-			{
-				 material_editor->material_editor_second_texture_check_box->SetValue(0);
-				 material_editor->material_editor_second_texture_chooser_panel->Enable(false);
-			}
-			else
-			{
-				 material_editor->material_editor_second_texture_chooser_panel->Enable();
-				 texture = material_editor_second_texture_chooser->get_object();
-			}
-			material_editor_wx_update_second_texture(material_editor, texture);
-	 }
-
-	 LEAVE;
-}
-
-void OnMaterialEditorThirdTextureCheckBoxChecked(wxCommandEvent& event)
-/*******************************************************************************
-LAST MODIFIED : 28 November 2007
-
-DESCRIPTION :
-Callback for the texture check box
-==============================================================================*/
-{
-	 Texture *texture;
-	 int return_code;
-
-	 ENTER(OnMaterialEditorThirdTextureCheckBoxChecked);
-	USE_PARAMETER(event);
-	 texture = (struct Texture *)NULL;
-	 if (material_editor->material_editor_third_texture_check_box)
-	 {
-			return_code = 0;
-			if (material_editor->material_editor_third_texture_check_box->IsChecked())
-			{
-				 return_code = material_editor_third_texture_chooser->get_number_of_object();				 
-			}
-			if (return_code  == 0 )
-			{
-				 material_editor->material_editor_third_texture_check_box->SetValue(0);
-				 material_editor->material_editor_third_texture_chooser_panel->Enable(false);
-			}
-			else
-			{
-				 material_editor->material_editor_third_texture_chooser_panel->Enable();
-				 texture = material_editor_third_texture_chooser->get_object();
-			}
-			material_editor_wx_update_third_texture(material_editor, texture);
-	 }
-
-	 LEAVE;
-}
-
-void OnMaterialEditorFourthTextureCheckBoxChecked(wxCommandEvent& event)
-/*******************************************************************************
-LAST MODIFIED : 28 November 2007
-
-DESCRIPTION :
-Callback for the texture check box
-==============================================================================*/
-{
-	 Texture *texture;
-	 int return_code;
-
-	 ENTER(OnMaterialEditorFourthTextureCheckBoxChecked);
-	USE_PARAMETER(event);
-	 texture = (struct Texture *)NULL;
-	 if (material_editor->material_editor_fourth_texture_check_box)
-	 {
-			return_code = 0;
-			if (material_editor->material_editor_fourth_texture_check_box->IsChecked())
-			{
-				 return_code = material_editor_fourth_texture_chooser->get_number_of_object();				 
-			}
-			if (return_code  == 0 )
-			{
-				 material_editor->material_editor_fourth_texture_check_box->SetValue(0);
-				 material_editor->material_editor_fourth_texture_chooser_panel->Enable(false);
-			}
-			else
-			{
-				 material_editor->material_editor_fourth_texture_chooser_panel->Enable();
-				 texture = material_editor_fourth_texture_chooser->get_object();
-			}
-			material_editor_wx_update_fourth_texture(material_editor, texture);
-	 }
-
-	 LEAVE;
+	int num = event.GetSelection();
+	struct Computed_field *field = NULL;
+	if (num == 0)
+		field = Graphical_material_get_image_field(material_editor->edit_material);
+	else if (num == 1)
+		field = Graphical_material_get_second_image_field(material_editor->edit_material);
+	else if (num == 2)
+		field = Graphical_material_get_third_image_field(material_editor->edit_material);
+	else if (num == 3)
+		field = Graphical_material_get_fourth_image_field(material_editor->edit_material);
+	Set_region_and_image_field_chooser(field);
 }
 
 void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
@@ -1102,7 +860,6 @@ void OnMaterialEditorDeleteMaterial(wxCommandEvent& event)
 	 material_editor->current_material = NULL;
 	 make_current_material(material_editor, NULL);
 	 material_editor_wx_set_material(material_editor,material_editor->current_material);
-
 	 LEAVE;
 }
 
@@ -1135,7 +892,7 @@ void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 	 bump_mapping_flag = 0;
 	 if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
 	 {
-			if (material_editor->material_editor_second_texture_check_box->GetValue())
+			if (Graphical_material_get_second_image_field(material_editor->edit_material))
 			{
 				 material_editor->material_editor_bump_mapping_checkbox->Enable(true);
 				 bump_mapping_flag =
@@ -1178,16 +935,13 @@ BEGIN_EVENT_TABLE(wxMaterialEditor, wxFrame)
 	 EVT_TEXT_ENTER(XRCID("MaterialEditorShininessTextCtrl"),wxMaterialEditor::OnMaterialEditorShininessTextEntered)
 	 EVT_COMMAND_SCROLL(XRCID("MaterialEditorAlphaSlider"),wxMaterialEditor::OnMaterialEditorAlphaSliderChanged)
 	 EVT_COMMAND_SCROLL(XRCID("MaterialEditorShininessSlider"),wxMaterialEditor::OnMaterialEditorShininessSliderChanged)
-	 EVT_CHECKBOX(XRCID("MaterialEditorTextureCheckBox"), wxMaterialEditor::OnMaterialEditorTextureCheckBoxChecked)
-	 EVT_CHECKBOX(XRCID("MaterialEditorSecondTextureCheckBox"), wxMaterialEditor::OnMaterialEditorSecondTextureCheckBoxChecked)
-	 EVT_CHECKBOX(XRCID("MaterialEditorThirdTextureCheckBox"), wxMaterialEditor::OnMaterialEditorThirdTextureCheckBoxChecked)
-	 EVT_CHECKBOX(XRCID("MaterialEditorFourthTextureCheckBox"), wxMaterialEditor::OnMaterialEditorFourthTextureCheckBoxChecked)
 	 EVT_CHECKBOX(XRCID("MaterialEditorPerPixelLightingCheckBox"), wxMaterialEditor::OnMaterialEditorAdvancedSettingsChanged)
 	 EVT_CHECKBOX(XRCID("MaterialEditorBumpMappingCheckBox"), wxMaterialEditor::OnMaterialEditorAdvancedSettingsChanged)
 	 EVT_BUTTON(XRCID("wxMaterialApplyButton"),wxMaterialEditor::OnMaterialEditorApplyButtonPressed)
 	 EVT_BUTTON(XRCID("wxMaterialOKButton"),wxMaterialEditor::OnMaterialEditorOKButtonPressed)
 	 EVT_BUTTON(XRCID("wxMaterialRevertButton"),wxMaterialEditor::OnMaterialEditorRevertButtonPressed)
 	 EVT_BUTTON(XRCID("wxMaterialCancelButton"),wxMaterialEditor::OnMaterialEditorCancelButtonPressed)
+	 EVT_CHOICE(XRCID("MaterialEditorTextureChoice"),wxMaterialEditor::OnMaterialEditorTextureChoice)
 	 EVT_CLOSE(wxMaterialEditor::CloseMaterialEditor)
 END_EVENT_TABLE()
 
@@ -1317,14 +1071,6 @@ int Material_editor_build_widgets(struct Material_editor *material_editor,
 				 , "MaterialEditorAlphaTextCtrl", wxTextCtrl);
 			material_editor->material_editor_shininess_text_ctrl = XRCCTRL(*material_editor->wx_material_editor
 				 , "MaterialEditorShininessTextCtrl", wxTextCtrl);
-			material_editor->material_editor_texture_check_box = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorTextureCheckBox", wxCheckBox);
-			material_editor->material_editor_second_texture_check_box = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorSecondTextureCheckBox", wxCheckBox);
-			material_editor->material_editor_third_texture_check_box = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorThirdTextureCheckBox", wxCheckBox);
-			material_editor->material_editor_fourth_texture_check_box = XRCCTRL(*material_editor->wx_material_editor
-				 , "MaterialEditorFourthTextureCheckBox", wxCheckBox);
 			material_editor->material_editor_per_pixel_checkbox = XRCCTRL(*material_editor->wx_material_editor
 				 , "MaterialEditorPerPixelLightingCheckBox", wxCheckBox);
 			material_editor->material_editor_bump_mapping_checkbox = XRCCTRL(*material_editor->wx_material_editor
@@ -1353,7 +1099,6 @@ int Material_editor_build_widgets(struct Material_editor *material_editor,
 			}
 			material_editor->wx_material_editor->Show();
 			material_editor->wx_material_editor->Fit();
-			material_editor->material_editor_texture_chooser_panel->SetSize(-1,100);
 			if (init_widgets)
 			{
 				 Graphics_buffer_awaken(material_editor->graphics_buffer);
@@ -1422,10 +1167,10 @@ int Material_editor_remove_widgets(struct Material_editor *material_editor)
 		}
 		if (material_editor->material_manager_callback_id)
 		{
-			 MANAGER_DEREGISTER(Graphical_material)(
-					material_editor->material_manager_callback_id,
-					material_editor->graphical_material_manager);
-			 material_editor->material_manager_callback_id = (void *)NULL;
+			MANAGER_DEREGISTER(Graphical_material)(
+				material_editor->material_manager_callback_id,
+				material_editor->graphical_material_manager);
+			material_editor->material_manager_callback_id = (void *)NULL;
 		}
 		return_code = 1;
 	}
@@ -1434,9 +1179,10 @@ int Material_editor_remove_widgets(struct Material_editor *material_editor)
 }
 
 struct Material_editor *CREATE(Material_editor)(
-	 struct Cmiss_graphics_module *graphics_module,
-	 struct Graphics_buffer_package *graphics_buffer_package,
-	 struct User_interface *user_interface)
+	struct Cmiss_region *root_region,
+	struct Cmiss_graphics_module *graphics_module,
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
 
@@ -1460,6 +1206,8 @@ Creates a Material_editor.
 						graphics_module);
 				material_editor->graphical_material_manager = Cmiss_graphics_module_get_material_manager(
 						graphics_module);
+				material_editor->graphics_module = Cmiss_graphics_module_access(graphics_module);
+				material_editor->root_region = Cmiss_region_access(root_region);
 				material_editor->graphics_buffer = (struct Graphics_buffer *)NULL;
 				material_editor->current_material=(struct Graphical_material *)NULL;
 				material_editor->edit_material=(struct Graphical_material *)NULL;
@@ -1478,10 +1226,6 @@ Creates a Material_editor.
 				material_editor->material_editor_shininess_slider = NULL;
 				material_editor->material_editor_alpha_text_ctrl  = NULL;
 				material_editor->material_editor_shininess_text_ctrl = NULL;
-				material_editor->material_editor_texture_check_box = NULL;
-				material_editor->material_editor_second_texture_check_box = NULL;
-				material_editor->material_editor_third_texture_check_box = NULL;
-				material_editor->material_editor_fourth_texture_check_box = NULL;
 				material_editor->material_editor_per_pixel_checkbox = NULL;
 				material_editor->material_editor_bump_mapping_checkbox = NULL;
 				Material_editor_build_widgets(material_editor, graphics_buffer_package);
@@ -1512,9 +1256,9 @@ Sets the <material> to be edited by the <material_editor>.
 ==============================================================================*/
 {
 	 Colour temp_colour;
-	 int return_code, texture_set, per_pixel_set;
+	 int return_code, per_pixel_set;
+	 struct Computed_field *field = NULL;
 	 MATERIAL_PRECISION alpha,shininess;
-	 struct Texture *texture;
 
 	ENTER(material_editor_wx_set_material);
 	if (material_editor)
@@ -1577,59 +1321,16 @@ Sets the <material> to be edited by the <material_editor>.
 							material_editor->material_editor_shininess_slider,
 							shininess);	 
 				}
-				if (texture=Graphical_material_get_texture(material_editor->edit_material))
-				{
-					 material_editor->wx_material_editor->material_editor_set_texture_object(texture);
-					 texture_set=1;
-				}
-				else
-				{
-					 texture_set=0;
-				}
-				material_editor->material_editor_texture_check_box->SetValue(texture_set);
-				material_editor->material_editor_texture_chooser_panel->Enable(texture_set);
 
-				if (texture=Graphical_material_get_second_texture(material_editor->edit_material))
-				{
-					 material_editor->wx_material_editor->material_editor_set_second_texture_object(texture);
-					 texture_set=1;
-				}
-				else
-				{
-					 texture_set=0;
-				}
-				material_editor->material_editor_second_texture_check_box->SetValue(texture_set);
-				material_editor->material_editor_second_texture_chooser_panel->Enable(texture_set);
+				field=Graphical_material_get_image_field(material_editor->edit_material);
+				material_editor->wx_material_editor->Set_region_and_image_field_chooser(field);
 
-				if (texture=Graphical_material_get_third_texture(material_editor->edit_material))
-				{
-					 material_editor->wx_material_editor->material_editor_set_third_texture_object(texture);
-					 texture_set=1;
-				}
-				else
-				{
-					 texture_set=0;
-				}
-				material_editor->material_editor_third_texture_check_box->SetValue(texture_set);
-				material_editor->material_editor_third_texture_chooser_panel->Enable(texture_set);
-
-				if (texture=Graphical_material_get_fourth_texture(material_editor->edit_material))
-				{
-					 material_editor->wx_material_editor->material_editor_set_fourth_texture_object(texture);
-					 texture_set=1;
-				}
-				else
-				{
-					 texture_set=0;
-				}
-				material_editor->material_editor_fourth_texture_check_box->SetValue(texture_set);
-				material_editor->material_editor_fourth_texture_chooser_panel->Enable(texture_set);
 
 				per_pixel_set = Graphical_material_get_per_pixel_lighting_flag(material_editor->edit_material);
 				if (per_pixel_set)
 				{
 					 material_editor->material_editor_per_pixel_checkbox->SetValue(true);
-					 if (material_editor->material_editor_second_texture_check_box->GetValue())
+					 if (Graphical_material_get_second_image_field(material_editor->edit_material))
 					 {
 							material_editor->material_editor_bump_mapping_checkbox->Enable(true);
 							material_editor->material_editor_bump_mapping_checkbox->SetValue(
@@ -1713,6 +1414,7 @@ Update the material colour and settings in the material editor .
 
 int material_editor_bring_up_editor(
 	struct Material_editor **material_editor_address,
+	struct Cmiss_region *root_region,
 	struct Cmiss_graphics_module *graphics_module,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface)
@@ -1744,7 +1446,7 @@ bring the material editor to the front.
 		}
 		else
 		{
-			*material_editor_address = CREATE(Material_editor)(
+			*material_editor_address = CREATE(Material_editor)(root_region,
 				graphics_module, graphics_buffer_package, user_interface);
 			if (*material_editor_address)
 			{

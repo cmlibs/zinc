@@ -310,4 +310,5 @@ int Cmiss_command_data_set_cmgui_string(struct Cmiss_command_data *command_data,
  */
 int Cmiss_command_data_process_command_line(int argc, const char *argv[], 
 	struct Cmgui_command_line_options *command_line_options);
+
 #endif /* !defined (COMMAND_CMISS_H) */
