@@ -186,7 +186,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 	const int MAX_NUMBER_OF_NODES = 27;
 	FE_value base_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values, *derivatives,
 		*nodal_values, source_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, j, k, number_of_components, number_of_values, return_code;
+	int i, j, k, number_of_components, number_of_values, return_code = 1;
 	struct CM_element_information identifier;
 	struct FE_element *new_element;
 	struct FE_node *nodes[MAX_NUMBER_OF_NODES];
