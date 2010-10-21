@@ -4495,7 +4495,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 const char *GetRegionPathFromTreeItemId(wxTreeItemId current_item_id)
 {
 	wxTreeItemId parent_id, root_item_id;
-	std::string path_name, current_region_name;
+	wxString path_name, current_region_name;
 
 	path_name = region_tree_viewer->testing_tree_ctrl->
 		GetItemText(current_item_id);

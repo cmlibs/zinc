@@ -334,7 +334,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    endif
    ifeq ($(OPERATING_SYSTEM),darwin)
       ifneq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-          GRAPHICS_LIB += -framework Carbon -framework AGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
+          GRAPHICS_LIB += -framework Carbon -framework AGL -framework OpenGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
       endif # $(USER_INTERFACE) != MOTIF_USER_INTERFACE
     endif # $(OPERATING_SYSTEM) == darwin
     ifeq ($(OPERATING_SYSTEM),win32)
@@ -852,7 +852,7 @@ endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
       # The lib -lSystemStubs is used to resolve some linking differences between some code
       # with gcc-3.3 and gcc-4
-      SYSTEM_LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++ -lSystemStubs
+      SYSTEM_LIB = -lm -ldl -lpthread -liconv -lstdc++ -lSystemStubs
 endif # SYSNAME == Darwin
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \

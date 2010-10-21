@@ -127,7 +127,7 @@ Main program for the CMISS Graphical User Interface
 		CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
 		CMISS_SVN_REVISION_STRING);
 
-#if defined (WX_USER_INTERFACE) && (DARWIN)
+#if defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) && (DARWIN)
 	ProcessSerialNumber PSN;
 	GetCurrentProcess(&PSN);
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);

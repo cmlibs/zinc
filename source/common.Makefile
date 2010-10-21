@@ -499,8 +499,8 @@ ifeq ($(SYSNAME),Darwin)
       # for profiling
       #CC = gcc -c -std=gnu99 -pg
 		# -fno-common so that it doesn't use common blocks and they symbols will get exported into a library	
-      CC = gcc -c -std=gnu99 -fno-common
-      CPP = g++ -c
+      CC = gcc -arch i386 -m32 -c -std=gnu99 -fno-common
+      CPP = g++ -c -arch i386 -m32
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
 #    endif
@@ -509,19 +509,19 @@ ifeq ($(SYSNAME),Darwin)
    ifneq ($(STATIC_LINK),true)
       # for profiling
       #LINK = gcc -pg
-      LINK = g++ -Wl,-Y,20 
+      LINK = g++ -arch i386 -m32 -Wl,-Y,20 
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
    else # STATIC_LINK) != true
       LINK = g++ -static
-      # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
+      # LINK = g++ -arch i386 -m32 --no-demangle -rdynamic -L/usr/X11R6/lib*/
    endif # STATIC_LINK) != true
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
       COMPILE_DEFINES = -DOPTIMISED
-      COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -Wno-long-double -Werror
-      CPP_STRICT_FLAGS = -Wno-long-double -Werror
+      COMPILE_FLAGS = -fPIC -arch i386 -m32
+      STRICT_FLAGS =
+      CPP_STRICT_FLAGS =
       NON_STRICT_FLAGS = 
       CPP_NON_STRICT_FLAGS = 
       NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
@@ -532,9 +532,9 @@ ifeq ($(SYSNAME),Darwin)
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
-      COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-long-double -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-long-double -Werror
+      COMPILE_FLAGS = -fPIC -arch i386 -m32
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter
       NON_STRICT_FLAGS = 
       CPP_NON_STRICT_FLAGS = 
       NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
