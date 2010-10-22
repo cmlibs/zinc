@@ -47,6 +47,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
+#include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -399,7 +400,11 @@ DESCRIPTION :
 						Scene_viewer_get_background_texture_info(scene_viewer,
 							&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
 							&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
-						if (texture = Scene_viewer_get_background_texture(scene_viewer))
+						struct Computed_field *field=
+							Scene_viewer_get_background_image_field(scene_viewer);
+						texture = Computed_field_get_texture(field);
+						DEACCESS(Computed_field)(&field);
+						if (texture)
 						{
 							Texture_get_distortion_info(texture, &distortion_centre_x, 
 								&distortion_centre_y, &distortion_factor_k1);

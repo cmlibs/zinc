@@ -55,6 +55,7 @@ November 97 Created from rendering part of Drawing.
 #include <stdio.h>
 #include <math.h>
 extern "C" {
+#include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
@@ -141,13 +142,21 @@ The default data used to create Cmiss_scene_viewers.
 	struct Light_model *default_light_model;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *scene;
-	struct MANAGER(Texture) *texture_manager;
 	struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback))
 		*destroy_callback_list;
+};
+
+struct Scene_viewer_image_texture
+{
+	struct Texture *texture;
+	struct MANAGER(Computed_field) *manager;
+	struct Computed_field *field;
+	void *callback_id;
+	struct Scene_viewer *scene_viewer;
 };
 
 struct Scene_viewer
@@ -222,8 +231,6 @@ DESCRIPTION :
 	enum Scene_viewer_transparency_mode transparency_mode;
 	/* number of layers used in layered transparency mode */
 	int transparency_layers;
-	/* A background texture may also be displayed behind the projected image */
-	struct Texture *background_texture;
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
 		 position and scale of the image relative to user coordinates. In the
 		 RELATIVE_VIEWPORT and DISTORTING_RELATIVE_VIEWPORT modes, these values
@@ -256,8 +263,6 @@ DESCRIPTION :
 	void *light_model_manager_callback_id;
 	struct MANAGER(Scene) *scene_manager;
 	void *scene_manager_callback_id;
-	struct MANAGER(Texture) *texture_manager;
-	void *texture_manager_callback_id;
 	/* For interpreting mouse events */
         enum Scene_viewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
@@ -310,6 +315,7 @@ DESCRIPTION :
 #endif /* defined (WIN32_SYSTEM) */
 	/* Keeps a counter of the frame redraws */
 	unsigned int frame_count;
+	Scene_viewer_image_texture image_texture;
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -530,19 +536,19 @@ DESCRIPTION :
 		texels_per_polygon_x,texels_per_polygon_y,width_texels;
 
 	ENTER(Scene_viewer_render_background_texture);
-	if (scene_viewer&&scene_viewer->background_texture)
+	if (scene_viewer&&scene_viewer->image_texture.texture)
 	{
 		/* get information about the texture */
-		Texture_get_original_size(scene_viewer->background_texture,
+		Texture_get_original_size(scene_viewer->image_texture.texture,
 			&width_texels, &height_texels, &depth_texels);
-		Texture_get_physical_size(scene_viewer->background_texture,
+		Texture_get_physical_size(scene_viewer->image_texture.texture,
 			&texture_width, &texture_height, &texture_depth);
 		tex_ratio_x=texture_width/width_texels;
 		tex_ratio_y=texture_height/height_texels;
 		/* note the texture stores radial distortion parameters in terms
 			 of its physical space from 0,0 to texture_width,texture_height.
 			 We want them in terms of user viewport coordinates */
-		Texture_get_distortion_info(scene_viewer->background_texture,
+		Texture_get_distortion_info(scene_viewer->image_texture.texture,
 			&centre_x,&centre_y,&factor_k1);
 		distortion_centre_x=(double)centre_x;
 		distortion_centre_y=(double)centre_y;
@@ -591,8 +597,8 @@ DESCRIPTION :
 			-1.0,1.0);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		renderer->Texture_compile(scene_viewer->background_texture);
-		renderer->Texture_execute(scene_viewer->background_texture);
+		renderer->Texture_compile(scene_viewer->image_texture.texture);
+		renderer->Texture_execute(scene_viewer->image_texture.texture);
 
 #if defined (OLD_CODE)
 		/* simple, un-corrected texture */
@@ -1562,7 +1568,7 @@ Renders the background into the scene.
 #endif /* defined (WIN32_SYSTEM) */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (scene_viewer->background_texture)
+		if (scene_viewer->image_texture.texture)
 		{
 			glDisable(GL_LIGHTING);
 			glColor3f((scene_viewer->background_colour).red,
@@ -3965,33 +3971,82 @@ static void Scene_viewer_scene_change(
 }
 
 /***************************************************************************//**
- * Something has changed globally in the texture manager. If the scene has a
- * background_texture and it is in the changed_object_list, then redraw.
+ * Something has changed in the regional computed field manager.
+ * Check if the field being used is changed, if so update the scene viewer.
  */
-static void Scene_viewer_texture_change(
-	struct MANAGER_MESSAGE(Texture) *message,void *scene_viewer_void)
+static void Scene_viewer_image_field_change(
+	struct MANAGER_MESSAGE(Computed_field) *message, void *scene_viewer_image_texture_void)
 {
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_texture_change);
-	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
+	struct Scene_viewer_image_texture *image_texture =
+		(struct Scene_viewer_image_texture *)scene_viewer_image_texture_void;
+	if (message && image_texture)
 	{
-		if (scene_viewer->background_texture)
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(
+				message, image_texture->field);
+		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
-			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Texture)(message,
-				scene_viewer->background_texture);
-			if (change & MANAGER_CHANGE_RESULT(Texture))
+			REACCESS(Texture)(&(image_texture->texture),
+				Computed_field_get_texture(image_texture->field));
+			Scene_viewer_redraw(image_texture->scene_viewer);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_image_field_change.  Invalid argument(s)");
+	}
+}
+
+/***************************************************************************//**
+ * Set the field and update all the related objects in scene_viewer_image_texture.
+ * This will also create a callback for computed field.
+ */
+int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *image_texture,
+	struct Computed_field *field)
+{
+	int return_code = 0;
+	if (image_texture)
+	{
+		return_code = 1;
+		if (image_texture->field)
+		{
+			DEACCESS(Computed_field)(&(image_texture->field));
+			image_texture->field=(struct Computed_field *)NULL;
+			if (image_texture->manager &&	image_texture->callback_id)
 			{
-				Scene_viewer_redraw(scene_viewer);
+				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
+						image_texture->manager);
+				image_texture->callback_id = NULL;
+			}
+			if (image_texture->texture)
+				DEACCESS(Texture)(&(image_texture->texture));
+		}
+		if (field)
+		{
+			struct Cmiss_region *temp_region = Computed_field_get_region(field);
+			MANAGER(Computed_field) *field_manager =
+				Cmiss_region_get_Computed_field_manager(temp_region);
+			if (field_manager)
+			{
+				image_texture->callback_id=
+					MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
+						(void *)image_texture, field_manager);
+				image_texture->manager = field_manager;
+				image_texture->field = ACCESS(Computed_field)(field);
+				image_texture->texture = ACCESS(Texture)(
+					Computed_field_get_texture(image_texture->field));
+				return_code = 1;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_texture_change.  Invalid argument(s)");
+			 "Material_image_texture_set_field.  Missing Material_image_texture");
+		return_code = 0;
 	}
-	LEAVE;
+
+	return return_code;
 }
 
 /*
@@ -4007,7 +4062,6 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -4034,7 +4088,6 @@ Creates a Cmiss_scene_viewer_package.
 			scene_viewer_package->default_light_model = ACCESS(Light_model)(default_light_model);
 			scene_viewer_package->scene_manager = scene_manager;
 			scene_viewer_package->scene = ACCESS(Scene)(scene);
-			scene_viewer_package->texture_manager = texture_manager;
 			scene_viewer_package->user_interface = user_interface;
 			scene_viewer_package->scene_viewer_list = CREATE(LIST(Scene_viewer))();
 			scene_viewer_package->destroy_callback_list=
@@ -4350,7 +4403,6 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -4358,7 +4410,7 @@ LAST MODIFIED : 19 September 2002
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
 Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager, light_model_manager, scene_manager or texture_manager
+If any of light_manager, light_model_manager or scene_manager
 are supplied, the scene_viewer will automatically redraw in response to changes
 of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
@@ -4431,7 +4483,6 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->background_colour).red=background_colour->red;
 				(scene_viewer->background_colour).green=background_colour->green;
 				(scene_viewer->background_colour).blue=background_colour->blue;
-				scene_viewer->background_texture=(struct Texture *)NULL;
 				/* set viewing transformation eye pos, look at point and up-vector */
 				/* initially view the x,y plane */
 				scene_viewer->eyex=0.0;
@@ -4479,8 +4530,11 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->light_model_manager_callback_id=(void *)NULL;
 				scene_viewer->scene_manager=scene_manager;
 				scene_viewer->scene_manager_callback_id=(void *)NULL;
-				scene_viewer->texture_manager=texture_manager;
-				scene_viewer->texture_manager_callback_id=(void *)NULL;
+				(scene_viewer->image_texture).texture=(struct Texture *)NULL;
+				(scene_viewer->image_texture).manager = NULL;
+				(scene_viewer->image_texture).field  = NULL;
+				(scene_viewer->image_texture).callback_id = NULL;
+				(scene_viewer->image_texture).scene_viewer = scene_viewer;
 				/* no current interactive_tool */
 				scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
 				/* Currently only set when created from a Cmiss_scene_viewer_package
@@ -4513,7 +4567,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->user_viewport_left=0.0;
 				scene_viewer->user_viewport_pixels_per_unit_x=1.0;
 				scene_viewer->user_viewport_pixels_per_unit_y=1.0;
-				scene_viewer->background_texture=(struct Texture *)NULL;
 				scene_viewer->bk_texture_top=0.0;
 				scene_viewer->bk_texture_left=0.0;
 				scene_viewer->bk_texture_width=0.0;
@@ -4616,6 +4669,8 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
 	{
 		Scene_viewer_sleep(scene_viewer);
+		Scene_viewer_image_texture_set_field(&(scene_viewer->image_texture),
+			NULL);
 		/* send the destroy callbacks */
 		if (scene_viewer->destroy_callback_list)
 		{
@@ -4625,10 +4680,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 				&scene_viewer->destroy_callback_list);
 		}
 		/* dispose of our data structure */
-		if (scene_viewer->background_texture)
-		{
-			DEACCESS(Texture)(&(scene_viewer->background_texture));
-		}
 		DEACCESS(Scene)(&(scene_viewer->scene));
 		if (scene_viewer->overlay_scene)
 		{
@@ -4734,7 +4785,6 @@ DESCRIPTION :
 			cmiss_scene_viewer_package->default_light_model,
 			cmiss_scene_viewer_package->scene_manager,
 			scene,
-			cmiss_scene_viewer_package->texture_manager,
 			cmiss_scene_viewer_package->user_interface);
 		
 		new_interactive_tool_manager = CREATE(MANAGER(Interactive_tool))();
@@ -4805,12 +4855,12 @@ Scene_viewer_sleep to restore normal activity.
 					(void *)scene_viewer,scene_viewer->scene_manager);
 		}
 		/* register for any texture changes */
-		if (scene_viewer->texture_manager &&
-			(!scene_viewer->texture_manager_callback_id))
+		if (scene_viewer->image_texture.manager &&
+			(!scene_viewer->image_texture.callback_id))
 		{
-			scene_viewer->texture_manager_callback_id=
-				MANAGER_REGISTER(Texture)(Scene_viewer_texture_change,
-					(void *)scene_viewer,scene_viewer->texture_manager);
+			scene_viewer->image_texture.callback_id=
+					MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
+						(void *)&(scene_viewer->image_texture), scene_viewer->image_texture.manager);
 		}
 		return_code=1;
 	}
@@ -5030,11 +5080,11 @@ Must call this in DESTROY function.
 				scene_viewer->scene_manager);
 			scene_viewer->scene_manager_callback_id=(void *)NULL;
 		}
-		if (scene_viewer->texture_manager_callback_id)
+		if (scene_viewer->image_texture.callback_id)
 		{
-			MANAGER_DEREGISTER(Texture)(scene_viewer->texture_manager_callback_id,
-				scene_viewer->texture_manager);
-			scene_viewer->texture_manager_callback_id=(void *)NULL;
+			MANAGER_DEREGISTER(Computed_field)(scene_viewer->image_texture.callback_id,
+				scene_viewer->image_texture.manager);
+			scene_viewer->image_texture.callback_id=(void *)NULL;
 		}
 		return_code=1;
 	}
@@ -5108,110 +5158,6 @@ Sets the background_colour of the scene_viewer.
 
 	return (return_code);
 } /* Scene_viewer_set_background_colour */
-
-struct Texture *Scene_viewer_get_background_texture(
-	struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Retrieves the Scene_viewer's background_texture. Note that NULL is the valid
-return if there is no background texture.
-==============================================================================*/
-{
-	struct Texture *return_texture;
-
-	ENTER(Scene_viewer_get_background_texture);
-	if (scene_viewer)
-	{
-		return_texture=scene_viewer->background_texture;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_background_texture.  Missing scene_viewer");
-		return_texture=(struct Texture *)NULL;
-	}
-	LEAVE;
-
-	return (return_texture);
-} /* Scene_viewer_get_background_texture */
-
-int Scene_viewer_set_background_texture(struct Scene_viewer *scene_viewer,
-	struct Texture *background_texture)
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Sets the background_texture to be displayed in the Scene_viewer. Information
-on how it will be displayed is set in Scene_viewer_set_background_texture_info.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_background_texture);
-	if (scene_viewer)
-	{
-		if (background_texture)
-		{
-			ACCESS(Texture)(background_texture);
-		}
-		if (scene_viewer->background_texture)
-		{
-			DEACCESS(Texture)(&(scene_viewer->background_texture));
-		}
-		scene_viewer->background_texture=background_texture;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_background_texture.  Missing scene_viewer");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_background_texture */
-
-int Scene_viewer_set_background_texture_by_name(struct Scene_viewer *scene_viewer,
-	const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer scene from names in the scene manager.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(Scene_viewer_set_background_texture_by_name);
-	if (scene_viewer&&name)
-	{
-		if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
-			(char *)name, scene_viewer->texture_manager))
-		{
-			return_code = Scene_viewer_set_background_texture(scene_viewer, texture);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_viewer_set_background_texture_by_name.  "
-				"Unable to find a texture named %s.", name);
-			return_code = 0;
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_background_texture_by_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_background_texture_by_name */
 
 int Scene_viewer_get_background_texture_info(struct Scene_viewer *scene_viewer,
 	double *bk_texture_left,double *bk_texture_top,
@@ -9351,3 +9297,42 @@ Returns a count of the number of scene viewer redraws.
 	return (frame_count);
 } /* Scene_viewer_get_frame_count */
 
+struct Computed_field *Scene_viewer_get_background_image_field(struct Scene_viewer *scene_viewer)
+{
+	struct Computed_field *image_field = NULL;
+
+	if (scene_viewer)
+	{
+			image_field = scene_viewer->image_texture.field;
+			if (image_field)
+			{
+				ACCESS(Computed_field)(image_field);
+			}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_background_image_field.  Invalid argument(s)");
+	}
+
+	return image_field;
+}
+
+int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
+	struct Computed_field *field)
+{
+	int return_code = 0;
+	if (scene_viewer)
+	{
+		return_code = Scene_viewer_image_texture_set_field(
+			&(scene_viewer->image_texture), field);
+		Scene_viewer_redraw(scene_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_background_image_field.  Invalid argument(s)");
+	}
+
+	return return_code;
+}

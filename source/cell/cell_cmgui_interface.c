@@ -551,7 +551,7 @@ Creates a Cell_cmgui_interface object, setting the data fields.
 				cmgui_interface->background_colour,cmgui_interface->light_manager,
 				cmgui_interface->default_light,cmgui_interface->light_model_manager,
 				cmgui_interface->default_light_model,cmgui_interface->scene_manager,
-				cmgui_interface->scene,cmgui_interface->texture_manager,
+				cmgui_interface->scene,
 				cmgui_interface->user_interface))
 			{
 				/* Set-up the scene */

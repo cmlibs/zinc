@@ -5060,7 +5060,7 @@ int Graphical_material_set_image_field(struct Graphical_material *material,
 	ENTER(Graphical_material_set_image_field);
 	if (material)
 	{
-		Material_image_texture_set_field(&(material->image_texture), field);
+		return_code = Material_image_texture_set_field(&(material->image_texture), field);
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		Graphical_material_changed(material);
 	}
@@ -5083,7 +5083,7 @@ int Graphical_material_set_second_image_field(struct Graphical_material *materia
 	ENTER(Graphical_material_set_second_image_field);
 	if (material)
 	{
-		Material_image_texture_set_field(&(material->second_image_texture), field);
+		return_code = Material_image_texture_set_field(&(material->second_image_texture), field);
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		Graphical_material_changed(material);
 	}
@@ -5106,7 +5106,7 @@ int Graphical_material_set_third_image_field(struct Graphical_material *material
 	ENTER(Graphical_material_set_third_image_field);
 	if (material)
 	{
-		Material_image_texture_set_field(&(material->third_image_texture), field);
+		return_code = Material_image_texture_set_field(&(material->third_image_texture), field);
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		Graphical_material_changed(material);
 	}
@@ -5129,7 +5129,7 @@ int Graphical_material_set_fourth_image_field(struct Graphical_material *materia
 	ENTER(Graphical_material_set_fourth_image_field);
 	if (material)
 	{
-		Material_image_texture_set_field(&(material->fourth_image_texture), field);
+		return_code = Material_image_texture_set_field(&(material->fourth_image_texture), field);
 		material->compile_status = GRAPHICS_NOT_COMPILED;
 		Graphical_material_changed(material);
 	}

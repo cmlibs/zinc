@@ -65,6 +65,7 @@ extern "C" {
 #include "colour/edit_var.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/parser.h"
+#include "computed_field/computed_field_image.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/indexed_list_private.h"
@@ -265,7 +266,6 @@ Contains information for a graphics window.
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
-	struct MANAGER(Texture) *texture_manager;
 	/* interaction */
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
@@ -1355,6 +1355,127 @@ orthographic axes.
 	return (return_code);
 } /* set_Graphics_window_ortho_axes */
 
+
+int set_image_field(struct Parse_state *state,void *field_address_void,
+		void *root_region_void)
+{
+	const char *current_token;
+	int return_code;
+	struct Cmiss_region *root_region = NULL;
+	struct Computed_field *temp_field = NULL, **field_address = NULL;
+
+	ENTER(set_image_field);
+	if (state)
+	{
+		current_token=state->current_token;
+		if (current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				field_address=(struct Computed_field **)field_address_void;
+				root_region = (struct Cmiss_region *)root_region_void;
+				if (field_address	&& root_region)
+				{
+					if (fuzzy_string_compare(current_token,"NONE"))
+					{
+						if (*field_address)
+						{
+							DEACCESS(Computed_field)(field_address);
+							*field_address=(struct Computed_field *)NULL;
+						}
+						return_code=1;
+					}
+					else
+					{
+						struct Cmiss_region *region = NULL;
+						char *region_path = NULL, *field_name = NULL;
+						if (Cmiss_region_get_partial_region_path(root_region,
+							current_token, &region, &region_path, &field_name))
+						{
+							Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
+							if (field_name && (strlen(field_name) > 0) &&
+								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
+							{
+								temp_field = Cmiss_field_module_find_field_by_name(field_module,
+									field_name);
+								if (temp_field &&
+										!Computed_field_is_image_type(temp_field,NULL))
+								{
+									DEACCESS(Computed_field)(&temp_field);
+									display_message(ERROR_MESSAGE,
+										"set_image_field.  Field specify does not contain image "
+										"information.");
+									return_code=0;
+								}
+							}
+							Cmiss_field_module_destroy(&field_module);
+						}
+						if (region_path)
+							DEALLOCATE(region_path);
+						if (field_name)
+							DEALLOCATE(field_name);
+						if (temp_field)
+						{
+							if (*field_address!=temp_field)
+							{
+								REACCESS(Computed_field)(field_address, temp_field);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"set_image_field.  Image field does not exist");
+							return_code=0;
+						}
+					}
+					shift_Parse_state(state,1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_image_field.  Invalid argument(s)");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," IMAGE_NAME|none");
+				field_address=(struct Computed_field **)field_address_void;
+				if (field_address)
+				{
+					temp_field= *field_address;
+					if (temp_field)
+					{
+						char *temp_name = Cmiss_field_get_name(temp_field);
+						display_message(INFORMATION_MESSAGE,"[%s]",temp_name);
+						DEALLOCATE(temp_name);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"[none]");
+					}
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing field name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_image_field.  Missing state");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* set_image_field */
+
 static int modify_Graphics_window_background(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
@@ -1375,10 +1496,10 @@ the changes are to be applied to all panes.
 	struct Modify_graphics_window_data *modify_graphics_window_data;
 	struct Option_table *option_table, *undistort_option_table;
 	struct Scene_viewer *scene_viewer;
-	struct Texture *background_texture;
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_placement_data=
 		{4," TEXTURE_LEFT TEXTURE_TOP TEXTURE_WIDTH TEXTURE_HEIGHT",0};
+	struct Computed_field *image_field = NULL;
 
 	ENTER(modify_Graphics_window_background);
 	if (state)
@@ -1394,11 +1515,7 @@ the changes are to be applied to all panes.
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					Scene_viewer_get_background_colour(scene_viewer,&background_colour);
-					if (background_texture=
-						Scene_viewer_get_background_texture(scene_viewer))
-					{
-						ACCESS(Texture)(background_texture);
-					}
+					image_field = Scene_viewer_get_background_image_field(scene_viewer);
 					Scene_viewer_get_background_texture_info(scene_viewer,
 						&(texture_placement[0]),&(texture_placement[1]),
 						&(texture_placement[2]),&(texture_placement[3]),
@@ -1410,7 +1527,6 @@ the changes are to be applied to all panes.
 					background_colour.red=0.0;
 					background_colour.green=0.0;
 					background_colour.blue=0.0;
-					background_texture=(struct Texture *)NULL;
 					texture_placement[0]=texture_placement[1]=
 						texture_placement[2]=texture_placement[3]=0.0;
 					undistort_on=0;
@@ -1431,7 +1547,7 @@ the changes are to be applied to all panes.
 					&max_pixels_per_polygon);
 				/* texture */
 				Option_table_add_entry(option_table, "texture",
-					&background_texture, modify_graphics_window_data->texture_manager, set_Texture);
+					&image_field, modify_graphics_window_data->root_region, set_image_field);
 				/* tex_placement */
 				Option_table_add_double_vector_with_help_entry(option_table, "tex_placement", 
 					texture_placement, &texture_placement_data);
@@ -1478,14 +1594,13 @@ the changes are to be applied to all panes.
 							scene_viewer=window->scene_viewer_array[pane_no];
 							Scene_viewer_set_background_colour(scene_viewer,
 								&background_colour);
-							Scene_viewer_set_background_texture(scene_viewer,
-								background_texture);
+							Scene_viewer_set_background_image_field(scene_viewer,	image_field);
 							if ((texture_placement[2] == 0.0) && (texture_placement[3] == 0.0))
 							{
-								if (background_texture)
+								if (image_field)
 								{
 									/* Get the default size from the texture itself */
-									Texture_get_original_size(background_texture,
+									Texture_get_original_size(Computed_field_get_texture(image_field),
 										&pixelsx, &pixelsy, &pixelsz);
 									texture_placement[2] = pixelsx;
 									texture_placement[3] = pixelsy;
@@ -1514,9 +1629,9 @@ the changes are to be applied to all panes.
 					}
 				}
 				DESTROY(Option_table)(&option_table);
-				if (background_texture)
+				if (image_field)
 				{
-					DEACCESS(Texture)(&background_texture);
+					DEACCESS(Computed_field)(&image_field);
 				}
 			}
 			else
@@ -3790,7 +3905,6 @@ struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Time_keeper *default_time_keeper,
 	struct User_interface *user_interface)
@@ -3891,7 +4005,7 @@ it.
 		(GRAPHICS_WINDOW_MONO==stereo_mode)||
 		(GRAPHICS_WINDOW_STEREO==stereo_mode))&&background_colour&&
 		light_manager&&light_model_manager&&default_light_model&&
-		scene_manager&&scene&&texture_manager&&interactive_tool_manager&&
+		scene_manager&&scene&&interactive_tool_manager&&
 		graphics_buffer_package&&user_interface)
 	{
 		/* Try to allocate space for the window structure */
@@ -3912,7 +4026,6 @@ it.
 			window->default_light=ACCESS(Light)(default_light);
 			window->default_light_model=ACCESS(Light_model)(default_light_model);
 			window->scene_manager=scene_manager;
-			window->texture_manager=texture_manager;
 			window->scene=ACCESS(Scene)(scene);
 			window->time_keeper = ACCESS(Time_keeper)(default_time_keeper);
 			window->interactive_tool_manager=interactive_tool_manager;
@@ -4181,7 +4294,7 @@ it.
 													background_colour,light_manager,default_light,
 													light_model_manager,default_light_model,
 													scene_manager,window->scene,
-													texture_manager,window->user_interface))
+													window->user_interface))
 											{
 												Scene_viewer_set_interactive_tool(
 													window->scene_viewer_array[pane_no],
@@ -4345,7 +4458,7 @@ it.
 							 background_colour, light_manager,default_light,
 							 light_model_manager,default_light_model,
 							 scene_manager, window->scene,
-							 texture_manager, user_interface))
+							 user_interface))
 						{
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
@@ -4482,7 +4595,7 @@ it.
 								 background_colour, light_manager,default_light,
 								 light_model_manager,default_light_model,
 								 scene_manager, window->scene,
-								 texture_manager, user_interface))
+								 user_interface))
 							{
 								Scene_viewer_set_interactive_tool(
 									window->scene_viewer_array[pane_no],
@@ -4696,7 +4809,7 @@ it.
 										 background_colour, light_manager,default_light,
 										 light_model_manager,default_light_model,
 										 scene_manager, window->scene,
-										 texture_manager, user_interface))
+										 user_interface))
 							 {
 									ortho_up_axis=window->ortho_up_axis;
 									ortho_front_axis=window->ortho_front_axis;
@@ -4868,7 +4981,7 @@ it.
 								 background_colour, light_manager,default_light,
 								 light_model_manager,default_light_model,
 								 scene_manager, window->scene,
-								 texture_manager, user_interface))
+								 user_interface))
 							{
 								Scene_viewer_set_interactive_tool(
 									window->scene_viewer_array[pane_no],
@@ -5555,7 +5668,7 @@ Sets the layout mode in effect on the <window>.
 								window->light_manager,window->default_light,
 								window->light_model_manager,window->default_light_model,
 								window->scene_manager,window->scene,
-								window->texture_manager,window->user_interface))
+								window->user_interface))
 						{
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
@@ -7673,8 +7786,11 @@ Writes the properties of the <window> to the command window.
 			display_message(INFORMATION_MESSAGE,
 				"    background colour R G B: %g %g %g\n",
 				colour.red,colour.green,colour.blue);
-			if ((texture=Scene_viewer_get_background_texture(scene_viewer))&&
-				Scene_viewer_get_background_texture_info(scene_viewer,
+			struct Computed_field *field=
+				Scene_viewer_get_background_image_field(scene_viewer);
+			texture = Computed_field_get_texture(field);
+			DEACCESS(Computed_field)(&field);
+			if (texture && Scene_viewer_get_background_texture_info(scene_viewer,
 					&left,&top,&texture_width,&texture_height,&undistort_on,
 					&max_pixels_per_polygon)&&
 				GET_NAME(Texture)(texture,&name))
@@ -7989,8 +8105,11 @@ and establishing the views in it to the command window to a com file.
 			Scene_viewer_get_background_colour(scene_viewer,&colour);
 			process_message->process_command(INFORMATION_MESSAGE,
 				" colour %g %g %g",colour.red,colour.green,colour.blue);
-			if ((texture=Scene_viewer_get_background_texture(scene_viewer))&&
-				Scene_viewer_get_background_texture_info(scene_viewer,
+			struct Computed_field *field=
+				Scene_viewer_get_background_image_field(scene_viewer);
+			texture = Computed_field_get_texture(field);
+			DEACCESS(Computed_field)(&field);
+			if (texture &&	Scene_viewer_get_background_texture_info(scene_viewer,
 					&left,&top,&texture_width,&texture_height,&undistort_on,
 					&max_pixels_per_polygon)&&
 				GET_NAME(Texture)(texture,&name))

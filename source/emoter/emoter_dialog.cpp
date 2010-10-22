@@ -3323,7 +3323,6 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								shared_data->viewer_light_model,
 								(struct MANAGER(Scene) *)NULL,
 								shared_data->viewer_scene,
-								(struct MANAGER(Texture) *)NULL,
 								shared_data->user_interface );
 							Scene_viewer_set_viewport_size(emoter_slider->scene_viewer,
 								50, 50);

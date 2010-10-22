@@ -5135,7 +5135,6 @@ Executes a GFX CREATE WINDOW command.
 							command_data->light_manager,command_data->default_light,
 							command_data->light_model_manager,command_data->default_light_model,
 							command_data->scene_manager,command_data->default_scene,
-							command_data->texture_manager,
 							interactive_tool_manager,
 							command_data->default_time_keeper,
 							command_data->user_interface))
@@ -5163,7 +5162,6 @@ Executes a GFX CREATE WINDOW command.
 							command_data->light_manager,command_data->default_light,
 							command_data->light_model_manager,command_data->default_light_model,
 							command_data->scene_manager,command_data->default_scene,
-							command_data->texture_manager,
 							command_data->interactive_tool_manager,
 							command_data->default_time_keeper,
 							command_data->user_interface))
@@ -14124,8 +14122,6 @@ Executes a GFX MODIFY command.
 				modify_graphics_window_data.light_model_manager=
 					command_data->light_model_manager;
 				modify_graphics_window_data.scene_manager=command_data->scene_manager;
-				modify_graphics_window_data.texture_manager=
-					command_data->texture_manager;
 				modify_graphics_window_data.root_region=command_data->root_region;
 				Option_table_add_entry(option_table,"window",NULL, 
 					(void *)(&modify_graphics_window_data), modify_Graphics_window);
@@ -24417,4 +24413,3 @@ int Cmiss_command_data_set_cmgui_string(Cmiss_command_data *command_data, const 
 
 	return return_code;
 }
-

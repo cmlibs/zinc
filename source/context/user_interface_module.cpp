@@ -448,7 +448,6 @@ struct User_interface_module *User_interface_module_create(
 						Cmiss_graphics_module_get_light_manager(graphics_module), default_light,
 						Cmiss_graphics_module_get_light_model_manager(graphics_module), default_light_model,
 						Cmiss_graphics_module_get_scene_manager(graphics_module), default_scene,
-						Cmiss_graphics_module_get_texture_manager(graphics_module), 
 						UI_module->user_interface);
 				DEACCESS(Light_model)(&default_light_model);
 				DEACCESS(Light)(&default_light);

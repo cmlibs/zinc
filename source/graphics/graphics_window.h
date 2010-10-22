@@ -149,7 +149,6 @@ Structure to pass to modify_Graphics_window.
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
-	struct MANAGER(Texture) *texture_manager;
 	struct Cmiss_region *root_region;
 }; /* struct Modify_graphics_window_data */
 
@@ -188,7 +187,6 @@ struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Time_keeper *default_time_keeper,
 	struct User_interface *user_interface);

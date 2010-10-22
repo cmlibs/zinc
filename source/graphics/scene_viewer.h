@@ -53,6 +53,7 @@ translating and zooming with mouse button press and motion events.
 #define SCENE_VIEWER_H
 
 #include "api/cmiss_scene_viewer.h"
+#include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
 #include "general/image_utilities.h"
@@ -135,7 +136,6 @@ and the functions given their public names.
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
 #define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
 #define Scene_viewer_set_overlay_scene_by_name Cmiss_scene_viewer_set_overlay_scene_by_name
-#define Scene_viewer_set_background_texture_by_name Cmiss_scene_viewer_set_background_texture_by_name
 #define Scene_viewer_set_interactive_tool_by_name Cmiss_scene_viewer_set_interactive_tool_by_name
 #define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
 #define Scene_viewer_win32_set_window_size Cmiss_scene_viewer_win32_set_window_size
@@ -265,7 +265,6 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -341,7 +340,6 @@ struct Scene_viewer *CREATE(Scene_viewer)(
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
-	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -534,25 +532,6 @@ LAST MODIFIED : 21 January 1998
 DESCRIPTION :
 Retrieves the Scene_viewer's background_texture. Note that NULL is the valid
 return if there is no background texture.
-==============================================================================*/
-
-int Scene_viewer_set_background_texture(struct Scene_viewer *scene_viewer,
-	struct Texture *background_texture);
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Sets the background_texture to be displayed in the Scene_viewer. Information
-on how it will be displayed is set in Scene_viewer_set_background_texture_info.
-==============================================================================*/
-
-int Scene_viewer_set_background_texture_by_name(struct Scene_viewer *scene_viewer,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer scene from names in the scene manager.
 ==============================================================================*/
 
 int Scene_viewer_get_background_texture_info(struct Scene_viewer *scene_viewer,
@@ -1667,4 +1646,9 @@ DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
 
+struct Computed_field *Scene_viewer_get_background_image_field(
+	struct Scene_viewer *scene_viewer);
+
+int Scene_viewer_set_background_image_field(
+	struct Scene_viewer *scene_viewer, struct Computed_field *field);
 #endif /* !defined (SCENE_VIEWER_H) */

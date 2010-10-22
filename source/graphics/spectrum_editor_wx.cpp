@@ -2391,7 +2391,6 @@ Creates a spectrum_editor widget.
 											 (struct MANAGER(Light_model) *)NULL,viewer_light_model,
 											(struct MANAGER(Scene) *)NULL,
 											spectrum_editor->spectrum_editor_scene,
-											(struct MANAGER(Texture) *)NULL,
 											user_interface );
 								 ADD_OBJECT_TO_MANAGER(GT_object)(spectrum_editor->graphics_object,
 									 Cmiss_graphics_module_get_default_glyph_manager(graphics_module));
