@@ -11922,6 +11922,7 @@ static int gfx_list_scene(struct Parse_state *state,
 		{
 			Cmiss_scene_destroy(&scene);
 		}
+		DESTROY(Option_table)(&option_table);
 	}
 	else
 	{

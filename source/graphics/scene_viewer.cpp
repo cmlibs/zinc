@@ -4859,8 +4859,8 @@ Scene_viewer_sleep to restore normal activity.
 			(!scene_viewer->image_texture.callback_id))
 		{
 			scene_viewer->image_texture.callback_id=
-					MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
-						(void *)&(scene_viewer->image_texture), scene_viewer->image_texture.manager);
+				MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
+					(void *)&(scene_viewer->image_texture), scene_viewer->image_texture.manager);
 		}
 		return_code=1;
 	}

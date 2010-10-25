@@ -1360,7 +1360,7 @@ int set_image_field(struct Parse_state *state,void *field_address_void,
 		void *root_region_void)
 {
 	const char *current_token;
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_region *root_region = NULL;
 	struct Computed_field *temp_field = NULL, **field_address = NULL;
 
@@ -1394,6 +1394,7 @@ int set_image_field(struct Parse_state *state,void *field_address_void,
 							current_token, &region, &region_path, &field_name))
 						{
 							Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
+							return_code=1;
 							if (field_name && (strlen(field_name) > 0) &&
 								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 							{
@@ -1421,6 +1422,7 @@ int set_image_field(struct Parse_state *state,void *field_address_void,
 							{
 								REACCESS(Computed_field)(field_address, temp_field);
 							}
+							DEACCESS(Computed_field)(&temp_field);
 						}
 						else
 						{
