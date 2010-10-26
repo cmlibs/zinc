@@ -76,7 +76,6 @@ struct Cmiss_graphics_module
 	struct LIST(Light) *list_of_lights;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *default_spectrum;
-	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct Light_model *default_light_model;
@@ -99,7 +98,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	{
 		if (ALLOCATE(module, struct Cmiss_graphics_module, 1))
 		{
-			module->texture_manager = NULL;
 			module->light_manager = NULL;
 			module->spectrum_manager = NULL;
 			module->material_package = NULL;
@@ -111,7 +109,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->graphics_font_package = NULL;
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
-			module->texture_manager=CREATE(MANAGER(Texture))();
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
 			Spectrum_manager_set_owner(module->spectrum_manager, module);
@@ -238,8 +235,6 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Material_package)(&graphics_module->material_package);
 			if (graphics_module->default_font)
 				DEACCESS(Graphics_font)(&graphics_module->default_font);
-			if (graphics_module->texture_manager)
-				DESTROY(MANAGER(Texture))(&graphics_module->texture_manager);
 			if (graphics_module->default_time_keeper)
 				DEACCESS(Time_keeper)(&graphics_module->default_time_keeper);
 			if (graphics_module->graphics_font_package)
@@ -302,23 +297,6 @@ int Cmiss_graphics_module_create_rendition(
 	LEAVE;
 
 	return (return_code);
-}
-
-
-struct MANAGER(Texture) *Cmiss_graphics_module_get_texture_manager(
-	struct Cmiss_graphics_module *graphics_module)
-{
-	struct MANAGER(Texture) *texture_manager = NULL;
-	if (graphics_module)
-	{
-		texture_manager = graphics_module->texture_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_texture_manager.  Invalid argument(s)");
-	}
-	return texture_manager;
 }
 
 struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(

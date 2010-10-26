@@ -1927,4 +1927,53 @@ int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
 	return (return_code);
 } /* Cmiss_field_image_read */
 
+int list_image_field(struct Computed_field *field,void *dummy_void)
+{
+	int return_code = 0;
+	USE_PARAMETER(dummy_void);
 
+	if (field)
+	{
+		return_code = 1;
+		if (Computed_field_is_image_type(field, NULL))
+		{
+			struct Texture *texture = Computed_field_get_texture(field);
+			if (texture)
+			{
+				return_code = list_Texture(texture,NULL);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_image_field.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}
+
+int list_image_field_commands(struct Computed_field *field,void *command_prefix_void)
+{
+	int return_code = 0;
+
+	if (field)
+	{
+		return_code = 1;
+		if (Computed_field_is_image_type(field, NULL))
+		{
+			struct Texture *texture = Computed_field_get_texture(field);
+			if (texture)
+			{
+				return_code = list_Texture_commands(texture,command_prefix_void);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_image_field_commands.  Invalid argument(s)");
+	}
+
+	return (return_code);
+}

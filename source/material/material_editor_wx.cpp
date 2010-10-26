@@ -96,7 +96,6 @@ deaccess it.
 	struct Graphical_material *edit_material, *current_material;
 	struct Graphics_buffer *graphics_buffer;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct MANAGER(Texture) *texture_manager;
 	struct User_interface *user_interface;
 	wxMaterialEditor *wx_material_editor;
 	//wxListBox *material_editor_list_box;
@@ -1202,8 +1201,6 @@ Creates a Material_editor.
 				/* initialise the structure */
 				material_editor->material_manager_callback_id=(void *)NULL;
 				material_editor->background=0; /* tri-colour */
-				material_editor->texture_manager=Cmiss_graphics_module_get_texture_manager(
-						graphics_module);
 				material_editor->graphical_material_manager = Cmiss_graphics_module_get_material_manager(
 						graphics_module);
 				material_editor->graphics_module = Cmiss_graphics_module_access(graphics_module);

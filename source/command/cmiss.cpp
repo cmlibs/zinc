@@ -60,6 +60,7 @@
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
 #include "api/cmiss_context.h"
+#include "api/cmiss_field_module.h"
 #include "api/cmiss_field_sub_group_template.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
@@ -371,7 +372,6 @@ DESCRIPTION :
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
@@ -4590,8 +4590,8 @@ Modifies the properties of a texture.
 
 							if (texture_copy != texture)
 							{
-								MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(texture,
-									texture_copy,command_data->texture_manager);
+								MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)
+									(texture, texture_copy);
 								DESTROY(Texture)(&texture_copy);
 							}
 						}
@@ -7367,74 +7367,6 @@ Executes a GFX DESTROY SCENE command.
 	return (return_code);
 } /* gfx_destroy_Scene */
 
-static int gfx_destroy_texture(struct Parse_state *state,
-	void *dummy_to_be_modified, void *texture_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 8 May 2002
-
-DESCRIPTION :
-Executes a GFX DESTROY TEXTURE command.
-==============================================================================*/
-{
-	const char *current_token;
-	struct Texture *texture;
-	int return_code;
-	struct MANAGER(Texture) *texture_manager;
-
-	ENTER(gfx_destroy_texture);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (texture_manager =
-		(struct MANAGER(Texture) *)texture_manager_void))
-	{
-		if (current_token = state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING, current_token) &&
-				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
-			{
-				if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture, name)(
-					current_token, texture_manager))
-				{
-					if (REMOVE_OBJECT_FROM_MANAGER(Texture)(texture, texture_manager))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Could not remove texture %s from manager", current_token);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Unknown texture: %s", current_token);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " TEXTURE_NAME");
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Missing texture name");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_destroy_texture.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_destroy_texture */
-
 static int gfx_destroy_vtextures(struct Parse_state *state,
 	void *dummy_to_be_modified,void *volume_texture_manager_void)
 /*******************************************************************************
@@ -7650,9 +7582,6 @@ Executes a GFX DESTROY command.
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", NULL,
 					command_data->spectrum_manager, gfx_destroy_spectrum);
-				/* texture */
-				Option_table_add_entry(option_table, "texture", NULL,
-					command_data->texture_manager, gfx_destroy_texture);
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
@@ -12012,7 +11941,7 @@ Executes a GFX LIST SPECTRUM.
 } /* gfx_list_spectrum */
 
 static int gfx_list_texture(struct Parse_state *state,
-	void *dummy_to_be_modified,void *texture_manager_void)
+	void *dummy_to_be_modified,void *region_void)
 /*******************************************************************************
 LAST MODIFIED : 19 May 1999
 
@@ -12022,68 +11951,106 @@ Executes a GFX LIST TEXTURE.
 ==============================================================================*/
 {
 	static const char	*command_prefix="gfx create texture ";
+	char *region_name = NULL, *field_name = NULL;
 	char commands_flag;
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"commands",NULL,NULL,set_char_flag},
-		{"name",NULL,NULL,set_Texture},
-		{NULL,NULL,NULL,set_Texture}
-	};
-	struct Texture *texture;
-	struct MANAGER(Texture) *texture_manager;
+	int return_code = 0;
+	struct Cmiss_region *region = NULL, *root_region = NULL;
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_texture);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (texture_manager=(struct MANAGER(Texture) *)texture_manager_void)
+		root_region=(struct Cmiss_region *)region_void;
+		if (root_region)
 		{
 			commands_flag=0;
 			/* if no texture specified, list all textures */
-			texture=(struct Texture *)NULL;
-			(option_table[0]).to_be_modified= &commands_flag;
-			(option_table[1]).to_be_modified= &texture;
-			(option_table[1]).user_data= texture_manager_void;
-			(option_table[2]).to_be_modified= &texture;
-			(option_table[2]).user_data= texture_manager_void;
-			if (return_code=process_multiple_options(state,option_table))
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table,"region",&region_name,
+				(void *)1,set_name);
+			Option_table_add_entry(option_table, "commands", &commands_flag,
+				NULL, set_char_flag);
+			Option_table_add_entry(option_table,"field",&field_name,
+				(void *)1,set_name);
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
-				if (commands_flag)
+				if (region_name)
 				{
-					if (texture)
+					region = Cmiss_region_find_subregion_at_path(root_region,
+						region_name);
+					if (!region)
 					{
-						return_code=list_Texture_commands(texture,(void *)command_prefix);
-					}
-					else
-					{
-						return_code=FOR_EACH_OBJECT_IN_MANAGER(Texture)(
-							list_Texture_commands,(void *)command_prefix,texture_manager);
+						display_message(ERROR_MESSAGE, "No region named '%s'",region_name);
 					}
 				}
 				else
 				{
-					if (texture)
+					region = ACCESS(Cmiss_region)(root_region);
+					region_name = Cmiss_region_get_path(region);
+				}
+				if (region)
+				{
+					MANAGER(Computed_field) *field_manager =
+						Cmiss_region_get_Computed_field_manager(region);
+					Computed_field *existing_field = NULL;
+					if (field_name)
 					{
-						return_code=list_Texture(texture,(void *)NULL);
+						existing_field =	FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							(char *)field_name, field_manager);
+						if (existing_field)
+						{
+							if (Computed_field_is_image_type(existing_field, NULL))
+							{
+								if (commands_flag)
+								{
+									return_code=list_image_field_commands(existing_field,(void *)command_prefix);
+								}
+								else
+								{
+									return_code=list_image_field(existing_field,NULL);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"gfx_list_texture.  "
+									"Field specified does not contains a texture");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"gfx_list_texture.  "
+								"Field specified does not exist in region.");
+							return_code = 0;
+						}
 					}
 					else
 					{
-						return_code=FOR_EACH_OBJECT_IN_MANAGER(Texture)(
-							list_Texture,(void *)NULL,texture_manager);
+						if (commands_flag)
+						{
+							return_code=FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+								list_image_field_commands,(void *)command_prefix,field_manager);
+						}
+						else
+						{
+							return_code=FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+									list_image_field,(void *)NULL,field_manager);
+						}
 					}
+					DEACCESS(Cmiss_region)(&region);
 				}
 			}
-			/* must deaccess texture since accessed by set_Texture */
-			if (texture)
-			{
-				DEACCESS(Texture)(&texture);
-			}
+			DESTROY(Option_table)(&option_table);
+			if (region_name)
+				DEALLOCATE(region_name);
+			if (field_name)
+				DEALLOCATE(field_name);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"gfx_list_texture.  "
-				"Missing texture_manager_void");
+				"Missing root_region");
 			return_code=0;
 		}
 	}
@@ -12097,6 +12064,7 @@ Executes a GFX LIST TEXTURE.
 
 	return (return_code);
 } /* gfx_list_texture */
+
 
 static int gfx_list_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -12140,7 +12108,6 @@ Executes a GFX LIST TRANSFORMATION.
 						region_name);
 					if (!region)
 					{
-						region = NULL;
 						display_message(ERROR_MESSAGE, "No region named '%s'",region_name);
 					}
 				}
@@ -12465,7 +12432,7 @@ Executes a GFX LIST command.
 				command_data->spectrum_manager, gfx_list_spectrum);
 			/* texture */
 			Option_table_add_entry(option_table, "texture", NULL,
-				command_data->texture_manager, gfx_list_texture);
+					command_data->root_region, gfx_list_texture);
 			/* transformation */
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_list_transformation);
@@ -12868,7 +12835,6 @@ Parameter <help_mode> should be NULL when calling this function.
 					command_data->spectrum_manager;
 				rendition_command_data.default_spectrum =
 					command_data->default_spectrum;
-				rendition_command_data.texture_manager = command_data->texture_manager;
 
 				option_table = CREATE(Option_table)();
 				/* cylinders */
@@ -19056,7 +19022,7 @@ Executes a GFX WRITE TEXTURE command.
 	enum Image_file_format image_file_format;
 	int number_of_bytes_per_component, number_of_valid_strings,
 		original_depth_texels, original_height_texels, original_width_texels,
-		return_code;
+		return_code = 0;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -19073,33 +19039,45 @@ Executes a GFX WRITE TEXTURE command.
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (command_data->texture_manager)
+				if (command_data->root_region)
 				{
-					if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
-						(current_token, command_data->texture_manager))
+					struct Cmiss_region *region = NULL;
+					char *region_path = NULL, *field_name = NULL;
+					if (Cmiss_region_get_partial_region_path(command_data->root_region,
+						current_token, &region, &region_path, &field_name))
 					{
-						return_code = shift_Parse_state(state, 1);
+						Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
+						return_code=1;
+						if (field_name && (strlen(field_name) > 0) &&
+							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
+						{
+							struct Computed_field *temp_field =
+								Cmiss_field_module_find_field_by_name(field_module, field_name);
+							if (temp_field)
+							{
+								if (!Computed_field_is_image_type(temp_field,NULL))
+								{
+									DEACCESS(Computed_field)(&temp_field);
+									display_message(ERROR_MESSAGE,
+										"set_image_field.  Field specify does not contain image "
+										"information.");
+									return_code=0;
+								}
+								else
+								{
+									texture = Computed_field_get_texture(temp_field);
+									shift_Parse_state(state, 1);
+								}
+								DEACCESS(Computed_field)(&temp_field);
+							}
+						}
+						Cmiss_field_module_destroy(&field_module);
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx write texture:  Unknown texture : %s",current_token);
-						display_parse_state_location(state);
-						return_code = 0;
-					}
+					if (region_path)
+						DEALLOCATE(region_path);
+					if (field_name)
+						DEALLOCATE(field_name);
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_write_texture.  Missing texture manager");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " TEXTURE_NAME");
-				return_code = 1;
-				/* by not shifting parse state the rest of the help should come out */
 			}
 		}
 		else
@@ -22970,7 +22948,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->default_light_model=(struct Light_model *)NULL;
 		command_data->light_model_manager=(struct MANAGER(Light_model) *)NULL;
 		command_data->environment_map_manager=(struct MANAGER(Environment_map) *)NULL;
-		command_data->texture_manager=(struct MANAGER(Texture) *)NULL;
 		command_data->volume_texture_manager=(struct MANAGER(VT_volume_texture) *)NULL;
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -23273,9 +23250,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		/* environment map manager */
 		command_data->environment_map_manager=CREATE(MANAGER(Environment_map))();
-		/* texture manager */
-		command_data->texture_manager=Cmiss_graphics_module_get_texture_manager(
-				        command_data->graphics_module);
 		/* volume texture manager */
 		command_data->volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
 		/* spectrum manager */
@@ -23416,11 +23390,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->graphics_window_manager);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-			if (command_data->texture_manager)
-			{
-				Computed_field_register_type_image(
-					command_data->computed_field_package);
-			}
+			Computed_field_register_type_image(
+				command_data->computed_field_package);
 			if (command_data->root_region)
 			{
 				Computed_field_register_type_integration(
@@ -23928,7 +23899,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		DEACCESS(Material_package)(&command_data->material_package);
 		DEACCESS(Graphics_font)(&command_data->default_font);
 		DESTROY(MANAGER(VT_volume_texture))(&command_data->volume_texture_manager);
-		command_data->texture_manager = NULL;
 		DESTROY(MANAGER(Environment_map))(&command_data->environment_map_manager);				
 		DEACCESS(Light_model)(&(command_data->default_light_model));
 		DEACCESS(Light)(&(command_data->default_light));
@@ -24305,28 +24275,6 @@ Gets the user_interface for this <command_data>
 
 	return (user_interface);
 } /* Cmiss_command_data_get_user_interface */
-
-struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
-	struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 7 November 2006
-
-DESCRIPTION :
-Returns the texture manager from the <command_data>.
-==============================================================================*/
-{
-	struct MANAGER(Texture) *texture_manager;
-
-	ENTER(Cmiss_command_data_get_texture_manager);
-	texture_manager=(struct MANAGER(Texture) *)NULL;
-	if (command_data)
-	{
-		texture_manager = command_data->texture_manager;
-	}
-	LEAVE;
-
-	return (texture_manager);
-} /* Cmiss_command_data_get_texture_manager */
 
 struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
 	struct Cmiss_command_data *command_data)

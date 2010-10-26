@@ -103,4 +103,14 @@ int Computed_field_is_image_type(struct Computed_field *field,
 
 int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
 		struct Texture *texture);
+
+/***************************************************************************//**
+ * A function to list information of the texture in an image field.
+ */
+int list_image_field(struct Computed_field *field,void *dummy_void);
+
+/***************************************************************************//**
+ * A function to list the command to create an image field.
+ */
+int list_image_field_commands(struct Computed_field *field,void *command_prefix_void);
 #endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */

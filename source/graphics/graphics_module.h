@@ -92,16 +92,6 @@ struct Material_package *Cmiss_graphics_module_get_material_package(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the texture manager in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the texture manager in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct MANAGER(Texture) *Cmiss_graphics_module_get_texture_manager(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the manager of light in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.

@@ -1355,7 +1355,6 @@ orthographic axes.
 	return (return_code);
 } /* set_Graphics_window_ortho_axes */
 
-
 int set_image_field(struct Parse_state *state,void *field_address_void,
 		void *root_region_void)
 {

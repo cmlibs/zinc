@@ -114,7 +114,6 @@ Structure for maintaining a graphical rendition of region.
 	/* global stores of selected objects for automatic highlighting */
 	void *graphical_material_manager_callback_id;
 	void *spectrum_manager_callback_id;
-	void *texture_manager_callback_id;
 	std::list<struct Scene *> *list_of_scene;
 	/* level of cache in effect */
 	int cache;
@@ -443,7 +442,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->computed_field_manager_callback_id=(void *)NULL;
 				cmiss_rendition->graphical_material_manager_callback_id=(void *)NULL;
 				cmiss_rendition->spectrum_manager_callback_id=(void *)NULL;
-				cmiss_rendition->texture_manager_callback_id=(void *)NULL;
 				cmiss_rendition->transformation = (gtMatrix *)NULL;
 				cmiss_rendition->graphics_module =	graphics_module;
 				cmiss_rendition->time_object = NULL;
@@ -4247,8 +4245,6 @@ int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition, const char *co
 					Cmiss_graphics_module_get_spectrum_manager(graphics_module);
 				rendition_command_data.default_spectrum =
 						Cmiss_graphics_module_get_default_spectrum(graphics_module);
-				rendition_command_data.texture_manager =
-					Cmiss_graphics_module_get_texture_manager(graphics_module);
 
 				option_table = CREATE(Option_table)();
 				/* cylinders */

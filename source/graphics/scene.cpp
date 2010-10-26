@@ -287,7 +287,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct MANAGER(Spectrum) *spectrum_manager;
 	void *spectrum_manager_callback_id;
 	struct Spectrum *default_spectrum;
-	struct MANAGER(Texture) *texture_manager;
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 #endif /* defined (OLD_CODE) */
@@ -3085,7 +3084,6 @@ from the default versions of these functions.
 		scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		scene->spectrum_manager_callback_id=(void *)NULL;
 		scene->default_spectrum=(struct Spectrum *)NULL;
-		scene->texture_manager=(struct MANAGER(Texture) *)NULL;
 		scene->default_time_keeper=(struct Time_keeper *)NULL;
 		scene->user_interface=(struct User_interface *)NULL;
 #endif /* defined (OLD_CODE) */
