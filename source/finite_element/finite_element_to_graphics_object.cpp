@@ -272,7 +272,13 @@ computed_fields_of_node->number_of_nodes++.
 			actual size after adding each node, thereby only visiting and 
 			checking each node once. */
 		current_field_address=computed_fields_of_node->required_fields;
-		if (computed_fields_of_node->select_mode == GRAPHICS_DRAW_SELECTED ||
+
+		if ((computed_fields_of_node->select_mode == GRAPHICS_DRAW_UNSELECTED) &&
+			!computed_fields_of_node->group_field)
+		{
+			visibility = 1;
+		}
+		else if (computed_fields_of_node->select_mode == GRAPHICS_DRAW_SELECTED ||
 			computed_fields_of_node->select_mode == GRAPHICS_DRAW_UNSELECTED)
 		{
 			if (computed_fields_of_node->group_field &&
@@ -382,7 +388,12 @@ fields used here.
 	number_of_variable_scale_components = 0;
 	node_to_glyph_set_data =
 		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void;
-	if (node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED ||
+	if ((node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED) &&
+			!node_to_glyph_set_data->group_field)
+	{
+		visibility_value = 1;
+	}
+	else if (node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED ||
 		node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED)
 	{
 		if (node_to_glyph_set_data->group_field &&
@@ -1385,8 +1396,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 		((!label_density_field) ||
 			(3 >=	Computed_field_get_number_of_components(label_density_field))))
 	{
-		if (((GRAPHICS_DRAW_SELECTED!=select_mode)&&
-				(GRAPHICS_DRAW_UNSELECTED!=select_mode))||group_field)
+		if ((GRAPHICS_DRAW_SELECTED!=select_mode) || group_field)
 		{
 			if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
 			{
