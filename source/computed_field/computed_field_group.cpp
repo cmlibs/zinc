@@ -475,10 +475,18 @@ Cmiss_field_id Computed_field_group::create_node_group()
 	{
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
-		local_node_group = Cmiss_field_module_create_node_group_template(field_module);
-		Cmiss_field_set_name(local_node_group, "cmiss_node_selection");
+		local_node_group = get_node_group();
+		if (!local_node_group)
+		{
+			char *temp_string = Cmiss_field_get_name(this->getField());
+			int error = 0;
+			append_string(&temp_string, ".nodes", &error);
+			local_node_group = Cmiss_field_module_create_node_group_template(field_module);
+			Cmiss_field_set_name(local_node_group, temp_string);
+			Cmiss_field_access(local_node_group);
+			DEALLOCATE(temp_string);
+		}
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_field_access(local_node_group);
 	}
 	else
 	{
@@ -494,6 +502,19 @@ Cmiss_field_id Computed_field_group::get_node_group()
 	{
 		Cmiss_field_access(local_node_group);
 	}
+	else
+	{
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		char *temp_string = Cmiss_field_get_name(this->getField());
+		int error = 0;
+		append_string(&temp_string, ".nodes", &error);
+		local_node_group = Cmiss_field_module_find_field_by_name(
+			field_module, temp_string);
+		DEALLOCATE(temp_string);
+		if (local_node_group)
+			Cmiss_field_access(local_node_group);
+		Cmiss_field_module_destroy(&field_module);
+	}
 
 	return (local_node_group);
 }
@@ -504,10 +525,18 @@ Cmiss_field_id Computed_field_group::create_element_group()
 	{
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
-		local_element_group = Cmiss_field_module_create_element_group_template(field_module);
-		Cmiss_field_set_name(local_element_group, "cmiss_element_selection");
+		local_element_group = get_element_group();
+		if (!local_element_group)
+		{
+			char *temp_string = Cmiss_field_get_name(this->getField());
+			int error = 0;
+			append_string(&temp_string, ".elements", &error);
+			local_element_group = Cmiss_field_module_create_element_group_template(field_module);
+			Cmiss_field_set_name(local_element_group, temp_string);
+			Cmiss_field_access(local_element_group);
+			DEALLOCATE(temp_string);
+		}
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_field_access(local_element_group);
 	}
 	else
 	{
@@ -523,7 +552,19 @@ Cmiss_field_id Computed_field_group::get_element_group()
 	{
 		Cmiss_field_access(local_element_group);
 	}
-
+	else
+	{
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		char *temp_string = Cmiss_field_get_name(this->getField());
+		int error = 0;
+		append_string(&temp_string, ".elements", &error);
+		local_element_group = Cmiss_field_module_find_field_by_name(
+			field_module, temp_string);
+		DEALLOCATE(temp_string);
+		if (local_element_group)
+			Cmiss_field_access(local_element_group);
+		Cmiss_field_module_destroy(&field_module);
+	}
 	return (local_element_group);
 }
 
