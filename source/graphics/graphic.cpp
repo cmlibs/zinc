@@ -4085,7 +4085,8 @@ int Cmiss_graphic_Computed_field_change(
 	  			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 	  				(CMISS_GRAPHIC_LINES==graphic->graphic_type) ||
 	  				(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type) ||
-	  				(CMISS_GRAPHIC_SURFACES==graphic->graphic_type)))
+	  				(CMISS_GRAPHIC_SURFACES==graphic->graphic_type) ||
+	  				(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)))
 	  	{
 	  		switch (graphic->select_mode)
 	  		{
