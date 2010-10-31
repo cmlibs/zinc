@@ -190,11 +190,14 @@ Called by the
 	int include_null_item(bool flag)
 	{
 		int return_code = 1;
-		null_item_flag = flag;
-		if (null_item_flag != flag && (null_item_flag = flag) && build_items())
+		if (null_item_flag != flag)
 		{
-			return_code=chooser->build_main_menu(
-				 number_of_items, items, item_names, (Managed_object *)NULL);
+			null_item_flag = flag;
+			if (build_items())
+			{
+				return_code=chooser->build_main_menu(
+					number_of_items, items, item_names, (Managed_object *)NULL);
+			}
 		}
 		return return_code;
 	}

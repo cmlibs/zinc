@@ -118,12 +118,14 @@ public:
 	{
 		unsigned int i, return_code;
 		return_code = 0;
-		for (i = 0 ; !return_code && (i < GetCount()) ; i++)
+		unsigned int number_of_items = GetCount();
+		for (i = 0 ; i < number_of_items ; i++)
 		{
 			if (new_item == GetClientData(i))
 			{
 				SetSelection(i);
 				return_code = 1;
+				break;
 			}
 		}
 		return (return_code);
