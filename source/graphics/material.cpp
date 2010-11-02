@@ -5759,11 +5759,6 @@ int set_Material_image_texture(struct Parse_state *state,void *material_image_te
 						if (Cmiss_region_get_partial_region_path(root_region,
 							current_token, &region, &region_path, &field_name))
 						{
-							if (region_path && !field_name)
-							{
-								field_name = region_path;
-								region_path = NULL;
-							}
 							Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
 							if (field_name && (strlen(field_name) > 0) &&
 								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
@@ -5779,6 +5774,21 @@ int set_Material_image_texture(struct Parse_state *state,void *material_image_te
 										"information.");
 									return_code=0;
 								}
+							}
+							else
+							{
+								if (field_name)
+								{
+									display_message(ERROR_MESSAGE,
+										"set_Material_image_texture:  Invalid region path or texture field name '%s'", field_name);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"set_Material_image_texture:  Missing texture field name or name matches child region '%s'", current_token);
+								}
+								display_parse_state_location(state);
+								return_code = 0;
 							}
 							Cmiss_field_module_destroy(&field_module);
 						}

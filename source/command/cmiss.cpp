@@ -4078,11 +4078,6 @@ Modifies the properties of a texture.
 						if (Cmiss_region_get_partial_region_path(command_data->root_region,
 							current_token, &region, &region_path, &field_name))
 						{
-							if (region_path && !field_name)
-							{
-								field_name = region_path;
-								region_path = NULL;
-							}
 							if (field_name && (strlen(field_name) > 0) &&
 								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 							{
@@ -4101,6 +4096,21 @@ Modifies the properties of a texture.
 									}
 									Cmiss_field_destroy(&existing_field);
 								}
+							}
+							else
+							{
+								if (field_name)
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx_modify_Texture:  Invalid region path or texture field name '%s'", field_name);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx_modify_Texture:  Missing texture field name or name matches child region '%s'", current_token);
+								}
+								display_parse_state_location(state);
+								return_code = 0;
 							}
 							if (region_path)
 								DEALLOCATE(region_path);
@@ -4704,11 +4714,6 @@ Executes a GFX CREATE TEXTURE command.
 					if (Cmiss_region_get_partial_region_path(command_data->root_region,
 						current_token, &region, &region_path, &field_name))
 					{
-						if (region_path && !field_name)
-						{
-							field_name = region_path;
-							region_path = NULL;
-						}
 						Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
@@ -4761,12 +4766,12 @@ Executes a GFX CREATE TEXTURE command.
 							if (field_name)
 							{
 								display_message(ERROR_MESSAGE,
-									"gfx_create_texture:  Invalid region path or field name '%s'", field_name);
+									"gfx_create_texture:  Invalid region path or texture field name '%s'", field_name);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"gfx_create_texture:  Missing field name or name matches child region '%s'", current_token);
+									"gfx_create_texture:  Missing texture field name or name matches child region '%s'", current_token);
 							}
 							display_parse_state_location(state);
 							return_code = 0;
