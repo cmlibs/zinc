@@ -317,7 +317,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	int image_width = -1, image_height = -1, image_depth = -1, bytes_per_pixel, i,
 		image_width_bytes, j, k, number_of_components, dimension, *sizes,
 		return_code, tex_number_of_components,
-		use_pixel_location, texture_dimension, l;
+		use_pixel_location, texture_dimension, l, source_field_is_image = 0;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct Computed_field_find_element_xi_cache *cache;
@@ -328,93 +328,101 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	ENTER(Computed_field_image::evaluate_texture_from_source_field);
 	if (texture && texture_is_evaluated_from_source_field())
 	{
-		/* Setup sizes */
-		sizes = (int *)NULL;
-		texture_coordinate_field = field->source_fields[0];
-		source_field = field->source_fields[1];
-		if (Computed_field_get_native_resolution(source_field,
-				&dimension, &sizes, &source_texture_coordinate_field))
-		{
-			if (dimension > 0)
-			{
-				image_width = sizes[0];
-			}
-			else
-			{
-				image_width = 1;
-			}
-			
-			if (dimension > 1)
-			{
-				image_height = sizes[1];
-			}
-			else
-			{
-				image_height = 1;
-			}
-			
-			if (dimension > 2)
-			{
-				image_depth = sizes[2];
-			}
-			else
-			{
-				image_depth = 1;
-			}
-			DEALLOCATE(sizes);
-		}
-		if (image_depth > 1)
-		{
-			texture_dimension = 3;
-		}
-		else
-		{
-			if (image_height > 1)
-			{
-				texture_dimension = 2;
-			}
-			else
-			{
-				texture_dimension = 1;
-			}
-		}
-
-		if (3 >= (tex_number_of_components =
-			Computed_field_get_number_of_components(texture_coordinate_field)))
+		if (Computed_field_is_image_type(field->source_fields[1], NULL))
 		{
 			return_code = 1;
+			source_field_is_image = 1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_image::evaluate_texture_from_source_field.  Invalid texture_coordinate field.");
-			return_code = 0;
-		}
+			/* Setup sizes */
+			sizes = (int *)NULL;
+			texture_coordinate_field = field->source_fields[0];
+			source_field = field->source_fields[1];
+			if (Computed_field_get_native_resolution(source_field,
+					&dimension, &sizes, &source_texture_coordinate_field))
+			{
+				if (dimension > 0)
+				{
+					image_width = sizes[0];
+				}
+				else
+				{
+					image_width = 1;
+				}
 
-		number_of_components = 
-			Computed_field_get_number_of_components(source_field);	
-		if (number_of_components == 1)
-		{
-			specify_format = TEXTURE_LUMINANCE;
-		}
-		else if (number_of_components == 2)
-		{
-			specify_format = TEXTURE_LUMINANCE_ALPHA;
-		}
-		else if (number_of_components == 3)
-		{
-			specify_format = TEXTURE_RGB;
-		}
-		else if (number_of_components == 4)
-		{
-			specify_format = TEXTURE_RGBA;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
-				"the number of components in source field.");
-			return_code = 0;
+				if (dimension > 1)
+				{
+					image_height = sizes[1];
+				}
+				else
+				{
+					image_height = 1;
+				}
+
+				if (dimension > 2)
+				{
+					image_depth = sizes[2];
+				}
+				else
+				{
+					image_depth = 1;
+				}
+				DEALLOCATE(sizes);
+			}
+			if (image_depth > 1)
+			{
+				texture_dimension = 3;
+			}
+			else
+			{
+				if (image_height > 1)
+				{
+					texture_dimension = 2;
+				}
+				else
+				{
+					texture_dimension = 1;
+				}
+			}
+
+			if (3 >= (tex_number_of_components =
+				Computed_field_get_number_of_components(texture_coordinate_field)))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_image::evaluate_texture_from_source_field.  Invalid texture_coordinate field.");
+				return_code = 0;
+			}
+
+			number_of_components =
+				Computed_field_get_number_of_components(source_field);
+			if (number_of_components == 1)
+			{
+				specify_format = TEXTURE_LUMINANCE;
+			}
+			else if (number_of_components == 2)
+			{
+				specify_format = TEXTURE_LUMINANCE_ALPHA;
+			}
+			else if (number_of_components == 3)
+			{
+				specify_format = TEXTURE_RGB;
+			}
+			else if (number_of_components == 4)
+			{
+				specify_format = TEXTURE_RGBA;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
+					"the number of components in source field.");
+				return_code = 0;
+			}
 		}
 	}
 	else
@@ -429,7 +437,11 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	{
 		/* allocate the texture image */
 		use_pixel_location = 1;
-		if (Texture_allocate_image(texture, image_width, image_height,
+		if (source_field_is_image)
+		{
+			REACCESS(Texture)(&texture, Computed_field_get_texture(field->source_fields[1]));
+		}
+		else if (Texture_allocate_image(texture, image_width, image_height,
 				image_depth, specify_format, number_of_bytes_per_component, field->name))
 		{
 			cache = (struct Computed_field_find_element_xi_cache *)NULL;
@@ -492,8 +504,8 @@ int Computed_field_image::evaluate_texture_from_source_field()
 							{
 								/* Try to use a pixel coordinate first */
 								if (Computed_field_evaluate_at_field_coordinates(source_field,
-									texture_coordinate_field, texture_dimension, values, 
-										/*time*/0.0, data_values))
+										texture_coordinate_field, texture_dimension, values,
+									/*time*/0.0, data_values))
 								{
 									rgba[0] = 0;
 									rgba[1] = 0;
@@ -1020,6 +1032,7 @@ Computed_field *Computed_field_create_image(
 {
 	Computed_field *field = NULL;
 	int return_code = 1;
+	bool check_source_field = true;
 	Computed_field *texture_coordinate_field = NULL;
 	if (domain_field)
 	{
@@ -1072,7 +1085,7 @@ Computed_field *Computed_field_create_image(
 						}
 					}
 				}
-				else
+				else if (texture_coordinate_field == NULL && source_texture_coordinate_field)
 				{
 					REACCESS(Computed_field)(&texture_coordinate_field, source_texture_coordinate_field);
 				}
@@ -1082,12 +1095,16 @@ Computed_field *Computed_field_create_image(
 	}
 	if (texture_coordinate_field == (struct Computed_field *)NULL)
 	{
-		Cmiss_field_module *temp_field_module =
-			Cmiss_field_module_create(Cmiss_field_module_get_region(field_module));
-		Cmiss_field_module_set_field_name(temp_field_module, "Cmiss_temp_image_domain");
-		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_module);
-		Computed_field_set_read_only(texture_coordinate_field);
-		Cmiss_field_module_destroy(&temp_field_module);
+		texture_coordinate_field =
+			Cmiss_field_module_find_field_by_name(field_module, "Cmiss_temp_image_domain");
+		if (!texture_coordinate_field)
+		{
+			texture_coordinate_field = Computed_field_create_xi_coordinates(field_module);
+			Computed_field_set_name(texture_coordinate_field, "Cmiss_temp_image_domain");
+			Computed_field_set_read_only(texture_coordinate_field);
+			check_source_field = false;
+		}
+		check_source_field = false;
 	}
 	if (return_code && texture_coordinate_field && 
 		(3 >= texture_coordinate_field->number_of_components))
@@ -1104,7 +1121,7 @@ Computed_field *Computed_field_create_image(
 			source_fields[1] = source_field;
 		}
 		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/true,
+			check_source_field,
 			number_of_components,
 			number_of_source_fields, source_fields,
 			/*number_of_source_values*/0, NULL,

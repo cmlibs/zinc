@@ -4078,6 +4078,11 @@ Modifies the properties of a texture.
 						if (Cmiss_region_get_partial_region_path(command_data->root_region,
 							current_token, &region, &region_path, &field_name))
 						{
+							if (region_path && !field_name)
+							{
+								field_name = region_path;
+								region_path = NULL;
+							}
 							if (field_name && (strlen(field_name) > 0) &&
 								(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 							{
@@ -4097,8 +4102,10 @@ Modifies the properties of a texture.
 									Cmiss_field_destroy(&existing_field);
 								}
 							}
-							DEALLOCATE(region_path);
-							DEALLOCATE(field_name);
+							if (region_path)
+								DEALLOCATE(region_path);
+							if (field_name)
+								DEALLOCATE(field_name);
 						}
 						if (texture)
 						{
@@ -4697,6 +4704,11 @@ Executes a GFX CREATE TEXTURE command.
 					if (Cmiss_region_get_partial_region_path(command_data->root_region,
 						current_token, &region, &region_path, &field_name))
 					{
+						if (region_path && !field_name)
+						{
+							field_name = region_path;
+							region_path = NULL;
+						}
 						Cmiss_field_module *field_module = Cmiss_region_get_field_module(region);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
@@ -4760,8 +4772,10 @@ Executes a GFX CREATE TEXTURE command.
 							return_code = 0;
 						}
 						Cmiss_field_module_destroy(&field_module);
-						DEALLOCATE(region_path);
-						DEALLOCATE(field_name);
+						if (region_path)
+							DEALLOCATE(region_path);
+						if (field_name)
+							DEALLOCATE(field_name);
 					}
 				}
 				else
