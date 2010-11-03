@@ -4814,8 +4814,9 @@ int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
 			region_tree_viewer->graphiclistbox->Clear();
 			for_each_graphic_in_Cmiss_rendition(region_tree_viewer->rendition,
 				Region_tree_viewer_add_graphic_item, (void *)region_tree_viewer);
-			REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition,
-				create_editor_copy_Cmiss_rendition(region_tree_viewer->rendition));
+			Cmiss_rendition *copy = create_editor_copy_Cmiss_rendition(region_tree_viewer->rendition);
+			REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, copy);
+			DEACCESS(Cmiss_rendition)(&copy);
 			int num = 	region_tree_viewer->graphiclistbox->GetCount();
 			if (selection >= num)
 			{
