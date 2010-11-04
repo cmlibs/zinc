@@ -3189,25 +3189,9 @@ value searches just elements of that dimension.
 ==============================================================================*/
 {
 	char *field_name;
-	unsigned char *image_plane, *ptr;
-	unsigned short *two_bytes_image_plane, *two_bytes_ptr;
-	FE_value *data_values, values[3], xi[3];
-	float hint_minimums[3] = {0.0, 0.0, 0.0};
-	float hint_maximums[3];
-	float hint_resolution[3];
-	float multiplier;
-	float	rgba[4], fail_alpha, texture_depth, texture_height,
-		texture_width;
-	int bytes_per_pixel, dimension, i, image_width_bytes, j, k,
-	  number_of_components,
-		number_of_data_components, return_code, source_dimension,
-		*source_sizes, tex_number_of_components, use_pixel_location;
-	unsigned long field_evaluate_error_count, find_element_xi_error_count,
-		spectrum_render_error_count, total_number_of_pixels;
-	struct Colour fail_colour;
-	struct Computed_field *source_texture_coordinate_field;
-	struct Computed_field_find_element_xi_cache *cache;
-	struct FE_element *element;
+	int bytes_per_pixel, dimension, number_of_components, return_code,
+		source_dimension, *source_sizes, tex_number_of_components, use_pixel_location = 1;
+	struct Computed_field *source_texture_coordinate_field = NULL;
 
 	ENTER(set_Texture_image_from_field);
 	if (texture && field && spectrum && region &&
@@ -3300,354 +3284,17 @@ value searches just elements of that dimension.
 			 number_of_bytes_per_component = 1;
 		}
 		/* allocate the texture image */
+		use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field);
 		field_name = (char *)NULL;
-		use_pixel_location = 1;
 		GET_NAME(Computed_field)(field, &field_name);
 		if (Texture_allocate_image(texture, image_width, image_height,
 			image_depth, storage, number_of_bytes_per_component, field_name))
 		{
-			cache = (struct Computed_field_find_element_xi_cache *)NULL;
-			number_of_data_components =
-				Computed_field_get_number_of_components(field);
-			Texture_get_physical_size(texture, &texture_width, &texture_height,
-				&texture_depth);
-			/* allocate space for a single image plane */
 			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
-			image_width_bytes = image_width*bytes_per_pixel;
-			if (number_of_bytes_per_component == 2)
-			{
-				 image_plane = (unsigned char *)NULL;
-				 ALLOCATE(two_bytes_image_plane, unsigned short, image_height*image_width_bytes);
-			}
-			else
-			{
-				 two_bytes_image_plane = (unsigned short *)NULL;
-				 ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
-			}
-			ALLOCATE(data_values, FE_value,
-				Computed_field_get_number_of_components(field));
-			for (i = 0; (Computed_field_get_number_of_components(field) >i);  i++)
-			{
-				 data_values[i]=0.0;
-			}
-			Graphical_material_get_diffuse(fail_material, &fail_colour);
-			Graphical_material_get_alpha(fail_material, &fail_alpha);
-			if ((image_plane || two_bytes_image_plane) && data_values)
-			{
-				hint_resolution[0] = image_width;
-				hint_resolution[1] = image_height;
-				hint_resolution[2] = image_depth;
-				field_evaluate_error_count = 0;
-				find_element_xi_error_count = 0;
-				spectrum_render_error_count = 0;
-				total_number_of_pixels = image_width*image_height*image_depth;
-				hint_maximums[0] = texture_width;
-				hint_maximums[1] = texture_height;
-				hint_maximums[2] = texture_depth;
-				for (i = 0; (i < image_depth) && return_code; i++)
-				{
-					/*???debug -- leave in so user knows something is happening! */
-					if (1 < image_depth)
-					{
-						printf("Evaluating image plane %d of %d\n", i+1, image_depth);
-					}
-					if (number_of_bytes_per_component == 2)
-					{
-						 two_bytes_ptr = (unsigned short *)two_bytes_image_plane;
-						 ptr = (unsigned char *)NULL;
-					}
-					else
-					{
-						 two_bytes_ptr = (unsigned short *)NULL;
-						 ptr = (unsigned char *)image_plane;
-					}
-					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
-					for (j = 0; (j < image_height) && return_code; j++)
-					{
-						values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
-						for (k = 0; (k < image_width) && return_code; k++)
-						{
-							values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
-#if defined (DEBUG)
-							/*???debug*/
-							if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
-							{
-								printf("  field pos = %10g %10g %10g\n", values[0], values[1], values[2]);
-							}
-#endif /* defined (DEBUG) */
-							if (use_pixel_location)
-							{
-								/* Try to use a pixel coordinate first */
-								if (Computed_field_evaluate_at_field_coordinates(field,
-									texture_coordinate_field, dimension, values, 
-										/*time*/0.0, data_values))
-								{
-									if (!Spectrum_value_to_rgba(spectrum,
-											number_of_data_components, data_values,
-											rgba))
-									{
-										rgba[0] = fail_colour.red;
-										rgba[1] = fail_colour.green;
-										rgba[2] = fail_colour.blue;
-										rgba[3] = fail_alpha;
-										spectrum_render_error_count++;
-									}
-								}
-								else
-								{
-									use_pixel_location = 0;
-								}
-							}
-							if (!use_pixel_location)
-							{
-								/* Otherwise find a valid element xi location */
-								/* Computed_field_find_element_xi_special returns true if it has
-									performed a valid calculation even if the element isn't found
-									to stop the slow Computed_field_find_element_xi being called */
-								if (Computed_field_find_element_xi_special(
-										 texture_coordinate_field, &cache, values,
-										 tex_number_of_components, &element, xi,
-										 region, element_dimension,
-										 graphics_buffer_package,
-										 hint_minimums, hint_maximums, hint_resolution) ||
-									Computed_field_find_element_xi(texture_coordinate_field,
-										values, tex_number_of_components, /*time*/0, &element, xi,
-										element_dimension, region, propagate_field,
-										/*find_nearest_location*/0))
-								{
-									if (element)
-									{
-#if defined (DEBUG)
-										/*???debug*/
-										if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
-										{
-											printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
-										}
-#endif /* defined (DEBUG) */
-										if (Computed_field_evaluate_in_element(field,
-												element, xi,/*time*/0,(struct FE_element *)NULL,
-												data_values, (FE_value *)NULL))
-										{
-											if (!Spectrum_value_to_rgba(spectrum,
-													number_of_data_components, data_values,
-													rgba))
-											{
-												rgba[0] = fail_colour.red;
-												rgba[1] = fail_colour.green;
-												rgba[2] = fail_colour.blue;
-												rgba[3] = fail_alpha;
-												spectrum_render_error_count++;
-											}
-										}
-										else
-										{
-											rgba[0] = fail_colour.red;
-											rgba[1] = fail_colour.green;
-											rgba[2] = fail_colour.blue;
-											rgba[3] = fail_alpha;
-											field_evaluate_error_count++;
-										}
-									}
-									else
-									{
-										rgba[0] = fail_colour.red;
-										rgba[1] = fail_colour.green;
-										rgba[2] = fail_colour.blue;
-										/* not in any element; set alpha to zero so invisible */
-										rgba[3] = fail_alpha;
-									}
-								}
-								else
-								{
-									rgba[0] = fail_colour.red;
-									rgba[1] = fail_colour.green;
-									rgba[2] = fail_colour.blue;
-									/* error finding element:xi; set alpha to zero so invisible */
-									rgba[3] = fail_alpha;
-									find_element_xi_error_count++;
-								}
-							}
-#if defined (DEBUG)
-							/*???debug*/
-							if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
-							{
-								printf("  RGBA = %10g %10g %10g %10g\n", rgba[0], rgba[1], rgba[2], rgba[3]);
-							}
-#endif /* defined (DEBUG) */
-							if (number_of_bytes_per_component == 2)
-							{
-								 multiplier = pow(256.0,number_of_bytes_per_component) - 1.0;
-								 switch (storage)
-								 {
-										case TEXTURE_LUMINANCE:
-										{
-											 *two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
-											 two_bytes_ptr++;
-										} break;
-										case TEXTURE_LUMINANCE_ALPHA:
-										{
-											 *two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
-											 two_bytes_ptr++;
-										} break;
-										case TEXTURE_RGB:
-										{
-											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
-											 two_bytes_ptr++;
-										} break;
-										case TEXTURE_RGBA:
-										{
-											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
-											 two_bytes_ptr++;
-										} break;
-										case TEXTURE_ABGR:
-										{
-											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
-											 two_bytes_ptr++;
-											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
-											 two_bytes_ptr++;
-										} break;
-										default:
-										{
-											 display_message(ERROR_MESSAGE,
-													"set_Texture_image_from_field.  Unsupported storage type");
-											 return_code = 0;
-										} break;
-								 }
-							}
-							else
-							{
-								 multiplier = 255.0;
-								 switch (storage)
-								 {
-										case TEXTURE_LUMINANCE:
-										{
-											 *ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
-											 ptr++;
-										} break;
-										case TEXTURE_LUMINANCE_ALPHA:
-										{
-											 *ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[3] * multiplier);
-											 ptr++;
-										} break;
-										case TEXTURE_RGB:
-										{
-											 *ptr = (unsigned char)(rgba[0] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[1] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[2] * multiplier);
-											 ptr++;
-										} break;
-										case TEXTURE_RGBA:
-										{
-											 *ptr = (unsigned char)(rgba[0] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[1] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[2] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[3] * multiplier);
-											 ptr++;
-										} break;
-										case TEXTURE_ABGR:
-										{
-											 *ptr = (unsigned char)(rgba[3] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[2] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[1] * multiplier);
-											 ptr++;
-											 *ptr = (unsigned char)(rgba[0] * multiplier);
-											 ptr++;
-										} break;
-										default:
-										{
-											 display_message(ERROR_MESSAGE,
-													"set_Texture_image_from_field.  Unsupported storage type");
-											 return_code = 0;
-										} break;
-								 }
-							}
-						}
-					}
-					if (number_of_bytes_per_component == 2)
-					{
-						 if (!Texture_set_image_block(texture,
-									 /*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
-									 image_width_bytes, (unsigned char *)two_bytes_image_plane))
-						 {
-								display_message(ERROR_MESSAGE,
-									 "set_Texture_image_from_field.  Could not set texture block");
-								return_code = 0;
-						 }
-					}
-					else
-					{
-						 if (!Texture_set_image_block(texture,
-									 /*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
-									 image_width_bytes, image_plane))
-						 {
-								display_message(ERROR_MESSAGE,
-									 "set_Texture_image_from_field.  Could not set texture block");
-								return_code = 0;
-						 }
-					}
-				}
-				Computed_field_clear_cache(field);
-				Computed_field_clear_cache(texture_coordinate_field);
-				Spectrum_end_value_to_rgba(spectrum);
-				if (0 < field_evaluate_error_count)
-				{
-					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
-						"Field could not be evaluated in element for %d out of %d pixels",
-						field_evaluate_error_count, total_number_of_pixels);
-				}
-				if (0 < spectrum_render_error_count)
-				{
-					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
-						"Spectrum could not be evaluated for %d out of %d pixels",
-						spectrum_render_error_count, total_number_of_pixels);
-				}
-				if (0 < find_element_xi_error_count)
-				{
-					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
-						"Unable to find element:xi for %d out of %d pixels",
-						find_element_xi_error_count, total_number_of_pixels);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_Texture_image_from_field.  Not enough memory");
-				return_code = 0;
-			}
-			DEALLOCATE(data_values);
-			if (image_plane)
-				 DEALLOCATE(image_plane);
-			if (two_bytes_image_plane)
-				 DEALLOCATE(two_bytes_image_plane);
-			if (cache)
-			{
-				DESTROY(Computed_field_find_element_xi_cache)(&cache);
-			}
+			Set_cmiss_field_value_to_texture(field, texture_coordinate_field,
+				texture, spectrum,	fail_material, image_height, image_width, image_depth,
+				bytes_per_pixel, number_of_bytes_per_component, use_pixel_location,
+				storage,propagate_field,	graphics_buffer_package, element_dimension);
 		}
 		else
 		{
@@ -19089,6 +18736,21 @@ Executes a GFX WRITE TEXTURE command.
 								}
 								DEACCESS(Computed_field)(&temp_field);
 							}
+						}
+						else
+						{
+							if (field_name)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_write_texture:  Invalid region path or texture field name '%s'", field_name);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_write_texture:  Missing texture field name or name matches child region '%s'", current_token);
+							}
+							display_parse_state_location(state);
+							return_code = 0;
 						}
 						Cmiss_field_module_destroy(&field_module);
 					}

@@ -113,4 +113,17 @@ int list_image_field(struct Computed_field *field,void *dummy_void);
  * A function to list the command to create an image field.
  */
 int list_image_field_commands(struct Computed_field *field,void *command_prefix_void);
+
+/***************************************************************************//**
+ * A function to evaluate a field into a texture, the texture must allocate the
+ * image before passing into this function.
+ */
+int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
+		struct Cmiss_field *texture_coordinate_field,	struct Texture *texture,
+		struct Spectrum *spectrum,	struct Graphical_material *fail_material,
+		int image_height, int image_width, int image_depth, int bytes_per_pixel,
+		int number_of_bytes_per_component, int use_pixel_location,
+		enum Texture_storage_type specify_format, int propagate_field,
+		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension);
+
 #endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */
