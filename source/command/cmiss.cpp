@@ -3701,6 +3701,7 @@ Modifies the properties of a texture.
 	struct Movie_graphics *movie, *old_movie;
 	struct X3d_movie *x3d_movie;
 #endif /* defined (SGI_MOVIE_FILE) */
+	Cmiss_field_image_id image = NULL;
 
 	ENTER(gfx_modify_Texture);
 	cmgui_image_information = NULL;
@@ -3734,7 +3735,7 @@ Modifies the properties of a texture.
 										field_name, field_manager);
 								if (existing_field)
 								{
-									Cmiss_field_image_id image = Cmiss_field_cast_image(existing_field);
+									image = Cmiss_field_cast_image(existing_field);
 									if (image)
 									{
 										texture = Cmiss_field_image_get_texture(image);
@@ -4261,6 +4262,8 @@ Modifies the properties of a texture.
 						}
 						if (texture_is_managed)
 						{
+							if (image && texture)
+								Cmiss_field_image_set_texture(image, texture);
 							MANAGER_END_CACHE(Computed_field)(field_manager);
 						}
 					}
