@@ -45,26 +45,36 @@ struct Cmiss_graphics_module;
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
 #define CMISS_GRAPHICS_MODULE_ID_DEFINED
 #endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
+
 #ifndef CMISS_RENDITION_ID_DEFINED
 struct Cmiss_rendition;
 typedef struct Cmiss_rendition * Cmiss_rendition_id;
 #define CMISS_RENDITION_ID_DEFINED
 #endif
+
 #ifndef CMISS_REGION_ID_DEFINED
 struct Cmiss_region;
 typedef struct Cmiss_region * Cmiss_region_id;
 #define CMISS_REGION_ID_DEFINED
 #endif
+
 #ifndef CMISS_SCENE_ID_DEFINED
 struct Cmiss_scene;
 typedef struct Cmiss_scene * Cmiss_scene_id;
 #define CMISS_SCENE_ID_DEFINED
 #endif
+
 #ifndef CMISS_SPECTRUM_ID_DEFINED
 #define Cmiss_spectrum Spectrum
 struct Cmiss_spectrum;
 typedef struct Cmiss_spectrum * Cmiss_spectrum_id;
-#define CMISS_SCENE_ID_DEFINED
+#define CMISS_SPECTRUM_ID_DEFINED
+#endif
+
+#ifndef CMISS_TESSELLATION_ID_DEFINED
+struct Cmiss_tessellation;
+typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
+#define CMISS_TESSELLATION_ID_DEFINED
 #endif
 
 /***************************************************************************//**
@@ -163,6 +173,27 @@ Cmiss_spectrum_id Cmiss_graphics_module_find_spectrum_by_name(
  * @return  Handle to the newly created spectrum if successful, otherwise NULL.
  */
 Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
+	Cmiss_graphics_module_id graphics_module);
+
+/***************************************************************************//**
+ * Find the tessellation with the supplied name in graphics module, if any.
+ *
+ * @param graphics_module  The handle to the graphics module to find the
+ * tessellation in.
+ * @param name  The name of the tessellation.
+ * @return  Handle to the tessellation with that name, or NULL if not found.
+ */
+Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
+
+/***************************************************************************//**
+ * Create and return a handle to a new tessellation.
+ *
+ * @param graphics_module  The handle to the graphics module the tessellation will
+ * belong to.
+ * @return  Handle to the newly created tessellation if successful, otherwise NULL.
+ */
+Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 	Cmiss_graphics_module_id graphics_module);
 
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

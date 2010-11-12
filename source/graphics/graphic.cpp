@@ -79,6 +79,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "graphics/rendergl.hpp"
+#include "graphics/tessellation.hpp"
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"
 #	include "cad/computed_field_cad_topology.h"
@@ -143,6 +144,7 @@ finite element group rendition.
 	enum Xi_discretization_mode xi_discretization_mode;
 	struct Computed_field *xi_point_density_field;
 	struct FE_field *native_discretization_field;
+	struct Cmiss_tessellation *tessellation;
 	struct Element_discretization discretization;
 	int circle_discretization;
 	/* for volumes only */
@@ -308,6 +310,43 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphic_glyph_scaling_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode)
 
+int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
+	enum Cmiss_graphic_attribute_id attribute_id)
+{
+	int return_code = 0;
+
+	switch (attribute_id)
+	{
+		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
+		{
+			return_code = (graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS);
+		} break;
+
+		case CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD:
+		{
+			return_code =
+				(graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+				(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
+				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+				(graphic_type == CMISS_GRAPHIC_STATIC);
+		} break;
+		case CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD:
+		case CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION:
+		{
+			return_code = (graphic_type != CMISS_GRAPHIC_DATA_POINTS) &&
+				(graphic_type != CMISS_GRAPHIC_NODE_POINTS) &&
+				(graphic_type != CMISS_GRAPHIC_STATIC) &&
+				(graphic_type != CMISS_GRAPHIC_STREAMLINES);
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_graphic_type_uses_attribute.  Unrecognised attribute ID");
+		} break;
+	}
+	return return_code;
+}
+
 struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 	enum Cmiss_graphic_type graphic_type)
 /*******************************************************************************
@@ -381,6 +420,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
 			graphic->xi_point_density_field = (struct Computed_field *)NULL;
 			graphic->native_discretization_field=(struct FE_field *)NULL;
+			graphic->tessellation=NULL;
 			/* default to 1*1*1 discretization for fastest possible display.
 				 Important since model may have a *lot* of elements */
 			graphic->discretization.number_in_xi1=1;
@@ -433,7 +473,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->selected_graphics_changed = 0;
 			graphic->time_dependent = 0;
 
-			graphic->access_count=0;
+			graphic->access_count=1;
 		}
 		else
 		{
@@ -534,6 +574,10 @@ int DESTROY(Cmiss_graphic)(
 		if (graphic->native_discretization_field)
 		{
 			DEACCESS(FE_field)(&(graphic->native_discretization_field));
+		}
+		if (graphic->tessellation)
+		{
+			DEACCESS(Cmiss_tessellation)(&(graphic->tessellation));
 		}
 		if (graphic->stream_vector_field)
 		{
@@ -841,9 +885,19 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			}
 			/* determine discretization of element for graphic */
 			top_level_element = (struct FE_element *)NULL;
-			top_level_number_in_xi[0] = graphic->discretization.number_in_xi1;
-			top_level_number_in_xi[1] = graphic->discretization.number_in_xi2;
-			top_level_number_in_xi[2] = graphic->discretization.number_in_xi3;
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+			{
+				top_level_number_in_xi[dim] = 1;
+			}
+			if (graphic->tessellation)
+			{
+				// GRC work out if refined/non-linear
+				Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
+					MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
+			}
+			top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
+			top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
+			top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
 			native_discretization_field = graphic->native_discretization_field;
 			if (FE_region_get_FE_element_discretization(
 				graphic_to_object_data->fe_region, element, graphic->face,
@@ -2034,7 +2088,7 @@ struct Computed_field *Cmiss_graphic_get_coordinate_field(
 	LEAVE;
 
 	return (coordinate_field);
-} /* Cmiss_graphic_get_coordinate_field */
+}
 
 int Cmiss_graphic_set_coordinate_field(
 	struct Cmiss_graphic *graphic,struct Computed_field *coordinate_field)
@@ -2052,33 +2106,6 @@ int Cmiss_graphic_set_coordinate_field(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_set_coordinate_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_coordinate_field */
-
-int Cmiss_graphic_set_general_coordinate_field(
-	struct Cmiss_graphic *graphic,void *coordinate_field_void)
-{
-	int return_code;
-	struct Computed_field *coordinate_field;
-
-	ENTER(Cmiss_graphic_set_general_coordinate_field);
-	if (graphic&&(coordinate_field = (struct Computed_field *)coordinate_field_void))
-	{
-		if (graphic->coordinate_field != coordinate_field)
-		{
-			Cmiss_graphic_set_coordinate_field(graphic,coordinate_field);
-			Cmiss_graphic_default_coordinate_field_change(graphic, (void *)NULL);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_general_coordinate_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -2437,21 +2464,35 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				}
 			}
 		}
-		
-		if ((CMISS_GRAPHIC_DATA_POINTS!=graphic->graphic_type) &&
-			(CMISS_GRAPHIC_NODE_POINTS!=graphic->graphic_type) &&
-			(CMISS_GRAPHIC_ELEMENT_POINTS!=graphic->graphic_type) &&
-			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type) &&
-			(CMISS_GRAPHIC_STATIC!=graphic->graphic_type))
+
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 		{
 			sprintf(temp_string, " discretization \"%d*%d*%d\"",
 				graphic->discretization.number_in_xi1,
 				graphic->discretization.number_in_xi2,
 				graphic->discretization.number_in_xi3);
-			append_string(&graphic_string,temp_string,&error);	
+			append_string(&graphic_string,temp_string,&error);
 		}
 
-		/* for element_points and iso_surfaces */
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+		{
+			append_string(&graphic_string, " tessellation ", &error);
+			if (graphic->tessellation)
+			{
+				name = Cmiss_tessellation_get_name(graphic->tessellation);
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&graphic_string, name, &error);
+				DEALLOCATE(name);
+			}
+			else
+			{
+				append_string(&graphic_string,"NONE",&error);
+			}
+		}
+
 		if (CMISS_GRAPHIC_LINES==graphic->graphic_type)
 		{
 			if (0 != graphic->line_width)
@@ -2460,7 +2501,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				append_string(&graphic_string,temp_string,&error);
 			}
 		}
-		/* for cylinders only */
+
 		if (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
 		{
 			sprintf(temp_string," circle_discretization %d", 
@@ -2700,12 +2741,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 						error = 1;
 					}
 				}
-				sprintf(temp_string,
-					" discretization \"%d*%d*%d\" native_discretization ",
-					graphic->discretization.number_in_xi1,
-					graphic->discretization.number_in_xi2,
-					graphic->discretization.number_in_xi3);
-				append_string(&graphic_string,temp_string,&error);
+				append_string(&graphic_string," native_discretization ", &error);
 				if (graphic->native_discretization_field)
 				{
 					if (GET_NAME(FE_field)(graphic->native_discretization_field,&name))
@@ -3121,10 +3157,9 @@ int Cmiss_graphic_to_graphics_object(
 	{
 		/* all primitives added at time 0.0 */
 		time = 0.0;
-		coordinate_field = graphic_to_object_data->default_rc_coordinate_field;
+		coordinate_field = NULL; // GRC graphic_to_object_data->default_rc_coordinate_field;
 		return_code = 1;
 		/* build only if visible... */
-		// GRC need to ask scene if visible
 		if (Cmiss_scene_shows_graphic(graphic_to_object_data->scene, graphic))
 		{
 			/* build only if changed... */
@@ -3869,7 +3904,6 @@ static int Cmiss_graphic_clear_graphics(
 	{
 		if (graphic->graphics_object)
 		{
-			/*???RC Once again, assumes graphics stored at time 0.0 */
 			GT_object_remove_primitives_at_time(
 				graphic->graphics_object, /*time*/0.0,
 				(GT_object_primitive_object_name_conditional_function *)NULL,
@@ -4787,72 +4821,14 @@ int Cmiss_graphic_set_xi_discretization(
 	return (return_code);
 } /* Cmiss_graphic_set_xi_discretization */
 
-int Cmiss_graphic_default_coordinate_field_change(
-	struct Cmiss_graphic *graphic,void *dummy_void)
-{
-	int return_code;
-	
-	ENTER(Cmiss_graphic_default_coordinate_field_change);
-	USE_PARAMETER(dummy_void);
-	if (graphic)
-	{
-		if ((struct Computed_field *)NULL == graphic->coordinate_field)
-		{
-			Cmiss_graphic_clear_graphics(graphic);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_default_coordinate_field_change.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_default_coordinate_field_change */
-
-int Cmiss_graphic_element_discretization_change(
-	struct Cmiss_graphic *graphic,void *dummy_void)
-{
-	int return_code;
-	
-	ENTER(Cmiss_graphic_element_discretization_change);
-	USE_PARAMETER(dummy_void);
-	if (graphic)
-	{
-		if ((Cmiss_graphic_type_uses_dimension(graphic->graphic_type, 1) ||
-			Cmiss_graphic_type_uses_dimension(graphic->graphic_type, 2) ||
-			Cmiss_graphic_type_uses_dimension(graphic->graphic_type, 3)) &&
-			(CMISS_GRAPHIC_ELEMENT_POINTS != graphic->graphic_type) &&
-			(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type) &&
-			(CMISS_GRAPHIC_VOLUMES != graphic->graphic_type))
-		{
-			Cmiss_graphic_clear_graphics(graphic);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_element_discretization_change.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_element_discretization_change */
-
 int Cmiss_graphic_set_discretization(
   struct Cmiss_graphic *graphic, struct Element_discretization *discretization)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphic_set_general_discretization);
-	if (graphic && discretization)
+	ENTER(Cmiss_graphic_set_discretization);
+	if (graphic && discretization && Cmiss_graphic_type_uses_attribute(
+		graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 	{
 		if ((graphic->discretization.number_in_xi1 != 
 				discretization->number_in_xi1) ||
@@ -4877,59 +4853,6 @@ int Cmiss_graphic_set_discretization(
 
 	return (return_code);
 } /* Cmiss_graphic_set_discretization */
-
-int Cmiss_graphic_set_general_element_discretization(
-	struct Cmiss_graphic *graphic, void *discretization_void)
-{
-	int return_code;
-	struct Element_discretization *discretization;
-
-	ENTER(Cmiss_graphic_set_general_discretization);
-	if (graphic&& (discretization = (struct Element_discretization *)discretization_void))
-	{
-	  if (Cmiss_graphic_set_discretization(graphic, discretization))
-	  {
-	    Cmiss_graphic_element_discretization_change(graphic, (void *)NULL);
-	  }
-	  return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_discretization.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_discretization */
-
-int Cmiss_graphic_circle_discretization_change(
-	struct Cmiss_graphic *graphic,void *dummy_void)
-{
-	int return_code;
-	
-	ENTER(Cmiss_graphic_circle_discretization_change);
-	USE_PARAMETER(dummy_void);
-	if (graphic)
-	{
-		if (CMISS_GRAPHIC_CYLINDERS == graphic->graphic_type)
-		{
-			Cmiss_graphic_clear_graphics(graphic);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_circle_discretization_change.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_circle_discretization_change */
 
 int Cmiss_graphic_copy_without_graphics_object(
 	struct Cmiss_graphic *destination, struct Cmiss_graphic *source)
@@ -5050,6 +4973,8 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->circle_discretization=source->circle_discretization;
 		REACCESS(FE_field)(&(destination->native_discretization_field),
 			source->native_discretization_field);
+		REACCESS(Cmiss_tessellation)(&(destination->tessellation),
+			source->tessellation);
 		REACCESS(Computed_field)(&(destination->label_density_field),source->label_density_field);
 		/* for volumes only */
 		REACCESS(VT_volume_texture)(&(destination->volume_texture),
@@ -5365,6 +5290,58 @@ int Cmiss_graphic_data_FE_region_change(
 	return (return_code);
 } /* Cmiss_graphic_data_FE_region_change */
 
+namespace {
+
+/***************************************************************************//**
+ * Makes a new graphic of the supplied graphic_type, optionally a copy of an
+ * existing_graphic.
+ *
+ * @param rendition  Source of graphics defaults if creating a new graphic.
+ * @param graphic_type  The type of the new graphic.
+ * @param existing_graphic  An existing graphic to copy settings from if of
+ * same graphic_type.
+ * @return  1 on success, 0 on failure.
+ */
+Cmiss_graphic* get_graphic_for_gfx_modify(Cmiss_rendition *rendition,
+	Cmiss_graphic_type graphic_type, Cmiss_graphic *existing_graphic)
+{
+	Cmiss_graphic *graphic = CREATE(Cmiss_graphic)(graphic_type);
+	if (existing_graphic && (graphic_type == existing_graphic->graphic_type))
+	{
+		Cmiss_graphic_copy_without_graphics_object(graphic, existing_graphic);
+		// GRC not sure why this was done:
+		// Cmiss_graphic_set_rendition_private(graphic, existing_graphic->rendition);
+	}
+	else
+	{
+		Cmiss_rendition_set_graphic_defaults(rendition, graphic);
+		/* Set up the coordinate_field */
+		// GRC move following to Cmiss_rendition_set_graphic_defaults ?
+		// GRC can improve as logic is probably already in rendition
+		if (!graphic->coordinate_field)
+		{
+			struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+			struct FE_region *fe_region =	Cmiss_region_get_FE_region(region);
+			struct FE_region *data_region = FE_region_get_data_FE_region(fe_region);
+			struct FE_field *fe_field;
+			if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
+				FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
+			{
+				struct Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field,
+					(void *)fe_field, Cmiss_region_get_Computed_field_manager(region));
+				if (coordinate_field)
+				{
+					Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
+				}
+			}
+		}
+	}
+	return (graphic);
+}
+
+} // namespace anonymous
+
 int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
@@ -5373,7 +5350,6 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
-	struct Cmiss_graphic *graphic;
 	struct Rendition_command_data *rendition_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -5382,74 +5358,18 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	ENTER(gfx_modify_rendition_surfaces);
 	if (state)
 	{
-		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
-				rendition_command_data_void))
+		if (NULL != (rendition_command_data =
+			(struct Rendition_command_data *)rendition_command_data_void))
 		{
-			if (NULL != (modify_rendition_data=
-					(struct Modify_rendition_data *)modify_rendition_data_void))
+			if (NULL != (modify_rendition_data =
+				(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the Cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_SURFACES);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_SURFACES ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_SURFACES,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -5475,9 +5395,6 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
-					/* discretization */
-					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -5520,6 +5437,9 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					Option_table_add_entry(option_table,"spectrum",
 						&(graphic->spectrum),rendition_command_data->spectrum_manager,
 						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
 					/* texture_coordinates */
 					set_texture_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -5547,11 +5467,6 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 						Cmiss_graphic_set_render_type(graphic, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
-					if (!return_code)
-					{
-						/* parse error, help */
-						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
-					}
 				}
 				else
 				{
@@ -5559,6 +5474,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 						"gfx_modify_rendition_surfaces.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -5710,6 +5626,27 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 			return_code=
 				(graphic->use_element_type==second_graphic->use_element_type);
 		}
+		/* for graphics that tessellate or sample elements */
+		if (return_code && Cmiss_graphic_type_uses_attribute(
+			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+		{
+			return_code = (graphic->tessellation == second_graphic->tessellation);
+		}
+		if (return_code &&
+			(CMISS_GRAPHIC_NODE_POINTS != graphic->graphic_type) &&
+			(CMISS_GRAPHIC_DATA_POINTS != graphic->graphic_type) &&
+			(CMISS_GRAPHIC_STATIC != graphic->graphic_type))
+		{
+			return_code =
+				(graphic->discretization.number_in_xi1 ==
+					second_graphic->discretization.number_in_xi1) &&
+				(graphic->discretization.number_in_xi2 ==
+					second_graphic->discretization.number_in_xi2) &&
+				(graphic->discretization.number_in_xi3 ==
+					second_graphic->discretization.number_in_xi3) &&
+				(graphic->native_discretization_field ==
+					second_graphic->native_discretization_field);
+		}
 		/* for element_points only */
 		if (return_code&&
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))
@@ -5718,15 +5655,7 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(graphic->xi_discretization_mode==
 					second_graphic->xi_discretization_mode)&&
 				(graphic->xi_point_density_field==
-					second_graphic->xi_point_density_field)&&
-				(graphic->native_discretization_field==
-					second_graphic->native_discretization_field)&&
-				(graphic->discretization.number_in_xi1==
-					second_graphic->discretization.number_in_xi1)&&
-				(graphic->discretization.number_in_xi2==
-					second_graphic->discretization.number_in_xi2)&&
-				(graphic->discretization.number_in_xi3==
-					second_graphic->discretization.number_in_xi3);
+					second_graphic->xi_point_density_field);
 		}
 		/* for volumes only */
 		if (return_code&&(CMISS_GRAPHIC_VOLUMES==graphic->graphic_type))
@@ -5821,7 +5750,6 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 		visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct Graphics_font *new_font;
-	struct Cmiss_graphic *graphic;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
@@ -5841,73 +5769,12 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_NODE_POINTS);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_NODE_POINTS ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_NODE_POINTS,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
-					if (!graphic->font)
-					{
-						graphic->font = ACCESS(Graphics_font)(
-							rendition_command_data->default_font);
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
@@ -5915,12 +5782,6 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 						&orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
-					/* default to point glyph for fasest possible display */
-					if (!glyph)
-					{
-						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-							rendition_command_data->glyph_manager);
-					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
 					{
@@ -6116,6 +5977,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						"gfx_modify_rendition_node_points.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -6152,7 +6014,6 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct Graphics_font *new_font;
-	struct Cmiss_graphic *graphic;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
@@ -6171,73 +6032,12 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the gt_element_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_DATA_POINTS);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_DATA_POINTS ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_DATA_POINTS,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
-					if (!graphic->font)
-					{
-						graphic->font = ACCESS(Graphics_font)(
-							rendition_command_data->default_font);
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
@@ -6245,12 +6045,6 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 						&orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
-					/* default to point glyph for fastest possible display */
-					if (!glyph)
-					{
-						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-							rendition_command_data->glyph_manager);
-					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
 					{
@@ -6446,6 +6240,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						"gfx_modify_rendition_data_points.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -6483,7 +6278,6 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 		visibility, overlay_flag = 0;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct Graphics_font *new_font;
-	struct Cmiss_graphic *graphic;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
@@ -6493,7 +6287,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
-	ENTER(gfx_modify_rendition_node_points);
+	ENTER(gfx_modify_rendition_static_graphic);
 	if (state)
 	{
 		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
@@ -6502,34 +6296,12 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_STATIC);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_STATIC ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_STATIC,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					if (graphic->overlay_flag)
 					{
 						overlay_flag = graphic->overlay_order;
@@ -6538,45 +6310,6 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					{
 						overlay_flag = 0;
 					}
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region =
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region =
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field =
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
-					if (!graphic->font)
-					{
-						graphic->font = ACCESS(Graphics_font)(
-							rendition_command_data->default_font);
-					}
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
@@ -6584,12 +6317,6 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 						&orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
-					/* default to point glyph for fasest possible display */
-					if (!glyph)
-					{
-						glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-							rendition_command_data->glyph_manager);
-					}
 					ACCESS(GT_object)(glyph);
 					if (orientation_scale_field)
 					{
@@ -6782,20 +6509,21 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_modify_rendition_node_points.  Could not create graphic");
+						"gfx_modify_rendition_static_graphic.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_modify_rendition_node_points.  No modify data");
+					"gfx_modify_rendition_static_graphic.  No modify data");
 				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"gfx_modify_rendition_node_points.  "
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_static_graphic.  "
 				"Missing rendition_command_data");
 			return_code=0;
 		}
@@ -6803,14 +6531,13 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_modify_rendition_node_points.  Missing state");
+			"gfx_modify_rendition_static_graphic.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_modify_rendition_node_points */
-
+}
 
 int gfx_modify_rendition_lines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
@@ -6819,7 +6546,6 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
-	struct Cmiss_graphic *graphic;
 	struct Rendition_command_data *rendition_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -6834,68 +6560,12 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_LINES);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_LINES ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_LINES,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -6921,9 +6591,6 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
-					/* discretization */
-					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -6965,6 +6632,9 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 					Option_table_add_entry(option_table,"spectrum",
 						&(graphic->spectrum),rendition_command_data->spectrum_manager,
 						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
 					/* texture_coordinates */
 					set_texture_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -7002,6 +6672,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 						"gfx_modify_rendition_lines.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -7035,7 +6706,6 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
-	struct Cmiss_graphic *graphic;
 	struct Rendition_command_data *rendition_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -7051,68 +6721,12 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_CYLINDERS);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_CYLINDERS ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_CYLINDERS,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					visibility = graphic->visibility_flag;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -7142,9 +6756,6 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(graphic->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
-					/* discretization */
-					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),NULL,set_Element_discretization);
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
@@ -7203,6 +6814,9 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 					Option_table_add_entry(option_table,"spectrum",
 						&(graphic->spectrum),rendition_command_data->spectrum_manager,
 						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
 					/* texture_coordinates */
 					set_texture_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -7242,6 +6856,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						"gfx_modify_rendition_cylinders.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -7279,7 +6894,6 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 	int number_of_valid_strings,range_number_of_iso_values,
 		return_code,visibility;
 	struct Modify_rendition_data *modify_rendition_data;
-	struct Cmiss_graphic *graphic;
 	struct Rendition_command_data *rendition_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -7295,68 +6909,12 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				/* create the cmiss_graphic: */
-				graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_ISO_SURFACES);
-				/* if we are specifying the name then copy the existings graphic values so
-					we can modify from these rather than the default */
-				if (modify_rendition_data->graphic)
-				{
-					if (CMISS_GRAPHIC_ISO_SURFACES ==modify_rendition_data->graphic->graphic_type)
-					{
-						Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-						Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-					}
-					DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-				}
-				else
-				{
-					Cmiss_graphic_set_native_discretization_field(
-						graphic, modify_rendition_data->native_discretization_field);
-					Cmiss_graphic_set_coordinate_field(
-						graphic, modify_rendition_data->default_coordinate_field);
-					Cmiss_graphic_set_circle_discretization(
-						graphic, modify_rendition_data->circle_discretization);
-					Cmiss_graphic_set_discretization(
-						graphic, &(modify_rendition_data->element_discretization));
-				}
+				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+					rendition_command_data->rendition, CMISS_GRAPHIC_ISO_SURFACES,
+					modify_rendition_data->graphic);
 				if (graphic)
 				{
-					/* access since deaccessed in gfx_modify_rendition */
-					modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-					/* Set up the coordinate_field */
-					if (!graphic->coordinate_field)
-					{
-						struct Computed_field *computed_field;
-						struct FE_field *fe_field;
-						struct FE_region *fe_region = 
-							Cmiss_region_get_FE_region(rendition_command_data->region);
-						struct FE_region *data_region = 
-							FE_region_get_data_FE_region(fe_region);
-						if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-							FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-						{
-							if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,
-										(void *)fe_field, rendition_command_data->computed_field_manager)))
-							{
-								graphic->coordinate_field = 
-									ACCESS(Computed_field)(computed_field);
-							}
-						}
-					}
-					/* set essential parameters not set by CREATE function */
-					if (!Cmiss_graphic_get_material(graphic))
-					{
-						Cmiss_graphic_set_material(graphic,
-							rendition_command_data->default_material);
-					}
-					if (!Cmiss_graphic_get_selected_material(graphic))
-					{
-						Cmiss_graphic_set_selected_material(graphic,
-							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-								"default_selected",
-								rendition_command_data->graphical_material_manager));
-					}
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 					visibility = graphic->visibility_flag;
 					range_number_of_iso_values = 0;
 					option_table=CREATE(Option_table)();
@@ -7409,9 +6967,6 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
-					/* discretization */
-					Option_table_add_entry(option_table,"discretization",
-						&(graphic->discretization),NULL,set_Element_discretization);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
 						NULL,set_char_flag);
@@ -7481,6 +7036,9 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 					Option_table_add_entry(option_table,"spectrum",
 						&(graphic->spectrum),rendition_command_data->spectrum_manager,
 						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
 					/* texture_coordinates */
 					set_texture_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -7566,6 +7124,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						"gfx_modify_rendition_iso_surfaces.  Could not create graphic");
 					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
 			else
 			{
@@ -7607,7 +7166,6 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 		*xi_point_density_field;
 	struct FE_region *fe_region;
 	struct Graphics_font *new_font;
-	struct Cmiss_graphic *graphic;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
@@ -7624,73 +7182,12 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			(struct Modify_rendition_data *)modify_rendition_data_void) &&
 		(fe_region = Cmiss_region_get_FE_region(rendition_command_data->region)))
 	{
-		/* create the cmiss_graphic: */
-		graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_ELEMENT_POINTS);
-		/* if we are specifying the name then copy the existings graphic values so
-			we can modify from these rather than the default */
-		if (modify_rendition_data->graphic)
-		{
-			if (CMISS_GRAPHIC_ELEMENT_POINTS ==modify_rendition_data->graphic->graphic_type)
-			{
-				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-				Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-			}
-			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-		}
-		else
-		{
-			Cmiss_graphic_set_native_discretization_field(
-				graphic, modify_rendition_data->native_discretization_field);
-			Cmiss_graphic_set_coordinate_field(
-				graphic, modify_rendition_data->default_coordinate_field);
-			Cmiss_graphic_set_circle_discretization(
-				graphic, modify_rendition_data->circle_discretization);
-			Cmiss_graphic_set_discretization(
-				graphic, &(modify_rendition_data->element_discretization));
-		}
+		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+			rendition_command_data->rendition, CMISS_GRAPHIC_ELEMENT_POINTS,
+			modify_rendition_data->graphic);
 		if (graphic)
 		{
-			/* access since deaccessed in gfx_modify_rendition */
-			modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-			/* Set up the coordinate_field */
-			if (!graphic->coordinate_field)
-			{
-				struct Computed_field *computed_field;
-				struct FE_field *fe_field;
-				struct FE_region *fe_region = 
-					Cmiss_region_get_FE_region(rendition_command_data->region);
-				struct FE_region *data_region = 
-					FE_region_get_data_FE_region(fe_region);
-				if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-					FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-				{
-					if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_read_only_with_fe_field,
-								(void *)fe_field, rendition_command_data->computed_field_manager)))
-					{
-						graphic->coordinate_field = 
-							ACCESS(Computed_field)(computed_field);
-					}
-				}
-			}
-			/* set essential parameters not set by CREATE function */
-			if (!Cmiss_graphic_get_material(graphic))
-			{
-				Cmiss_graphic_set_material(graphic,
-					rendition_command_data->default_material);
-			}
-			if (!Cmiss_graphic_get_selected_material(graphic))
-			{
-				Cmiss_graphic_set_selected_material(graphic,
-					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						"default_selected",
-						rendition_command_data->graphical_material_manager));
-			}
-			if (!graphic->font)
-			{
-				graphic->font = ACCESS(Graphics_font)(
-					rendition_command_data->default_font);
-			}
+			REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 			font_name = (char *)NULL;
 			orientation_scale_field = (struct Computed_field *)NULL;
 			variable_scale_field = (struct Computed_field *)NULL;
@@ -7699,13 +7196,6 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 				&orientation_scale_field, glyph_scale_factors,
 				&variable_scale_field);
-			/* default to point glyph for fastest possible display */
-			if (!glyph)
-			{
-				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-					rendition_command_data->glyph_manager);
-			}
-			font_name = (char *)NULL;
 			ACCESS(GT_object)(glyph);
 			if (orientation_scale_field)
 			{
@@ -7859,6 +7349,9 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			Option_table_add_entry(option_table,"spectrum",
 				&(graphic->spectrum),rendition_command_data->spectrum_manager,
 				set_Spectrum);
+			/* tessellation */
+			Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+				rendition_command_data->graphics_module, &(graphic->tessellation));
 			/* use_elements/use_faces/use_lines */
 			use_element_type = graphic->use_element_type;
 			use_element_type_string =
@@ -7969,6 +7462,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				"gfx_modify_rendition_element_points.  Could not create graphic");
 			return_code=0;
 		}
+		DEACCESS(Cmiss_graphic)(&graphic);
 	}
 	else
 	{
@@ -7996,7 +7490,6 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	struct Computed_field *stream_vector_field;
 	struct Cmiss_region *seed_node_region;
 	struct FE_region *fe_region;
-	struct Cmiss_graphic *graphic;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
 	struct Option_table *option_table;
@@ -8011,68 +7504,12 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			(struct Modify_rendition_data *)modify_rendition_data_void) &&
 		(fe_region = Cmiss_region_get_FE_region(rendition_command_data->region)))
 	{
-		/* create the cmiss_graphic: */
-		graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_STREAMLINES);
-		/* if we are specifying the name then copy the existings graphic values so
-			we can modify from these rather than the default */
-		if (modify_rendition_data->graphic)
-		{
-			if (CMISS_GRAPHIC_STREAMLINES ==modify_rendition_data->graphic->graphic_type)
-			{
-				Cmiss_graphic_copy_without_graphics_object(graphic, modify_rendition_data->graphic);
-				Cmiss_graphic_set_rendition_private(graphic, modify_rendition_data->graphic->rendition);
-			}
-			DEACCESS(Cmiss_graphic)(&modify_rendition_data->graphic);
-		}
-		else
-		{
-			Cmiss_graphic_set_native_discretization_field(
-				graphic, modify_rendition_data->native_discretization_field);
-			Cmiss_graphic_set_coordinate_field(
-				graphic, modify_rendition_data->default_coordinate_field);
-			Cmiss_graphic_set_circle_discretization(
-				graphic, modify_rendition_data->circle_discretization);
-			Cmiss_graphic_set_discretization(
-				graphic, &(modify_rendition_data->element_discretization));
-		}
+		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
+			rendition_command_data->rendition, CMISS_GRAPHIC_STREAMLINES,
+			modify_rendition_data->graphic);
 		if (graphic)
 		{
-			/* access since deaccessed in gfx_modify_rendition */
-			modify_rendition_data->graphic = ACCESS(Cmiss_graphic)(graphic);
-			/* Set up the coordinate_field */
-			if (!graphic->coordinate_field)
-			{
-				struct Computed_field *computed_field;
-				struct FE_field *fe_field;
-				struct FE_region *fe_region = 
-					Cmiss_region_get_FE_region(rendition_command_data->region);
-				struct FE_region *data_region = 
-					FE_region_get_data_FE_region(fe_region);
-				if (FE_region_get_default_coordinate_FE_field(fe_region, &fe_field) ||
-					FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
-				{
-					if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_read_only_with_fe_field,
-								(void *)fe_field, rendition_command_data->computed_field_manager)))
-					{
-						graphic->coordinate_field = 
-							ACCESS(Computed_field)(computed_field);
-					}
-				}
-			}
-			/* set essential parameters not set by CREATE function */
-			if (!Cmiss_graphic_get_material(graphic))
-			{
-				Cmiss_graphic_set_material(graphic,
-					rendition_command_data->default_material);
-			}
-			if (!Cmiss_graphic_get_selected_material(graphic))
-			{
-				Cmiss_graphic_set_selected_material(graphic,
-					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						"default_selected",
-						rendition_command_data->graphical_material_manager));
-			}
+			REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 			/* The value stored in the graphic is an integer rather than a char */
 			if (graphic->reverse_track)
 			{
@@ -8107,9 +7544,11 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			/* delete */
 			Option_table_add_entry(option_table,"delete",
 				&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+#ifdef FUTURE_CODE
 			/* discretization */
 			Option_table_add_entry(option_table,"discretization",
 				&(graphic->discretization),NULL, set_Element_discretization);
+#endif /* FUTURE_CODE */
 			/* ellipse/line/rectangle/ribbon */
 			streamline_type = STREAM_LINE;
 			streamline_type_string =
@@ -8184,6 +7623,9 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			Option_table_add_entry(option_table,"spectrum",
 				&(graphic->spectrum),rendition_command_data->spectrum_manager,
 				set_Spectrum);
+			/* tessellation */
+			Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+				rendition_command_data->graphics_module, &(graphic->tessellation));
 			/* vector */
 			set_stream_vector_field_data.computed_field_manager=
 				rendition_command_data->computed_field_manager;
@@ -8290,6 +7732,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				"gfx_modify_rendition_streamlines.  Could not create graphic");
 			return_code=0;
 		}
+		DEACCESS(Cmiss_graphic)(&graphic);
 	}
 	else
 	{
@@ -8479,11 +7922,11 @@ int Cmiss_graphic_copy_and_put_in_list(
 				ADD_OBJECT_TO_LIST(Cmiss_graphic)(copy_graphic,
 					list_of_graphic)))
 			{
-				DESTROY(Cmiss_graphic)(&copy_graphic);
 				display_message(ERROR_MESSAGE,
 					"Cmiss_graphic_copy_and_put_in_list.  "
 					"Could not put copy in list");
 			}
+			DEACCESS(Cmiss_graphic)(&copy_graphic);
 		}
 		else
 		{
@@ -8819,6 +8262,45 @@ enum Use_element_type Cmiss_graphic_get_use_element_type(
 	return (use_element_type);
 } /* Cmiss_graphic_get_use_element_type */
 
+struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
+	struct Cmiss_graphic *graphic)
+{
+	struct Cmiss_tessellation *tessellation = NULL;
+	if (graphic)
+	{
+		tessellation=graphic->tessellation;
+		if (tessellation)
+		{
+			ACCESS(Cmiss_tessellation)(tessellation);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_get_tessellation.  Invalid argument(s)");
+	}
+	return (tessellation);
+}
+
+int Cmiss_graphic_set_tessellation(
+	struct Cmiss_graphic *graphic, struct Cmiss_tessellation *tessellation)
+{
+	int return_code;
+	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
+		CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+	{
+		return_code=1;
+		REACCESS(Cmiss_tessellation)(&(graphic->tessellation), tessellation);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_set_tessellation.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
 	struct Element_discretization *discretization)
 {
@@ -8871,7 +8353,8 @@ int Cmiss_graphic_set_native_discretization_field(
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_native_discretization_field);
-	if (graphic)
+	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
+		CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
 	{
 		return_code=1;
 		REACCESS(FE_field)(&(graphic->native_discretization_field),
@@ -8880,38 +8363,12 @@ int Cmiss_graphic_set_native_discretization_field(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_native_discretization_field.  "
-			"Invalid argument(s)");
+			"Cmiss_graphic_set_native_discretization_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-}
-
-int Cmiss_graphic_set_general_native_discretization_field(
-	struct Cmiss_graphic *graphic, void *native_discretization_field_void)
-{
-	int return_code;
-	struct FE_field *native_discretization_field =
-		(struct FE_field *)native_discretization_field_void;
-	if (graphic && native_discretization_field)
-	{
-		if (graphic->native_discretization_field != native_discretization_field)
-		{
-			Cmiss_graphic_set_native_discretization_field(
-				graphic,native_discretization_field);
-			Cmiss_graphic_element_discretization_change(
-				graphic, (void *)NULL);
-		}
-		return_code = 1;
-	}
-	else
-
-	{
-		return_code = 0;
-	}
-	return return_code;
 }
 
 int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic)
@@ -8953,35 +8410,6 @@ int Cmiss_graphic_set_circle_discretization(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_set_circle_discretization.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_graphic_set_general_circle_discretization(
-	struct Cmiss_graphic *graphic,void *circle_discretization_void)
-{
-	int return_code;
-	int *circle_discretization;
-
-	ENTER(Cmiss_graphic_set_general_circle_discretization);
-	if (graphic &&
-	    (circle_discretization = (int *)circle_discretization_void))
-	{
-		if (graphic->circle_discretization != *circle_discretization
-		    && (CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type))
-		{
-			graphic->circle_discretization = *circle_discretization;
-			Cmiss_graphic_circle_discretization_change(graphic, (void *)NULL);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_general_circle_discretization.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -9470,6 +8898,43 @@ Second argument is a struct Cmiss_graphic_Spectrum_change_data.
 
 	return (return_code);
 } /* Cmiss_graphic_Spectrum_change */
+
+/***************************************************************************//**
+ * Inform graphic of changes in the tessellation manager. Marks affected
+ * graphics for rebuilding and sets flag for informing clients of rendition.
+ *
+ * @param tessellation_change_data_void  Cmiss_graphic_tessellation_change_data.
+ */
+int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
+	void *tessellation_change_data_void)
+{
+	int return_code;
+	Cmiss_graphic_tessellation_change_data *tessellation_change_data =
+		(Cmiss_graphic_tessellation_change_data *)tessellation_change_data_void;
+	if (graphic && tessellation_change_data)
+	{
+		return_code = 1;
+		if (graphic->tessellation)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_tessellation)(
+				tessellation_change_data->manager_message, graphic->tessellation);
+			// GRC: following could be smarter, e.g. by checking if actual discretization is changing
+			if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_tessellation))
+			{
+				/* need to rebuild graphics_object from scratch */
+				Cmiss_graphic_clear_graphics(graphic);
+				tessellation_change_data->changed = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_tessellation_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
 
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object)

@@ -73,16 +73,14 @@ enum Render_type
 #endif /* RENDER_TYPE_DEFINED */
 
 /***************************************************************************//**
- * Sets the <coordinate_field> used by <graphic>. If the coordinate field is
- * NULL, the graphic uses the default coordinate_field from the graphical element
- * group.
+ * Sets the field supplying coordinates for the graphic.
  *
- * @param graphic  The graphic to be edit
+ * @param graphic  The graphic to be edited.
  * @param coordinate_field  The cmiss_field to be use as the coordinate field.
- * @return  If successfully set coordiante field for graphic returns 1, otherwise 0
+ * @return  1 if coordinate field successfully set, otherwise 0.
  */
 int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id coordiante_field);
+	Cmiss_field_id coordinate_field);
 
 /***************************************************************************//** 
  * Set the material of the cmiss graphic

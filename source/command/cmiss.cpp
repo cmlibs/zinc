@@ -184,6 +184,7 @@ extern "C" {
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
+#include "graphics/tessellation.hpp"
 extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
 #include "graphics/scene_editor.h"
@@ -6165,6 +6166,9 @@ Executes a GFX DEFINE command.
 				define_scene_data.root_region = command_data->root_region;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);
+				/* tessellation */
+				Option_table_add_entry(option_table, "tessellation", NULL,
+					command_data->graphics_module, gfx_define_tessellation);
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -7251,6 +7255,9 @@ Executes a GFX DESTROY command.
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", NULL,
 					command_data->spectrum_manager, gfx_destroy_spectrum);
+				/* tessellation */
+				Option_table_add_entry(option_table, "tessellation", NULL,
+					command_data->graphics_module, gfx_destroy_tessellation);
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
@@ -7754,6 +7761,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 #elif defined (WX_USER_INTERFACE)
 				if ((!command_data->user_interface) ||
 					(!CREATE(Region_tree_viewer)(	&(command_data->region_tree_viewer),
+						command_data->graphics_module,
 						command_data->scene_manager,
 						scene,
 						command_data->root_region,
@@ -12099,6 +12107,9 @@ Executes a GFX LIST command.
 			/* spectrum */
 			Option_table_add_entry(option_table, "spectrum", NULL,
 				command_data->spectrum_manager, gfx_list_spectrum);
+			/* tessellation */
+			Option_table_add_entry(option_table, "tessellation", NULL,
+				command_data->graphics_module, gfx_list_tessellation);
 			/* texture */
 			Option_table_add_entry(option_table, "texture", NULL,
 					command_data->root_region, gfx_list_texture);
@@ -12389,31 +12400,22 @@ Executes a GFX MODIFY G_ELEMENT command.
 Parameter <help_mode> should be NULL when calling this function.
 ==============================================================================*/
 {
-	//char *dummy_string, *region_path, *settings_name, *graphic_name;
-	char *dummy_string, *region_path, *graphic_name;
-	int previous_state_index, return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
-	struct Cmiss_rendition *rendition;
-	struct Modify_rendition_data modify_rendition_data;
-	struct Rendition_command_data rendition_command_data;
-
-	struct Option_table *option_table;
 
 	ENTER(gfx_modify_g_element);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code = 1;
-		/* initialize defaults */
-		region_path = Cmiss_region_get_root_region_path();
+		char *region_path = Cmiss_region_get_root_region_path();
 		if (!help_mode)
 		{
-			option_table = CREATE(Option_table)();
+			struct Option_table *option_table = CREATE(Option_table)();
 			if (!state->current_token ||
 				(strcmp(PARSER_HELP_STRING, state->current_token) &&
 					strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 			{
-				/* default option: group name */
+				/* region path */
 				Option_table_add_entry(option_table, (char *)NULL, &region_path,
 					command_data->root_region, set_Cmiss_region_path);
 			}
@@ -12428,149 +12430,13 @@ Parameter <help_mode> should be NULL when calling this function.
 		}
 		if (return_code)
 		{
-			if (region_path && Cmiss_region_get_region_from_path_deprecated(
-				command_data->root_region, region_path, &region))
-			{
-				modify_rendition_data.delete_flag = 0;
-				modify_rendition_data.position = -1;
-				modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
-				modify_rendition_data.default_coordinate_field = NULL;
-				modify_rendition_data.circle_discretization = 4;
-				modify_rendition_data.native_discretization_field = NULL;
-				modify_rendition_data.element_discretization.number_in_xi1 = 4;
-				modify_rendition_data.element_discretization.number_in_xi2 = 4;
-				modify_rendition_data.element_discretization.number_in_xi3 = 4;
-				/* Look ahead for the "as" option and find the settings with that name
-					if there is one.  Then the modify routines can keep the previous defaults */
-				if (state && (previous_state_index = state->current_index))
-				{
-					option_table = CREATE(Option_table)();
-					/* as */
-					graphic_name = (char *)NULL;
-					Option_table_add_name_entry(option_table, "as", &graphic_name);
-					/* default to absorb everything else */
-					dummy_string = (char *)NULL;
-					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
-					return_code = Option_table_multi_parse(option_table, state);
-					DESTROY(Option_table)(&option_table);
-					if (return_code)
-					{		
-						if (rendition = Cmiss_region_get_rendition_internal(region))
-						{
-							if (graphic_name && (modify_rendition_data.graphic = first_graphic_in_Cmiss_rendition_that(
-										rendition, Cmiss_graphic_has_name, (void *)graphic_name)))
-							{
-								ACCESS(Cmiss_graphic)(modify_rendition_data.graphic);
-							}
-							modify_rendition_data.default_coordinate_field =
-								Cmiss_rendition_get_default_coordinate_field(rendition);
-							modify_rendition_data.circle_discretization =
-								Cmiss_rendition_get_circle_discretization(rendition);
-							modify_rendition_data.native_discretization_field =
-									Cmiss_rendition_get_native_discretization_field(rendition);
-							struct Element_discretization element_discretization;
-							Cmiss_rendition_get_element_discretization(rendition,
-								&element_discretization);
-							modify_rendition_data.element_discretization =
-								element_discretization;
-							DEACCESS(Cmiss_rendition)(&rendition);
-						}
-					}
-					if (dummy_string)
-					{
-						DEALLOCATE(dummy_string);
-					}
-					if (graphic_name)
-					{
-						DEALLOCATE(graphic_name);
-					}
-					/* Return back to where we were */
-					shift_Parse_state(state, previous_state_index - state->current_index);
-				}
-
-				rendition_command_data.default_material =
-					Material_package_get_default_material(command_data->material_package);
-				rendition_command_data.graphics_font_package = 
-					command_data->graphics_font_package;
-				rendition_command_data.default_font = command_data->default_font;
-				rendition_command_data.glyph_manager = command_data->glyph_manager;
-				rendition_command_data.computed_field_manager = 
-					 Cmiss_region_get_Computed_field_manager(region);
-				rendition_command_data.region = region;
-				rendition_command_data.root_region = command_data->root_region;
-				rendition_command_data.graphical_material_manager =
-					Material_package_get_material_manager(command_data->material_package);
-				rendition_command_data.spectrum_manager =
-					command_data->spectrum_manager;
-				rendition_command_data.default_spectrum =
-					command_data->default_spectrum;
-
-				option_table = CREATE(Option_table)();
-				/* cylinders */
-				Option_table_add_entry(option_table, "cylinders",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_cylinders);
-				/* data_points */
-				Option_table_add_entry(option_table, "data_points",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_data_points);
-				/* element_points */
-				Option_table_add_entry(option_table, "element_points",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_element_points);
-				/* general */
-				Option_table_add_entry(option_table, "general",
-					(void *)region, (void *)NULL,	gfx_modify_rendition_general);
-				/* iso_surfaces */
-				Option_table_add_entry(option_table, "iso_surfaces",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_iso_surfaces);
-				/* lines */
-				Option_table_add_entry(option_table, "lines",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_lines);
-				/* node_points */
-				Option_table_add_entry(option_table, "node_points",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_node_points);
-				/* static_graphic */
-				Option_table_add_entry(option_table, "static_graphic",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_static_graphic);
-				/* streamlines */
-				Option_table_add_entry(option_table, "streamlines",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_streamlines);
-				/* surfaces */
-				Option_table_add_entry(option_table, "surfaces",
-					(void *)&modify_rendition_data, (void *)&rendition_command_data,
-					gfx_modify_rendition_surfaces);
-
-				return_code = Option_table_parse(option_table, state);
-				if (return_code && (modify_rendition_data.graphic))
-				{
-					return_code = Cmiss_region_modify_rendition(region,
-						modify_rendition_data.graphic,
-						modify_rendition_data.delete_flag,
-						modify_rendition_data.position);
-				} /* parse error,help */
-				DESTROY(Option_table)(&option_table);
-				if (modify_rendition_data.graphic)
-				{
-					DEACCESS(Cmiss_graphic)(&(modify_rendition_data.graphic));
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_modify_g_element.  Invalid region");
-				return_code = 0;
-			}
+			struct Cmiss_region *region = Cmiss_region_find_subregion_at_path(command_data->root_region, region_path);
+			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+			return_code = Cmiss_rendition_execute_command_internal(rendition, state);
+			Cmiss_rendition_destroy(&rendition);
+			Cmiss_region_destroy(&region);
 		} /* parse error,help */
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
+		DEALLOCATE(region_path);
 	}
 	else
 	{

@@ -50,6 +50,7 @@ extern "C" {
 #include <stdio.h>
 #include "api/cmiss_rendition.h"
 #include "api/cmiss_graphic.h"
+#include "api/cmiss_graphics_module.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -80,7 +81,9 @@ extern "C" {
 #include "graphics/font.h"
 #include "graphics/rendition.h"
 #include "graphics/graphic.h"
+#include "graphics/graphics_module.h"
 }
+#include "graphics/tessellation.hpp"
 #include "graphics/region_tree_viewer_wx.xrch"
 
 /*
@@ -322,6 +325,7 @@ DESCRIPTION :
 	int auto_apply, child_edited, child_expanded,
 		transformation_expanded, transformation_callback_flag,
 		gt_element_group_callback_flag, rendition_callback_flag;
+	struct Cmiss_graphics_module *graphics_module;
 	/* access gt_element_group for current_object if applicable */
 	struct Cmiss_rendition *rendition, *edit_rendition;
 	Scene *scene;
@@ -488,6 +492,7 @@ class wxRegionTreeViewer : public wxFrame
 	wxStaticText *currentsceneobjecttext,*constantradius,*scalefactor,
 		*isoscalartext, *glyphtext, *centretext, *baseglyphsizetext, *selectmodetext,
 		*glyphscalefactorstext, *useelementtypetext, *xidiscretizationmodetext,
+		*tessellationtext,
 		*discretizationtext, *circlediscretizationtext,*densityfieldtext,*xitext, 
 		*streamtypetext, *streamlengthtext, *streamwidthtext, *streamvectortext, 
 		*linewidthtext, *streamlinedatatypetext, *spectrumtext, *rendertypetext, *fonttext;
@@ -510,6 +515,7 @@ class wxRegionTreeViewer : public wxFrame
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
 		 *label_chooser_panel, *font_chooser_panel, *select_mode_chooser_panel,
 		 *use_element_type_chooser_panel, *xi_discretization_mode_chooser_panel,
+		 *tessellation_chooser_panel,
 		 *native_discretization_field_chooser_panel, *density_field_chooser_panel, 
 		 *streamline_type_chooser_panel, *stream_vector_chooser_panel, 
 		 *streamline_data_type_chooser_panel, *spectrum_chooser_panel,
@@ -564,6 +570,9 @@ class wxRegionTreeViewer : public wxFrame
 	DEFINE_ENUMERATOR_TYPE_CLASS(Xi_discretization_mode);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Xi_discretization_mode)>
 		*xi_discretization_mode_chooser;
+	DEFINE_MANAGER_CLASS(Cmiss_tessellation);
+	Managed_object_chooser<Cmiss_tessellation,MANAGER_CLASS(Cmiss_tessellation)>
+	 *tessellation_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	 *native_discretization_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
@@ -668,8 +677,24 @@ public:
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Spectrum *) >
 		 (this, &wxRegionTreeViewer::spectrum_callback);
 	spectrum_chooser->set_callback(spectrum_callback);
-
 	spectrum_chooser_panel->Fit();
+
+	/* Set the tessellation_chooser*/
+	wxPanel *tessellation_chooser_panel =
+		 XRCCTRL(*this,"TessellationChooserPanel", wxPanel);
+	tessellation_chooser =
+		new Managed_object_chooser<Cmiss_tessellation,MANAGER_CLASS(Cmiss_tessellation)>(
+			tessellation_chooser_panel, /*initial*/NULL,
+			Cmiss_graphics_module_get_tessellation_manager(region_tree_viewer->graphics_module),
+			(MANAGER_CONDITIONAL_FUNCTION(Cmiss_tessellation) *)NULL, (void *)NULL,
+			region_tree_viewer->user_interface);
+	tessellation_chooser->include_null_item(true);
+	Callback_base< Cmiss_tessellation* > *tessellation_callback =
+		 new Callback_member_callback< Cmiss_tessellation*,
+				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Cmiss_tessellation *) >
+		 (this, &wxRegionTreeViewer::tessellation_callback);
+	tessellation_chooser->set_callback(tessellation_callback);
+
 	select_mode_chooser = NULL;
 	radius_scalar_chooser = NULL;	
 	iso_scalar_chooser = NULL;
@@ -786,8 +811,10 @@ public:
 				 delete use_element_type_chooser;
 			if (xi_discretization_mode_chooser)
 				 delete xi_discretization_mode_chooser;
+			if (tessellation_chooser)
+				 delete tessellation_chooser;
 			if (native_discretization_field_chooser)
-				 delete	 native_discretization_field_chooser;
+				 delete native_discretization_field_chooser;
 			if (xi_point_density_field_chooser)
 				 delete  xi_point_density_field_chooser;
 			if (streamline_type_chooser)
@@ -1649,6 +1676,19 @@ Callback from wxChooser<Spectrum> when choice is made.
 	return 1;
 }
 
+/***************************************************************************//**
+ * Callback from wxChooser<Cmiss_tessellation> when choice is made.
+ */
+int tessellation_callback(Cmiss_tessellation *tessellation)
+{
+	Cmiss_graphic_set_tessellation(
+		region_tree_viewer->current_graphic, tessellation);
+	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+		region_tree_viewer->edit_rendition);
+	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	return 1;
+}
+
 int texture_coord_field_callback(Computed_field *texture_coord_field)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2007
@@ -1961,47 +2001,7 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 		}
 		else
 		{
-			/* set materials for all graphic */
-			Cmiss_graphic_set_material(graphic,
-				region_tree_viewer->default_material);
-			Cmiss_graphic_set_label_field(graphic,
-				(struct Computed_field *)NULL, region_tree_viewer->default_font);
-			Cmiss_graphic_set_selected_material(graphic,
-				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-					"default_selected",region_tree_viewer->graphical_material_manager));
-			Computed_field *default_coordinate_field=
-				Cmiss_rendition_get_default_coordinate_field(
-					region_tree_viewer->edit_rendition);
-			Cmiss_graphic_set_coordinate_field(graphic, default_coordinate_field);
-			/* for data_points, ensure either there are points with
-				 default_coordinate defined at them. If not, and any have
-				 the element_xi_coordinate field defined over them, use that */
-			if (CMISS_GRAPHIC_DATA_POINTS==graphic_type)
-			{
-				FE_region *data_fe_region = FE_region_get_data_FE_region(
-					Cmiss_region_get_FE_region(
-						Cmiss_rendition_get_region(
-							region_tree_viewer->edit_rendition)));
-				if (!FE_region_get_first_FE_node_that(data_fe_region,
-						FE_node_has_Computed_field_defined,
-						(void *)default_coordinate_field))
-				{
-					MANAGER(Computed_field) *computed_field_manager=  
-						Cmiss_region_get_Computed_field_manager(
-							Cmiss_rendition_get_region(region_tree_viewer->edit_rendition));
-					Computed_field *element_xi_coordinate_field;
-					if ((element_xi_coordinate_field=
-							FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								"element_xi_coordinate",computed_field_manager)) &&
-						FE_region_get_first_FE_node_that(data_fe_region,
-							FE_node_has_Computed_field_defined,
-							(void *)element_xi_coordinate_field))
-					{
-						Cmiss_graphic_set_coordinate_field(graphic,
-							element_xi_coordinate_field);
-					}
-				}
-			}
+			Cmiss_rendition_set_graphic_defaults(region_tree_viewer->edit_rendition, graphic);
 			/* set iso_scalar_field for iso_surfaces */
 			if (CMISS_GRAPHIC_ISO_SURFACES==graphic_type)
 			{
@@ -2024,52 +2024,6 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 				else
 				{
 					display_message(WARNING_MESSAGE,"No scalar fields defined");
-					return_code=0;
-				}
-			}
-			/* set initial glyph for graphic types that use them */
-			if ((CMISS_GRAPHIC_NODE_POINTS==graphic_type)||
-				(CMISS_GRAPHIC_DATA_POINTS==graphic_type)||
-				(CMISS_GRAPHIC_ELEMENT_POINTS==graphic_type)||
-				(CMISS_GRAPHIC_STATIC==graphic_type))
-			{
-				/* default to point glyph for fastest possible display */
-				GT_object *glyph, *old_glyph;
-				Graphic_glyph_scaling_mode glyph_scaling_mode;
-				Triple glyph_centre,glyph_scale_factors,glyph_size;
-				Computed_field *orientation_scale_field, *variable_scale_field; ;
-				glyph=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-					region_tree_viewer->glyph_manager);
-				if (!(Cmiss_graphic_get_glyph_parameters(graphic,
-							&old_glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
-							&orientation_scale_field, glyph_scale_factors,
-							&variable_scale_field) &&
-						Cmiss_graphic_set_glyph_parameters(graphic,glyph,
-							glyph_scaling_mode, glyph_centre, glyph_size,
-							orientation_scale_field, glyph_scale_factors,
-							variable_scale_field)))
-				{
-					display_message(WARNING_MESSAGE,"No glyphs defined");
-					return_code=0;
-				}
-			}
-			if (CMISS_GRAPHIC_VOLUMES==graphic_type)
-			{
-				/* must have a volume texture */
-				VT_volume_texture *volume_texture = FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
-						(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
-						(void *)NULL,region_tree_viewer->volume_texture_manager);
-				if (volume_texture)
-				{
-					if (!Cmiss_graphic_set_volume_texture(graphic,
-							volume_texture))
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"No volume textures defined");
 					return_code=0;
 				}
 			}
@@ -2105,11 +2059,6 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 					return_code=0;
 				}
 			}
-			/* set use_element_type for element_points */
-			if (return_code && (CMISS_GRAPHIC_ELEMENT_POINTS == graphic_type))
-			{
-				Cmiss_graphic_set_use_element_type(graphic,USE_ELEMENTS);
-			}
 		}
 		if (return_code && Cmiss_rendition_add_graphic(
 					region_tree_viewer->edit_rendition, graphic, 0))
@@ -2134,10 +2083,7 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 			sceneediting->Thaw();
 			sceneediting->Layout();
 		}
-		if (!return_code)
-		{
-			DESTROY(Cmiss_graphic)(&graphic);
-		}
+		DEACCESS(Cmiss_graphic)(&graphic);
 	}
 }
 
@@ -3920,7 +3866,6 @@ void SetGraphic(Cmiss_graphic *graphic)
 				 use_element_type_chooser_panel->Hide();
 				 useelementtypetext->Hide();	 
 			}
-
 		discretizationtext=XRCCTRL(*this,"DiscretizationText",wxStaticText);
 		discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
 		circlediscretizationtext=XRCCTRL(*this,"CircleDiscretizationText",wxStaticText);
@@ -3928,23 +3873,42 @@ void SetGraphic(Cmiss_graphic *graphic)
 		nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
 		native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
 
-		if ((CMISS_GRAPHIC_DATA_POINTS!=region_tree_viewer->current_graphic_type) &&
-			(CMISS_GRAPHIC_NODE_POINTS!=region_tree_viewer->current_graphic_type) &&
-			(CMISS_GRAPHIC_STREAMLINES!=region_tree_viewer->current_graphic_type) &&
-			(CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type))
+		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 		{
 			Cmiss_graphic_get_discretization(graphic,
 				&discretization);
 			sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
 				discretization.number_in_xi2,discretization.number_in_xi3);
 			discretizationtextctrl->SetValue(temp_string);
-			discretizationtextctrl->Show();	
+			discretizationtextctrl->Show();
 			discretizationtext->Show();
 		}
 		else
 		{
-			discretizationtextctrl->Hide();	
+			discretizationtextctrl->Hide();
 			discretizationtext->Hide();
+		}
+
+		tessellationtext=XRCCTRL(*this,"TessellationStaticText",wxStaticText);
+		tessellation_chooser_panel=XRCCTRL(*this, "TessellationChooserPanel",wxPanel);
+
+		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
+		{
+			Cmiss_tessellation *tessellation = Cmiss_graphic_get_tessellation(graphic);
+			tessellation_chooser->set_object(tessellation);
+			tessellation_chooser_panel->Show();
+			tessellationtext->Show();
+			if (tessellation)
+			{
+				DEACCESS(Cmiss_tessellation)(&tessellation);
+			}
+		}
+		else
+		{
+			tessellation_chooser_panel->Hide();
+			tessellationtext->Hide();
 		}
 
 		if (CMISS_GRAPHIC_CYLINDERS==region_tree_viewer->current_graphic_type)
@@ -4814,9 +4778,8 @@ int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
 			region_tree_viewer->graphiclistbox->Clear();
 			for_each_graphic_in_Cmiss_rendition(region_tree_viewer->rendition,
 				Region_tree_viewer_add_graphic_item, (void *)region_tree_viewer);
-			Cmiss_rendition *copy = create_editor_copy_Cmiss_rendition(region_tree_viewer->rendition);
-			REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, copy);
-			DEACCESS(Cmiss_rendition)(&copy);
+			DEACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition);
+			region_tree_viewer->edit_rendition = create_editor_copy_Cmiss_rendition(region_tree_viewer->rendition);
 			int num = 	region_tree_viewer->graphiclistbox->GetCount();
 			if (selection >= num)
 			{
@@ -5117,6 +5080,7 @@ Global functions
 
 struct Region_tree_viewer *CREATE(Region_tree_viewer)(	
 	struct Region_tree_viewer **region_tree_viewer_address,
+	struct Cmiss_graphics_module *graphics_module,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -5138,7 +5102,7 @@ DESCRIPTION :
  
 	ENTER(CREATE(Region_tree_viewer));
 	region_tree_viewer = (struct Region_tree_viewer *)NULL;
-	if (scene_manager && scene && root_region &&
+	if (graphics_module && scene_manager && scene && root_region &&
 		graphical_material_manager && default_material &&
 		glyph_manager && spectrum_manager && default_spectrum &&
 		volume_texture_manager && font_package && user_interface)
@@ -5152,6 +5116,7 @@ DESCRIPTION :
 			 region_tree_viewer->transformation_callback_flag = 0;
 			 region_tree_viewer->gt_element_group_callback_flag = 0;
 			 region_tree_viewer->rendition_callback_flag = 0;
+			 region_tree_viewer->graphics_module = graphics_module;
 			 region_tree_viewer->scene = scene;
 			 region_tree_viewer->graphical_material_manager = graphical_material_manager;
 			 region_tree_viewer->region_tree_viewer_address = (struct Region_tree_viewer **)NULL;

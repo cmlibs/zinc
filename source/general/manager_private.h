@@ -1391,16 +1391,21 @@ DECLARE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type)
 
-#define DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
+#define DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS( \
 	object_type , identifier_field_name , identifier_type , object_manager ) \
 DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type, \
 	identifier_field_name, object_manager) \
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
+	identifier_field_name,identifier_type)
+
+#define DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
+	object_type , identifier_field_name , identifier_type , object_manager ) \
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS( \
+	object_type , identifier_field_name , identifier_type , object_manager ) \
 DECLARE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 DECLARE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
 	identifier_field_name) \
 DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type,identifier_field_name, \
-	identifier_type) \
-DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
-	identifier_field_name,identifier_type)
+	identifier_type)
 
 #endif /* !defined (MANAGER_PRIVATE_H) */

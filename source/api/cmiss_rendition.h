@@ -70,21 +70,6 @@ typedef struct Cmiss_rendition * Cmiss_rendition_id;
 Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
- * Adds the <graphic> to <rendition> at the given <position>, where 1 is
- * the top of the list (rendered first), and values less than 1 or greater than the
- * last position in the list cause the graphic to be added at its end, with a
- * position one greater than the last.
- *
- * @param rendition  The handle to the rendition.
- * @param graphic  The handle to the cmiss graphic which will be added to the
- *   rendition.
- * @param pos  The position to put the target graphic to.
- * @return  Returns 1 if successfully add graphic to rendition at pos, otherwise
- *   returns 0.
- */
-int Cmiss_rendition_add_graphic(Cmiss_rendition_id rendition, Cmiss_graphic_id graphic, int pos);
-
-/***************************************************************************//**
  * Get graphic at position <pos> in the internal graphics list of rendition.
  *
  * @param rendition  The handle to the rendition of which the graphic is located.
@@ -151,16 +136,6 @@ int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
  * @return  Returns 1 if successfully end the cache on the rendition, otherwise 0.
  */
 int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
-
-/***************************************************************************//**
- * Returns the default coordinate field of the <rendition>.
- *
- * @param rendition  The handle to cmiss rendition.
- * @return  Returns the default coordinate field of rendition if found,
- * otherwise NULL.
- */
-Cmiss_field_id Cmiss_rendition_get_default_coordinate_field(
- 	Cmiss_rendition_id renditon);
 
 /***************************************************************************//**
  * Returns the status of the rendition's visibility flag. Note this only affects

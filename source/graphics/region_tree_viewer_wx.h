@@ -29,6 +29,7 @@ Global functions
 
 struct Region_tree_viewer *CREATE(Region_tree_viewer)(
 	struct Region_tree_viewer **region_tree_viewer_address,
+	struct Cmiss_graphics_module *graphics_module,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,

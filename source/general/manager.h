@@ -681,15 +681,20 @@ PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type)
 
-#define PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS( object_type , \
+#define PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS( object_type , \
 	identifier_field_name , identifier_type ) \
 PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type); \
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
+	identifier_field_name,identifier_type)
+
+#define PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS( object_type , \
+	identifier_field_name , identifier_type ) \
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(object_type, \
+	identifier_field_name,identifier_type); \
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name); \
 PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
 	identifier_field_name); \
 PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
-	identifier_field_name,identifier_type); \
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
 	identifier_field_name,identifier_type)
 
 #define PROTOTYPE_MANAGER_COPY_FUNCTIONS( object_type , \

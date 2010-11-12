@@ -47,6 +47,9 @@ extern "C" {
 #include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+}
+#include "graphics/tessellation.hpp"
+extern "C" {
 #include "region/cmiss_region_private.h"
 #include "time/time_keeper.h"
 #include "user_interface/message.h"
@@ -84,9 +87,41 @@ struct Cmiss_graphics_module
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
 	struct Time_keeper *default_time_keeper;
+	struct MANAGER(Cmiss_tessellation) *tessellation_manager;
+	void *tessellation_manager_callback_id;
+	struct Cmiss_tessellation *default_tessellation;
 	int access_count;
 	std::list<Cmiss_region*> *member_regions_list;
 };
+
+namespace {
+
+/***************************************************************************//**
+ * Callback for changes in the tessellation manager.
+ * Informs all renditions about the changes.
+ */
+void Cmiss_graphics_module_tessellation_manager_callback(
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *message, void *graphics_module_void)
+{
+	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	if (message && graphics_module)
+	{
+		// minimise scene messages while updating
+		MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+		std::list<Cmiss_region*>::iterator region_iter;
+		for (region_iter = graphics_module->member_regions_list->begin();
+			region_iter != graphics_module->member_regions_list->end(); ++region_iter)
+		{
+			Cmiss_region *region = *region_iter;
+			Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(graphics_module, region);
+			Cmiss_rendition_tessellation_change(rendition, message);
+			DEACCESS(Cmiss_rendition)(&rendition);
+		}
+		MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+	}
+}
+
+}
 
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	struct Context *context)
@@ -123,7 +158,13 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->data_selection = Cmiss_context_get_data_selection(context);
 			module->node_selection = Cmiss_context_get_node_selection(context);
 			module->default_time_keeper = NULL;
+			module->tessellation_manager = CREATE(MANAGER(Cmiss_tessellation))();
+			Cmiss_tessellation_manager_set_owner_private(module->tessellation_manager, module);
+			module->default_tessellation = NULL;
 			module->member_regions_list = new std::list<Cmiss_region*>;
+			module->tessellation_manager_callback_id =
+				MANAGER_REGISTER(Cmiss_tessellation)(Cmiss_graphics_module_tessellation_manager_callback,
+					(void *)module, module->tessellation_manager);
 			module->access_count = 1;
 		}
 		else
@@ -208,6 +249,9 @@ int Cmiss_graphics_module_destroy(
 		graphics_module->access_count--;
 		if (0 == graphics_module->access_count)
 		{
+			MANAGER_DEREGISTER(Cmiss_tessellation)(
+				graphics_module->tessellation_manager_callback_id,
+				graphics_module->tessellation_manager);
 			if (graphics_module->member_regions_list)
 			{
 				Cmiss_graphics_module_remove_member_regions_rendition(graphics_module);
@@ -239,6 +283,9 @@ int Cmiss_graphics_module_destroy(
 				DEACCESS(Time_keeper)(&graphics_module->default_time_keeper);
 			if (graphics_module->graphics_font_package)
 				DESTROY(Graphics_font_package)(&graphics_module->graphics_font_package);
+			if (graphics_module->default_tessellation)
+				DEACCESS(Cmiss_tessellation)(&graphics_module->default_tessellation);
+			DESTROY(MANAGER(Cmiss_tessellation))(&graphics_module->tessellation_manager);
 			DEALLOCATE(*graphics_module_address);
 		}
 		*graphics_module_address = NULL;
@@ -852,6 +899,105 @@ struct Light_model *Cmiss_graphics_module_get_default_light_model(
 			"Cmiss_graphics_module_get_default_light_model.  Invalid argument(s)");
 	}
 	return light_model;
+}
+
+struct MANAGER(Cmiss_tessellation) *Cmiss_graphics_module_get_tessellation_manager(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	struct MANAGER(Cmiss_tessellation) *tessellation_manager = NULL;
+	if (graphics_module)
+	{
+		tessellation_manager = graphics_module->tessellation_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_get_tessellation_manager.  Invalid argument(s)");
+	}
+	return tessellation_manager;
+}
+
+struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
+	struct Cmiss_graphics_module *graphics_module)
+{
+	const char *default_tessellation_name = "default";
+	struct Cmiss_tessellation *tessellation = NULL;
+	if (graphics_module && graphics_module->tessellation_manager)
+	{
+		if (!graphics_module->default_tessellation)
+		{
+			graphics_module->default_tessellation =
+				Cmiss_graphics_module_find_tessellation_by_name(graphics_module, default_tessellation_name);
+			if (NULL == graphics_module->default_tessellation)
+			{
+				graphics_module->default_tessellation = Cmiss_tessellation_create_private();
+				Cmiss_tessellation_set_name(graphics_module->default_tessellation, default_tessellation_name);
+				Cmiss_tessellation_set_persistent(tessellation, 1);
+
+				const int default_minimum_divisions = 1;
+				Cmiss_tessellation_set_minimum_divisions(graphics_module->default_tessellation,
+					/*dimensions*/1, &default_minimum_divisions);
+				const int default_refinement_factor = 4;
+				Cmiss_tessellation_set_refinement_factors(graphics_module->default_tessellation,
+					/*dimensions*/1, &default_refinement_factor);
+				if (!ADD_OBJECT_TO_MANAGER(Cmiss_tessellation)(graphics_module->default_tessellation,
+					graphics_module->tessellation_manager))
+				{
+					DEACCESS(Cmiss_tessellation)(&(graphics_module->default_tessellation));
+				}
+			}
+		}
+		tessellation = ACCESS(Cmiss_tessellation)(graphics_module->default_tessellation);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_get_default_tessellation.  Invalid argument(s)");
+	}
+	return tessellation;
+}
+
+struct Cmiss_tessellation* Cmiss_graphics_module_find_tessellation_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name)
+{
+	struct Cmiss_tessellation *tessellation = NULL;
+	if (graphics_module && name)
+	{
+		tessellation = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation, name)(
+			name, Cmiss_graphics_module_get_tessellation_manager(graphics_module));
+		if (tessellation)
+		{
+			ACCESS(Cmiss_tessellation)(tessellation);
+		}
+	}
+	return tessellation;
+}
+
+Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
+	Cmiss_graphics_module_id graphics_module)
+{
+	Cmiss_tessellation_id tessellation = NULL;
+	if (graphics_module)
+	{
+		struct MANAGER(Cmiss_tessellation) *tessellation_manager =
+			Cmiss_graphics_module_get_tessellation_manager(graphics_module);
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Cmiss_tessellation)(tessellation_manager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(temp_name,
+			tessellation_manager));
+		tessellation = Cmiss_tessellation_create_private();
+		Cmiss_tessellation_set_name(tessellation, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Cmiss_tessellation)(tessellation, tessellation_manager))
+		{
+			DEACCESS(Cmiss_tessellation)(&tessellation);
+		}
+	}
+	return tessellation;
 }
 
 int Cmiss_graphics_module_set_time_keeper_internal(struct Cmiss_graphics_module *module, struct Time_keeper *time_keeper)

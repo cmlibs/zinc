@@ -46,6 +46,7 @@ SET( API_HDRS
 	source/api/cmiss_rendition.h
 	source/api/cmiss_scene.h
 	source/api/cmiss_scene_filter.h
+	source/api/cmiss_tessellation.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
 	source/api/cmiss_time_sequence.h

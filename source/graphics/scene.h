@@ -1206,19 +1206,6 @@ DESCRIPTION :
 Writes the properties of the <scene> to the command window.
 ==============================================================================*/
 
-#if defined (OLD_CODE)
-int gfx_modify_g_element_general(struct Parse_state *state,
-	void *cmiss_region_void, void *scene_void);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Executes a GFX MODIFY G_ELEMENT GENERAL command.
-Allows general element_group settings to be changed (eg. discretization) and
-updates graphics of settings affected by the changes (probably all).
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 #if !defined (NEW_ALIAS)
 int export_to_alias(struct Scene *scene);
 /******************************************************************************

@@ -28,6 +28,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/selected_graphic.c
 	source/graphics/spectrum.cpp
 	source/graphics/spectrum_settings.c
+	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
 	source/graphics/texture_line.c
 	source/graphics/transform_tool.cpp
@@ -80,6 +81,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/spectrum_editor_dialog.h
 	source/graphics/spectrum_editor_settings.h
 	source/graphics/spectrum_settings.h
+	source/graphics/tessellation.hpp
 	source/graphics/texture.h
 	source/graphics/texture.hpp
 	source/graphics/texturemap.h

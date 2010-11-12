@@ -54,6 +54,7 @@
 #include "graphics/volume_texture.h"
 
 struct Cmiss_graphic;
+struct Cmiss_graphics_module;
 
 enum Cmiss_graphic_type
 {
@@ -74,6 +75,20 @@ enum Cmiss_graphic_type
 typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
+
+/***************************************************************************//**
+ * Unique identifier for each graphic attribute, used to query whether it can be
+ * used with each Cmiss_graphic_type.
+ * Must update Cmiss_graphic_type_uses_attribute as new attribute IDs defined.
+ * @see Cmiss_graphic_type_uses_attribute()
+ */
+enum Cmiss_graphic_attribute_id
+{
+	CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION,
+	CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD,
+	CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD,
+	CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION
+};
 
 enum Cmiss_graphic_string_details
 {
@@ -124,15 +139,12 @@ struct Cmiss_graphic_to_graphics_object_data
 	/* graphics object names are preceded by this */
 	const char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */
-	struct Computed_field *rc_coordinate_field,*default_rc_coordinate_field,
+	struct Computed_field *rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field,
 		*group_field;
 	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region;
-	struct Element_discretization *element_discretization;
-	struct FE_field *native_discretization_field;
-	int circle_discretization;
 	FE_value time;
 	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */
@@ -168,21 +180,16 @@ Structure modified by g_element modify routines.
 {
 	char delete_flag;
 	int position;
-	int circle_discretization;
-	struct FE_field *native_discretization_field;
-	struct Element_discretization element_discretization;
-	struct Computed_field *default_coordinate_field;
 	struct Cmiss_graphic *graphic;
 }; /* struct Modify_graphic_data */
 
+/***************************************************************************//**
+ * Subset of command data passed to rendition modify routines.
+ */
 struct Rendition_command_data
-/*******************************************************************************
-LAST MODIFIED : 6 March 2003
-
-DESCRIPTION :
-Subset of command data passed to g_element modify routines.
-==============================================================================*/
 {
+	struct Cmiss_graphics_module *graphics_module;
+	struct Cmiss_rendition *rendition;
 	struct Graphical_material *default_material;
 	struct Graphics_font *default_font;
 	struct Graphics_font_package *graphics_font_package;
@@ -223,6 +230,18 @@ struct Cmiss_graphic_Graphical_material_change_data
 
 DECLARE_LIST_TYPES(Cmiss_graphic);
 
+/***************************************************************************//**
+ * Queries whether an attribute can be used with supplied graphic_type.
+ * @param graphic_type  The type of graphic to query.
+ * @param attribute_id  Identifier of graphic attribute to query about.
+ * @return  1 if the attribute can be used with graphic type, otherwise 0.
+ */
+int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
+	enum Cmiss_graphic_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Created with access_count = 1.
+ */
 struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 	enum Cmiss_graphic_type graphic_type);
 
@@ -416,13 +435,13 @@ int Cmiss_graphic_set_select_mode(struct Cmiss_graphic *graphic,
 	enum Graphics_select_mode select_mode);
 
 /***************************************************************************//**
- * Returns the coordinate field used by <graphic>.
+ * Returns the field supplying coordinates for the graphic.
+ *
+ * @param graphic  The graphic to query.
+ * @return  The coordinate field pointer, or NULL if none or invalid graphic.
  */
 struct Computed_field *Cmiss_graphic_get_coordinate_field(
 	struct Cmiss_graphic *graphic);
-
-int Cmiss_graphic_set_general_coordinate_field(
-	struct Cmiss_graphic *graphic,void *coordinate_field_void);
 
 /***************************************************************************//**
  * Returns the material used by <graphic>.
@@ -502,8 +521,17 @@ struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
 	struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**
- * Returns the <discretization> of points where glyphs are displayed for <graphic>
- * of type CMISS_GRAPHIC_ELEMENT_POINTS.
+ * Returns the tessellation object of the graphics or NULL if none.
+ * Caller must destroy reference.
+ */
+struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
+	struct Cmiss_graphic *graphic);
+
+int Cmiss_graphic_set_tessellation(
+	struct Cmiss_graphic *graphic, struct Cmiss_tessellation *tessellation);
+
+/***************************************************************************//**
+ * Returns the fixed discretization <graphic>.
  */
 int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
 	struct Element_discretization *discretization);
@@ -521,16 +549,10 @@ struct FE_field *Cmiss_graphic_get_native_discretization_field(
 int Cmiss_graphic_set_native_discretization_field(
       struct Cmiss_graphic *graphic, struct FE_field *native_discretization_field);
 
-int Cmiss_graphic_set_general_native_discretization_field(
-	struct Cmiss_graphic *graphic, void *native_discretization_field_void);
-
 int Cmiss_graphic_get_circle_discretization(struct Cmiss_graphic *graphic);
 
 int Cmiss_graphic_set_circle_discretization(
 	struct Cmiss_graphic *graphic, int circle_discretization);
-
-int Cmiss_graphic_set_general_circle_discretization(
-	struct Cmiss_graphic *graphic,void *circle_discretization_void);
 
 /***************************************************************************//**
  * Returns the current glyph and parameters for orienting and scaling it.
@@ -786,30 +808,6 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**
- * Deaccesses any graphics_object in <settings> if it uses the default coordinate
- * field from the gt_element_group - that is, settings->coordinate_field is NULL.
- */
-int Cmiss_graphic_default_coordinate_field_change(
-	struct Cmiss_graphic *graphic,void *dummy_void);
-
-/***************************************************************************//**
- * Deaccesses any graphics_object in <graphic> if it would have to be rebuilt
- * due to a change in element discretization.
- */
-int Cmiss_graphic_element_discretization_change(
-	struct Cmiss_graphic *graphic,void *dummy_void);
-
-int Cmiss_graphic_set_general_element_discretization(
-	struct Cmiss_graphic *graphic, void *discretization_void);
-
-/***************************************************************************//**
- * Deaccesses any graphics_object in <graphic> if it would have to be rebuilt
- * due to a change in element discretization.
- */
-int Cmiss_graphic_circle_discretization_change(
-	struct Cmiss_graphic *graphic,void *dummy_void);
-
-/***************************************************************************//**
  * Writes out the <graphic> as a text string in the command window with the
  * <graphic_string_detail>, <line_prefix> and <line_suffix> given in the
  * <list_data>.
@@ -939,6 +937,24 @@ Data to pass to GT_element_settings_Spectrum_change.
 
 int Cmiss_graphic_Spectrum_change(
 	struct Cmiss_graphic *graphic, void *spectrum_change_data_void);
+
+/***************************************************************************//**
+ * Data to pass to Cmiss_graphic_tessellation_change.
+ */
+struct Cmiss_graphic_tessellation_change_data
+{
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message;
+	/* flag indicating if the Cmiss_rendition has changed */
+	int changed;
+};
+
+/***************************************************************************//**
+ * Inform graphic of changes in the tessellation manager. Marks affected
+ * graphics for rebuilding and sets flag for informing clients of rendition.
+ * @param tessellation_change_data_void  Cmiss_graphic_tessellation_change_data.
+ */
+int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
+	void *tessellation_change_data_void);
 
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object);

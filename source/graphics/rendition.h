@@ -47,12 +47,14 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
 #include "general/any_object_prototype.h"
+#include "general/manager.h"
 #include "general/object.h"
 #include "graphics/graphic.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
 
 struct Cmiss_rendition;
+struct MANAGER_MESSAGE(Cmiss_tessellation);
 
 typedef int(*Cmiss_rendition_callback)(struct Cmiss_rendition *rendition,
 	void *user_data);
@@ -155,9 +157,6 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 	LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *conditional_function,
 	void *data);
 
-int Cmiss_region_modify_rendition(struct Cmiss_region *region,
-	struct Cmiss_graphic *graphic, int delete_flag, int position);
-
 /***************************************************************************//**
  * Adds a callback routine which is called whenever a Cmiss_rendition is aware of
  * changes.
@@ -180,59 +179,14 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	void *cmiss_region_void, void *dummy_void);
 
 /***************************************************************************//**
- * Returns the circle discretization of the gt_element_group.
- */
-int Cmiss_rendition_get_circle_discretization(
-	struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
- * Sets the circle discretization of the rendition.
- */
-int Cmiss_rendition_set_circle_discretization(
-	struct Cmiss_rendition *rendition, int circle_discretization);
-
-/***************************************************************************//**
  * Returns the default coordinate field of the <rendition>.
+ *
+ * @param rendition  The handle to cmiss rendition.
+ * @return  Returns the default coordinate field of rendition if found,
+ * otherwise NULL.
  */
 struct Computed_field *Cmiss_rendition_get_default_coordinate_field(
 	struct Cmiss_rendition *rendition);
-
-/*******************************************************************************
- * Sets the <default_coordinate_field> used by <rendition>. Settings without
- * a specific coordinate field will use this one.
- */
-int Cmiss_rendition_set_default_coordinate_field(
-	struct Cmiss_rendition *rendition,
-	struct Computed_field *default_coordinate_field);
-
-/***************************************************************************//**
- *Returns the element discretization of the rendition.
- */
-int Cmiss_rendition_get_element_discretization(
-	struct Cmiss_rendition *rendition,
-	struct Element_discretization *element_discretization);
-
-/***************************************************************************//**
- * Sets the element discretization of the rendition.
- */
-int Cmiss_rendition_set_element_discretization(
-	struct Cmiss_rendition *rendition,
-	struct Element_discretization *element_discretization);
-
-/***************************************************************************//**
- * Returns the default coordinate field of the <rendition>.
- */
-struct FE_field *Cmiss_rendition_get_native_discretization_field(
-	struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
- * Sets the <native_discretization_field> used by <rendition>. If the field
- * is not NULL and is element-based in a given element, its native discretization
- * is used in preference to the global element_discretization.
- */
-int Cmiss_rendition_set_native_discretization_field(
-	struct Cmiss_rendition *rendition,
-	struct FE_field *native_discretization_field);
 
 /***************************************************************************//**
  * Iterates through every material used by the scene.
@@ -263,6 +217,13 @@ int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition);
  */
 int Cmiss_rendition_Graphical_material_change(struct Cmiss_rendition *rendition,
 	void *changed_material_list_void);
+
+/***************************************************************************//**
+ * Private method for informing rendition of tessellation manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message);
 
 int for_each_rendition_in_Cmiss_rendition(
 	struct Cmiss_rendition *rendition,
@@ -382,6 +343,13 @@ int Cmiss_rendition_create_node_list_selection(Cmiss_rendition_id rendition,
 	struct LIST(FE_node) *node_list);
 
 /***************************************************************************//**
+ * Set default graphic attributes depending on type, e.g. tessellation,
+ * materials, etc.
+ */
+int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
+	struct Cmiss_graphic *graphic);
+
+/***************************************************************************//**
  * Adds the <graphic> to <rendition> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
  * last position in the list cause the graphic to be added at its end, with a
@@ -400,6 +368,13 @@ int Cmiss_rendition_update_callback(struct Cmiss_rendition *rendition, void *dum
 
 int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *child_rendition,
 	void *region_void);
+
+/***************************************************************************//**
+ * Shared gfx commands used via Cmiss_rendition_execute_command API and
+ * command/cmiss
+ */
+int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
+	struct Parse_state *state);
 
 int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *rendition,
 	void *command_prefix_void);

@@ -1127,6 +1127,7 @@ GRAPHICS_SRCS = \
 	graphics/selected_graphic.c \
 	graphics/spectrum.cpp \
 	graphics/spectrum_settings.c \
+	graphics/tessellation.cpp \
 	graphics/texture.c \
 	graphics/texture_line.c \
 	graphics/transform_tool.cpp \
