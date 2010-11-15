@@ -79,7 +79,7 @@
 												<object class="sizeritem">
 													<flag>wxEXPAND</flag>
 													<option>0</option>
-													<object class ="wxStaticBoxSizer">
+													<object class ="wxBoxSizer">
 														<orient>wxHORIZONTAL</orient>
 														<object class ="sizeritem">
 															<flag>wxALIGN_CENTRE</flag>

@@ -483,7 +483,7 @@ class wxRegionTreeViewer : public wxFrame
 #if defined (__WXMSW__)
 	Region_tree_viewer_size region_tree_viewer_size;
 #endif /* defined (__WXMSW__) */
-	wxScrolledWindow *lowest_panel, *sceneediting;
+	wxScrolledWindow *sceneediting;
 	wxFrame *frame;
 	wxSplitterWindow *lowersplitter, *verticalsplitter;
 	wxCheckListBox *scenechecklist,*graphicalitemschecklist;
@@ -4542,7 +4542,7 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 		region_tree_viewer->lowersplitter->SetSize(width-1, height-1);
 		region_tree_viewer->lowersplitter->SetSize(width+1, height+1);
 	}
-	lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
+	wxPanel *lowest_panel = XRCCTRL(*this, "LowestPanel",wxPanel);
 	if (lowest_panel)
 	{
 		lowest_panel->GetSize(&width, &height);
@@ -5185,9 +5185,13 @@ DESCRIPTION :
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 			 region_tree_viewer->sceneediting->Layout();
 			 region_tree_viewer->sceneediting->SetScrollbars(10,10,40,40);
-			 region_tree_viewer->verticalsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"VerticalSplitter",wxSplitterWindow);
+			 region_tree_viewer->verticalsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
+					"VerticalSplitter",wxSplitterWindow);
 			 region_tree_viewer->verticalsplitter->SetSashPosition(150);
-			 region_tree_viewer->lowersplitter->SetSashPosition(160);
+			 region_tree_viewer->lowersplitter->SetSashPosition(100);
+			 wxPanel *lowest_panel = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
+				 "LowestPanel",wxPanel);
+			 lowest_panel->SetMinSize(wxSize(-1,150));
 			 region_tree_viewer->lowersplitter->Layout();
 			 region_tree_viewer->lowersplitter->Hide();
 			 region_tree_viewer->verticalsplitter->Layout();
