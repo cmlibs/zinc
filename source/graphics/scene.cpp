@@ -1,23 +1,11 @@
-/*******************************************************************************
-FILE : scene.cpp
-
-DESCRIPTION :
-Structure for storing the collections of objects that make up a 3-D graphical
-model - lights, materials, primitives, etc.
-Also contains interface routines for having these converted to display lists,
-and for these to be assembled into a single display list of the whole scene.
-The display list for the whole scene lives and dies with the scene, but it is
-up to others - ie. the Scene_viewer - to display.
-
-???RC In hierarchical model a Scene should be a type derived from a
-Scene_object/base graphics object - that way they can be stored in the same
-containers - and in a scene themselves. Furthermore, I think Graphical
-Finite Elements/Regions should be a class derived from a Scene, not just
-extra functionality for it as is currently the case.
-
-HISTORY :
-November 1997. Created from Scene description part of Drawing.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : scene.cpp
+ *
+ * Implementation of Cmiss_scene which describes a collection of graphics able
+ * to be output to a Cmiss_scene_viewer or other outputs/devices.
+ * It broadly comprises a reference to a region sub-tree and filters controlling
+ * which graphics are displayed from its renditions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *

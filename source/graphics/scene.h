@@ -1,18 +1,11 @@
-/*******************************************************************************
-FILE : scene.h
-
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Structure for storing the collections of objects that make up a 3-D graphical
-model - lights, materials, primitives, etc.
-Also contains interface routines for having these converted to display lists,
-and for these to be assembled into a single display list of the whole scene.
-
-HISTORY :
-November 1997. Created from Scene description part of Drawing.
-December 1997. Created MANAGER(Scene).
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : scene.h
+ *
+ * Internal interface to Cmiss_scene which describes a collection of graphics
+ * able to be output to a Cmiss_scene_viewer or other outputs/devices.
+ * It broadly comprises a reference to a region sub-tree and filters controlling
+ * which graphics are displayed from its renditions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
