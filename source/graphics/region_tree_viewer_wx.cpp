@@ -364,8 +364,7 @@ DESCRIPTION :
 	wxCheckListBox *graphiclistbox;
 	 wxCmguiHierachicalTree *testing_tree_ctrl;
 	 wxImageList *ImageList;
-	 wxSplitterWindow *lowersplitter;
-	 wxSplitterWindow *topsplitter;
+	 wxSplitterWindow *lowersplitter, *verticalsplitter;
 	 wxCheckBox *autocheckbox;
 	 wxButton *applybutton;
 	 wxButton *revertbutton;
@@ -486,7 +485,7 @@ class wxRegionTreeViewer : public wxFrame
 #endif /* defined (__WXMSW__) */
 	wxScrolledWindow *lowest_panel, *sceneediting;
 	wxFrame *frame;
-	wxSplitterWindow *lowersplitter,*topsplitter;
+	wxSplitterWindow *lowersplitter, *verticalsplitter;
 	wxCheckListBox *scenechecklist,*graphicalitemschecklist;
 	wxListBox *scenelistbox,*graphicalitemslistbox;
 	wxStaticText *currentsceneobjecttext,*constantradius,*scalefactor,
@@ -1735,12 +1734,12 @@ void CollapsiblepaneChangedEvent(wxCollapsiblePaneEvent& event)
 	if (frame)
 	{
 		frame->Freeze();
+		wxPanel *rightpanel=XRCCTRL(*this,"RightPanel", wxPanel);
+		rightpanel->Layout();
+		verticalsplitter=XRCCTRL(*this,"VerticalSplitter",wxSplitterWindow);
+		verticalsplitter->Layout();
 		lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
 		lowersplitter->Layout();	
-		topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-		topsplitter->Layout();	
-		frame = 
-			XRCCTRL(*this, "CmguiRegionTreeViewer", wxFrame);
 		frame->SetMinSize(wxSize(50,100));
 		frame->SetMaxSize(wxSize(2000,2000));
 		frame->Layout();
@@ -1848,8 +1847,8 @@ void ResetWindow(wxSplitterEvent& event)
 			XRCCTRL(*this, "CmguiRegionTreeViewer", wxFrame);
 	 frame->Layout();
 	 frame->SetMinSize(wxSize(50,100));
-	 topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-	 topsplitter->Layout();	
+	 verticalsplitter=XRCCTRL(*this,"VerticalSplitter",wxSplitterWindow);
+	 verticalsplitter->Layout();
 	 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
 	 lowersplitter->Layout();
 	 sceneediting = 
@@ -3334,15 +3333,10 @@ void SetGraphic(Cmiss_graphic *graphic)
 			temp_coordinate_field=
 				Cmiss_graphic_get_coordinate_field(region_tree_viewer->current_graphic);
 		}
-		if (temp_coordinate_field)
-		{
-			coordinate_field_chooser_panel->Enable();
-		}
-		else
+		if (!temp_coordinate_field)
 		{
 			temp_coordinate_field = Cmiss_rendition_get_default_coordinate_field(
 				region_tree_viewer->edit_rendition);
-			coordinate_field_chooser_panel->Disable();
 		}
 		if (coordinate_field_chooser ==NULL)
 		{
@@ -3356,6 +3350,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				(this, &wxRegionTreeViewer::coordinate_field_callback);
 			coordinate_field_chooser->set_callback(coordinate_field_callback);
 			coordinate_field_chooser_panel->Fit();
+			coordinate_field_chooser->include_null_item(true);
 		}
 		coordinate_field_chooser->set_object(temp_coordinate_field);
 		coordinate_field_chooser_panel->Show();
@@ -4523,6 +4518,8 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 			}
 			DEACCESS(Cmiss_rendition)(&rendition);
 		}
+		wxPanel *rightpanel=XRCCTRL(*this,"RightPanel", wxPanel);
+		rightpanel->Layout();
 	}
 	else
 	{
@@ -5152,6 +5149,11 @@ DESCRIPTION :
 			 wxLogNull logNo;
 			 region_tree_viewer->wx_region_tree_viewer = new
 					wxRegionTreeViewer(region_tree_viewer);
+			 region_tree_viewer->frame=
+					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmguiRegionTreeViewer", wxFrame);
+			 region_tree_viewer->frame->SetMinSize(wxSize(50,100));
+			 region_tree_viewer->frame->SetSize(wxSize(600,800));
+			 region_tree_viewer->frame->SetMaxSize(wxSize(2000,2000));
 			 region_tree_viewer->lowersplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"LowerSplitter",wxSplitterWindow);
 			 region_tree_viewer->top_collpane = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
 					"RegionTreeViewerTopCollapsiblePane", wxCollapsiblePane);
@@ -5176,24 +5178,22 @@ DESCRIPTION :
 			 region_tree_viewer->revertbutton =
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "RevertButton", wxButton);
 			 region_tree_viewer->revertbutton->Disable();
-			 region_tree_viewer->frame=
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmguiRegionTreeViewer", wxFrame);
 			 region_tree_viewer->frame->Layout();
-			 region_tree_viewer->frame->SetMinSize(wxSize(50,100));
-			 region_tree_viewer->frame->SetSize(wxSize(600,800));
-			 region_tree_viewer->frame->SetMaxSize(wxSize(2000,2000));
 			 region_tree_viewer->sceneediting =
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "SceneEditing", wxScrolledWindow);
 			 region_tree_viewer->graphiclistbox =
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 			 region_tree_viewer->sceneediting->Layout();
 			 region_tree_viewer->sceneediting->SetScrollbars(10,10,40,40);
-			 region_tree_viewer->topsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TopSplitter",wxSplitterWindow);
-			 region_tree_viewer->topsplitter->SetSashPosition(150);
+			 region_tree_viewer->verticalsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"VerticalSplitter",wxSplitterWindow);
+			 region_tree_viewer->verticalsplitter->SetSashPosition(150);
 			 region_tree_viewer->lowersplitter->SetSashPosition(160);
 			 region_tree_viewer->lowersplitter->Layout();
 			 region_tree_viewer->lowersplitter->Hide();
-			 region_tree_viewer->topsplitter->Layout();
+			 region_tree_viewer->verticalsplitter->Layout();
+				wxPanel *rightpanel=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"RightPanel",
+					wxPanel);
+				rightpanel->Layout();
 			 wxPanel *tree_control_panel =
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TreeControlPanel",wxPanel);
 			 region_tree_viewer->testing_tree_ctrl =

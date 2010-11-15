@@ -3,148 +3,59 @@
 
   <object class="wxFrame" subclass="wxRegionTreeViewer" name="CmguiRegionTreeViewer" title="Region Tree Viewer">
 	  <title>Region Tree Viewer</title>
-	  <flag>wxCLIP_CHILDREN</flag>	
-	  <object class = "wxBoxSizer">
-			<orient>wxVERTICAL</orient>
-			<object class ="sizeritem">
-				<flag>wxEXPAND</flag>
-				<option>0</option>
-				<object class = "wxBoxSizer">
-					<orient>wxHORIZONTAL</orient>
-<!--
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTER</flag>
-						<option>0</option>
-						<object class = "wxStaticText" name="scene-text">
-	   						<label>Scene:</label>
-						</object>
-					</object>
-
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTRE</flag>
-						<option>1</option>
-						<object class="wxPanel" name="SceneObjectChooserPanel">
-							<size>100,26</size>
-		   	    </object>
-	    	  </object>
-
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT</flag>
-						<object class = "wxStaticText">
-							<option>0</option>
-							<label>   Current Object:</label>
-						</object>
-					</object>
-
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTRE</flag>
-						<option>0</option>
-						<object class = "wxStaticText" name="CurrentSceneObjectText">
-						</object>
-					</object>
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTRE</flag>
-						<option>0</option>
-						<object class="wxButton" name="SceneObjectUpButton">
-							<label>Up</label>
-							<size>-1,26</size>
-		   	    </object>
-	    	  </object>
-					<object class ="sizeritem">
-						<flag>wxALIGN_CENTRE</flag>
-						<option>0</option>
-						<object class="wxButton" name="SceneObjectDownButton" >
-							<label>Down</label>
-							<size>-1,26</size>
-		   	    </object>
-	    	  </object>
--->
-
-	     		</object>	
+	  <flag>wxCLIP_CHILDREN</flag>
+     <object class ="wxSplitterWindow" name="VerticalSplitter">
+		  <style>wxSP_3D</style>
+		  <minsize>150</minsize>
+		  <orientation>vertical</orientation>
+		  <object class ="wxPanel">
+            <object class="wxStaticBoxSizer">
+               <style>wxSUNKEN_BORDER</style>
+             	<object class="sizeritem">
+             		<flag>wxEXPAND</flag>
+                  <option>1</option>
+                  <object class = "wxPanel" name="TreeControlPanel"/>
+               </object>
+            </object>
   			</object>
 
-			<object class ="sizeritem">
-				<flag>wxEXPAND</flag>
-				<option>1</option>
-    	  	<object class ="wxSplitterWindow" name="TopSplitter">
-					<style>wxSP_3D</style>
-			 	 	<orientation>horizontal</orientation>
-					<minsize>100</minsize>
-					<object class ="wxPanel">
-				   		<object class = "wxBoxSizer">
-							<orient>wxVERTICAL</orient>
-				  			<object class="sizeritem">
-	 				  			<flag>wxEXPAND</flag>
-									<option>1</option>
-			            <object class = "wxBoxSizer">
-                  	<orient>wxHORIZONTAL</orient>
-
-  									<object class="sizeritem">
-                    	<flag>wxEXPAND</flag>
-                      <option>1</option>
-                      <object class="wxStaticBoxSizer">
-                        <style>wxSUNKEN_BORDER</style>
-                        <object class="sizeritem">
-                          <flag>wxEXPAND</flag>
-                          <option>1</option>
-                          <object class = "wxPanel" name="TreeControlPanel"/>
-                        </object>
-                      </object>
-                    </object>
-<!--
-										<object class="sizeritem">
-                      <flag>wxEXPAND</flag>
-                      <option>1</option>
-                      <object class="wxStaticBoxSizer">
-                        <style>wxSUNKEN_BORDER</style>
-                        <object class="sizeritem">
-                        	<flag>wxEXPAND</flag>
-                          <option>1</option>
-                          <object class = "wxCheckListBox" name="SceneCheckList">
-                            <style>wxLB_HSCROLL</style>                                                                                    </object>
-                        </object>                                                                                
-											</object>
-                    </object>
--->
-
-                  </object>
-               </object>
-
-				  		 <object class="sizeritem">
-								 <option>0</option>
-								 <object class = "wxBoxSizer">
-									 <orient>wxHORIZONTAL</orient>
-							  	 <object class="sizeritem">
-										 <flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-										 <object class ="wxCheckBox" name = "AutoCheckBox">
-											 <label>Auto</label>
-											 <size>-1,26</size>
-										 </object>
-									 </object>
-						  		 <object class="sizeritem">
-										 <flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-										 <object class ="wxButton" name = "ApplyButton">
-											 <label>Apply</label>
-											 <size>-1,26</size>
-										 </object>
-									 </object>
-						  		 <object class="sizeritem">
-										 <flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
-										 <object class ="wxButton" name = "RevertButton">
-											 <label>Revert</label>
-											 <size>-1,26</size>
-										 </object>
-									 </object>
+			<object class ="wxPanel" name="RightPanel">
+    	  		<object class ="wxBoxSizer">
+				  <orient>wxVERTICAL</orient>
+				  	<object class="sizeritem">
+				  		<flag>wxEXPAND|wxALL</flag>
+						<option>0</option>
+						<object class = "wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
+								<object class ="wxCheckBox" name = "AutoCheckBox">
+									<label>Auto</label>
+									<size>-1,26</size>
+								</object>
+							</object>
+						  	<object class="sizeritem">
+								<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
+								<object class ="wxButton" name = "ApplyButton">
+									<label>Apply</label>
+									<size>-1,26</size>
+								</object>
+							</object>
+						  	<object class="sizeritem">
+								<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
+								 <object class ="wxButton" name = "RevertButton">
+									<label>Revert</label>
+									<size>-1,26</size>
 								 </object>
-						   </object>
-
+							</object>
 						 </object>
 					 </object>
 
-					 <object class ="wxPanel" name="LowerPanel">
+				  	 <object class="sizeritem">
+				  		<flag>wxEXPAND|wxALL</flag>
+						<option>1</option>
 					    <object class = "wxBoxSizer">	
 				   	   <orient>wxVERTICAL</orient>
-
 				  		 	<object class="sizeritem">
 				  		  		<flag>wxEXPAND|wxALL</flag>
 								<option>0</option>
@@ -153,20 +64,18 @@
  				         	</object>
  				       	</object>
 
-								<object class ="sizeritem">
-									<flag>wxEXPAND</flag>
-									<option>1</option>
-    	  					<object class ="wxSplitterWindow" name="LowerSplitter">
-										<style>wxSP_3D</style>
-										<minsize>100</minsize>
-			 	 						<orientation>horizontal</orientation>
-
-										<object class ="wxPanel" name="LowestPanel">
-											<flag>wxEXPAND</flag>
-											<option>1</option>
-				   						<object class = "wxBoxSizer">	
-												<orient>wxVERTICAL</orient>
-
+							<object class ="sizeritem">
+								<flag>wxEXPAND</flag>
+								<option>1</option>
+    	  						<object class ="wxSplitterWindow" name="LowerSplitter">
+									<style>wxSP_3D</style>
+									<minsize>100</minsize>
+			 	 					<orientation>horizontal</orientation>
+									<object class ="wxPanel" name="LowestPanel">
+										<flag>wxEXPAND</flag>
+										<option>1</option>
+				   					<object class = "wxBoxSizer">	
+											<orient>wxVERTICAL</orient>
 												<object class="sizeritem">
 													<flag>wxEXPAND</flag>
 													<option>0</option>
