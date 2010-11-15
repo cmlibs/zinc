@@ -406,6 +406,14 @@ struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
 	struct Cmiss_region *root_region, const char *path);
 
 /***************************************************************************//**
+ * Returns a reference to the root region of this region.
+ *
+ * @param region  The region.
+ * @return  Accessed reference to root region, or NULL if none.
+ */
+struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region);
+
+/***************************************************************************//**
  * Separates a region/path/name into the region plus region-path and remainder
  * string containing text from the first unrecognized child region name.
  *

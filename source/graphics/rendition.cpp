@@ -112,9 +112,6 @@ Structure for maintaining a graphical rendition of region.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(Cmiss_graphic) *list_of_graphics;
 	void *computed_field_manager_callback_id;
-	/* global stores of selected objects for automatic highlighting */
-	void *graphical_material_manager_callback_id;
-	void *spectrum_manager_callback_id;
 	std::list<struct Scene *> *list_of_scene;
 	/* level of cache in effect */
 	int cache;
@@ -277,6 +274,10 @@ int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *chi
 	return (return_code);
 }
 
+/***************************************************************************//**
+ * ANY_OBJECT cleanup function for Cmiss_rendition attached to Cmiss_region.
+ * Called when region is destroyed.
+ */
 static int Cmiss_rendition_void_detach_from_Cmiss_region(void *cmiss_rendition_void)
 {
 	int return_code;
@@ -285,8 +286,12 @@ static int Cmiss_rendition_void_detach_from_Cmiss_region(void *cmiss_rendition_v
 	ENTER(Cmiss_rendition_void_detach_from_Cmiss_region);
 	if ((rendition = (struct Cmiss_rendition *)cmiss_rendition_void))
 	{
-		Cmiss_graphics_module_remove_member_region(rendition->graphics_module,
+		// graphics_module pointer is cleared if graphics_module is being destroyed
+		if (rendition->graphics_module)
+		{
+			Cmiss_graphics_module_remove_member_region(rendition->graphics_module,
 				rendition->region);
+		}
 		rendition->region = (struct Cmiss_region *)NULL;
 		return_code = DEACCESS(Cmiss_rendition)(&rendition);
 	}
@@ -442,8 +447,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->computed_field_manager=Cmiss_region_get_Computed_field_manager(
 					 cmiss_region);
 				cmiss_rendition->computed_field_manager_callback_id=(void *)NULL;
-				cmiss_rendition->graphical_material_manager_callback_id=(void *)NULL;
-				cmiss_rendition->spectrum_manager_callback_id=(void *)NULL;
 				cmiss_rendition->transformation = (gtMatrix *)NULL;
 				cmiss_rendition->graphics_module =	graphics_module;
 				cmiss_rendition->time_object = NULL;
@@ -1417,6 +1420,9 @@ int Cmiss_region_deaccess_rendition(struct Cmiss_region *region)
 				(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,	list);
 			if (rendition)
 			{
+				/* Clear graphics module to avoid being called back when rendition is detached
+				 * from region. @see Cmiss_rendition_void_detach_from_Cmiss_region */
+				rendition->graphics_module = NULL;
 				REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(Cmiss_rendition))(rendition, list);
 			}
 		}
@@ -1448,94 +1454,20 @@ int Cmiss_rendition_destroy(struct Cmiss_rendition **rendition)
 	return return_code;
 }
 
-int Cmiss_rendition_Spectrum_change(struct Cmiss_rendition *rendition,
-	void *changed_spectrum_list_void)
-{
-	int return_code = 0;
-	struct Cmiss_graphic_Spectrum_change_data spectrum_change_data;
-	struct LIST(Spectrum) *changed_spectrum_list = (struct LIST(Spectrum) *)changed_spectrum_list_void;
-
-	ENTER(Cmiss_rendition_Spectrum_change);
-	if (rendition && changed_spectrum_list)
-	{
-		spectrum_change_data.changed_spectrum_list = changed_spectrum_list;
-		/* flag to indicate if GT_element_group_changed needs to be called */
-		spectrum_change_data.changed = 0;
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_Spectrum_change, (void *)&spectrum_change_data,
-			rendition->list_of_graphics);
-		if (spectrum_change_data.changed)
-		{
-			Cmiss_rendition_changed(rendition);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_Spectrum_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_Spectrum_change */
-
-
-/***************************************************************************//**
- * Something has changed globally in the material manager.
- * Tell the rendition it has changed and it will rebuild affected materials too.
- */
-static void Cmiss_rendition_Spectrum_callback(
-	struct MANAGER_MESSAGE(Spectrum) *message, void *rendition_void)
-{
-	struct Cmiss_rendition *rendition;
-
-	ENTER(Cmiss_rendition_Spectrum_callback);
-	if (message && (rendition = (struct Cmiss_rendition *)rendition_void))
-	{
-
-		struct LIST(Spectrum) *changed_spectrum_list =
-			MANAGER_MESSAGE_GET_CHANGE_LIST(Spectrum)(message,
-				MANAGER_CHANGE_RESULT(Spectrum));
-		if (changed_spectrum_list)
-		{
-			/* cache the following in case more than one changed spectrum in use */
-			Cmiss_rendition_begin_cache(rendition);
-			for_each_rendition_in_Cmiss_rendition(
-				rendition,
-				&Cmiss_rendition_Spectrum_change,
-				(void *)changed_spectrum_list);
-			DESTROY_LIST(Spectrum)(&changed_spectrum_list);
-			Cmiss_rendition_end_cache(rendition);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_Spectrum_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Cmiss_rendition_Spectrum_callback */
-
-int Cmiss_rendition_Graphical_material_change(struct Cmiss_rendition *rendition,
-	void *changed_material_list_void)
+int Cmiss_rendition_material_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Graphical_material) *manager_message)
 {
 	int return_code;
-	struct LIST(Graphical_material) *changed_material_list;
-	struct Cmiss_graphic_Graphical_material_change_data
-		material_change_data;
-
-	ENTER(Cmiss_rendition_Graphical_material_change);
-	if (rendition && 
-		(changed_material_list = (struct LIST(Graphical_material) *)changed_material_list_void))
+	if (rendition && manager_message)
 	{
-		material_change_data.changed_material_list = changed_material_list;
-		/* flag to indicate if rendition_changed needs to be called */
-		material_change_data.changed = 0;
+		return_code = 1;
+		Cmiss_graphic_material_change_data material_change_data;
+		material_change_data.manager_message = manager_message;
+		material_change_data.graphics_changed = 0;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_Graphical_material_change,
-			(void *)&material_change_data, rendition->list_of_graphics);
-		if (material_change_data.changed)
+			Cmiss_graphic_material_change, (void *)&material_change_data,
+			rendition->list_of_graphics);
+		if (material_change_data.graphics_changed)
 		{
 			Cmiss_rendition_changed(rendition);
 		}
@@ -1543,12 +1475,37 @@ int Cmiss_rendition_Graphical_material_change(struct Cmiss_rendition *rendition,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_Graphical_material_change.  Invalid argument(s)");
+			"Cmiss_rendition_material_change.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
+int Cmiss_rendition_spectrum_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Spectrum) *manager_message)
+{
+	int return_code;
+	if (rendition && manager_message)
+	{
+		return_code = 1;
+		Cmiss_graphic_spectrum_change_data spectrum_change_data;
+		spectrum_change_data.manager_message = manager_message;
+		spectrum_change_data.graphics_changed = 0;
+		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_spectrum_change, (void *)&spectrum_change_data,
+			rendition->list_of_graphics);
+		if (spectrum_change_data.graphics_changed)
+		{
+			Cmiss_rendition_changed(rendition);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_spectrum_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
 }
 
 int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
@@ -1560,11 +1517,11 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 		return_code = 1;
 		Cmiss_graphic_tessellation_change_data tessellation_change_data;
 		tessellation_change_data.manager_message = manager_message;
-		tessellation_change_data.changed = 0;
+		tessellation_change_data.graphics_changed = 0;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_tessellation_change, (void *)&tessellation_change_data,
 			rendition->list_of_graphics);
-		if (tessellation_change_data.changed)
+		if (tessellation_change_data.graphics_changed)
 		{
 			Cmiss_rendition_changed(rendition);
 		}
@@ -1575,104 +1532,6 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 			"Cmiss_rendition_tessellation_change.  Invalid argument(s)");
 		return_code = 0;
 	}
-	return return_code;
-}
-
-/***************************************************************************//**
- * Something has changed globally in the material manager.
- * Tell the rendition it has changed and it will rebuild affected materials too.
- */
-static void Cmiss_rendition_Graphical_material_callback(
-	struct MANAGER_MESSAGE(Graphical_material) *message, void *rendition_void)
-{
-	struct Cmiss_rendition *rendition;
-
-	ENTER(Cmiss_rendition_Graphical_material_callback);
-	if (message && (rendition = (struct Cmiss_rendition *)rendition_void))
-	{
-		struct LIST(Graphical_material) *changed_material_list =
-			MANAGER_MESSAGE_GET_CHANGE_LIST(Graphical_material)(message,
-				MANAGER_CHANGE_RESULT(Graphical_material));
-		if (changed_material_list)
-		{
-			/* cache the following in case more than one changed material in use */
-			Cmiss_rendition_begin_cache(rendition);
-			/* let Scene_object deal with the changes */
-			for_each_rendition_in_Cmiss_rendition(
-				rendition,
-				&Cmiss_rendition_Graphical_material_change,
-				(void *)changed_material_list);
-			DESTROY_LIST(Graphical_material)(&changed_material_list);
-			Cmiss_rendition_end_cache(rendition);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_Graphical_material_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Cmiss_rendition_Graphical_material_callback */
-
-int Cmiss_rendition_unset_graphics_managers_callback(struct Cmiss_rendition *rendition)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_rendition_set_graphics_managers_callback);
-	if (rendition && rendition->graphics_module && rendition->list_of_scene->empty())
-	{
-		struct MANAGER(Graphical_material) *material_manager =
-				Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
-		if (rendition->graphical_material_manager_callback_id &&
-				material_manager)
-		{
-				MANAGER_DEREGISTER(Graphical_material)(rendition->graphical_material_manager_callback_id,
-					material_manager);
-				rendition->graphical_material_manager_callback_id = NULL;
-		}
-		struct MANAGER(Spectrum) *spectrum_manager =
-				Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
-		if (rendition->spectrum_manager_callback_id &&	spectrum_manager)
-		{
-			MANAGER_DEREGISTER(Spectrum)(rendition->spectrum_manager_callback_id,
-				spectrum_manager);
-			rendition->spectrum_manager_callback_id = NULL;
-		}
-		return_code = 1;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendition)
-{
-	int return_code = 0;
-	
-	ENTER(Cmiss_rendition_set_graphics_managers_callback);
-	if (rendition && rendition->graphics_module)
-	{
-		struct MANAGER(Graphical_material) *material_manager =
-				Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
-		if (!rendition->graphical_material_manager_callback_id &&
-				material_manager)
-		{
-			rendition->graphical_material_manager_callback_id=
-				MANAGER_REGISTER(Graphical_material)(Cmiss_rendition_Graphical_material_callback,
-					(void *)rendition,material_manager);
-		}
-		struct MANAGER(Spectrum) *spectrum_manager =
-				Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
-		if (!rendition->spectrum_manager_callback_id &&	spectrum_manager)
-		{
-			rendition->spectrum_manager_callback_id=
-				MANAGER_REGISTER(Spectrum)(Cmiss_rendition_Spectrum_callback,
-					(void *)rendition, spectrum_manager);
-		}
-		return_code = 1;
-	}
-	LEAVE;
-
 	return return_code;
 }
 
@@ -3299,6 +3158,7 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 		{
 			rendition->list_of_scene = new std::list<struct Scene *>;
 		}
+		// GRC check whether scene already added?
 		rendition->list_of_scene->push_back(scene);
 		Cmiss_scene_add_rendition(scene, rendition);
 		if (hierarchical)
@@ -3421,19 +3281,6 @@ int DESTROY(Cmiss_rendition)(
 		if (cmiss_rendition->time_object)
 		{
 			DEACCESS(Time_object)(&cmiss_rendition->time_object);
-		}
-		if (cmiss_rendition->graphical_material_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Graphical_material)(
-				cmiss_rendition->graphical_material_manager_callback_id,
-				Cmiss_graphics_module_get_material_manager(cmiss_rendition->graphics_module));
-			cmiss_rendition->graphical_material_manager_callback_id = NULL;
-		}
-		if (cmiss_rendition->spectrum_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Spectrum)(
-				cmiss_rendition->spectrum_manager_callback_id,
-				Cmiss_graphics_module_get_spectrum_manager(cmiss_rendition->graphics_module));
 		}
 		if (cmiss_rendition->default_coordinate_field)
 		{
@@ -3904,7 +3751,7 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			rendition_command_data.computed_field_manager =
 				 Cmiss_region_get_Computed_field_manager(rendition->region);
 			rendition_command_data.region = rendition->region;
-			rendition_command_data.root_region = rendition->region;
+			rendition_command_data.root_region = Cmiss_region_get_root(rendition->region);
 			rendition_command_data.graphical_material_manager =
 				Cmiss_graphics_module_get_material_manager(graphics_module);
 			rendition_command_data.spectrum_manager =
@@ -3978,6 +3825,7 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			{
 				DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
 			}
+			Cmiss_region_destroy(&(rendition_command_data.root_region));
 		}
 	}
 	return return_code;

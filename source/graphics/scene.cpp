@@ -8347,36 +8347,34 @@ static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
 }
 
 /***************************************************************************//**
- * Unset rendition on scene.
- * @param scene The scene to be set
- * @return If successfully disable rendition returns 1 else 0.
+ * Detaches scene from rendition tree starting at the current region.
+ * Removes hierarchical change callback from current region.
+ *
+ * @param scene  The scene to detach. Must have region pointer set.
+ * @return  1 on success, otherwise 0.
  */
-int Cmiss_scene_disable_renditions(Scene *scene)
+static int Cmiss_scene_detach_from_renditions(Scene *scene)
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_disable_renditions);
-	if (scene)
+	ENTER(Cmiss_scene_detach_from_renditions);
+	if (scene && scene->region)
 	{
-		if (scene->region)
+		struct Cmiss_rendition *rendition =
+			Cmiss_region_get_rendition_internal(scene->region);
+		if (rendition)
 		{
-			struct Cmiss_rendition *rendition =
-				Cmiss_region_get_rendition_internal(scene->region);
-			if (rendition)
-			{
-				Cmiss_rendition_remove_callback(rendition,
-					Scene_rendition_update_callback,
-					(void *)scene);
-				Cmiss_rendition_unset_graphics_managers_callback(rendition);
-				DEACCESS(Cmiss_rendition)(&rendition);
-			}
+			Cmiss_rendition_remove_callback(rendition,
+				Scene_rendition_update_callback,
+				(void *)scene);
+			DEACCESS(Cmiss_rendition)(&rendition);
 		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" Cmiss_scene_disable_renditions. Invalid argument(s)");
+			"Cmiss_scene_detach_from_renditions.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -8385,40 +8383,33 @@ int Cmiss_scene_disable_renditions(Scene *scene)
 }
 
 /***************************************************************************//**
- * Enable rendition on scene. This function will add rendition to top region
- * and its child regions in scene if they do not already have an rendition.
- * This function will also set appropriate callback to the top region's
- * rendition to avoid multiple calls of the same callback functions in the same
- * region.
+ * Attaches scene to rendition tree starting at the current region for tracking
+ * changes. Sets up hierarchical change callback from current region.
  *
- * @param scene The scene to be set
- * @return If successfully enable rendition returns 1 else 0.
+ * @param scene  The scene to attach. Must have region pointer set.
+ * @return  1 on success, otherwise 0.
  */
-int Cmiss_scene_enable_renditions(Scene *scene)
+static int Cmiss_scene_attach_to_renditions(Scene *scene)
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_enable_renditions);
-	if (scene)
+	ENTER(Cmiss_scene_attach_to_renditions);
+	if (scene && scene->region)
 	{
-		if (scene->region)
+		struct Cmiss_rendition *rendition;
+		if (rendition = Cmiss_region_get_rendition_internal(scene->region))
 		{
-			struct Cmiss_rendition *rendition;
-			if (rendition = Cmiss_region_get_rendition_internal(scene->region))
-			{
-				Cmiss_rendition_add_scene(rendition,scene,/*hieracrical*/1);
-				Cmiss_rendition_add_callback(rendition,
-					Scene_rendition_update_callback, (void *)scene);
-				Cmiss_rendition_set_graphics_managers_callback(rendition);
-				DEACCESS(Cmiss_rendition)(&rendition);
-			}
+			Cmiss_rendition_add_scene(rendition, scene, /*hierarchical*/1);
+			Cmiss_rendition_add_callback(rendition,
+				Scene_rendition_update_callback, (void *)scene);
+			DEACCESS(Cmiss_rendition)(&rendition);
 		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" Cmiss_scene_enable_renditions. Invalid argument(s)");
+			"Cmiss_scene_attach_to_renditions.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -8456,18 +8447,20 @@ int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
 				{
 					scene->list_of_rendition = new Rendition_set;
 				}
-				Cmiss_scene_disable_renditions(scene);
+				if (scene->region)
+				{
+					Cmiss_scene_detach_from_renditions(scene);
+				}
 				REACCESS(Cmiss_region)(&(scene->region), region);
-				Cmiss_rendition_add_scene(rendition, scene, 1);
 				DEACCESS(Cmiss_rendition)(&rendition);
+				Cmiss_scene_attach_to_renditions(scene);
 				Scene_changed_private(scene, 0);
-				Cmiss_scene_enable_renditions(scene);
 				return_code = 1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					" Cmiss_scene_set_region. Region does not have a rendition");
+					"Cmiss_scene_set_region.  Region does not have a rendition");
 			}
 		}
 	}

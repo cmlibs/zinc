@@ -119,22 +119,6 @@ int Cmiss_rendition_begin_cache(struct Cmiss_rendition *rendition);
  */
 int Cmiss_rendition_end_cache(struct Cmiss_rendition *rendition);
 
-/***************************************************************************//** 
- * Enable callback to the rendition from changes on graphics
- * @param rendition The rendition to be edited
- * @return If successfully ensable callback to rendition for region returns 1,
- * otherwise 0
- */
-int Cmiss_rendition_set_graphics_managers_callback(struct Cmiss_rendition *rendition);
-
-/***************************************************************************//** 
- * Remove callback to the rendition from changes on graphics
- * @param rendition The rendition to be edited
- * @return If successfully disable callback to rendition for region returns 1,
- * otherwise 0
- */
-int Cmiss_rendition_unset_graphics_managers_callback(struct Cmiss_rendition *rendition);
-
 /***************************************************************************//**
  * Deaccess the rendition of the region
  * @param region The region to deaccess rendition from
@@ -211,12 +195,18 @@ int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_list_contents(struct Cmiss_rendition *rendition);
 
 /***************************************************************************//**
- * If any of the graphic in <rendition> use materials with spectrums in the
- * <changed_material_list>, clear their graphics objects and call
- * Cmiss_rendition_changed.
+ * Private method for informing rendition of material manager changes.
+ * Should only be called by Cmiss_graphics_module.
  */
-int Cmiss_rendition_Graphical_material_change(struct Cmiss_rendition *rendition,
-	void *changed_material_list_void);
+int Cmiss_rendition_material_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Graphical_material) *manager_message);
+
+/***************************************************************************//**
+ * Private method for informing rendition of spectrum manager changes.
+ * Should only be called by Cmiss_graphics_module.
+ */
+int Cmiss_rendition_spectrum_change(struct Cmiss_rendition *rendition,
+	struct MANAGER_MESSAGE(Spectrum) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing rendition of tessellation manager changes.

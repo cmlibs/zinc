@@ -218,16 +218,6 @@ struct Cmiss_graphic_Computed_field_change_data
 	struct LIST(Computed_field) *changed_field_list;
 };
 
-/***************************************************************************//**
- * Data to pass to Cmiss_graphic_Graphical_material_change.
- */
-struct Cmiss_graphic_Graphical_material_change_data
-{
-	struct LIST(Graphical_material) *changed_material_list;
-	/* flag indicating if the Cmiss_rendition has changed */
-	int changed;
-};
-
 DECLARE_LIST_TYPES(Cmiss_graphic);
 
 /***************************************************************************//**
@@ -816,18 +806,6 @@ int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
 	void *list_data_void);
 
 /***************************************************************************//**
- * If <graphic> has a graphics object that plots data, and it uses any material in
- * the <changed_material_list>, the graphics object display list is marked as being
- * not current. This is required since the spectrum combines its colour with the
- * material at the time it is compiled - it may not update correctly if only the
- * material's display list is recompiled.
- * If the graphic are visible, the changed flag is set.
- * Second argument is a struct Cmiss_graphic_Graphical_material_change_data.
- */
-int Cmiss_graphic_Graphical_material_change(
-	struct Cmiss_graphic *graphic, void *material_change_data_void);
-
-/***************************************************************************//**
  * Returns the position of <grpahic> in <list_of_grpahic>.
  */
 int Cmiss_graphic_get_position_in_list(
@@ -922,21 +900,43 @@ struct Cmiss_graphic_FE_region_change_data
 	struct FE_region *fe_region;
 }; /* struct Cmiss_graphic_FE_region_change_data */
 
-struct Cmiss_graphic_Spectrum_change_data
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Data to pass to GT_element_settings_Spectrum_change.
-==============================================================================*/
+/***************************************************************************//**
+ * Data to pass to Cmiss_graphic_material_change.
+ */
+struct Cmiss_graphic_material_change_data
 {
-	struct LIST(Spectrum) *changed_spectrum_list;
-	/* flag indicating if the GT_element_group rendition has changed */
-	int changed;
+	struct MANAGER_MESSAGE(Graphical_material) *manager_message;
+	int graphics_changed;
 };
 
-int Cmiss_graphic_Spectrum_change(
-	struct Cmiss_graphic *graphic, void *spectrum_change_data_void);
+/***************************************************************************//**
+ * Inform graphic of changes in the material manager. Marks affected
+ * graphics for rebuilding and sets flag for informing clients of rendition.
+ * Note: only graphics combining a material with data/spectrum are updated;
+ * pure material changes do not require update.
+ *
+ * @param material_change_data_void  Cmiss_graphic_material_change_data.
+ */
+int Cmiss_graphic_material_change(struct Cmiss_graphic *graphic,
+	void *material_change_data_void);
+
+/***************************************************************************//**
+ * Data to pass to Cmiss_graphic_spectrum_change.
+ */
+struct Cmiss_graphic_spectrum_change_data
+{
+	struct MANAGER_MESSAGE(Spectrum) *manager_message;
+	int graphics_changed;
+};
+
+/***************************************************************************//**
+ * Inform graphic of changes in the spectrum manager. Marks affected
+ * graphics for rebuilding and sets flag for informing clients of rendition.
+ *
+ * @param spectrum_change_data_void  Cmiss_graphic_spectrum_change_data.
+ */
+int Cmiss_graphic_spectrum_change(struct Cmiss_graphic *graphic,
+	void *spectrum_change_data_void);
 
 /***************************************************************************//**
  * Data to pass to Cmiss_graphic_tessellation_change.
@@ -944,13 +944,13 @@ int Cmiss_graphic_Spectrum_change(
 struct Cmiss_graphic_tessellation_change_data
 {
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message;
-	/* flag indicating if the Cmiss_rendition has changed */
-	int changed;
+	int graphics_changed;
 };
 
 /***************************************************************************//**
  * Inform graphic of changes in the tessellation manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of rendition.
+ *
  * @param tessellation_change_data_void  Cmiss_graphic_tessellation_change_data.
  */
 int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,

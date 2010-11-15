@@ -68,7 +68,7 @@ Cmiss_graphic_id Cmiss_rendition_create_surfaces(Cmiss_rendition_id rendition)
 			Cmiss_rendition_add_graphic(rendition, graphic, -1);
 		}
 	}
-	return ACCESS(Cmiss_graphic)(graphic);
+	return graphic;
 }
 
 Cmiss_graphic_id Cmiss_rendition_create_node_points(Cmiss_rendition_id rendition)
@@ -81,7 +81,7 @@ Cmiss_graphic_id Cmiss_rendition_create_node_points(Cmiss_rendition_id rendition
 			Cmiss_rendition_add_graphic(rendition, graphic, -1);
 		}
 	}
-	return ACCESS(Cmiss_graphic)(graphic);
+	return graphic;
 }
 
 Cmiss_graphic_id Cmiss_rendition_create_static(Cmiss_rendition_id rendition)
@@ -94,5 +94,5 @@ Cmiss_graphic_id Cmiss_rendition_create_static(Cmiss_rendition_id rendition)
 			Cmiss_rendition_add_graphic(rendition, graphic, -1);
 		}
 	}
-	return ACCESS(Cmiss_graphic)(graphic);
+	return graphic;
 }

@@ -7795,48 +7795,6 @@ int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
           	return (return_code);
 } /* Cmiss_graphic_list_contents */
 
-int Cmiss_graphic_Graphical_material_change(
-	struct Cmiss_graphic *graphic, void *material_change_data_void)
-{
-	int return_code;
-	struct Cmiss_graphic_Graphical_material_change_data
-		*material_change_data;
-
-	ENTER(Cmiss_graphic_Graphical_material_change);
-	if (graphic && (material_change_data =
-		(struct Cmiss_graphic_Graphical_material_change_data *)
-		material_change_data_void))
-	{
-		if (graphic->material && (IS_OBJECT_IN_LIST(Graphical_material)(
-			graphic->material, material_change_data->changed_material_list) ||
-			(graphic->secondary_material &&
-				IS_OBJECT_IN_LIST(Graphical_material)(graphic->secondary_material,
-					material_change_data->changed_material_list)) ||
-			(graphic->selected_material && 
-				IS_OBJECT_IN_LIST(Graphical_material)(graphic->selected_material,
-					material_change_data->changed_material_list))))
-		{
-			if (graphic->graphics_object)
-			{
-				GT_object_Graphical_material_change(graphic->graphics_object,
-					(struct LIST(Graphical_material) *)NULL);
-			}
-			/* need a way to tell either graphic is used in any scene or not */
-			material_change_data->changed = 1;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_Graphical_material_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_Graphical_material_change */
-
 int Cmiss_graphic_get_position_in_list(
 	struct Cmiss_graphic *graphic,
 	struct LIST(Cmiss_graphic) *list_of_graphic)
@@ -8838,44 +8796,35 @@ int Cmiss_graphic_update_time_behaviour(
 	return (return_code);
 } /* Cmiss_graphic_update_time_behaviour */
 
-int Cmiss_graphic_Spectrum_change(
-	struct Cmiss_graphic *graphic, void *spectrum_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2002
-
-DESCRIPTION :
-If <graphic> has a graphics object that plots a scalar using a spectrum in the
-<changed_spectrum_list>, the graphics object display list is marked as being
-not current. If the graphic are visible, the changed flag is set.
-Second argument is a struct Cmiss_graphic_Spectrum_change_data.
-==============================================================================*/
+int Cmiss_graphic_material_change(
+	struct Cmiss_graphic *graphic, void *material_change_data_void)
 {
 	int return_code;
-	struct Cmiss_graphic_Spectrum_change_data *spectrum_change_data;
-	struct Spectrum *colour_lookup;
-
-	ENTER(Cmiss_graphic_Spectrum_change);
-	if (graphic && (spectrum_change_data =
-		(struct Cmiss_graphic_Spectrum_change_data *)
-		spectrum_change_data_void))
+	Cmiss_graphic_material_change_data *material_change_data =
+		(Cmiss_graphic_material_change_data *)material_change_data_void;
+	if (graphic && material_change_data)
 	{
-		if (graphic->spectrum && IS_OBJECT_IN_LIST(Spectrum)(graphic->spectrum,
-			spectrum_change_data->changed_spectrum_list))
+		return_code = 1;
+		bool material_change = false;
+		if (graphic->material)
 		{
-			if (graphic->graphics_object)
-			{
-				GT_object_Spectrum_change(graphic->graphics_object,
-					(struct LIST(Spectrum) *)NULL);
-			}
-			/* need a way to tell either graphic is used in any scene or not */
-			spectrum_change_data->changed = 1;
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+				material_change_data->manager_message, graphic->material);
+			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
 		}
-		/* The material gets it's own notification of the change, 
-			it should propagate that to the Cmiss_graphic */
-		if (graphic->material && (colour_lookup = 
-				Graphical_material_get_colour_lookup_spectrum(graphic->material))
-			&& IS_OBJECT_IN_LIST(Spectrum)(colour_lookup,
-				spectrum_change_data->changed_spectrum_list))
+		if (!material_change && graphic->secondary_material)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+				material_change_data->manager_message, graphic->secondary_material);
+			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
+		}
+		if (!material_change && graphic->selected_material)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+				material_change_data->manager_message, graphic->selected_material);
+			material_change = change_flags & MANAGER_CHANGE_RESULT(Graphical_material);
+		}
+		if (material_change)
 		{
 			if (graphic->graphics_object)
 			{
@@ -8883,28 +8832,71 @@ Second argument is a struct Cmiss_graphic_Spectrum_change_data.
 					(struct LIST(Graphical_material) *)NULL);
 			}
 			/* need a way to tell either graphic is used in any scene or not */
-			spectrum_change_data->changed = 1;
+			material_change_data->graphics_changed = 1;
 		}
-		
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_Spectrum_change.  Invalid argument(s)");
+			"Cmiss_graphic_material_change.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
-} /* Cmiss_graphic_Spectrum_change */
+int Cmiss_graphic_spectrum_change(
+	struct Cmiss_graphic *graphic, void *spectrum_change_data_void)
+{
+	int return_code;
+	Cmiss_graphic_spectrum_change_data *spectrum_change_data =
+		(Cmiss_graphic_spectrum_change_data *)spectrum_change_data_void;
+	if (graphic && spectrum_change_data)
+	{
+		return_code = 1;
+		if (graphic->spectrum)
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
+				spectrum_change_data->manager_message, graphic->spectrum);
+			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
+			{
+				if (graphic->graphics_object)
+				{
+					GT_object_Spectrum_change(graphic->graphics_object,
+						(struct LIST(Spectrum) *)NULL);
+				}
+				/* need a way to tell either graphic is used in any scene or not */
+				spectrum_change_data->graphics_changed = 1;
+			}
+		}
+		/* The material gets it's own notification of the change, 
+			it should propagate that to the Cmiss_graphic */
+		struct Spectrum *colour_lookup;
+		if (graphic->material && (colour_lookup = 
+				Graphical_material_get_colour_lookup_spectrum(graphic->material)))
+		{
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
+				spectrum_change_data->manager_message, colour_lookup);
+			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
+			{
+				if (graphic->graphics_object)
+				{
+					GT_object_Graphical_material_change(graphic->graphics_object,
+						(struct LIST(Graphical_material) *)NULL);
+				}
+				/* need a way to tell either graphic is used in any scene or not */
+				spectrum_change_data->graphics_changed = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_spectrum_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
 
-/***************************************************************************//**
- * Inform graphic of changes in the tessellation manager. Marks affected
- * graphics for rebuilding and sets flag for informing clients of rendition.
- *
- * @param tessellation_change_data_void  Cmiss_graphic_tessellation_change_data.
- */
 int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 	void *tessellation_change_data_void)
 {
@@ -8923,7 +8915,7 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 			{
 				/* need to rebuild graphics_object from scratch */
 				Cmiss_graphic_clear_graphics(graphic);
-				tessellation_change_data->changed = 1;
+				tessellation_change_data->graphics_changed = 1;
 			}
 		}
 	}

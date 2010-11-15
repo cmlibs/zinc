@@ -423,7 +423,7 @@ Cmiss_context_get_node_selection
 Cmiss_context_get_element_selection
 Cmiss_context_get_default_IO_stream_package
 
-Cmiss_scene_destroyCmiss_tessellation_get_refinement_factors
+Cmiss_scene_destroy
 
 Cmiss_scene_set_region
 Cmiss_scene_set_name
