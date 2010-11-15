@@ -93,42 +93,6 @@ Global types
 ------------
 */
 
-#if defined (OLD_CODE)
-enum Scene_graphical_element_mode
-/*******************************************************************************
-LAST MODIFIED : 16 March 2001
-
-DESCRIPTION :
-Controls whether graphical element groups are placed in the scene and if so,
-how they are rendered by default.
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-==============================================================================*/
-{
-	GRAPHICAL_ELEMENT_EMPTY,
-	GRAPHICAL_ELEMENT_INVISIBLE,
-	GRAPHICAL_ELEMENT_LINES,
-	GRAPHICAL_ELEMENT_MANUAL,
-	GRAPHICAL_ELEMENT_NONE
-}; /* enum Scene_graphical_element_mode */
-#endif /* defined (OLD_CODE) */
-
-#if defined (USE_SCENE_OBJECT)
-enum Scene_object_type
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	SCENE_OBJECT_TYPE_INVALID,
-	SCENE_OBJECT_GRAPHICS_OBJECT,
-	SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP,
-	SCENE_OBJECT_SCENE
-}; /* enum Scene_object_type */
-#endif /* defined (USE_SCENE_OBJECT) */
-
 enum Scene_change_status
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -141,20 +105,6 @@ Describes the nature of the change message received by scene clients.
 	SCENE_CHANGE,
 	SCENE_FAST_CHANGE
 };
-
-#if defined (USE_SCENE_OBJECT)
-struct Scene_object;
-/*******************************************************************************
-LAST MODIFIED : 19 November 1997
-
-DESCRIPTION :
-Scenes store a list of these wrappers to GT_objects so that the same
-graphics object may have different visibility on different scenes.
-Members of this object are private.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Scene_object);
-#endif /* defined (USE_SCENE_OBJECT) */
 
 struct Scene_picked_object;
 /*******************************************************************************
@@ -200,13 +150,6 @@ struct Define_scene_data
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Cmiss_region *root_region;
-#if defined (OLD_CODE)
-	/* following used for enabling GFEs */
-	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
-	struct FE_node_selection *data_selection,*node_selection;
-	struct User_interface *user_interface;
-#endif /* defined (OLD_CODE) */
 }; /* struct Define_scene_data */
 
 enum Scene_input_type
@@ -253,11 +196,6 @@ Contains all information necessary for an input callback from the scene.
 	void *data;
 }; /* struct Scene_input_callback */
 
-#if defined (USE_SCENE_OBJECT)
-DECLARE_CMISS_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
-	gtMatrix *, void);
-#endif /* defined (USE_SCENE_OBJECT) */
-
 struct Scene_get_data_range_for_spectrum_data
 {
 	struct Spectrum *spectrum;
@@ -271,10 +209,6 @@ struct Cmiss_rendition;
 Global functions
 ----------------
 */
-
-#if defined (OLD_CODE)
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode);
-#endif /* defined (OLD_CODE) */
 
 struct Scene *CREATE(Scene)(void);
 /*******************************************************************************
@@ -311,93 +245,6 @@ DESCRIPTION :
 Call after making changes preceded by a call to Scene_begin_cache to enable a
 final message to be sent to clients.
 ==============================================================================*/
-
-#if defined (OLD_CODE)
-int Scene_enable_graphics(struct Scene *scene,
-	struct MANAGER(GT_object) *glyph_manager,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct Graphical_material *default_material,
-	struct Graphics_font *default_font,
-	struct MANAGER(Light) *light_manager,
-	struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *default_spectrum,
-	struct MANAGER(Texture) *texture_manager);
-/*******************************************************************************
-LAST MODIFIED : 24 November 2005
-
-DESCRIPTION :
-The scene is initially incapable of generating any graphics, since it does not
-have access to the material, light and spectrum managers. This routine must be
-called soon after creating the scene to give the scene these managers.
-Do not have to call this routine if MANAGER_COPY_WITHOUT_IDENTIFIER is used to
-create a scene from an existing scene with graphics enabled.
-NOTE: The light_manager is not currently used by the scene.
-==============================================================================*/
-
-int Scene_disable_graphics(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 20 July 1998
-
-DESCRIPTION :
-Removes links to all objects required to display graphics.
-==============================================================================*/
-
-int Scene_enable_time_behaviour(struct Scene *scene,
-	struct Time_keeper *default_time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 12 February 1999
-
-DESCRIPTION :
-The scene is initially incapable of varying objects with time as it has no
-time_keeper to put time_objects into.
-Do not have to call this routine if MANAGER_COPY_WITHOUT_IDENTIFIER is used to
-create a scene from an existing scene with graphics enabled.
-==============================================================================*/
-
-struct Time_keeper *Scene_get_default_time_keeper(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1999
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_disable_time_behaviour(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 12 February 1999
-
-DESCRIPTION :
-Removes links to all objects required to vary graphics objects with time.
-==============================================================================*/
-
-enum Scene_graphical_element_mode Scene_get_graphical_element_mode(
-	struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns the mode controlling how graphical element groups are displayed in the
-scene.
-==============================================================================*/
-
-int Scene_set_graphical_element_mode(struct Scene *scene,
-	enum Scene_graphical_element_mode graphical_element_mode,
-	struct Cmiss_region *root_region,
-	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection,
-	struct FE_node_selection *node_selection,
-	struct FE_node_selection *data_selection,
-	struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Sets the mode controlling how graphical element groups are displayed in the
-scene. Passes the managers and other data required to create and update the
-graphical elements.
-Must be called after Scene_enable_graphics since GFEs require the default
-material and spectrum.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Scene);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene);
@@ -456,40 +303,6 @@ LAST MODIFIED : 15 July 1999
 DESCRIPTION :
 Destroys the Scene_picked_object.
 ==============================================================================*/
-
-#if defined (USE_SCENE_OBJECT)
-int Scene_picked_object_add_Scene_object(
-	struct Scene_picked_object *scene_picked_object,
-	struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Adds the <scene_object> to the end of the list specifying the path to the
-picked graphic represented by the <scene_picked_object>.
-==============================================================================*/
-
-int Scene_picked_object_get_number_of_scene_objects(
-	struct Scene_picked_object *scene_picked_object);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the number of scene objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-
-struct Scene_object *Scene_picked_object_get_Scene_object(
-	struct Scene_picked_object *scene_picked_object,int scene_object_no);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Returns the scene_object at position <scene_object_no> - where 0 is the first -
-in the list of scene_objects in the path of our display heirarchy to the
-<scene_picked_object>.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
 
 int Scene_picked_object_add_subobject(
 	struct Scene_picked_object *scene_picked_object,int subobject);
@@ -863,84 +676,6 @@ DESCRIPTION :
 Calls the just fast_changing display list for <scene>, if any.
 ==============================================================================*/
 
-#if defined (USE_SCENE_OBJECT)
-int Scene_remove_Scene_object(struct Scene *scene,
-	struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 14 March 2001
-
-DESCRIPTION :
-Removes <scene object> from the list of objects on <scene>.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
-
-#if defined (USE_GRAPHICS_OBJECT)
-int Scene_remove_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Removes all scene objects containing <graphics object> from <scene>.
-Does not complain if <graphics_object> is not used in <scene>.
-==============================================================================*/
-#endif /* defined (USE_GRAPHICS_OBJECT) */
-
-#if defined (USE_CHILD_SCENE)
-int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
-	int position, const char *scene_object_name, struct MANAGER(Scene) *scene_manager);
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Adds <child_scene> to the list of objects on <scene> at <position>.
-A position of 1 indicates the top of the list, while less than 1 or greater
-than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> allows the scene_object to be given a different
-name from that of the <child_scene>, and must be unique for the scene.
-==============================================================================*/
-
-int Scene_remove_child_scene(struct Scene *scene, struct Scene *child_scene);
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Removes all scene objects containing <child_scene> from <scene>.
-Does not complain if <child_scene> is not used in <scene>.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
-
-#if defined (TO_BE_EDITED)
-int Scene_add_graphical_element_group(struct Scene *scene,
-	struct Cmiss_region *cmiss_region, int position, char *scene_object_name);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Adds a graphical element group for <cmiss_region> to the list of objects in
-<scene> at <position>.
-The group will be given a default rendition depending on the scene's current
-graphical_element_mode.
-The new Scene_object will take the <scene_object_name>; an error is
-reported if this name is already in use in <scene>.
-A position of 1 indicates the top of the list, while less than 1 or greater
-than the number of graphics objects in the list puts it at the end.
-Note if the scene is in GRAPHICAL_ELEMENT_MANUAL mode, a group may be added
-more than once with a different name, however, it will share the underlying
-GT_element_group and therefore have the same rendition.
-==============================================================================*/
-
-int Scene_remove_graphical_element_group(struct Scene *scene,
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Removes all scene objects containing a graphical rendition of <cmiss_region>
-from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
-==============================================================================*/
-#endif /* defined (TO_BE_EDITED) */
-
 int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 5 October 1998
@@ -995,178 +730,6 @@ from 1 at the top. A value less than 1 or greater than the number of graphics
 objects in the list puts <cmiss_region> at the end.
 Scene_object for the group keeps the same name.
 ==============================================================================*/
-#if defined (USE_GRAPHICS_OBJECT)
-int Scene_get_graphics_object_position(struct Scene *scene,
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-The order in which objects are drawn is important for OpenGL transparency.
-This function returns the position of <graphics_object> in <scene>, starting
-from 1 at the top. A return value of 0 indicates an error - probably saying
-that the graphics object is not in the scene.
-==============================================================================*/
-#endif /* defined (USE_GRAPHICS_OBJECT) */
-
-#if defined (USE_SCENE_OBJECT)
-int Scene_get_scene_object_position(struct Scene *scene,
-	struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 12 November 2001
-
-DESCRIPTION :
-Returns the position of <scene_object> in the <scene>->scene_object_list.
-==============================================================================*/
-
-struct Scene_object *Scene_get_scene_object_at_position(struct Scene *scene,
-	 int position);
-/*******************************************************************************
-LAST MODIFIED : 7 May 2007
-
-DESCRIPTION :
-Returns the <scene_object> at <position> in the <scene>->scene_object_list.
-==============================================================================*/
-
-int Scene_set_scene_object_position(struct Scene *scene,
-	struct Scene_object *scene_object,int position);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-The order in which objects are drawn is important for OpenGL transparency.
-This function sets the position of <scene_object> in <scene>, starting
-from 1 at the top. A value less than 1 or greater than the number of graphics
-objects in the list puts <scene_object> at the end.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
-
-#if defined (USE_GRAPHICS_OBJECT)
-int Scene_set_graphics_object_position(struct Scene *scene,
-	struct GT_object *graphics_object,int position);
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-The order in which objects are drawn is important for OpenGL transparency.
-This function sets the position of <graphics_object> in <scene>, starting
-from 1 at the top. A value less than 1 or greater than the number of graphics
-objects in the list puts <graphics_object> at the end.
-==============================================================================*/
-#endif /* defined (USE_GRAPHICS_OBJECT) */
-
-#if defined (TO_BE_EDITED)
-enum GT_visibility_type Scene_get_element_group_visibility(
-	struct Scene *scene, struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns the visibility of the GFE for <cmiss_region> in <scene>.
-==============================================================================*/
-
-int Scene_set_element_group_visibility(struct Scene *scene,
-	struct Cmiss_region *cmiss_region, enum GT_visibility_type visibility);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Sets the visibility of all scene objects that are graphical element groups for
-<cmiss_region> in <scene>.
-==============================================================================*/
-#endif /* defined (TO_BE_EDITED) */
-
-#if defined (USE_GRAPHICS_OBJECT)
-enum GT_visibility_type Scene_get_graphics_object_visibility(
-	struct Scene *scene,struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-Returns the visibility of <graphics_object> in <scene>.
-==============================================================================*/
-
-int Scene_set_graphics_object_visibility(struct Scene *scene,
-	struct GT_object *graphics_object,enum GT_visibility_type visibility);
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-Sets the visibility of all instances of <graphics_object> in <scene>.
-==============================================================================*/
-
-int Scene_has_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 8 December 1997
-
-DESCRIPTION :
-Returns true if <graphics object> is in the list of objects on <scene>.
-==============================================================================*/
-#endif /* defined (USE_GRAPHICS_OBJECT) */
-
-#if defined (USE_SCENE_OBJECT)
-struct Scene *Scene_object_get_child_scene(struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 7 July 1999
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
-
-#if defined (USE_CHILD_SCENE)
-int Scene_has_child_scene(struct Scene *scene,struct Scene *child_scene);
-/*******************************************************************************
-LAST MODIFIED : 20 November 1998
-
-DESCRIPTION :
-Returns true if <child_scene> is in the list of scenes in <scene>.
-==============================================================================*/
-#endif /* defined (USE_CHILD_SCENE) */
-
-#if defined (USE_SCENE_OBJECT)
-struct Scene_object *Scene_get_Scene_object_by_name(struct Scene *scene,
-	char *name);
-/*******************************************************************************
-LAST MODIFIED : 14 March 2001
-
-DESCRIPTION :
-Returns the Scene_object called <name> in <scene>, or NULL if not found.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
-
-#if defined (TO_BE_EDITED)
-int Scene_has_Cmiss_region(struct Scene *scene,
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns true if <scene> contains a graphical element for <cmiss_region>.
-==============================================================================*/
-#endif
-
-#if defined (TO_BE_EDITED)
-struct GT_element_group *Scene_get_graphical_element_group(
-	struct Scene *scene, struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns the graphical element_group for <cmiss_region> in <scene>.
-==============================================================================*/
-#endif /* defined (TO_BE_EDITED) */
-
-#if defined (USE_SCENE_OBJECT)
-struct Scene_object *Scene_get_scene_object_with_Cmiss_region(
-	struct Scene *scene, struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Returns the scene_object for <element_group> in <scene>.
-==============================================================================*/
-#endif /* defined (USE_SCENE_OBJECT) */
 
 int set_Scene(struct Parse_state *state,
 	void *material_address_void,void *scene_manager_void);
@@ -1242,121 +805,6 @@ Sets the range to include the data values of any of the graphics object
 in the <scene> which point to this spectrum.  The <range_set> flag is set if
 any valid graphics objects using this spectrum were found.
 ==============================================================================*/
-
-#if defined (USE_SCENE_OBJECT)
-int get_command_list(struct Scene_object *scene_object,
-	 void *dummy_void);
-#endif /*defined (USE_SCENE_OBJECT)*/
-
-#if defined (TO_BE_EDITED)
-int for_each_graphics_object_in_scene_get_command_list(struct Scene *scene,
-	 void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 13 Aug 2007
-
-DESCRIPTION :
-This function iterates through every graphics object in the scene
-including those in each individual settings of the graphical finite
-elements and those chained together with other graphics objects
-==============================================================================*/
-#endif /* defined (TO_BE_EDITED) */
-
-
-#if defined (OLD_CODE)
-/***************************************************************************//** 
- * Adds a callback to <scene> for when its transformation is changed.
- * <function> should have 3 arguments: struct Scene_object *, a gtMatrix * and the
- * given void *user_data.
- * @param Scene The scene
- * @param function The callback function to be added
- * @param user_data User data from scene
-	* @return if successfully add transformation callback returns 1, otherwise 0
- */
-int Cmiss_scene_add_transformation_callback(struct Scene *scene,
-	CMISS_CALLBACK_FUNCTION(Scene_transformation) *function, void *user_data);
-
-/***************************************************************************//** 
- * Removes the transformation callback from scene
- * @param Scene The scene
- * @param function The callback function to be remove
- * @param user_data User data from scene
- * @return if successfully remove transformation callback returns 1, otherwise 0
- */
-int Cmiss_scene_remove_transformation_callback(
-	struct Scene *scene,
-	CMISS_CALLBACK_FUNCTION(Scene_transformation) *function, void *user_data);
-
-/***************************************************************************//** 
- * Check if the <scene> has a nonidentity transformation matrix
- * @param scene The scene 
- * @return if transformation is present in the scene returns 1, otherwise 0
- */
-int Cmiss_scene_has_transformation(struct Scene *scene);
-
-/***************************************************************************//** 
- * Get the transformation gtMatrix of <scene>
- * @param scene The scene 
- * @param transformation The transformation gtMatrix to be returned to
- * @return if successfully get the transformation to scene returns 1, otherwise 0
- */
-int Cmiss_scene_get_transformation(struct Scene *scene,
-	gtMatrix *transformation);
-
-/***************************************************************************//**
- * Set the transformation of <scene>
- * @param scene Scene to be edited
- * @param transformation The transformation to be set to the scene
- * @return if successfully set the transformation to scene returns 1, otherwise 0
- */
-int Cmiss_scene_set_transformation(struct Scene *scene,
-	gtMatrix *transformation);
-
-/***************************************************************************//** 
- * Returns the visibility of <scene>.
- * @param scene The current scene
- * @return If scene is visible returns 1, otherwise 0
- */ 
-int Cmiss_scene_get_local_visiblilty(struct Scene *scene);
-
-/***************************************************************************//** 
- * Set the visibility of <scene>.
- * @param scene The scene to be edited
- * @param local_visibility_flag The new value to be assigned
- * @return If successfully changed the visibility flag returns 1, otherwise 0
- */ 
-int Cmiss_scene_set_local_visibility(struct Scene *scene, int local_visibility_flag);
-
-/***************************************************************************//** 
- * Returns the shared visibility of <scene>.
- * @param scene The current scene
- * @return If scene is visible returns 1, otherwise 0
- */ 
-int Cmiss_scene_get_shared_visiblilty(struct Scene *scene);
-
-/***************************************************************************//** 
- * Set the visibility of <scene>.
- * @param scene The scene to be edited
- * @param shared_visibility_flag The new value to be assigned
- * @return If successfully changed the visibility flag returns 1, otherwise 0
- */ 
-int Cmiss_scene_set_shared_visibility(struct Scene *scene, int shared_visibility_flag);
-
-/***************************************************************************//** 
- * Create and add sub scene to the current scene
- * @param scene The current scene
- * @param region The region of the sub scene
- * @return If success return subscene of region, otherwise NULL
- */ 
-struct Scene *Cmiss_scene_get_sub_scene(struct Scene *scene, struct Cmiss_region *region);
-
-/***************************************************************************//** 
- * Deaccess scene from the current scene
- * @param scene The current scene
- * @param region The region of the to be released sub scene
- * @return If successfully get sub scene return 1, otherwise 0
- */ 
-int deaccess_scene(struct Scene *scene);
-#endif
 
 /***************************************************************************//** 
  * Get the top region of the scene.

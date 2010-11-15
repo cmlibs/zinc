@@ -6613,45 +6613,6 @@ Executes a GFX DESTROY FIELD command.
 	return (return_code);
 } /* gfx_destroy_Computed_field */
 
-static int Scene_remove_graphics_object_iterator(struct Scene *scene,
-	void *graphics_object_void)
-/*******************************************************************************
-LAST MODIFIED : 20 November 1998
-
-DESCRIPTION :
-Removes all instances of the <graphics_object> from <scene>.
-???RC Move to scene.c?
-==============================================================================*/
-{
-	int return_code;
-	return_code = 1;
-	USE_PARAMETER(scene);
-	USE_PARAMETER(graphics_object_void);
-	
-#if defined (USE_GRAPHICS_OBJECT)
-	struct GT_object *graphics_object;
-
-	ENTER(Scene_remove_graphics_object_iterator);
-	if (scene&&(graphics_object=(struct GT_object *)graphics_object_void))
-	{
-		while (Scene_has_graphics_object(scene,graphics_object))
-		{
-			Scene_remove_graphics_object(scene,graphics_object);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_remove_graphics_object_iterator.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-#endif /* defined (USE_GRAPHICS_OBJECT) */
-
-	return (return_code);
-} /* Scene_remove_graphics_object_iterator */
-
 static int gfx_destroy_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -6680,12 +6641,6 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 					if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
 						current_token,command_data->glyph_manager))
 					{
-						/* remove all instances of the graphics object from all scenes */
-						FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-							Scene_remove_graphics_object_iterator,(void *)graphics_object,
-							command_data->scene_manager);
-						/* remove graphics object from the global list. Object is destroyed
-							 when deaccessed by list */
 						REMOVE_OBJECT_FROM_MANAGER(GT_object)(graphics_object,
 							command_data->glyph_manager);
 						return_code=1;
@@ -7292,69 +7247,6 @@ Executes a GFX DESTROY command.
 
 	return (return_code);
 } /* execute_command_gfx_destroy */
-
-struct Scene_add_graphics_object_iterator_data
-{
-	int position;
-	struct Scene *scene;
-};
-
-#if defined (TO_BE_EDITED)
-static int Scene_add_graphics_object_iterator(struct GT_object *graphics_object,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 March 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	//char *name;
-	int return_code;
-	struct Scene *scene;
-	struct Scene_add_graphics_object_iterator_data *data;
-
-	ENTER(Scene_add_graphics_object_iterator);
-	return_code = 0;
-	if (graphics_object &&
-		(data = (struct Scene_add_graphics_object_iterator_data *)data_void )&&
-		(scene = data->scene))
-	{
-#if defined (USE_GRAPHICS_OBJECT)
-		if (Scene_has_graphics_object(scene, graphics_object))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			if (GET_NAME(GT_object)(graphics_object, &name))
-			{
-				return_code = Scene_add_graphics_object(scene,graphics_object,
-					data->position, name, /*fast_changing*/0);
-				DEALLOCATE(name);
-			}
-			if (0 < data->position)
-			{
-				data->position++;
-			}
-		}
-		if (1 < GT_object_get_number_of_times(graphics_object))
-		{
-			Scene_update_time_behaviour(data->scene, graphics_object);
-		}
-#else
-		return_code = 1;
-#endif
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_add_graphics_object_iterator.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_add_graphics_object_iterator */
-#endif /* TO_BE_EDITED */
 
 static int execute_command_gfx_draw(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -10291,13 +10183,7 @@ Executes a GFX LIST ALL_COMMANDS.
 						list_Graphical_material_commands,(void *)command_prefix, 
 						graphical_material_manager);
 				}
-#if defined (TO_BE_EDITED)
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-					for_each_graphics_object_in_scene_get_command_list, (void*) "false",
-					command_data->scene_manager);
-#else
 				return_code =1;
-#endif
 				/* Command of graphics window */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
@@ -11056,11 +10942,7 @@ Executes a GFX LIST G_ELEMENT.
 	int error, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-#if defined (TO_BE_EDITED)
-	struct GT_element_group *gt_element_group;
-#else
 	struct Cmiss_rendition *rendition;
-#endif
 	struct Option_table *option_table;
 	struct Scene *scene;
 
@@ -17834,13 +17716,7 @@ Can also write individual groups with the <group> option.
 										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
 										 graphical_material_manager);
 							 }
-#if defined (TO_BE_EDITED)
-							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-									for_each_graphics_object_in_scene_get_command_list, (void*) "true",
-									command_data->scene_manager);
-#else
 							 return_code =1;
-#endif
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
 									write_Graphics_window_commands_to_comfile,(void *)NULL,
