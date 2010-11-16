@@ -1936,7 +1936,6 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	void *cmiss_region_void, void *dummy_void)
 {
 	int clear_flag, return_code = 0;
-	struct Cmiss_region *cmiss_region;
 	struct Computed_field *default_coordinate_field = NULL;
 	struct Set_FE_field_conditional_FE_region_data
 		native_discretization_field_conditional_data;
@@ -1947,7 +1946,8 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 
 	ENTER(gfx_modify_rendition_general);
 	USE_PARAMETER(dummy_void);
-	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
+	struct Cmiss_region *cmiss_region = (Cmiss_region *)cmiss_region_void;
+	if (state && cmiss_region)
 	{
 		/* if possible, get defaults from element_group on default scene */
 		rendition = Cmiss_region_get_rendition_internal(cmiss_region);
@@ -1961,6 +1961,12 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			clear_flag=0;
 			
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The clear option removes all graphics from the rendition. "
+				"Option 'circle_discretization' is deprecated: use circle_discretization option on cylinders instead. "
+				"Option 'default_coordinate' is deprecated: use coordinate option on individual graphics instead. "
+				"Option 'element_discretization' is deprecated: use tessellation option on individual graphics instead. "
+				"Option 'native_discretization' is deprecated: use native_discretization option on individual graphics instead. ");
 			/* circle_discretization */
 			Option_table_add_entry(option_table, "circle_discretization",
 				(void *)&rendition->circle_discretization, (void *)NULL,
@@ -1990,7 +1996,9 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 				(void *)&rendition->native_discretization_field,
 				(void *)&native_discretization_field_conditional_data,
 				set_FE_field_conditional_FE_region);
-			if ((return_code = Option_table_multi_parse(option_table, state)))
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
 			{
 				Cmiss_rendition_begin_cache(rendition);
 				if (clear_flag)
@@ -2012,25 +2020,29 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 				/* regenerate graphics for changed graphic */
 				Cmiss_rendition_end_cache(rendition);
 				return_code=1;
-				
-				DESTROY(Option_table)(&option_table);
-				DEACCESS(Cmiss_rendition)(&rendition);
 			}
 			if (default_coordinate_field)
 			{
 				DEACCESS(Computed_field)(&default_coordinate_field);
 			}
+			DEACCESS(Cmiss_rendition)(&rendition);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"gfx_modify_rendition_general.  "
-				"Missing state");
-			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"gfx_modify_rendition_general.  Missing rendition");
+			return_code = 0;
 		}
-		LEAVE;
 	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_general.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
 	return (return_code);
-} /* gfx_modify_rendition_general */
+}
 	
 int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,	
 	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
