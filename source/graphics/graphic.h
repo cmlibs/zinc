@@ -531,6 +531,17 @@ int Cmiss_graphic_set_discretization(
   struct Cmiss_graphic *graphic, struct Element_discretization *discretization);
 
 /***************************************************************************//**
+ * Fills the top_level_number_in_xi array with the discretization computed for
+ * the graphic taking into account the tessellation, non-linearity of the
+ * coordinate field and fixed discretization, if supported for graphic type.
+ *
+ * @param max_dimensions  Size of supplied top_level_number_in_xi array.
+ * @param top_level_number_in_xi  Array to receive values.
+ */
+int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
+	int max_dimensions, int *top_level_number_in_xi);
+
+/***************************************************************************//**
  * Returns the native_discretization field used by <graphic>.
  * For type CMISS_GRAPHIC_ELEMENT_POINTS only.
  */

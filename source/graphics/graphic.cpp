@@ -882,11 +882,18 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				draw_element = 1;
 			}
 			/* determine discretization of element for graphic */
+			// copy top_level_number_in_xi since scaled by native_discretization in
+			// get_FE_element_discretization
+			int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+			{
+				top_level_number_in_xi[dim] = graphic_to_object_data->top_level_number_in_xi[dim];
+			}
 			top_level_element = (struct FE_element *)NULL;
 			native_discretization_field = graphic->native_discretization_field;
 			if (FE_region_get_FE_element_discretization(
 				graphic_to_object_data->fe_region, element, graphic->face,
-				native_discretization_field, graphic_to_object_data->top_level_number_in_xi,
+				native_discretization_field, top_level_number_in_xi,
 				&top_level_element, number_in_xi))
 			{
 				element_dimension = get_FE_element_dimension(element);
@@ -1251,14 +1258,14 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic->xi_discretization_mode)
 								{
 									FE_element_convert_xi_points_cell_corners_to_top_level(
-										element, top_level_element, graphic_to_object_data->top_level_number_in_xi,
+										element, top_level_element, top_level_number_in_xi,
 										number_of_xi_points, xi_points, &top_level_xi_point_numbers);
 								}
 								if (top_level_xi_point_numbers)
 								{
 									/* xi_points have been converted to top-level */
 									use_element = top_level_element;
-									use_number_in_xi = graphic_to_object_data->top_level_number_in_xi;
+									use_number_in_xi = top_level_number_in_xi;
 								}
 								else
 								{
@@ -1585,7 +1592,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 static int Element_point_ranges_select_in_graphics_object(
 	struct Element_point_ranges *element_point_ranges,void *select_data_void)
 {
-	int i,return_code,top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i,return_code;
 	struct CM_element_information cm;
 	struct Element_point_ranges_identifier element_point_ranges_identifier,
 		temp_element_point_ranges_identifier;
@@ -1620,10 +1627,10 @@ static int Element_point_ranges_select_in_graphics_object(
 					((XI_DISCRETIZATION_CELL_CORNERS!=graphic->xi_discretization_mode) &&
 						Cmiss_graphic_uses_FE_element(graphic, element, fe_region)))
 				{
+					int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+					Cmiss_graphic_get_top_level_number_in_xi(graphic,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
 					top_level_element=(struct FE_element *)NULL;
-					top_level_number_in_xi[0]=graphic->discretization.number_in_xi1;
-					top_level_number_in_xi[1]=graphic->discretization.number_in_xi2;
-					top_level_number_in_xi[2]=graphic->discretization.number_in_xi3;
 					if (FE_region_get_FE_element_discretization(fe_region, element,
 						graphic->face,graphic->native_discretization_field,
 						top_level_number_in_xi,&top_level_element,
@@ -3212,39 +3219,8 @@ int Cmiss_graphic_to_graphics_object(
 							DEALLOCATE(graphic_string);
 						}
 #endif /* defined (DEBUG) */
-
-						for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-						{
-							graphic_to_object_data->top_level_number_in_xi[dim] = 1;
-						}
-						if (graphic->tessellation)
-						{
-							Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
-								MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
-							// refine if coordinate field is non-linear
-							// first check if coordinate field has been wrapped which
-							// means its coordinate system is non-linear
-							if ((graphic_to_object_data->rc_coordinate_field != coordinate_field) ||
-								Computed_field_is_non_linear(coordinate_field))
-							{
-								int refinement_factors[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-								if (Cmiss_tessellation_get_refinement_factors(graphic->tessellation,
-									MAXIMUM_ELEMENT_XI_DIMENSIONS, refinement_factors))
-								{
-									for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-									{
-										graphic_to_object_data->top_level_number_in_xi[dim] *= refinement_factors[dim];
-									}
-								}
-							}
-						}
-						if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-						{
-							graphic_to_object_data->top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
-							graphic_to_object_data->top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
-							graphic_to_object_data->top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
-						}
-
+						Cmiss_graphic_get_top_level_number_in_xi(graphic,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
 						graphic_to_object_data->existing_graphics =
 							(struct GT_object *)NULL;
 						/* work out the name the graphics object is to have */
@@ -8358,6 +8334,60 @@ int Cmiss_graphic_get_discretization(struct Cmiss_graphic *graphic,
 
 	return (return_code);
 } /* Cmiss_graphic_get_discretization */
+
+int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
+	int max_dimensions, int *top_level_number_in_xi)
+{
+	int return_code = 1;
+	if (graphic && (0 < max_dimensions) && top_level_number_in_xi)
+	{
+		int dim;
+		for (dim = 0; dim < max_dimensions; dim++)
+		{
+			top_level_number_in_xi[dim] = 1;
+		}
+		if (graphic->tessellation)
+		{
+			Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
+				max_dimensions, top_level_number_in_xi);
+			if (graphic->coordinate_field)
+			{
+				// refine if coordinate field is non-linear
+				// first check if its coordinate system is non-linear (cheaper)
+				Coordinate_system_type type = get_coordinate_system_type(
+					Computed_field_get_coordinate_system(graphic->coordinate_field));
+				if (Coordinate_system_type_is_non_linear(type) ||
+					Computed_field_is_non_linear(graphic->coordinate_field))
+				{
+					int refinement_factors[max_dimensions];
+					if (Cmiss_tessellation_get_refinement_factors(graphic->tessellation,
+						max_dimensions, refinement_factors))
+					{
+						for (dim = 0; dim < max_dimensions; dim++)
+						{
+							top_level_number_in_xi[dim] *= refinement_factors[dim];
+						}
+					}
+				}
+			}
+		}
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
+		{
+			top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
+			if (max_dimensions > 1)
+				top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
+			if (max_dimensions > 2)
+				top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_get_top_level_number_in_xi.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
 
 struct FE_field *Cmiss_graphic_get_native_discretization_field(
 	struct Cmiss_graphic *graphic)

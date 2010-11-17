@@ -36674,9 +36674,18 @@ either case the top_level_number_in_xi used is returned.
 				FE_element_field_is_grid_based(*top_level_element,
 					native_discretization_field))
 			{
+				int native_top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				{
+					native_top_level_number_in_xi[dim] = 1;
+				}
 				/* use first component only */
 				get_FE_element_field_component_grid_map_number_in_xi(*top_level_element,
-					native_discretization_field, /*component_number*/0, top_level_number_in_xi);
+					native_discretization_field, /*component_number*/0, native_top_level_number_in_xi);
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				{
+					top_level_number_in_xi[dim] *= native_top_level_number_in_xi[dim];
+				}
 			}
 			if (get_FE_element_discretization_from_top_level(element,number_in_xi,
 				*top_level_element,top_level_number_in_xi,element_to_top_level))

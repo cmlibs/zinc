@@ -960,10 +960,8 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
-	int element_point_number,face_number,i,return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int element_point_number, i, return_code;
 	struct CM_element_information cm;
-	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *element,*top_level_element;
@@ -1009,16 +1007,14 @@ and destroy it once returned.
 						FE_region_contains_FE_element(Cmiss_region_get_FE_region(
 							nearest_element_point_data->cmiss_region), element))
 					{
-						/* determine discretization of element for graphic */
-						top_level_element=(struct FE_element *)NULL;
-						Cmiss_graphic_get_discretization(graphic,
-							&element_discretization);
-						top_level_number_in_xi[0]=element_discretization.number_in_xi1;
-						top_level_number_in_xi[1]=element_discretization.number_in_xi2;
-						top_level_number_in_xi[2]=element_discretization.number_in_xi3;
+						int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+						Cmiss_graphic_get_top_level_number_in_xi(graphic,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
+						int face_number = -1;
 						Cmiss_graphic_get_face(graphic,&face_number);
 						native_discretization_field=
 							Cmiss_graphic_get_native_discretization_field(graphic);
+						top_level_element=(struct FE_element *)NULL;
 						if (FE_region_get_FE_element_discretization(fe_region, element,
 							face_number, native_discretization_field, top_level_number_in_xi,
 							&top_level_element, element_point_ranges_identifier.number_in_xi))
