@@ -10046,6 +10046,83 @@ list we will be looking at will not be global but will belong to the region.
 	return (return_code);
 } /* FE_field_has_multiple_times */
 
+static int FE_basis_is_non_linear(struct FE_basis *basis)
+{
+	if (basis)
+	{
+		int dimensions, i, j;
+		const int *type;
+		type = basis->type;
+		dimensions = *type;
+		++type;
+		for (i = 0; i < dimensions; i++)
+		{
+			/* Admittedly, even linear lagrange elements have non-linear terms for 2 or more dimensions */
+			if ((FE_BASIS_CONSTANT != *type) &&
+				(LINEAR_LAGRANGE != *type) &&
+				(LINEAR_SIMPLEX != *type) &&
+				(POLYGON != *type))
+			{
+				return 1;
+			}
+			for (j = i; j < dimensions; j++)
+			{
+				++type;
+			}
+		}
+	}
+	return 0;
+}
+
+static int FE_element_field_uses_non_linear_basis(
+	struct FE_element_field *element_field)
+{
+	if (element_field)
+	{
+		int i;
+		for (i = 0; i < element_field->field->number_of_components; i++)
+		{
+			if (FE_basis_is_non_linear(element_field->components[i]->basis))
+			{
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+static int FE_element_field_info_FE_field_uses_non_linear_basis(
+	struct FE_element_field_info *field_info, void *fe_field_void)
+{
+	struct FE_field *fe_field;
+	fe_field = (struct FE_field *)fe_field_void;
+	if (field_info && fe_field)
+	{
+		struct FE_element_field *element_field;
+		element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+			fe_field, field_info->element_field_list);
+		if (element_field && FE_element_field_uses_non_linear_basis(element_field))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int FE_field_uses_non_linear_basis(struct FE_field *fe_field)
+{
+	if (fe_field && fe_field->info && fe_field->info->fe_region)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field_info)(
+			FE_element_field_info_FE_field_uses_non_linear_basis, (void *)fe_field,
+			FE_region_get_FE_element_field_info_list_private(fe_field->info->fe_region)))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 int ensure_FE_field_is_in_list(struct FE_field *field, void *field_list_void)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2006

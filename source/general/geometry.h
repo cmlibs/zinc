@@ -302,4 +302,13 @@ Calculate the <jacobian> if not NULL.
 ???DB.  Should the dimension be part of struct Coordinate_system ?
 ???DB.  Can we get rid of most of io_devices/conversion ?
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Query if coordinate system type varies non-linearly with screen space.
+ * Currently only RECTANGULAR_CARTESIAN and NORMALISED_WINDOW_COORDINATES are
+ * linear, all other types are non-linear.
+ * @return  1 if non-linear, 0 if linear.
+ */
+int Coordinate_system_type_is_non_linear(enum Coordinate_system_type type);
+
 #endif /* !defined (GEOMETRY_H) */

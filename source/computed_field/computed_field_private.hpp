@@ -287,6 +287,12 @@ public:
 	virtual void dependency_change()
 	{
 	}
+
+	// override if field knows its function is non-linear over its domain
+	// base implementation returns true if any source fields are non_linear.
+	// Overrides must call the base implementation if function is not non-linear
+	// and there are source fields.
+	virtual bool is_non_linear() const;
 }; /* class Computed_field_core */
 
 struct Computed_field

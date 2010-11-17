@@ -178,4 +178,10 @@ int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region);
  */
 int FE_region_need_add_xi_field(struct FE_region *fe_region);
 
+/***************************************************************************//**
+ * Obtain private member.
+ */
+struct LIST(FE_element_field_info) *FE_region_get_FE_element_field_info_list_private(
+	struct FE_region *fe_region);
+
 #endif /* !defined (FINITE_ELEMENT_REGION_PRIVATE_H) */

@@ -3257,6 +3257,12 @@ This will be improved when regionalised, so that hopefully the node field
 list we will be looking at will not be global but will belong to the region.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Return true if any basis functions used by the field is non-linear i.e.
+ * quadratic, cubic, Fourier etc.
+ */
+int FE_field_uses_non_linear_basis(struct FE_field *fe_field);
+
 struct FE_field *find_first_time_field_at_FE_node(struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 9 June 1999

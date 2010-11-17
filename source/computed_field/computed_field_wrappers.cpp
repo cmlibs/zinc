@@ -80,11 +80,7 @@ wrapped.
 		Computed_field_get_number_of_components(coordinate_field)))
 	{
 		type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinate_field));
-		if ((RECTANGULAR_CARTESIAN==type)||(NORMALISED_WINDOW_COORDINATES==type))
-		{
-			wrapper_field=ACCESS(Computed_field)(coordinate_field);
-		}
-		else
+		if (Coordinate_system_type_is_non_linear(type))
 		{
 			Cmiss_field_module *field_module =
 				Cmiss_field_module_create(Computed_field_get_region(coordinate_field));
@@ -95,6 +91,10 @@ wrapped.
 			wrapper_field = Computed_field_create_coordinate_transformation(field_module,
 				coordinate_field);
 			Cmiss_field_module_destroy(&field_module);
+		}
+		else
+		{
+			wrapper_field = ACCESS(Computed_field)(coordinate_field);
 		}
 	}
 	else

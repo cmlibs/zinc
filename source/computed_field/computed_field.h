@@ -1006,7 +1006,29 @@ Change the name of a field.
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
-int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list );
+/*******************************************************************************
+ * Returns the domains of the given field by recursively searching through the
+ * field's source fields
+ *
+ * @param field  The field to find the domain of
+ * @param domain_field_list  A handle to the list of domains for the field
+ * @return  1 on success, 0 otherwise
+ */
+int Computed_field_get_domain( struct Computed_field *field,
+	struct LIST(Computed_field) *domain_field_list );
+
+/*******************************************************************************
+ * Returns true if the field value varies non-linearly over its domain.
+ * If applicable, e.g. for coordinate fields, callers should first determine
+ * whether the coordinate system varies non-linearly with screen space since
+ * that is a less expensive query.
+ * Note that an image-based field is linear if it is interpolated linearly.
+ *
+ * @see Coordinate_system_type_is_non_linear
+ * @param field  The field to query.
+ * @return  1 if non-linear, 0 if linear.
+ */
+int Computed_field_is_non_linear(struct Computed_field *field);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

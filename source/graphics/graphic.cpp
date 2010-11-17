@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 FILE : cmiss_graphic.cpp
 
@@ -815,7 +814,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		element_selected, i, name_selected,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		*top_level_xi_point_numbers,
 		use_element_dimension, *use_number_in_xi;
 	struct CM_element_information cm;
@@ -885,24 +883,11 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			}
 			/* determine discretization of element for graphic */
 			top_level_element = (struct FE_element *)NULL;
-			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-			{
-				top_level_number_in_xi[dim] = 1;
-			}
-			if (graphic->tessellation)
-			{
-				// GRC work out if refined/non-linear
-				Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
-					MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
-			}
-			top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
-			top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
-			top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
 			native_discretization_field = graphic->native_discretization_field;
 			if (FE_region_get_FE_element_discretization(
 				graphic_to_object_data->fe_region, element, graphic->face,
-				native_discretization_field, top_level_number_in_xi, &top_level_element,
-				number_in_xi))
+				native_discretization_field, graphic_to_object_data->top_level_number_in_xi,
+				&top_level_element, number_in_xi))
 			{
 				element_dimension = get_FE_element_dimension(element);
 				/* g_element renditions use only one time = 0.0. Must take care. */
@@ -1266,14 +1251,14 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic->xi_discretization_mode)
 								{
 									FE_element_convert_xi_points_cell_corners_to_top_level(
-										element, top_level_element, top_level_number_in_xi,
+										element, top_level_element, graphic_to_object_data->top_level_number_in_xi,
 										number_of_xi_points, xi_points, &top_level_xi_point_numbers);
 								}
 								if (top_level_xi_point_numbers)
 								{
 									/* xi_points have been converted to top-level */
 									use_element = top_level_element;
-									use_number_in_xi = top_level_number_in_xi;
+									use_number_in_xi = graphic_to_object_data->top_level_number_in_xi;
 								}
 								else
 								{
@@ -3139,7 +3124,6 @@ int Cmiss_graphic_to_graphics_object(
 	float time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
-	struct Computed_field *coordinate_field;
 	struct Coordinate_system *coordinate_system;
 	struct FE_element *first_element;
 	struct FE_region *fe_region;
@@ -3157,7 +3141,6 @@ int Cmiss_graphic_to_graphics_object(
 	{
 		/* all primitives added at time 0.0 */
 		time = 0.0;
-		coordinate_field = NULL; // GRC graphic_to_object_data->default_rc_coordinate_field;
 		return_code = 1;
 		/* build only if visible... */
 		if (Cmiss_scene_shows_graphic(graphic_to_object_data->scene, graphic))
@@ -3165,11 +3148,7 @@ int Cmiss_graphic_to_graphics_object(
 			/* build only if changed... */
 			if (graphic->graphics_changed)
 			{
-				/* override the default_coordinate_field with one chosen in graphic */
-				if (graphic->coordinate_field)
-				{
-					coordinate_field = graphic->coordinate_field;
-				}
+				Computed_field *coordinate_field = graphic->coordinate_field;
  				if (coordinate_field)
 				{
 					/* RC coordinate_field to pass to FE_element_to_graphics_object */
@@ -3195,6 +3174,39 @@ int Cmiss_graphic_to_graphics_object(
 							DEALLOCATE(graphic_string);
 						}
 #endif /* defined (DEBUG) */
+
+						for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+						{
+							graphic_to_object_data->top_level_number_in_xi[dim] = 1;
+						}
+						if (graphic->tessellation)
+						{
+							Cmiss_tessellation_get_minimum_divisions(graphic->tessellation,
+								MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
+							// refine if coordinate field is non-linear
+							// first check if coordinate field has been wrapped which
+							// means its coordinate system is non-linear
+							if ((graphic_to_object_data->rc_coordinate_field != coordinate_field) ||
+								Computed_field_is_non_linear(coordinate_field))
+							{
+								int refinement_factors[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+								if (Cmiss_tessellation_get_refinement_factors(graphic->tessellation,
+									MAXIMUM_ELEMENT_XI_DIMENSIONS, refinement_factors))
+								{
+									for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+									{
+										graphic_to_object_data->top_level_number_in_xi[dim] *= refinement_factors[dim];
+									}
+								}
+							}
+						}
+						if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
+						{
+							graphic_to_object_data->top_level_number_in_xi[0] *= graphic->discretization.number_in_xi1;
+							graphic_to_object_data->top_level_number_in_xi[1] *= graphic->discretization.number_in_xi2;
+							graphic_to_object_data->top_level_number_in_xi[2] *= graphic->discretization.number_in_xi3;
+						}
+
 						graphic_to_object_data->existing_graphics =
 							(struct GT_object *)NULL;
 						/* work out the name the graphics object is to have */
@@ -5626,16 +5638,15 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 			return_code=
 				(graphic->use_element_type==second_graphic->use_element_type);
 		}
-		/* for graphics that tessellate or sample elements */
+
 		if (return_code && Cmiss_graphic_type_uses_attribute(
 			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
 		{
 			return_code = (graphic->tessellation == second_graphic->tessellation);
 		}
-		if (return_code &&
-			(CMISS_GRAPHIC_NODE_POINTS != graphic->graphic_type) &&
-			(CMISS_GRAPHIC_DATA_POINTS != graphic->graphic_type) &&
-			(CMISS_GRAPHIC_STATIC != graphic->graphic_type))
+
+		if (return_code && Cmiss_graphic_type_uses_attribute(
+			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 		{
 			return_code =
 				(graphic->discretization.number_in_xi1 ==
@@ -5643,10 +5654,17 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(graphic->discretization.number_in_xi2 ==
 					second_graphic->discretization.number_in_xi2) &&
 				(graphic->discretization.number_in_xi3 ==
-					second_graphic->discretization.number_in_xi3) &&
+					second_graphic->discretization.number_in_xi3);
+		}
+
+		if (return_code && Cmiss_graphic_type_uses_attribute(
+			graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
+		{
+			return_code =
 				(graphic->native_discretization_field ==
 					second_graphic->native_discretization_field);
 		}
+
 		/* for element_points only */
 		if (return_code&&
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))

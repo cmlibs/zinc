@@ -168,6 +168,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	struct Cmiss_scene *scene;
 	/* additional values for passing to element_to_graphics_object */
 	struct Cmiss_graphic *graphic;
+	int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 };
 
 struct Modify_rendition_data

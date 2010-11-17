@@ -7922,3 +7922,11 @@ int FE_region_need_add_xi_field(struct FE_region *fe_region)
 
 	return (return_code);
 } /* FE_region_need_add_xi_field */
+
+struct LIST(FE_element_field_info) *FE_region_get_FE_element_field_info_list_private(
+	struct FE_region *fe_region)
+{
+	if (fe_region)
+		return fe_region->fe_element_field_info_list;
+	return NULL;
+}

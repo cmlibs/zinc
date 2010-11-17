@@ -799,6 +799,15 @@ int gfx_define_tessellation_contents(struct Parse_state *state, void *tessellati
 			refinement_factors[0] = 1;
 		}
 		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Defines tessellation objects which control how finite elements are "
+			"subdivided into graphics. The minimum_divisions option gives the "
+			"minimum number of linear segments approximating geometry in each xi "
+			"dimension of the element. If the coordinate field of a graphic uses "
+			"non-linear basis functions the minimum_divisions is multiplied by "
+			"the refinement_factors to give the refined number of segments. "
+			"Both minimum_divisions and refinement_factors use the last supplied "
+			"number for all higher dimensions, so \"4\" = \"4*4\" and so on.");
 		Option_table_add_divisions_entry(option_table, "minimum_divisions",
 			&minimum_divisions, &minimum_divisions_size);
 		Option_table_add_divisions_entry(option_table, "refinement_factors",

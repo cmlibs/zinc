@@ -1327,3 +1327,9 @@ Calculate the <jacobian> if not NULL.
 
 	return (return_code);
 } /* convert_Coordinate_system */
+
+int Coordinate_system_type_is_non_linear(enum Coordinate_system_type type)
+{
+	return ((RECTANGULAR_CARTESIAN != type) &&
+		(NORMALISED_WINDOW_COORDINATES != type));
+}

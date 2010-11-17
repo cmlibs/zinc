@@ -147,6 +147,11 @@ private:
 		FE_value *values, int number_of_values, struct FE_element **element,
 		FE_value *xi, int element_dimension, double time,
 		struct Cmiss_region *search_region);
+
+	virtual bool is_non_linear() const
+	{
+		return FE_field_uses_non_linear_basis(fe_field);
+	}
 };
 
 Computed_field_finite_element::~Computed_field_finite_element()

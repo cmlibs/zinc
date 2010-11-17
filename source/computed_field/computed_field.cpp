@@ -3139,25 +3139,32 @@ int recursively_add_source_fields_to_list( struct Computed_field *field, struct 
 	return return_code;
 }
 
-/**
- * Returns the domain of the given field by recursively searching through the fields source fields
- *
- * @param field The field to find the  domain of
- * @param domain_field_list A handle to the list of domains for the field
- * @return 1 on success, 0 otherwise
- */
 int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )
 {
 	int return_code = 0;
 	if (field && domain_field_list)
 	{
-		//field_list = CREATE_LIST(Computed_field)();
 		return_code = field->core->get_domain( domain_field_list );
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_domain.  Invalid argument(s)");
+	}
+	return return_code;
+}
+
+int Computed_field_is_non_linear(struct Computed_field *field)
+{
+	int return_code = 0;
+	if (field)
+	{
+		return_code = field->core->is_non_linear();
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_non_linear.  Invalid argument(s)");
 	}
 
 	return return_code;
@@ -4846,7 +4853,27 @@ int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_l
 	}
 
 	return return_code;
-} /* Computed_field_core::get_command_string */
+}
+
+bool Computed_field_core::is_non_linear() const
+{
+	if (field)
+	{
+		for (int i = 0; i < field->number_of_source_fields; i++)
+		{
+			if (field->source_fields[i]->core->is_non_linear())
+			{
+				return true;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::is_non_linear.  Missing field");
+	}
+	return false;
+}
 
 struct Computed_field_package *CREATE(Computed_field_package)(
 	struct MANAGER(Computed_field) *computed_field_manager)
