@@ -3313,7 +3313,6 @@ void SetGraphic(Cmiss_graphic *graphic)
 		Triple glyph_centre, glyph_size, glyph_scale_factors, seed_xi;
 		struct Graphics_font *font;
 		struct Element_discretization discretization;
-		struct FE_field *native_discretization_field;
 		enum Streamline_type streamline_type;
 		enum Streamline_data_type streamline_data_type;
 		struct Spectrum *spectrum;
@@ -3928,7 +3927,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
 			CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
 		{
-			native_discretization_field=
+			struct FE_field *native_discretization_field =
 				Cmiss_graphic_get_native_discretization_field(graphic);
 			if (native_discretization_field_chooser==NULL)
 			{
@@ -4012,6 +4011,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 				discretizationtextctrl->Enable();	
 				discretizationtext->Enable();
 				nativediscretizationfieldcheckbox->Enable();
+				struct FE_field *native_discretization_field =
+					Cmiss_graphic_get_native_discretization_field(graphic);
 				if ((struct FE_field *)NULL != native_discretization_field)
 				{
 					native_discretization_field_chooser_panel->Enable();
