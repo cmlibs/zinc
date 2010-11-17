@@ -2713,41 +2713,54 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode))
 				{
 					append_string(&graphic_string, " density ", &error);
-					if (GET_NAME(Computed_field)(graphic->xi_point_density_field,&name))
+					if (graphic->xi_point_density_field)
 					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphic_string, name, &error);
-						DEALLOCATE(name);
+						if (GET_NAME(Computed_field)(graphic->xi_point_density_field,&name))
+						{
+							/* put quotes around name if it contains special characters */
+							make_valid_token(&name);
+							append_string(&graphic_string, name, &error);
+							DEALLOCATE(name);
+						}
+						else
+						{
+							DEALLOCATE(graphic_string);
+							error = 1;
+						}
 					}
 					else
 					{
-						DEALLOCATE(graphic_string);
-						error = 1;
+						append_string(&graphic_string,"NONE",&error);
 					}
-				}
-				append_string(&graphic_string," native_discretization ", &error);
-				if (graphic->native_discretization_field)
-				{
-					if (GET_NAME(FE_field)(graphic->native_discretization_field,&name))
-					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphic_string,name,&error);
-						DEALLOCATE(name);
-					}
-					else
-					{
-						DEALLOCATE(graphic_string);
-						error=1;
-					}
-				}
-				else
-				{
-					append_string(&graphic_string,"NONE",&error);
 				}
 			}
 		}
+
+		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
+		{
+			append_string(&graphic_string," native_discretization ", &error);
+			if (graphic->native_discretization_field)
+			{
+				if (GET_NAME(FE_field)(graphic->native_discretization_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&graphic_string,name,&error);
+					DEALLOCATE(name);
+				}
+				else
+				{
+					DEALLOCATE(graphic_string);
+					error=1;
+				}
+			}
+			else
+			{
+				append_string(&graphic_string,"NONE",&error);
+			}
+		}
+
 		/* for volumes only */
 		if (CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)
 		{
@@ -3115,6 +3128,30 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 }
 #endif /* (USE_OPENCASCADE) */
 
+/***************************************************************************//**
+ * @return  1 if all compulsory attributes or fields of graphic are set,
+ * 0 otherwise.
+ */
+static int Cmiss_graphic_has_all_compulsory_attributes(struct Cmiss_graphic *graphic)
+{
+	int return_code = 1;
+	if (graphic)
+	{
+		if ((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) &&
+			((XI_DISCRETIZATION_CELL_DENSITY == graphic->xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode)) &&
+			(!graphic->xi_point_density_field))
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
+
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
 {
@@ -3145,8 +3182,9 @@ int Cmiss_graphic_to_graphics_object(
 		/* build only if visible... */
 		if (Cmiss_scene_shows_graphic(graphic_to_object_data->scene, graphic))
 		{
-			/* build only if changed... */
-			if (graphic->graphics_changed)
+			/* build only if changed... and complete */
+			if (graphic->graphics_changed &&
+				Cmiss_graphic_has_all_compulsory_attributes(graphic))
 			{
 				Computed_field *coordinate_field = graphic->coordinate_field;
  				if (coordinate_field)
@@ -4806,16 +4844,16 @@ int Cmiss_graphic_set_xi_discretization(
 	enum Xi_discretization_mode xi_discretization_mode,
 	struct Computed_field *xi_point_density_field)
 {
-	int need_density_field, return_code;
+	int uses_density_field, return_code;
 
 	ENTER(Cmiss_graphic_set_xi_discretization);
-	need_density_field =
+	uses_density_field =
 		(XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
 		(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode);
 
-	if (graphic && ((!need_density_field && !xi_point_density_field) ||
-		(need_density_field && xi_point_density_field &&
-			Computed_field_is_scalar(xi_point_density_field, (void *)NULL))))
+	if (graphic && ((!uses_density_field && !xi_point_density_field) ||
+		(uses_density_field && (!xi_point_density_field ||
+			Computed_field_is_scalar(xi_point_density_field, (void *)NULL)))))
 	{
 		graphic->xi_discretization_mode = xi_discretization_mode;
 		REACCESS(Computed_field)(&(graphic->xi_point_density_field),
@@ -5417,6 +5455,10 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					Option_table_add_entry(option_table,"material",&(graphic->material),
 						rendition_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
@@ -6627,6 +6669,10 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 						&(graphic->secondary_material),
 						rendition_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
@@ -6787,6 +6833,10 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 					Option_table_add_entry(option_table,"material",&(graphic->material),
 						rendition_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
@@ -7013,6 +7063,10 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 					/* first_iso_value */
 					Option_table_add_double_entry(option_table,"first_iso_value",
 						&(graphic->first_iso_value));	
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
@@ -7182,7 +7236,6 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field,
 		*xi_point_density_field;
-	struct FE_region *fe_region;
 	struct Graphics_font *new_font;
 	struct GT_object *glyph;
 	struct Rendition_command_data *rendition_command_data;
@@ -7197,8 +7250,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 	if (state && (rendition_command_data=(struct Rendition_command_data *)
 		rendition_command_data_void) &&
 		(modify_rendition_data=
-			(struct Modify_rendition_data *)modify_rendition_data_void) &&
-		(fe_region = Cmiss_region_get_FE_region(rendition_command_data->region)))
+			(struct Modify_rendition_data *)modify_rendition_data_void))
 	{
 		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
 			rendition_command_data->rendition, CMISS_GRAPHIC_ELEMENT_POINTS,
@@ -7317,7 +7369,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			/* native_discretization */
 			Option_table_add_set_FE_field_from_FE_region(option_table,
 				"native_discretization", &(graphic->native_discretization_field),
-				fe_region);
+				Cmiss_region_get_FE_region(rendition_command_data->region));
 			/* glyph scaling mode */
 			glyph_scaling_mode_string =
 				ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
@@ -7585,6 +7637,12 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			Option_table_add_entry(option_table,"material",&(graphic->material),
 				rendition_command_data->graphical_material_manager,
 				set_Graphical_material);
+#ifdef FUTURE_CODE
+			/* native_discretization */
+			Option_table_add_set_FE_field_from_FE_region(option_table,
+				"native_discretization", &(graphic->native_discretization_field),
+				Cmiss_region_get_FE_region(rendition_command_data->region));
+#endif /* FUTURE_CODE */
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
 			streamline_data_type = STREAM_NO_DATA;
 			streamline_data_type_string =

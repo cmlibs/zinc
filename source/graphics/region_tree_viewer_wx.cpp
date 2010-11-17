@@ -3925,8 +3925,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 		densityfieldtext=XRCCTRL(*this, "DensityFieldText",wxStaticText);
 		density_field_chooser_panel=XRCCTRL(*this,"DensityFieldChooserPanel",wxPanel);
 
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)&&
-				Cmiss_graphic_get_xi_discretization(graphic,&xi_discretization_mode, &xi_point_density_field))	
+		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
 		{
 			native_discretization_field=
 				Cmiss_graphic_get_native_discretization_field(graphic);
@@ -3960,7 +3960,16 @@ void SetGraphic(Cmiss_graphic *graphic)
 				nativediscretizationfieldcheckbox->SetValue(0);
 				native_discretization_field_chooser_panel->Disable();
 			}
+		}
+		else
+		{
+			nativediscretizationfieldcheckbox->Hide();
+			native_discretization_field_chooser_panel->Hide();
+		}
 
+		if ((CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)&&
+			Cmiss_graphic_get_xi_discretization(graphic,&xi_discretization_mode, &xi_point_density_field))
+		{
 			if (xi_discretization_mode_chooser ==NULL)
 			{
 				xi_discretization_mode_chooser = 
@@ -3986,6 +3995,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 					(density_field_chooser_panel, xi_point_density_field, region_tree_viewer->field_manager,
 						Computed_field_is_scalar, (void *)NULL, 
 						region_tree_viewer->user_interface);
+				xi_point_density_field_chooser->include_null_item(true);
 				Callback_base< Computed_field* > *xi_point_density_callback = 
 					new Callback_member_callback< Computed_field*, 
 					wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
@@ -4032,8 +4042,6 @@ void SetGraphic(Cmiss_graphic *graphic)
 		}
 		else
 		{	
-			nativediscretizationfieldcheckbox->Hide();
-			native_discretization_field_chooser_panel->Hide();
 			xidiscretizationmodetext->Hide();
 			xi_discretization_mode_chooser_panel->Hide();
 			densityfieldtext->Hide();	
