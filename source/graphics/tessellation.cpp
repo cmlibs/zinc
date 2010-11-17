@@ -630,12 +630,13 @@ int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation
 int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
 	int dimensions, int *fixed_divisions)
 {
-	int return_code = 1;
+	int return_code = 0;
 	if (tessellation && (dimensions > 0) && fixed_divisions)
 	{
 		if ((dimensions >= tessellation->minimum_divisions_size) &&
 			(dimensions >= tessellation->refinement_factors_size))
 		{
+			return_code = 1;
 			for (int i = 0; i < dimensions; i++)
 			{
 				if ((tessellation->get_minimum_divisions_value(i) != fixed_divisions[i]) ||
