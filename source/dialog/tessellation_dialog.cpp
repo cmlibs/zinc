@@ -110,6 +110,15 @@ void TessellationItem::set_callback()
 	applyButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(TessellationItem::OnTessellationApplyPressed),
 			NULL, this);
+	divisionsTextCtrl->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(TessellationItem::OnTessellationTextEntered),
+			NULL, this);
+	refinementTextCtrl->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(TessellationItem::OnTessellationTextEntered),
+			NULL, this);
+	tessellationLabel->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(TessellationItem::OnTessellationTextEntered),
+			NULL, this);
 }
 
 void TessellationItem::update_divisions_string_for_dialog()
@@ -167,53 +176,56 @@ void TessellationItem::update_refinement_string_for_dialog()
 void TessellationItem::OnTessellationTextEntered(wxCommandEvent& event)
 {
 	wxTextCtrl *textctrl = (wxTextCtrl *)event.GetEventObject();
-	if (tessellationLabel == textctrl)
+	if (textctrl->IsModified())
 	{
-		labelChanged = 1;
-	}
-	else if (refinementTextCtrl == textctrl)
-	{
-		wxString temp = textctrl->GetValue();
-		int size = 0, *values = NULL;
-		if (string_to_divisions(temp.c_str(), &values, &size))
+		if (tessellationLabel == textctrl)
 		{
-			refinementChanged = 1;
+			labelChanged = 1;
+		}
+		else if (refinementTextCtrl == textctrl)
+		{
+			wxString temp = textctrl->GetValue();
+			int size = 0, *values = NULL;
+			if (string_to_divisions(temp.c_str(), &values, &size))
+			{
+				refinementChanged = 1;
+			}
+			else
+			{
+				update_refinement_string_for_dialog();
+				refinementChanged = 0;
+			}
+			if (values)
+			{
+				DEALLOCATE(values);
+			}
 		}
 		else
 		{
-			update_refinement_string_for_dialog();
-			refinementChanged = 0;
+			wxString temp = textctrl->GetValue();
+			int size = 0, *values = NULL;
+			if (string_to_divisions(temp.c_str(), &values, &size))
+			{
+				divisionsChanged = 1;
+			}
+			else
+			{
+				update_divisions_string_for_dialog();
+				divisionsChanged = 0;
+			}
+			if (values)
+			{
+				DEALLOCATE(values);
+			}
 		}
-		if (values)
+		if (labelChanged || divisionsChanged || refinementChanged)
 		{
-			DEALLOCATE(values);
-		}
-	}
-	else
-	{
-		wxString temp = textctrl->GetValue();
-		int size = 0, *values = NULL;
-		if (string_to_divisions(temp.c_str(), &values, &size))
-		{
-			divisionsChanged = 1;
+			applyButton->Enable();
 		}
 		else
 		{
-			update_divisions_string_for_dialog();
-			divisionsChanged = 0;
+			applyButton->Disable();
 		}
-		if (values)
-		{
-			DEALLOCATE(values);
-		}
-	}
-	if (labelChanged||divisionsChanged||refinementChanged)
-	{
-		applyButton->Enable();
-	}
-	else
-	{
-		applyButton->Disable();
 	}
 }
 
@@ -433,5 +445,10 @@ void TessellationDialog::manager_callback(struct MANAGER_MESSAGE(Cmiss_tessellat
 	sizer->FitInside(TessellationItemsPanel);
 	wxSize newSize = GetSizer()->GetMinSize();
 	wxSize originalSize = GetSize();
-	SetSize(wxSize(originalSize.GetWidth(), newSize.GetHeight()));
+	int height = newSize.GetHeight();
+	if (originalSize.GetHeight() > height)
+	{
+		height = originalSize.GetHeight();
+	}
+	SetSize(wxSize(originalSize.GetWidth(), height));
 }
