@@ -421,7 +421,7 @@ void TessellationDialog::manager_callback(struct MANAGER_MESSAGE(Cmiss_tessellat
 		}
 		else if (change_flags & MANAGER_CHANGE_REMOVE(Cmiss_tessellation))
 		{
-			sizer->Remove(pos->second);
+			sizer->Detach(pos->second);
 			sizer->Layout();
 			delete pos->second;
 			itemMap.erase(pos++);
