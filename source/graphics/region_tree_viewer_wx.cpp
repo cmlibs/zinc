@@ -67,6 +67,7 @@ extern "C" {
 #include "choose/choose_enumerator_class.hpp"
 #include "choose/choose_list_class.hpp"
 #include "choose/text_choose_from_fe_element.hpp"
+#include "dialog/tessellation_dialog.hpp"
 #include "transformation/transformation_editor_wx.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
@@ -590,7 +591,7 @@ class wxRegionTreeViewer : public wxFrame
 	DEFINE_ENUMERATOR_TYPE_CLASS(Render_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Render_type)>
 	*render_type_chooser;
-
+	wxWindowID tessellationWindowID;
 public:
 
   wxRegionTreeViewer(Region_tree_viewer *region_tree_viewer) :
@@ -638,6 +639,7 @@ public:
 		 (this, &wxRegionTreeViewer::selected_material_callback);
 	selected_material_chooser->set_callback(selected_material_callback);
 	selected_material_chooser_panel->Fit();
+	tessellationWindowID = 0;
 	wxPanel *graphic_type_chooser_panel =
 		 XRCCTRL(*this, "TypeFormChooser", wxPanel);
 	graphic_type_chooser = 
@@ -4692,7 +4694,24 @@ void CloseRegionTreeViewer(wxCloseEvent &event)
 	 LEAVE;
 }
 
-  DECLARE_DYNAMIC_CLASS(wxRegionTreeViewer);
+void EditTessellation(wxCommandEvent &event)
+{
+	USE_PARAMETER(event);
+	wxWindow *window = FindWindowById(tessellationWindowID, this);
+	if (!window)
+	{
+		TessellationDialog *dlg = new TessellationDialog(
+			region_tree_viewer->graphics_module, this, wxID_ANY);
+		tessellationWindowID = dlg->GetId();
+		dlg->Show();
+	}
+	else
+	{
+		window->Raise();
+	}
+}
+
+DECLARE_DYNAMIC_CLASS(wxRegionTreeViewer);
   DECLARE_EVENT_TABLE();
 };
 
@@ -4746,6 +4765,7 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_TREE_SEL_CHANGED(wxID_ANY, wxRegionTreeViewer::TreeControlSelectionChanged)
 	EVT_CUSTOM(wxEVT_TREE_IMAGE_CLICK_EVENT, wxID_ANY, wxRegionTreeViewer::TreeControlImageClicked)
 	EVT_TREE_ITEM_MENU(CmguiTree_Ctrl, wxRegionTreeViewer::OnItemMenu)
+	EVT_BUTTON(XRCID("TessellationButton"),wxRegionTreeViewer::EditTessellation)
 	EVT_MENU(CmguiTree_MenuItem1, wxRegionTreeViewer::OnMenuSelectionOn)
 	EVT_MENU(CmguiTree_MenuItem2, wxRegionTreeViewer::OnMenuSelectionOff)
 	EVT_MENU(AddMenuItemNode, wxRegionTreeViewer::AddGraphicItemFromMenu)

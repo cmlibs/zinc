@@ -656,6 +656,60 @@ int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
 	return return_code;
 }
 
+int string_to_divisions(const char *input, int **values_in, int *size_in)
+{
+	int return_code = 1;
+	int *values = NULL;
+	const char *str = input;
+	int size = 0;
+	while (input)
+	{
+		char *end = NULL;
+		int value = (int)strtol(str, &end, /*base*/10);
+		if (value <= 0)
+		{
+			display_message(ERROR_MESSAGE,
+					"Non-positive or missing integer in string: %s", input);
+			return_code = 0;
+			break;
+		}
+		while (*end == ' ')
+		{
+			end++;
+		}
+		size++;
+		int *temp;
+		if (!REALLOCATE(temp, values, int, size))
+		{
+			return_code = 0;
+			break;
+		}
+		values = temp;
+		values[size - 1] = value;
+		if (*end == '\0')
+		{
+			break;
+		}
+		if (*end == '*')
+		{
+			end++;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+					"Invalid character \'%c' where * expected", *end);
+			return_code = 0;
+			break;
+		}
+		str = end;
+	}
+	*size_in = size;
+	*values_in = values;
+
+	return return_code;
+}
+
+
 namespace {
 
 /***************************************************************************//**
@@ -682,51 +736,15 @@ int set_divisions(struct Parse_state *state,
 			if (strcmp(PARSER_HELP_STRING, current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				const char *str = current_token;
 				int size = 0;
 				int *values = NULL;
-				while (current_token)
+				if (current_token)
 				{
-					char *end = NULL;
-					int value = (int)strtol(str, &end, /*base*/10);
-					if (value <= 0)
-					{
-						display_message(ERROR_MESSAGE,
-							"Non-positive or missing integer in string: %s", current_token);
-						display_parse_state_location(state);
-						return_code = 0;
-						break;
-					}
-					while (*end == ' ')
-					{
-						end++;
-					}
-					size++;
-					int *temp;
-					if (!REALLOCATE(temp, values, int, size))
-					{
-						return_code = 0;
-						break;
-					}
-					values = temp;
-					values[size - 1] = value;
-					if (*end == '\0')
-					{
-						break;
-					}
-					if (*end == '*')
-					{
-						end++;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Invalid character \'%c' where * expected", *end);
-						display_parse_state_location(state);
-						return_code = 0;
-						break;
-					}
-					str = end;
+					return_code = string_to_divisions(current_token, &values, &size);
+				}
+				if (!return_code)
+				{
+					display_parse_state_location(state);
 				}
 				if (return_code)
 				{

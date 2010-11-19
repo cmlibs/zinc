@@ -99,6 +99,16 @@ int Cmiss_tessellation_has_fixed_divisions(Cmiss_tessellation_id tessellation,
 	int dimensions, int *fixed_divisions);
 
 /***************************************************************************//**
+ * Function to process the string to be passed into an tessellation object.
+ *
+ * @param input  string to be passed into the function..
+ * @param values_in  pointer of an array of int in which values will be written
+ * 	 into.
+ * @param size_in  pointer to an int which value will be assigned in this function.
+ */
+int string_to_divisions(const char *input, int **values_in, int *size_in);
+
+/***************************************************************************//**
  * Adds a token to the option_table which if matched reads the following string
  * as a series of positive integers separated by *, mainly used for element
  * discretization.
