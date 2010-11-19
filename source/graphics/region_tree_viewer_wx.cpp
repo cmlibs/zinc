@@ -4871,8 +4871,10 @@ void Region_tree_viewer_set_active_rendition(
 		if (region_tree_viewer->transformation_callback_flag)
 		{
 			region_tree_viewer->transformation_editor->set_rendition(NULL);
-			if (Cmiss_rendition_remove_transformation_callback(region_tree_viewer->rendition,
-					Region_tree_viewer_wx_transformation_change, (void *)region_tree_viewer))
+			if (Cmiss_rendition_remove_transformation_callback(
+					region_tree_viewer->rendition,
+					Region_tree_viewer_wx_transformation_change,
+					(void *) region_tree_viewer))
 			{
 				region_tree_viewer->transformation_callback_flag = 0;
 			}
@@ -4880,112 +4882,134 @@ void Region_tree_viewer_set_active_rendition(
 		if (region_tree_viewer->rendition_callback_flag)
 		{
 			if (Cmiss_rendition_remove_callback(region_tree_viewer->rendition,
-					Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
+					Region_tree_viewer_wx_rendition_change, (void *) region_tree_viewer))
 			{
 				region_tree_viewer->rendition_callback_flag = 0;
 			}
 		}
 	}
-	 if (region_tree_viewer && rendition)
-	 {
-		 int previous_selection;
-		 if (region_tree_viewer->edit_rendition && region_tree_viewer->current_graphic)
-		 {
-			 previous_selection = Cmiss_rendition_get_graphic_position(
-				 region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic);
-		 }
-		 else
-		 {
-			 previous_selection = 0;
-		 }
-		 REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition, rendition);
-		 Cmiss_rendition *edit_rendition;
-		 if (region_tree_viewer->rendition)
-		 {
-			 edit_rendition =
-				 create_editor_copy_Cmiss_rendition(region_tree_viewer->rendition);
-			 if (!edit_rendition)
-			 {
-				 display_message(ERROR_MESSAGE,
-					 "Rendition_editor_set_rendition.  "
-					 "Could not copy rendition");
-			 }
-		 }
-		 else
-		 {
-			 edit_rendition = (struct Cmiss_rendition *)NULL;
-		 }
-		 REACCESS(Cmiss_rendition)(&(region_tree_viewer->edit_rendition),
-			 edit_rendition);
-		 DEACCESS(Cmiss_rendition)(&edit_rendition);
-		 if (previous_selection == 0)
-		 {
-			 previous_selection = 1;
-		 }
-		 if (!region_tree_viewer->graphiclistbox)
-		 {
-			 region_tree_viewer->graphiclistbox = XRCCTRL(
-				 *region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
-		 }
-		 region_tree_viewer->graphiclistbox->SetSelection(wxNOT_FOUND);
-		 region_tree_viewer->graphiclistbox->Clear();
-		 if (region_tree_viewer->edit_rendition)
-		 {
-			 for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
-				 Region_tree_viewer_add_graphic, (void *)region_tree_viewer);
-			 int num = Cmiss_rendition_get_number_of_graphic(
-				 region_tree_viewer->edit_rendition);
-			 Cmiss_graphic *temp_graphic = NULL;
-			 if (num > previous_selection) 
-			 {
-				 num = previous_selection;
-			 }
-			 temp_graphic = Cmiss_rendition_get_graphic_at_position(
-				 region_tree_viewer->edit_rendition, num);
-			 region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(
-				 temp_graphic);
-			 region_tree_viewer->graphiclistbox->SetSelection(num-1);
-			 REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic, temp_graphic);
-			 if (temp_graphic)
-				 Cmiss_graphic_destroy(&temp_graphic);
-			 if (region_tree_viewer->current_graphic)
-			 {
-				 region_tree_viewer->current_graphic_type = Cmiss_graphic_get_graphic_type(
-					 region_tree_viewer->current_graphic);
-			 }
-			 region_tree_viewer->lowersplitter->Enable();
-			 region_tree_viewer->lowersplitter->Show();
-			 region_tree_viewer->field_manager = Cmiss_region_get_Computed_field_manager(
-				 Cmiss_rendition_get_region(
-					 region_tree_viewer->edit_rendition));
-		 }
-		 if (region_tree_viewer->rendition)
-		 {
-			 gtMatrix transformation_matrix;
-			 Cmiss_rendition_get_transformation(region_tree_viewer->rendition,
-				 &transformation_matrix);
-			 region_tree_viewer->transformation_editor->set_rendition(
-				 region_tree_viewer->rendition);
-			 region_tree_viewer->transformation_editor->set_transformation(
-				 &transformation_matrix);
-			 if (Cmiss_rendition_add_transformation_callback(region_tree_viewer->rendition,
-					 Region_tree_viewer_wx_transformation_change, (void *)region_tree_viewer))
-			 {
-				 region_tree_viewer->transformation_callback_flag = 1;
-			 }
-			 if (Cmiss_rendition_add_callback(region_tree_viewer->rendition,
-					 Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
-			 {
-				 region_tree_viewer->rendition_callback_flag = 1;
-			 }
-		 }
-	 }
-	 else if (region_tree_viewer)
-	 {
-		 REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition, NULL);
-		 REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, NULL);
-		 REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic,NULL);
-	 }
+	if (region_tree_viewer && rendition)
+	{
+		int previous_selection;
+		if (region_tree_viewer->edit_rendition
+				&& region_tree_viewer->current_graphic)
+		{
+			previous_selection = Cmiss_rendition_get_graphic_position(
+					region_tree_viewer->edit_rendition,
+					region_tree_viewer->current_graphic);
+		}
+		else
+		{
+			previous_selection = 0;
+		}
+		REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition, rendition);
+		Cmiss_rendition *edit_rendition;
+		if (region_tree_viewer->rendition)
+		{
+			edit_rendition = create_editor_copy_Cmiss_rendition(
+					region_tree_viewer->rendition);
+			if (!edit_rendition)
+			{
+				display_message(ERROR_MESSAGE, "Rendition_editor_set_rendition.  "
+					"Could not copy rendition");
+			}
+		}
+		else
+		{
+			edit_rendition = (struct Cmiss_rendition *) NULL;
+		}
+		REACCESS(Cmiss_rendition)(&(region_tree_viewer->edit_rendition),
+				edit_rendition);
+		DEACCESS(Cmiss_rendition)(&edit_rendition);
+		if (previous_selection == 0)
+		{
+			previous_selection = 1;
+		}
+		if (!region_tree_viewer->graphiclistbox)
+		{
+			region_tree_viewer->graphiclistbox
+					= XRCCTRL(
+							*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
+		}
+		region_tree_viewer->graphiclistbox->SetSelection(wxNOT_FOUND);
+		region_tree_viewer->graphiclistbox->Clear();
+		if (region_tree_viewer->edit_rendition)
+		{
+			if (Cmiss_rendition_get_number_of_graphic(
+					region_tree_viewer->edit_rendition) > 0)
+			{
+				for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
+						Region_tree_viewer_add_graphic, (void *) region_tree_viewer);
+				int num = Cmiss_rendition_get_number_of_graphic(
+						region_tree_viewer->edit_rendition);
+				Cmiss_graphic *temp_graphic = NULL;
+				if (num > previous_selection)
+				{
+					num = previous_selection;
+				}
+				temp_graphic = Cmiss_rendition_get_graphic_at_position(
+						region_tree_viewer->edit_rendition, num);
+				region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(
+						temp_graphic);
+				region_tree_viewer->graphiclistbox->SetSelection(num - 1);
+				REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic,
+						temp_graphic);
+				if (temp_graphic)
+					Cmiss_graphic_destroy(&temp_graphic);
+				if (region_tree_viewer->current_graphic)
+				{
+					region_tree_viewer->current_graphic_type
+							= Cmiss_graphic_get_graphic_type(
+									region_tree_viewer->current_graphic);
+				}
+				region_tree_viewer->lowersplitter->Enable();
+				region_tree_viewer->lowersplitter->Show();
+			}
+			else
+			{
+				if (region_tree_viewer->current_graphic)
+				{
+					DEACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic);
+				}
+				region_tree_viewer->lowersplitter->Enable();
+				region_tree_viewer->lowersplitter->Show();
+				region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(
+						NULL);
+				region_tree_viewer->current_graphic_type = CMISS_GRAPHIC_LINES;
+			}
+			region_tree_viewer->field_manager
+					= Cmiss_region_get_Computed_field_manager(Cmiss_rendition_get_region(
+							region_tree_viewer->edit_rendition));
+		}
+		if (region_tree_viewer->rendition)
+		{
+			gtMatrix transformation_matrix;
+			Cmiss_rendition_get_transformation(region_tree_viewer->rendition,
+					&transformation_matrix);
+			region_tree_viewer->transformation_editor->set_rendition(
+					region_tree_viewer->rendition);
+			region_tree_viewer->transformation_editor->set_transformation(
+					&transformation_matrix);
+			if (Cmiss_rendition_add_transformation_callback(
+					region_tree_viewer->rendition,
+					Region_tree_viewer_wx_transformation_change,
+					(void *) region_tree_viewer))
+			{
+				region_tree_viewer->transformation_callback_flag = 1;
+			}
+			if (Cmiss_rendition_add_callback(region_tree_viewer->rendition,
+					Region_tree_viewer_wx_rendition_change, (void *) region_tree_viewer))
+			{
+				region_tree_viewer->rendition_callback_flag = 1;
+			}
+		}
+	}
+	else if (region_tree_viewer)
+	{
+		REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition, NULL);
+		REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, NULL);
+		REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic, NULL);
+	}
 }
 
 /***************************************************************************//**
