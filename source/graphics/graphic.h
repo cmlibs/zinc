@@ -202,7 +202,6 @@ struct Rendition_command_data
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
-	struct MANAGER(Texture) *texture_manager;
 }; /* struct Rendition_command_data */
 
 struct Cmiss_graphic_Computed_field_change_data

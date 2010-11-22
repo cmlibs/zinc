@@ -50,8 +50,6 @@ The data structures used for representing textures.
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "api/cmiss_texture.h"
 #include "general/enumerator.h"
-#include "general/list.h"
-#include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 
@@ -192,10 +190,6 @@ DESCRIPTION :
 The contents of struct Texture are private.
 ==============================================================================*/
 
-DECLARE_LIST_TYPES(Texture);
-
-DECLARE_MANAGER_TYPES(Texture);
-
 struct Texture_tiling
 /*******************************************************************************
 LAST MODIFIED : 19 November 2007
@@ -278,24 +272,7 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(Texture);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Texture);
 
-PROTOTYPE_LIST_FUNCTIONS(Texture);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture,name,const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Texture,name,const char *);
-
-PROTOTYPE_MANAGER_FUNCTIONS(Texture);
-
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,const char *);
-
-int Texture_notify_change(struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 11 December 2007
-
-DESCRIPTION :
-Notify the rest of the program that changes have been made to the <texture>.
-Probably need to establish a consistent policy for manager messages.
-==============================================================================*/
+int Texture_copy_without_identifier(struct Texture *source, struct Texture *destination);
 
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage);
@@ -792,15 +769,6 @@ LAST MODIFIED : 14 September 2005
 DESCRIPTION :
 Sets the texture coordinate scaling into the vertex program environment for use
 by vertex programs.
-==============================================================================*/
-
-int set_Texture(struct Parse_state *state,void *texture_address_void,
-	void *texture_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 5 September 1996
-
-DESCRIPTION :
-Modifier function to set the texture from a command.
 ==============================================================================*/
 
 int Texture_set_property(struct Texture *texture,

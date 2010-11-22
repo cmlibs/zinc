@@ -644,16 +644,6 @@ DESCRIPTION :
 Converts a finite element into a surface.
 ==============================================================================*/
 
-int set_Displacement_map(struct Parse_state *state,
-	void *displacement_map_void,void *texture_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 27 April 1998
-
-DESCRIPTION :
-A modifier function for setting the displacement map.
-???RC Move to texture? volume_texture?
-==============================================================================*/
-
 int element_to_glyph_set(struct FE_element *element,
 	void *new_element_to_glyph_set_data_void);
 /*******************************************************************************

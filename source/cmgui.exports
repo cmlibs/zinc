@@ -138,7 +138,6 @@ Cmiss_field_image_read
 Cmiss_field_image_write
 Cmiss_field_image_read_file
 Cmiss_field_image_write_file
-Cmiss_field_image_get_texture
 Cmiss_field_image_storage_information_create
 Cmiss_field_image_storage_information_add_file_name
 Cmiss_field_image_storage_information_set_memory_block
@@ -208,9 +207,6 @@ Cmiss_field_evaluate_in_element
 Cmiss_field_module_create_window_projection
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
-Cmiss_texture_manager_get_texture
-Cmiss_texture_manager_create_texture_from_file
-Cmiss_texture_manager_create_texture_from_file_with_parameters
 Cmiss_texture_get_combine_mode
 Cmiss_texture_set_combine_mode
 Cmiss_texture_get_compression_mode

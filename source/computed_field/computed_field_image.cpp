@@ -2113,7 +2113,6 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 				"Unable to find element:xi for %d out of %d pixels",
 				find_element_xi_error_count, total_number_of_pixels);
 		}
-		Texture_notify_change(texture);
 	}
 	else
 	{

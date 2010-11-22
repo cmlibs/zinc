@@ -394,15 +394,6 @@ int Graphical_material_set_third_image_field(struct Graphical_material *material
 int Graphical_material_set_fourth_image_field(struct Graphical_material *material,
 	struct Computed_field *field);
 
-int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
-	void *texture_list_void);
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Returns true if the <material> uses a texture in the <texture_list>.
-==============================================================================*/
-
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void);
 /*******************************************************************************

@@ -262,15 +262,6 @@ DESCRIPTION :
 Gets the user_interface for this <command_data>
 ==============================================================================*/
 
-struct MANAGER(Cmiss_texture) *Cmiss_command_data_get_texture_manager(
-	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 7 November 2006
-
-DESCRIPTION :
-Returns the texture manager from the <command_data>.
-==============================================================================*/
-
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************

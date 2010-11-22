@@ -347,7 +347,7 @@ LAST MODIFIED : 19 September 2002
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
 Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager, light_model_manager, scene_manager or texture_manager
+If any of light_manager, light_model_manager or scene_manager.
 are supplied, the scene_viewer will automatically redraw in response to changes
 of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.

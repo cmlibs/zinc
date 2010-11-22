@@ -67,7 +67,6 @@ extern "C" {
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
-#include "general/manager_private.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -192,10 +191,6 @@ The properties of a graphical texture.
 	struct X3d_movie *movie;
 	struct Graphics_buffer *graphics_buffer;
 
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Texture) *texture_manager;
-	int manager_change_status;
-
 #if defined (OPENGL_API)
 	GLuint display_list;
 	GLuint texture_id;
@@ -214,11 +209,6 @@ The properties of a graphical texture.
 
 	int access_count;
 }; /* struct Texture */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(Texture);
-
-FULL_DECLARE_MANAGER_TYPE(Texture);
-
 /*
 Module functions
 ----------------
@@ -435,10 +425,6 @@ DESCRIPTION :
 } /* DESTROY(Texture_tiling) */
 
 DECLARE_OBJECT_FUNCTIONS(Texture_tiling)
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,const char *,strcmp)
-
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Texture)
 
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage)
@@ -3537,8 +3523,6 @@ of all textures.
 			(texture->combine_colour).blue=0.;
 			texture->combine_alpha=0.;
 			texture->mipmap_level_of_detail_bias=0.;
-			texture->texture_manager = (struct MANAGER(Texture) *)NULL;
-			texture->manager_change_status = MANAGER_CHANGE_NONE(Texture);
 			texture->movie = (struct X3d_movie *)NULL;
 			texture->graphics_buffer = (struct Graphics_buffer *)NULL;
 #if defined (OPENGL_API)
@@ -3678,74 +3662,13 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 DECLARE_OBJECT_FUNCTIONS(Texture)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Texture)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Texture)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture,name,const char *,strcmp)
-
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Texture,name)
-
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Texture,name)
-{
-	char *name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Texture,name));
-	/* check arguments */
-	if (source&&destination)
-	{
-		if (source->name)
-		{
-			if (ALLOCATE(name,char,strlen(source->name)+1))
-			{
-				strcpy(name,source->name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-	"MANAGER_COPY_WITH_IDENTIFIER(Texture,name).  Insufficient memory for name");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			if (0 != (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)(destination,source)))
-			{
-				/* copy values */
-				DEALLOCATE(destination->name);
-				destination->name=name;
-			}
-			else
-			{
-				DEALLOCATE(name);
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Texture,name).  Could not copy without identifier");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITH_IDENTIFIER(Texture,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Texture,name) */
-
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
+int Texture_copy_without_identifier(struct Texture *source, struct Texture *destination)
 {
 	char *image_file_name;
 	int image_size, number_of_components, return_code;
 	unsigned char *destination_image;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name));
+	ENTER(Texture_copy_without_identifier);
 	if (source && destination)
 	{
 		if (source->image_file_name)
@@ -3758,7 +3681,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name).  "
+					"Texture_copy_without_identifier.  "
 					"Insufficient memory for image file name");
 				return_code=0;
 			}
@@ -3796,7 +3719,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 					}
 #else /* defined (SGI_DIGITAL_MEDIA) */
 					display_message(ERROR_MESSAGE,
-						"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)."
+						"Texture_copy_without_identifier."
 						"  Digital Media unavailable but source has type DM_BUFFER or PBUFFER");
 					return_code=0;
 #endif /* defined (SGI_DIGITAL_MEDIA) */
@@ -3814,7 +3737,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name).  "
+							"Texture_copy_without_identifier.  "
 							"Insufficient memory for image");
 						if (image_file_name)
 						{
@@ -3882,95 +3805,13 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name).  Invalid argument(s)");
+			"Texture_copy_without_identifier. Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name) */
-
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,const char *)
-{
-	char *destination_name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_IDENTIFIER(Texture,name));
-	/* check arguments */
-	if (name&&destination)
-	{
-		if (name)
-		{
-			if (ALLOCATE(destination_name,char,strlen(name)+1))
-			{
-				strcpy(destination_name,name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Texture,name).  Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			/* copy name */
-			DEALLOCATE(destination->name);
-			destination->name=destination_name;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Texture,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Texture,name) */
-
-DECLARE_MANAGER_FUNCTIONS(Texture,texture_manager)
-
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture,texture_manager)
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Texture,name,const char *,texture_manager)
-
-int Texture_notify_change(struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 13 February 1998
-
-DESCRIPTION :
-Returns the alpha value used for combining the texture.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Texture_notify_change);
-	if (texture)
-	{
-		/* display list needs to be compiled again */
-		texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
-		return_code = MANAGED_OBJECT_CHANGE(Texture)(texture,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Texture_notify_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_notify_change */
+} /* Texture_copy_without_identifier */
 
 int Texture_get_combine_alpha(struct Texture *texture,float *alpha)
 /*******************************************************************************
@@ -4015,7 +3856,6 @@ Sets the alpha value used for combining the texture.
 		if (alpha != texture->combine_alpha)
 		{
 			texture->combine_alpha=alpha;
-			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -4075,7 +3915,6 @@ Sets the colour to be combined with the texture in blending combine mode.
 		texture->combine_colour.red=colour->red;
 		texture->combine_colour.green=colour->green;
 		texture->combine_colour.blue=colour->blue;
-		Texture_notify_change(texture);
 		return_code=1;
 	}
 	else
@@ -4177,7 +4016,6 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 			if (return_code)
 			{
 				texture->combine_mode = combine_mode;
-				Texture_notify_change(texture);
 			}
 		}
 	}
@@ -4223,7 +4061,6 @@ int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,float bias)
 		if (bias != texture->mipmap_level_of_detail_bias)
 		{
 			texture->mipmap_level_of_detail_bias=bias;
-			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -4281,7 +4118,6 @@ Sets how the texture is compressed.
 		if (compression_mode != texture->compression_mode)
 		{
 			texture->compression_mode = compression_mode;	
-			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -4350,7 +4186,6 @@ Sets the texture filter: linear or nearest.
 			if (filter_mode != texture->filter_mode)
 			{
 				texture->filter_mode = filter_mode;
-				Texture_notify_change(texture);
 			}
 			return_code=1;
 		}
@@ -4425,7 +4260,6 @@ Sets the texture filter: linear or nearest.
 		if (resize_filter_mode != texture->resize_filter_mode)
 		{
 			texture->resize_filter_mode = resize_filter_mode;
-			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -7460,106 +7294,6 @@ by vertex programs.
 
 	return (return_code);
 } /* Texture_execute_vertex_program_environment */
-
-int set_Texture(struct Parse_state *state,void *texture_address_void,
-	void *texture_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 22 June 1999
-
-DESCRIPTION :
-Modifier function to set the texture from a command.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct MANAGER(Texture) *texture_manager;
-	struct Texture *temp_texture,**texture_address;
-
-	ENTER(set_Texture);
-	if (state)
-	{
-		current_token=state->current_token;
-		if (current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				if ((texture_address=(struct Texture **)texture_address_void)&&
-					(texture_manager=(struct MANAGER(Texture) *)texture_manager_void))
-				{
-					if (fuzzy_string_compare(current_token,"NONE"))
-					{
-						if (*texture_address)
-						{
-							DEACCESS(Texture)(texture_address);
-							*texture_address=(struct Texture *)NULL;
-						}
-						return_code=1;
-					}
-					else
-					{
-						temp_texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
-							current_token,texture_manager);
-						if (temp_texture)
-						{
-							if (*texture_address!=temp_texture)
-							{
-								DEACCESS(Texture)(texture_address);
-								*texture_address=ACCESS(Texture)(temp_texture);
-							}
-							return_code=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"set_Texture.  Texture does not exist");
-							return_code=0;
-						}
-					}
-					shift_Parse_state(state,1);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"set_Texture.  Invalid argument(s)");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE," TEXTURE_NAME|none");
-				texture_address=(struct Texture **)texture_address_void;
-				if (texture_address)
-				{
-					temp_texture= *texture_address;
-					if (temp_texture)
-					{
-						display_message(INFORMATION_MESSAGE,"[%s]",temp_texture->name);
-					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE,"[none]");
-					}
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing texture name");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture.  Missing state");
-		return_code=0;
-	}
-
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture */
 
 int Texture_set_property(struct Texture *texture,
 	const char *property, const char *value)

@@ -66,7 +66,6 @@ struct Cmiss_graphics_module;
  * @param light_manager  Light Manager
  * @param spectrum_manager  Spectrum manager
  * @param default_spectrum  Default spectrum
- * @param texture_manager  Texture manager
  * @return  If successfully constructed, return the Cmiss_rendition
  */
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);

@@ -5144,35 +5144,6 @@ int Graphical_material_set_fourth_image_field(struct Graphical_material *materia
 	return (return_code);
 }
 
-int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
-	void *texture_list_void)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2001
-
-DESCRIPTION :
-Returns true if the <material> uses a texture in the <texture_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(Texture) *texture_list;
-
-	ENTER(Graphical_material_uses_texture);
-	if (material && (texture_list = (struct LIST(Texture) *)texture_list_void))
-	{
-		return_code = material->image_texture.texture &&
-			IS_OBJECT_IN_LIST(Texture)(material->image_texture.texture, texture_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material_uses_texture.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_material_uses_texture */
-
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void)
 /*******************************************************************************

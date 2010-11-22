@@ -4234,8 +4234,7 @@ Modifies the properties of a texture.
 									texture))
 							{
 								texture_copy = CREATE(Texture)("temporary");
-								MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)
-									(texture_copy, texture);
+								Texture_copy_without_identifier(texture, texture_copy);
 							}
 							else
 							{
@@ -4256,8 +4255,7 @@ Modifies the properties of a texture.
 
 							if (texture_copy != texture)
 							{
-								MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)
-									(texture, texture_copy);
+								Texture_copy_without_identifier(texture_copy, texture);
 								DESTROY(Texture)(&texture_copy);
 							}
 						}
