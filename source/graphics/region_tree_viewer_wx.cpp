@@ -496,7 +496,7 @@ class wxRegionTreeViewer : public wxFrame
 		*discretizationtext, *circlediscretizationtext,*densityfieldtext,*xitext, 
 		*streamtypetext, *streamlengthtext, *streamwidthtext, *streamvectortext, 
 		*linewidthtext, *streamlinedatatypetext, *spectrumtext, *rendertypetext, *fonttext;
-	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton;
+	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton, *tessellationbutton;
 	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,
 		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
 		*labelcheckbox,*visibility_field_checkbox,*nativediscretizationfieldcheckbox,
@@ -716,6 +716,7 @@ public:
 	render_type_chooser = NULL;
 	seed_element_chooser = NULL;
 	graphicalitemschecklist = NULL;
+	tessellationbutton = NULL;
 
 	XRCCTRL(*this,"NameTextField", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxRegionTreeViewer::GraphicEditorNameText),
@@ -3888,7 +3889,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 
 		tessellationtext=XRCCTRL(*this,"TessellationStaticText",wxStaticText);
 		tessellation_chooser_panel=XRCCTRL(*this, "TessellationChooserPanel",wxPanel);
-
+		tessellationbutton=XRCCTRL(*this,"TessellationButton",wxButton);
 		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
 			CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
 		{
@@ -3896,6 +3897,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 			tessellation_chooser->set_object(tessellation);
 			tessellation_chooser_panel->Show();
 			tessellationtext->Show();
+			tessellationbutton->Show();
 			if (tessellation)
 			{
 				DEACCESS(Cmiss_tessellation)(&tessellation);
@@ -3905,6 +3907,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		{
 			tessellation_chooser_panel->Hide();
 			tessellationtext->Hide();
+			tessellationbutton->Show(false);
 		}
 
 		if (CMISS_GRAPHIC_CYLINDERS==region_tree_viewer->current_graphic_type)
