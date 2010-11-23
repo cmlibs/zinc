@@ -108,6 +108,50 @@ enum Cmiss_field_image_storage_compression
 	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_ZIP
 };
 
+/***************************************************************************//**
+ * Describes the blending of the texture with the texture constant colour and
+ * the underlying fragment colour
+ */
+enum Cmiss_field_image_combine_mode
+{
+	CMISS_FIELD_IMAGE_COMBINE_BLEND = 0,
+	CMISS_FIELD_IMAGE_COMBINE_DECAL = 1,
+	CMISS_FIELD_IMAGE_COMBINE_MODULATE = 2,
+	CMISS_FIELD_IMAGE_COMBINE_ADD = 3,
+	CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED = 4,  /*!< Add the value and subtract 0.5 so the texture value
+								 effectively ranges from -0.5 to 0.5 */
+	CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 5,  /*!< Multiply and then scale by 4, so that we can
+										 scale down or up */
+	CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 6,  /*!< Same as blend with a 4 * scaling */
+	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT = 7,
+	CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 8,
+	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 9,
+	CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 10,
+	CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 11
+};
+
+/***************************************************************************//**
+ * Whether the texture is compressed.  Could add specific compression formats that
+ * are explictly requested from the hardware.
+ */
+enum Cmiss_field_image_compression_mode
+{
+	CMISS_FIELD_IMAGE_COMPRESSION_UNCOMPRESSED = 0,
+	CMISS_FIELD_IMAGE_COMPRESSION_COMPRESSED_UNSPECIFIED = 1/*!< Allow the hardware to choose the compression */
+};
+
+/***************************************************************************//**
+ * Specfiy how the graphics hardware rasterises the texture onto the screen.
+ */
+enum Cmiss_field_image_filter_mode
+{
+	CMISS_FIELD_IMAGE_FILTER_NEAREST = 0,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR = 1,
+	CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 2,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 3,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 4
+};
+
 /*****************************************************************************//**
  * Optional information used to describe the binary data supplied with
  * Cmiss_field_image_set_formatted_image_data and used to specify how to format
@@ -218,12 +262,66 @@ int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
 	const char *file_name);
 
 /*****************************************************************************//**
- * A get function that gets the internal cmiss_texture from the image field.
- * 
- * @param image_field  The image field to get the texture from.
- * @return Returns the handle to cmiss texture.
+ * Returns how the image is combined with the material: blend, decal or modulate.
+ *
+ * @param  image_field  The image field.
+ * @return  Returns enum describing how the image is combined with the material.
  */
-Cmiss_texture_id Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
+enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
+   Cmiss_field_image_id image_field);
+
+/*****************************************************************************//**
+ * Sets how the image is combined with the material: blend, decal or modulate.
+ *
+ * @param image_field  The image field.
+ * @param combine_mode  Enumerator describing how the image is combined with the
+ * 		material.
+ * @return  Returns 1 if successfully set the combine mode.
+ */
+int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_combine_mode combine_mode);
+
+/*****************************************************************************//**
+ * Returns how the image is stored in graphics memory.
+ *
+ * @param image_field  The image field.
+ * @return  Returns enum describing how the image is stored in graphics memory.
+ */
+enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
+   Cmiss_field_image_id image_field);
+
+/*****************************************************************************//**
+ * Indicate to the graphics hardware how you would like the texture stored in
+ * graphics memory.
+ *
+ * @param image_field  The image field.
+ * @param compression_mode  Enumerator describing how the image is combined with the
+ * 		material.
+ * @return  Returns 1 if successfully set the compression mode.
+ */
+int Cmiss_field_image_set_compression_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_compression_mode compression_mode);
+
+/*****************************************************************************//**
+ * Returns how the image is rasterised onto the screen.
+ *
+ * @param image_field  The image field.
+ * @return  Returns enum describing how the image is rasterised onto the screen.
+ */
+enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
+   Cmiss_field_image_id image_field);
+
+/*****************************************************************************//**
+ * Indicate to the graphics hardware how you would like the image rasterised
+ * onto the screen.
+ *
+ * @param image_field  The image field.
+ * @param filter_mode  Enumerator describing how the graphics hardware rasterises
+ *   the texture onto the screen.
+ * @return  Returns 1 if successfully set the filter_mode.
+ */
+int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_filter_mode filter_mode);
 
 /*****************************************************************************//**
  * Creates a Cmiss_field_image_storage_information object.

@@ -316,18 +316,6 @@ DESCRIPTION :
 Returns the spectrum member of the material.
 ==============================================================================*/
 
-struct Computed_field *Graphical_material_get_image_field(
-	struct Graphical_material *material);
-
-struct Computed_field *Graphical_material_get_second_image_field(
-	struct Graphical_material *material);
-
-struct Computed_field *Graphical_material_get_third_image_field(
-	struct Graphical_material *material);
-
-struct Computed_field *Graphical_material_get_fourth_image_field(
-	struct Graphical_material *material);
-
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material);
 /*******************************************************************************
@@ -381,18 +369,6 @@ LAST MODIFIED : 5 December 2007
 DESCRIPTION :
 Returns the flag set for per_pixel_lighting.
 ==============================================================================*/
-
-int Graphical_material_set_image_field(struct Graphical_material *material,
-	struct Computed_field *field);
-
-int Graphical_material_set_second_image_field(struct Graphical_material *material,
-	struct Computed_field *field);
-
-int Graphical_material_set_third_image_field(struct Graphical_material *material,
-	struct Computed_field *field);
-
-int Graphical_material_set_fourth_image_field(struct Graphical_material *material,
-	struct Computed_field *field);
 
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void);

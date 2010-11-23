@@ -62,6 +62,29 @@ typedef struct Graphical_material * Cmiss_material_id;
 #define CMISS_MATERIAL_ID_DEFINED
 #endif /* CMISS_MATERIAL_ID_DEFINED */
 
+#ifndef CMISS_FIELD_ID_DEFINED
+#define Cmiss_field Computed_field
+	struct Cmiss_field;
+	typedef struct Cmiss_field *Cmiss_field_id;
+	#define CMISS_FIELD_ID_DEFINED
+#endif /* CMISS_FIELD_ID_DEFINED */
+
+/***************************************************************************//**
+ * Enumerator to identify different image fields used in Cmiss_material.
+ */
+enum Cmiss_material_image_field_identifier
+{
+	CMISS_MATERIAL_INVALID_FIELD = 0,
+	CMISS_MATERIAL_FIRST_IMAGE_FIELD = 1, /*!<Used as the first texture for C
+								 miss_material*/
+	CMISS_MATERIAL_SECOND_IMAGE_FIELD = 2, /*!<Used as the second texture for C
+								 miss_material*/
+	CMISS_MATERIAL_THIRD_IMAGE_FIELD = 3, /*!<Used as the third texture for C
+								 miss_material*/
+	CMISS_MATERIAL_FOURTH_IMAGE_FIELD = 4 /*!<Used as the fourth texture for C
+								 miss_material*/
+};
+
 /***************************************************************************//**
  * Set/change name for <material>.
  *
@@ -164,16 +187,6 @@ int Cmiss_material_set_specular(
 	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
- * Set the texture of the material.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param texture  Handle to cmiss texture to be used for this material.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_material_set_texture(
-	Cmiss_material_id material, Cmiss_texture_id texture);
-
-/***************************************************************************//**
 * Sets the persistent property flag of the material;.
 * Default setting persistent=0 means the material is destroyed when the number of
 * external references to it drops to zero.
@@ -235,4 +248,34 @@ int Cmiss_material_destroy(Cmiss_material_id *material);
  * @return  allocated string containing material name, otherwise NULL.
  */
 char *Cmiss_material_get_name(Cmiss_material_id material);
+
+/***************************************************************************//**
+ * Set a cmiss_field containing an image for a Cmiss_material.
+ * This image will be displayed with the material as the corresponding texture.
+ * This function read in a general field but it may not work properly if
+ * the field passing in is not an image field.
+ *
+ * @param material  handle to the cmiss material.
+ * @param field  handle to a general cmiss field.
+ * @param identifier  enumerator to identify which image field to be set in
+ * 		material.
+ * @return  1 if successfully set an image field, otherwise 0.
+ */
+int Cmiss_material_set_image_field(Cmiss_material_id material,
+		enum Cmiss_material_image_field_identifier identifier, Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Get the cmiss_field containing an image from a Cmiss_material which is used
+ * as a texture when displaying. The target image field is specified by the
+ * identifier.
+ *
+ * @param material  handle to the cmiss material.
+ * @param identifier  enumerator to identify which image field to be set in
+ * 		material.
+ * @return  cmiss_field if a field has been sett for the material, otherwise NULL.
+ * 		This also incremenet the access count of the cmiss_field by 1;
+ */
+Cmiss_field_id  Cmiss_material_get_image_field(Cmiss_material_id material,
+	enum Cmiss_material_image_field_identifier identifier);
+
 #endif

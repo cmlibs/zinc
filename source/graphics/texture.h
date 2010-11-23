@@ -82,20 +82,20 @@ DESCRIPTION :
 How the texture is combined with the material.
 ==============================================================================*/
 {
-	TEXTURE_BLEND,
-	TEXTURE_DECAL,
-	TEXTURE_MODULATE,
-	TEXTURE_ADD,
-	TEXTURE_ADD_SIGNED, /* Add the value and subtract 0.5 so the texture value
+	TEXTURE_BLEND = 0,
+	TEXTURE_DECAL = 1,
+	TEXTURE_MODULATE = 2,
+	TEXTURE_ADD = 3,
+	TEXTURE_ADD_SIGNED = 4, /* Add the value and subtract 0.5 so the texture value
 								 effectively ranges from -0.5 to 0.5 */
-	TEXTURE_MODULATE_SCALE_4, /* Multiply and then scale by 4, so that we can
+	TEXTURE_MODULATE_SCALE_4 = 5, /* Multiply and then scale by 4, so that we can
 										 scale down or up */
-	TEXTURE_BLEND_SCALE_4, /* Same as blend with a 4 * scaling */
-	TEXTURE_SUBTRACT,
-	TEXTURE_ADD_SCALE_4,
-	TEXTURE_SUBTRACT_SCALE_4,
-	TEXTURE_INVERT_ADD_SCALE_4,
-	TEXTURE_INVERT_SUBTRACT_SCALE_4
+	TEXTURE_BLEND_SCALE_4 = 6, /* Same as blend with a 4 * scaling */
+	TEXTURE_SUBTRACT = 7,
+	TEXTURE_ADD_SCALE_4 = 8,
+	TEXTURE_SUBTRACT_SCALE_4 = 9,
+	TEXTURE_INVERT_ADD_SCALE_4 = 10,
+	TEXTURE_INVERT_SUBTRACT_SCALE_4 = 11
 }; /* enum Texture_combine_mode */
 
 enum Texture_compression_mode
@@ -107,8 +107,8 @@ Whether the texture is compressed.  Could add specific compression formats that
 are explictly requested from the hardware.
 ==============================================================================*/
 {
-	TEXTURE_UNCOMPRESSED,
-	TEXTURE_COMPRESSED_UNSPECIFIED /* Allow the hardware to choose the compression */
+	TEXTURE_UNCOMPRESSED = 0,
+	TEXTURE_COMPRESSED_UNSPECIFIED = 1 /* Allow the hardware to choose the compression */
 }; /* enum Texture_compression_mode */
 
 enum Texture_filter_mode
@@ -119,11 +119,11 @@ DESCRIPTION :
 What happens to when the screen and texture are at different resolutions.
 ==============================================================================*/
 {
-	TEXTURE_LINEAR_FILTER,
-	TEXTURE_NEAREST_FILTER,
-	TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER,
-	TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER,
-	TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER
+	TEXTURE_LINEAR_FILTER = 0,
+	TEXTURE_NEAREST_FILTER = 1,
+	TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER = 2,
+	TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER = 3,
+	TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER = 4
 }; /* enum Texture_filter_mode */
 
 enum Texture_resize_filter_mode

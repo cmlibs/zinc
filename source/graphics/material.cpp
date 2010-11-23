@@ -4761,7 +4761,7 @@ Returns the flag set for per_pixel_lighting.
 	return (return_code);
 }
 
-struct Computed_field *Graphical_material_get_image_field(
+struct Computed_field *Cmiss_material_get_first_image_field(
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
@@ -4772,7 +4772,7 @@ Returns the texture member of the material.
 {
 	struct Computed_field *image_field;
 
-	ENTER(Graphical_material_get_image_field);
+	ENTER(Cmiss_material_get_first_image_field);
 	if (material)
 	{
 		image_field=material->image_texture.field;
@@ -4780,15 +4780,15 @@ Returns the texture member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_get_image_field.  Missing material");
+			"Cmiss_material_get_first_image_field.  Missing material");
 		image_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (image_field);
-} /* Graphical_material_get_image_field */
+} /* Cmiss_material_get_first_image_field */
 
-struct Computed_field *Graphical_material_get_second_image_field(
+struct Computed_field *Cmiss_material_get_second_image_field(
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
@@ -4799,7 +4799,7 @@ Returns the texture member of the material.
 {
 	struct Computed_field *image_field;
 
-	ENTER(Graphical_material_get_second_image_field);
+	ENTER(Cmiss_material_get_second_image_field);
 	if (material)
 	{
 		image_field=material->second_image_texture.field;
@@ -4807,15 +4807,15 @@ Returns the texture member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_get_second_image_field.  Missing material");
+			"Cmiss_material_get_second_image_field.  Missing material");
 		image_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (image_field);
-} /* Graphical_material_get_second_image_field */
+} /* Cmiss_material_get_second_image_field */
 
-struct Computed_field *Graphical_material_get_third_image_field(
+struct Computed_field *Cmiss_material_get_third_image_field(
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
@@ -4826,7 +4826,7 @@ Returns the texture member of the material.
 {
 	struct Computed_field *image_field;
 
-	ENTER(Graphical_material_get_third_image_field);
+	ENTER(Cmiss_material_get_third_image_field);
 	if (material)
 	{
 		image_field=material->third_image_texture.field;
@@ -4834,15 +4834,15 @@ Returns the texture member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_get_third_image_field.  Missing material");
+			"Cmiss_material_get_third_image_field.  Missing material");
 		image_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (image_field);
-} /* Graphical_material_get_third_image_field */
+} /* Cmiss_material_get_third_image_field */
 
-struct Computed_field *Graphical_material_get_fourth_image_field(
+struct Computed_field *Cmiss_material_get_fourth_image_field(
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
@@ -4853,7 +4853,7 @@ Returns the texture member of the material.
 {
 	struct Computed_field *image_field;
 
-	ENTER(Graphical_material_get_fourth_image_field);
+	ENTER(Cmiss_material_get_fourth_image_field);
 	if (material)
 	{
 		image_field=material->fourth_image_texture.field;
@@ -4861,13 +4861,62 @@ Returns the texture member of the material.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_get_fourth_image_field.  Missing material");
+			"Cmiss_material_get_fourth_image_field.  Missing material");
 		image_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (image_field);
-} /* Graphical_material_get_fourth_image_field */
+} /* Cmiss_material_get_fourth_image_field */
+
+Cmiss_field_id  Cmiss_material_get_image_field(Cmiss_material_id material,
+	enum Cmiss_material_image_field_identifier identifier)
+{
+	Cmiss_field_id image_field = NULL;
+
+	ENTER(Cmiss_material_get_image_field);
+	if (material)
+	{
+		switch(identifier)
+		{
+			case CMISS_MATERIAL_FIRST_IMAGE_FIELD:
+			{
+				image_field = Cmiss_material_get_first_image_field(material);
+			} break;
+			case CMISS_MATERIAL_SECOND_IMAGE_FIELD:
+			{
+				image_field = Cmiss_material_get_second_image_field(material);
+			} break;
+			case CMISS_MATERIAL_THIRD_IMAGE_FIELD:
+			{
+				image_field = Cmiss_material_get_third_image_field(material);
+			} break;
+			case CMISS_MATERIAL_FOURTH_IMAGE_FIELD:
+			{
+				image_field = Cmiss_material_get_fourth_image_field(material);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_material_get_image_field.  Invalid image field has been specified");
+				image_field = NULL;
+			} break;
+		}
+		if (image_field)
+		{
+			Cmiss_field_access(image_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_material_get_image_field.  Missing material");
+		image_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (image_field);
+} /* Cmiss_material_get_fourth_image_field */
 
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material)
@@ -5052,12 +5101,12 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-int Graphical_material_set_image_field(struct Graphical_material *material,
-	struct Computed_field *field)
+int Cmiss_material_set_first_image_field(Cmiss_material_id material,
+		Cmiss_field_id field)
 {
 	int return_code;
 
-	ENTER(Graphical_material_set_image_field);
+	ENTER(Cmiss_material_set_first_image_field);
 	if (material)
 	{
 		return_code = Material_image_texture_set_field(&(material->image_texture), field);
@@ -5067,7 +5116,7 @@ int Graphical_material_set_image_field(struct Graphical_material *material,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_texture.  Missing material");
+			"Cmiss_material_set_first_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
@@ -5075,8 +5124,8 @@ int Graphical_material_set_image_field(struct Graphical_material *material,
 	return (return_code);
 }
 
-int Graphical_material_set_second_image_field(struct Graphical_material *material,
-	struct Computed_field *field)
+int Cmiss_material_set_second_image_field(Cmiss_material_id material,
+		Cmiss_field_id field)
 {
 	int return_code;
 
@@ -5090,7 +5139,7 @@ int Graphical_material_set_second_image_field(struct Graphical_material *materia
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_second_image_field.  Missing material");
+			"Cmiss_material_set_second_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
@@ -5098,8 +5147,8 @@ int Graphical_material_set_second_image_field(struct Graphical_material *materia
 	return (return_code);
 }
 
-int Graphical_material_set_third_image_field(struct Graphical_material *material,
-	struct Computed_field *field)
+int Cmiss_material_set_third_image_field(Cmiss_material_id material,
+		Cmiss_field_id field)
 {
 	int return_code;
 
@@ -5113,7 +5162,7 @@ int Graphical_material_set_third_image_field(struct Graphical_material *material
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_thrid_texture.  Missing material");
+			"Cmiss_material_set_third_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
@@ -5121,8 +5170,8 @@ int Graphical_material_set_third_image_field(struct Graphical_material *material
 	return (return_code);
 }
 
-int Graphical_material_set_fourth_image_field(struct Graphical_material *material,
-	struct Computed_field *field)
+int Cmiss_material_set_fourth_image_field(Cmiss_material_id material,
+		Cmiss_field_id field)
 {
 	int return_code;
 
@@ -5136,13 +5185,54 @@ int Graphical_material_set_fourth_image_field(struct Graphical_material *materia
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material_set_fourth_image_field.  Missing material");
+			"Cmiss_material_set_fourth_image_field.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 }
+int Cmiss_material_set_image_field(Cmiss_material_id material,
+		enum Cmiss_material_image_field_identifier identifier, Cmiss_field_id field)
+{
+	int return_code = 0;
+	ENTER(Cmiss_material_set_image_field);
+	if (material)
+	{
+		switch(identifier)
+		{
+			case CMISS_MATERIAL_FIRST_IMAGE_FIELD:
+			{
+				return_code = Cmiss_material_set_first_image_field(material, field);
+			} break;
+			case CMISS_MATERIAL_SECOND_IMAGE_FIELD:
+			{
+				return_code = Cmiss_material_set_second_image_field(material, field);
+			} break;
+			case CMISS_MATERIAL_THIRD_IMAGE_FIELD:
+			{
+				return_code = Cmiss_material_set_third_image_field(material, field);
+			} break;
+			case CMISS_MATERIAL_FOURTH_IMAGE_FIELD:
+			{
+				return_code = Cmiss_material_set_fourth_image_field(material, field);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_material_set_image_field.  Invalid image field has been specified");
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_material_set_image_field.  Missing material");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_material_set_image_field */
 
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void)

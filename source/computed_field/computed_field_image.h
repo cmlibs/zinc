@@ -104,6 +104,15 @@ int Computed_field_is_image_type(struct Computed_field *field,
 int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
 		struct Texture *texture);
 
+/*****************************************************************************//**
+ * A get function that gets the internal cmiss_texture from the image field.
+ * This is an internal function.
+ *
+ * @param image_field  The image field to get the texture from.
+ * @return Returns the handle to cmiss texture.
+ */
+Cmiss_texture_id Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
+
 /***************************************************************************//**
  * A function to list information of the texture in an image field.
  */

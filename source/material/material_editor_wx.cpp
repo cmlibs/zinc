@@ -474,23 +474,23 @@ void material_editor_wx_update_image_field(Material_editor *material_editor,
 {
 	if (selection == 0)
 	{
-		Graphical_material_set_image_field(material_editor->edit_material,
-			field);
+		Cmiss_material_set_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_FIRST_IMAGE_FIELD, field);
 	}
 	else if (selection == 1)
 	{
-		Graphical_material_set_second_image_field(material_editor->edit_material,
-			field);
+		Cmiss_material_set_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_SECOND_IMAGE_FIELD, field);
 	}
 	else if (selection == 2)
 	{
-		Graphical_material_set_third_image_field(material_editor->edit_material,
-			field);
+		Cmiss_material_set_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_THIRD_IMAGE_FIELD, field);
 	}
 	else if (selection == 3)
 	{
-		Graphical_material_set_fourth_image_field(material_editor->edit_material,
-			field);
+		Cmiss_material_set_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_FOURTH_IMAGE_FIELD, field);
 	}
 	 material_editor_update_picture(material_editor);
 }
@@ -763,14 +763,20 @@ void OnMaterialEditorTextureChoice(wxCommandEvent& event)
 	int num = event.GetSelection();
 	struct Computed_field *field = NULL;
 	if (num == 0)
-		field = Graphical_material_get_image_field(material_editor->edit_material);
+		field = Cmiss_material_get_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_FIRST_IMAGE_FIELD);
 	else if (num == 1)
-		field = Graphical_material_get_second_image_field(material_editor->edit_material);
+		field = Cmiss_material_get_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_SECOND_IMAGE_FIELD);
 	else if (num == 2)
-		field = Graphical_material_get_third_image_field(material_editor->edit_material);
+		field = Cmiss_material_get_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_THIRD_IMAGE_FIELD);
 	else if (num == 3)
-		field = Graphical_material_get_fourth_image_field(material_editor->edit_material);
+		field =	Cmiss_material_get_image_field(material_editor->edit_material,
+			CMISS_MATERIAL_FOURTH_IMAGE_FIELD);
 	Set_region_and_image_field_chooser(field);
+	if (field)
+		Cmiss_field_destroy(&field);
 }
 
 void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
@@ -885,32 +891,34 @@ void OnMaterialEditorRenameMaterial(wxCommandEvent& event)
 
 void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 {
-	 ENTER(OnMaterialEditorAdvancedSettingsChanged);
-	 int return_code, bump_mapping_flag;
+	ENTER(OnMaterialEditorAdvancedSettingsChanged);
+	int return_code, bump_mapping_flag;
 	USE_PARAMETER(event);
-	 bump_mapping_flag = 0;
-	 if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
-	 {
-			if (Graphical_material_get_second_image_field(material_editor->edit_material))
-			{
-				 material_editor->material_editor_bump_mapping_checkbox->Enable(true);
-				 bump_mapping_flag =
-						material_editor->material_editor_bump_mapping_checkbox->GetValue();
-			}
-			return_code = set_material_program_type(material_editor->edit_material,
-				 /*bump_mapping_flag */ bump_mapping_flag, 
-				 0, 0, 0, 0, 0, 0, 0, 1);
-	 }
-	 else
-	 {
-			material_editor->material_editor_bump_mapping_checkbox->SetValue(false);
-			material_editor->material_editor_bump_mapping_checkbox->Enable(false);
-			return_code = material_deaccess_material_program(material_editor->edit_material);
-	 }
-	 if (return_code)
-			material_editor_update_picture(material_editor);
-
-	 LEAVE;
+	bump_mapping_flag = 0;
+	if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
+	{
+		Cmiss_field_id field = Cmiss_material_get_image_field(material_editor->edit_material,
+				CMISS_MATERIAL_SECOND_IMAGE_FIELD);
+		if (field)
+		{
+			material_editor->material_editor_bump_mapping_checkbox->Enable(true);
+			bump_mapping_flag
+					= material_editor->material_editor_bump_mapping_checkbox->GetValue();
+			Cmiss_field_destroy(&field);
+		}
+		return_code = set_material_program_type(material_editor->edit_material,
+		/*bump_mapping_flag */bump_mapping_flag, 0, 0, 0, 0, 0, 0, 0, 1);
+	}
+	else
+	{
+		material_editor->material_editor_bump_mapping_checkbox->SetValue(false);
+		material_editor->material_editor_bump_mapping_checkbox->Enable(false);
+		return_code = material_deaccess_material_program(
+			material_editor->edit_material);
+	}
+	if (return_code)
+		material_editor_update_picture(material_editor);
+	LEAVE;
 }
 
 void CloseMaterialEditor(wxCloseEvent &event)
@@ -1319,19 +1327,24 @@ Sets the <material> to be edited by the <material_editor>.
 							shininess);	 
 				}
 
-				field=Graphical_material_get_image_field(material_editor->edit_material);
+				field=Cmiss_material_get_image_field(material_editor->edit_material,
+					CMISS_MATERIAL_FIRST_IMAGE_FIELD);
 				material_editor->wx_material_editor->Set_region_and_image_field_chooser(field);
-
+				if (field)
+					Cmiss_field_destroy(&field);
 
 				per_pixel_set = Graphical_material_get_per_pixel_lighting_flag(material_editor->edit_material);
 				if (per_pixel_set)
 				{
 					 material_editor->material_editor_per_pixel_checkbox->SetValue(true);
-					 if (Graphical_material_get_second_image_field(material_editor->edit_material))
+					 field=Cmiss_material_get_image_field(material_editor->edit_material,
+							CMISS_MATERIAL_SECOND_IMAGE_FIELD);
+					 if (field)
 					 {
 							material_editor->material_editor_bump_mapping_checkbox->Enable(true);
 							material_editor->material_editor_bump_mapping_checkbox->SetValue(
 								 Graphical_material_get_bump_mapping_flag(material_editor->edit_material));
+							Cmiss_field_destroy(&field);
 					 }
 					 else
 					 {

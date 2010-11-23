@@ -2133,3 +2133,58 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	return return_code;
 }
 
+enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
+   Cmiss_field_image_id image_field)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = Texture_get_combine_mode(texture);
+	enum Cmiss_field_image_combine_mode combine_mode = (Cmiss_field_image_combine_mode)mode;
+	return combine_mode;
+}
+
+int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_combine_mode combine_mode)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = combine_mode;
+	enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)mode;
+	return Texture_set_combine_mode(texture, texture_combine_mode);
+}
+
+enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
+   Cmiss_field_image_id image_field)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = Texture_get_compression_mode(texture);
+	enum Cmiss_field_image_compression_mode compression_mode =
+		(Cmiss_field_image_compression_mode)mode;
+	return compression_mode;
+}
+
+int Cmiss_field_image_set_compression_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_compression_mode compression_mode)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = compression_mode;
+	enum Texture_compression_mode texture_compression_mode =
+		(Texture_compression_mode)mode;
+	return Texture_set_compression_mode(texture, texture_compression_mode);
+}
+
+enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
+   Cmiss_field_image_id image_field)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = Texture_get_filter_mode(texture);
+	enum Cmiss_field_image_filter_mode filter_mode = (Cmiss_field_image_filter_mode)mode;
+	return filter_mode;
+}
+
+int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_filter_mode filter_mode)
+{
+	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
+	int mode = filter_mode;
+	enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
+	return Texture_set_filter_mode(texture, texture_filter_mode);
+}
