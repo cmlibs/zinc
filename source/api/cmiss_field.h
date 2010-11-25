@@ -213,13 +213,6 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
-int Cmiss_field_is_type_finite_element(Cmiss_field_id field);
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 /***************************************************************************//**
  * Return the name of the field. 
  * 
@@ -261,32 +254,5 @@ int Cmiss_field_get_persistent(Cmiss_field_id field);
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent);
-
-int Cmiss_field_finite_element_set_string_at_node(
-	Cmiss_field_id field, int component_number, Cmiss_node_id node,
-	double time, const char *string);
-/*******************************************************************************
-LAST MODIFIED : 24 May 2006
-
-DESCRIPTION :
-Special function for field_finite_element fields only.
-Allows the setting of a string if that is the type of field represented.
-==============================================================================*/
-
-int Cmiss_field_finite_element_define_at_node(
-	Cmiss_field_id field, Cmiss_node_id node,
-	struct Cmiss_time_sequence *time_sequence,
-	struct Cmiss_node_field_creator *node_field_creator);
-/*******************************************************************************
-LAST MODIFIED : 25 May 2006
-
-DESCRIPTION :
-Special function for field_finite_element fields only.
-Defines the field at the specified node.
-<fe_time_sequence> optionally defines multiple times for the <field>.  If it is
-NULL then the field will be defined as constant for all times.
-<node_field_creator> optionally defines different versions and/or derivative types.
-If it is NULL then a single nodal value for each component will be defined.
-==============================================================================*/
 
 #endif /* __CMISS_FIELD_H__ */

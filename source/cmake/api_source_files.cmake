@@ -5,7 +5,6 @@ SET( API_SRCS
 	source/api/cmiss_context.c
 	source/api/cmiss_core.c
 	source/api/cmiss_element.c
-	source/api/cmiss_field.c
 	source/api/cmiss_graphic.c
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c

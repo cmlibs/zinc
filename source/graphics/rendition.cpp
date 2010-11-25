@@ -342,7 +342,7 @@ static int Cmiss_rendition_update_default_coordinate(
 				{
 					/* Find the computed_field wrapper */
 					if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_read_only_with_fe_field,
+						Computed_field_wraps_fe_field,
 						(void *)fe_field, rendition->computed_field_manager)))
 					{
 						rendition->default_coordinate_field = 

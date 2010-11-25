@@ -725,6 +725,22 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
 	return (return_code);
 } /* REACCESS(Computed_field) */
 
+Cmiss_field_id Cmiss_field_access(Cmiss_field_id field)
+{
+	return (ACCESS(Computed_field)(field));
+}
+
+int Cmiss_field_destroy(Cmiss_field_id *field_address)
+{
+	return (DEACCESS(Computed_field)(field_address));
+}
+
+Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field)
+{
+	struct Cmiss_region *region = Computed_field_get_region(field);
+	return Cmiss_region_get_field_module(region);
+}
+
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
 /*****************************************************************************
 LAST MODIFIED : 6 September 2007
@@ -2561,6 +2577,35 @@ number_of_components
 	return (return_code);
 } /* Computed_field_evaluate_in_element */
 
+/* public API implementation - clears cache */
+int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
+	struct Cmiss_element *element, double *xi, double time,
+	struct Cmiss_element *top_level_element, int number_of_values,
+	double *values, int number_of_derivatives, double *derivatives)
+{
+	int return_code;
+
+	ENTER(Cmiss_field_evaluate_in_element);
+	if (field && element && xi && values &&
+		(number_of_values >= Computed_field_get_number_of_components(field))
+		&& (!derivatives || (number_of_derivatives >=
+		Computed_field_get_number_of_components(field) * get_FE_element_dimension(element))))
+	{
+		return_code = Computed_field_evaluate_in_element(field, element, xi,
+			time, top_level_element, values, derivatives);
+		Computed_field_clear_cache(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
@@ -2599,6 +2644,30 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	return (return_string);
 } /* Computed_field_evaluate_as_string_at_location */
+
+/* public API implementation - clears cache */
+char *Cmiss_field_evaluate_as_string_at_node(
+	struct Cmiss_field *field, struct Cmiss_node *node, double time)
+{
+	char *return_code;
+
+	ENTER(Cmiss_field_evaluate_as_string_at_node);
+	if (field && node)
+	{
+		return_code = Computed_field_evaluate_as_string_at_node(field,
+			/*component_number*/-1, node, time);
+		Computed_field_clear_cache(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_as_string_at_node.  Invalid argument(s)");
+		return_code=NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
@@ -2654,6 +2723,40 @@ number_of_components.
 
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
+
+/* public API implementation - clears cache */
+int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
+	struct Cmiss_node *node, double time, int number_of_values, double *values)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2004
+
+DESCRIPTION :
+Returns the <values> of <field> at <node> and <time> if it is defined there.
+
+The <values> array must be large enough to store as many floats as there are
+number_of_components, the function checks that <number_of_values> is
+greater than or equal to the number of components.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_field_evaluate_at_node);
+	if (field && node && values &&
+		(number_of_values >= Computed_field_get_number_of_components(field)))
+	{
+		return_code = Computed_field_evaluate_at_node(field, node, time, values);
+		Computed_field_clear_cache(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 char *Computed_field_evaluate_as_string_without_node(struct Computed_field *field,
 		int component_number, FE_value time)
@@ -2867,7 +2970,30 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	return (return_code);
 } /* Computed_field_set_values_at_node */
 
-int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
+/* public API implementation */
+int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
+	struct Cmiss_node *node, double time, int number_of_values, double *values)
+{
+	int return_code;
+
+	ENTER(Cmiss_field_set_values_at_node);
+	if (field && node && values &&
+		(number_of_values >= Computed_field_get_number_of_components(field)))
+	{
+		return_code = Computed_field_set_values_at_node(field, node, time, values);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_field_evaluate_at_field_coordinates(struct Computed_field *field,
 	struct Computed_field *reference_field, int number_of_input_values,
 	FE_value *input_values, FE_value time, FE_value *values)
 /*******************************************************************************
@@ -2883,7 +3009,7 @@ number_of_components.
 {
 	int i,return_code;
 
-	ENTER(Computed_field_evaluate_at_field_coordinates);
+	ENTER(Cmiss_field_evaluate_at_field_coordinates);
 	if (field&&reference_field&&number_of_input_values&&input_values&&values)
 	{
 		Field_coordinate_location location(reference_field,
@@ -2900,13 +3026,13 @@ number_of_components.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_at_field_coordinates.  Invalid argument(s)");
+			"Cmiss_field_evaluate_at_field_coordinates.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_evaluate_at_field_coordinates */
+} /* Cmiss_field_evaluate_at_field_coordinates */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element, int *number_in_xi, FE_value time,
@@ -5249,7 +5375,14 @@ int Computed_field_set_managed_status(
 	return (return_code);
 } /* Computed_field_set_managed_status */
 
-int Computed_field_set_name(
+char *Cmiss_field_get_name(Cmiss_field_id field)
+{
+	char *name = NULL;
+	GET_NAME(Computed_field)(field, &name);
+	return (name);
+}
+
+int Cmiss_field_set_name(
 	struct Computed_field *field, const char *name)
 /*******************************************************************************
 LAST MODIFIED : 18 April 2008
@@ -5262,7 +5395,7 @@ Changes the name of a field.
 	int return_code;
 	LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data;
 
-	ENTER(Computed_field_set_name);
+	ENTER(Cmiss_field_set_name);
 	if (field && name)
 	{
 		if (ALLOCATE(new_name, char, strlen(name)+1))
@@ -5274,7 +5407,7 @@ Changes the name of a field.
 						 const_cast<char *>(name), field->manager))
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_set_name.  "
+						"Cmiss_field_set_name.  "
 						"Field named \"%s\" already exists in this field manager.",
 						name);
 					return_code = 0;
@@ -5285,7 +5418,7 @@ Changes the name of a field.
 			if (NULL == identifier_change_data)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_name.  "
+					"Cmiss_field_set_name.  "
 					"Could not safely change identifier in indexed lists");
 				return_code = 0;
 			}
@@ -5309,7 +5442,7 @@ Changes the name of a field.
 					name)(&identifier_change_data))
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_name  "
+					"Cmiss_field_set_name  "
 					"Could not restore object to all indexed lists");
 			}
 			if (field->manager)
@@ -5320,20 +5453,20 @@ Changes the name of a field.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Computed_field_set_name.  "
+			display_message(ERROR_MESSAGE,"Cmiss_field_set_name.  "
 				"Unable to ALLOCATE memory");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Computed_field_set_name.  "
+		display_message(ERROR_MESSAGE,"Cmiss_field_set_name.  "
 			"Missing field");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Computed_field_set_name */
+}
 
 struct Cmiss_region *Computed_field_manager_get_region(
 	struct MANAGER(Computed_field) *manager)
@@ -5465,6 +5598,27 @@ int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Co
 }
 
 /***************************************************************************//**
+ * Make a 'unique' name based on the number_of_objects in the manager
+ * @return  Allocated string containing valid field name not used by any field
+ * in manager. Caller must DEALLOCATE. NULL on failure.
+ */
+static char *Computed_field_manager_get_unique_field_name(
+	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
+	const char *separator="")
+{
+	char *field_name = NULL;
+	ALLOCATE(field_name, char, strlen(stem_name) + strlen(separator) + 20);
+	int number = NUMBER_IN_MANAGER(Computed_field)(manager);
+	do
+	{
+		sprintf(field_name, "%s%s%d", stem_name, separator, number);
+		number++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+	return field_name;
+}
+
+/***************************************************************************//**
  * Private function to add field to a manager, automatically making field names
  * unique if name already used by another field.
  *
@@ -5478,7 +5632,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 {
 	int return_code;
 
-  ENTER(Computed_field_add_to_manager_private);
+	ENTER(Computed_field_add_to_manager_private);
 	if (field && manager && (!field->manager))
 	{
 		if (field->name[0] != 0)
@@ -5486,38 +5640,21 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 						field->name, manager))
 			{
-				char *field_name;
-				if (ALLOCATE(field_name, char, strlen(field->name)+20))
-				{
-					int number = 1;
-					do
-					{
-						sprintf(field_name, "%s_%d", field->name, number);
-						number++;
-					}
-					while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_");
 #if defined (OLD_CODE)
-					display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
-						"Renaming field from %s to %s as name already in use.",
-						field->name, field_name);
+				display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
+					"Renaming field from %s to %s as name already in use.",
+					field->name, unique_name);
 #endif /* defined (OLD_CODE) */
-					Computed_field_set_name(field, field_name);
-					DEALLOCATE(field_name);
-				}
+				Cmiss_field_set_name(field, unique_name);
+				DEALLOCATE(unique_name);
 			}
 		}
 		else
 		{
-			char field_name[50];
-			/* Make a 'unique' name based on the number_of_objects in the manager */
-			int number = NUMBER_IN_MANAGER(Computed_field)(manager);
-			do
-			{
-				sprintf(field_name, "temp%d", number);
-				number++;
-			}
-			while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
-			Computed_field_set_name(field, field_name);
+			char *unique_name = Computed_field_manager_get_unique_field_name(manager);
+			Cmiss_field_set_name(field, unique_name);
+			DEALLOCATE(unique_name);
 		}
 		Computed_field_set_managed_status(field, managed_status);
 		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
@@ -5706,6 +5843,22 @@ int Cmiss_field_module_destroy(
 	return (return_code);
 } /* Cmiss_field_module_destroy */
 
+char *Cmiss_field_module_get_unique_field_name(
+	struct Cmiss_field_module *field_module)
+{
+	struct MANAGER(Computed_field) *manager;
+	if (field_module &&
+		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
+	{
+		return Computed_field_manager_get_unique_field_name(manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_get_unique_field_name.  Invalid argument(s)");
+	}
+	return NULL;
+}
 
 struct Computed_field *Cmiss_field_module_find_field_by_name(
 	struct Cmiss_field_module *field_module, const char *field_name)
@@ -5740,7 +5893,7 @@ struct Cmiss_region *Cmiss_field_module_get_region(
 {
 	if (field_module)
 	{
-		return field_module->region;
+		return ACCESS(Cmiss_region)(field_module->region);
 	}
 	return NULL;
 }
@@ -5890,13 +6043,12 @@ Computed_field *Computed_field_modify_data::get_field()
 
 Cmiss_region *Computed_field_modify_data::get_region()
 {
-	return Cmiss_field_module_get_region(field_module);
+	return field_module->region;
 };
 
 MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
 {
-	return Cmiss_region_get_Computed_field_manager(
-		Cmiss_field_module_get_region(field_module));
+	return Cmiss_region_get_Computed_field_manager(field_module->region);
 };
 
 int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_field_void)

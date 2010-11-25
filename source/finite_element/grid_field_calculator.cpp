@@ -437,7 +437,7 @@ Applies the computed field to the grid field.
 						coordinate_component[i],
 						CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
 						grid_calc->curve_manager);
-					Computed_field_set_name(curve_lookup[i], tmp_string);
+					Cmiss_field_set_name(curve_lookup[i], tmp_string);
 					if (!curve_lookup[i])
 					{
 						return_code = 0;
@@ -655,7 +655,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 				double double_value = 1.0;
 				integration_integrand = Computed_field_create_constant(field_module,
 					/*number_of_components*/1, &double_value);
-				Computed_field_set_name(integration_integrand, "constant_1.0");
+				Cmiss_field_set_name(integration_integrand, "constant_1.0");
 			}
 			seed_element = TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget);
@@ -858,7 +858,7 @@ Callback for change of seed_element.
 				value = 1.0;
 				integration_integrand = Computed_field_create_constant(field_module,
 					/*number_of_components*/1, &value);
-				Computed_field_set_name(integration_integrand, "constant_1.0");
+				Cmiss_field_set_name(integration_integrand, "constant_1.0");
 				integration_magnitude_coordinates = 0;
 			}
 			

@@ -1952,6 +1952,57 @@ message if not already in the middle of changes.
 	return (return_code);
 } /* FE_region_clear */
 
+struct FE_field *FE_region_get_FE_field_with_general_properties(
+	struct FE_region *fe_region, char *name, enum Value_type value_type,
+	int number_of_components)
+{
+	struct FE_field *fe_field;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_get_FE_field_with_general_properties);
+	fe_field = (struct FE_field *)NULL;
+	if (fe_region && name && (0 < number_of_components))
+	{
+		/* get the ultimate master FE_region; only it has fe_field_list */
+		master_fe_region = fe_region;
+		while (master_fe_region->master_fe_region)
+		{
+			master_fe_region = master_fe_region->master_fe_region;
+		}
+		fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
+			master_fe_region->fe_field_list);
+		if (fe_field)
+		{
+			if ((get_FE_field_FE_field_type(fe_field) != GENERAL_FE_FIELD) ||
+				(get_FE_field_value_type(fe_field) != value_type) ||
+				(get_FE_field_number_of_components(fe_field) != number_of_components))
+			{
+				fe_field = (struct FE_field *)NULL;
+			}
+		}
+		else
+		{
+			fe_field = CREATE(FE_field)(name, master_fe_region);
+			if (!(set_FE_field_value_type(fe_field, value_type) &&
+				set_FE_field_number_of_components(fe_field, number_of_components) &&
+				set_FE_field_type_general(fe_field) &&
+				FE_region_merge_FE_field(master_fe_region, fe_field)))
+			{
+				DESTROY(FE_field)(&fe_field);
+				fe_field = (struct FE_field *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_FE_field_with_general_properties.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (fe_field);
+}
+
 struct FE_field *FE_region_get_FE_field_with_properties(
 	struct FE_region *fe_region, char *name, enum FE_field_type fe_field_type,
 	struct FE_field *indexer_field, int number_of_indexed_values,
@@ -1959,17 +2010,6 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 	enum Value_type value_type, int number_of_components, char **component_names,
 	int number_of_times, enum Value_type time_value_type,
 	struct FE_field_external_information *external)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Returns an FE_field with the given <name> merged into <fe_region> and with the
-given properties. If a field of the given <name> already exists, checks that
-it has the same properties -- if not an error is reported. If no field of that
-name exists, one is created and FE_region_merge_FE_field called for it.
-Hence, this function may result in change messages being sent, so use
-begin/end change if several calls are to be made.
-==============================================================================*/
 {
 	char *component_name;
 	int i;
@@ -2064,7 +2104,8 @@ begin/end change if several calls are to be made.
 	LEAVE;
 
 	return (fe_field);
-} /* FE_region_get_FE_field_with_properties */
+}
+
 
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field)

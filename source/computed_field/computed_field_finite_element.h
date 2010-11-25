@@ -44,7 +44,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "api/cmiss_field.h"
+#include "api/cmiss_field_finite_element.h"
 
 /*
 Global types
@@ -58,22 +58,6 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 Private package
 ==============================================================================*/
-
-/* 
-The Cmiss_computed_field which is Public is currently the same object as the 
-cmgui internal Computed_field.  The Public interface is contained in 
-api/cmiss_computed_field.h however most of the functions come directly from
-this module.  So that these functions match the public declarations the
-functions are given their public names.
-*/
-
-/* Convert the functions that have identical interfaces */
-#define Computed_field_is_type_finite_element \
-	Cmiss_field_is_type_finite_element
-#define Computed_field_finite_element_define_at_node \
-	Cmiss_field_finite_element_define_at_node
-#define Computed_field_finite_element_set_string_at_node \
-	Cmiss_field_finite_element_set_string_at_node
 
 /*
 Global functions
@@ -110,44 +94,6 @@ Iterator/conditional function returning true if <field> is read only and a
 wrapper for an FE_field.
 ==============================================================================*/
 
-int Computed_field_finite_element_set_string_at_node(
-	struct Computed_field *field, int component_number, struct FE_node *node, 
-	double time, const char *string);
-/*******************************************************************************
-LAST MODIFIED : 24 May 2006
-
-DESCRIPTION :
-Special function for Computed_field_finite_element fields only.
-Allows the setting of a string if that is the type of field represented.
-==============================================================================*/
-
-int Computed_field_finite_element_define_at_node(
-	struct Computed_field *field, struct FE_node *node,
-	struct FE_time_sequence *fe_time_sequence,
-	struct FE_node_field_creator *node_field_creator);
-/*******************************************************************************
-LAST MODIFIED : 25 May 2006
-
-DESCRIPTION :
-Special function for Computed_field_finite_element fields only.
-Defines the field at the specified node.
-<fe_time_sequence> optionally defines multiple times for the <field>.  If it is
-NULL then the field will be defined as constant for all times.
-<node_field_creator> optionally defines different versions and/or derivative types.
-If it is NULL then a single nodal value for each component will be defined.
-==============================================================================*/
-
-/*****************************************************************************//**
- * Creates a computed field wrapper for <fe_field>.
- * Makes the number of components the same as in the <fe_field>.
- * 
- * @param field_module  Region field module which will own new field.
- * @param fe_field  FE_field to be wrapped
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_finite_element(
-	struct Cmiss_field_module *field_module, struct FE_field *fe_field);
-
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field);
 /*******************************************************************************
@@ -158,17 +104,13 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 "wrapped" by it is returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Computed_field_is_read_only_with_fe_field(
-	struct Computed_field *field, void *fe_field_void);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> is read only and a
-wrapper for <fe_field>.
-???RC This looks ready for an overhaul since other fields in this module can
-contain FE_fields.
-==============================================================================*/
+ * Iterator/conditional function returning true if <field> is the finite_element
+ * computed field wrapper for the FE_field.
+ * @param fe_field_void  Void pointer to a struct FE_field.
+ */
+int Computed_field_wraps_fe_field(struct Computed_field *field,
+	void *fe_field_void);
 
 int Computed_field_contains_changed_FE_field(
 	struct Computed_field *field, void *fe_field_change_log_void);

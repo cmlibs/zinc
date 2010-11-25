@@ -131,6 +131,13 @@ Cmiss_field_module_create_concatenate
 /* api/cmiss_field_conditional.h */
 Cmiss_field_module_create_if
 
+/* api/cmiss_field_finite_element.h */
+Cmiss_field_module_create_finite_element
+Cmiss_field_cast_finite_element
+Cmiss_field_finite_element_destroy
+Cmiss_field_finite_element_set_string_at_node
+Cmiss_field_finite_element_define_at_node
+
 /* api/cmiss_field_image.h */
 Cmiss_field_module_create_image
 Cmiss_field_cast_image
@@ -206,9 +213,6 @@ Cmiss_field_module_create_atan
 Cmiss_field_module_create_atan2
 
 Cmiss_field_set_values_at_node
-Cmiss_field_finite_element_set_string_at_node
-Cmiss_field_is_type_finite_element
-Cmiss_field_finite_element_define_at_node
 Cmiss_field_evaluate_in_element
 #if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Cmiss_field_module_create_window_projection

@@ -773,7 +773,7 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
  * Gets the region this field module can create fields for.
  *
  * @param field_module  The field module to create fields in.
- * @return  Owning region for field_module.
+ * @return  Accessed handle to owning region for field_module.
  */
 struct Cmiss_region *Cmiss_field_module_get_region(
 	struct Cmiss_field_module *field_module);

@@ -5354,7 +5354,7 @@ Cmiss_graphic* get_graphic_for_gfx_modify(Cmiss_rendition *rendition,
 				FE_region_get_default_coordinate_FE_field(data_region, &fe_field))
 			{
 				struct Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_read_only_with_fe_field,
+					Computed_field_wraps_fe_field,
 					(void *)fe_field, Cmiss_region_get_Computed_field_manager(region));
 				if (coordinate_field)
 				{

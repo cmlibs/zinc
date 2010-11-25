@@ -39,7 +39,6 @@ SET( CMGUI_LIB_HDRS
 	${CMGUI_LIB_INTERFACE_HDRS}
 	${wxWidgets_GENERATED_HDRS} )
 #	source/api/cmiss_command_data.c
-#	source/api/cmiss_field.c
 #	source/api/cmiss_region.c )
 
 #IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )

@@ -3954,7 +3954,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 			{
 				native_discretization_field_chooser->set_object(
 					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_read_only_with_fe_field, native_discretization_field,
+						Computed_field_wraps_fe_field, native_discretization_field,
 						region_tree_viewer->field_manager));
 				nativediscretizationfieldcheckbox->SetValue(1);
 				native_discretization_field_chooser_panel->Enable();

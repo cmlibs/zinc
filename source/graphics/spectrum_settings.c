@@ -2470,7 +2470,7 @@ passed in render data.
 					FE_value dataValue[1];
 					float* tmpPointer = render_data->data + settings->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
-					Computed_field_evaluate_at_field_coordinates(settings->output_field,
+					Cmiss_field_evaluate_at_field_coordinates(settings->output_field,
 						settings->input_field, /*Number of values*/1,
 						dataValue,
 						/*time*/0.0, values);
@@ -2481,7 +2481,7 @@ passed in render data.
 					ALLOCATE(feData, FE_value,render_data->number_of_data_components);
 					CAST_TO_FE_VALUE_C(feData,render_data->data,
 						render_data->number_of_data_components);
-					Computed_field_evaluate_at_field_coordinates(settings->output_field,
+					Cmiss_field_evaluate_at_field_coordinates(settings->output_field,
 						settings->input_field, render_data->number_of_data_components,
 						feData,
 						/*time*/0.0, values);

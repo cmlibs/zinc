@@ -815,7 +815,7 @@ Computed_field *Computed_field_create_image(
 		if (!texture_coordinate_field)
 		{
 			texture_coordinate_field = Computed_field_create_xi_coordinates(field_module);
-			Computed_field_set_name(texture_coordinate_field, "Cmiss_temp_image_domain");
+			Cmiss_field_set_name(texture_coordinate_field, "Cmiss_temp_image_domain");
 			Computed_field_set_read_only(texture_coordinate_field);
 			check_source_field = false;
 		}
@@ -1819,7 +1819,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 					if (use_pixel_location)
 					{
 						/* Try to use a pixel coordinate first */
-						if (Computed_field_evaluate_at_field_coordinates(field,
+						if (Cmiss_field_evaluate_at_field_coordinates(field,
 							texture_coordinate_field, dimension, values,
 							/*time*/0.0, data_values))
 						{

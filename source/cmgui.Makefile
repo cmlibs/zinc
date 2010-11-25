@@ -880,7 +880,6 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 
 API_SRCS = \
 	api/cmiss_context.c \
-	api/cmiss_field.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
 	api/cmiss_graphic.c \
@@ -1702,7 +1701,6 @@ endif
 
 LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_element.c \
-	api/cmiss_field.c \
 	api/cmiss_node.c \
 	api/cmiss_time_sequence.c \
 	general/io_stream.c \

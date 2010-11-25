@@ -91,6 +91,7 @@ functions are given their public names.
 #define Computed_field_get_number_of_components \
 	Cmiss_field_get_number_of_components
 #define Computed_field_set_type Cmiss_field_set_type
+#define Computed_field_is_defined_at_node Cmiss_field_is_defined_at_node
 
 /*
 Global types
@@ -455,20 +456,6 @@ is reached for which its calculation is not reversible, or is not supported yet.
 int Computed_field_evaluate_at_location(struct Computed_field *field,
 	Field_location& loc, FE_value *values, FE_value *derivatives = 0);
 #endif /* __cplusplus */
-
-int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
-	struct Computed_field *reference_field, int number_of_input_values,
-	FE_value *input_values, FE_value time, FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 April 2007
-
-DESCRIPTION :
-Returns the <values> of <field> at the location of <input_values>
-with respect to the <reference_field> if it is defined there.
-
-The <values> array must be large enough to store as many FE_values as there are
-number_of_components.
-==============================================================================*/
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element, int *number_in_xi, FE_value time,
@@ -989,15 +976,6 @@ be destroyed, assuming it is only accessed by this field and its manager.
 int Computed_field_set_managed_status(struct Computed_field *field,
 	enum Computed_field_managed_status managed_status); 
 
-int Computed_field_set_name(struct Computed_field *field,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 18 January 2007
-
-DESCRIPTION :
-Change the name of a field.
-==============================================================================*/
-
 /***************************************************************************//**
  * Returns the region which this field belongs to, if any.
  *
@@ -1029,6 +1007,12 @@ int Computed_field_get_domain( struct Computed_field *field,
  * @return  1 if non-linear, 0 if linear.
  */
 int Computed_field_is_non_linear(struct Computed_field *field);
+
+/***************************************************************************//**
+ * @return  Allocated field name unused by any other field in field_module.
+ */
+char *Cmiss_field_module_get_unique_field_name(
+	struct Cmiss_field_module *field_module);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.
