@@ -252,12 +252,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 		{
 			enumerator_string = "static_graphic";
 		} break;
-#if ! defined (WX_USER_INTERFACE)
-		case CMISS_GRAPHIC_VOLUMES:
-		{
-			enumerator_string = "volumes";
-		} break;
-#endif /* ! defined (WX_USER_INTERFACE) */
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -365,7 +359,6 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 		(CMISS_GRAPHIC_SURFACES==graphic_type)||
 		(CMISS_GRAPHIC_ISO_SURFACES==graphic_type)||
 		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic_type)||
-		(CMISS_GRAPHIC_VOLUMES==graphic_type)||
 		(CMISS_GRAPHIC_STREAMLINES==graphic_type)||
 		(CMISS_GRAPHIC_STATIC==graphic_type))
 	{
@@ -666,7 +659,6 @@ int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic)
 			{
 				dimension=2;
 			} break;
-			case CMISS_GRAPHIC_VOLUMES:
 			case CMISS_GRAPHIC_STREAMLINES:
 			{
 				dimension=3;
@@ -1341,49 +1333,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							}
 						}
 					} break;
-					case CMISS_GRAPHIC_VOLUMES:
-					{
-						if (graphic_to_object_data->existing_graphics)
-						{
-							voltex = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_voltex)
-								(graphic_to_object_data->existing_graphics, time,
-									element_graphics_name);
-						}
-						else
-						{
-							voltex = (struct GT_voltex *)NULL;
-						}
-						if (draw_element)
-						{
-							/* not an error if no voltex produced. Iso-value probably just
-								 out of range of voltex data */
-							if (voltex ||
-								(voltex = generate_clipped_GT_voltex_from_FE_element(
-									(struct Clipping *)NULL,element,
-									graphic_to_object_data->rc_coordinate_field,
-									graphic->data_field,
-									graphic->volume_texture, graphic->render_type,
-									graphic->displacement_map_field,
-									graphic->displacement_map_xi_direction,
-									graphic->texture_coordinate_field,
-									graphic_to_object_data->time)))
-							{
-								if (!GT_OBJECT_ADD(GT_voltex)(
-									graphic->graphics_object, time, voltex))
-								{
-									DESTROY(GT_voltex)(&voltex);
-									return_code = 0;
-								}
-							}
-						}
-						else
-						{
-							if (voltex)
-							{
-								DESTROY(GT_voltex)(&voltex);
-							}
-						}
-					} break;
 					case CMISS_GRAPHIC_STREAMLINES:
 					{
 						/* use local copy of seed_xi since tracking function updates it */
@@ -1860,8 +1809,7 @@ int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 			(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_SURFACES==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)||
-			(CMISS_GRAPHIC_VOLUMES==graphic->graphic_type));
+			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type));
 	}
 	else
 	{
@@ -2767,39 +2715,8 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				append_string(&graphic_string,"NONE",&error);
 			}
 		}
-
-		/* for volumes only */
-		if (CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)
-		{
-			if (graphic->volume_texture)
-			{
-				append_string(&graphic_string," vtexture ",&error);
-				append_string(&graphic_string,graphic->volume_texture->name,
-					&error);
-			}
-			if (graphic->displacement_map_field)
-			{
-				if (GET_NAME(Computed_field)(graphic->displacement_map_field,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&graphic_string," displacement_map_field ",&error);
-					append_string(&graphic_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(graphic_string);
-					error=1;
-				}
-				sprintf(temp_string," displacment_map_xi_direction %d",
-					graphic->displacement_map_xi_direction);
-				append_string(&graphic_string,temp_string,&error);
-			}
-		}
 		/* for graphic starting in a particular element */
-		if ((CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
+		if (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)
 		{
 			if (graphic->seed_element)
 			{
@@ -2953,7 +2870,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			/* for surfaces and volumes */
 			if ((CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type)
 				|| (CMISS_GRAPHIC_SURFACES==graphic->graphic_type) 
-				|| (CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)
 				|| (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
 			{
 				append_string(&graphic_string," ",&error);
@@ -3311,10 +3227,6 @@ int Cmiss_graphic_to_graphics_object(
 									{
 										graphics_object_type = g_GLYPH_SET;
 									} break;
-									case CMISS_GRAPHIC_VOLUMES:
-									{
-										graphics_object_type = g_VOLTEX;
-									} break;
 									case CMISS_GRAPHIC_STREAMLINES:
 									{
 										if (STREAM_LINE == graphic->streamline_type)
@@ -3544,36 +3456,6 @@ int Cmiss_graphic_to_graphics_object(
 										}
 									}
 								} break;
-								case CMISS_GRAPHIC_VOLUMES:
-								{
-									/* does volume texture extend beyond a single element? */
-									if (graphic->volume_texture && (
-											 (graphic->volume_texture->ximin[0] < 0.0) ||
-											 (graphic->volume_texture->ximin[1] < 0.0) ||
-											 (graphic->volume_texture->ximin[2] < 0.0) ||
-											 (graphic->volume_texture->ximax[0] > 1.0) ||
-											 (graphic->volume_texture->ximax[1] > 1.0) ||
-											 (graphic->volume_texture->ximax[2] > 1.0)))
-									{
-										/* then must rebuild all graphics */
-										if (graphic_to_object_data->existing_graphics)
-										{
-											DESTROY(GT_object)(
-												&(graphic_to_object_data->existing_graphics));
-										}
-									}
-									if (graphic->seed_element)
-									{
-										return_code = FE_element_to_graphics_object(
-											graphic->seed_element, graphic_to_object_data_void);
-									}
-									else
-									{
-										return_code = FE_region_for_each_FE_element(fe_region,
-											FE_element_to_graphics_object,
-											graphic_to_object_data_void);
-									}
-								} break;
 								case CMISS_GRAPHIC_STREAMLINES:
 								{
 									/* must always regenerate ALL streamlines since they can cross
@@ -3770,7 +3652,6 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_LINES:
 							case CMISS_GRAPHIC_SURFACES:
 							case CMISS_GRAPHIC_ISO_SURFACES:
-							case CMISS_GRAPHIC_VOLUMES:
 							{
                 GT_object_set_element_highlight_functor(graphic->graphics_object,
                   (void *)graphic_to_object_data->group_field);
@@ -4038,14 +3919,6 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		{
 			return_code = 1;
 		}
-		/* for volumes only */
-		else if ((CMISS_GRAPHIC_VOLUMES == graphic->graphic_type)&&
-			(graphic->displacement_map_field &&
-				Computed_field_or_ancestor_satisfies_condition(
-					graphic->displacement_map_field, conditional_function, user_data)))
-		{
-			return_code = 1;
-		}
 		/* for streamlines only */
 		else if ((CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type) &&
 			graphic->stream_vector_field &&
@@ -4267,10 +4140,6 @@ int Cmiss_graphic_type_uses_dimension(
 		case CMISS_GRAPHIC_SURFACES:
 		{
 			return_code = ((-1 == dimension) || (2 == dimension));
-		} break;
-		case CMISS_GRAPHIC_VOLUMES:
-		{
-			return_code = ((-1 == dimension) || (3 == dimension));
 		} break;
 		case CMISS_GRAPHIC_STREAMLINES:
 		{
@@ -5695,19 +5564,8 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(graphic->xi_point_density_field==
 					second_graphic->xi_point_density_field);
 		}
-		/* for volumes only */
-		if (return_code&&(CMISS_GRAPHIC_VOLUMES==graphic->graphic_type))
-		{
-			return_code=
-				(graphic->volume_texture==second_graphic->volume_texture)&&
-				(graphic->displacement_map_field==
-					second_graphic->displacement_map_field)&&
-				(graphic->displacement_map_xi_direction==
-					second_graphic->displacement_map_xi_direction);
-		}
 		/* for graphic starting in a particular element */
-		if (return_code&&((CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
+		if (return_code&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 		{
 			return_code=
 				(graphic->seed_element==second_graphic->seed_element);
@@ -8102,29 +7960,6 @@ int Cmiss_graphic_extract_graphics_object_from_list(
 	return (return_code);
 } /* Cmiss_graphic_extract_graphics_object_from_list */
 
-int Cmiss_graphic_set_volume_texture(struct Cmiss_graphic *graphic,
-	struct VT_volume_texture *volume_texture)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_set_volume_texture);
-	if (graphic&&volume_texture&&
-		(CMISS_GRAPHIC_VOLUMES==graphic->graphic_type))
-	{
-		REACCESS(VT_volume_texture)(&(graphic->volume_texture),volume_texture);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_volume_texture.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_set_volume_texture */
-
 int Cmiss_graphic_get_data_spectrum_parameters(
 	struct Cmiss_graphic *graphic,
 	struct Computed_field **data_field,struct Spectrum **spectrum)
@@ -8489,8 +8324,7 @@ struct FE_element *Cmiss_graphic_get_seed_element(
 	struct FE_element *seed_element;
 
 	ENTER(Cmiss_graphic_get_seed_element);
-	if (graphic&&((CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)||
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
+	if (graphic&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 	{
 		seed_element=graphic->seed_element;
 	}
@@ -8517,8 +8351,7 @@ For graphic starting in a particular element.
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_seed_element);
-	if (graphic&&((CMISS_GRAPHIC_VOLUMES==graphic->graphic_type)||
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
+	if (graphic&&(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 	{
 		REACCESS(FE_element)(&graphic->seed_element,seed_element);
 		return_code=1;
