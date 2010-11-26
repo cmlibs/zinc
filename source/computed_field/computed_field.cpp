@@ -65,10 +65,6 @@ values at certain positions that may have changed. Alternative of getting
 messages from element/node managers seems a little expensive. Forgetting to
 clear the cache could cause some unexpected behaviour.
 
-- Computed fields that are not created by the user (eg. default coordinate, xi
-and those automatically created to wrap FE_fields) have a read_only flag set,
-so that the user can not modify them be text commands.
-
 
 FUTURE PLANS AND ISSUES:
 ------------------------
@@ -548,9 +544,6 @@ COMPUTED_FIELD_INVALID with no components.
 			field->command_string = (char *)field->name;
 			/* initialise all members of computed_field */	
 			field->number_of_components = 0;
-			/* allowed to modify/remove from manager until disabled with
-				 Computed_field_set_read_only */
-			field->read_only = 0;
 			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field->component_names = (char **)NULL;
 
@@ -1006,7 +999,6 @@ Do not allow copy if:
 		}
 		if (return_code)
 		{
-			destination->read_only = source->read_only;
 			COPY(Coordinate_system)(&destination->coordinate_system,
 				&source->coordinate_system);
 			if (!Computed_field_copy_type_specific(destination, source))
@@ -1478,19 +1470,21 @@ Computed_field *Computed_field_create_generic(
 						Cmiss_field_module_get_replace_field(field_module);
 					if (replace_field)
 					{
-						if (Computed_field_is_read_only(replace_field))
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_create_generic.  Not allowed to modify read-only field");
-							return_code = 0;
-						}
-						else
+						if (replace_field->core->not_in_use() ||
+							(replace_field->core->get_type_string() == field_core->get_type_string()))
 						{
 							/* copy modifications to existing field. Can fail if new definition is incompatible */
 							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
 								replace_field, field,
 								Cmiss_region_get_Computed_field_manager(region));
 							REACCESS(Computed_field)(&field, replace_field);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Computed_field_create_generic.  "
+								"Cannot change type of field '%s' while its objects are in use",
+								replace_field->name);
+							return_code = 0;
 						}
 					}
 					else
@@ -3931,89 +3925,6 @@ The number of components controls how the field is interpreted:
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
 
-int Computed_field_is_read_only(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if the field is read_only - use this to check if you are allowed
-to modify or remove it from the manager.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_read_only);
-	if (field)
-	{
-		return_code=field->read_only;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_read_only.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_read_only */
-
-int Computed_field_set_read_only(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Marks <field> as read-only, telling the program that the user is not permitted
-to modify or destroy it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_read_only);
-	if (field)
-	{
-		field->read_only=1;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_read_only.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_read_only */
-
-int Computed_field_set_read_write(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Clears read-only status of <field>, telling the program that the user is allowed
-to modify and destroy it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_read_write);
-	if (field)
-	{
-		field->read_only=0;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_read_write.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_read_write */
-
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
@@ -4522,14 +4433,6 @@ Writes the properties of the <field> to the command window.
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
 		}
-		if (field->read_only)
-		{
-			display_message(INFORMATION_MESSAGE,"  field is read only\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"  field is read/write\n");
-		}
 		display_message(INFORMATION_MESSAGE,"  (access count = %d)\n",
 			field->access_count);
 	}
@@ -4656,11 +4559,11 @@ Second argument is a struct List_Computed_field_commands_data.
 			{
 				/* do not list commands for read-only computed fields created
 					 automatically by cmgui */
-				return_code = ((field->read_only ||
+				return_code =
 					list_Computed_field_commands(field,
-						(void *)list_commands_data->command_prefix)) &&
+						(void *)list_commands_data->command_prefix) &&
 					ADD_OBJECT_TO_LIST(Computed_field)(field,
-						list_commands_data->computed_field_list));
+						list_commands_data->computed_field_list);
 				list_commands_data->listed_fields++;
 			}
 		}
@@ -4743,11 +4646,11 @@ Second argument is a struct List_Computed_field_commands_data.
 			{
 				/* do not list commands for read-only computed fields created
 					 automatically by cmgui */
-				return_code = ((field->read_only ||
+				return_code =
 					write_Computed_field_commands_to_comfile(field,
-						 (void *)list_commands_data->command_prefix)) &&
+						 (void *)list_commands_data->command_prefix) &&
 					ADD_OBJECT_TO_LIST(Computed_field)(field,
-						list_commands_data->computed_field_list));
+						list_commands_data->computed_field_list);
 				list_commands_data->listed_fields++;
 			}
 		}
@@ -4821,7 +4724,6 @@ its name matches the contents of the <other_computed_field_void>.
 	if (field && (other_computed_field=(struct Computed_field *)other_computed_field_void))
 	{
 		if((field->number_of_components==other_computed_field->number_of_components)
-			&&(field->read_only==other_computed_field->read_only)
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
 			/* Ignoring other coordinate_system parameters */
 			&&(typeid(field->core)==typeid(other_computed_field->core))

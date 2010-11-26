@@ -816,7 +816,6 @@ Computed_field *Computed_field_create_image(
 		{
 			texture_coordinate_field = Computed_field_create_xi_coordinates(field_module);
 			Cmiss_field_set_name(texture_coordinate_field, "Cmiss_temp_image_domain");
-			Computed_field_set_read_only(texture_coordinate_field);
 			check_source_field = false;
 		}
 		check_source_field = false;

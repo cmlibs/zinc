@@ -1457,9 +1457,9 @@ FE_field being made and/or modified.
 			}
 			else
 			{
-				/* default to real, 3-component coordinate field */
-				number_of_components = 3;
-				cm_field_type = CM_COORDINATE_FIELD;
+				/* default to real, scalar general field */
+				number_of_components = 1;
+				cm_field_type = CM_GENERAL_FIELD;
 				value_type = FE_VALUE_VALUE;
 			}
 			if (return_code)
@@ -1478,7 +1478,9 @@ FE_field being made and/or modified.
 					}
 					else
 					{
-						component_names[i] = (char *)NULL;
+						char temp[20];
+						sprintf(temp, "%d", i+1);
+						component_names[i] = duplicate_string(temp);
 					}
 				}
 			}
@@ -3921,8 +3923,6 @@ private:
 
 	int has_numerical_components();
 
-	int not_in_use();
-
 	int calculate_FE_element_field_values_for_element(
 		int calculate_derivatives, struct FE_element *element,
 		FE_value time, struct FE_element *top_level_element);
@@ -4132,50 +4132,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Computed_field_basis_derivative::has_numerical_components */
-
-int Computed_field_basis_derivative::not_in_use()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-The FE_field must also not be in use.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Computed_field_basis_derivative::not_in_use);
-	if (field)
-	{
-		/* check the fe_field can be destroyed */
-		if (fe_region = FE_field_get_FE_region(fe_field))
-		{
-			/* ask owning FE_region if fe_field is used in nodes and elements */
-			if (FE_region_is_FE_field_in_use(fe_region, fe_field))
-			{
-				return_code = 0;
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_basis_derivative::not_in_use.  Missing FE_region");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::not_in_use.  Missing field");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_basis_derivative::not_in_use */
 
 int Computed_field_basis_derivative::calculate_FE_element_field_values_for_element(
 	int calculate_derivatives,
@@ -4970,7 +4926,6 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
 					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_cmiss_number(field_module);
-					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}
@@ -4986,7 +4941,6 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module_set_field_name(field_module, "xi");
 					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_xi_coordinates(field_module);
-					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}

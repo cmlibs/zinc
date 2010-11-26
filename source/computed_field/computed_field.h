@@ -715,33 +715,6 @@ The number of components controls how the field is interpreted:
     normal).
 ==============================================================================*/
 
-int Computed_field_is_read_only(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Returns true if the field is read_only - use this to check if you are allowed
-to modify or remove it from the manager.
-==============================================================================*/
-
-int Computed_field_set_read_only(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Marks <field> as read-only, telling the program that the user is not permitted
-to modify or destroy it.
-==============================================================================*/
-
-int Computed_field_set_read_write(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Clears read-only status of <field>, telling the program that the user is allowed
-to modify and destroy it.
-==============================================================================*/
-
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,

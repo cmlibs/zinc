@@ -314,9 +314,6 @@ DESCRIPTION :
 		the defaults of 1,2...number_of_components */
 	char **component_names;
 
-	/* if the following flag is set, the field may not be modified or destroyed
-		 by the user. See Computed_field_set_read_only function */
-	int read_only;
 	struct Coordinate_system coordinate_system;
 
 	/* Value cache: This should probably form another object kept here, rather
