@@ -56,22 +56,6 @@
 struct Cmiss_graphic;
 struct Cmiss_graphics_module;
 
-enum Cmiss_graphic_type
-{
-	CMISS_GRAPHIC_NODE_POINTS,
-	CMISS_GRAPHIC_DATA_POINTS,
-	CMISS_GRAPHIC_LINES,
-	CMISS_GRAPHIC_CYLINDERS,
-	CMISS_GRAPHIC_SURFACES,
-	CMISS_GRAPHIC_ISO_SURFACES,
-	CMISS_GRAPHIC_ELEMENT_POINTS,
-	CMISS_GRAPHIC_STREAMLINES,
-	CMISS_GRAPHIC_STATIC,
-	CMISS_GRAPHIC_VOLUMES /* Must be last as disabled in
-		 WX_USER_INTERFACE, see 
-		 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type) */
-}; /* enum Cmiss_graphics_type */
-
 typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
@@ -509,16 +493,6 @@ int Cmiss_graphic_get_face(struct Cmiss_graphic *graphic,int *face);
  */
 struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
 	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Returns the tessellation object of the graphics or NULL if none.
- * Caller must destroy reference.
- */
-struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
-	struct Cmiss_graphic *graphic);
-
-int Cmiss_graphic_set_tessellation(
-	struct Cmiss_graphic *graphic, struct Cmiss_tessellation *tessellation);
 
 /***************************************************************************//**
  * Returns the fixed discretization <graphic>.

@@ -3790,6 +3790,8 @@ int Cmiss_graphic_to_graphics_object(
 									Element_point_ranges_select_in_graphics_object,
 									(void *)&select_data,
 									graphic_to_object_data->selected_element_point_ranges_list);
+                GT_object_set_element_highlight_functor(graphic->graphics_object,
+                  (void *)graphic_to_object_data->group_field);
 							} break;
 							case CMISS_GRAPHIC_STATIC:
 							case CMISS_GRAPHIC_STREAMLINES:
@@ -8273,7 +8275,7 @@ enum Use_element_type Cmiss_graphic_get_use_element_type(
 } /* Cmiss_graphic_get_use_element_type */
 
 struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
-	struct Cmiss_graphic *graphic)
+	Cmiss_graphic_id graphic)
 {
 	struct Cmiss_tessellation *tessellation = NULL;
 	if (graphic)
@@ -8293,7 +8295,7 @@ struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
 }
 
 int Cmiss_graphic_set_tessellation(
-	struct Cmiss_graphic *graphic, struct Cmiss_tessellation *tessellation)
+	Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation)
 {
 	int return_code;
 	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
@@ -9331,4 +9333,10 @@ int Cmiss_graphic_set_rendition_for_list_private(struct Cmiss_graphic *graphic, 
 	}
 
 	return return_code;
+}
+
+int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
+{
+	return DEACCESS(Cmiss_graphic)(graphic);
+
 }

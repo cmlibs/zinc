@@ -72,6 +72,32 @@ enum Render_type
 #define RENDER_TYPE_DEFINED
 #endif /* RENDER_TYPE_DEFINED */
 
+#ifndef CMISS_GRAPHIC_TYPE_DEFINED
+#define CMISS_GRAPHIC_TYPE_DEFINED
+/***************************************************************************//**
+ * An enum type to define the type of a cmiss_graphic.
+ */
+enum Cmiss_graphic_type
+{
+	CMISS_GRAPHIC_INVALD = 0,
+	CMISS_GRAPHIC_NODE_POINTS = 1,
+	CMISS_GRAPHIC_DATA_POINTS = 2,
+	CMISS_GRAPHIC_LINES = 3,
+	CMISS_GRAPHIC_CYLINDERS = 4,
+	CMISS_GRAPHIC_SURFACES = 5,
+	CMISS_GRAPHIC_ISO_SURFACES = 6,
+	CMISS_GRAPHIC_ELEMENT_POINTS = 7,
+	CMISS_GRAPHIC_STREAMLINES = 8,
+	CMISS_GRAPHIC_STATIC = 9, /*!< CMISS_GRAPHIC_STATIC is different from others,
+	 * as the graphics object of this is created by user instead of generated from
+	 * finite element models, it does not require a coordinate field in the
+	 * rendition. To get an idea of what graphics objects are, take a look at
+	 * the glyphs used in points representation they are a set of preset graphics
+	 * object in cmgui. This will be replaced in the future*/
+	CMISS_GRAPHIC_VOLUMES  = 10 /* !This is not supported currently*/
+}; /* enum Cmiss_graphics_type */
+#endif /* CMISS_GRAPHIC_TYPE_DEFINED */
+
 /***************************************************************************//**
  * Sets the field supplying coordinates for the graphic.
  *
@@ -115,6 +141,28 @@ int Cmiss_graphic_set_selected_material(
  */
 int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
+
+/***************************************************************************//**
+ * Returns the tessellation object of the graphics or NULL if none.
+ * Caller must destroy reference.
+ *
+ * @param graphic  The graphic to be edit
+ *
+ * @return  tessellation for graphic or NULL if none.
+ */
+struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
+	Cmiss_graphic_id graphic);
+
+/***************************************************************************//**
+ * Sets the tessellation object of the graphics.
+ *
+ * @param graphic  The graphic to be edit
+ * @param tessellation  The tessellation object to be set for graphic
+ *
+ * @return  tessellation for graphic or NULL if none.
+ */
+int Cmiss_graphic_set_tessellation(
+		Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation);
 
 /***************************************************************************//**
  * Set the type for how the graphics will be rendered in GL.

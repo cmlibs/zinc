@@ -3370,7 +3370,7 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 				(void *)cmiss_graphic_name, rendition->list_of_graphics))
 		{
 			Cmiss_rendition_begin_change(rendition);
-			Cmiss_graphic *graphic = Cmiss_rendition_create_static(rendition);
+			Cmiss_graphic *graphic = Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_STATIC);
 			struct Graphical_material *material = get_GT_object_default_material(glyph);
 			if (!material)
 			{
@@ -3955,3 +3955,18 @@ in an easy-to-interpret matrix multiplication form.
 
 	return (return_code);
 } /* list_Cmiss_rendition_transformation */
+
+Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
+		enum Cmiss_graphic_type graphic_type)
+{
+	Cmiss_graphic_id graphic = NULL;
+	if (rendition)
+	{
+		if (NULL != (graphic=CREATE(Cmiss_graphic)(graphic_type)))
+		{
+			Cmiss_rendition_add_graphic(rendition, graphic, -1);
+		}
+	}
+	return graphic;
+
+}

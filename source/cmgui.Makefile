@@ -882,11 +882,9 @@ API_SRCS = \
 	api/cmiss_context.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
-	api/cmiss_graphic.c \
 	api/cmiss_idle.c \
 	api/cmiss_material.c \
 	api/cmiss_node.c \
-	api/cmiss_rendition.c \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c \

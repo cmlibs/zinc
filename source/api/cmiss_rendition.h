@@ -155,54 +155,20 @@ int Cmiss_rendition_get_visibility_flag(struct Cmiss_rendition *rendition);
 int Cmiss_region_has_rendition(Cmiss_region_id cmiss_region);
 
 /***************************************************************************//**
- * Create a line representation for rendition. This graphical representation can
- * be modified through Cmiss_graphic_set functions.
- *
- * @param rendition  The handle to the rendition which the lines are created for.
- * @return  If successfully create lines for rendition returns the handle to the
- *   created graphic, otherwise NULL.
- */
-Cmiss_graphic_id Cmiss_rendition_create_lines(Cmiss_rendition_id rendition);
-
-/***************************************************************************//**
- * Create a surface representation for rendition. This graphical representation 
- * can be modified through Cmiss_graphic_set functions.
- *
- * @param rendition  The handle to the rendition which the surface are created 
- *   for.
- * @return  If successfully create surface for rendition returns the handle to 
- *   the created graphic, otherwise NULL.
- */
-Cmiss_graphic_id Cmiss_rendition_create_surfaces(Cmiss_rendition_id rendition);
-
-/***************************************************************************//**
- * Create a node point representation for rendition. This graphical 
+ * Create graphic representation for rendition. This graphical
  * representation can be modified through Cmiss_graphic_set functions.
+ * Type of graphic to be created is specified by graphic_type.
  *
- * @param rendition  The handle to the rendition which the node point are 
- *   created for.
- * @return  If successfully create node points for rendition returns the handle
- *   to the created graphic, otherwise NULL.
- */
-Cmiss_graphic_id Cmiss_rendition_create_node_points(Cmiss_rendition_id rendition);
-
-/***************************************************************************//**
- * Create a static graphics representation for rendition. This graphical 
- * representation can be modified through Cmiss_graphic_set functions.
- * This graphic type is different from others, as the graphics object of this is
- * created by user instead of generated from finite element models, it does not 
- * require a coordinate field in the rendition. To get an idea of what graphics 
- * objects are, take a look at the glyphs used in points representation  
- * they are a set of preset graphics object in cmgui. 
- * More functions will be created to support this graphics type.
- *
- * @warning  This function is under development and may subject to change.
  * @param rendition  The handle to the rendition which the static graphics are
  *   object created for.
- * @return  If successfully create static graphics objects for rendition returns 
- *   the handle to the created graphic, otherwise NULL.
+ *
+ * @param graphic_type  enumerator for a specific graphic type. Please
+ * 		take a look at cmiss_graphic.h for available graphic types.
+ * @return  the handle to the created graphic if successfully create graphic of
+ * the specified type for rendition, otherwise NULL.
  */
-Cmiss_graphic_id Cmiss_rendition_create_static(Cmiss_rendition_id rendition);
+Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
+	enum Cmiss_graphic_type graphic_type);
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
