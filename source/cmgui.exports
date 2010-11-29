@@ -472,6 +472,8 @@ Cmiss_graphic_set_tessellation
 Cmiss_graphic_set_coordinate_field
 Cmiss_graphic_set_texture_coordinate_field
 Cmiss_graphic_set_render_type
+Cmiss_graphic_get_visibility_flag
+Cmiss_graphic_set_visibility_flag
 Cmiss_graphic_destroy
 
 Cmiss_spectrum_get_name

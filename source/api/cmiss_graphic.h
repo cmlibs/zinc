@@ -189,5 +189,23 @@ int Cmiss_graphic_set_render_type(
  *   otherwise 0
  */
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
+
+/***************************************************************************//**
+ * Return status of graphic visibility flag attribute.
+ *
+ * @param graphic  The graphic to query.
+ * @return  1 if graphic visibility flag is set, 0 if not.
+ */
+int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
+
+/***************************************************************************//**
+ * Sets status of graphic visibility flag attribute.
+ *
+ * @param graphic  The graphic to modify.
+ * @param visibility_flag  1 to set, 0 to clear.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
+	int visibility_flag);
 	
 #endif /*__CMISS_GRAPHIC_H__*/

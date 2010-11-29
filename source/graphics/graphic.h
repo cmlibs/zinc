@@ -269,24 +269,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail);
 
 /***************************************************************************//**
- * Return status of graphic visibility flag attribute.
- * 
- * @param graphic  The graphic to query.
- * @return  1 if graphic visibility flag is set, 0 if not.
- */
-int Cmiss_graphic_get_visibility_flag(struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
- * Sets status of graphic visibility flag attribute.
- * 
- * @param graphic  The graphic to modify.
- * @param visibility_flag  1 to set, 0 to clear.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
-	int visibility_flag);
-
-/***************************************************************************//**
  * @return  1 if both graphic and its rendition visibility flags are set,
  * otherwise 0. 
  */
