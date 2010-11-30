@@ -881,10 +881,10 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 API_SRCS = \
 	api/cmiss_context.c \
 	api/cmiss_core.c \
-	api/cmiss_element.c \
+	api/cmiss_element.cpp \
 	api/cmiss_idle.c \
 	api/cmiss_material.c \
-	api/cmiss_node.c \
+	api/cmiss_node.cpp \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c \
@@ -1698,8 +1698,8 @@ ifeq ($(OPERATING_SYSTEM), win32)
 endif
 
 LIB_CORE_FIELDS_SRCS = \
-	api/cmiss_element.c \
-	api/cmiss_node.c \
+	api/cmiss_element.cpp \
+	api/cmiss_node.cpp \
 	api/cmiss_time_sequence.c \
 	general/io_stream.c \
 	general/statistics.c \

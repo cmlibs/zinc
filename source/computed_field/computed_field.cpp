@@ -5284,37 +5284,40 @@ char *Cmiss_field_get_name(Cmiss_field_id field)
 	return (name);
 }
 
-int Cmiss_field_set_name(
-	struct Computed_field *field, const char *name)
-/*******************************************************************************
-LAST MODIFIED : 18 April 2008
-
-DESCRIPTION :
-Changes the name of a field.
-==============================================================================*/
+int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 {
-	char *new_name;
 	int return_code;
-	LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data;
 
 	ENTER(Cmiss_field_set_name);
 	if (field && name)
 	{
-		if (ALLOCATE(new_name, char, strlen(name)+1))
+		LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data = NULL;
+		return_code = 1;
+		if (field->manager)
 		{
-			return_code = 1;
-			if (field->manager)
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+					 const_cast<char *>(name), field->manager))
 			{
-				if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
-						 const_cast<char *>(name), field->manager))
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_field_set_name.  "
-						"Field named \"%s\" already exists in this field manager.",
-						name);
-					return_code = 0;
-				}
+				display_message(ERROR_MESSAGE,
+					"Cmiss_field_set_name.  "
+					"Field named \"%s\" already exists in this field manager.",
+					name);
+				return_code = 0;
 			}
+		}
+		if (return_code)
+		{
+			// core type must confirm change is permitted
+			if (!field->core->can_set_name(name))
+			{
+				display_message(ERROR_MESSAGE, "Cmiss_field_set_name.  "
+					"Cannot change name of field %s to %s due to its type", field->name, name);
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			// this temporarily removes the object from all indexed lists
 			identifier_change_data =
 				LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(field);
 			if (NULL == identifier_change_data)
@@ -5324,9 +5327,12 @@ Changes the name of a field.
 					"Could not safely change identifier in indexed lists");
 				return_code = 0;
 			}
-				
-			/* Actually do the change */
-			if (return_code)
+		}
+		if (return_code)
+		{
+			/* change the name attribute */
+			char *new_name = duplicate_string(name);
+			if (new_name)
 			{
 				/* If this has previously been allocated separately destroy it */
 				if (field->command_string != field->name)
@@ -5339,25 +5345,22 @@ Changes the name of a field.
 				/* Now make them point to the same memory */
 				field->command_string = (char *)field->name;
 			}
-			
-			if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
-					name)(&identifier_change_data))
+			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_field_set_name  "
-					"Could not restore object to all indexed lists");
-			}
-			if (field->manager)
-			{
-				return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
-					MANAGER_CHANGE_IDENTIFIER(Computed_field));
+				return_code = 0;
 			}
 		}
-		else
+		// Must restore objects to indexed lists if removed:
+		if ((identifier_change_data) && (!LIST_END_IDENTIFIER_CHANGE
+			(Computed_field,name)(&identifier_change_data)))
 		{
-			display_message(ERROR_MESSAGE,"Cmiss_field_set_name.  "
-				"Unable to ALLOCATE memory");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Cmiss_field_set_name  "
+				"Could not restore object to all indexed lists");
+		}
+		if (return_code && field->manager)
+		{
+			return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
+				MANAGER_CHANGE_IDENTIFIER(Computed_field));
 		}
 	}
 	else
@@ -5500,17 +5503,25 @@ int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Co
 }
 
 /***************************************************************************//**
- * Make a 'unique' name based on the number_of_objects in the manager
+ * Make a 'unique' field name by appending a number onto the stem_name until no
+ * field of that name is found in the manager.
+ *
+ * @param first_number  First number to try. If negative (the default argument),
+ * start with number of fields in manager + 1.
  * @return  Allocated string containing valid field name not used by any field
  * in manager. Caller must DEALLOCATE. NULL on failure.
  */
 static char *Computed_field_manager_get_unique_field_name(
 	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
-	const char *separator="")
+	const char *separator="", int first_number=-1)
 {
 	char *field_name = NULL;
 	ALLOCATE(field_name, char, strlen(stem_name) + strlen(separator) + 20);
-	int number = NUMBER_IN_MANAGER(Computed_field)(manager);
+	int number = first_number;
+	if (number < 0)
+	{
+		number = NUMBER_IN_MANAGER(Computed_field)(manager) + 1;
+	}
 	do
 	{
 		sprintf(field_name, "%s%s%d", stem_name, separator, number);
@@ -5542,7 +5553,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 						field->name, manager))
 			{
-				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_");
+				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
 #if defined (OLD_CODE)
 				display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
 					"Renaming field from %s to %s as name already in use.",
@@ -5804,18 +5815,14 @@ int Cmiss_field_module_set_field_name(
 	struct Cmiss_field_module *field_module, const char *field_name)
 {
 	int return_code = 0;
-	if (field_module && field_name)
+	if (field_module)
 	{
-		char *temp = duplicate_string(field_name);
-		if (temp)
+		if (field_module->field_name)
 		{
-			if (field_module->field_name)
-			{
-				DEALLOCATE(field_module->field_name);
-			}
-			field_module->field_name = temp;
-			return_code = 1;
+			DEALLOCATE(field_module->field_name);
 		}
+		field_module->field_name = field_name ? duplicate_string(field_name) : NULL;
+		return_code = 1;
 	}
 	return (return_code);
 }

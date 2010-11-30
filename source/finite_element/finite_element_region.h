@@ -308,7 +308,7 @@ Returns the number of FE_fields in <fe_region>.
  * left at their default values.
  */
 struct FE_field *FE_region_get_FE_field_with_general_properties(
-	struct FE_region *fe_region, char *name, enum Value_type value_type,
+	struct FE_region *fe_region, const char *name, enum Value_type value_type,
 	int number_of_components);
 
 /***************************************************************************//**
@@ -320,7 +320,7 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
  * begin/end change if several calls are to be made.
  */
 struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, char *name, enum FE_field_type fe_field_type,
+	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
 	struct FE_field *indexer_field, int number_of_indexed_values,
 	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
 	enum Value_type value_type, int number_of_components, char **component_names,
@@ -828,23 +828,45 @@ of <fe_region>.
 Should place multiple calls to this function between begin_change/end_change.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Checks the source element is compatible with region & that there is no
+ * existing element of supplied identifier, then creates element of that
+ * identifier as a copy of source and adds it to the fe_region.
+ *
+ * @param identifier  Positive integer identifier of new element, or <= 0 to
+ * automatically generate. Fails if already used by an existing element.
+ * @return  New element (non-accessed), or NULL if failed.
+ */
+struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
+	enum CM_element_type element_type, int identifier,
+	struct FE_element *source);
+
+/***************************************************************************//**
+ * Checks <element> is compatible with <fe_region> and any existing FE_element
+ * using the same identifier, then merges it into <fe_region>.
+ * If no FE_element of the same identifier exists in FE_region, <element> is
+ * added to <fe_region> and returned by this function, otherwise changes are
+ * merged into the existing FE_element and it is returned.
+ * During the merge, any new fields from <element> are added to the existing
+ * element of the same identifier. Where those fields are already defined on the
+ * existing element, the existing structure is maintained, but the new values
+ * are added from <element>. Fails if fields are not consistently defined.
+ *
+ * @return  On success, the element from the region which differs from the
+ * element argument if modifying an existing element, or NULL on error.
+ */
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
 
-DESCRIPTION :
-Checks <element> is compatible with <fe_region> and any existing FE_element
-using the same identifier, then merges it into <fe_region>.
-If no FE_element of the same identifier exists in FE_region, <element> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_element and it is returned.
-During the merge, any new fields from <element> are added to the existing
-element of the same identifier. Where those fields are already defined on the
-existing element, the existing structure is maintained, but the new values are
-added from <element>. Fails if fields are not consistently defined.
-A NULL value is returned on any error.
-==============================================================================*/
+/***************************************************************************//**
+ * Merges field changes from source into destination element. Checks both
+ * elements are compatible with the same master region / fe_region, and adds
+ * destination to fe_region if it is not the master.
+ *
+ * @return  1 on success, 0 on error.
+ */
+int FE_region_merge_FE_element_existing(struct FE_region *fe_region,
+	struct FE_element *destination, struct FE_element *source);
 
 int FE_region_begin_define_faces(struct FE_region *fe_region);
 /*******************************************************************************

@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_node.h
-
-LAST MODIFIED : 3 November 2004
-
-DESCRIPTION :
-The public interface to Cmiss_node.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_node.h
+ *
+ * The public interface to Cmiss_node.
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -49,28 +47,23 @@ Global types
 ------------
 */
 
-struct Cmiss_region;
-/*******************************************************************************
-LAST MODIFIED : 14 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
 #ifndef CMISS_REGION_ID_DEFINED
+	struct Cmiss_region;
+	/** Handle to a region object */
    typedef struct Cmiss_region * Cmiss_region_id;
    #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+/* GRC remove */
 #define Cmiss_node FE_node
 
-struct Cmiss_node;
-typedef struct Cmiss_node *Cmiss_node_id;
-/*******************************************************************************
-LAST MODIFIED : 14 August 2002
-
-DESCRIPTION :
-==============================================================================*/
+#ifndef CMISS_NODE_ID_DEFINED
+	struct Cmiss_node;
+	/** Handle to a single node object */
+	typedef struct Cmiss_node *Cmiss_node_id;
+	#define CMISS_NODE_ID_DEFINED
+#endif /* CMISS_NODE_ID_DEFINED */
 
 typedef int (*Cmiss_node_iterator_function)(Cmiss_node_id node,
   void *user_data);

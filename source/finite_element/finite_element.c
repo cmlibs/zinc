@@ -3763,6 +3763,8 @@ field_1 > field_2.
 
 	ENTER(compare_FE_field);
 	/*???DB.  Alphabetical ordering */
+	/* GRC using this to order FE_node_field and FE_element_field makes it
+	 * practically impossible to rename FE_fields */
 	return_code=strcmp(field_1->name,field_2->name);
 #if defined (OLD_CODE)
 	if (field_1<field_2)
@@ -9727,7 +9729,7 @@ Function prototype should be in finite_element_private.h, so not public.
 	return (return_code);
 } /* FE_field_copy_without_identifier */
 
-int FE_field_matches_description(struct FE_field *field,char *name,
+int FE_field_matches_description(struct FE_field *field, const char *name,
 	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
@@ -26063,35 +26065,36 @@ Static constructor to be called by specialised constructors.
 	return (node_scale_field_info);
 } /* CREATE(FE_element_node_scale_field_info) */
 
+/***************************************************************************//**
+ * The number of nodes can only increase.
+ */
 static int FE_element_node_scale_field_info_set_number_of_nodes(
 	struct FE_element_node_scale_field_info *element_node_scale_field_info,
 	int number_of_nodes)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-==============================================================================*/
 {
 	int i, return_code;
 
 	ENTER(FE_element_node_scale_field_info_set_number_of_nodes);
 	if (element_node_scale_field_info && (0 <= number_of_nodes))
 	{
-		if (element_node_scale_field_info->nodes)
+		if (number_of_nodes < element_node_scale_field_info->number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_element_node_scale_field_info_set_number_of_nodes.  "
-				"Number of nodes is already set");
+				"Cannot reduce the number of nodes in element");
 			return_code = 0;
 		}
 		else
 		{
 			if (0 < number_of_nodes)
 			{
-				if (ALLOCATE(element_node_scale_field_info->nodes, struct FE_node *,
-					number_of_nodes))
+				struct FE_node **temp_nodes;
+				if (REALLOCATE(temp_nodes, element_node_scale_field_info->nodes,
+					struct FE_node *, number_of_nodes))
 				{
-					for (i = 0; i < number_of_nodes; i++)
+					element_node_scale_field_info->nodes = temp_nodes;
+					for (i = element_node_scale_field_info->number_of_nodes;
+						i < number_of_nodes; i++)
 					{
 						element_node_scale_field_info->nodes[i] = (struct FE_node *)NULL;
 					}
@@ -28072,6 +28075,91 @@ sets <*element_shape_address> to NULL.
 DECLARE_OBJECT_FUNCTIONS(FE_element_shape)
 DECLARE_LIST_FUNCTIONS(FE_element_shape)
 
+#if (MAXIMUM_ELEMENT_XI_DIMENSIONS > 3)
+#error Resize following define.
+#endif
+#define INT_SHAPE_TYPE_ARRAY_LENGTH 6
+
+struct Cmiss_element_shape_type_map
+{
+	enum Cmiss_element_shape_type shape_type;
+	const int dimension;
+	const int int_shape_type_array[INT_SHAPE_TYPE_ARRAY_LENGTH];
+};
+
+const struct Cmiss_element_shape_type_map standard_shape_type_maps[] =
+{
+	{ CMISS_ELEMENT_SHAPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
+	{ CMISS_ELEMENT_SHAPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
+	{ CMISS_ELEMENT_SHAPE_TRIANGLE,    2, { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE, 0, 0, 0 } },
+	{ CMISS_ELEMENT_SHAPE_CUBE,        3, { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE } },
+	{ CMISS_ELEMENT_SHAPE_TETRAHEDRON, 3, { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } },
+	{ CMISS_ELEMENT_SHAPE_WEDGE12,     3, { SIMPLEX_SHAPE, 1, 0, SIMPLEX_SHAPE, 0, LINE_SHAPE } },
+	{ CMISS_ELEMENT_SHAPE_WEDGE13,     3, { SIMPLEX_SHAPE, 0, 1, LINE_SHAPE, 0, SIMPLEX_SHAPE } },
+	{ CMISS_ELEMENT_SHAPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
+};
+
+const int standard_shape_type_maps_length = sizeof(standard_shape_type_maps) / sizeof(struct Cmiss_element_shape_type_map);
+
+struct FE_element_shape *FE_element_shape_create_simple_type(
+	struct FE_region *fe_region, enum Cmiss_element_shape_type shape_type)
+{
+	struct FE_element_shape *fe_element_shape;
+	int i;
+
+	fe_element_shape = NULL;
+	if (fe_region)
+	{
+		for (i = 0; i < standard_shape_type_maps_length; i++)
+		{
+			if (standard_shape_type_maps[i].shape_type == shape_type)
+			{
+				fe_element_shape = ACCESS(FE_element_shape)(
+					CREATE(FE_element_shape)(standard_shape_type_maps[i].dimension,
+						standard_shape_type_maps[i].int_shape_type_array, fe_region));
+				break;
+			}
+		}
+	}
+	if (!fe_element_shape)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_create_simple_type.  Invalid arguments");
+	}
+	return fe_element_shape;
+}
+
+enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
+	struct FE_element_shape *element_shape)
+{
+	int dimension, i, j, length;
+	enum Cmiss_element_shape_type shape_type;
+
+	shape_type = CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN;
+	if (element_shape)
+	{
+		dimension = element_shape->dimension;
+		length = dimension*(dimension + 1)/2;
+		for (i = 0; i < standard_shape_type_maps_length; i++)
+		{
+			if (standard_shape_type_maps[i].dimension == dimension)
+			{
+				for (j = 0; j < length; j++)
+				{
+					if (element_shape->type[j] != standard_shape_type_maps[i].int_shape_type_array[j])
+						break;
+				}
+				if (j == length)
+				{
+					shape_type = standard_shape_type_maps[i].shape_type;
+					break;
+				}
+			}
+		}
+	}
+	return shape_type;
+}
+
 int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002
@@ -28978,29 +29066,20 @@ returns the element in the <element_list> with that CM_element_information.
 	return (element);
 } /* any_element_string_to_FE_element */
 
-static int set_FE_element_shape(struct FE_element *element,
+int set_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape *shape)
-/*******************************************************************************
-LAST MODIFIED : 11 October 2002
-
-DESCRIPTION :
-Sets the <shape> of <element>. Note that the element must not currently have a
-shape in order for this to be set, ie. just created. Allocates and clears the
-faces array in the element, so this must be clear too.
-Only called by CREATE FE_element.
-==============================================================================*/
 {
 	int i,return_code;
 	struct FE_element **faces;
 
 	ENTER(set_FE_element_shape);
 	return_code=0;
-	if (element&&shape&&(0<=shape->number_of_faces))
+	if (element && shape && (0 <= shape->number_of_faces))
 	{
-		if (element->shape||element->faces)
+		if ((element->shape) && (element->shape->dimension != shape->dimension))
 		{
 			display_message(ERROR_MESSAGE,
-				"set_FE_element_shape.  Element already has shape/faces");
+				"set_FE_element_shape.  Cannot change to a different dimension shape");
 		}
 		else
 		{
@@ -29013,8 +29092,16 @@ Only called by CREATE FE_element.
 				{
 					faces[i] = (struct FE_element *)NULL;
 				}
-				element->faces=faces;
+				if (element->shape)
+				{
+					DEACCESS(FE_element_shape)(&element->shape);
+				}
+				if (element->faces)
+				{
+					DEALLOCATE(element->faces);
+				}
 				element->shape=ACCESS(FE_element_shape)(shape);
+				element->faces=faces;
 				return_code=1;
 			}
 			else

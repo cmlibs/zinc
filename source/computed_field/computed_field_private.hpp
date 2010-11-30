@@ -293,6 +293,13 @@ public:
 	// Overrides must call the base implementation if function is not non-linear
 	// and there are source fields.
 	virtual bool is_non_linear() const;
+
+	// override if field type cannot be renamed e.g. finite_element field
+	virtual int can_set_name(const char *name)
+	{
+		USE_PARAMETER(name);
+		return 1;
+	}
 }; /* class Computed_field_core */
 
 struct Computed_field

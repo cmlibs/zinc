@@ -1,6 +1,3 @@
-api/cmiss_command_data.c
-api/cmiss_element.c
-api/cmiss_node.c
 api/cmiss_region.c
 api/cmiss_texture.c
 command/command.c

@@ -206,9 +206,6 @@ DECLARE_LIST_TYPES(FE_node);
 
 DECLARE_CHANGE_LOG_TYPES(FE_node);
 
-#if defined (OLD_CODE)
-Shifted to API
-
 enum FE_basis_type
 /*******************************************************************************
 LAST MODIFIED : 20 October 1997
@@ -217,6 +214,7 @@ DESCRIPTION :
 The different basis types available.
 NOTE: Must keep this up to date with functions
 FE_basis_type_string
+NOTE: External API uses different enum Cmiss_element_basis_type
 ==============================================================================*/
 {
 	FE_BASIS_TYPE_INVALID=-1,
@@ -238,7 +236,6 @@ FE_basis_type_string
 	SINGULAR,
 	TRANSITION
 }; /* enum FE_basis_type */
-#endif /* defined (OLD_CODE) */
 
 typedef int (Standard_basis_function)(void *,FE_value *,FE_value *);
 
@@ -2287,6 +2284,23 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_element_shape);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_shape);
 
+/***************************************************************************//**
+ * Creates an element shape object given just a Cmiss_element_shape_type.
+ *
+ * @return  Accessed shape object or NULL on error.
+ */
+struct FE_element_shape *FE_element_shape_create_simple_type(
+	struct FE_region *fe_region, enum Cmiss_element_shape_type shape_type);
+
+/***************************************************************************//**
+ * Returns a Cmiss_element_shape_type describing the shape if possible.
+ *
+ * @param element_shape   The shape object to query.
+ * @return  The shape type, or unknown if not able to be described by enum.
+ */
+enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
+	struct FE_element_shape *element_shape);
+
 int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002
@@ -2454,6 +2468,15 @@ Frees the memory for the element, sets <*element_address> to NULL.
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
+
+/***************************************************************************//**
+ * Sets the element shape. Must match the dimension of the existing shape.
+ * Beware that face mappings are lost if shape changes are merged into global
+ * elements.
+ * Does not propagate change messages.
+ */
+int set_FE_element_shape(struct FE_element *element,
+	struct FE_element_shape *shape);
 
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements, 
@@ -2649,8 +2672,8 @@ int set_FE_element_number_of_nodes(struct FE_element *element,
 LAST MODIFIED : 4 November 2002
 
 DESCRIPTION :
-Establishes storage for <number_of_nodes> in <element>.
-May only be set once; should only be called for unmanaged elements.
+Establishes storage for <number_of_nodes> in <element>. Can only be increased.
+Should only be called for unmanaged elements.
 ==============================================================================*/
 
 int get_FE_element_number_of_nodes(struct FE_element *element,
@@ -3201,7 +3224,7 @@ Copies the contents but not the name identifier of <source> to <destination>.
 ?COPY_WITHOUT_IDENTIFIER object_type,identifier
 ==============================================================================*/
 
-int FE_field_matches_description(struct FE_field *field,char *name,
+int FE_field_matches_description(struct FE_field *field, const char *name,
 	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,

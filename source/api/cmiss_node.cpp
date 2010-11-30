@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_finite_element.c
-
-LAST MODIFIED : 1 April 2004
-
-DESCRIPTION :
-The public interface to the Cmiss_finite_elements.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_node.cpp
+ *
+ * Implementation of public interface to Cmiss_node.
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,12 +39,15 @@ The public interface to the Cmiss_finite_elements.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+extern "C" {
 #include <stdarg.h>
 #include "api/cmiss_node.h"
 #include "general/debug.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "user_interface/message.h"
+}
 
 /*
 Global functions
@@ -90,7 +91,7 @@ The new node is set to belong to the ultimate master FE_region of <region>.
 
 	ENTER(create_Cmiss_node);
 	node = (Cmiss_node_id)NULL;
-	if (fe_region=Cmiss_region_get_FE_region(region))
+	if ((fe_region=Cmiss_region_get_FE_region(region)))
 	{
 		node = ACCESS(FE_node)(CREATE(FE_node)(node_identifier, fe_region, (struct FE_node *)NULL));
 	}

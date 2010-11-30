@@ -73,7 +73,7 @@ Global types
 	typedef struct Cmiss_field *Cmiss_field_id;
 	#define CMISS_FIELD_ID_DEFINED
 #endif /* CMISS_FIELD_ID_DEFINED */
-   
+
 /* Forward declared types */
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_time_sequence FE_time_sequence

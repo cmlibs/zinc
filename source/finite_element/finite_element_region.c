@@ -1953,7 +1953,7 @@ message if not already in the middle of changes.
 } /* FE_region_clear */
 
 struct FE_field *FE_region_get_FE_field_with_general_properties(
-	struct FE_region *fe_region, char *name, enum Value_type value_type,
+	struct FE_region *fe_region, const char *name, enum Value_type value_type,
 	int number_of_components)
 {
 	struct FE_field *fe_field;
@@ -2004,7 +2004,7 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 }
 
 struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, char *name, enum FE_field_type fe_field_type,
+	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
 	struct FE_field *indexer_field, int number_of_indexed_values,
 	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
 	enum Value_type value_type, int number_of_components, char **component_names,
@@ -4672,23 +4672,71 @@ Should place multiple calls to this function between begin_change/end_change.
 	return (return_code);
 } /* FE_region_define_FE_field_at_element */
 
+struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
+	enum CM_element_type element_type, int identifier,
+	struct FE_element *source)
+{
+	struct CM_element_information cm;
+	struct FE_element *new_element;
+
+	ENTER(FE_region_create_FE_element_copy);
+	new_element = (struct FE_element *)NULL;
+	if (fe_region && source)
+	{
+		if (fe_region->master_fe_region)
+		{
+			FE_region_begin_change(fe_region);
+			new_element = FE_region_create_FE_element_copy(
+				fe_region->master_fe_region, element_type, identifier, source);
+			if ((new_element) && ADD_OBJECT_TO_LIST(FE_element)(new_element,
+				fe_region->fe_element_list))
+			{
+				FE_REGION_FE_ELEMENT_CHANGE(fe_region, new_element,
+					CHANGE_LOG_OBJECT_ADDED(FE_element), new_element);
+			}
+			FE_region_end_change(fe_region);
+		}
+		else if (FE_element_get_FE_region(source) == fe_region)
+		{
+			cm.type = element_type;
+			cm.number = identifier;
+			if (identifier <= 0)
+			{
+				cm.number = FE_region_get_next_FE_element_identifier(
+					fe_region, element_type, 0);
+			}
+			new_element = CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
+				(struct FE_region *)NULL, source);
+			if (ADD_OBJECT_TO_LIST(FE_element)(new_element, fe_region->fe_element_list))
+			{
+				FE_REGION_FE_ELEMENT_CHANGE(fe_region, new_element,
+					CHANGE_LOG_OBJECT_ADDED(FE_element), new_element);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_create_FE_element_copy.  Element identifier in use.");
+				DESTROY(FE_element)(&new_element);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_region_create_FE_element_copy.  "
+				"Source element is incompatible with region");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_create_FE_element_copy.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (new_element);
+}
+
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Checks <element> is compatible with <fe_region> and any existing FE_element
-using the same identifier, then merges it into <fe_region>.
-If no FE_element of the same identifier exists in FE_region, <element> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_element and it is returned.
-During the merge, any new fields from <element> are added to the existing
-element of the same identifier. Where those fields are already defined on the
-existing element, the existing structure is maintained, but the new values are
-added from <element>. Fails if fields are not consistently defined.
-A NULL value is returned on any error.
-==============================================================================*/
 {
 	struct CM_element_information identifier;
 	struct FE_element *merged_element;
@@ -4814,7 +4862,63 @@ A NULL value is returned on any error.
 	LEAVE;
 
 	return (merged_element);
-} /* FE_region_merge_FE_element */
+}
+
+int FE_region_merge_FE_element_existing(struct FE_region *fe_region,
+	struct FE_element *destination, struct FE_element *source)
+{
+	int return_code;
+	struct LIST(FE_field) *changed_fe_field_list;
+
+	ENTER(FE_region_merge_FE_element_existing);
+	return_code = 0;
+	if (fe_region && destination && source)
+	{
+		if (fe_region->master_fe_region)
+		{
+			FE_region_begin_change(fe_region);
+			if (FE_region_merge_FE_element_existing(fe_region->master_fe_region,
+				destination, source))
+			{
+				if (!IS_OBJECT_IN_LIST(FE_element)(destination, fe_region->fe_element_list))
+				{
+					if (ADD_OBJECT_TO_LIST(FE_element)(destination,fe_region->fe_element_list))
+					{
+						FE_REGION_FE_ELEMENT_CHANGE(fe_region, destination,
+							CHANGE_LOG_OBJECT_ADDED(FE_element), destination);
+					}
+				}
+			}
+			FE_region_end_change(fe_region);
+		}
+		else if ((FE_element_get_FE_region(destination) == fe_region) &&
+			(FE_element_get_FE_region(source) == fe_region))
+		{
+			changed_fe_field_list = CREATE(LIST(FE_field))();
+			if (merge_FE_element(destination, source, changed_fe_field_list))
+			{
+				return_code = 1;
+				FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region, destination,
+					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
+					changed_fe_field_list);
+			}
+			DESTROY(LIST(FE_field))(&changed_fe_field_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_region_merge_FE_element_existing.  "
+				"Source and/or destination elements are incompatible with region");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_merge_FE_element_existing.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return return_code;
+}
 
 int FE_region_merge_FE_element_iterator(struct FE_element *element,
 	void *fe_region_void)

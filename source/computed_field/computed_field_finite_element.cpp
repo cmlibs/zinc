@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_finite_element.c
+FILE : computed_field_finite_element.cpp
 
 LAST MODIFIED : 24 August 2006
 
@@ -152,6 +152,17 @@ private:
 	{
 		return FE_field_uses_non_linear_basis(fe_field);
 	}
+
+	// can only rename finite_element_fields to match internal FE_field
+	virtual int can_set_name(const char *name)
+	{
+		char *fe_field_name = NULL;
+		GET_NAME(FE_field)(fe_field, &fe_field_name);
+		int return_code = (0 == strcmp(name, fe_field_name));
+		DEALLOCATE(fe_field_name);
+		return return_code;
+	};
+
 };
 
 Computed_field_finite_element::~Computed_field_finite_element()
@@ -1213,31 +1224,47 @@ static struct Computed_field *Computed_field_create_finite_element_internal(
 }
 
 Cmiss_field_id Cmiss_field_module_create_finite_element(
-	Cmiss_field_module_id field_module, int number_of_components)
+	Cmiss_field_module_id field_module, const char *name,
+	int number_of_components)
 {
 	Computed_field *field = NULL;
-	if (field_module && (0 < number_of_components))
+	if (field_module && name && (0 < number_of_components))
 	{
-		char *unique_name = Cmiss_field_module_get_unique_field_name(field_module);
-		display_message(INFORMATION_MESSAGE, "Cmiss_field_module_create_finite_element: creating %s\n", unique_name); // GRC
-		Cmiss_region *region = Cmiss_field_module_get_region(field_module);
-		// cache changes to ensure FE_field not automatically wrapped already
-		Cmiss_region_begin_change(region);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
-		FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-			fe_region, unique_name, FE_VALUE_VALUE, number_of_components);
-		if (fe_field)
+		field = Cmiss_field_module_find_field_by_name(field_module, name);
+		if (field)
 		{
-			Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
-			set_FE_field_coordinate_system(fe_field, &coordinate_system);
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/false, number_of_components,
-				/*number_of_source_fields*/0, NULL,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_finite_element(fe_field));
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_module_create_finite_element.  Field name is in use");
+			Cmiss_field_destroy(&field);
 		}
-		Cmiss_region_end_change(region);
-		Cmiss_region_destroy(&region);
+		else
+		{
+			Cmiss_region *region = Cmiss_field_module_get_region(field_module);
+			// cache changes to ensure FE_field not automatically wrapped already
+			Cmiss_region_begin_change(region);
+			FE_region *fe_region = Cmiss_region_get_FE_region(region);
+			FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
+				fe_region, name, FE_VALUE_VALUE, number_of_components);
+			if (fe_field)
+			{
+				Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
+				set_FE_field_coordinate_system(fe_field, &coordinate_system);
+				char *old_default_name = Cmiss_field_module_get_field_name(field_module);
+				Cmiss_field_module_set_field_name(field_module, name);
+				field = Computed_field_create_generic(field_module,
+					/*check_source_field_regions*/false, number_of_components,
+					/*number_of_source_fields*/0, NULL,
+					/*number_of_source_values*/0, NULL,
+					new Computed_field_finite_element(fe_field));
+				Cmiss_field_module_set_field_name(field_module, old_default_name);
+				if (old_default_name)
+				{
+					DEALLOCATE(old_default_name);
+				}
+			}
+			Cmiss_region_end_change(region);
+			Cmiss_region_destroy(&region);
+		}
 	}
 	else
 	{
