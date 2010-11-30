@@ -3174,46 +3174,40 @@ Should place multiple calls to this function between begin_change/end_change.
 	ENTER(FE_region_define_FE_field_at_FE_node);
 	if (fe_region && node && fe_field && node_field_creator)
 	{
-		if (FE_region_contains_FE_node(fe_region, node))
+		return_code = 1;
+		if (!FE_field_is_defined_at_node(fe_field, node))
 		{
-			return_code = 1;
-			if (!FE_field_is_defined_at_node(fe_field, node))
+			/* get the ultimate master FE_region; only it has FE_time */
+			master_fe_region = fe_region;
+			while (master_fe_region->master_fe_region)
 			{
-				/* get the ultimate master FE_region; only it has FE_time */
-				master_fe_region = fe_region;
-				while (master_fe_region->master_fe_region)
+				master_fe_region = master_fe_region->master_fe_region;
+			}
+			if (FE_field_get_FE_region(fe_field) != master_fe_region)
+			{
+				display_message(ERROR_MESSAGE, "FE_region_define_FE_field_at_FE_node.  "
+					"Field is not of this finite element region");
+				return_code = 0;
+			}
+			if (fe_time_sequence && (!FE_time_sequence_package_has_FE_time_sequence(
+				master_fe_region->fe_time, fe_time_sequence)))
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_define_FE_field_at_FE_node.  "
+					"Time version is not of this finite element region");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				if (return_code = define_FE_field_at_node(node, fe_field,
+					fe_time_sequence, node_field_creator))
 				{
-					master_fe_region = master_fe_region->master_fe_region;
-				}
-				if (FE_field_get_FE_region(fe_field) != master_fe_region)
-				{
-					display_message(ERROR_MESSAGE, "FE_region_define_FE_field_at_FE_node.  "
-						"Field is not of this finite element region");
-					return_code = 0;
-				}
-				if (fe_time_sequence && (!FE_time_sequence_package_has_FE_time_sequence(
-					master_fe_region->fe_time, fe_time_sequence)))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_define_FE_field_at_FE_node.  "
-						"Time version is not of this finite element region");
-					return_code = 0;
-				}
-				if (return_code)
-				{
-					if (return_code = define_FE_field_at_node(node, fe_field,
-						fe_time_sequence, node_field_creator))
+					if (FE_region_contains_FE_node(master_fe_region, node))
 					{
 						FE_REGION_FE_NODE_FIELD_CHANGE(master_fe_region, node, fe_field);
 					}
 				}
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_define_FE_field_at_FE_node.  Node is not in region");
-			return_code = 0;
 		}
 	}
 	else

@@ -237,6 +237,7 @@ Cmiss_texture_set_pixels
 Cmiss_texture_get_property
 Cmiss_texture_set_property
 
+/* api/cmiss_region.h */
 Cmiss_region_access
 Cmiss_region_destroy
 Cmiss_region_begin_change
@@ -258,7 +259,6 @@ Cmiss_region_get_field_module
 
 Cmiss_region_get_element
 Cmiss_region_get_node
-Cmiss_region_merge_Cmiss_element
 Cmiss_region_merge_Cmiss_node
 Cmiss_region_get_number_of_nodes_in_region
 Cmiss_region_get_number_of_elements_in_region

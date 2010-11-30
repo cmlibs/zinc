@@ -331,37 +331,6 @@ Iterates over each element in <region>.
 	return (return_code);
 } /* Cmiss_region_for_each_element_in_region */
 
-Cmiss_element_id Cmiss_region_merge_Cmiss_element(Cmiss_region_id region,
-	Cmiss_element_id element)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Checks <element> is compatible with <region> and any existing Cmiss_element
-using the same identifier, then merges it into <region>.
-If no Cmiss_element of the same identifier exists in Cmiss_region, <element> is added
-to <region> and returned by this function, otherwise changes are merged into
-the existing Cmiss_element and it is returned.
-==============================================================================*/
-{
-	Cmiss_element_id returned_element;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_merge_Cmiss_element);
-	returned_element = (Cmiss_element_id)NULL;
-	if (region&&element)
-	{
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			returned_element = ACCESS(FE_element)(
-				FE_region_merge_FE_element(fe_region, element));
-		}
-	}
-	LEAVE;
-
-	return (returned_element);
-} /* Cmiss_region_merge_Cmiss_element */
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name)
 /*******************************************************************************

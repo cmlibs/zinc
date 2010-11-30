@@ -326,19 +326,6 @@ DESCRIPTION :
 Iterates over each element in <region>.
 ==============================================================================*/
 
-Cmiss_element_id Cmiss_region_merge_Cmiss_element(Cmiss_region_id region,
-	Cmiss_element_id element);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Checks <element> is compatible with <region> and any existing Cmiss_element
-using the same identifier, then merges it into <region>.
-If no Cmiss_element of the same identifier exists in Cmiss_region, <element> is added
-to <region> and returned by this function, otherwise changes are merged into
-the existing Cmiss_element and it is returned.
-==============================================================================*/
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 /*******************************************************************************
