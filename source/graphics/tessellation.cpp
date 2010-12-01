@@ -987,11 +987,12 @@ int gfx_define_tessellation(struct Parse_state *state, void *dummy_to_be_modifie
 				{
 					tessellation = Cmiss_graphics_module_create_tessellation(graphics_module);
 					Cmiss_tessellation_set_name(tessellation, current_token);
-					Cmiss_tessellation_set_persistent(tessellation, 1);
 				}
 				shift_Parse_state(state,1);
 				if (tessellation)
 				{
+					// set persistent here so persistent whenever created or edited
+					Cmiss_tessellation_set_persistent(tessellation, 1);
 					return_code = gfx_define_tessellation_contents(state, (void *)tessellation, graphics_module_void);
 				}
 				Cmiss_tessellation_destroy(&tessellation);
