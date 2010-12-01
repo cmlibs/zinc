@@ -163,6 +163,34 @@ private:
 		return return_code;
 	};
 
+	virtual int get_property_flag(enum Cmiss_field_property_flag property_flag)
+	{
+		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
+			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
+		return 0;
+	}
+
+	virtual int set_property_flag(enum Cmiss_field_property_flag property_flag, int flag_value)
+	{
+		// Note that CM_field_type is an enum with 3 states
+		// so can't be COORDINATE and ANATOMICAL at the same time.
+		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
+		{
+			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
+			if (flag_value)
+			{
+				if (cm_field_type != CM_COORDINATE_FIELD)
+					set_FE_field_CM_field_type(fe_field, CM_COORDINATE_FIELD);
+			}
+			else
+			{
+				if (cm_field_type == CM_COORDINATE_FIELD)
+					set_FE_field_CM_field_type(fe_field, CM_GENERAL_FIELD);
+			}
+		}
+		return 0;
+	}
+
 };
 
 Computed_field_finite_element::~Computed_field_finite_element()
@@ -1233,9 +1261,17 @@ Cmiss_field_id Cmiss_field_module_create_finite_element(
 		field = Cmiss_field_module_find_field_by_name(field_module, name);
 		if (field)
 		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_create_finite_element.  Field name is in use");
-			Cmiss_field_destroy(&field);
+			Computed_field_finite_element* core =
+				dynamic_cast<Computed_field_finite_element*>(field->core);
+			if ((!core)
+				|| (get_FE_field_number_of_components(core->fe_field) != number_of_components)
+				|| (get_FE_field_FE_field_type(core->fe_field) != GENERAL_FE_FIELD)
+				|| (get_FE_field_value_type(core->fe_field) != FE_VALUE_VALUE))
+			{
+				display_message(ERROR_MESSAGE, "Cmiss_field_module_create_finite_element.  "
+					"Name '%s' already used by field of different type or definition", name);
+				Cmiss_field_destroy(&field);
+			}
 		}
 		else
 		{

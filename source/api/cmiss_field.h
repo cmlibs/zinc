@@ -81,6 +81,17 @@ struct Cmiss_time_sequence;
 
 struct Cmiss_node_field_creator;
 
+/***************************************************************************//**
+ * Labels of property flags which fields may store or satisfy.
+ *
+ * @see Cmiss_field_get_property_flag
+ * @see Cmiss_field_set_property_flag
+ */
+enum Cmiss_field_property_flag
+{
+	CMISS_FIELD_PROPERTY_FLAG_COORDINATE = 0
+};
+
 /* Global Functions */
 
 int Cmiss_field_get_number_of_components(Cmiss_field_id field);
@@ -254,5 +265,28 @@ int Cmiss_field_get_persistent(Cmiss_field_id field);
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent);
+
+/***************************************************************************//**
+ * Query whether a property flag is set for the field.
+ *
+ * @param field  The field to query.
+ * @param property_flag  The property flag to query.
+ * @return  1 if flag is set, 0 if not.
+ */
+int Cmiss_field_get_property_flag(Cmiss_field_id field,
+	enum Cmiss_field_property_flag property_flag);
+
+/***************************************************************************//**
+ * Set a property flag for the field. Not all properties are relevant for all
+ * field types: many cannot be set or changed.
+ *
+ * @param field  The field to set the property for.
+ * @param property_flag  The property flag to modify.
+ * @param flag_value  1 to set, 0 to clear.
+ * @return  1 if property changed, 0 if ignored.
+ */
+int Cmiss_field_set_property_flag(Cmiss_field_id field,
+	enum Cmiss_field_property_flag property_flag, int flag_value);
+
 
 #endif /* __CMISS_FIELD_H__ */

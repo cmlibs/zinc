@@ -300,6 +300,22 @@ public:
 		USE_PARAMETER(name);
 		return 1;
 	}
+
+	// override if property supported by field type
+	virtual int get_property_flag(enum Cmiss_field_property_flag property_flag)
+	{
+		USE_PARAMETER(property_flag);
+		return 0;
+	}
+
+	// override if property can be set for field type
+	virtual int set_property_flag(enum Cmiss_field_property_flag property_flag, int flag_value)
+	{
+		USE_PARAMETER(property_flag);
+		USE_PARAMETER(flag_value);
+		return 0;
+	}
+
 }; /* class Computed_field_core */
 
 struct Computed_field

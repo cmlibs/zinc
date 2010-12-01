@@ -105,6 +105,8 @@ Cmiss_field_get_name
 Cmiss_field_set_name
 Cmiss_field_get_persistent
 Cmiss_field_set_persistent
+Cmiss_field_get_property_flag
+Cmiss_field_set_property_flag
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy

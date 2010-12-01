@@ -54,13 +54,14 @@
 #endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
 
 /***************************************************************************//**
- * Creates a real-valued finite_element field which can be interpolated over
- * a finite element mesh with parameters indexed by nodes.
+ * Creates or finds existing real-valued finite_element field which can be
+ * interpolated over a finite element mesh with parameters indexed by nodes.
  *
  * @param field_module  Region field module which will own new field.
- * @param name  The name for the field; must be unique in the field module.
+ * @param name  The name for the field. Must be unique in the field module or
+ * identify an existing finite_element field with identical definition.
  * @param number_of_components  The number of components for the new field.
- * @return  Handle to newly created field.
+ * @return  Handle to the found or newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_finite_element(
 	Cmiss_field_module_id field_module, const char *name,

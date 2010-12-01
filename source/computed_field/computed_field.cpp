@@ -5247,6 +5247,22 @@ int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent)
 	return (return_code);
 }
 
+int Cmiss_field_get_property_flag(Cmiss_field_id field,
+	enum Cmiss_field_property_flag property_flag)
+{
+	if (field)
+		return field->core->get_property_flag(property_flag);
+	return 0;
+}
+
+int Cmiss_field_set_property_flag(Cmiss_field_id field,
+	enum Cmiss_field_property_flag property_flag, int flag_value)
+{
+	if (field)
+		return field->core->set_property_flag(property_flag, flag_value);
+	return 0;
+}
+
 int Computed_field_set_managed_status(
 	struct Computed_field *field, enum Computed_field_managed_status managed_status) 
 {
