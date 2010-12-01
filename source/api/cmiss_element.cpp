@@ -1004,7 +1004,7 @@ int Cmiss_element_template_finalise(
 {
 	if (element_template)
 		return element_template->finalise();
-	return NULL;
+	return 0;
 }
 
 Cmiss_node_id Cmiss_element_template_get_node(
@@ -1020,7 +1020,7 @@ int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
 {
 	if (element_template)
 		return element_template->setNode(local_node_index, node);
-	return NULL;
+	return 0;
 }
 
 Cmiss_element_id Cmiss_element_access(Cmiss_element_id element)
