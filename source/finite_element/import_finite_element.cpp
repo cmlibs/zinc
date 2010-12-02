@@ -3509,7 +3509,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							{
 								if (region_path && (CMISS_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
 								{
-									read_region = Cmiss_region_get_or_create_region_at_path(root_region, region_path);
+									read_region = Cmiss_region_create_subregion(root_region, region_path);
 									if (read_region)
 									{
 										REACCESS(Cmiss_region)(&region, read_region);

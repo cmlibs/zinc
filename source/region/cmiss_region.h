@@ -392,20 +392,6 @@ int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
 	const char *path, struct Cmiss_region **subregion_address);
 
 /***************************************************************************//**
- * Returns an ACCESSed pointer to the region at the specified path, creating it
- * and any intermediary regions if required.
- * Only creates true regions sharing globals with root_region.
- * 
- * @param root_region  The region the path is relative to.
- * @param path  Region path, a series of valid region names separated by the
- *   CMISS_REGION_PATH_SEPARATOR_CHAR. Leading and trailing separator characters
- *   are optional/ignored.
- * @return  Accessed pointer to the required region.
- */
-struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
-	struct Cmiss_region *root_region, const char *path);
-
-/***************************************************************************//**
  * Returns a reference to the root region of this region.
  *
  * @param region  The region.

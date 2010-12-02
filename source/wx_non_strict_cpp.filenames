@@ -78,7 +78,6 @@ material/material_editor_wx.cpp
 minimise/minimise.cpp
 node/node_tool.cpp
 node/node_viewer_wx.cpp
-region/cmiss_region.cpp
 region/cmiss_region_chooser_wx.cpp
 three_d_drawing/graphics_buffer.cpp
 transformation/transformation_editor_wx.cpp

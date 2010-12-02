@@ -71,7 +71,6 @@ interaction/select_tool.cpp
 material/material_editor.cpp
 minimise/minimise.cpp
 node/node_tool.cpp
-region/cmiss_region.cpp
 three_d_drawing/graphics_buffer.cpp
 user_interface/confirmation.cpp
 user_interface/event_dispatcher.cpp

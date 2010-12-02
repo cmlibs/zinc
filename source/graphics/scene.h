@@ -775,17 +775,13 @@ Exports visible volumes to alias
 typedef int(*graphics_object_tree_iterator_function)(
 	struct GT_object *graphics_object, double time, void *user_data);
 
+/***************************************************************************//**
+ * This function iterates through every graphics object in the scene in region
+ * order calling the iterator_function with the optional user_data.
+ */
 int for_each_graphics_object_in_scene(struct Scene *scene,
 	graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
-
-DESCRIPTION :
-This function iterates through every graphics object in the scene
-including those in each individual settings of the graphical finite
-elements and those chained together with other graphics objects
-==============================================================================*/
 
 int Scene_get_data_range_for_spectrum(struct Scene *scene,
 	struct Spectrum *spectrum, float *minimum, float *maximum,

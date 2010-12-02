@@ -4550,48 +4550,78 @@ static int Scene_graphics_objects_in_Cmiss_graphic_iterator(
 	return (return_code);
 }
 
+/***************************************************************************//**
+ * Calls Scene_graphics_objects_in_Cmiss_graphic_iterator for the rendition
+ * of region, then calls this function for each of its child regions.
+ */
+static int Cmiss_region_recursive_for_each_graphics_object(Cmiss_region *region,
+	Scene_graphics_object_iterator_data *data)
+{
+	int return_code = 0;
+	if (region && data)
+	{
+		// a bit naughty using this internal API, but Scene doesn't yet have
+		// pointer to graphics_module...
+		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+		if (rendition)
+		{
+			return_code = for_each_graphic_in_Cmiss_rendition(rendition,
+				Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)data);
+			if (return_code)
+			{
+				Cmiss_region *child_region = Cmiss_region_get_first_child(region);
+				while (child_region)
+				{
+					if (!Cmiss_region_recursive_for_each_graphics_object(
+						child_region, data))
+					{
+						return_code = 0;
+						break;
+					}
+					Cmiss_region_reaccess_next_sibling(&child_region);
+				}
+				if (child_region)
+				{
+					Cmiss_region_destroy(&child_region);
+				}
+			}
+			Cmiss_rendition_destroy(&rendition);
+		}
+	}
+	return (return_code);
+}
+
 int for_each_graphics_object_in_scene(struct Scene *scene,
 	graphics_object_tree_iterator_function iterator_function,
 	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1998
-
-DESCRIPTION :
-This function iterates through every graphics object in the scene
-including those in each settings of the graphical finite
-elements and those chained together with other graphics objects
-==============================================================================*/
 {
 	int return_code = 0;
-	struct Scene_graphics_object_iterator_data data;
 
 	ENTER(for_each_graphics_object_in_scene);
-
-	if (scene && iterator_function && user_data)
+	if (scene && iterator_function)
 	{
+		Scene_graphics_object_iterator_data data;
 		data.iterator_function = iterator_function;
 		data.user_data = user_data;
 		data.graphic_name = NULL;
 		data.scene = scene;
-		Rendition_set::iterator pos =
-			scene->list_of_rendition->begin();
-		while (pos != scene->list_of_rendition->end())
+		return_code =
+			Cmiss_region_recursive_for_each_graphics_object(scene->region, &data);
+		if (!return_code)
 		{
-			return_code = for_each_graphic_in_Cmiss_rendition(*pos,
-				Scene_graphics_objects_in_Cmiss_graphic_iterator, (void *)&data);
-			++pos;
+			display_message(ERROR_MESSAGE,
+				"for_each_graphics_object_in_scene.  Failed");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"for_each_graphics_object_in_scene.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* for_each_graphics_object_in_scene */
+}
 
 static int Scene_get_data_range_for_spectrum_iterator(
 	struct GT_object *graphics_object, double time, void *data_void)

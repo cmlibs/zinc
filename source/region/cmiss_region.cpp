@@ -754,7 +754,6 @@ struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_regio
 	const char *name)
 {
 	struct Cmiss_region *region = NULL;
-
 	if (parent_region)
 	{
 		region = Cmiss_region_find_child_by_name(parent_region, name);
@@ -776,31 +775,49 @@ struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_regio
 				}
 			}
 		}
-		else
-		{
-			Cmiss_region_destroy(&region);
-		}
 	}
-
 	return region;
 }
 
 struct Cmiss_region *Cmiss_region_create_subregion(
-	struct Cmiss_region *top_region, const char *path)
+	struct Cmiss_region *root_region, const char *path)
 {
 	struct Cmiss_region *region = NULL;
-
-	region = Cmiss_region_find_subregion_at_path(top_region, path);
-	if (region)
+	if (root_region && path)
 	{
-		Cmiss_region_destroy(&region);
+		region = ACCESS(Cmiss_region)(root_region);
+		char *path_copy = duplicate_string(path);
+		char *child_name = path_copy;
+		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		{
+			child_name++;
+		}
+		while (region && child_name && (child_name[0] != '\0'))
+		{
+			char *child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR);
+			if (child_name_end)
+			{
+				*child_name_end = '\0';
+			}
+			Cmiss_region *child_region = Cmiss_region_find_child_by_name(region, child_name);
+			if (!child_region)
+			{
+				child_region = Cmiss_region_create_child(region, child_name);
+			}
+			REACCESS(Cmiss_region)(&region, child_region);
+			DEACCESS(Cmiss_region)(&child_region);
+			if (child_name_end)
+			{
+				child_name = child_name_end + 1;
+			}
+			else
+			{
+				child_name = (char *)NULL;
+			}
+		}
+		DEALLOCATE(path_copy);
 	}
-	else
-	{
-		region = Cmiss_region_get_or_create_region_at_path(top_region, path);
-	}
-
-	return region;
+	return (region);
 }
 
 int Cmiss_region_clear_finite_elements(struct Cmiss_region *region)
@@ -851,7 +868,7 @@ int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
 	if (state && (root_region = static_cast<struct Cmiss_region *>(root_region_void)) &&
 		(region_address = static_cast<struct Cmiss_region **>(region_address_void)))
 	{
-		if (current_token = state->current_token)
+		if ((current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -940,7 +957,7 @@ Modifier function for entering a path to a Cmiss_region, starting at
 	ENTER(set_Cmiss_region_path);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		if (current_token = state->current_token)
+		if ((current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -949,13 +966,13 @@ Modifier function for entering a path to a Cmiss_region, starting at
 					root_region, current_token);
 				if (region)
 				{
-					if (path_address = (char **)path_address_void)
+					if ((path_address = (char **)path_address_void))
 					{
 						if (*path_address)
 						{
 							DEALLOCATE(*path_address);
 						}
-						if (*path_address = duplicate_string(current_token))
+						if ((*path_address = duplicate_string(current_token)))
 						{
 							return_code = shift_Parse_state(state, 1);
 						}
@@ -1209,27 +1226,35 @@ char *Cmiss_region_get_name(struct Cmiss_region *region)
 int Cmiss_region_set_name(struct Cmiss_region *region, const char *name)
 {
 	int return_code = 0;
-	if (region && name && is_standard_object_name(name))
+	if (region && name)
 	{
-		return_code = 1;
-		if ((NULL == region->name) || strcmp(region->name, name))
+		if (is_standard_object_name(name))
 		{
-			if ((NULL == region->parent) ||
-				(NULL == Cmiss_region_find_child_by_name_internal(region->parent, name)))
+			return_code = 1;
+			if ((NULL == region->name) || strcmp(region->name, name))
 			{
-				char *temp_name = duplicate_string(name);
-				if (region->name)
+				if ((NULL == region->parent) ||
+					(NULL == Cmiss_region_find_child_by_name_internal(region->parent, name)))
 				{
-					DEALLOCATE(region->name);
+					char *temp_name = duplicate_string(name);
+					if (region->name)
+					{
+						DEALLOCATE(region->name);
+					}
+					region->name = temp_name;
+					region->changes.name_changed = 1;
+					Cmiss_region_update(region);
 				}
-				region->name = temp_name;
-				region->changes.name_changed = 1;
-				Cmiss_region_update(region);
+				else
+				{
+					return_code = 0; // name is in use by sibling
+				}
 			}
-			else
-			{
-				return_code = 0; // name is in use by sibling
-			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_region_set_name.  Invalid region name '%s'", name);
 		}
 	}
 	return (return_code);
@@ -1251,7 +1276,7 @@ char *Cmiss_region_get_path(struct Cmiss_region *region)
 		Cmiss_region* parent = region->parent;
 		if (parent)
 		{
-			if (path = Cmiss_region_get_path(parent))
+			if ((path = Cmiss_region_get_path(parent)))
 			{
 				append_string(&path, region->name, &error);
 			}
@@ -1282,7 +1307,7 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
 			Cmiss_region* parent = region->parent;
 			if (parent)
 			{
-				if (path = Cmiss_region_get_relative_path(parent, other_region))
+				if ((path = Cmiss_region_get_relative_path(parent, other_region)))
 				{
 					append_string(&path, region->name, &error);
 				}
@@ -1505,65 +1530,6 @@ int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
 	return (return_code);
 }
 
-struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
-	struct Cmiss_region *root_region, const char *path)
-{
-	char *child_name, *child_name_end, *path_copy;
-	struct Cmiss_region *child_region, *region;
-
-	ENTER(Cmiss_region_get_or_create_region_at_path);
-	if (root_region && path)
-	{
-		region = ACCESS(Cmiss_region)(root_region);
-		path_copy = duplicate_string(path);
-		child_name = path_copy;
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-		{
-			child_name++;
-		}
-		while (region && child_name && (child_name[0] != '\0') &&
-			(0 != strcmp(child_name, CMISS_REGION_PATH_SEPARATOR_STRING)))
-		{
-			if (child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR))
-			{
-				*child_name_end = '\0';
-			}
-			child_region = Cmiss_region_find_child_by_name(region, child_name);
-			if (NULL == child_region)
-			{
-				child_region = Cmiss_region_create_region(region);
-				Cmiss_region_set_name(child_region, child_name);
-				if (!Cmiss_region_append_child(region, child_region))
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_region_get_or_create_region_at_path.  Failed");
-					DEACCESS(Cmiss_region)(&child_region);
-				}
-			}
-			REACCESS(Cmiss_region)(&region, child_region);
-			DEACCESS(Cmiss_region)(&child_region);
-			if (child_name_end)
-			{
-				child_name = child_name_end + 1;
-			}
-			else
-			{
-				child_name = (char *)NULL;
-			}
-		}
-		DEALLOCATE(path_copy);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_or_create_region_at_path.  Invalid argument(s)");
-		region = (Cmiss_region *)NULL;
-	}
-	LEAVE;
-
-	return (region);
-} /* Cmiss_region_get_or_create_region_at_path */
-
 /***************************************************************************//**
  * Returns a reference to the root region of this region.
  *
@@ -1613,8 +1579,7 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 			{
 				*child_name_end = '\0';
 			}
-			if (next_region =
-					Cmiss_region_find_child_by_name_internal(region, child_name))
+			if ((next_region = Cmiss_region_find_child_by_name_internal(region, child_name)))
 			{
 				region = next_region;
 				if (child_name_end)
@@ -1709,7 +1674,7 @@ static int set_region_path_and_or_field_name(struct Parse_state *state,
 	if (state && (name_data = (struct Cmiss_region_path_and_name *)region_path_and_name_void) &&
 		(root_region = (struct Cmiss_region *)root_region_void))
 	{
-		if (current_token = state->current_token)
+		if ((current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))

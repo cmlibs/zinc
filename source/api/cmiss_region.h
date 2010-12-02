@@ -347,30 +347,24 @@ NULL otherwise.
 Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
 
 /***************************************************************************//**
- * Creates and returns the reference to a child region with provided name 
- * in parent region.
- * A valid region name must start with an alphanumeric character, contain only
- * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
- * and may not finish with a space.
- * Fails if the new name is already in use by another region in parent region. 
- * 
+ * Find or create a child region with provided name in parent region.
+ *
+ * @see Cmiss_region_set_name
  * @param parent_region  The parent region for the new region.
  * @param name  The name for the newly created region
- * @return  Accessed reference to the newly created child region, or NULL if fails.
+ * @return  Accessed reference to the child region, or NULL if failed.
  */
 Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region, 
 	const char *name);
 
 /***************************************************************************//**
- * Create and return a reference to a region at the specified relative path, 
- * creating any intermediary regions if required.
- * Fails if there is already a region at that relative path. 
+ * Find or create a region at the specified relative path, creating any
+ * intermediary regions if required.
  * 
  * @param top_region  The region the path is relative to.
- * @param path  Region path, a series of valid region names separated by the
- *   CMISS_REGION_PATH_SEPARATOR_CHAR. Leading and trailing separator characters
- *   are optional/ignored.
- * @return  Accessed reference to the created region, or NULL if fails.
+ * @param path  Region path, a series of valid region names separated by a
+ * forward slash "/". Leading and trailing separator slashes are optional.
+ * @return  Accessed reference to the subregion, or NULL if failed.
  */
 Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region, 
 	const char *path);

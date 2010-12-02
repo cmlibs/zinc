@@ -2535,7 +2535,6 @@ DESCRIPTION :
 Executes a GFX CREATE REGION command.
 ==============================================================================*/
 {
-	char *path;
 	int return_code = 0;
 	struct Cmiss_region *region, *root_region;
 
@@ -2543,33 +2542,54 @@ Executes a GFX CREATE REGION command.
 	USE_PARAMETER(dummy);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		path = (char *)NULL;
-		if (set_string(state, (void *)&path, (void *)" PATH"))
+		char *insert_before_sibling_name = NULL;
+		char *region_path = NULL;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Create or confirm existence of region at the supplied path. The "
+			"optional insert_before argument allows the new or existing region "
+			"to be inserted before the sibling region of the supplied name.");
+		Option_table_add_string_entry(option_table, "insert_before",
+			&insert_before_sibling_name, " SIBLING_REGION_NAME");
+		Option_table_add_default_string_entry(option_table, &region_path,
+			"PATH_TO_REGION");
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
 		{
-			if ((!state->current_token) ||
-				(strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+			region = Cmiss_region_create_subregion(root_region, region_path);
+			if (region)
 			{
-				return_code = 1;
-				region = Cmiss_region_find_subregion_at_path(root_region, path);
-				if (path && region )
+				if (insert_before_sibling_name)
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create region.  Region '%s' already exists", path);
-					return_code = 0;
+					Cmiss_region *parent = Cmiss_region_get_parent(region);
+					Cmiss_region *sibling = Cmiss_region_find_child_by_name(parent,
+						insert_before_sibling_name);
+					if (sibling)
+					{
+						Cmiss_region_insert_child_before(parent, region, sibling);
+						Cmiss_region_destroy(&sibling);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx create region.  Cannot find sibling '%s' to insert before",
+							insert_before_sibling_name);
+						return_code = 0;
+					}
+					Cmiss_region_destroy(&parent);
 				}
-				DEACCESS(Cmiss_region)(&region);
-				if (return_code)
-				{
-					region = Cmiss_region_create_subregion(root_region, path);
-					DEACCESS(Cmiss_region)(&region);
-				}
+				Cmiss_region_destroy(&region);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx create region.  Invalid path '%s'", region_path);
+				return_code = 0;
 			}
 		}
-		if (path)
-		{
-			DEALLOCATE(path);
-		}
+		DEALLOCATE(insert_before_sibling_name);
+		DEALLOCATE(region_path);
 	}
 	else
 	{
@@ -6248,20 +6268,20 @@ Executes a GFX DESTROY CMISS_CONNECTION command.
 } /* gfx_destroy_cmiss */
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
-static int gfx_remove_region(struct Parse_state *state,
+static int gfx_destroy_region(struct Parse_state *state,
 	void *dummy_to_be_modified, void *root_region_void)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
-Executes a GFX REMOVE REGION command.
+Executes a GFX DESTROY REGION command.
 ==============================================================================*/
 {
 	const char *current_token;
 	int return_code = 1;
 	struct Cmiss_region *root_region;
 
-	ENTER(gfx_remove_region);
+	ENTER(gfx_destroy_region);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
@@ -6283,7 +6303,7 @@ Executes a GFX REMOVE REGION command.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx remove region:  The root region may not be removed");
+							"gfx destroy region:  The root region may not be removed");
 						display_parse_state_location(state);
 						return_code = 0;
 					}
@@ -6311,13 +6331,13 @@ Executes a GFX REMOVE REGION command.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "gfx_remove_region.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "gfx_destroy_region.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gfx_remove_region */
+} /* gfx_destroy_region */
 
 static int gfx_destroy_elements(struct Parse_state *state,
 	void *cm_element_type_void, void *command_data_void)
@@ -7174,10 +7194,10 @@ Executes a GFX DESTROY command.
 					command_data_void, gfx_destroy_nodes);
 				/* dgroup */
 				Option_table_add_entry(option_table, "dgroup", NULL,
-					command_data->root_region, gfx_remove_region);
+					command_data->root_region, gfx_destroy_region);
 				/* egroup */
 				Option_table_add_entry(option_table, "egroup", NULL,
-					command_data->root_region, gfx_remove_region);
+					command_data->root_region, gfx_destroy_region);
 				/* elements */
 				Option_table_add_entry(option_table, "elements", (void *)CM_ELEMENT,
 					command_data_void, gfx_destroy_elements);
@@ -7198,10 +7218,13 @@ Executes a GFX DESTROY command.
 					Material_package_get_material_manager(command_data->material_package), gfx_destroy_material);
 				/* ngroup */
 				Option_table_add_entry(option_table, "ngroup", NULL,
-					command_data->root_region, gfx_remove_region);
+					command_data->root_region, gfx_destroy_region);
 				/* nodes */
 				Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
 					command_data_void, gfx_destroy_nodes);
+				/* region */
+				Option_table_add_entry(option_table, "region", NULL,
+					command_data->root_region, gfx_destroy_region);
 				/* scene */
 				Option_table_add_entry(option_table, "scene", NULL,
 					command_data->scene_manager, gfx_destroy_Scene);
@@ -11981,6 +12004,9 @@ Executes a GFX LIST command.
 			/* nodes */
 			Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
 				command_data_void, gfx_list_FE_node);
+			/* region */
+			Option_table_add_entry(option_table, "region", NULL,
+				command_data->root_region, gfx_list_region);
 			/* scene */
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data->scene_manager, gfx_list_scene);
@@ -16299,100 +16325,6 @@ Sets nodal field values from a command.
 	return (return_code);
 } /* gfx_set_FE_nodal_value */
 
-static int gfx_set_scene_order(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Sets the ordering of graphics objects on scene(s) from the command line.
-==============================================================================*/
-{
-	char *name;
-	int return_code,position;
-	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-#endif
-	static struct Modifier_entry option_table[]=
-	{
-		{"object",NULL,(void *)1,set_name},
-		{"position",NULL,NULL,set_int},
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_name}
-	};
-
-	ENTER(gfx_set_scene_order);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialize defaults */
-			name=(char *)NULL;
-			position=0;
-			scene=ACCESS(Scene)(command_data->default_scene);
-			(option_table[0]).to_be_modified= &name;
-			(option_table[1]).to_be_modified= &position;
-			(option_table[2]).to_be_modified= &scene;
-			(option_table[2]).user_data=command_data->scene_manager;
-			(option_table[3]).to_be_modified= &name;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (name)
-				{
-#if defined (USE_SCENE_OBJECT)
-					if (scene_object=Scene_get_Scene_object_by_name(scene,name))
-					{
-						return_code=Scene_set_scene_object_position(scene,scene_object,
-							position);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"No graphics object named '%s' in scene",name);
-						return_code=0;
-					}
-#else
-					return_code = 1;
-#endif
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Missing graphics object name");
-					return_code=0;
-				}
-			} /* parse error,help */
-			if (name)
-			{
-				DEALLOCATE(name);
-			}
-			if (scene)
-			{
-				DEACCESS(Scene)(&scene);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_scene_order.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_set_scene_order.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_scene_order */
-
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -16835,8 +16767,6 @@ Executes a GFX SET command.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "node_value", NULL,
 				command_data_void, gfx_set_FE_nodal_value);
-			Option_table_add_entry(option_table, "order", NULL,
-				command_data_void, gfx_set_scene_order);
 			Option_table_add_entry(option_table, "point_size", &global_point_size,
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "transformation", NULL,
