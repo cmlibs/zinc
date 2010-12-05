@@ -2526,69 +2526,60 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 } /* gfx_create_element_point_viewer */
 #endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE) */
 
+/***************************************************************************//**
+ * Executes a GFX CREATE REGION command.
+ */
 static int gfx_create_region(struct Parse_state *state,
 	void *dummy, void *root_region_void)
-/*******************************************************************************
-LAST MODIFIED : 9 December 2005
-
-DESCRIPTION :
-Executes a GFX CREATE REGION command.
-==============================================================================*/
 {
 	int return_code = 0;
-	struct Cmiss_region *region, *root_region;
 
 	ENTER(gfx_create_region);
 	USE_PARAMETER(dummy);
-	if (state && (root_region = (struct Cmiss_region *)root_region_void))
+	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
+	if (state && root_region)
 	{
-		char *insert_before_sibling_name = NULL;
 		char *region_path = NULL;
+		int error_if_exists = 1;
 		Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_help(option_table,
-			"Create or confirm existence of region at the supplied path. The "
-			"optional insert_before argument allows the new or existing region "
-			"to be inserted before the sibling region of the supplied name.");
-		Option_table_add_string_entry(option_table, "insert_before",
-			&insert_before_sibling_name, " SIBLING_REGION_NAME");
+			"Create a region at the supplied path, with names in the path "
+			"separated by slash '/' characters. Use the 'no_error_if_exists' "
+			"option to avoid errors if region exists already. ");
+		Option_table_add_switch(option_table,
+			"error_if_exists", "no_error_if_exists", &error_if_exists);
 		Option_table_add_default_string_entry(option_table, &region_path,
 			"PATH_TO_REGION");
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
-			region = Cmiss_region_create_subregion(root_region, region_path);
+			Cmiss_region *region = Cmiss_region_find_subregion_at_path(root_region, region_path);
 			if (region)
 			{
-				if (insert_before_sibling_name)
+				if (error_if_exists)
 				{
-					Cmiss_region *parent = Cmiss_region_get_parent(region);
-					Cmiss_region *sibling = Cmiss_region_find_child_by_name(parent,
-						insert_before_sibling_name);
-					if (sibling)
-					{
-						Cmiss_region_insert_child_before(parent, region, sibling);
-						Cmiss_region_destroy(&sibling);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx create region.  Cannot find sibling '%s' to insert before",
-							insert_before_sibling_name);
-						return_code = 0;
-					}
-					Cmiss_region_destroy(&parent);
+					display_message(ERROR_MESSAGE,
+						"gfx create region.  Region already exists at path '%s'", region_path);
+					return_code = 0;
 				}
 				Cmiss_region_destroy(&region);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx create region.  Invalid path '%s'", region_path);
-				return_code = 0;
+				region = Cmiss_region_create_subregion(root_region, region_path);
+				if (region)
+				{
+					Cmiss_region_destroy(&region);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx create region.  Invalid region path '%s'", region_path);
+					return_code = 0;
+				}
 			}
 		}
-		DEALLOCATE(insert_before_sibling_name);
 		DEALLOCATE(region_path);
 	}
 	else
@@ -2600,7 +2591,7 @@ Executes a GFX CREATE REGION command.
 	LEAVE;
 
 	return (return_code);
-} /* gfx_create_region */
+}
 
 static int gfx_create_snake(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -14537,7 +14528,7 @@ user, otherwise the elements file is read.
 					if (NULL == top_region)
 					{
 						display_message(ERROR_MESSAGE, "gfx_read_elements.  "
-							"Unable to create child region.");
+							"Unable to find or create region '%s'.", region_path);
 						return_code = 0;
 					}
 				}
@@ -14810,7 +14801,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 							if (NULL == top_region)
 							{
 								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-									"Unable to create child region.");
+									"Unable to find or create region '%s'.", region_path);
 								return_code = 0;
 							}
 						}
@@ -16325,6 +16316,91 @@ Sets nodal field values from a command.
 	return (return_code);
 } /* gfx_set_FE_nodal_value */
 
+/***************************************************************************//**
+ * Sets the order of regions in the region hierarchy.
+ */
+static int gfx_set_region_order(struct Parse_state *state,
+	void *dummy_to_be_modified, void *root_region_void)
+{
+	int return_code = 0;
+	ENTER(gfx_set_region_order);
+	USE_PARAMETER(dummy_to_be_modified);
+	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
+	if (state && root_region)
+	{
+		if (state && root_region)
+		{
+			char *insert_before_sibling_name = NULL;
+			Cmiss_region *region = NULL;
+			Option_table *option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"Change the order of regions in the region hierarchy. The 'region' "
+				"option specifies the current path of the region to be moved. The "
+				"'before' option gives the name of an existing sibling region "
+				"which the region will be re-inserted before.");
+			Option_table_add_string_entry(option_table, "before ",
+				&insert_before_sibling_name, "SIBLING_REGION_NAME");
+			Option_table_add_set_Cmiss_region(option_table,
+				"region", root_region, &region);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
+			{
+				if (!region)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx set order.  Must specify a region");
+					return_code = 0;
+				}
+				if (!insert_before_sibling_name)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx set order.  Must specify a sibling region name to insert before");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					Cmiss_region *parent = Cmiss_region_get_parent(region);
+					Cmiss_region *sibling = Cmiss_region_find_child_by_name(parent,
+						insert_before_sibling_name);
+					if (sibling)
+					{
+						Cmiss_region_insert_child_before(parent, region, sibling);
+						Cmiss_region_destroy(&sibling);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx set order.  Cannot find sibling '%s' to insert before",
+							insert_before_sibling_name);
+						return_code = 0;
+					}
+					Cmiss_region_destroy(&parent);
+				}
+			}
+			DEALLOCATE(insert_before_sibling_name);
+			if (region)
+				Cmiss_region_destroy(&region);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_set_region_order.  Invalid argument(s)");
+			return_code = 0;
+		}
+		LEAVE;
+
+		return (return_code);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_set_region_order.  Invalid argument(s)");
+	}
+	LEAVE;
+	return (return_code);
+}
+
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -16767,7 +16843,9 @@ Executes a GFX SET command.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "node_value", NULL,
 				command_data_void, gfx_set_FE_nodal_value);
-			Option_table_add_entry(option_table, "point_size", &global_point_size,
+         Option_table_add_entry(option_table, "order", NULL,
+         	(void *)command_data->root_region, gfx_set_region_order);
+         Option_table_add_entry(option_table, "point_size", &global_point_size,
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_set_transformation);

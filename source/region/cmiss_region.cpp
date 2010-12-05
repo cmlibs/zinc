@@ -756,36 +756,29 @@ struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_regio
 	struct Cmiss_region *region = NULL;
 	if (parent_region)
 	{
-		region = Cmiss_region_find_child_by_name(parent_region, name);
-		if (!region)
+		region = Cmiss_region_create_region(parent_region);
+		if ((!Cmiss_region_set_name(region, name)) ||
+			(!Cmiss_region_append_child(parent_region, region)))
 		{
-			region = Cmiss_region_create_region(parent_region);
-			if (region)
-			{
-				if (Cmiss_region_set_name(region, name))
-				{
-					if (!Cmiss_region_append_child(parent_region, region))
-					{
-						Cmiss_region_destroy(&region);
-					}
-				}
-				else
-				{
-					Cmiss_region_destroy(&region);
-				}
-			}
+			Cmiss_region_destroy(&region);
 		}
 	}
 	return region;
 }
 
 struct Cmiss_region *Cmiss_region_create_subregion(
-	struct Cmiss_region *root_region, const char *path)
+	struct Cmiss_region *top_region, const char *path)
 {
-	struct Cmiss_region *region = NULL;
-	if (root_region && path)
+	// Fails if a subregion exists at that path already
+	struct Cmiss_region *region = Cmiss_region_find_child_by_name(top_region, path);
+	if (region)
 	{
-		region = ACCESS(Cmiss_region)(root_region);
+		Cmiss_region_destroy(&region);
+		return NULL;
+	}
+	if (top_region && path)
+	{
+		region = ACCESS(Cmiss_region)(top_region);
 		char *path_copy = duplicate_string(path);
 		char *child_name = path_copy;
 		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)

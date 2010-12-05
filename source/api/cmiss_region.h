@@ -347,24 +347,26 @@ NULL otherwise.
 Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
 
 /***************************************************************************//**
- * Find or create a child region with provided name in parent region.
+ * Create a child region with provided name in parent region.
+ * Fails if a child of that name exists already.
  *
  * @see Cmiss_region_set_name
  * @param parent_region  The parent region for the new region.
  * @param name  The name for the newly created region
- * @return  Accessed reference to the child region, or NULL if failed.
+ * @return  Accessed reference to the new child region, or NULL if failed.
  */
 Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region, 
 	const char *name);
 
 /***************************************************************************//**
- * Find or create a region at the specified relative path, creating any
- * intermediary regions if required.
+ * Create a region at the specified relative path, creating any intermediary
+ * regions if required.
+ * Fails if a subregion exists at that path already.
  * 
  * @param top_region  The region the path is relative to.
  * @param path  Region path, a series of valid region names separated by a
  * forward slash "/". Leading and trailing separator slashes are optional.
- * @return  Accessed reference to the subregion, or NULL if failed.
+ * @return  Accessed reference to the new subregion, or NULL if failed.
  */
 Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region, 
 	const char *path);

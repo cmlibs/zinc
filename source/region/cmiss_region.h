@@ -111,21 +111,18 @@ PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region);
  */
 struct Cmiss_region *Cmiss_region_create_internal(void);
 
+/***************************************************************************//**
+ * Creates a Cmiss_region that shares the fields with master_region but
+ * uses a subset of its nodes and element (i.e. a group).
+ * Region is created with an access_count of 1; DEACCESS to destroy.
+ * Consider as private: NOT TO BE PUT IN THE PUBLIC API.
+ */
 struct Cmiss_region *Cmiss_region_create_group(
 		struct Cmiss_region *master_region);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Creates a Cmiss_region that shares the fields with master_region but
-uses a subset of its nodes and element (i.e. a group).
-Region is created with an access_count of 1; DEACCESS to destroy.
-Consider as private: NOT approved for exposing in API.
-==============================================================================*/
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
- * 
+ *
  * @param region  The region to clear the fields from. Must not be a group.
  * @return  1 on success, 0 if no region supplied.
  */
