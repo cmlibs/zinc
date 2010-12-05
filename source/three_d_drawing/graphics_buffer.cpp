@@ -5588,7 +5588,7 @@ mode with zinc.
 	  } break;
 	  case WM_MOUSEMOVE:
 	  {
-		  SetCursor(LoadCursor(NULL, IDC_ARROW));
+		  //SetCursor(LoadCursor(NULL, IDC_ARROW));
 	  } // No break, fall through
 	  case WM_LBUTTONDOWN:
 	  case WM_LBUTTONUP:
@@ -5619,7 +5619,7 @@ mode with zinc.
 #if defined (DEBUG)
 		  printf ("Graphics_buffer_handle_windows_event WM_SETCURSOR\n");
 #endif /* defined (DEBUG) */
-	          SetCursor(LoadCursor(NULL, IDC_ARROW));
+//	          SetCursor(LoadCursor(NULL, IDC_ARROW));
 		  return_code=1;
 	  } break;
 	  default:
