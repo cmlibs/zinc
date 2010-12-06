@@ -885,29 +885,11 @@ struct FE_node_field_iterator_and_data
 	void *user_data;
 }; /* struct FE_node_field_iterator_and_data */
 
-struct FE_node_field_priority_iterator_and_data
-{
-	FE_node_field_iterator_function *iterator;
-	struct FE_node *node;
-	void *user_data;
-	int priority_on;
-	struct LIST(FE_field) *priority_field_list;
-}; /* struct FE_node_field_iterator_and_data */
-
 struct FE_element_field_iterator_and_data
 {
 	FE_element_field_iterator_function *iterator;
 	struct FE_element *element;
 	void *user_data;
-}; /* struct FE_element_field_iterator_and_data */
-
-struct FE_element_field_priority_iterator_and_data
-{
-	FE_element_field_iterator_function *iterator;
-	struct FE_element *element;
-	void *user_data;
-	int priority_on;
-	struct LIST(FE_field) *priority_field_list;
 }; /* struct FE_element_field_iterator_and_data */
 
 struct FE_field_order_info
@@ -3759,6 +3741,7 @@ Returns -1 if field_1 < field_2, 0 if field_1 = field_2 and 1 if
 field_1 > field_2.
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	int return_code;
 
 	ENTER(compare_FE_field);
@@ -3766,27 +3749,20 @@ field_1 > field_2.
 	/* GRC using this to order FE_node_field and FE_element_field makes it
 	 * practically impossible to rename FE_fields */
 	return_code=strcmp(field_1->name,field_2->name);
-#if defined (OLD_CODE)
-	if (field_1<field_2)
-	{
-		return_code= -1;
-	}
-	else
-	{
-		if (field_1>field_2)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
-} /* compare_FE_field */
+#endif /* defined (OLD_CODE) */
+	if (field_1 < field_2)
+	{
+		return -1;
+	}
+	else if (field_1 > field_2)
+	{
+		return 1;
+	}
+	return 0;
+}
 
 static struct FE_node_field *CREATE(FE_node_field)(struct FE_field *field)
 /*******************************************************************************
@@ -5909,13 +5885,11 @@ appropriately.
 } /* merge_FE_node_field_into_list */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
-/*******************************************************************************
-LAST MODIFIED : 14 February 2008
-
-DESCRIPTION :
-Outputs the information contained by the node field.
-==============================================================================*/
+/***************************************************************************//**
+ * Outputs details of how field is defined at node.
+ */
+static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
+	void *dummy_void)
 {
 	char *component_name, *string_value;
 	const char *type_string;
@@ -5924,16 +5898,22 @@ Outputs the information contained by the node field.
 	int i,version,k,number_of_components,number_of_times,number_of_versions,
 		return_code,time_index,xi_dimension,xi_index;
 	struct FE_element *embedding_element;
-	struct FE_field *field;
-	struct FE_node *node;
+	struct FE_node_field *node_field;
 	struct FE_node_field_component *node_field_component;
 	Value_storage *values_storage, *value;
 
 	ENTER(list_FE_node_field);
-	if (node_field&&(node=(struct FE_node *)node_void))
+	USE_PARAMETER(dummy_void);
+	if (node && field)
 	{
-		if ((field=node_field->field)&&node_field->components)
-		{	 
+		node_field = (struct FE_node_field *)NULL;
+		if (node->fields)
+		{
+			node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+				field, node->fields->node_field_list);
+		}
+		if (node_field && node_field->components)
+		{
 			return_code=1;
 			display_message(INFORMATION_MESSAGE,"  %s",field->name);
 			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
@@ -6344,7 +6324,9 @@ Outputs the information contained by the node field.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"list_FE_node_field.  Missing field");
+			display_message(ERROR_MESSAGE,
+				"list_FE_node_field.  Field %s is not defined at node %d",
+				field->name, node->cm_node_identifier);
 			return_code=0;
 		}
 	}
@@ -8387,89 +8369,6 @@ FE_node_field iterator for for_each_FE_field_at_node.
 	return (return_code);
 } /* for_FE_field_at_node_iterator */
 
-static int FE_node_field_add_indexer_field_to_list(
-	struct FE_node_field *node_field,void *field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-If the field in the <node_field> is of type INDEXED_FE_FIELD, function ensures
-its indexer_field is put in the <field_list>.
-Used by for_each_FE_field_at_node_indexer_first to put indexer_fields into a
-priority list for iterating through first.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-	struct LIST(FE_field) *field_list;
-
-	ENTER(FE_node_field_add_indexer_field_to_list);
-	if (node_field&&(field=node_field->field)&&
-		(field_list=(struct LIST(FE_field) *)field_list_void))
-	{
-		return_code=1;
-		if (INDEXED_FE_FIELD==field->fe_field_type)
-		{
-			if (!IS_OBJECT_IN_LIST(FE_field)(field->indexer_field,field_list))
-			{
-				return_code=
-					ADD_OBJECT_TO_LIST(FE_field)(field->indexer_field,field_list);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_add_indexer_field_to_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_add_indexer_field_to_list */
-
-static int for_FE_field_at_node_priority_iterator(
-	struct FE_node_field *node_field,void *iterator_and_data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-FE_node_field iterator for for_each_FE_field_at_node. Only calls the iterator
-function if the priority_on flag matches the field status in priority_list.
-==============================================================================*/
-{
-	int priority_field,return_code;
-	struct FE_node_field_priority_iterator_and_data *iterator_and_data;
-
-	ENTER(for_FE_field_at_node_iterator);
-	if (node_field&&(iterator_and_data=
-		(struct FE_node_field_priority_iterator_and_data *)iterator_and_data_void)&&
-		iterator_and_data->iterator)
-	{
-		priority_field=IS_OBJECT_IN_LIST(FE_field)(node_field->field,
-			iterator_and_data->priority_field_list);
-		if ((iterator_and_data->priority_on&&priority_field)||
-			((!iterator_and_data->priority_on)&&(!priority_field)))
-		{
-			return_code=(iterator_and_data->iterator)(iterator_and_data->node,
-				node_field->field,iterator_and_data->user_data);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_FE_field_at_node_iterator.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_FE_field_at_node_iterator */
-
 static struct FE_node_field *FE_node_get_FE_node_field(struct FE_node *node,
 	struct FE_field *fe_field)
 /*******************************************************************************
@@ -9506,7 +9405,7 @@ Outputs the information contained in <field>.
 					} break;
 					default:
 					{
-						display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
+						display_message(INFORMATION_MESSAGE,"list_FE_field: "
 							"Can't display that field value_type yet. Write the code!");
 					} break;
 				}	/* switch () */							
@@ -14194,58 +14093,49 @@ called.
 	return (return_code);
 } /* for_each_FE_field_at_node */
 
-int for_each_FE_field_at_node_indexer_first(
+int for_each_FE_field_at_node_alphabetical_indexer_priority(
 	FE_node_field_iterator_function *iterator,void *user_data,
 	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <node> until the <iterator>
-returns 0 or it runs out of fields.  Returns the result of the last <iterator>
-called. This version insists that any field used as an indexer_field for another
-field in the list is output first.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_node_field_priority_iterator_and_data iterator_and_data;
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+	struct FE_field_order_info *field_order_info;
+	struct FE_node_field *node_field;
+	struct FE_region *fe_region;
 
-	ENTER(for_each_FE_field_at_node);
-	return_code=0;
-	if (iterator&&node&&(node->fields))
+	ENTER(for_each_FE_field_at_node_alphabetical_indexer_priority);
+	return_code = 0;
+	if (iterator && node && node->fields)
 	{
-		if (iterator_and_data.priority_field_list=CREATE(LIST(FE_field))())
+		// get list of all fields in default alphabetical order
+		field_order_info = CREATE(FE_field_order_info)();
+		fe_region = node->fields->fe_region;
+		return_code = FE_region_for_each_FE_field(fe_region,
+			FE_field_add_to_FE_field_order_info, (void *)field_order_info);
+		FE_field_order_info_prioritise_indexer_fields(field_order_info);
+		number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+		for (i = 0; i < number_of_fields; i++)
 		{
-			/* make priority list of indexer fields for fields defined at node */
-			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-				FE_node_field_add_indexer_field_to_list,
-				(void *)(iterator_and_data.priority_field_list),
+			field = get_FE_field_order_info_field(field_order_info, i);
+			node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 				node->fields->node_field_list);
-			iterator_and_data.iterator=iterator;
-			iterator_and_data.user_data=user_data;
-			iterator_and_data.node=node;
-			/* call iterator function for fields in priority list */
-			iterator_and_data.priority_on=1;
-			return_code=FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-				for_FE_field_at_node_priority_iterator,&iterator_and_data,
-				node->fields->node_field_list);
-			/* call iterator function for fields not in priority list */
-			iterator_and_data.priority_on=0;
-			return_code=FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-				for_FE_field_at_node_priority_iterator,&iterator_and_data,
-				node->fields->node_field_list);
-			DESTROY(LIST(FE_field))(&(iterator_and_data.priority_field_list));
+			if (node_field)
+			{
+				return_code = (iterator)(node, field, user_data);
+			}
 		}
+		DESTROY(FE_field_order_info)(&field_order_info);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"for_each_FE_field_at_node.  Invalid argument(s)");
+			"for_each_FE_field_at_node_alphabetical_indexer_priority.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* for_each_FE_field_at_node */
+}
 
 static int FE_node_field_has_FE_field_values(
 	struct FE_node_field *node_field,void *dummy)
@@ -18566,8 +18456,8 @@ Outputs the information contained at the node.
 			/* write the field information */
 			if (node->fields)
 			{
-				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(list_FE_node_field,(void *)node,
-					node->fields->node_field_list);
+				for_each_FE_field_at_node_alphabetical_indexer_priority(
+					list_FE_node_field, (void *)NULL, node);
 			}
 #if defined (DEBUG)
 			/*???debug*/
@@ -23812,28 +23702,32 @@ headers have to change in output files.
 } /* FE_element_fields_match */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int list_FE_element_field(struct FE_element_field *element_field,
-	void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 01 April 2008
-
-DESCRIPTION :
-Outputs the information contained by the element field.
-==============================================================================*/
+/***************************************************************************//**
+ * Outputs details of how field is defined at element.
+ */
+static int list_FE_element_field(struct FE_element *element,
+	struct FE_field *field, void *dummy_user_data)
 {
 	char *component_name;
 	const char *type_string;
 	int *basis_type,i,j,k,*nodal_value_index,*number_in_xi,
 		number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
+	struct FE_element_field *element_field;
 	struct FE_element_field_component **element_field_component;
-	struct FE_field *field;
 	struct Standard_node_to_element_map **node_to_element_map;
 
 	ENTER(list_FE_element_field);
-	if (element_field&&!dummy_user_data)
+	USE_PARAMETER(dummy_user_data);
+	if (element && field)
 	{
-		if (field=element_field->field)
+		element_field = (struct FE_element_field *)NULL;
+		if (element->fields)
+		{
+			element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+				field, element->fields->element_field_list);
+		}
+		if (element_field && element_field->components)
 		{
 			return_code=1;
 			display_message(INFORMATION_MESSAGE,"  %s",field->name);
@@ -24030,7 +23924,9 @@ Outputs the information contained by the element field.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"list_FE_element_field.  Missing field");
+			display_message(ERROR_MESSAGE,
+				"list_FE_element_field.  Field %s is not defined at element",
+				field->name);
 			return_code=0;
 		}
 	}
@@ -24187,90 +24083,6 @@ FE_element_field iterator for for_each_FE_field_at_element.
 	{
 		return_code=(iterator_and_data->iterator)(iterator_and_data->element,
 			element_field->field,iterator_and_data->user_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_FE_field_at_element_iterator.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_FE_field_at_element_iterator */
-
-static int FE_element_field_add_indexer_field_to_list(
-	struct FE_element_field *element_field,void *field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-If the field in the <element_field> is of type INDEXED_FE_FIELD, function
-ensures its indexer_field is put in the <field_list>.
-Used by for_each_FE_field_at_element_indexer_first to put indexer_fields into a
-priority list for iterating through first.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-	struct LIST(FE_field) *field_list;
-
-	ENTER(FE_element_field_add_indexer_field_to_list);
-	if (element_field&&(field=element_field->field)&&
-		(field_list=(struct LIST(FE_field) *)field_list_void))
-	{
-		return_code=1;
-		if (INDEXED_FE_FIELD==field->fe_field_type)
-		{
-			if (!IS_OBJECT_IN_LIST(FE_field)(field->indexer_field,field_list))
-			{
-				return_code=
-					ADD_OBJECT_TO_LIST(FE_field)(field->indexer_field,field_list);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_add_indexer_field_to_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_add_indexer_field_to_list */
-
-static int for_FE_field_at_element_priority_iterator(
-	struct FE_element_field *element_field,void *iterator_and_data_void)
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-FE_element_field iterator for for_each_FE_field_at_element. Only calls the
-iterator function if the priority_on flag matches the field status in
-priority_list.
-==============================================================================*/
-{
-	int priority_field,return_code;
-	struct FE_element_field_priority_iterator_and_data *iterator_and_data;
-
-	ENTER(for_FE_field_at_element_iterator);
-	if (element_field&&(iterator_and_data=
-		(struct FE_element_field_priority_iterator_and_data *)
-		iterator_and_data_void)&&iterator_and_data->iterator)
-	{
-		priority_field=IS_OBJECT_IN_LIST(FE_field)(element_field->field,
-			iterator_and_data->priority_field_list);
-		if ((iterator_and_data->priority_on&&priority_field)||
-			((!iterator_and_data->priority_on)&&(!priority_field)))
-		{
-			return_code=(iterator_and_data->iterator)(iterator_and_data->element,
-				element_field->field,iterator_and_data->user_data);
-		}
-		else
-		{
-			return_code=1;
-		}
 	}
 	else
 	{
@@ -34217,62 +34029,49 @@ Calls the <iterator> for each field defined at the <element> until the
 	return (return_code);
 } /* for_each_FE_field_at_element */
 
-int for_each_FE_field_at_element_indexer_first(
+int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	FE_element_field_iterator_function *iterator,void *user_data,
 	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <element> until the
-<iterator> returns 0 or it runs out of fields.  Returns the result of the last
-<iterator> called. This version insists that any field used as an indexer_field
-for another field in the list is output first.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_element_field_priority_iterator_and_data iterator_and_data;
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+	struct FE_field_order_info *field_order_info;
+	struct FE_element_field *element_field;
+	struct FE_region *fe_region;
 
-	ENTER(for_each_FE_field_at_element_indexer_first);
-	if (iterator && element)
+	ENTER(for_each_FE_field_at_element_alphabetical_indexer_priority);
+	return_code = 0;
+	if (iterator && element && element->fields)
 	{
-		if (iterator_and_data.priority_field_list = CREATE(LIST(FE_field))())
+		// get list of all fields in default alphabetical order
+		field_order_info = CREATE(FE_field_order_info)();
+		fe_region = element->fields->fe_region;
+		return_code = FE_region_for_each_FE_field(fe_region,
+			FE_field_add_to_FE_field_order_info, (void *)field_order_info);
+		FE_field_order_info_prioritise_indexer_fields(field_order_info);
+		number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+		for (i = 0; i < number_of_fields; i++)
 		{
-			/* make priority list of indexer fields for fields defined at element */
-			FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-				FE_element_field_add_indexer_field_to_list,
-				(void *)(iterator_and_data.priority_field_list),
+			field = get_FE_field_order_info_field(field_order_info, i);
+			element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
 				element->fields->element_field_list);
-			iterator_and_data.iterator = iterator;
-			iterator_and_data.user_data = user_data;
-			iterator_and_data.element = element;
-			/* call iterator function for fields in priority list */
-			iterator_and_data.priority_on = 1;
-			return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-				for_FE_field_at_element_priority_iterator, &iterator_and_data,
-				element->fields->element_field_list);
-			/* call iterator function for fields not in priority list */
-			iterator_and_data.priority_on=0;
-			return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-				for_FE_field_at_element_priority_iterator, &iterator_and_data,
-				element->fields->element_field_list);
-			DESTROY(LIST(FE_field))(&(iterator_and_data.priority_field_list));
+			if (element_field)
+			{
+				return_code = (iterator)(element, field, user_data);
+			}
 		}
-		else
-		{
-			return_code = 0;
-		}
+		DESTROY(FE_field_order_info)(&field_order_info);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"for_each_FE_field_at_element_indexer_first.  Invalid argument(s)");
-		return_code = 0;
+			"for_each_FE_field_at_element_alphabetical_indexer_priority.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* for_each_FE_field_at_element_indexer_first */
+}
 
 struct FE_field *get_FE_element_default_coordinate_field(
 	struct FE_element *element)
@@ -35279,9 +35078,9 @@ Outputs the information contained at the element.
 				if (0 < NUMBER_IN_LIST(FE_element_field)(
 					element->fields->element_field_list))
 				{
-					display_message(INFORMATION_MESSAGE,"  Field information\n");				
-					FOR_EACH_OBJECT_IN_LIST(FE_element_field)(list_FE_element_field,
-						(void *)NULL, element->fields->element_field_list);
+					display_message(INFORMATION_MESSAGE,"  Field information\n");
+					for_each_FE_field_at_element_alphabetical_indexer_priority(
+						list_FE_element_field, (void *)NULL, element);
 					if (element->information)
 					{
 						if ((scale_factor = element->information->scale_factors)&&
@@ -35325,6 +35124,7 @@ Outputs the information contained at the element.
 						display_message(INFORMATION_MESSAGE," -");				
 					}
 				}
+				display_message(INFORMATION_MESSAGE, "\n");
 			}
 #if defined (OLD_CODE)
 			/*???debug */
@@ -39667,6 +39467,49 @@ Adds <field> to the end of the list of fields in <field_order_info>.
 
 	return (return_code);
 } /* add_FE_field_order_info_field */
+
+int FE_field_add_to_FE_field_order_info(struct FE_field *field,
+	void *field_order_info_void)
+{
+	return (add_FE_field_order_info_field(
+		(struct FE_field_order_info *)field_order_info_void, field));
+}
+
+int FE_field_order_info_prioritise_indexer_fields(
+	struct FE_field_order_info *field_order_info)
+{
+	int i, j, k, number_of_indexed_values,return_code;
+	struct FE_field *indexer_field;
+
+	return_code = 0;
+	if (field_order_info)
+	{
+		for (i = 0; i < field_order_info->number_of_fields; i++)
+		{
+			indexer_field = NULL;
+			if ((INDEXED_FE_FIELD ==
+				get_FE_field_FE_field_type(field_order_info->fields[i])) &&
+				get_FE_field_type_indexed(field_order_info->fields[i], &indexer_field,
+					/*ignored*/&number_of_indexed_values))
+			{
+				for (j = i + 1; j < field_order_info->number_of_fields; j++)
+				{
+					if (field_order_info->fields[j] == indexer_field)
+					{
+						for (k = j; k > i; k--)
+						{
+							field_order_info->fields[k] = field_order_info->fields[k - 1];
+						}
+						field_order_info->fields[i] = indexer_field;
+						break;
+					}
+				}
+			}
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
 
 int clear_FE_field_order_info(struct FE_field_order_info *field_order_info)
 /*******************************************************************************

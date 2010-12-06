@@ -918,7 +918,7 @@ written.
 		}
 		else
 		{
-			for_each_FE_field_at_node_indexer_first(write_FE_node_field_values,
+			for_each_FE_field_at_node_alphabetical_indexer_priority(write_FE_node_field_values,
 				(void *)&values_data,node);
 		}
 		/* add extra carriage return for not multiple of
@@ -1087,7 +1087,7 @@ has been selected for output) then the header is written out.
 				}
 				else
 				{
-					for_each_FE_field_at_node_indexer_first(write_FE_node_field_info_sub,
+					for_each_FE_field_at_node_alphabetical_indexer_priority(write_FE_node_field_info_sub,
 						&field_data, node);
 				}
 				indent -= EXPORT_INDENT_SPACES;
@@ -1119,7 +1119,7 @@ has been selected for output) then the header is written out.
 			}
 			else
 			{
-				for_each_FE_field_at_node_indexer_first(
+				for_each_FE_field_at_node_alphabetical_indexer_priority(
 					write_FE_node_field_FE_field_values, (void *)output_file, node);
 			}
 		}
@@ -2238,7 +2238,7 @@ are passed to this function.
 		}
 		else
 		{
-			for_each_FE_field_at_element_indexer_first(
+			for_each_FE_field_at_element_alphabetical_indexer_priority(
 				write_FE_element_basis_and_templates_sub,
 				(void *)&write_element_field_data, element);
 		}
@@ -2568,7 +2568,7 @@ are passed to this function.
 				}
 				else
 				{
-					for_each_FE_field_at_element_indexer_first(
+					for_each_FE_field_at_element_alphabetical_indexer_priority(
 						write_FE_element_field_sub,(void *)&write_element_field_data,
 						element);
 				}
@@ -2594,7 +2594,7 @@ are passed to this function.
 					}
 					else
 					{
-						for_each_FE_field_at_element_indexer_first(
+						for_each_FE_field_at_element_alphabetical_indexer_priority(
 							write_FE_element_field_FE_field_values,
 							(void *)output_file,element);
 					}
@@ -2849,7 +2849,7 @@ DESCRIPTION :
 			if (FE_element_has_grid_based_fields(element))
 			{
 				fprintf(output_file," Values :\n");
-				for_each_FE_field_at_element_indexer_first(
+				for_each_FE_field_at_element_alphabetical_indexer_priority(
 					write_FE_element_field_values,(void *)output_file,element);
 			}
 		}

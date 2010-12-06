@@ -1293,7 +1293,7 @@ are passed to this function.
 					}
 					else
 					{
-						for_each_FE_field_at_element_indexer_first(
+						for_each_FE_field_at_element_alphabetical_indexer_priority(
 							write_FE_element_field_sub,(void *)&write_element_field_data,
 							element);
 					}
@@ -1316,7 +1316,7 @@ are passed to this function.
 						}
 						else
 						{
-							for_each_FE_field_at_element_indexer_first(
+							for_each_FE_field_at_element_alphabetical_indexer_priority(
 								write_FE_element_field_FE_field_values,
 								(void *)output_file,element);
 						}
@@ -1531,7 +1531,7 @@ Notes:
 ==============================================================================*/
 {
 	FE_value scale_factor;
-	int field_no, first_grid_field, i, number_of_faces, number_of_fields,
+	int field_no, i, number_of_faces, number_of_fields,
 		number_of_nodes, number_of_scale_factors, return_code,
 		total_number_of_scale_factors;
 	struct FE_element *face;
@@ -1576,9 +1576,9 @@ Notes:
 		{
 			number_of_fields =
 				get_FE_field_order_info_number_of_fields(field_order_info);
+			int first_grid_field = 1;
 			for (field_no = 0; field_no < number_of_fields; field_no++)
 			{
-				first_grid_field = 1;
 				if ((field =
 					get_FE_field_order_info_field(field_order_info, field_no)) &&
 					FE_element_field_is_grid_based(element,field))
@@ -1597,7 +1597,7 @@ Notes:
 			if (FE_element_has_grid_based_fields(element))
 			{
 				fprintf(output_file," Values :\n");
-				for_each_FE_field_at_element_indexer_first(
+				for_each_FE_field_at_element_alphabetical_indexer_priority(
 					write_FE_element_field_values,(void *)output_file,element);
 			}
 		}
@@ -2279,7 +2279,7 @@ written.
 		}
 		else
 		{
-			for_each_FE_field_at_node_indexer_first(write_FE_node_field_values,
+			for_each_FE_field_at_node_alphabetical_indexer_priority(write_FE_node_field_values,
 				(void *)&values_data,node);
 		}
 		/* add extra carriage return for not multiple of
@@ -2502,7 +2502,7 @@ has been selected for output) then the header is written out.
 				}
 				else
 				{
-					for_each_FE_field_at_node_indexer_first(write_FE_node_field_info_sub,
+					for_each_FE_field_at_node_alphabetical_indexer_priority(write_FE_node_field_info_sub,
 						&field_data, node);
 				}
 				if (write_field_values)
@@ -2524,7 +2524,7 @@ has been selected for output) then the header is written out.
 					}
 					else
 					{
-						for_each_FE_field_at_node_indexer_first(
+						for_each_FE_field_at_node_alphabetical_indexer_priority(
 							write_FE_node_field_FE_field_values, (void *)output_file, node);
 					}
 				}
@@ -2578,35 +2578,38 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	if (output_file && fe_region)
 	{
 		return_code = 1;
-		/* a NULL field_order_info means write all fields, an empty one means write no fields */
-		if (write_fields_mode != FE_WRITE_ALL_FIELDS)
+		field_order_info = CREATE(FE_field_order_info)();
+		if (write_fields_mode == FE_WRITE_ALL_FIELDS)
 		{
-			field_order_info = CREATE(FE_field_order_info)();
-			if ((0 < number_of_field_names) && field_names && field_names_counter)
+			// get list of all fields in default alphabetical order
+			return_code = FE_region_for_each_FE_field(fe_region,
+				FE_field_add_to_FE_field_order_info, (void *)field_order_info);
+			FE_field_order_info_prioritise_indexer_fields(field_order_info);
+		}
+		else if ((0 < number_of_field_names) && field_names && field_names_counter)
+		{
+			for (int i = 0; (i < number_of_field_names) && return_code; i++)
 			{
-				for (int i = 0; (i < number_of_field_names) && return_code; i++)
+				if (field_names[i])
 				{
-					if (field_names[i])
+					struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
+					if (fe_field)
 					{
-						struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
-						if (fe_field)
-						{
-							++(field_names_counter[i]);
-							return_code = add_FE_field_order_info_field(field_order_info, fe_field);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "write_FE_region.  NULL field name");
-						return_code = 0;
+						++(field_names_counter[i]);
+						return_code = add_FE_field_order_info_field(field_order_info, fe_field);
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "write_FE_region.  NULL field name");
+					return_code = 0;
+				}
 			}
-			else if (0 < number_of_field_names)
-			{
-				display_message(ERROR_MESSAGE, "write_FE_region.  Missing field names array");
-				return_code = 0;
-			}
+		}
+		else if (0 < number_of_field_names)
+		{
+			display_message(ERROR_MESSAGE, "write_FE_region.  Missing field names array");
+			return_code = 0;
 		}
 
 		if (return_code)

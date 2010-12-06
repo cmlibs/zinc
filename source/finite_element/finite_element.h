@@ -690,18 +690,16 @@ returns 0 or it runs out of fields.  Returns the result of the last <iterator>
 called.
 ==============================================================================*/
 
-int for_each_FE_field_at_node_indexer_first(
+/***************************************************************************//**
+ * Calls the <iterator> for each field defined at the <node> in alphabetical
+ * order and with indexer fields prioritised so they are defined before the
+ * fields indexed by them. Runs until the <iterator> returns 0 or it runs out
+ * of fields.  Returns the result of the last <iterator>.
+ * Note: expensive
+ */
+int for_each_FE_field_at_node_alphabetical_indexer_priority(
 	FE_node_field_iterator_function *iterator,void *user_data,
 	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <node> until the <iterator>
-returns 0 or it runs out of fields.  Returns the result of the last <iterator>
-called. This version insists that any field used as an indexer_field for another
-field in the list is output first.
-==============================================================================*/
 
 int FE_node_has_FE_field_values(struct FE_node *node);
 /*******************************************************************************
@@ -2875,18 +2873,16 @@ Calls the <iterator> for each field defined at the <element> until the
 <iterator> called.
 ==============================================================================*/
 
-int for_each_FE_field_at_element_indexer_first(
+/***************************************************************************//**
+ * Calls the <iterator> for each field defined at the <element> in alphabetical
+ * order and with indexer fields prioritised so they are defined before the
+ * fields indexed by them. Runs until the <iterator> returns 0 or it runs out
+ * of fields.  Returns the result of the last <iterator>.
+ * Note: expensive
+ */
+int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	FE_element_field_iterator_function *iterator,void *user_data,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <element> until the
-<iterator> returns 0 or it runs out of fields.  Returns the result of the last
-<iterator> called. This version insists that any field used as an indexer_field
-for another field in the list is output first.
-==============================================================================*/
 
 struct FE_field *get_FE_element_default_coordinate_field(
 	struct FE_element *element);
@@ -4419,6 +4415,18 @@ LAST MODIFIED : 4 September 2001
 DESCRIPTION :
 Adds <field> to the end of the list of fields in <field_order_info>.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * FE_field iterator for calling add_FE_field_order_info_field.
+ */
+int FE_field_add_to_FE_field_order_info(struct FE_field *field,
+	void *field_order_info_void);
+
+/***************************************************************************//**
+ * Ensures indexer fields precede fields they index in FE_field_order_info.
+ */
+int FE_field_order_info_prioritise_indexer_fields(
+	struct FE_field_order_info *field_order_info);
 
 int clear_FE_field_order_info(struct FE_field_order_info *field_order_info);
 /*******************************************************************************

@@ -7074,34 +7074,33 @@ Data for passing to FE_node_merge_into_FE_region.
 	struct FE_field **embedded_fields;
 };
 
+/***************************************************************************//**
+ * If <field> is embedded, ie. returns element_xi, adds it to the embedded_field
+ * array in the FE_node_merge_into_FE_region_data.
+ * @param merge_nodes_data_void  A struct FE_node_merge_into_FE_region_data *.
+ */
 static int FE_field_add_embedded_field_to_array(struct FE_field *field,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2002
-
-DESCRIPTION :
-If <field> is embedded, ie. returned element_xi, adds it to the embedded_field
-array in the data.
-<data_void> points at a struct FE_node_merge_into_FE_region_data.
-==============================================================================*/
+	void *merge_nodes_data_void)
 {
 	int return_code;
 	struct FE_field **embedded_fields;
-	struct FE_node_merge_into_FE_region_data *data;
+	struct FE_node_merge_into_FE_region_data *merge_nodes_data;
 
 	ENTER(FE_field_add_embedded_field_to_array);
-	if (field &&
-		(data = (struct FE_node_merge_into_FE_region_data *)data_void))
+	if (field && (merge_nodes_data =
+		(struct FE_node_merge_into_FE_region_data *)merge_nodes_data_void))
 	{
 		return_code = 1;
 		if (ELEMENT_XI_VALUE == get_FE_field_value_type(field))
 		{
-			if (REALLOCATE(embedded_fields, data->embedded_fields, struct FE_field *,
-				(data->number_of_embedded_fields + 1)))
+			if (REALLOCATE(embedded_fields, merge_nodes_data->embedded_fields,
+				struct FE_field *, (merge_nodes_data->number_of_embedded_fields + 1)))
 			{
-				embedded_fields[data->number_of_embedded_fields] = field;
-				data->embedded_fields = embedded_fields;
-				data->number_of_embedded_fields++;
+				/* must be mapped to a global field */
+				embedded_fields[merge_nodes_data->number_of_embedded_fields] =
+					FE_region_merge_FE_field(merge_nodes_data->fe_region, field);
+				merge_nodes_data->embedded_fields = embedded_fields;
+				merge_nodes_data->number_of_embedded_fields++;
 			}
 			else
 			{

@@ -761,7 +761,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 						if (return_code)
 						{
 							if (!(cc_set_node_field_values(destination_node,
-								source->parameter_field,FE_NODAL_VALUE,&parameter)&&
+								destination->parameter_field,FE_NODAL_VALUE,&parameter)&&
 								cc_set_node_field_values(destination_node,
 									destination->value_field,FE_NODAL_VALUE,values)&&
 								((!derivatives)||(
