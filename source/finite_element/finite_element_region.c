@@ -53,6 +53,7 @@ finite element fields defined on or interpolated over them.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/mystring.h"
 #include "general/object.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
@@ -2386,6 +2387,65 @@ Returns the field of <field_name> in <fe_region>, or NULL without error if none.
 	return (field);
 } /* FE_region_get_FE_field_from_name */
 
+int FE_region_set_FE_field_name(struct FE_region *fe_region,
+	struct FE_field *field, const char *new_name)
+{
+	int return_code;
+
+	ENTER(FE_region_set_FE_field_name);
+	if (fe_region && field && FE_region_contains_FE_field(fe_region, field) &&
+		is_standard_object_name(new_name))
+	{
+		return_code = 1;
+		struct LIST_IDENTIFIER_CHANGE_DATA(FE_field,name) *identifier_change_data = NULL;
+		if (FE_region_get_FE_field_from_name(fe_region, new_name))
+		{
+			display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name.  "
+				"Field named \"%s\" already exists in this FE_region.", new_name);
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			// this temporarily removes the object from all indexed lists
+			identifier_change_data =
+				LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(field);
+			if (NULL == identifier_change_data)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_set_FE_field_name.  "
+					"Could not safely change identifier in indexed lists");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			return_code = set_FE_field_name(field, new_name);
+		}
+		// Must restore objects to indexed lists if removed:
+		if ((identifier_change_data) && (!LIST_END_IDENTIFIER_CHANGE
+			(FE_field,name)(&identifier_change_data)))
+		{
+			display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name  "
+				"Could not restore object to all indexed lists");
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			struct FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+			FE_REGION_FE_FIELD_CHANGE(master_fe_region, field,
+				CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_set_FE_field_name.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int FE_region_contains_FE_field(struct FE_region *fe_region,
 	struct FE_field *field)
 /*******************************************************************************
@@ -2821,11 +2881,7 @@ in use by an node in the same ultimate master FE_region.
 				if (identifier_change_data =
 					LIST_BEGIN_IDENTIFIER_CHANGE(FE_node,cm_node_identifier)(node))
 				{
-					if (set_FE_node_identifier(node, new_identifier))
-					{
-						FE_REGION_FE_NODE_IDENTIFIER_CHANGE(master_fe_region, node);
-					}
-					else
+					if (!set_FE_node_identifier(node, new_identifier))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_region_change_FE_node_identifier.  "
@@ -2839,6 +2895,10 @@ in use by an node in the same ultimate master FE_region.
 							"FE_region_change_FE_node_identifier.  "
 							"Could not restore object to all indexed lists");
 						return_code = 0;
+					}
+					if (return_code)
+					{
+						FE_REGION_FE_NODE_IDENTIFIER_CHANGE(master_fe_region, node);
 					}
 				}
 				else 
@@ -4170,11 +4230,7 @@ in use by an element in the same ultimate master FE_region.
 				if (identifier_change_data =
 					LIST_BEGIN_IDENTIFIER_CHANGE(FE_element,identifier)(element))
 				{
-					if (set_FE_element_identifier(element, new_identifier))
-					{
-						FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(master_fe_region, element);
-					}
-					else
+					if (!set_FE_element_identifier(element, new_identifier))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_region_change_FE_element_identifier.  "
@@ -4188,6 +4244,10 @@ in use by an element in the same ultimate master FE_region.
 							"FE_region_change_FE_element_identifier.  "
 							"Could not restore object to all indexed lists");
 						return_code = 0;
+					}
+					if (return_code)
+					{
+						FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(master_fe_region, element);
 					}
 				}
 				else 

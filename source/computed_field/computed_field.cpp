@@ -1201,6 +1201,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 									display_message(ERROR_MESSAGE,
 										"MANAGER_MODIFY(Computed_field,name).  "
 										"Could not restore object to all indexed lists");
+									return_code = 0;
 								}
 								if (return_code)
 								{
@@ -5305,12 +5306,15 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 	int return_code;
 
 	ENTER(Cmiss_field_set_name);
-	if (field && name)
+	if (field && is_standard_object_name(name))
 	{
 		LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data = NULL;
 		return_code = 1;
 		if (field->manager)
 		{
+			// cache manager changes to prevent finite_element field wrapper change
+			// messages while objects are temporarily removed from indexed lists
+			MANAGER_BEGIN_CACHE(Computed_field)(field->manager);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
 					 const_cast<char *>(name), field->manager))
 			{
@@ -5318,16 +5322,6 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 					"Cmiss_field_set_name.  "
 					"Field named \"%s\" already exists in this field manager.",
 					name);
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			// core type must confirm change is permitted
-			if (!field->core->can_set_name(name))
-			{
-				display_message(ERROR_MESSAGE, "Cmiss_field_set_name.  "
-					"Cannot change name of field %s to %s due to its type", field->name, name);
 				return_code = 0;
 			}
 		}
@@ -5372,17 +5366,30 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 		{
 			display_message(ERROR_MESSAGE, "Cmiss_field_set_name  "
 				"Could not restore object to all indexed lists");
+			return_code = 0;
 		}
-		if (return_code && field->manager)
+		if (return_code)
+		{
+			// allow core type to change name of wrapped objects e.g. FE_field
+			field->core->set_name(name);
+		}
+		if (return_code)
 		{
 			return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
 				MANAGER_CHANGE_IDENTIFIER(Computed_field));
 		}
+		if (field->manager)
+		{
+			MANAGER_END_CACHE(Computed_field)(field->manager);
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_field_set_name.  "
-			"Missing field");
+		if (field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_set_name.  Invalid field name '%s'", name);
+		}
 		return_code=0;
 	}
 

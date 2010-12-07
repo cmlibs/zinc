@@ -15324,6 +15324,110 @@ Executes a GFX READ command.
 	return (return_code);
 } /* execute_command_gfx_read */
 
+/***************************************************************************//**
+ * Renames a field.
+ */
+static int gfx_rename_field(struct Parse_state *state,
+	void *dummy_to_be_modified, void *root_region_void)
+{
+	int return_code = 0;
+
+	ENTER(gfx_rename_field);
+	USE_PARAMETER(dummy_to_be_modified);
+	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
+	if (state && root_region)
+	{
+		char *new_name = NULL;
+		char *region_and_field_name = NULL;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_string_entry(option_table, "as", &new_name, " NEW_NAME");
+		Option_table_add_default_string_entry(option_table,
+			&region_and_field_name, "[REGION_PATH/]FIELD_NAME");
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
+		{
+			if (!new_name)
+			{
+				display_message(ERROR_MESSAGE, "gfx rename field.  Must specify a new name");
+				return_code = 0;
+			}
+			if (!region_and_field_name)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx set order.  Must specify a [region_path/]field_name to be changed");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				char *region_path = NULL;
+				char *field_name = NULL;
+				Cmiss_region *region = NULL;
+				if (Cmiss_region_get_partial_region_path(root_region,
+					region_and_field_name, &region, &region_path, &field_name))
+				{
+					Cmiss_field *field;
+					if (field_name &&
+						(field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							field_name, Cmiss_region_get_Computed_field_manager(region))))
+					{
+						return_code = Cmiss_field_set_name(field, new_name);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Field does not exist: %s", region_and_field_name);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+					DEALLOCATE(region_path);
+					DEALLOCATE(field_name);
+				}
+			}
+		}
+		DEALLOCATE(new_name);
+		DEALLOCATE(region_and_field_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_rename_field.  Invalid argument(s)");
+	}
+	LEAVE;
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Executes a GFX RENAME command.
+ */
+static int execute_command_gfx_rename(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+{
+	int return_code;
+
+	ENTER(execute_command_gfx_rename);
+	USE_PARAMETER(dummy_to_be_modified);
+	struct Cmiss_command_data *command_data =
+		(struct Cmiss_command_data *)command_data_void;
+	if (state && command_data)
+	{
+		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, "field",
+			NULL, (void *)command_data->root_region, gfx_rename_field);
+		return_code = Option_table_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_rename.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 #if defined (AWU_TESTING)
 
 int Cmiss_select_in_Cmiss_element_selection(Cmiss_element_id element,
@@ -16323,74 +16427,63 @@ static int gfx_set_region_order(struct Parse_state *state,
 	void *dummy_to_be_modified, void *root_region_void)
 {
 	int return_code = 0;
+
 	ENTER(gfx_set_region_order);
 	USE_PARAMETER(dummy_to_be_modified);
 	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
 	if (state && root_region)
 	{
-		if (state && root_region)
+		char *insert_before_sibling_name = NULL;
+		Cmiss_region *region = NULL;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Change the order of regions in the region hierarchy. The 'region' "
+			"option specifies the current path of the region to be moved. The "
+			"'before' option gives the name of an existing sibling region "
+			"which the region will be re-inserted before.");
+		Option_table_add_string_entry(option_table, "before",
+			&insert_before_sibling_name, " SIBLING_REGION_NAME");
+		Option_table_add_set_Cmiss_region(option_table,
+			"region", root_region, &region);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
 		{
-			char *insert_before_sibling_name = NULL;
-			Cmiss_region *region = NULL;
-			Option_table *option_table = CREATE(Option_table)();
-			Option_table_add_help(option_table,
-				"Change the order of regions in the region hierarchy. The 'region' "
-				"option specifies the current path of the region to be moved. The "
-				"'before' option gives the name of an existing sibling region "
-				"which the region will be re-inserted before.");
-			Option_table_add_string_entry(option_table, "before ",
-				&insert_before_sibling_name, "SIBLING_REGION_NAME");
-			Option_table_add_set_Cmiss_region(option_table,
-				"region", root_region, &region);
-			return_code = Option_table_multi_parse(option_table, state);
-			DESTROY(Option_table)(&option_table);
+			if (!region)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx set order.  Must specify a region");
+				return_code = 0;
+			}
+			if (!insert_before_sibling_name)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx set order.  Must specify a sibling region name to insert before");
+				return_code = 0;
+			}
 			if (return_code)
 			{
-				if (!region)
+				Cmiss_region *parent = Cmiss_region_get_parent(region);
+				Cmiss_region *sibling = Cmiss_region_find_child_by_name(parent,
+					insert_before_sibling_name);
+				if (sibling)
+				{
+					Cmiss_region_insert_child_before(parent, region, sibling);
+					Cmiss_region_destroy(&sibling);
+				}
+				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx set order.  Must specify a region");
-					return_code = 0;
-				}
-				if (!insert_before_sibling_name)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx set order.  Must specify a sibling region name to insert before");
-					return_code = 0;
-				}
-				if (return_code)
-				{
-					Cmiss_region *parent = Cmiss_region_get_parent(region);
-					Cmiss_region *sibling = Cmiss_region_find_child_by_name(parent,
+						"gfx set order.  Cannot find sibling '%s' to insert before",
 						insert_before_sibling_name);
-					if (sibling)
-					{
-						Cmiss_region_insert_child_before(parent, region, sibling);
-						Cmiss_region_destroy(&sibling);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx set order.  Cannot find sibling '%s' to insert before",
-							insert_before_sibling_name);
-						return_code = 0;
-					}
-					Cmiss_region_destroy(&parent);
+					return_code = 0;
 				}
+				Cmiss_region_destroy(&parent);
 			}
-			DEALLOCATE(insert_before_sibling_name);
-			if (region)
-				Cmiss_region_destroy(&region);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_region_order.  Invalid argument(s)");
-			return_code = 0;
-		}
-		LEAVE;
-
-		return (return_code);
+		DEALLOCATE(insert_before_sibling_name);
+		if (region)
+			Cmiss_region_destroy(&region);
 	}
 	else
 	{
@@ -16398,6 +16491,7 @@ static int gfx_set_region_order(struct Parse_state *state,
 			"gfx_set_region_order.  Invalid argument(s)");
 	}
 	LEAVE;
+
 	return (return_code);
 }
 
@@ -18812,6 +18906,8 @@ Executes a GFX command.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "read", NULL,
 				command_data_void, execute_command_gfx_read);
+			Option_table_add_entry(option_table, "rename", NULL,
+				command_data_void, execute_command_gfx_rename);
 			Option_table_add_entry(option_table, "select", NULL,
 				command_data_void, execute_command_gfx_select);
 			Option_table_add_entry(option_table, "set", NULL,

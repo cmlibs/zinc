@@ -135,6 +135,8 @@ Private functions
 -----------------
 */
 
+PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name);
+
 struct FE_field_info *CREATE(FE_field_info)(struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003

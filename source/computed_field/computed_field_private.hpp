@@ -294,8 +294,8 @@ public:
 	// and there are source fields.
 	virtual bool is_non_linear() const;
 
-	// override if field type cannot be renamed e.g. finite_element field
-	virtual int can_set_name(const char *name)
+	/** called by Cmiss_field_set_name. Override to rename wrapped objects e.g. FE_field */
+	virtual int set_name(const char *name)
 	{
 		USE_PARAMETER(name);
 		return 1;

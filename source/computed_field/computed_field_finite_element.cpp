@@ -153,14 +153,9 @@ private:
 		return FE_field_uses_non_linear_basis(fe_field);
 	}
 
-	// can only rename finite_element_fields to match internal FE_field
-	virtual int can_set_name(const char *name)
+	virtual int set_name(const char *name)
 	{
-		char *fe_field_name = NULL;
-		GET_NAME(FE_field)(fe_field, &fe_field_name);
-		int return_code = (0 == strcmp(name, fe_field_name));
-		DEALLOCATE(fe_field_name);
-		return return_code;
+		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
 	virtual int get_property_flag(enum Cmiss_field_property_flag property_flag)

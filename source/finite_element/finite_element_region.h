@@ -258,6 +258,19 @@ DESCRIPTION :
 Returns the field of <field_name> in <fe_region>, or NULL without error if none.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Safely change the name of field in fe_region to new_name, and inform clients.
+ *
+ * @see is_standard_object_name
+ * @param fe_region  The owning region of the field.
+ * @param field  The field to rename.
+ * @param new_name  The new name of the field. Must be a valid object name and
+ * unique in FE_region.
+ * @return  1 on success, 0 if failed.
+ */
+int FE_region_set_FE_field_name(struct FE_region *fe_region,
+	struct FE_field *field, const char *new_name);
+
 int FE_region_contains_FE_field(struct FE_region *fe_region,
 	struct FE_field *field);
 /*******************************************************************************

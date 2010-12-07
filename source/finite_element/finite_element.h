@@ -3747,14 +3747,12 @@ Returns a pointer to the name for the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
 
-int set_FE_field_name(struct FE_field *field, char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 February 1999
-
-DESCRIPTION :
-Sets the name of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
+/***************************************************************************//**
+ * Sets the name of the <field>.
+ * Should only call this function for unmanaged fields.
+ * All others should use FE_region_set_FE_field_name.
+ */
+int set_FE_field_name(struct FE_field *field, const char *name);
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component);
 

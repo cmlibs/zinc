@@ -12267,23 +12267,19 @@ Should only call this function for unmanaged fields.
 	return (name);
 }/*get_FE_field_name */
 
-int set_FE_field_name(struct FE_field *field, char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 February 1999
-
-DESCRIPTION :
-Sets the name of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
+int set_FE_field_name(struct FE_field *field, const char *name)
 {
+	char *temp;
 	int return_code;
 
 	ENTER(set_FE_field_name);
 	if (field&&name)
 	{
-		if (ALLOCATE(field->name,char,strlen(name)+1))
+		temp = duplicate_string(name);
+		if (temp)
 		{
-			strcpy(field->name,name);	
+			DEALLOCATE(field->name);
+			field->name = temp;
 			return_code=1;
 		}
 		else
