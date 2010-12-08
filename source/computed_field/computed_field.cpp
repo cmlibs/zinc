@@ -5373,13 +5373,13 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 			// allow core type to change name of wrapped objects e.g. FE_field
 			field->core->set_name(name);
 		}
-		if (return_code)
-		{
-			return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
-				MANAGER_CHANGE_IDENTIFIER(Computed_field));
-		}
 		if (field->manager)
 		{
+			if (return_code)
+			{
+				MANAGED_OBJECT_CHANGE(Computed_field)(field,
+					MANAGER_CHANGE_IDENTIFIER(Computed_field));
+			}
 			MANAGER_END_CACHE(Computed_field)(field->manager);
 		}
 	}
