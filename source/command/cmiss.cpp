@@ -7401,14 +7401,14 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 	FE_value x, x2, y, y2, z, z2, h2;
 	int return_code;
 	struct Apply_transformation_data *data;
-	struct FE_field *coordinate_field;
 
 	ENTER(apply_transformation_to_node);
 	return_code = 0;
 	if (node && (data = (struct Apply_transformation_data  *)data_void))
 	{
-		if (coordinate_field = FE_node_get_position_cartesian(node,
-			(struct FE_field *)NULL,&x,&y,&z,(FE_value *)NULL))
+		FE_field *coordinate_field = get_FE_node_default_coordinate_field(node);
+		if (FE_node_get_position_cartesian(node, coordinate_field,
+			&x, &y, &z, (FE_value *)NULL))
 		{
 			/* Get the new position */
 			h2 = (data->transformation)[0][3] * x

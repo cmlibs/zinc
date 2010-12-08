@@ -1526,13 +1526,12 @@ node is temporarily removed from all the indexed lists it is in and re-added
 afterwards. FE_region should be the only object that needs to call this.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns the first coordinate field define at the node, currently in
+ * alphabetical order. Not reliable for finding the correct coordinate field
+ * if multiple defined such as reference, deformed, texture coordinates.
+ */
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 3 November 1998
-
-DESCRIPTION :
-Returns the default coordinate field of the <node>.
-==============================================================================*/
 
 int FE_node_find_default_coordinate_field_iterator(
 	struct FE_node *node, void *fe_field_ptr_void);
@@ -2884,15 +2883,14 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	FE_element_field_iterator_function *iterator,void *user_data,
 	struct FE_element *element);
 
+/***************************************************************************//**
+ * Returns the first coordinate field define over the element, currently in
+ * alphabetical order. Recursively gets it from its first parent if it has no
+ * node scale field information. Not reliable for finding the correct coordinate
+ * field if multiple defined such as reference, deformed, texture coordinates.
+ */
 struct FE_field *get_FE_element_default_coordinate_field(
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
-
-DESCRIPTION :
-Returns the first coordinate field defined over <element>, recursively getting
-it from its first parent if it has no node scale field information.
-==============================================================================*/
 
 int FE_element_find_default_coordinate_field_iterator(
 	struct FE_element *element, void *fe_field_void);
@@ -4132,34 +4130,33 @@ over it. By supplying an <element_list> this limits the test to elements that
 are also in the list.
 ==============================================================================*/
 
-struct FE_field *FE_node_get_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field,FE_value *node_x,FE_value *node_y,
-	FE_value *node_z,FE_value *coordinate_jacobian);
-/*******************************************************************************
-LAST MODIFIED : 2 November 1998
+/***************************************************************************//**
+ * Evaluates the supplied coordinate_field. Sets non-present components to zero
+ * (eg if only had x and y, z would be set to zero).  Converts to rectangular
+ * Cartesian coordinates: x,y,z.
+ * Note: Does not handle multiple versions.
+ *
+ * @param coordinate_field  The coordinate field to evaluate.
+ * @param coordinate_jacobian  If supplied then fills with the Jacobian for the
+ * transformation from native coordinates to rectangular Cartesian.
+ * @return  1 on success, 0 on failure.
+ */
+int FE_node_get_position_cartesian(struct FE_node *node,
+	struct FE_field *coordinate_field, FE_value *node_x, FE_value *node_y,
+	FE_value *node_z, FE_value *coordinate_jacobian);
 
-DESCRIPTION :
-Evaluates the supplied coordinate_field (or the first one in the node if NULL).
-Sets non-present components to zero (eg if only had x and y, z would be set to
-zero).  Converts to rectangular Cartesian coordinates: x,y,z.  If
-<coordinate_jacobian>, then its is filled with the Jacobian for the
-transformation from native coordinates to rectangular Cartesian.  Returns the
-field it actually calculated.
-???RC Does not handle multiple versions.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Sets the position of <node> in Cartesian coordinates: x[,y[,z]] using the
+ * supplied coordinate_field. The givenCartesian coordinates are converted into
+ * the coordinate system of the coordinate_field.
+ * Sets all versions.
+ *
+ * @param coordinate_field  The coordinate field to modify.
+ * @return  1 on success, 0 on failure.
+ */
 int FE_node_set_position_cartesian(struct FE_node *node,
 	struct FE_field *coordinate_field,
-	FE_value node_x,FE_value node_y,FE_value node_z);
-/*******************************************************************************
-LAST MODIFIED : 28 April 1998
-
-DESCRIPTION :
-Sets the position of <node> in Cartesian coordinates: x[,y[,z]] using the
-supplied coordinate_field (or the first one in the node if NULL). The given
-Cartesian coordinates are converted into the coordinate system of the node
-for the coordinate_field used.
-==============================================================================*/
+	FE_value node_x, FE_value node_y, FE_value node_z);
 
 int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void);
 /*******************************************************************************

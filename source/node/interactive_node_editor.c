@@ -339,13 +339,16 @@ Tells CMGUI about the current values.
 		*temp_interactive_node_editor = user_data;
 	struct Cmgui_coordinate *coordinate = temp_coordinate;
 	struct Dof3_data new_dof3,node_position;
+	struct FE_field *coordinate_field;
 
 	ENTER(interactive_node_editor_update_coord);
 	USE_PARAMETER(coord_widget);
 	temp_interactive_node_editor->current_coordinate = coordinate;
 	/* get the position of the node */
+	coordinate_field = get_FE_node_default_coordinate_field(
+		temp_interactive_node_editor->current_value);
 	FE_node_get_position_cartesian(temp_interactive_node_editor->current_value,
-		(struct FE_field *)NULL,&node_x,&node_y,&node_z,(FE_value *)NULL);
+		coordinate_field,&node_x,&node_y,&node_z,(FE_value *)NULL);
 	(node_position.data)[0]=node_x;
 	(node_position.data)[1]=node_y;
 	(node_position.data)[2]=node_z;
@@ -368,6 +371,7 @@ Receives an update from the dof3 position widget.
 {
 	struct Interactive_node_editor_struct *temp_interactive_node_editor = user_data;
 	struct Dof3_data *temp_position = temp_dof3,node_position;
+	struct FE_field *coordinate_field;
 
 	ENTER(interactive_node_editor_update_position);
 	USE_PARAMETER(position_widget);
@@ -375,8 +379,10 @@ Receives an update from the dof3 position widget.
 	get_global_position(temp_position,
 		temp_interactive_node_editor->current_coordinate,
 		&node_position);
+	coordinate_field = get_FE_node_default_coordinate_field(
+		temp_interactive_node_editor->current_value);
 	FE_node_set_position_cartesian(temp_interactive_node_editor->current_value,
-		(struct FE_field *)NULL,(FE_value)(node_position.data)[0],
+		coordinate_field, (FE_value)(node_position.data)[0],
 		(FE_value)(node_position.data)[1],(FE_value)(node_position.data)[2]);
 	interactive_node_editor_update(temp_interactive_node_editor);
 	LEAVE;
@@ -502,6 +508,7 @@ Creates a interactive_node_editor widget that gets a position from the user.
 		(XtPointer)interactive_node_editor_coord_form_ID}
 	};
 	struct Dof3_data node_position;
+	struct FE_field *coordinate_field;
 	Widget return_widget;
 
 	ENTER(create_interactive_node_editor_widget);
@@ -554,8 +561,10 @@ Creates a interactive_node_editor widget that gets a position from the user.
 			overwrite_FE_node_with_cm_node_identifier(temp_interactive_node_editor->current_value,
 				temp_interactive_node_editor->global_value);
 			/* get the position of the node */
+			coordinate_field = get_FE_node_default_coordinate_field(
+				temp_interactive_node_editor->current_value);
 			FE_node_get_position_cartesian(
-				temp_interactive_node_editor->current_value,(struct FE_field *)NULL,
+				temp_interactive_node_editor->current_value, coordinate_field,
 				&node_x,&node_y,&node_z,(FE_value *)NULL);
 			(node_position.data)[0]=node_x;
 			(node_position.data)[1]=node_y;
@@ -727,6 +736,7 @@ Changes a data item of the interactive_node_editor widget.
 	int return_code;
 	struct Interactive_node_editor_struct *temp_interactive_node_editor;
 	struct Dof3_data node_position;
+	struct FE_field *coordinate_field;
 
 	ENTER(interactive_node_editor_set_data);
 	/* Get the pointer to the data for the interactive_node_editor dialog */
@@ -775,8 +785,10 @@ Changes a data item of the interactive_node_editor widget.
 			overwrite_FE_node_with_cm_node_identifier(temp_interactive_node_editor->current_value,
 				temp_interactive_node_editor->global_value);
 			/* get the position of the node */
+			coordinate_field = get_FE_node_default_coordinate_field(
+				temp_interactive_node_editor->current_value);
 			FE_node_get_position_cartesian(
-				temp_interactive_node_editor->current_value,(struct FE_field *)NULL,
+				temp_interactive_node_editor->current_value, coordinate_field,
 				&node_x,&node_y,&node_z,(FE_value *)NULL);
 			(node_position.data)[0]=node_x;
 			(node_position.data)[1]=node_y;

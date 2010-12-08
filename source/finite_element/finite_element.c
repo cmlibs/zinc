@@ -3618,35 +3618,42 @@ and any arrays in values_storage.
 	return (return_code);
 } /* allocate_and_copy_FE_node_values_storage */
 
-static int FE_node_field_is_coordinate_field(struct FE_node_field 
-	*node_field,void *dummy)
-/*******************************************************************************
-LAST MODIFIED: 29 August 2001
-
-DESCRIPTION:
-Returns true if <node_field> has a field of type CM_coordinate, returns
-FE_values and has up to 3 components.
-==============================================================================*/
+/***************************************************************************//**
+ * If node_field is for a coordinate field, set it at supplied address if
+ * currently none or name is alphabetically less than current field.
+ * @param coordinate_field_address_void  struct FE_field **.
+ */
+static int FE_node_field_get_first_coordinate_field(struct FE_node_field
+	*node_field, void *coordinate_field_address_void)
 {
 	int return_code;
-	struct FE_field *field;
+	struct FE_field **coordinate_field_address, *field;
 
-	ENTER(FE_node_field_is_coordinate_field);
-	USE_PARAMETER(dummy);
-	if (node_field && (field = node_field->field))
+	ENTER(FE_node_field_get_first_coordinate_field);
+	coordinate_field_address = (struct FE_field **)coordinate_field_address_void;
+	if (node_field && coordinate_field_address)
 	{
-		return_code=FE_field_is_coordinate_field(field,dummy);
+		return_code = 1;
+		field = node_field->field;
+		if (FE_field_is_coordinate_field(field, (void *)NULL))
+		{
+			if ((NULL == *coordinate_field_address) ||
+				(strcmp(field->name, (*coordinate_field_address)->name) < 0))
+			{
+				*coordinate_field_address = field;
+			}
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_field_is_coordinate_field.  Invalid arguments");
+			"FE_node_field_get_first_coordinate_field.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-}/* FE_node_field_is_coordinate_field */
+}
 
 static int FE_node_field_has_time(struct FE_node_field *node_field,void *dummy)
 /*******************************************************************************
@@ -18215,40 +18222,26 @@ afterwards. FE_region should be the only object that needs to call this.
 } /* set_FE_node_identifier */
 
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 5 November 1998
-
-DESCRIPTION :
-Returns the default coordinate field of the <node>.
-==============================================================================*/
 {
 	struct FE_field *default_coordinate_field;
-	struct FE_node_field *default_coordinate_node_field;
 
 	ENTER(get_FE_node_default_coordinate_field);
-	if (node&&(node->fields))
-	{	
-		if (default_coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-			FE_node_field_is_coordinate_field,(void *)NULL,
-			node->fields->node_field_list))
-		{
-			default_coordinate_field=default_coordinate_node_field->field;
-		}
-		else
-		{
-			default_coordinate_field=(struct FE_field *)NULL;
-		}
+	default_coordinate_field = (struct FE_field *)NULL;
+	if (node && node->fields)
+	{
+		FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+			FE_node_field_get_first_coordinate_field,
+			(void *)&default_coordinate_field, node->fields->node_field_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_node_default_coordinate_field.  Invalid node");
-		default_coordinate_field=(struct FE_field *)NULL;
 	}
 	LEAVE;
 
 	return (default_coordinate_field);
-} /* get_FE_node_default_coordinate_field */
+}
 
 int FE_node_find_default_coordinate_field_iterator(
 	struct FE_node *node, void *fe_field_ptr_void)
@@ -24005,32 +23998,42 @@ If <element_field> is standard node based, returns the <fe_basis> used for
 	return (return_code);
 } /* FE_element_field_private_get_component_FE_basis */
 
-int FE_element_field_is_coordinate_field(struct FE_element_field *element_field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Returns a non-zero if the <element_field> is for a coordinate field.
-==============================================================================*/
+/***************************************************************************//**
+ * If element_field is for a coordinate field, set it at supplied address if
+ * currently none or name is alphabetically less than current field.
+ * @param coordinate_field_address_void  struct FE_field **.
+ */
+static int FE_element_field_get_first_coordinate_field(struct FE_element_field
+	*element_field, void *coordinate_field_address_void)
 {
 	int return_code;
+	struct FE_field **coordinate_field_address, *field;
 
-	ENTER(FE_element_field_is_coordinate_field);
-	return_code=0;
-	if (element_field)
+	ENTER(FE_element_field_get_first_coordinate_field);
+	coordinate_field_address = (struct FE_field **)coordinate_field_address_void;
+	if (element_field && coordinate_field_address)
 	{
-		return_code=FE_field_is_coordinate_field(element_field->field,dummy_void); 	
+		return_code = 1;
+		field = element_field->field;
+		if (FE_field_is_coordinate_field(field, (void *)NULL))
+		{
+			if ((NULL == *coordinate_field_address) ||
+				(strcmp(field->name, (*coordinate_field_address)->name) < 0))
+			{
+				*coordinate_field_address = field;
+			}
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_field_is_coordinate_field.  Invalid argument");
+			"FE_element_field_get_first_coordinate_field.  Invalid arguments");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_field_is_coordinate_field */
+}
 
 int FE_element_field_is_anatomical_fibre_field(
 	struct FE_element_field *element_field,void *dummy_void)
@@ -29193,20 +29196,19 @@ column of the <coordinate_transformation> matrix.
 		/* check if the field is defined for the element */
 		if ((field_info = element->fields) && element->information)
 		{
+			if (!field)
+			{
+				// non-inheriting part of get_FE_element_default_coordinate_field
+				FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+					FE_element_field_get_first_coordinate_field,
+					(void *)&field, field_info->element_field_list);
+			}
 			if (field)
 			{
 				element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
 					field)(field,field_info->element_field_list);
-				return_code=1;
 			}
-			else
-			{
-				/* if <field> is NULL check for a coordinate field */
-				element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-					FE_element_field_is_coordinate_field,(void *)NULL,
-					field_info->element_field_list);
-				return_code=1;
-			}
+			return_code=1;
 		}
 		else
 		{
@@ -34071,41 +34073,32 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 
 struct FE_field *get_FE_element_default_coordinate_field(
 	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns the first coordinate field defined over <element>, recursively getting
-it from its first parent if it has no node scale field information.
-==============================================================================*/
 {
-	struct FE_element_field *element_field;
-	struct FE_field *field;
+	struct FE_field *default_coordinate_field;
 
 	ENTER(get_FE_element_default_coordinate_field);
-	field = (struct FE_field *)NULL;
+	default_coordinate_field = (struct FE_field *)NULL;
 	if (element && element->fields)
 	{
-		if (element_field = FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-			FE_element_field_is_coordinate_field, (void *)NULL,
-			element->fields->element_field_list))
+		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+			FE_element_field_get_first_coordinate_field,
+			(void *)&default_coordinate_field, element->fields->element_field_list);
+		if ((!default_coordinate_field) &&
+			element->parents && (0 < element->number_of_parents))
 		{
-			field = element_field->field;
-		}
-		else if ((element->parents) && (0 < element->number_of_parents))
-		{
-			field = get_FE_element_default_coordinate_field(element->parents[0]);
+			default_coordinate_field =
+				get_FE_element_default_coordinate_field(element->parents[0]);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_element_default_coordinate_field.  Invalid argument(s)");
+			"get_FE_element_default_coordinate_field.  Invalid element");
 	}
 	LEAVE;
 
-	return (field);
-} /* get_FE_element_default_coordinate_field */
+	return (default_coordinate_field);
+}
 
 int FE_element_find_default_coordinate_field_iterator(
 	struct FE_element *element, void *fe_field_ptr_void)
@@ -37720,76 +37713,56 @@ are also in the list.
 	return (return_code);
 } /* FE_element_or_parent_has_field */
 
-struct FE_field *FE_node_get_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field,FE_value *node_x,FE_value *node_y,
-	FE_value *node_z,FE_value *coordinate_jacobian)
-/*******************************************************************************
-LAST MODIFIED : 12 April 1999
-
-DESCRIPTION :
-Evaluates the supplied coordinate_field (or the first one in the node if NULL).
-Sets non-present components to zero (eg if only had x and y, z would be set to
-zero).  Converts to rectangular Cartesian coordinates: x,y,z.  If
-<coordinate_jacobian>, then its is filled with the Jacobian for the
-transformation from native coordinates to rectangular Cartesian.  Returns the
-field it actually calculated.
-???RC Does not handle multiple versions.
-==============================================================================*/
+int FE_node_get_position_cartesian(struct FE_node *node,
+	struct FE_field *coordinate_field, FE_value *node_x, FE_value *node_y,
+	FE_value *node_z, FE_value *coordinate_jacobian)
 {
 	struct Coordinate_system *coordinate_system;
 	FE_value node_1,node_2,node_3;	
-	int number_of_coordinate_components;
-	struct FE_field *return_field;	
-	struct FE_node_field *coordinate_node_field;
-	struct FE_node_field_info *node_field_information;
+	int number_of_coordinate_components, return_code;
 
 	ENTER(FE_node_get_position_cartesian);
-	if (node&&node_x&&node_y&&node_z&&(node_field_information=node->fields))
+	return_code = 0;
+	if (node && coordinate_field && node_x && node_y && node_z)
 	{
-		if (coordinate_field)
+		if (coordinate_field->value_type==FE_VALUE_VALUE)
 		{
-			coordinate_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				coordinate_field,node_field_information->node_field_list);
-		}
-		else
-		{
-			coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-				FE_node_field_is_coordinate_field,(void *)NULL,
-				node_field_information->node_field_list);
-		}
-		if (coordinate_node_field)
-		{
-			if ( (coordinate_field=coordinate_node_field->field)&& 
-				(coordinate_node_field->field->value_type==FE_VALUE_VALUE))
+			return_code = 1;
+			number_of_coordinate_components=
+				coordinate_field->number_of_components;
+			if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/0,
+				/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_1))
 			{
-				return_field=coordinate_node_field->field;
-				number_of_coordinate_components=
-					coordinate_node_field->field->number_of_components;
-
-				coordinate_system=get_FE_field_coordinate_system(coordinate_node_field->field); 
-				get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/0,
-					/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_1);
-
-				if (1<number_of_coordinate_components)
-				{					
-					get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/1,
-						/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_2);
-
-					if (2<number_of_coordinate_components)
-					{						
-						get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/2,
-							/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_3);
-					}
-					else
+				return_code = 0;
+			}
+			if (1<number_of_coordinate_components)
+			{
+				if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/1,
+					/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_2))
+				{
+					return_code = 0;
+				}
+				if (2<number_of_coordinate_components)
+				{
+					if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/2,
+						/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_3))
 					{
-						node_3=0.;
+						return_code = 0;
 					}
 				}
 				else
 				{
-					node_2=0.;
 					node_3=0.;
 				}
+			}
+			else
+			{
+				node_2=0.;
+				node_3=0.;
+			}
+			if (return_code)
+			{
+				coordinate_system=get_FE_field_coordinate_system(coordinate_field);
 				/* transform points to cartesian coordinates */
 				switch (coordinate_system->type)
 				{
@@ -37836,74 +37809,51 @@ field it actually calculated.
 						}
 					} break;
 				} /* switch */
-			} /* if (coordinate_field->value_type==FE_VALUE_VALUE) */
+			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"FE_node_get_position_cartesian.  "
-					"Currently only does field->value_type=FE_VALUE_VALUE. Write the code!");
-				return_field=(struct FE_field *)NULL;
+				display_message(ERROR_MESSAGE,
+					"FE_node_get_position_cartesian.  Field not defined at node");
 			}
-		} /* if (coordinate_node_field) */
+		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"FE_node_get_position_cartesian.  "
-				"Could not find coordinate_node_field");
-			return_field=(struct FE_field *)NULL;
+			display_message(ERROR_MESSAGE,
+				"FE_node_get_position_cartesian.  Only supports FE_VALUE type");
 		}
-	}/* if (node& */
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_node_get_position_cartesian.  Invalid argument(s)");
-		return_field=(struct FE_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_field);
-} /* FE_node_get_position_cartesian */
+	return (return_code);
+}
 
 int FE_node_set_position_cartesian(struct FE_node *node,
 	struct FE_field *coordinate_field,
 	FE_value node_x,FE_value node_y,FE_value node_z)
-/*******************************************************************************
-LAST MODIFIED : 12 April 1999
-
-DESCRIPTION :
-Sets the position of <node> in Cartesian coordinates: x[,y[,z]] using the
-supplied coordinate_field (or the first one in the node if NULL). The given
-Cartesian coordinates are converted into the coordinate system of the node
-for the coordinate_field used.
-==============================================================================*/
 {
 	struct Coordinate_system *coordinate_system;
 	FE_value node_1,node_2,node_3;
 	int number_of_coordinate_components,return_code,version;
 	struct FE_node_field *coordinate_node_field;
 	struct FE_node_field_component *coordinate_node_field_component;
-	struct FE_node_field_info *node_field_information;	
 
 	ENTER(FE_node_set_position_cartesian);
-	if (node&&(node_field_information=node->fields))
+	return_code = 0;
+	if (node && coordinate_field && node->fields)
 	{
-		if (coordinate_field)
+		if (coordinate_field->value_type==FE_VALUE_VALUE)
 		{
-			coordinate_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				coordinate_field,node_field_information->node_field_list);
-		}
-		else
-		{
-			coordinate_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-				FE_node_field_is_coordinate_field,(void *)NULL,
-				node_field_information->node_field_list);
-		}
-		if (coordinate_node_field)
-		{
-			if ((coordinate_field=coordinate_node_field->field)&& 
-				(coordinate_node_field->field->value_type==FE_VALUE_VALUE))
+			coordinate_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+				coordinate_field, node->fields->node_field_list);
+			if (coordinate_node_field)
 			{
 				return_code=1;
-				number_of_coordinate_components=
-					coordinate_node_field->field->number_of_components;
+				number_of_coordinate_components = coordinate_field->number_of_components;
 
 				coordinate_system = get_FE_field_coordinate_system(
 					coordinate_node_field->field);
@@ -37975,31 +37925,28 @@ for the coordinate_field used.
 						}
 					}
 				}
-			} /* if (coordinate_field->value_type==FE_VALUE_VALUE) */
+			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"FE_node_set_position_cartesian.  "
-					"Currently only does field->value_type=FE_VALUE_VALUE. Write the code!");
-				return_code=0;
+				display_message(ERROR_MESSAGE,
+					"FE_node_set_position_cartesian.  Field is not defined at node");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"FE_node_set_position_cartesian.  "
-				"Could not find coordinate_node_field");
-			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"FE_node_set_position_cartesian.  Only supports FE_VALUE type");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_node_set_position_cartesian.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_set_position_cartesian */
+}
 
 int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
