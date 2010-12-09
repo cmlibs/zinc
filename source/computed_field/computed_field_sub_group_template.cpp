@@ -122,6 +122,27 @@ int Cmiss_field_node_group_template_add_node(Cmiss_field_node_group_template_id 
 	return return_code;
 }
 
+int Cmiss_field_node_group_template_remove_node(Cmiss_field_node_group_template_id node_group,
+		Cmiss_node_id node)
+{
+	int return_code = 1;
+
+	if (node_group && node)
+	{
+	  int identifier = get_FE_node_identifier(node);
+		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+			Cmiss_field_node_group_template_id>(node_group);
+		group_core->remove_object(identifier);
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
 int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id node_group)
 {
 	int return_code = 1;

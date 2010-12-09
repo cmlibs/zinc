@@ -109,7 +109,6 @@ struct Cad_tool
 	struct Interactive_tool *interactive_tool;
 	/* needed for destroy button */
 	struct Cmiss_region *region;
-	struct FE_element_selection *element_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Graphical_material *rubber_band_material;
 	struct Time_keeper *time_keeper;
@@ -255,11 +254,6 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									//	}
 									//}
 								}
-								//if (!FE_element_selection_is_element_selected(
-								//	cad_tool->element_selection,picked_element))
-								//{
-								//	cad_tool->picked_element_was_unselected=1;
-								//}
 							}
 							//REACCESS(FE_element)(&(cad_tool->last_picked_element),
 							//	picked_element);
@@ -273,7 +267,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 								{
 									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
 									cad_tool->region);
-									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+									Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
 									root_rendition);
 									if (root_group_field)
 									{
@@ -299,7 +293,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 								if (cad_tool->rendition)
 								{
 									sub_region = Cmiss_rendition_get_region(cad_tool->rendition);
-									sub_group_field = Cmiss_rendition_get_selection_group(cad_tool->rendition);
+									sub_group_field = Cmiss_rendition_get_or_create_selection_group(cad_tool->rendition);
 									sub_group = Cmiss_field_cast_group(sub_group_field);
 									if (sub_group)
 									{
@@ -342,10 +336,6 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									Cmiss_field_destroy(&temporary_handle);
 								}
 							}
-							if (clear_selection)
-							{
-								//FE_element_selection_end_cache(cad_tool->element_selection);
-							}
 							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
 						cad_tool->motion_detected=0;
@@ -364,18 +354,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 						{
 							cad_tool->motion_detected=1;
 						}
-						if (cad_tool->last_picked_element)
-						{
-							/* unselect last_picked_element if not just added */
-							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-								shift_pressed&&(!(cad_tool->picked_element_was_unselected)))
-							{
-								FE_element_selection_unselect_element(
-									cad_tool->element_selection,
-									cad_tool->last_picked_element);
-							}
-						}
-						else if (cad_tool->motion_detected)
+						if (cad_tool->motion_detected)
 						{
 							/* rubber band select */
 							if (temp_interaction_volume=
@@ -453,7 +432,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 													if (sub_region)
 													{
 														region_rendition= Cmiss_rendition_get_from_region(sub_region);
-														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+														sub_group_field = Cmiss_rendition_get_or_create_selection_group(region_rendition);
 														sub_group = Cmiss_field_cast_group(sub_group_field);
 													}
 													if (sub_group)
@@ -698,33 +677,9 @@ public:
 
 	void OnButtonDestroyPressed(wxCommandEvent& event)
 	{
-		int number_not_destroyed;
-		struct LIST(FE_element) *destroy_element_list;
-
 		USE_PARAMETER(event);
-		if (destroy_element_list = CREATE(LIST(FE_element))())
-		{
-			COPY_LIST(FE_element)(destroy_element_list,
-				FE_element_selection_get_element_list(
-					cad_tool->element_selection));
-			fe_region = Cmiss_region_get_FE_region(cad_tool->region);
-			FE_region_begin_change(fe_region);
-			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
-			if (0 < (number_not_destroyed =
-				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
-			{
-				display_message(WARNING_MESSAGE,
-					"%d of the selected element(s) could not be destroyed",
-					number_not_destroyed);
-			}
-			FE_region_end_change(fe_region);
-			DESTROY(LIST(FE_element))(&destroy_element_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cad_tool_destroy_selected_CB.  Invalid argument(s)");
-		}
+
+		/* Implement new code here */
 	}
 
 	void CadToolInterfaceRenew(Cad_tool *destination_cad_tool)
@@ -821,7 +776,6 @@ static int Cad_tool_copy_function(
 			destination_cad_tool = CREATE(Cad_tool)
 				(destination_tool_manager,
 				source_cad_tool->region,
-				source_cad_tool->element_selection,
 				source_cad_tool->element_point_ranges_selection,
 				source_cad_tool->rubber_band_material,
 				source_cad_tool->user_interface,
@@ -861,7 +815,6 @@ static int Cad_tool_copy_function(
 struct Cad_tool *CREATE(Cad_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *region,
-	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
@@ -871,7 +824,6 @@ LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates an Cad_tool with Interactive_tool in <interactive_tool_manager>.
-Selects elements in <element_selection> in response to interactive_events.
 ==============================================================================*/
 {
 	struct Cad_tool *cad_tool;
@@ -880,7 +832,7 @@ Selects elements in <element_selection> in response to interactive_events.
 	ENTER(CREATE(Cad_tool));
 	cad_tool=(struct Cad_tool *)NULL;
 	if (interactive_tool_manager && region &&
-		element_selection&&(NULL != (computed_field_manager=
+			(NULL != (computed_field_manager=
 				Cmiss_region_get_Computed_field_manager(region)))
 		&&rubber_band_material&&user_interface)
 	{
@@ -889,7 +841,6 @@ Selects elements in <element_selection> in response to interactive_events.
 			cad_tool->execute_command=NULL;
 			cad_tool->interactive_tool_manager=interactive_tool_manager;
 			cad_tool->region = region;
-			cad_tool->element_selection=element_selection;
 			cad_tool->element_point_ranges_selection=
 				element_point_ranges_selection;
 			cad_tool->rubber_band_material=

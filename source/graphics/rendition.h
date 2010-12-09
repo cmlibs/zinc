@@ -323,7 +323,7 @@ PROTOTYPE_ANY_OBJECT(Cmiss_rendition);
 int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition, 
 	struct GT_object *glyph, const char *cmiss_graphic_name);
 
-struct Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
+struct Computed_field *Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);
 
 int Cmiss_rendition_has_selection_group(Cmiss_rendition_id rendition);
 
@@ -370,5 +370,11 @@ int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *renditi
 	void *command_prefix_void);
 
 int list_Cmiss_rendition_transformation(struct Cmiss_rendition *rendition);
+
+int Cmiss_rendition_add_selection_from_node_list(Cmiss_rendition_id rendition,
+	struct LIST(FE_node) *node_list, int use_data);
+
+int Cmiss_rendition_remove_selection_from_node_list(Cmiss_rendition_id rendition,
+	struct LIST(FE_node) *node_list, int use_data);
 #endif /* !defined (RENDITION_H) */
 

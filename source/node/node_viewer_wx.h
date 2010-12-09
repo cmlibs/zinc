@@ -5,7 +5,7 @@ LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
-FE_node_selection to display the last selected node, or set it if entered in
+selection to display the last selected node, or set it if entered in
 this dialog.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -48,7 +48,6 @@ this dialog.
  
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
-#include "selection/node_selection.h"
 #include "time/time.h"
 #include "user_interface/user_interface.h"
 /*

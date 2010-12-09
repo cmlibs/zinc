@@ -3641,12 +3641,13 @@ int Cmiss_graphic_to_graphics_object(
 						{
 							case CMISS_GRAPHIC_DATA_POINTS:
 							{
-								GT_object_set_node_highlight_functor(graphic->graphics_object, NULL);
+								GT_object_set_node_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, /*use_data*/1);
 							} break;
 							case CMISS_GRAPHIC_NODE_POINTS:
 							{
 							  GT_object_set_node_highlight_functor(graphic->graphics_object,
-							  	(void *)graphic_to_object_data->group_field);
+							  	(void *)graphic_to_object_data->group_field, /*use_data*/0);
 							} break;
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
@@ -4018,6 +4019,7 @@ int Cmiss_graphic_Computed_field_change(
 	  {
 	  	if (graphic->graphics_object&&
 	  			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
+	  				(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 	  				(CMISS_GRAPHIC_LINES==graphic->graphic_type) ||
 	  				(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type) ||
 	  				(CMISS_GRAPHIC_SURFACES==graphic->graphic_type) ||

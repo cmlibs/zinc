@@ -362,14 +362,12 @@ struct User_interface_module *User_interface_module_create(
 			UI_module->node_tool=CREATE(Node_tool)(
 				UI_module->interactive_tool_manager,
 				root_region, /*use_data*/0,
-				Cmiss_context_get_node_selection(context),
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,
 				UI_module->default_time_keeper);
 			UI_module->data_tool=CREATE(Node_tool)(
 				UI_module->interactive_tool_manager,
 				root_region, /*use_data*/1,
-				Cmiss_context_get_data_selection(context),
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,
 				UI_module->default_time_keeper);
@@ -385,7 +383,6 @@ struct User_interface_module *User_interface_module_create(
 			UI_module->cad_tool=CREATE(Cad_tool)(
 				UI_module->interactive_tool_manager,
 				root_region,
-				Cmiss_context_get_element_selection(context),
 				Cmiss_context_get_element_point_ranges_selection(context),
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,

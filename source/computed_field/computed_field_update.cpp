@@ -124,7 +124,7 @@ DESCRIPTION :
 	FE_value time;
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
-	struct FE_node_selection *node_selection;
+	struct Computed_field *group_field;
 };
 
 int Computed_field_update_nodal_values_from_source_sub(
@@ -143,8 +143,7 @@ DESCRIPTION :
 		(struct Computed_field_update_nodal_values_from_source_data *)data_void))
 	{
 		return_code = 1;
-		if (((struct FE_node_selection *)NULL == data->node_selection) ||
-			FE_node_selection_is_node_selected(data->node_selection, node))
+		if ((data->group_field == NULL) || Computed_field_is_true_at_node(data->group_field, node, 0))
 		{
 			if (Computed_field_is_defined_at_node(data->source_field, node) &&
 				Computed_field_is_defined_at_node(data->destination_field, node))
@@ -177,7 +176,7 @@ DESCRIPTION :
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
 	struct Cmiss_region *region, int use_data,
-	struct FE_node_selection *node_selection,	FE_value time)
+	struct Computed_field *group_field,	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -205,7 +204,7 @@ Restricts update to nodes in <node_selection>, if supplied.
 			{
 				data.source_field = source_field;
 				data.destination_field = destination_field;
-				data.node_selection = node_selection;
+				data.group_field = group_field;
 				data.selected_count = 0;
 				data.success_count = 0;
 				data.time = time;

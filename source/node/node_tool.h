@@ -48,7 +48,6 @@ based on input from devices.
 #include "finite_element/finite_element.h"
 #include "graphics/material.h"
 #include "interaction/interactive_tool.h"
-#include "selection/node_selection.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -81,7 +80,6 @@ Global functions
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *root_region, int use_data,
-	struct FE_node_selection *node_selection,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
 	struct Time_keeper *time_keeper);

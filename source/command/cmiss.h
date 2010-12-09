@@ -244,15 +244,6 @@ DESCRIPTION :
 Returns the selected_element object from the <command_data>.
 ==============================================================================*/
 
-struct FE_node_selection *Cmiss_command_data_get_node_selection(
-	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-Returns the selected_node object from the <command_data>.
-==============================================================================*/
-
 struct User_interface *Cmiss_command_data_get_user_interface(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************

@@ -6974,7 +6974,7 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
 }
 
 int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
-		void *group_field_void)
+		void *group_field_void, int use_data)
 {
 	struct Computed_field *group_field =
 		(struct Computed_field *)group_field_void;
@@ -6987,7 +6987,11 @@ int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
 	if (graphics_object && group_field)
 	{
 	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-	  Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+	  Cmiss_field_id node_group_field = NULL;
+	  if (!use_data)
+	  	node_group_field = Cmiss_field_group_get_node_group(sub_group);
+	  else
+	  	node_group_field = Cmiss_field_group_get_data_group(sub_group);
 	  Cmiss_field_node_group_template_id node_group = NULL;
     if (node_group_field)
     {

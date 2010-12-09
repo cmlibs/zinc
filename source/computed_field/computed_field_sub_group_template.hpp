@@ -79,7 +79,7 @@ namespace {
 			return 1;
 		};
 
-		inline int remove_object(int identifier, T object)
+		inline int remove_object(int identifier)
 		{
 
 			if (object_map.find(identifier) != object_map.end())

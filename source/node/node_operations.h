@@ -49,31 +49,11 @@ cannot reside in finite element modules.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "general/multi_range.h"
-#include "selection/node_selection.h"
 
 /*
 Global functions
 ----------------
 */
-
-struct LIST(FE_node) *
-	FE_node_list_from_fe_region_selection_ranges_condition(
-		struct FE_region *fe_region, struct FE_node_selection *node_selection,
-		int selected_flag, struct Multi_range *node_ranges,
-		struct Computed_field *conditional_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Creates and returns an node list that is the intersection of:
-- all the nodes in <fe_region>;
-- all nodes in the <node_selection> if <selected_flag> is set;
-- all nodes in the given <node_ranges>, if any.
-- all nodes for which the <conditional_field> evaluates as "true"
-  in its centre at the specified <time>
-Up to the calling function to destroy the returned node list.
-==============================================================================*/
-
 int FE_region_change_node_identifiers(struct FE_region *fe_region,
 	int node_offset, struct Computed_field *sort_by_field, FE_value time);
 /*******************************************************************************
@@ -108,5 +88,10 @@ struct LIST(FE_node) *
 		struct Cmiss_region *region, struct Multi_range *node_ranges,
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data);
+
+struct LIST(FE_node) *
+	FE_node_list_from_ranges(
+		struct FE_region *fe_region, struct Multi_range *node_ranges,
+		struct Computed_field *conditional_field, FE_value time);
 
 #endif /* !defined (NODE_OPERATIONS_H) */

@@ -386,7 +386,6 @@ DESCRIPTION :
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *data_selection,*node_selection;
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 	struct Time_keeper *default_time_keeper;
@@ -2120,134 +2119,6 @@ Executes a GFX CREATE LMODEL command.
 	return (return_code);
 } /* gfx_create_light_model */
 
-struct Interpreter_command_node_selection_callback_data
-{
-	char *perl_action;
-	struct Interpreter *interpreter;
-}; /* struct Interpreter_command_node_selection_callback_data */
-
-#if defined (USE_PERL_INTERPRETER)
-static void interpreter_command_node_selection_callback(
-	struct FE_node_selection *node_selection,
-	struct FE_node_selection_changes *node_selection_changes,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *callback_result;
-	int return_code;
-	struct Interpreter_command_node_selection_callback_data *data;
-
-	ENTER(interpreter_command_node_selection_callback);
-
-	if (node_selection && node_selection_changes && 
-		(data = (struct Interpreter_command_node_selection_callback_data *)data_void))
-	{
-		callback_result = (char *)NULL;
-		interpreter_evaluate_string(data->interpreter,
-			  data->perl_action, &callback_result, &return_code);
-		if (callback_result)
-		{
-			DEALLOCATE(callback_result);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"interpreter_command_node_selection_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return;
-} /* interpreter_command_node_selection_callback */
-#endif /* defined (USE_PERL_INTERPRETER) */
-
-static int gfx_create_node_selection_callback(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
-==============================================================================*/
-{
-	char *perl_action;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-#if defined (USE_PERL_INTERPRETER)
-	struct Interpreter_command_node_selection_callback_data *data = 0;
-#endif /* defined (USE_PERL_INTERPRETER) */
-	struct Option_table *option_table;
-
-	ENTER(gfx_create_node_selection_callback);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		perl_action = (char *)NULL;
-		
-		option_table=CREATE(Option_table)();
-#if defined (USE_PERL_INTERPRETER)
-		/* perl_action */
-		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
-			set_name);
-#endif /* defined (USE_PERL_INTERPRETER) */
-		return_code = Option_table_multi_parse(option_table,state);
-		DESTROY(Option_table)(&option_table);
-		if (return_code)
-		{
-#if defined (USE_PERL_INTERPRETER)
-			if (!perl_action)
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_node_selection_callback.  "
-					"Specify a perl_action.");
-				return_code=0;
-			}
-			if (return_code)
-			{
-				if (ALLOCATE(data, struct Interpreter_command_node_selection_callback_data, 1))
-				{
-					data->perl_action = duplicate_string(perl_action);
-					data->interpreter = command_data->interpreter;
-
-					FE_node_selection_add_callback(
-						command_data->node_selection,
-						interpreter_command_node_selection_callback,
-						(void *)data);
-
-					/* Should add these callbacks to a list in the command data so that 
-						they can be cleaned up when quitting and retrieved for a destroy command */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_node_selection_callback.  "
-						"Unable to allocate callback data.");
-					return_code=0;
-				}
-			}
-#endif /* defined (USE_PERL_INTERPRETER) */
-		}
-		if (perl_action)
-		{
-			DEALLOCATE(perl_action);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_node_selection_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_node_selection_callback */
-
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int gfx_create_node_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -2728,13 +2599,34 @@ Executes a GFX CREATE SNAKE command.
 			}
 			if (return_code)
 			{
-				return_code = create_FE_element_snake_from_data_points(
-					fe_region, coordinate_field, weight_field,
-					number_of_fitting_fields, fitting_fields,
-					FE_node_selection_get_node_list(command_data->data_selection),
-					number_of_elements,
-					density_factor,
-					stiffness);
+	  		Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+	  		struct Computed_field *group_field = NULL;
+	  		if (rendition)
+	  		{
+	  			if (Cmiss_rendition_has_selection_group(rendition))
+	  			{
+	  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+	  			}
+					Cmiss_rendition_destroy(&rendition);
+	  		}
+	  		if (group_field)
+	  		{
+	  			struct LIST(FE_node) *data_list = FE_node_list_from_region_and_selection_group(
+	  				region, NULL,	group_field, NULL, 0, /*use_data*/1);
+	  			return_code = create_FE_element_snake_from_data_points(
+	  				fe_region, coordinate_field, weight_field,
+	  				number_of_fitting_fields, fitting_fields,
+	  				data_list,
+	  				number_of_elements,
+	  				density_factor,
+	  				stiffness);
+	  			Cmiss_field_destroy(&group_field);
+	  			DESTROY(LIST(FE_node))(&data_list);
+	  		}
+	  		else
+	  		{
+	  			return_code = 0;
+	  		}
 			}
 		} /* parse error, help */
 		DESTROY(Option_table)(&option_table);
@@ -4765,7 +4657,6 @@ Executes a GFX CREATE WINDOW command.
 						Node_tool_set_execute_command(CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
-								command_data->node_selection,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
 								command_data->default_time_keeper),
@@ -4773,7 +4664,6 @@ Executes a GFX CREATE WINDOW command.
 						Node_tool_set_execute_command(CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/1,
-								command_data->data_selection,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
 								command_data->default_time_keeper),
@@ -4791,7 +4681,6 @@ Executes a GFX CREATE WINDOW command.
 						Cad_tool_set_execute_command(CREATE(Cad_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
-								command_data->element_selection,
 								command_data->element_point_ranges_selection,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
@@ -5926,8 +5815,6 @@ Executes a GFX CREATE command.
 					/*create_more*/(void *)1, command_data_void, gfx_create_flow_particles);
 				Option_table_add_entry(option_table, "ngroup", /*use_object_type*/(void *)1,
 					(void *)command_data->root_region, gfx_create_group);
-				Option_table_add_entry(option_table,"node_selection_callback",NULL,
-					command_data_void,gfx_create_node_selection_callback);
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
@@ -6414,7 +6301,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		  		{
 		  			if (Cmiss_rendition_has_selection_group(rendition))
 		  			{
-		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 		  			}
 						Cmiss_rendition_destroy(&rendition);
 		  		}
@@ -6779,7 +6666,6 @@ use node_manager and node_selection.
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
 	struct Computed_field *conditional_field;
-	struct FE_node_selection *node_selection;
 	struct FE_region *fe_region, *master_fe_region;
 	struct LIST(FE_node) *destroy_node_list;
 	struct Multi_range *node_ranges;
@@ -6789,14 +6675,6 @@ use node_manager and node_selection.
 	ENTER(gfx_destroy_nodes);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (use_data)
-		{
-			node_selection = command_data->data_selection;
-		}
-		else
-		{
-			node_selection = command_data->node_selection;
-		}
 		/* initialise defaults */
 		all_flag = 0;
 		region_path = (char *)NULL;
@@ -6853,7 +6731,7 @@ use node_manager and node_selection.
 		  		{
 		  			if (Cmiss_rendition_has_selection_group(rendition))
 		  			{
-		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 		  			}
 						Cmiss_rendition_destroy(&rendition);
 		  		}
@@ -9945,7 +9823,6 @@ DESCRIPTION :
 	struct Computed_field *destination_field, *source_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *data_selection, *node_selection;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_destination_field_data,
 		set_source_field_data;
@@ -10007,19 +9884,15 @@ DESCRIPTION :
 			{
 				if (selected_flag)
 				{
-					data_selection = command_data->data_selection;
 					element_point_ranges_selection =
 						command_data->element_point_ranges_selection;
 					element_selection = command_data->element_selection;
-					node_selection = command_data->node_selection;
 				}
 				else
 				{
-					data_selection = (struct FE_node_selection *)NULL;
 					element_point_ranges_selection =
 						(struct Element_point_ranges_selection *)NULL;
 					element_selection = (struct FE_element_selection *)NULL;
-					node_selection = (struct FE_node_selection *)NULL;
 				}
 
 				if (data_region_path && (!element_region_path) && (!node_region_path))
@@ -10027,8 +9900,26 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						data_region_path, &region))
 					{
+			  		struct Computed_field *group_field = NULL;
+			  		if (selected_flag)
+			  		{
+							Cmiss_rendition_id rendition =
+								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+							if (rendition)
+							{
+								if (Cmiss_rendition_has_selection_group(rendition))
+								{
+									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+								}
+								Cmiss_rendition_destroy(&rendition);
+							}
+			  		}
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, /*use_data*/1, data_selection, time);
+							destination_field, source_field, region, /*use_data*/1, group_field, time);
+						if (group_field)
+						{
+							Cmiss_field_destroy(&group_field);
+						}
 					}
 				}
 				else if (element_region_path && (!data_region_path) &&
@@ -10048,8 +9939,26 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						node_region_path, &region))
 					{
+			  		struct Computed_field *group_field = NULL;
+			  		if (selected_flag)
+			  		{
+							Cmiss_rendition_id rendition =
+								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+							if (rendition)
+							{
+								if (Cmiss_rendition_has_selection_group(rendition))
+								{
+									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+								}
+								Cmiss_rendition_destroy(&rendition);
+							}
+			  		}
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, /*use_data*/0, node_selection, time);
+							destination_field, source_field, region, /*use_data*/0, group_field, time);
+						if (group_field)
+						{
+							Cmiss_field_destroy(&group_field);
+						}
 					}
 				}
 				else
@@ -10497,7 +10406,7 @@ Executes a GFX LIST ELEMENT.
 		  		{
 		  			if (Cmiss_rendition_has_selection_group(rendition))
 		  			{
-		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 		  			}
 						Cmiss_rendition_destroy(&rendition);
 		  		}
@@ -10634,7 +10543,6 @@ use node_manager and node_selection.
 	int return_code, start, stop;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-	struct FE_node_selection *node_selection;
 	struct LIST(FE_node) *node_list = NULL;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
@@ -10642,14 +10550,6 @@ use node_manager and node_selection.
  	ENTER(gfx_list_FE_node);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (use_data)
-		{
-			node_selection = command_data->data_selection;
-		}
-		else
-		{
-			node_selection = command_data->node_selection;
-		}
 		/* initialise defaults */
 		all_flag = 0;
 		region_path = Cmiss_region_get_root_region_path();
@@ -10685,7 +10585,7 @@ use node_manager and node_selection.
 		  		{
 		  			if (Cmiss_rendition_has_selection_group(rendition))
 		  			{
-		  				group_field = Cmiss_rendition_get_selection_group(rendition);
+		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 		  			}
 						Cmiss_rendition_destroy(&rendition);
 		  		}
@@ -12180,7 +12080,7 @@ be specified at once.
 				  		{
 				  			if (Cmiss_rendition_has_selection_group(rendition))
 				  			{
-				  				group_field = Cmiss_rendition_get_selection_group(rendition);
+				  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 				  			}
 								Cmiss_rendition_destroy(&rendition);
 				  		}
@@ -12492,7 +12392,6 @@ use node_manager and node_selection.
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
 	struct Cmiss_region *region = NULL;
-	struct FE_node_selection *node_selection;
 	struct FE_region *modify_fe_region;
 	struct LIST(FE_node) *node_list = NULL;
 	struct Multi_range *node_ranges;
@@ -12503,14 +12402,7 @@ use node_manager and node_selection.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		modify_region_path = (char *)NULL;
-		if (use_data)
-		{
-			node_selection = command_data->data_selection;
-		}
-		else
-		{
-			node_selection = command_data->node_selection;
-		}
+
 		if (set_Cmiss_region_path(state, (void *)&modify_region_path,
 			(void *)command_data->root_region))
 		{
@@ -12612,7 +12504,7 @@ use node_manager and node_selection.
 				  		{
 				  			if (Cmiss_rendition_has_selection_group(rendition))
 				  			{
-				  				group_field = Cmiss_rendition_get_selection_group(rendition);
+				  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 				  			}
 								Cmiss_rendition_destroy(&rendition);
 				  		}
@@ -13073,7 +12965,6 @@ use node_manager and node_selection.
 	struct FE_node_field_component_derivatives_data component_derivatives_data;
 	struct FE_node_field_component_versions_data component_versions_data;
 	struct FE_node_field_creator *node_field_creator;
-	struct FE_node_selection *node_selection;
 	struct FE_region *fe_region;
 	struct LIST(FE_node) *node_list;
 	struct Multi_range *node_ranges;
@@ -13085,14 +12976,6 @@ use node_manager and node_selection.
 	ENTER(gfx_modify_nodes);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (use_data)
-		{
-			node_selection = command_data->data_selection;
-		}
-		else
-		{
-			node_selection = command_data->node_selection;
-		}
 		/* initialise defaults */
 		all_flag = 0;
 		conditional_field=(struct Computed_field *)NULL;
@@ -13206,7 +13089,7 @@ use node_manager and node_selection.
 			  		{
 			  			if (Cmiss_rendition_has_selection_group(rendition))
 			  			{
-			  				group_field = Cmiss_rendition_get_selection_group(rendition);
+			  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 			  			}
 							Cmiss_rendition_destroy(&rendition);
 			  		}
@@ -15498,7 +15381,7 @@ int Cmiss_select_in_Cmiss_element_selection(Cmiss_element_id element,
 		}
 		if (element_group)
 		{
-			
+
 			Cmiss_field_destroy(&element_group);
 		}
 		if (group_field)
@@ -15517,7 +15400,7 @@ int Cmiss_select_in_Cmiss_element_selection(Cmiss_element_id element,
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_select_in_FE_node_selection */
+} /* Cmiss_select_in_Cmiss_element_selection */
 #endif
 
 
@@ -15666,29 +15549,22 @@ Executes a GFX SELECT command.
 				if (data_flag)
 				{
 					if (node_list =
-						FE_node_list_from_fe_region_selection_ranges_condition(
-							FE_region_get_data_FE_region(fe_region),
-							command_data->data_selection, selected_flag,
-							multi_range, conditional_field, time))
+						FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time))
 					{
-						FE_node_selection_begin_cache(command_data->data_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-							FE_node_select_in_FE_node_selection,
-							(void *)command_data->data_selection, node_list))
+						if (region)
 						{
-							if (verbose_flag)
-							{
-								display_message(INFORMATION_MESSAGE,
-									"Selected %d data points.\n",
-									NUMBER_IN_LIST(FE_node)(node_list));
-							}
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_add_selection_from_node_list(local_rendition,
+								node_list, /* use_data */1);
+							Cmiss_rendition_destroy(&local_rendition);
 						}
-						else
+						if (verbose_flag)
 						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_select.  Problem selecting nodes.");
+							display_message(INFORMATION_MESSAGE,
+								"Selected %d data points.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
-						FE_node_selection_end_cache(command_data->data_selection);
 						DESTROY(LIST(FE_node))(&node_list);
 					}
 				}
@@ -15845,38 +15721,22 @@ Executes a GFX SELECT command.
 				if (nodes_flag)
 				{
 					if (node_list =
-						FE_node_list_from_fe_region_selection_ranges_condition(
-							fe_region, command_data->node_selection, selected_flag,
-							multi_range, conditional_field, time))
+							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time))
 					{
-						FE_node_selection_begin_cache(command_data->node_selection);
-#if defined (AWU_TESTING)
 						if (region)
 						{
-							Cmiss_rendition *local_rendition = Cmiss_region_get_rendition_internal(region);
-							Cmiss_rendition_create_node_list_selection(local_rendition,
-								node_list);
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_add_selection_from_node_list(local_rendition,
+								node_list, /* use_data */0);
 							Cmiss_rendition_destroy(&local_rendition);
 						}
-#else
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-							FE_node_select_in_FE_node_selection,
-							(void *)command_data->node_selection, node_list))
+						if (verbose_flag)
 						{
-							if (verbose_flag)
-							{
-								display_message(INFORMATION_MESSAGE,
-									"Selected %d nodes.\n",
-									NUMBER_IN_LIST(FE_node)(node_list));
-							}
+							display_message(INFORMATION_MESSAGE,
+								"Selected %d data points.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_select.  Problem selecting nodes.");
-						}
-#endif
-						FE_node_selection_end_cache(command_data->node_selection);
 						DESTROY(LIST(FE_node))(&node_list);
 					}
 
@@ -16059,29 +15919,22 @@ Executes a GFX UNSELECT command.
 				if (data_flag)
 				{
 					if (node_list =
-						FE_node_list_from_fe_region_selection_ranges_condition(
-							FE_region_get_data_FE_region(fe_region),
-							command_data->data_selection, selected_flag,
-							multi_range, conditional_field, time))
+							FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time))
 					{
-						FE_node_selection_begin_cache(command_data->data_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-							FE_node_unselect_in_FE_node_selection,
-							(void *)command_data->data_selection, node_list))
+						if (region)
 						{
-							if (verbose_flag)
-							{
-								display_message(INFORMATION_MESSAGE,
-									"Unselected %d data points.\n",
-									NUMBER_IN_LIST(FE_node)(node_list));
-							}
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_remove_selection_from_node_list(local_rendition,
+								node_list, /* use_data */1);
+							Cmiss_rendition_destroy(&local_rendition);
 						}
-						else
+						if (verbose_flag)
 						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem unselecting nodes.");
+							display_message(INFORMATION_MESSAGE,
+								"Unselected %d data points.\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
-						FE_node_selection_end_cache(command_data->data_selection);
 						DESTROY(LIST(FE_node))(&node_list);
 					}
 				}
@@ -16226,28 +16079,16 @@ Executes a GFX UNSELECT command.
 				if (nodes_flag)
 				{
 					if (node_list =
-						FE_node_list_from_fe_region_selection_ranges_condition(
-							fe_region, command_data->node_selection, selected_flag,
-							multi_range, conditional_field, time))
+							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time))
 					{
-						FE_node_selection_begin_cache(command_data->node_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-							FE_node_unselect_in_FE_node_selection,
-							(void *)command_data->node_selection, node_list))
+						if (region)
 						{
-							if (verbose_flag)
-							{
-								display_message(INFORMATION_MESSAGE,
-									"Unselected %d nodes.\n",
-									NUMBER_IN_LIST(FE_node)(node_list));
-							}
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_remove_selection_from_node_list(local_rendition,
+								node_list, /* use_data */0);
+							Cmiss_rendition_destroy(&local_rendition);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem unselecting nodes.");
-						}
-						FE_node_selection_end_cache(command_data->node_selection);
 						DESTROY(LIST(FE_node))(&node_list);
 					}
 				}
@@ -22496,8 +22337,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->any_object_selection=(struct Any_object_selection *)NULL;
 		command_data->element_point_ranges_selection=(struct Element_point_ranges_selection *)NULL;
 		command_data->element_selection=(struct FE_element_selection *)NULL;
-		command_data->data_selection=(struct FE_node_selection *)NULL;
-		command_data->node_selection=(struct FE_node_selection *)NULL;
 		command_data->interactive_tool_manager=(struct MANAGER(Interactive_tool) *)NULL;
 		command_data->io_stream_package = (struct IO_stream_package *)NULL;
 		command_data->computed_field_package=(struct Computed_field_package *)NULL;
@@ -22836,8 +22675,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_point_ranges_selection = 
 			Cmiss_context_get_element_point_ranges_selection(context);
 		command_data->element_selection = Cmiss_context_get_element_selection(context);
-		command_data->node_selection = Cmiss_context_get_node_selection(context);
-		command_data->data_selection = Cmiss_context_get_data_selection(context);
 
 		/* interactive_tool manager */
 		command_data->interactive_tool_manager=UI_module->interactive_tool_manager;
@@ -23759,28 +23596,6 @@ Returns the selected_element object from the <command_data>.
 
 	return (element_selection);
 } /* Cmiss_command_data_get_element_selection */
-
-struct FE_node_selection *Cmiss_command_data_get_node_selection(
-	struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-Returns the selected_node object from the <command_data>.
-==============================================================================*/
-{
-	struct FE_node_selection *node_selection;
-
-	ENTER(Cmiss_command_data_get_node_selection);
-	node_selection=(struct FE_node_selection *)NULL;
-	if (command_data)
-	{
-		node_selection = command_data->node_selection;
-	}
-	LEAVE;
-
-	return (node_selection);
-} /* Cmiss_command_data_get_node_selection */
 
 struct User_interface *Cmiss_command_data_get_user_interface(
 	struct Cmiss_command_data *command_data)

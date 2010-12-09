@@ -1324,7 +1324,8 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
     void *group_field_void);
 
-int GT_object_set_node_highlight_functor(struct GT_object *graphics_object, void *group_field);
+int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
+	void *group_field_void, int use_data);
 
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges);

@@ -57,6 +57,9 @@ Cmiss_field_node_group_template_id Cmiss_field_cast_node_group_template(Cmiss_fi
 int Cmiss_field_node_group_template_add_node(Cmiss_field_node_group_template_id node_group,
 	Cmiss_node_id node);
 
+int Cmiss_field_node_group_template_remove_node(Cmiss_field_node_group_template_id node_group,
+	Cmiss_node_id node);
+
 int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id node_group);
 
 int Cmiss_field_node_group_template_is_node_selected(

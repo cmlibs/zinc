@@ -69,7 +69,6 @@ struct Context
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection, *data_selection;
 	struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Curve) *curve_manager;
@@ -88,8 +87,6 @@ struct Context *Cmiss_context_create(const char *id)
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
 		context->element_selection = NULL;
-		context->node_selection = NULL;
-		context->data_selection = NULL;
 		context->event_dispatcher = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
@@ -118,14 +115,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 			if (context->element_selection)
 			{
 				DESTROY(FE_element_selection)(&context->element_selection);
-			}
-			if (context->node_selection)
-			{
-				DESTROY(FE_node_selection)(&context->node_selection);
-			}
-			if (context->data_selection)
-			{
-				DESTROY(FE_node_selection)(&context->data_selection);
 			}
 			/* Removing graphics module first will cause some memory problem at present.
 			 * The problem however can be resolved once we use graphics module to store the
@@ -407,55 +396,6 @@ struct FE_element_selection *Cmiss_context_get_element_selection(
 			"Cmiss_context_get_element_selection.  Missing context.");
 	}
 	return element_selection;
-}
-
-struct FE_node_selection *Cmiss_context_get_node_selection(
-	struct Context *context)
-{
-	struct FE_node_selection *node_selection = NULL;
-	if (context)
-	{
-		if (!context->node_selection)
-		{
-			Cmiss_region *root_region = 
-				Cmiss_context_get_default_region(context);
-			context->node_selection = CREATE(FE_node_selection)(
-				Cmiss_region_get_FE_region(root_region));
-			Cmiss_region_destroy(&root_region);
-		}
-		node_selection = context->node_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_node_selection.  Missing context.");
-	}
-	return node_selection;
-}
-
-struct FE_node_selection *Cmiss_context_get_data_selection(
-	struct Context *context)
-{
-	struct FE_node_selection *data_selection = NULL;
-	if (context)
-	{
-		if (!context->data_selection)
-		{
-			Cmiss_region *root_region = 
-				Cmiss_context_get_default_region(context);
-			context->data_selection = CREATE(FE_node_selection)(
-				FE_region_get_data_FE_region(Cmiss_region_get_FE_region(root_region)));
-			Cmiss_region_destroy(&root_region);
-		}
-		data_selection = context->data_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_data_selection.  Missing context.");
-	}
-
-	return data_selection;
 }
 
 struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(

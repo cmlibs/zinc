@@ -63,6 +63,10 @@ Cmiss_field_id Cmiss_field_group_create_node_group(Cmiss_field_group_id group);
 
 Cmiss_field_id Cmiss_field_group_get_node_group(Cmiss_field_group_id group);
 
+Cmiss_field_id Cmiss_field_group_create_data_group(Cmiss_field_group_id group);
+
+Cmiss_field_id Cmiss_field_group_get_data_group(Cmiss_field_group_id group);
+
 Cmiss_field_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group);
 
 Cmiss_field_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group);
@@ -73,6 +77,8 @@ Cmiss_field_id Cmiss_field_group_create_sub_group(
 Cmiss_field_group_id Cmiss_field_cast_group(Cmiss_field_id field);
 
 int Cmiss_field_group_clear_region_tree_node(Cmiss_field_group_id group);
+
+int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group);
 
 int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group);
 

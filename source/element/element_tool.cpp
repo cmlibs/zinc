@@ -209,7 +209,7 @@ int Element_tool_remove_selected_element(struct Element_tool *element_tool)
 	{
 		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 			element_tool->region);
-		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+		Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
 			root_rendition);
 		if (root_group_field)
 		{
@@ -630,7 +630,7 @@ release.
 										element_tool->region);
 									if (Cmiss_rendition_has_selection_group(root_rendition))
 									{
-										Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+										Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
 											root_rendition);
 										if (root_group_field)
 										{
@@ -657,7 +657,7 @@ release.
 								if (element_tool->rendition)
 								{
 									sub_region = Cmiss_rendition_get_region(element_tool->rendition);
-									sub_group_field = Cmiss_rendition_get_selection_group(element_tool->rendition);
+									sub_group_field = Cmiss_rendition_get_or_create_selection_group(element_tool->rendition);
 									sub_group = Cmiss_field_cast_group(sub_group_field);
 									if (sub_group)
 									{
@@ -806,7 +806,7 @@ release.
 													if (sub_region)
 													{
 														region_rendition= Cmiss_region_get_rendition_internal(sub_region);
-														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+														sub_group_field = Cmiss_rendition_get_or_create_selection_group(region_rendition);
 														sub_group = Cmiss_field_cast_group(sub_group_field);
 													}
 													if (sub_group)

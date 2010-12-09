@@ -87,7 +87,6 @@ struct Cmiss_graphics_module
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *data_selection,*node_selection;
 	struct Time_keeper *default_time_keeper;
 	struct MANAGER(Cmiss_tessellation) *tessellation_manager;
 	void *tessellation_manager_callback_id;
@@ -225,8 +224,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->light_model_manager = CREATE(MANAGER(Light_model)());
 			module->element_point_ranges_selection = Cmiss_context_get_element_point_ranges_selection(context);
 			module->element_selection = Cmiss_context_get_element_selection(context);
-			module->data_selection = Cmiss_context_get_data_selection(context);
-			module->node_selection = Cmiss_context_get_node_selection(context);
 			module->default_time_keeper = NULL;
 			module->tessellation_manager = CREATE(MANAGER(Cmiss_tessellation))();
 			Cmiss_tessellation_manager_set_owner_private(module->tessellation_manager, module);

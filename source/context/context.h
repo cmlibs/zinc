@@ -85,24 +85,6 @@ struct FE_element_selection *Cmiss_context_get_element_selection(
 	struct Context *context);
 
 /***************************************************************************//**
- * Return the node selection in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the FE_node_selection for nodes if successfully, otherwise NULL.
- */
-struct FE_node_selection *Cmiss_context_get_node_selection(
-	struct Context *context);
-
-/***************************************************************************//**
- * Return the event dispatcher in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the FE_node_selection for data point if successfully, otherwise NULL.
- */
-struct FE_node_selection *Cmiss_context_get_data_selection(
-	struct Context *context);
-
-/***************************************************************************//**
  * Return the event dispatcher in context.
  *
  * @param context  Pointer to a cmiss_context object.

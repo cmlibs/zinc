@@ -5,7 +5,7 @@ LAST MODIFIED : 23 April 2007
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
-FE_node_selection to display the last selected node, or set it if entered in
+selection to display the last selected node, or set it if entered in
 this dialog.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -705,7 +705,7 @@ static void Node_viewer_Computed_field_change(
 			struct Computed_field *selection_group_field = NULL;
 			if (Cmiss_rendition_has_selection_group(rendition))
 			{
-			 selection_group_field = Cmiss_rendition_get_selection_group(rendition);
+			 selection_group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 			}
 			changed_field_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,

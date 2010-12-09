@@ -3,7 +3,6 @@ FILE : node_tool.c
 
 LAST MODIFIED : 28 October 2004
 
-DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
 Scene input.
 ==============================================================================*/
@@ -148,7 +147,6 @@ changes in node position and derivatives etc.
 	struct FE_region *fe_region;
 	/* needed for destroy button */
 	struct MANAGER(FE_element) *element_manager;
-	struct FE_node_selection *node_selection;
 	struct Graphical_material *rubber_band_material;
 	struct Cmiss_time_keeper *time_keeper;
 	struct User_interface *user_interface;
@@ -301,7 +299,7 @@ static int Node_tool_refresh_element_dimension_text(
 	 struct Node_tool *node_tool);
 #endif /*defined (WX_USER_INTERFACE)*/
 
-static int Node_tool_remove_region_selected_nodes(Cmiss_field_id field)
+static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use_data)
 {
 	int return_code = 0;
 
@@ -310,9 +308,15 @@ static int Node_tool_remove_region_selected_nodes(Cmiss_field_id field)
 		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
 		Cmiss_region_id region = Computed_field_get_region(field);
 		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		if (use_data)
+			fe_region = FE_region_get_data_FE_region(fe_region);
 		if (group && fe_region)
 		{
-			Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
+			Cmiss_field_id node_group_field = NULL;
+			if (!use_data)
+				node_group_field = Cmiss_field_group_get_node_group(group);
+			else
+				node_group_field = Cmiss_field_group_get_data_group(group);
 			if (node_group_field)
 			{
 				Cmiss_field_node_group_template_id node_group =
@@ -339,6 +343,16 @@ static int Node_tool_remove_region_selected_nodes(Cmiss_field_id field)
 	return return_code;
 }
 
+static int Node_tool_remove_region_selected_nodes(Cmiss_field_id field)
+{
+	return Node_tool_remove_region_selected_object(field, /*use_data*/0);
+}
+
+static int Node_tool_remove_region_selected_data(Cmiss_field_id field)
+{
+	return Node_tool_remove_region_selected_object(field, /*use_data*/1);
+}
+
 int Node_tool_remove_selected_node(struct Node_tool *node_tool)
 {
 	int return_code = 0;
@@ -346,15 +360,24 @@ int Node_tool_remove_selected_node(struct Node_tool *node_tool)
 	{
 		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 			node_tool->root_region);
-		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+		Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
 			root_rendition);
 		if (root_group_field)
 		{
 			Cmiss_field_group_id root_group =
 				Cmiss_field_cast_group(root_group_field);
-			Cmiss_field_group_for_each_child(root_group, Node_tool_remove_region_selected_nodes,1);
-			Node_tool_remove_region_selected_nodes(root_group_field);
-			Cmiss_field_group_clear_region_tree_node(root_group);
+			if (!node_tool->use_data)
+			{
+				Cmiss_field_group_for_each_child(root_group, Node_tool_remove_region_selected_nodes,1);
+				Node_tool_remove_region_selected_nodes(root_group_field);
+				Cmiss_field_group_clear_region_tree_node(root_group);
+			}
+			else
+			{
+				Cmiss_field_group_for_each_child(root_group, Node_tool_remove_region_selected_data,1);
+				Node_tool_remove_region_selected_data(root_group_field);
+				Cmiss_field_group_clear_region_tree_data(root_group);
+			}
 			Cmiss_field_destroy(&root_group_field);
 			root_group_field = reinterpret_cast<Computed_field *>(root_group);
 			Cmiss_field_destroy(&root_group_field);
@@ -1942,11 +1965,14 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 		if (node_tool->rendition)
 		{
 			sub_region = Cmiss_rendition_get_region(node_tool->rendition);
-			sub_group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+			sub_group_field = Cmiss_rendition_get_or_create_selection_group(node_tool->rendition);
 			sub_group = Cmiss_field_cast_group(sub_group_field);
 			if (sub_group)
 			{
-				node_group_field = Cmiss_field_group_create_node_group(sub_group);
+				if (!node_tool->use_data)
+					node_group_field = Cmiss_field_group_create_node_group(sub_group);
+				else
+					node_group_field = Cmiss_field_group_create_data_group(sub_group);
 				if (node_group_field)
 				{
 					node_group =
@@ -2073,9 +2099,13 @@ release.
 								if (Cmiss_rendition_has_selection_group(rendition))
 								{
 									node_tool->picked_node_was_unselected=1;
-									Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(rendition);
+									Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 									Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-									Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+									Cmiss_field_id node_group_field = NULL;
+									if (!node_tool->use_data)
+										node_group_field = Cmiss_field_group_get_node_group(sub_group);
+									else
+										node_group_field = Cmiss_field_group_get_data_group(sub_group);
 									if (node_group_field)
 									{
 										Cmiss_field_node_group_template_id node_group =
@@ -2161,13 +2191,16 @@ release.
 										node_tool->root_region);
 									if (Cmiss_rendition_has_selection_group(root_rendition))
 									{
-										Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
+										Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
 											root_rendition);
 										if (root_group_field)
 										{
 											Cmiss_field_group_id root_group =
 												Cmiss_field_cast_group(root_group_field);
-											Cmiss_field_group_clear_region_tree_node(root_group);
+											if (!node_tool->use_data)
+												Cmiss_field_group_clear_region_tree_node(root_group);
+											else
+												Cmiss_field_group_clear_region_tree_data(root_group);
 											Cmiss_field_destroy(&root_group_field);
 											root_group_field = reinterpret_cast<Computed_field *>(root_group);
 											Cmiss_field_destroy(&root_group_field);
@@ -2179,10 +2212,6 @@ release.
 							if (picked_node)
 							{
 								Node_tool_set_picked_node(node_tool, picked_node);
-							}
-							if (clear_selection)
-							{
-								//FE_node_selection_end_cache(node_tool->node_selection);
 							}
 						}
 					}
@@ -2336,9 +2365,13 @@ release.
 									if (node_tool->rendition &&
 											Cmiss_rendition_has_selection_group(node_tool->rendition))
 									{
-										Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+										Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(node_tool->rendition);
 										Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-										Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(sub_group);
+										Cmiss_field_id node_group_field = NULL;
+										if (!node_tool->use_data)
+											node_group_field = Cmiss_field_group_get_node_group(sub_group);
+										else
+											node_group_field = Cmiss_field_group_get_data_group(sub_group);
 										if (node_group_field)
 										{
 											Cmiss_field_node_group_template_id node_group =
@@ -2421,8 +2454,11 @@ release.
 									shift_pressed&&(!(node_tool->picked_node_was_unselected))&&
 									(!(node_tool->edit_enabled && node_tool->motion_detected)))
 								{
-									FE_node_selection_unselect_node(node_tool->node_selection,
-										node_tool->last_picked_node);
+									struct LIST(FE_node) *temp_node_list = CREATE(LIST(FE_node))();
+									ADD_OBJECT_TO_LIST(FE_node)(node_tool->last_picked_node, temp_node_list);
+									Cmiss_rendition_remove_selection_from_node_list(node_tool->rendition,
+										temp_node_list, node_tool->use_data);
+									DESTROY(LIST(FE_node))(&temp_node_list);
 								}
 							}
 						}
@@ -2500,12 +2536,15 @@ release.
 													if (sub_region)
 													{
 														region_rendition= Cmiss_region_get_rendition_internal(sub_region);
-														sub_group_field = Cmiss_rendition_get_selection_group(region_rendition);
+														sub_group_field = Cmiss_rendition_get_or_create_selection_group(region_rendition);
 														sub_group = Cmiss_field_cast_group(sub_group_field);
 													}
 													if (sub_group)
 													{
-														node_group_field = Cmiss_field_group_create_node_group(sub_group);
+														if (!node_tool->use_data)
+															node_group_field = Cmiss_field_group_create_node_group(sub_group);
+														else
+															node_group_field = Cmiss_field_group_create_data_group(sub_group);
 														if (node_group_field)
 														{
 															node_group = 
@@ -3045,34 +3084,41 @@ Set the selected option in the Coordinate Field chooser.
 
 	USE_PARAMETER(event);
 	if (node_tool->coordinate_field && (fe_field_list=
-	    Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
-	  {
-	    if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
-       		(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-   		(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-		 fe_field_list)))
-	      {
-		node_list = CREATE(LIST(FE_node))();
-		if (COPY_LIST(FE_node)(node_list,
-		    FE_node_selection_get_node_list(node_tool->node_selection)))
-		  {
-		    FE_region_begin_change(node_tool->fe_region);
-		    FE_region_undefine_FE_field_in_FE_node_list(
-		      node_tool->fe_region, fe_field, node_list, &number_in_elements);
-		    display_message(WARNING_MESSAGE,
-		      "Field could not be undefined in %d node(s) "
-		      "because in-use by elements", number_in_elements);
-		    FE_region_end_change(node_tool->fe_region);
-		  }
-		DESTROY(LIST(FE_node))(&node_list);
-	      }
-	    else
-	      {
-		display_message(ERROR_MESSAGE,
-				"Node_tool_undefine_selected_CB.  Invalid field");
-	      }
-	    DESTROY(LIST(FE_field))(&fe_field_list);
-	  }
+			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
+	{
+		if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
+				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+						(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+						fe_field_list)))
+		{
+			Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_tool->region);
+			if (rendition)
+			{
+				if (Cmiss_rendition_has_selection_group(rendition))
+				{
+					Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+					node_list = FE_node_list_from_region_and_selection_group(
+						node_tool->region, NULL, group_field, NULL, 0, node_tool->use_data);
+					FE_region_begin_change(node_tool->fe_region);
+					FE_region_undefine_FE_field_in_FE_node_list(
+						node_tool->fe_region, fe_field, node_list, &number_in_elements);
+					display_message(WARNING_MESSAGE,
+						"Field could not be undefined in %d node(s) "
+						"because in-use by elements", number_in_elements);
+					FE_region_end_change(node_tool->fe_region);
+	  			Cmiss_field_destroy(&group_field);
+					DESTROY(LIST(FE_node))(&node_list);
+				}
+				Cmiss_rendition_destroy(&rendition);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+					"Node_tool_undefine_selected_CB.  Invalid field");
+		}
+		DESTROY(LIST(FE_field))(&fe_field_list);
+	}
 	}
 
 void OnClearButtonpressed(wxCommandEvent &event)
@@ -3364,7 +3410,6 @@ Copies the state of one node tool to another.
 				destination_tool_manager,
 				source_node_tool->root_region, 
 				source_node_tool->use_data,
-				source_node_tool->node_selection,
 				source_node_tool->rubber_band_material,
 				source_node_tool->user_interface,
 				source_node_tool->time_keeper);
@@ -3480,7 +3525,7 @@ static void Node_tool_Computed_field_change(
 			struct Computed_field *selection_group_field = NULL;
 			if (Cmiss_rendition_has_selection_group(rendition))
 			{
-			 selection_group_field = Cmiss_rendition_get_selection_group(rendition);
+			 selection_group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 			}
 			changed_field_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
@@ -3489,7 +3534,11 @@ static void Node_tool_Computed_field_change(
 					selection_group_field,Computed_field_is_in_list, (void *)changed_field_list))
 			{
 				Cmiss_field_group_id group= Cmiss_field_cast_group(selection_group_field);
-				Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
+				Cmiss_field_id node_group_field = NULL;
+				if (!node_tool->use_data)
+					node_group_field = Cmiss_field_group_get_node_group(group);
+				else
+					node_group_field = Cmiss_field_group_get_data_group(group);
 				Cmiss_field_destroy(&selection_group_field);
 				selection_group_field = reinterpret_cast<Cmiss_field_id>(group);
 				Cmiss_field_node_group_template_id node_group =
@@ -3754,7 +3803,6 @@ in this region only.
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *root_region, int use_data,
-	struct FE_node_selection *node_selection,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
 	struct Time_keeper *time_keeper)
@@ -3762,9 +3810,8 @@ struct Node_tool *CREATE(Node_tool)(
 LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
-Creates a Node_tool for editing nodes/data in the <node_manager>,
-using the <node_selection>.
-The <use_data> flag indicates to use data, and that the <node_selection>
+Creates a Node_tool for editing nodes/data in the <node_manager>.
+The <use_data> flag indicates to use data, and that the selection
 refers to data, not nodes; needed since different GT_element_settings types are
 used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
@@ -3832,7 +3879,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 	ENTER(CREATE(Node_tool));
 	node_tool=(struct Node_tool *)NULL;
-	if (interactive_tool_manager&&root_region&&node_selection&&
+	if (interactive_tool_manager&&root_region&&
 		(NULL != (computed_field_manager=
 			Cmiss_region_get_Computed_field_manager(root_region)))
 		&&rubber_band_material&&user_interface)
@@ -3846,7 +3893,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->region=(struct Cmiss_region *)NULL;
 			node_tool->fe_region=(struct FE_region *)NULL;
 			node_tool->use_data = use_data;
-			node_tool->node_selection=node_selection;
 			node_tool->rubber_band_material=
 				ACCESS(Graphical_material)(rubber_band_material);
 			node_tool->user_interface=user_interface;
