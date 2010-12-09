@@ -1,11 +1,9 @@
 /***************************************************************************//**
  * FILE : cmiss_field_sub_group.h
  * 
- * Implements a cmiss field which maintains a group or selection of objects
- * from the region including the region itself, other fields representing domain
- * object groups (e.g. node, element), and related groups from child regions.
- * The field evaluates to 1 (true) at domain locations in the group, and 0
- * elsewhere.  
+ * Implements region sub object groups, e.g. node group, element group.
+ * These group fields evaluate to 1 (true) at domain locations in the group, and
+ * 0 elsewhere.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -24,11 +22,10 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- * Shane Blackett (shane at blackett.co.nz)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or

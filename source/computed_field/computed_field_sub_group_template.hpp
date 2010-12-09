@@ -1,9 +1,7 @@
 /*****************************************************************************//**
- * FILE : computed_field_sub_group.cpp
+ * FILE : computed_field_sub_group.hpp
  * 
- * Implements a cmiss field which is an group for another field, commonly from a
- * different region to make it available locally.
- *
+ * Implements region sub object groups, e.g. node group, element group.
  */
 /* ***** BEGIN LICENSE BLOCK *****
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -22,7 +20,7 @@
 *
 * The Initial Developer of the Original Code is
 * Auckland Uniservices Ltd, Auckland, New Zealand.
-* Portions created by the Initial Developer are Copyright (C) 2005
+* Portions created by the Initial Developer are Copyright (C) 2010
 * the Initial Developer. All Rights Reserved.
 *
 * Contributor(s):
