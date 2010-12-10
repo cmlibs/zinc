@@ -1250,8 +1250,7 @@ SELECT_INTERFACE_SRCS = \
 	select/select_spectrum.c
 SELECTION_SRCS = \
 	selection/any_object_selection.c \
-	selection/element_point_ranges_selection.c \
-	selection/element_selection.c
+	selection/element_point_ranges_selection.c
 
 THREE_D_DRAWING_SRCS =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)

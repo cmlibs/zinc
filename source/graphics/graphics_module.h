@@ -238,9 +238,6 @@ struct Time_keeper *Cmiss_graphics_module_get_time_keeper_internal(
 struct Element_point_ranges_selection *Cmiss_graphics_module_get_element_point_ranges_selection(
 	struct Cmiss_graphics_module *graphics_module);
 
-struct FE_element_selection *Cmiss_graphics_module_get_element_selection(
-	struct Cmiss_graphics_module *graphics_module);
-
 /***************************************************************************//**
  * Add a region with a rendition created by this graphics module object
  * into a list, so that graphics module can deaccess the rendition of the region

@@ -90,7 +90,7 @@ int Computed_field_update_element_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
 	struct Cmiss_region *region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection, FE_value time);
+	struct Computed_field *group_field, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 3 March 2003
 
@@ -98,7 +98,7 @@ DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <region> to the
 values from <source_field>.
 Restricts update to grid points which are in <element_point_ranges_selection>
-or whose elements are in <element_selection>, if either supplied.
+or whose elements are in <group field>, if either supplied.
 Note the union of these two selections is used if both supplied.
 ==============================================================================*/
 

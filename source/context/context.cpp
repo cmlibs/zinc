@@ -68,7 +68,6 @@ struct Context
  	struct User_interface_module *UI_module;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
 	struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Curve) *curve_manager;
@@ -86,7 +85,6 @@ struct Context *Cmiss_context_create(const char *id)
 		context->UI_module = NULL;
 		context->any_object_selection = NULL;
 		context->element_point_ranges_selection = NULL;
-		context->element_selection = NULL;
 		context->event_dispatcher = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
@@ -112,10 +110,6 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
 				User_interface_module_destroy(&context->UI_module);
-			if (context->element_selection)
-			{
-				DESTROY(FE_element_selection)(&context->element_selection);
-			}
 			/* Removing graphics module first will cause some memory problem at present.
 			 * The problem however can be resolved once we use graphics module to store the
 			 * region-rendition map instead.
@@ -372,30 +366,6 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
 			"Cmiss_context_get_element_point_ranges_selection.  Missing context.");
 	}
 	return element_point_ranges_selection;
-}
-
-struct FE_element_selection *Cmiss_context_get_element_selection(
-	struct Context *context)
-{
-	struct FE_element_selection *element_selection = NULL;
-	if (context)
-	{
-		if (!context->element_selection)
-		{
-			Cmiss_region *root_region = 
-				Cmiss_context_get_default_region(context);
-			context->element_selection = CREATE(FE_element_selection)(
-				Cmiss_region_get_FE_region(root_region));
-			Cmiss_region_destroy(&root_region);
-		}
-		element_selection = context->element_selection;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_get_element_selection.  Missing context.");
-	}
-	return element_selection;
 }
 
 struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(

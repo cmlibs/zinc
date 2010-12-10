@@ -49,32 +49,12 @@ therefore cannot reside in finite element modules.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "general/multi_range.h"
-#include "selection/element_selection.h"
 #include "selection/element_point_ranges_selection.h"
 
 /*
 Global functions
 ----------------
 */
-
-struct LIST(FE_element) *
-	FE_element_list_from_fe_region_selection_ranges_condition(
-		struct FE_region *fe_region, enum CM_element_type cm_element_type,
-		struct FE_element_selection *element_selection, int selected_flag,
-		struct Multi_range *element_ranges,
-		struct Computed_field *conditional_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Creates and returns an element list that is the intersection of:
-- all the elements in <fe_region>;
-- all elements in the <element_selection> if <selected_flag> is set;
-- all elements in the given <element_ranges>, if any.
-- all elements for which the <conditional_field> evaluates as "true"
-  in its centre at the specified <time>
-Up to the calling function to destroy the returned element list.
-==============================================================================*/
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	enum CM_element_type cm_type,	int element_offset,

@@ -299,8 +299,6 @@ extern "C" {
 #include "cad/cad_tool.h"
 #endif /* defined (USE_OPENCASCADE) */
 
-#define AWU_TESTING
-
 /*
 Module types
 ------------
@@ -385,7 +383,6 @@ DESCRIPTION :
 	/* global list of selected objects */
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 	struct Time_keeper *default_time_keeper;
@@ -1002,128 +999,6 @@ struct Interpreter_command_element_selection_callback_data
 	char *perl_action;
 	struct Interpreter *interpreter;
 }; /* struct Interpreter_command_element_selection_callback_data */
-
-#if defined (USE_PERL_INTERPRETER)
-static void interpreter_command_element_selection_callback(
-	struct FE_element_selection *element_selection,
-	struct FE_element_selection_changes *element_selection_changes,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *callback_result;
-	int return_code;
-	struct Interpreter_command_element_selection_callback_data *data;
-
-	ENTER(interpreter_command_element_selection_callback);
-
-	if (element_selection && element_selection_changes && 
-		(data = (struct Interpreter_command_element_selection_callback_data *)data_void))
-	{
-		callback_result = (char *)NULL;
-		interpreter_evaluate_string(data->interpreter,
-			  data->perl_action, &callback_result, &return_code);
-		if (callback_result)
-		{
-			DEALLOCATE(callback_result);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"interpreter_command_element_selection_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return;
-} /* interpreter_command_element_selection_callback */
-#endif /* defined (USE_PERL_INTERPRETER) */
-
-static int gfx_create_element_selection_callback(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
-==============================================================================*/
-{
-	char *perl_action;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-#if defined (USE_PERL_INTERPRETER)
-	struct Interpreter_command_element_selection_callback_data *data = 0;
-#endif /* defined (USE_PERL_INTERPRETER) */
-	struct Option_table *option_table;
-
-	ENTER(gfx_create_element_selection_callback);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		perl_action = (char *)NULL;
-		
-		option_table=CREATE(Option_table)();
-#if defined (USE_PERL_INTERPRETER)
-		/* perl_action */
-		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
-			set_name);
-#endif /* defined (USE_PERL_INTERPRETER) */
-		return_code = Option_table_multi_parse(option_table,state);
-		DESTROY(Option_table)(&option_table);
-		if (return_code)
-		{
-#if defined (USE_PERL_INTERPRETER)
-			if (!perl_action)
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_element_selection_callback.  "
-					"Specify a perl_action.");
-				return_code=0;
-			}
-			if (return_code)
-			{
-				if (ALLOCATE(data, struct Interpreter_command_element_selection_callback_data, 1))
-				{
-					data->perl_action = duplicate_string(perl_action);
-					data->interpreter = command_data->interpreter;
-
-					FE_element_selection_add_callback(
-						command_data->element_selection,
-						interpreter_command_element_selection_callback,
-						(void *)data);
-
-					/* Should add these callbacks to a list in the command data so that 
-						they can be cleaned up when quitting and retrieved for a destroy command */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_create_element_selection_callback.  "
-						"Unable to allocate callback data.");
-					return_code=0;
-				}
-			}
-#endif /* defined (USE_PERL_INTERPRETER) */
-		}
-		if (perl_action)
-		{
-			DEALLOCATE(perl_action);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_element_selection_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_element_selection_callback */
 
 static int gfx_create_group(struct Parse_state *state,
 	void *use_object_type, void *root_region_void)
@@ -4671,7 +4546,6 @@ Executes a GFX CREATE WINDOW command.
 						Element_tool_set_execute_command(CREATE(Element_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
-								command_data->element_selection,
 								command_data->element_point_ranges_selection,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
@@ -5742,8 +5616,6 @@ Executes a GFX CREATE command.
 				Option_table_add_entry(option_table,"element_point_viewer",NULL,
 					command_data_void,gfx_create_element_point_viewer);
 #endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE) */
-				Option_table_add_entry(option_table,"element_selection_callback",NULL,
-					command_data_void,gfx_create_element_selection_callback);
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.root_region=
 					command_data->root_region;
@@ -9822,7 +9694,6 @@ DESCRIPTION :
 	struct Cmiss_region *region;
 	struct Computed_field *destination_field, *source_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_destination_field_data,
 		set_source_field_data;
@@ -9886,13 +9757,10 @@ DESCRIPTION :
 				{
 					element_point_ranges_selection =
 						command_data->element_point_ranges_selection;
-					element_selection = command_data->element_selection;
 				}
 				else
 				{
-					element_point_ranges_selection =
-						(struct Element_point_ranges_selection *)NULL;
-					element_selection = (struct FE_element_selection *)NULL;
+					element_point_ranges_selection = NULL;
 				}
 
 				if (data_region_path && (!element_region_path) && (!node_region_path))
@@ -9928,9 +9796,28 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						element_region_path, &region))
 					{
+
+						struct Computed_field *group_field = NULL;
+			  		if (selected_flag)
+			  		{
+							Cmiss_rendition_id rendition =
+								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+							if (rendition)
+							{
+								if (Cmiss_rendition_has_selection_group(rendition))
+								{
+									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+								}
+								Cmiss_rendition_destroy(&rendition);
+							}
+			  		}
 						Computed_field_update_element_values_from_source(
 							destination_field, source_field, region,
-							element_point_ranges_selection, element_selection, time);
+							element_point_ranges_selection, group_field, time);
+						if (group_field)
+						{
+							Cmiss_field_destroy(&group_field);
+						}
 					}
 				}
 				else if (node_region_path && (!data_region_path) &&
@@ -15311,99 +15198,6 @@ static int execute_command_gfx_rename(struct Parse_state *state,
 	return (return_code);
 }
 
-#if defined (AWU_TESTING)
-
-int Cmiss_select_in_Cmiss_element_selection(Cmiss_element_id element,
-	void *element_selection_void)
-{
-	int return_code = 1;
-
-	USE_PARAMETER(element_selection_void);
-	ENTER(Cmiss_select_in_FE_element_selection);
-	Cmiss_region_id region = Cmiss_element_get_region(element);
-	Cmiss_region_id parent_region=NULL;
-	Cmiss_region_id top_region = region;
-	parent_region = Cmiss_region_get_parent(top_region);
-	top_region = parent_region;
-	while (parent_region)
-	{
-		top_region = parent_region;
-		parent_region = Cmiss_region_get_parent(top_region);
-		if (parent_region)
-			DEACCESS(Cmiss_region)(&top_region);
-	}
-	if (!top_region)
-	{
-		top_region = ACCESS(Cmiss_region)(region);
-	}
-
-	Cmiss_field_id field = NULL;
-	Cmiss_field_module_id field_module = 
-		Cmiss_region_get_field_module(top_region);
-	if (field_module)
-	{
-		if (NULL == (field = Cmiss_field_module_find_field_by_name(
-									 field_module, "cmiss_selection")))
-		{
-			field = Cmiss_field_module_create_group(field_module, top_region);
-			Cmiss_field_set_persistent(field, 1);
-			Cmiss_field_set_name(field, "cmiss_selection");
-		}
-		Cmiss_field_module_destroy(&field_module);
-	}
-	if (field)
-	{
-		Cmiss_field_id element_group = NULL;
-		Cmiss_field_element_group_template_id element_group_id = NULL;
-		Cmiss_field_group_id group_field = Cmiss_field_cast_group(field);
-		if (top_region == region)
-		{
-			element_group = Cmiss_field_group_create_element_group(group_field);
-			element_group_id = Cmiss_field_cast_element_group_template(element_group);
-		}
-		else
-		{
-			Cmiss_field_id sub_group = Cmiss_field_group_create_sub_group(group_field,region);
-			Cmiss_field_group_id sub_group_id = Cmiss_field_cast_group(sub_group);
-			element_group = Cmiss_field_group_create_element_group(sub_group_id);
-			element_group_id = Cmiss_field_cast_element_group_template(element_group);
-			Cmiss_field_id temporary_handle = 
-				reinterpret_cast<Computed_field *>(sub_group_id);
-			Cmiss_field_destroy(&temporary_handle);
- 			Cmiss_field_destroy(&sub_group);
-		}
-		if (element_group_id)
-		{
-			Cmiss_field_element_group_template_add_element(element_group_id, element);
-			Cmiss_field_id temporary_handle = 
-				reinterpret_cast<Computed_field *>(element_group_id);
-			Cmiss_field_destroy(&temporary_handle);
-		}
-		if (element_group)
-		{
-
-			Cmiss_field_destroy(&element_group);
-		}
-		if (group_field)
-		{
-			Cmiss_field_id temporary_handle = 
-				reinterpret_cast<Computed_field *>(group_field);
-			Cmiss_field_destroy(&temporary_handle);
-		}
-		Cmiss_field_destroy(&field);
-	}
-	if (top_region)
-	{
-		DEACCESS(Cmiss_region)(&top_region);
-	}
-
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_select_in_Cmiss_element_selection */
-#endif
-
-
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -15577,65 +15371,57 @@ Executes a GFX SELECT command.
 				/* elements */
 				if (elements_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_ELEMENT, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_select_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_ELEMENT, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Selected %d elements.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_select.  Problem selecting nodes.");
-						}
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* faces */
 				if (faces_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_FACE, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-#if defined (AWU_TESTING)
-						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							Cmiss_select_in_Cmiss_element_selection,
-							(void *)command_data->element_selection, element_list);
-#else
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_select_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_FACE, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Selected %d faces.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_select.  Problem selecting nodes.");
-						}
-#endif
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* grid_points */
@@ -15685,36 +15471,29 @@ Executes a GFX SELECT command.
 				/* lines */
 				if (lines_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_LINE, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-#if defined (AWU_TESTING)
-						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							Cmiss_select_in_Cmiss_element_selection,
-							(void *)command_data->element_selection, element_list);
-#else
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_select_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_LINE, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Selected %d lines.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_select.  Problem selecting nodes.");
-						}
-#endif
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* nodes */
@@ -15947,59 +15726,57 @@ Executes a GFX UNSELECT command.
 				/* elements */
 				if (elements_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_ELEMENT, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_unselect_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_ELEMENT, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Unselected %d elements.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem unselecting elements.");
-						}
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* faces */
 				if (faces_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_FACE, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_unselect_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_FACE, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Unselected %d faces.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem unselecting faces.");
-						}
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* grid_points */
@@ -16049,30 +15826,29 @@ Executes a GFX UNSELECT command.
 				/* lines */
 				if (lines_flag)
 				{
-					if (element_list =
-						FE_element_list_from_fe_region_selection_ranges_condition(
-							fe_region, CM_LINE, command_data->element_selection,
-							selected_flag, multi_range, conditional_field, time))
+					if (region)
 					{
-						FE_element_selection_begin_cache(command_data->element_selection);
-						if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_element_unselect_in_FE_element_selection,
-							(void *)command_data->element_selection, element_list))
+						if (element_list =
+								FE_element_list_from_region_and_selection_group(
+									region, CM_LINE, multi_range, NULL, conditional_field, time))
 						{
+							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
+								command_data->graphics_module, region);
+							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
 								display_message(INFORMATION_MESSAGE,
 									"Unselected %d lines.\n",
 									NUMBER_IN_LIST(FE_element)(element_list));
 							}
+							DESTROY(LIST(FE_element))(&element_list);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem unselecting lines.");
-						}
-						FE_element_selection_end_cache(command_data->element_selection);
-						DESTROY(LIST(FE_element))(&element_list);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_gfx_select.  Invalid region.");
 					}
 				}
 				/* nodes */
@@ -22336,7 +22112,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->glyph_manager=(struct MANAGER(GT_object) *)NULL;
 		command_data->any_object_selection=(struct Any_object_selection *)NULL;
 		command_data->element_point_ranges_selection=(struct Element_point_ranges_selection *)NULL;
-		command_data->element_selection=(struct FE_element_selection *)NULL;
 		command_data->interactive_tool_manager=(struct MANAGER(Interactive_tool) *)NULL;
 		command_data->io_stream_package = (struct IO_stream_package *)NULL;
 		command_data->computed_field_package=(struct Computed_field_package *)NULL;
@@ -22674,7 +22449,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->any_object_selection = Cmiss_context_get_any_object_selection(context);
 		command_data->element_point_ranges_selection = 
 			Cmiss_context_get_element_point_ranges_selection(context);
-		command_data->element_selection = Cmiss_context_get_element_selection(context);
 
 		/* interactive_tool manager */
 		command_data->interactive_tool_manager=UI_module->interactive_tool_manager;
@@ -23574,28 +23348,6 @@ Returns the root region from the <command_data>.
 
 	return (computed_field_manager);
 } /* Cmiss_command_data_get_computed_field_manager */
-
-struct FE_element_selection *Cmiss_command_data_get_element_selection(
-	struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2005
-
-DESCRIPTION :
-Returns the selected_element object from the <command_data>.
-==============================================================================*/
-{
-	struct FE_element_selection *element_selection;
-
-	ENTER(Cmiss_command_data_get_element_selection);
-	element_selection=(struct FE_element_selection *)NULL;
-	if (command_data)
-	{
-		element_selection = command_data->element_selection;
-	}
-	LEAVE;
-
-	return (element_selection);
-} /* Cmiss_command_data_get_element_selection */
 
 struct User_interface *Cmiss_command_data_get_user_interface(
 	struct Cmiss_command_data *command_data)

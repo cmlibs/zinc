@@ -85,14 +85,6 @@ Cmiss_scene_viewer_create_win32
 Cmiss_scene_viewer_win32_set_window_size
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-FE_element_selection_get_element_list
-FE_element_selection_add_callback
-FE_element_selection_remove_callback
-
-FE_node_selection_get_node_list
-FE_node_selection_add_callback
-FE_node_selection_remove_callback
-
 Cmiss_field_access
 Cmiss_field_destroy
 Cmiss_field_get_field_module

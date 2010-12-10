@@ -280,6 +280,30 @@ int Cmiss_field_element_group_template_add_element(Cmiss_field_element_group_tem
 	return return_code;
 }
 
+int Cmiss_field_element_group_template_remove_element(Cmiss_field_element_group_template_id element_group,
+		Cmiss_element_id element)
+{
+	int return_code = 1;
+	struct CM_element_information cm_identifier;
+	if (element_group && element)
+	{
+	  if (get_FE_element_identifier(element, &cm_identifier))
+	  {
+	  	Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+	  		Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+	  		Cmiss_field_element_group_template_id>(element_group);
+			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
+	  	group_core->remove_object(identifier);
+	  }
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
 int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_id element_group)
 {
 	int return_code = 1;

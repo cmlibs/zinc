@@ -143,7 +143,7 @@ DESCRIPTION :
 		(struct Computed_field_update_nodal_values_from_source_data *)data_void))
 	{
 		return_code = 1;
-		if ((data->group_field == NULL) || Computed_field_is_true_at_node(data->group_field, node, 0))
+		if ((data->group_field == NULL) || Computed_field_is_true_at_node(data->group_field, node, data->time))
 		{
 			if (Computed_field_is_defined_at_node(data->source_field, node) &&
 				Computed_field_is_defined_at_node(data->destination_field, node))
@@ -268,7 +268,7 @@ DESCRIPTION :
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
+	struct Computed_field *group_field;
 };
 
 int Computed_field_update_element_values_from_source_sub(
@@ -308,10 +308,10 @@ DESCRIPTION :
 			{
 				destination_field_is_grid_based = 0;
 			}
-			if (data->element_selection)
+			if (data->group_field)
 			{
-				if (FE_element_selection_is_element_selected(data->element_selection,
-					element))
+				if (Computed_field_is_true_in_element(data->group_field,
+						element, data->time))
 				{
 					element_selected = 1;
 					can_select_individual_points = 0;
@@ -440,7 +440,7 @@ DESCRIPTION :
 int Computed_field_update_element_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
 	struct Cmiss_region *region, struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection, FE_value time)
+	struct Computed_field *group_field, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -468,7 +468,7 @@ Note the union of these two selections is used if both supplied.
 			data.source_field = source_field;
 			data.destination_field = destination_field;
 			data.element_point_ranges_selection = element_point_ranges_selection;
-			data.element_selection = element_selection;
+			data.group_field = group_field;
 			data.selected_count = 0;
 			data.success_count = 0;
 			data.time = time;

@@ -76,15 +76,6 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
 	struct Context *context);
 
 /***************************************************************************//**
- * Return the fe element selection in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the FE_element_selection if successfully, otherwise NULL.
- */
-struct FE_element_selection *Cmiss_context_get_element_selection(
-	struct Context *context);
-
-/***************************************************************************//**
  * Return the event dispatcher in context.
  *
  * @param context  Pointer to a cmiss_context object.

@@ -374,7 +374,6 @@ struct User_interface_module *User_interface_module_create(
 			UI_module->element_tool=CREATE(Element_tool)(
 				UI_module->interactive_tool_manager,
 				root_region,
-				Cmiss_context_get_element_selection(context),
 				Cmiss_context_get_element_point_ranges_selection(context),
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,

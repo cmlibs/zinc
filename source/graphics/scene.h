@@ -64,7 +64,6 @@
 #include "interaction/interaction_volume.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
-#include "selection/element_selection.h"
 #include "time/time_keeper.h"
 /* #include "graphics/texture.h" */
 #if defined(USE_OPENCASCADE)

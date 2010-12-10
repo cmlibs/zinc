@@ -129,7 +129,6 @@ struct Element_tool
 	struct Interactive_tool *interactive_tool;
 	/* needed for destroy button */
 	struct Cmiss_region *region;
-	struct FE_element_selection *element_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Graphical_material *rubber_band_material;
 	struct Time_keeper *time_keeper;
@@ -610,19 +609,41 @@ release.
 										}
 									}
 								}
-								if (!FE_element_selection_is_element_selected(
-									element_tool->element_selection,picked_element))
+								if (Cmiss_rendition_has_selection_group(rendition))
 								{
-									element_tool->picked_element_was_unselected=1;
+									Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
+									if (group_field)
+									{
+										Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
+										Cmiss_field_destroy(&group_field);
+										Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
+										if (element_group_field)
+										{
+											Cmiss_field_element_group_template_id element_group =
+												Cmiss_field_cast_element_group_template(element_group_field);
+											Cmiss_field_destroy(&element_group_field);
+											if (element_group)
+											{
+												if (!Cmiss_field_element_group_template_is_element_selected(element_group,
+													picked_element))
+												{
+													element_tool->picked_element_was_unselected=1;
+												}
+												Cmiss_field_id temporary_handle =
+													reinterpret_cast<Computed_field *>(element_group);
+												Cmiss_field_destroy(&temporary_handle);
+											}
+										}
+										group_field = reinterpret_cast<Computed_field *>(group);
+										Cmiss_field_destroy(&group_field);
+									}
 								}
 							}
 							REACCESS(FE_element)(&(element_tool->last_picked_element),
 								picked_element);
-							if (clear_selection = !shift_pressed)
-#if defined (OLD_CODE)
+							if ((clear_selection = !shift_pressed)
 								&&((!picked_element)||
-								(element_tool->picked_element_was_unselected))))
-#endif /*defined (OLD_CODE) */
+								(element_tool->picked_element_was_unselected)))
 							{
 								if (element_tool->region)
 								{
@@ -694,10 +715,6 @@ release.
 									Cmiss_field_destroy(&temporary_handle);
 								}
 							}
-							if (clear_selection)
-							{
-								//FE_element_selection_end_cache(element_tool->element_selection);
-							}
 							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
 						element_tool->motion_detected=0;
@@ -722,9 +739,11 @@ release.
 							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
 								shift_pressed&&(!(element_tool->picked_element_was_unselected)))
 							{
-								FE_element_selection_unselect_element(
-									element_tool->element_selection,
-									element_tool->last_picked_element);
+								struct LIST(FE_element) *temp_element_list = CREATE(LIST(FE_element))();
+								ADD_OBJECT_TO_LIST(FE_element)(element_tool->last_picked_element, temp_element_list);
+								Cmiss_rendition_remove_selection_from_element_list(element_tool->rendition,
+									temp_element_list);
+								DESTROY(LIST(FE_element))(&temp_element_list);
 							}
 						}
 						else if (element_tool->motion_detected)
@@ -1202,7 +1221,6 @@ Copies the state of one element tool to another.WX only
 			destination_element_tool = CREATE(Element_tool)
 				(destination_tool_manager,
 				source_element_tool->region,
-				source_element_tool->element_selection,
 				source_element_tool->element_point_ranges_selection,
 				source_element_tool->rubber_band_material,
 				source_element_tool->user_interface,
@@ -1243,7 +1261,6 @@ Copies the state of one element tool to another.WX only
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *region,
-	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
@@ -1294,8 +1311,7 @@ Selects elements in <element_selection> in response to interactive_events.
 
 	ENTER(CREATE(Element_tool));
 	element_tool=(struct Element_tool *)NULL;
-	if (interactive_tool_manager && region &&
-		element_selection&&(NULL != (computed_field_manager=
+	if (interactive_tool_manager && region &&(NULL != (computed_field_manager=
 		Cmiss_region_get_Computed_field_manager(region)))
 		&&rubber_band_material&&user_interface)
 	{
@@ -1304,7 +1320,6 @@ Selects elements in <element_selection> in response to interactive_events.
 			element_tool->execute_command=NULL;
 			element_tool->interactive_tool_manager=interactive_tool_manager;
 			element_tool->region = region;
-			element_tool->element_selection=element_selection;
 			element_tool->element_point_ranges_selection=
 				element_point_ranges_selection;
 			element_tool->rubber_band_material=

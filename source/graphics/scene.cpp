@@ -1538,7 +1538,6 @@ from the default versions of these functions.
 		/* global stores of selected objects */
 		scene->element_point_ranges_selection=
 			(struct Element_point_ranges_selection *)NULL;
-		scene->element_selection=(struct FE_element_selection *)NULL;
 		scene->node_selection=(struct FE_node_selection *)NULL;
 		scene->data_selection=(struct FE_node_selection *)NULL;
 		/* attributes: */

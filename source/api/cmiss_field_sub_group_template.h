@@ -82,6 +82,9 @@ Cmiss_field_element_group_template_id Cmiss_field_cast_element_group_template(Cm
 int Cmiss_field_element_group_template_add_element(Cmiss_field_element_group_template_id element_group,
 	Cmiss_element_id element);
 
+int Cmiss_field_element_group_template_remove_element(Cmiss_field_element_group_template_id element_group,
+		Cmiss_element_id element);
+
 int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_id element_group);
 
 int Cmiss_field_element_group_template_is_element_selected(

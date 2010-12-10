@@ -473,7 +473,7 @@ Applies the computed field to the grid field.
 						return_code=Computed_field_update_element_values_from_source(
 							grid_field,source_field, grid_calc->region,
 							(struct Element_point_ranges_selection *)NULL,
-							(struct FE_element_selection *)NULL, /*time*/0);
+							(struct Computed_field  *)NULL, /*time*/0);
 						DEACCESS(Computed_field)(&source_field);
 					}
 					else

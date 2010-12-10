@@ -45,7 +45,6 @@ Interactive tool for selecting elements with mouse and other devices.
 #define ELEMENT_TOOL_H
 
 #include "interaction/interactive_tool.h"
-#include "selection/element_selection.h"
 #include "time/time_keeper.h"
 
 /*
@@ -69,7 +68,6 @@ Global functions
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *region,
-	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
