@@ -1283,8 +1283,23 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								{
 									ranges = Element_point_ranges_get_ranges(element_point_ranges);
 								}
-								element_selected = IS_OBJECT_IN_LIST(FE_element)(use_element,
-									graphic_to_object_data->selected_element_list);
+								element_selected = 0;
+								if (graphic_to_object_data->group_field)
+								{
+									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
+									Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
+									if (element_group_field)
+									{
+										Cmiss_field_element_group_template_id element_group =
+											Cmiss_field_cast_element_group_template(element_group_field);
+										element_selected = Cmiss_field_element_group_template_is_element_selected(element_group, use_element);
+										Cmiss_field_destroy(&element_group_field);
+										element_group_field = (Cmiss_field_id)element_group;
+										Cmiss_field_destroy(&element_group_field);
+									}
+									Cmiss_field_id group_field = (Cmiss_field_id)group;
+									Cmiss_field_destroy(&group_field);
+								}
 								base_size[0] = (FE_value)(graphic->glyph_size[0]);
 								base_size[1] = (FE_value)(graphic->glyph_size[1]);
 								base_size[2] = (FE_value)(graphic->glyph_size[2]);
@@ -3662,10 +3677,29 @@ int Cmiss_graphic_to_graphics_object(
 								select_data.fe_region=fe_region;
 								select_data.graphic=graphic;
 
-								FOR_EACH_OBJECT_IN_LIST(FE_element)(
-									FE_element_select_graphics_element_points,
-									(void *)&select_data,
-									graphic_to_object_data->selected_element_list);
+								if (graphic_to_object_data->group_field)
+								{
+									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
+									Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
+									if (element_group_field)
+									{
+										Cmiss_field_element_group_template_id element_group =
+											Cmiss_field_cast_element_group_template(element_group_field);
+										Cmiss_element_id element = Cmiss_field_element_group_template_get_first_element(element_group);
+										while (element)
+										{
+											FE_element_select_graphics_element_points(element, (void *)&select_data);
+											Cmiss_element_destroy(&element);
+											Cmiss_field_element_group_template_get_next_element(element_group);
+										}
+										Cmiss_field_destroy(&element_group_field);
+										element_group_field = (Cmiss_field_id)element_group;
+										Cmiss_field_destroy(&element_group_field);
+									}
+									Cmiss_field_id group_field = (Cmiss_field_id)group;
+									Cmiss_field_destroy(&group_field);
+								}
+
 								/* select Element_point_ranges for glyph_sets not already
 									 selected as elements */
 								FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(

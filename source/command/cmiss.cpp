@@ -2348,12 +2348,12 @@ DESCRIPTION :
 Executes a GFX CREATE SNAKE command.
 ==============================================================================*/
 {
-	char *region_path;
+	char *region_path, *source_region_path;
 	float density_factor, stiffness;
 	int i, number_of_elements, number_of_fitting_fields, 
 		previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
+	struct Cmiss_region *region, *source_region;
 	struct Computed_field *coordinate_field, **fitting_fields,
 		*weight_field;
 	struct FE_region *fe_region;
@@ -2367,6 +2367,7 @@ Executes a GFX CREATE SNAKE command.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		region_path = (char *)NULL;
+		source_region_path = (char *)NULL;
 		number_of_fitting_fields = 1;
 		coordinate_field = (struct Computed_field *)NULL;
 		weight_field = (struct Computed_field *)NULL;
@@ -2420,6 +2421,9 @@ Executes a GFX CREATE SNAKE command.
 		/* density_factor */
 		Option_table_add_entry(option_table, "density_factor",
 			&density_factor, NULL, set_float_0_to_1_inclusive);
+		/* source_group */
+		Option_table_add_entry(option_table, "source_group", &source_region_path,
+			command_data->root_region, set_Cmiss_region_path);
 		/* destination_group */
 		Option_table_add_entry(option_table, "destination_group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
@@ -2472,9 +2476,15 @@ Executes a GFX CREATE SNAKE command.
 					"Must specify a destination_group to put the snake elements in");
 				return_code = 0;
 			}
+			if (!(source_region_path &&
+				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
+					source_region_path, &source_region)))
+			{
+				source_region = command_data->root_region;
+			}
 			if (return_code)
 			{
-	  		Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+	  		Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, source_region);
 	  		struct Computed_field *group_field = NULL;
 	  		if (rendition)
 	  		{
@@ -2487,7 +2497,7 @@ Executes a GFX CREATE SNAKE command.
 	  		if (group_field)
 	  		{
 	  			struct LIST(FE_node) *data_list = FE_node_list_from_region_and_selection_group(
-	  				region, NULL,	group_field, NULL, 0, /*use_data*/1);
+	  				source_region, NULL,	group_field, NULL, 0, /*use_data*/1);
 	  			return_code = create_FE_element_snake_from_data_points(
 	  				fe_region, coordinate_field, weight_field,
 	  				number_of_fitting_fields, fitting_fields,
@@ -2527,6 +2537,10 @@ Executes a GFX CREATE SNAKE command.
 		if (region_path)
 		{
 			DEALLOCATE(region_path);
+		}
+		if (source_region_path)
+		{
+			DEALLOCATE(source_region_path);
 		}
 	}
 	else

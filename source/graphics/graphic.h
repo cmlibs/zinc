@@ -141,8 +141,6 @@ struct Cmiss_graphic_to_graphics_object_data
 	struct GT_object *existing_graphics;
 	/* for highlighting of selected objects */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
-	struct LIST(FE_element) *selected_element_list;
-
 	/** The number of components in the data field */
 	int number_of_data_values;
 	/** A buffer allocated large enough for evaluating the data field */
