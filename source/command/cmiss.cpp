@@ -2356,7 +2356,7 @@ Executes a GFX CREATE SNAKE command.
 	struct Cmiss_region *region, *source_region;
 	struct Computed_field *coordinate_field, **fitting_fields,
 		*weight_field;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = NULL;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_fitting_field_data, set_weight_field_data;
