@@ -88,7 +88,7 @@ private:
 			variance, maxKernelWidth);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_discrete_gaussian_image_filter_type_string);
 	}

@@ -323,7 +323,7 @@ The properties of a material.
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, Cmiss_graphics_module);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, Cmiss_graphics_module, void *);
 
 struct Material_package
 /*******************************************************************************

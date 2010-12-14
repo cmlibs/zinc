@@ -237,7 +237,7 @@ struct Cmiss_tessellation
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_tessellation);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_graphics_module);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_graphics_module, void *);
 
 /*
 Module functions

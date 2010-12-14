@@ -96,7 +96,7 @@ Spectrum type is private.
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_graphics_module);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, Cmiss_graphics_module, void *);
 
 /*
 Module functions

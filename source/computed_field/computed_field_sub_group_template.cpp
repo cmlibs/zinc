@@ -1,4 +1,4 @@
-/*****************************************************************************//**
+/***************************************************************************//**
  * FILE : computed_field_sub_group.cpp
  *
  * Implements region sub object groups, e.g. node group, element group.

@@ -152,7 +152,7 @@ private:
 		return new Computed_field_eigenvalues();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_eigenvalues_type_string);
 	}
@@ -622,7 +622,7 @@ private:
 		return new Computed_field_eigenvectors();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_eigenvectors_type_string);
 	}
@@ -969,7 +969,7 @@ private:
 		return new Computed_field_matrix_invert();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_matrix_invert_type_string);
 	}
@@ -1405,7 +1405,7 @@ private:
 		return new Computed_field_matrix_multiply(number_of_rows);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_matrix_multiply_type_string);
 	}
@@ -1859,7 +1859,7 @@ private:
 		return new Computed_field_projection(matrix_rows, matrix_columns, projection_matrix);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_projection_type_string);
 	}
@@ -2464,7 +2464,7 @@ private:
 		return new Computed_field_transpose(source_number_of_rows);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_transpose_type_string);
 	}
@@ -2842,7 +2842,7 @@ private:
 			return new Computed_field_quaternion_to_matrix();
 	 }
 
-	 char *get_type_string()
+	 const char *get_type_string()
 	 {
 			return(computed_field_quaternion_to_matrix_type_string);
 	 }
@@ -3149,7 +3149,7 @@ private:
 			return new Computed_field_matrix_to_quaternion();
 	 }
 
-	 char *get_type_string()
+	 const char *get_type_string()
 	 {
 			return(computed_field_matrix_to_quaternion_type_string);
 	 }

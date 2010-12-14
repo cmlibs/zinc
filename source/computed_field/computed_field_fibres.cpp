@@ -77,7 +77,7 @@ private:
 		return new Computed_field_fibre_axes();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_fibre_axes_type_string);
 	}

@@ -45,6 +45,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 }
+#include "computed_field/computed_field_sub_group_template.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "api/cmiss_field_sub_group_template.h"
@@ -93,6 +94,8 @@ char computed_field_group_type_string[] = "group";
 
 class Computed_field_group : public Computed_field_core
 {
+	Cmiss_field_group_change_detail change_detail;
+
 public:
 	Cmiss_region *region;
 	int selection_on;
@@ -208,6 +211,29 @@ public:
 
 	Cmiss_field_id getNextChild();
 
+	virtual Cmiss_field_change_detail *extract_change_detail()
+	{
+		if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+			return NULL;
+		Cmiss_field_group_change_detail *prior_change_detail =
+			new Cmiss_field_group_change_detail();
+		*prior_change_detail = change_detail;
+#ifdef GRC
+		{
+			Cmiss_region *region = Computed_field_get_region(field);
+			char *path = Cmiss_region_get_path(region);
+			display_message(INFORMATION_MESSAGE, "Group %s%s change %d\n", path, field->name, prior_change_detail->change);
+			DEALLOCATE(path);
+		}
+#endif // GRC
+		change_detail.clear();
+		return prior_change_detail;
+	}
+
+	int isEmpty() const;
+
+	virtual int check_dependency();
+
 private:
 
 	Computed_field_core* copy()
@@ -217,7 +243,7 @@ private:
 		return (core);
 	};
 
-	char* get_type_string()
+	const char* get_type_string()
 	{
 		return (computed_field_group_type_string);
 	}
@@ -242,6 +268,9 @@ private:
 
 	int contain_region_tree(struct Cmiss_region *child_region);
 
+	int isSubGroupEmpty(Computed_field_core *source_core) const;
+
+	int check_sub_group_dependency(Computed_field_core *source_core);
 };
 
 /***************************************************************************//**
@@ -397,6 +426,112 @@ Cmiss_field_id Computed_field_group::getNextChild()
 		}
 	}
 	return child_field;
+}
+
+int Computed_field_group::isSubGroupEmpty(Computed_field_core *source_core) const
+{
+	Computed_field_sub_group *sub_group = dynamic_cast<Computed_field_sub_group *>(source_core);
+	if (sub_group)
+	{
+		if (!sub_group->isEmpty())
+		{
+			return 0;
+		}
+	}
+	const Computed_field_group *subregion_group =
+		dynamic_cast<const Computed_field_group *>(source_core);
+	if (subregion_group)
+	{
+		if (!subregion_group->isEmpty())
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int Computed_field_group::isEmpty() const
+{
+	if (selection_on)
+	{
+		return 0;
+	}
+	if (local_node_group && !isSubGroupEmpty(local_node_group->core))
+		return 0;
+	if (local_data_group && !isSubGroupEmpty(local_data_group->core))
+		return 0;
+	if (local_element_group && !isSubGroupEmpty(local_element_group->core))
+		return 0;
+	std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
+	while (it != domain_selection_group.end())
+	{
+		Computed_field *sub_group_field = it->second;
+		if (!isSubGroupEmpty(sub_group_field->core))
+			return 0;
+		++it;
+	}
+	return 1;
+}
+
+int Computed_field_group::check_sub_group_dependency(Computed_field_core *source_core)
+{
+	if (source_core->check_dependency())
+	{
+		Computed_field_dependency_change_private(field);
+		const Cmiss_field_group_change_detail *sub_group_change_detail =
+			dynamic_cast<const Cmiss_field_group_change_detail *>(source_core->get_change_detail());
+		if (sub_group_change_detail &&
+			(sub_group_change_detail->change != CMISS_FIELD_GROUP_NO_CHANGE) &&
+			(sub_group_change_detail->change != change_detail.change))
+		{
+			if (sub_group_change_detail->change == CMISS_FIELD_GROUP_CLEAR)
+			{
+				if (isEmpty())
+				{
+					change_detail.change = CMISS_FIELD_GROUP_CLEAR;
+				}
+				else if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+				{
+					change_detail.change = CMISS_FIELD_GROUP_REMOVE;
+				}
+				else if (change_detail.change == CMISS_FIELD_GROUP_ADD)
+				{
+					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
+				}
+			}
+			else if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+			{
+				change_detail.change = sub_group_change_detail->change;
+			}
+			else
+			{
+				change_detail.change = CMISS_FIELD_GROUP_REPLACE;
+			}
+		}
+	}
+	return 1;
+}
+
+int Computed_field_group::check_dependency()
+{
+	if (field)
+	{
+		if (local_node_group)
+			check_sub_group_dependency(local_node_group->core);
+		if (local_data_group)
+			check_sub_group_dependency(local_data_group->core);
+		if (local_element_group)
+			check_sub_group_dependency(local_element_group->core);
+		std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
+		while (it != domain_selection_group.end())
+		{
+			Computed_field *sub_group_field = it->second;
+			check_sub_group_dependency(sub_group_field->core);
+			++it;
+		}
+		return (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field));
+	}
+	return 0;
 }
 
 /***************************************************************************//**

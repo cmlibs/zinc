@@ -78,7 +78,7 @@ private:
 		return new Computed_field_2d_strain();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_2d_strain_type_string);
 	}

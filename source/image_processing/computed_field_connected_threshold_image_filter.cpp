@@ -95,7 +95,7 @@ private:
  		  lower_threshold, upper_threshold, replace_value, num_seed_points, seed_points);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_connected_threshold_image_filter_type_string);
 	}

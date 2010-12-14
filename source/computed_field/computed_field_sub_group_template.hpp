@@ -1,4 +1,4 @@
-/*****************************************************************************//**
+/***************************************************************************//**
  * FILE : computed_field_sub_group.hpp
  * 
  * Implements region sub object groups, e.g. node group, element group.
@@ -55,16 +55,35 @@ extern "C" {
 #include <map>
 #include <iterator>
 
+class Computed_field_sub_group : public Computed_field_core
+{
+public:
+
+	Computed_field_sub_group() :
+		Computed_field_core()
+	{
+	}
+
+	const char* get_type_string()
+	{
+		return ("sub_group_object");
+	}
+
+	virtual int isEmpty() const = 0;
+
+	virtual int clear() = 0;
+};
+
 namespace {
 
-	char computed_field_sub_group_object_type_string[] = "sub_group_object";
-
 	template <typename T>
-	class Computed_field_sub_group_object : public Computed_field_core
+	class Computed_field_sub_group_object : public Computed_field_sub_group
 	{
 	public:
 
-		Computed_field_sub_group_object() : Computed_field_core(), object_map()
+		Computed_field_sub_group_object() :
+			Computed_field_sub_group(),
+			object_map()
 		{
 			object_pos = object_map.begin();
 		}
@@ -75,23 +94,62 @@ namespace {
 
 		inline int add_object(int identifier, T object)
 		{
-			object_map.insert(std::make_pair(identifier,object));
-			return 1;
+			if (object_map.insert(std::make_pair(identifier,object)).second)
+			{
+				switch (change_detail.change)
+				{
+				case CMISS_FIELD_GROUP_NO_CHANGE:
+					change_detail.change = CMISS_FIELD_GROUP_ADD;
+					break;
+				case CMISS_FIELD_GROUP_CLEAR:
+				case CMISS_FIELD_GROUP_REMOVE:
+					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
+					break;
+				default:
+					// do nothing
+					break;
+				}
+				update();
+				return 1;
+			}
+			return 0;
 		};
 
 		inline int remove_object(int identifier)
 		{
-
 			if (object_map.find(identifier) != object_map.end())
 			{
 				object_map.erase(identifier);
+				switch (change_detail.change)
+				{
+				case CMISS_FIELD_GROUP_NO_CHANGE:
+					change_detail.change = CMISS_FIELD_GROUP_REMOVE;
+					break;
+				case CMISS_FIELD_GROUP_ADD:
+					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
+					break;
+				default:
+					// do nothing
+					break;
+				}
+				if (0 == object_map.size())
+				{
+					change_detail.change = CMISS_FIELD_GROUP_CLEAR;
+				}
+				update();
+				return 1;
 			}
-			return 1;
+			return 0;
 		};
 
-		inline int clear()
+		int clear()
 		{
-			object_map.clear();
+			if (object_map.size())
+			{
+				object_map.clear();
+				change_detail.change = CMISS_FIELD_GROUP_CLEAR;
+				update();
+			}
 			return 1;
 		};
 
@@ -111,6 +169,11 @@ namespace {
 
 			return (return_code);
 		};
+
+		virtual int isEmpty() const
+		{
+			return object_map.empty();
+		}
 
 		int isIdentifierInList(int identifier)
 		{
@@ -142,9 +205,26 @@ namespace {
 			return return_object;
 		}
 
+		virtual Cmiss_field_change_detail *extract_change_detail()
+		{
+			if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+				return NULL;
+			Cmiss_field_group_change_detail *prior_change_detail =
+				new Cmiss_field_group_change_detail();
+			*prior_change_detail = change_detail;
+			change_detail.clear();
+			return prior_change_detail;
+		}
+
+		virtual const Cmiss_field_change_detail *get_change_detail() const
+		{
+			return &change_detail;
+		}
+
 	private:
 
 		std::map<int, T> object_map;
+		Cmiss_field_group_change_detail change_detail;
 		typename std::map<int, T>::iterator object_pos;
 
 		Computed_field_core* copy()
@@ -153,11 +233,6 @@ namespace {
 			core->object_map = this->object_map;
 			return (core);
 		};
-
-		char* get_type_string()
-		{
-			return (computed_field_sub_group_object_type_string);
-		}
 
 		int compare(Computed_field_core* other_field)
 		{
@@ -192,6 +267,11 @@ namespace {
 		{
 			return NULL;
 		};
+
+		inline void update()
+		{
+			Computed_field_changed(field);
+		}
 
 	};
 

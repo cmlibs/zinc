@@ -76,7 +76,7 @@ private:
 		return new Computed_field_or();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_or_type_string);
 	}
@@ -338,7 +338,7 @@ private:
 		return new Computed_field_and();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_and_type_string);
 	}
@@ -602,7 +602,7 @@ private:
 		return new Computed_field_xor();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_xor_type_string);
 	}
@@ -871,7 +871,7 @@ private:
 		return new Computed_field_equal_to();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_equal_to_type_string);
 	}
@@ -1166,7 +1166,7 @@ private:
 		return new Computed_field_less_than();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_less_than_type_string);
 	}
@@ -1430,7 +1430,7 @@ private:
 		return new Computed_field_greater_than();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_greater_than_type_string);
 	}
@@ -1694,7 +1694,7 @@ private:
 		return new Computed_field_is_defined();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_is_defined_type_string);
 	}

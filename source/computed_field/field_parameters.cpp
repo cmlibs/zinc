@@ -594,7 +594,7 @@ public:
 	{
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		// GRC define in specialisation class Field_parameters_real
 		return (field_real_parameters_type_string);

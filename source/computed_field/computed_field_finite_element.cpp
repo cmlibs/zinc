@@ -111,7 +111,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_finite_element_type_string);
 	}
@@ -1729,7 +1729,7 @@ private:
 		return new Computed_field_cmiss_number();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_cmiss_number_type_string);
 	}
@@ -1989,7 +1989,7 @@ private:
 		return new Computed_field_access_count();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_access_count_type_string);
 	}
@@ -2214,7 +2214,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_node_value_type_string);
 	}
@@ -3021,7 +3021,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_embedded_type_string);
 	}
@@ -3637,7 +3637,7 @@ private:
 		return new Computed_field_xi_coordinates();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_xi_coordinates_type_string);
 	}
@@ -3960,7 +3960,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_basis_derivative_type_string);
 	}

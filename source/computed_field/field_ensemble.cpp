@@ -67,7 +67,7 @@ Field_ensemble::~Field_ensemble()
 
 char field_ensemble_type_string[] = "ensemble";
 
-char *Field_ensemble::get_type_string()
+const char *Field_ensemble::get_type_string()
 {
 	return (field_ensemble_type_string);
 }
@@ -419,7 +419,7 @@ void Field_ensemble::freeEnsembleIterator(Cmiss_ensemble_iterator *&iterator)
 
 char field_ensemble_group_type_string[] = "ensemble_group";
 
-char *Field_ensemble_group::get_type_string()
+const char *Field_ensemble_group::get_type_string()
 {
 	return (field_ensemble_group_type_string);
 }

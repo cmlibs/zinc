@@ -76,7 +76,7 @@ private:
 		return new Computed_field_normalise();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_normalise_type_string);
 	}
@@ -375,7 +375,7 @@ private:
 		return new Computed_field_cross_product();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_cross_product_type_string);
 	}
@@ -953,7 +953,7 @@ private:
 		return new Computed_field_dot_product();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_dot_product_type_string);
 	}
@@ -1318,7 +1318,7 @@ private:
 		return new Computed_field_magnitude();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_magnitude_type_string);
 	}
@@ -1689,7 +1689,7 @@ private:
 		return new Computed_field_cubic_texture_coordinates();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_cubic_texture_coordinates_type_string);
 	}

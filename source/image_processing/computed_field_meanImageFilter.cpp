@@ -88,7 +88,7 @@ private:
 		return new Computed_field_mean_image_filter(field->source_fields[0], radius_sizes);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_mean_image_filter_type_string);
 	}

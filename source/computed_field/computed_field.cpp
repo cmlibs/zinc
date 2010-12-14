@@ -188,7 +188,7 @@ extern "C" {
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields, struct Cmiss_field_change_detail *);
 
 struct Computed_field_type_data
 /*******************************************************************************
@@ -249,33 +249,6 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,const char *,strcmp)
 
 /***************************************************************************//**
- * Recursively determines if any source fields have changed or have dependency
- * changes and if so marks this field as dependency changed, also calling
- * core->dependency change to allow fields to respond intelligently.
- * @return 1 If field changed, 0 if not or error.
- */
-int Computed_field_manager_dependency_walk(
-	struct Computed_field *field, struct MANAGER(Computed_field) *manager)
-{
-	if (field && (field->manager == manager))
-	{
-		for (int i = 0; i < field->number_of_source_fields; i++)
-		{
-			if ((field->source_fields[i]->manager_change_status &
-					MANAGER_CHANGE_RESULT(Computed_field)) ||
-				Computed_field_manager_dependency_walk(field->source_fields[i], manager))
-			{
-				field->manager_change_status |= MANAGER_CHANGE_DEPENDENCY(Computed_field);
-				ADD_OBJECT_TO_LIST(Computed_field)(field, manager->changed_object_list);
-				field->core->dependency_change();
-				return 1;
-			}
-		}
-	}
-	return 0;
-}		
-
-/***************************************************************************//**
  * Field iterator function ensuring field and any of its source fields are
  * marked in manager with MANAGER_CHANGE_DEPENDENCY if any source fields have
  * content or dependency change.
@@ -283,39 +256,105 @@ int Computed_field_manager_dependency_walk(
  * To be called only by Computed_field_manager_update_dependencies.
  * @return  1 normally, 0 if invalid arguments.
  */
-int Computed_field_check_dependency(struct Computed_field *field,	void *dummy_void)
+static int Computed_field_check_dependency_iterator(struct Computed_field *field,
+	void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		if (0 == (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field)))
-		{
-			Computed_field_manager_dependency_walk(field, field->manager);
-		}
+		field->core->check_dependency();
 		return 1;
 	}
 	return 0;
 }
 
+static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manager)
 /***************************************************************************//**
- * Called just before manager change messages are broadcast.
- * Adds fields that depend on changed fields to the message changed object list
- * as MANAGER_CHANGE_DEPENDENCY.
- * See also MANAGER_UPDATE_DEPENDENCIES macro.
+ * Special version for Computed_field which handles:
+ * - propagating field changes to dependencies
+ * - field type-specific change details
+ * Send a manager message listing all changes to date of the <change> type in
+ * the <changed_object_list> of <manager> to registered clients.
+ * Once <change> and <changed_object_list> are put in the <message>, they are
+ * cleared from the manager, then the message is sent.
+ * Copies the message, leaving the message in the manager blank before sending
+ * since it is sometimes possible to have messages sent while others are out.
  */
-void Computed_field_manager_update_dependencies(
-	struct MANAGER(Computed_field) *manager)
 {
-	FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-		Computed_field_check_dependency, (void *)NULL, manager);
-}
+	ENTER(MANAGER_UPDATE(Computed_field));
+	if (manager)
+	{
+		if (0 < NUMBER_IN_LIST(Computed_field)(manager->changed_object_list))
+		{
+			int i, number_of_changed_objects;
+			struct MANAGER_CALLBACK_ITEM(Computed_field) *item;
+			struct MANAGER_MESSAGE(Computed_field) message;
+			struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field) *object_change;
 
-// get manager update to call this function to find field dependency changes
-#undef MANAGER_UPDATE_DEPENDENCIES
-#define MANAGER_UPDATE_DEPENDENCIES( Computed_field , manager ) \
-	Computed_field_manager_update_dependencies(manager);
+			/* add objects changed by dependency */
+			FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+				Computed_field_check_dependency_iterator, (void *)NULL, manager);
+			/* prepare message, transferring change details from objects to it */
+			number_of_changed_objects =
+				NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
+			if (ALLOCATE(message.object_changes,
+				struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field),
+				number_of_changed_objects))
+			{
+				message.change_summary = MANAGER_CHANGE_NONE(Computed_field);
+				message.number_of_changed_objects = number_of_changed_objects;
+				object_change = message.object_changes;
+				for (i = 0; i < number_of_changed_objects; i++)
+				{
+					object_change->object = ACCESS(Computed_field)(
+						FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
+							(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL,
+							manager->changed_object_list));
+					object_change->change = object_change->object->manager_change_status;
+					object_change->object->manager_change_status =
+						MANAGER_CHANGE_NONE(Computed_field);
+					REMOVE_OBJECT_FROM_LIST(Computed_field)(object_change->object,
+						manager->changed_object_list);
+					object_change->detail = object_change->object->core->extract_change_detail();
+					message.change_summary |= object_change->change;
+					object_change++;
+				}
+				/* send message to clients */
+				item = manager->callback_list;
+				while (item)
+				{
+					(item->callback)(&message, item->user_data);
+					item = item->next;
+				}
+				/* clean up message */
+				object_change = message.object_changes;
+				for (i = 0; i < number_of_changed_objects; i++)
+				{
+					delete object_change->detail;
+					DEACCESS(Computed_field)(&(object_change->object));
+					object_change++;
+				}
+				DEALLOCATE(message.object_changes);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_UPDATE(Computed_field).  Could not build message");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_UPDATE(Computed_field).  Invalid argument(s)");
+	}
+	LEAVE;
+} /* MANAGER_UPDATE(Computed_field) */
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Computed_field)
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Computed_field)
+
 
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (const char *name, Define_Computed_field_type_function 
@@ -747,7 +786,7 @@ in computed_field_set.cpp.
 {
 	int return_code;
 
-	ENTER(GET_NAME(object_type));
+	ENTER(GET_NAME(Computed_field));
 	if (object&&name_ptr)
 	{
 		if (ALLOCATE(*name_ptr,char,strlen(object->command_string)+1))
@@ -1561,6 +1600,31 @@ int Computed_field_dependency_changed(struct Computed_field *field)
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_dependency_changed.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Computed_field_dependency_change_private(struct Computed_field *field)
+{
+	int return_code;
+
+	ENTER(Computed_field_dependency_change_private);
+	if (field)
+	{
+		if (field->manager_change_status == MANAGER_CHANGE_NONE(Computed_field))
+		{
+			ADD_OBJECT_TO_LIST(Computed_field)(field, field->manager->changed_object_list);
+		}
+		field->manager_change_status |= MANAGER_CHANGE_DEPENDENCY(Computed_field);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dependency_change_private.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3426,7 +3490,7 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 	return (return_code);
 } /* Computed_field_set_coordinate_system */
 
-char *Computed_field_get_type_string(struct Computed_field *field)
+const char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -3435,7 +3499,7 @@ Returns the string which identifies the type.
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Computed_field_get_type_string);
 	if (field)
@@ -3446,13 +3510,13 @@ The calling function must not deallocate the returned string.
 		}
 		else
 		{
-			return_string = (char *)NULL;
+			return_string = (const char *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"Computed_field_get_type_string.  Missing field");
-		return_string = (char *)NULL;
+		return_string = (const char *)NULL;
 	}
 	LEAVE;
 
@@ -4882,6 +4946,26 @@ int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_l
 	}
 
 	return return_code;
+}
+
+int Computed_field_core::check_dependency()
+{
+	if (field)
+	{
+		if (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		{
+			return 1;
+		}
+		for (int i = 0; i < field->number_of_source_fields; i++)
+		{
+			if (field->source_fields[i]->core->check_dependency())
+			{
+				Computed_field_dependency_change_private(field);
+				return 1;
+			}
+		}
+	}
+	return 0;
 }
 
 bool Computed_field_core::is_non_linear() const

@@ -89,7 +89,7 @@ private:
 			min, max, alpha, beta);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_sigmoid_image_filter_type_string);
 	}

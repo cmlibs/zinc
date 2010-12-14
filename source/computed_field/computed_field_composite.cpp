@@ -121,7 +121,7 @@ private:
 			source_field_numbers, source_value_numbers));
 	}
 
-	char* get_type_string()
+	const char* get_type_string()
 	{
 		return(computed_field_composite_type_string);
 	}

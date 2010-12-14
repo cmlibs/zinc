@@ -132,7 +132,7 @@ private:
 		return (core);
 	};
 
-	char* get_type_string()
+	const char* get_type_string()
 	{
 		return (computed_field_alias_type_string);
 	}

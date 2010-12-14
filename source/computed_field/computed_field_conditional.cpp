@@ -75,7 +75,7 @@ private:
 		return new Computed_field_if();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_if_type_string);
 	}

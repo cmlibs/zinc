@@ -69,7 +69,7 @@ Local types
 #define MANAGER_CALLBACK_ITEM( object_type ) \
 	manager_callback_item_ ## object_type
 
-#define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type ) \
+#define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type , change_detail_type ) \
 struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
 /*************************************************************************//** \
  * Internal record of a single managed object change. \
@@ -77,7 +77,7 @@ struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
 { \
 	struct object_type *object; \
 	int change; /* bits set from enum MANAGER_CHANGE(object_type) */ \
-	void *detail; /* optional detail of subobject changes */ \
+	change_detail_type detail; /* optional details of sub-object changes */ \
 }; \
 \
 struct MANAGER_MESSAGE(object_type) \
@@ -121,22 +121,12 @@ DECLARE_MANAGER_TYPE(object_type) \
 }; /* struct MANAGER(object_type) */
 
 #define FULL_DECLARE_MANAGER_TYPE( object_type ) \
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(object_type, void)
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(object_type, void, void *)
 
 /*
 Local functions
 ---------------
 */
-
-/*************************************************************************//**
- * Redefine following before calling DECLARE_LOCAL_MANAGER_FUNCTIONS to mark
- * objects dependent on changed objects as having a dependency change, e.g.:
- * #undef MANAGER_UPDATE_DEPENDENCIES
- * #define MANAGER_UPDATE_DEPENDENCIES( Computed_field , manager ) \
- *   Computed_field_manager_update_dependencies(manager);
- * (Only needed for certain objects.)
- */
-#define MANAGER_UPDATE_DEPENDENCIES( object_type, manager )
 
 #define MANAGER_UPDATE( object_type )  manager_update_ ## object_type
 
@@ -161,8 +151,6 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 			struct MANAGER_MESSAGE(object_type) message; \
 			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
 			\
-			/* Optional stage: added objects change by dependency */ \
-			MANAGER_UPDATE_DEPENDENCIES(object_type, manager) \
 			/* prepare message, transferring change details from objects to it */ \
 			number_of_changed_objects = \
 				NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
@@ -184,7 +172,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 						MANAGER_CHANGE_NONE(object_type); \
 					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
 						manager->changed_object_list); \
-					object_change->detail = NULL; \
+					object_change->detail = 0; \
 					message.change_summary |= object_change->change; \
 					object_change++; \
 				} \

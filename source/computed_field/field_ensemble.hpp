@@ -101,7 +101,7 @@ private:
 		return NULL; // not supported
 	}
 
-	char *get_type_string();
+	const char *get_type_string();
 
 	int compare(Computed_field_core* other_field)
 	{
@@ -207,7 +207,7 @@ private:
 		return NULL; // not supported
 	}
 
-	char *get_type_string();
+	const char *get_type_string();
 
 	int compare(Computed_field_core* other_field)
 	{

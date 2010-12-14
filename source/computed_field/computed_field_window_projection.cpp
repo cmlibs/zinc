@@ -130,7 +130,7 @@ private:
 			graphics_window_name, pane_number, scene_viewer, projection_type);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_window_projection_type_string);
 	}

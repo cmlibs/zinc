@@ -101,7 +101,7 @@ private:
 			string_constant_array);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_string_constant_type_string);
 	}

@@ -229,7 +229,7 @@ private:
 		return new Computed_field_coordinate_transformation();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_coordinate_transformation_type_string);
 	}
@@ -674,7 +674,7 @@ private:
 		return new Computed_field_vector_coordinate_transformation();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_vector_coordinate_transformation_type_string);
 	}

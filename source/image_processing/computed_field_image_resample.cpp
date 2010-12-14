@@ -95,7 +95,7 @@ namespace {
 		
 		int evaluate_cache_at_location(Field_location* location);
 
-		char *get_type_string()
+		const char *get_type_string()
 		{
 			return(computed_field_image_resample_type_string);
 		}

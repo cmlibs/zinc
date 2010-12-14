@@ -136,7 +136,7 @@ public:
 private:
 	Computed_field_core* copy();
 
-	char* get_type_string()
+	const char* get_type_string()
 	{
 		return (computed_field_cad_topology_type_string);
 	}
@@ -544,7 +544,7 @@ private:
 private:
 	Computed_field_core* copy();
 
-	char* get_type_string()
+	const char* get_type_string()
 	{
 		return (computed_field_cad_group_type_string);
 	}

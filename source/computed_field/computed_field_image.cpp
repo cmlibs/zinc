@@ -215,7 +215,7 @@ private:
 
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_image_type_string);
 	}
@@ -236,12 +236,14 @@ private:
 		return (field && (field->number_of_source_fields > 1));
 	}
 
-	virtual void dependency_change()
+	virtual int check_dependency()
 	{
-		if (texture_is_evaluated_from_source_field())
+		int return_code = Computed_field_core::check_dependency();
+		if (return_code && texture_is_evaluated_from_source_field())
 		{
 			need_evaluate_texture = true;
 		}
+		return return_code;
 	}
 };
 
@@ -433,6 +435,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		if (source_field_is_image)
 		{
 			REACCESS(Texture)(&texture, Computed_field_get_texture(field->source_fields[1]));
+			need_evaluate_texture = false;
 		}
 		else if (Texture_allocate_image(texture, image_width, image_height,
 				image_depth, specify_format, number_of_bytes_per_component, field->name))

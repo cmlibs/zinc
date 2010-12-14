@@ -137,7 +137,7 @@ private:
 			numberOfBins, marginalScale);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_histogram_image_filter_type_string);
 	}

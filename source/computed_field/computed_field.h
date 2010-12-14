@@ -565,7 +565,7 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 <focus> must be given with prolate and oblate spheroidal coordinate systems.
 ==============================================================================*/
 
-char *Computed_field_get_type_string(struct Computed_field *field);
+const char *Computed_field_get_type_string(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2002
 

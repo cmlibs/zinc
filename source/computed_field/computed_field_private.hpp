@@ -165,6 +165,52 @@ passed around as part of Computed_field_modify_data in to_be_modified argument.
 {
 };
 
+/***************************************************************************//**
+ * Base class of type-specific field change details.
+ */
+struct Cmiss_field_change_detail
+{
+	virtual ~Cmiss_field_change_detail()
+	{
+	}
+};
+
+/***************************************************************************//**
+ * Intermediate class for group field change details.
+ * GRC: move elsewhere
+ */
+enum Cmiss_field_group_change_type
+{
+	CMISS_FIELD_GROUP_NO_CHANGE,
+	CMISS_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
+	CMISS_FIELD_GROUP_ADD,       /*!< objects have been added only */
+	CMISS_FIELD_GROUP_REMOVE,    /*!< objects have been removed only */
+	CMISS_FIELD_GROUP_REPLACE    /*!< contents replaced: clear+add, add+remove */
+};
+
+/***************************************************************************//**
+ * Intermediate class for all group field change details.
+ * GRC: move elsewhere
+ */
+struct Cmiss_field_group_change_detail : public Cmiss_field_change_detail
+{
+	Cmiss_field_group_change_type change;
+
+	Cmiss_field_group_change_detail() :
+		change(CMISS_FIELD_GROUP_NO_CHANGE)
+	{
+	}
+
+	virtual ~Cmiss_field_group_change_detail()
+	{
+	}
+
+	void clear()
+	{
+		change = CMISS_FIELD_GROUP_NO_CHANGE;
+	}
+};
+
 class Computed_field_core
 /*******************************************************************************
 LAST MODIFIED : 23 August 2006
@@ -225,7 +271,7 @@ public:
 	
 	virtual Computed_field_core *copy() = 0;
 
-	virtual char *get_type_string() = 0;
+	virtual const char *get_type_string() = 0;
 
 	virtual int clear_cache()
 	{
@@ -283,10 +329,9 @@ public:
 
 	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 
-	// called if field depends on another field which has changed. Override if special response needed
-	virtual void dependency_change()
-	{
-	}
+	// override for customised response to propagating field changes to dependencies
+	// @return  1 if field has changed directly or via dependency
+	virtual int check_dependency();
 
 	// override if field knows its function is non-linear over its domain
 	// base implementation returns true if any source fields are non_linear.
@@ -314,6 +359,20 @@ public:
 		USE_PARAMETER(property_flag);
 		USE_PARAMETER(flag_value);
 		return 0;
+	}
+
+	/** clones and clears type-specific change detail, if any.
+	 * override for classes with type-specific change detail e.g. group fields
+	 * @return  change detail prior to clearing, or NULL if none.
+	 */
+	virtual Cmiss_field_change_detail *extract_change_detail()
+	{
+		return NULL;
+	}
+
+	virtual const Cmiss_field_change_detail *get_change_detail() const
+	{
+		return NULL;
 	}
 
 }; /* class Computed_field_core */
@@ -485,6 +544,14 @@ int Computed_field_changed(struct Computed_field *field);
  * @param field  The field whose dependencies have changed.
  */
 int Computed_field_dependency_changed(struct Computed_field *field);
+
+/***************************************************************************//**
+ * Private function for setting the dependency change flag and adding to the
+ * manager's changed object list without sending manager updates.
+ * Should only be called by code invoked by MANAGER_UPDATE().
+ * @return  1 on success, 0 on failure.
+ */
+int Computed_field_dependency_change_private(struct Computed_field *field);
 
 int Computed_field_package_add_type(
 	struct Computed_field_package *computed_field_package, const char *name,

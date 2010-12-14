@@ -105,7 +105,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_region_sum_type_string);
 	}
@@ -598,7 +598,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return (computed_field_region_mean_type_string);
 	}

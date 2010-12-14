@@ -103,7 +103,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_compose_type_string);
 	}

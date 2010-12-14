@@ -75,7 +75,7 @@ private:
 		return new Computed_field_sin();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_sin_type_string);
 	}
@@ -385,7 +385,7 @@ private:
 		return new Computed_field_cos();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_cos_type_string);
 	}
@@ -695,7 +695,7 @@ private:
 		return new Computed_field_tan();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_tan_type_string);
 	}
@@ -1005,7 +1005,7 @@ private:
 		return new Computed_field_asin();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_asin_type_string);
 	}
@@ -1323,7 +1323,7 @@ private:
 		return new Computed_field_acos();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_acos_type_string);
 	}
@@ -1641,7 +1641,7 @@ private:
 		return new Computed_field_atan();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_atan_type_string);
 	}
@@ -1952,7 +1952,7 @@ private:
 		return new Computed_field_atan2();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_atan2_type_string);
 	}

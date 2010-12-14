@@ -111,7 +111,7 @@ private:
 		return new Computed_field_derivative_image_filter(field->source_fields[0], xi_index, derivative_operator_order);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_derivative_type_string);
 	}
@@ -290,7 +290,7 @@ public:
 private:
 	Computed_field_core *copy();
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_derivative_type_string);
 	}
@@ -782,7 +782,7 @@ private:
 		return new Computed_field_curl();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_curl_type_string);
 	}
@@ -1222,7 +1222,7 @@ private:
 		return new Computed_field_divergence();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_divergence_type_string);
 	}
@@ -1689,7 +1689,7 @@ private:
 		return new Computed_field_gradient();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_gradient_type_string);
 	}

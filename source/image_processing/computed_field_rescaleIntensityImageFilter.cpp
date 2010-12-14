@@ -88,7 +88,7 @@ private:
 			outputMin, outputMax);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_rescale_intensity_image_filter_type_string);
 	}

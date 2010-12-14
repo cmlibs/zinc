@@ -77,7 +77,7 @@ private:
 		return new Computed_field_power();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_power_type_string);
 	}
@@ -442,7 +442,7 @@ private:
 		return new Computed_field_multiply_components();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_multiply_components_type_string);
 	}
@@ -802,7 +802,7 @@ private:
 		return new Computed_field_divide_components();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_divide_components_type_string);
 	}
@@ -1160,7 +1160,7 @@ private:
 		return new Computed_field_add();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_add_type_string);
 	}
@@ -1566,7 +1566,7 @@ private:
 		return new Computed_field_scale();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_scale_type_string);
 	}
@@ -2092,7 +2092,7 @@ private:
 		return new Computed_field_clamp_maximum();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_clamp_maximum_type_string);
 	}
@@ -2555,7 +2555,7 @@ private:
 		return new Computed_field_clamp_minimum();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_clamp_minimum_type_string);
 	}
@@ -3025,7 +3025,7 @@ private:
 		return new Computed_field_offset();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_offset_type_string);
 	}
@@ -3524,7 +3524,7 @@ private:
 		return new Computed_field_sum_components();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_sum_components_type_string);
 	}
@@ -3926,7 +3926,7 @@ private:
 		return new Computed_field_edit_mask();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_edit_mask_type_string);
 	}
@@ -4387,7 +4387,7 @@ private:
 		return new Computed_field_log();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_log_type_string);
 	}
@@ -4702,7 +4702,7 @@ private:
 		return new Computed_field_sqrt();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_sqrt_type_string);
 	}
@@ -5018,7 +5018,7 @@ private:
 		return new Computed_field_exp();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_exp_type_string);
 	}
@@ -5334,7 +5334,7 @@ private:
 		return new Computed_field_abs();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_abs_type_string);
 	}

@@ -78,7 +78,7 @@ private:
 		return new Computed_field_time_lookup();
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_time_lookup_type_string);
 	}
@@ -583,7 +583,7 @@ private:
 			Time_object_get_time_keeper(time_object));
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_time_value_type_string);
 	}
