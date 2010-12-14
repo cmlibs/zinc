@@ -97,6 +97,7 @@ extern "C" {
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
+#include "computed_field/computed_field_format_output.h"
 #include "computed_field/computed_field_function.h"
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_image.h"
@@ -22492,6 +22493,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_arithmetic_operators(
 				command_data->computed_field_package);
 			Computed_field_register_types_trigonometry(
+				command_data->computed_field_package);
+			Computed_field_register_types_format_output(
 				command_data->computed_field_package);
 			if (command_data->root_region)
 			{
