@@ -3591,6 +3591,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 							new Callback_member_callback< GT_object*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(GT_object *) >
 							(this, &wxRegionTreeViewer::glyph_callback);
+					 glyph_chooser->include_null_item(true);
 					 glyph_chooser->set_callback(glyph_callback);	
 					 glyph_chooser_panel->Fit();
 				}

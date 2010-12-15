@@ -2656,10 +2656,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_string.  Graphic missing glyph");
-				DEALLOCATE(graphic_string);
-				error=1;
+				append_string(&graphic_string," glyph none",&error);
 			}
 		}
 		/* for element_points and iso_surfaces */
@@ -4398,7 +4395,7 @@ int Cmiss_graphic_set_glyph_parameters(
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && glyph && glyph_centre && glyph_size &&
+	if (graphic && (glyph && glyph_centre && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -4406,7 +4403,7 @@ int Cmiss_graphic_set_glyph_parameters(
 		((!orientation_scale_field) || Computed_field_is_orientation_scale_capable(
 			orientation_scale_field,(void *)NULL)) && glyph_scale_factors &&
 		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
-			variable_scale_field,(void *)NULL)))
+			variable_scale_field,(void *)NULL)) || !glyph))
 	{
 		if (graphic->glyph)
 		{
@@ -4414,22 +4411,25 @@ int Cmiss_graphic_set_glyph_parameters(
 				Cmiss_graphic_glyph_change, (void *)graphic);
 		}
 		REACCESS(GT_object)(&(graphic->glyph),glyph);
-		GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
-				(void *)graphic);
-		graphic->glyph_scaling_mode = glyph_scaling_mode;
-		graphic->glyph_centre[0] = glyph_centre[0];
-		graphic->glyph_centre[1] = glyph_centre[1];
-		graphic->glyph_centre[2] = glyph_centre[2];
-		graphic->glyph_size[0] = glyph_size[0];
-		graphic->glyph_size[1] = glyph_size[1];
-		graphic->glyph_size[2] = glyph_size[2];
-		REACCESS(Computed_field)(&(graphic->orientation_scale_field),
-			orientation_scale_field);
-		graphic->glyph_scale_factors[0]=glyph_scale_factors[0];
-		graphic->glyph_scale_factors[1]=glyph_scale_factors[1];
-		graphic->glyph_scale_factors[2]=glyph_scale_factors[2];
-		REACCESS(Computed_field)(&(graphic->variable_scale_field),
-			variable_scale_field);
+		if (glyph)
+		{
+			GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
+					(void *)graphic);
+			graphic->glyph_scaling_mode = glyph_scaling_mode;
+			graphic->glyph_centre[0] = glyph_centre[0];
+			graphic->glyph_centre[1] = glyph_centre[1];
+			graphic->glyph_centre[2] = glyph_centre[2];
+			graphic->glyph_size[0] = glyph_size[0];
+			graphic->glyph_size[1] = glyph_size[1];
+			graphic->glyph_size[2] = glyph_size[2];
+			REACCESS(Computed_field)(&(graphic->orientation_scale_field),
+				orientation_scale_field);
+			graphic->glyph_scale_factors[0]=glyph_scale_factors[0];
+			graphic->glyph_scale_factors[1]=glyph_scale_factors[1];
+			graphic->glyph_scale_factors[2]=glyph_scale_factors[2];
+			REACCESS(Computed_field)(&(graphic->variable_scale_field),
+				variable_scale_field);
+		}
 		return_code=1;
 	}
 	else
