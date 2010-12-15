@@ -4854,10 +4854,10 @@ int Cmiss_graphic_copy_without_graphics_object(
 			}
 		}
 		/* for node_points, data_points and element_points only */
-		if ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
+		if (source->glyph && ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_STATIC==source->graphic_type))
+			(CMISS_GRAPHIC_STATIC==source->graphic_type)))
 		{
 			Cmiss_graphic_set_glyph_parameters(destination,
 				source->glyph, source->glyph_scaling_mode,
@@ -5710,18 +5710,22 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
-					Cmiss_graphic_get_glyph_parameters(graphic,
-						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
-						&orientation_scale_field, glyph_scale_factors,
-						&variable_scale_field);
-					ACCESS(GT_object)(glyph);
-					if (orientation_scale_field)
+					glyph = (GT_object *)NULL;
+					if (graphic->glyph)
 					{
-						ACCESS(Computed_field)(orientation_scale_field);
-					}
-					if (variable_scale_field)
-					{
-						ACCESS(Computed_field)(variable_scale_field);
+						Cmiss_graphic_get_glyph_parameters(graphic,
+							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field);
+						ACCESS(GT_object)(glyph);
+						if (orientation_scale_field)
+						{
+							ACCESS(Computed_field)(orientation_scale_field);
+						}
+						if (variable_scale_field)
+						{
+							ACCESS(Computed_field)(variable_scale_field);
+						}
 					}
 					number_of_components = 3;
 					visibility = graphic->visibility_flag;
@@ -5872,9 +5876,8 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
-								"No glyph specified for node_points");
-							return_code=0;
+							if (graphic->glyph)
+								DEACCESS(GT_object)(&graphic->glyph);
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -5973,18 +5976,22 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
-					Cmiss_graphic_get_glyph_parameters(graphic,
-						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
-						&orientation_scale_field, glyph_scale_factors,
-						&variable_scale_field);
-					ACCESS(GT_object)(glyph);
-					if (orientation_scale_field)
+					glyph = (GT_object *)NULL;
+					if (graphic->glyph)
 					{
-						ACCESS(Computed_field)(orientation_scale_field);
-					}
-					if (variable_scale_field)
-					{
-						ACCESS(Computed_field)(variable_scale_field);
+						Cmiss_graphic_get_glyph_parameters(graphic,
+							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field);
+						ACCESS(GT_object)(glyph);
+						if (orientation_scale_field)
+						{
+							ACCESS(Computed_field)(orientation_scale_field);
+						}
+						if (variable_scale_field)
+						{
+							ACCESS(Computed_field)(variable_scale_field);
+						}
 					}
 					number_of_components = 3;
 					visibility = graphic->visibility_flag;
@@ -6135,9 +6142,8 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
-								"No glyph specified for data_points");
-							return_code=0;
+							if (graphic->glyph)
+								DEACCESS(GT_object)(&graphic->glyph);
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -6245,18 +6251,22 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
-					Cmiss_graphic_get_glyph_parameters(graphic,
-						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
-						&orientation_scale_field, glyph_scale_factors,
-						&variable_scale_field);
-					ACCESS(GT_object)(glyph);
-					if (orientation_scale_field)
+					glyph = (GT_object *)NULL;
+					if (graphic->glyph)
 					{
-						ACCESS(Computed_field)(orientation_scale_field);
-					}
-					if (variable_scale_field)
-					{
-						ACCESS(Computed_field)(variable_scale_field);
+						Cmiss_graphic_get_glyph_parameters(graphic,
+							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field);
+						ACCESS(GT_object)(glyph);
+						if (orientation_scale_field)
+						{
+							ACCESS(Computed_field)(orientation_scale_field);
+						}
+						if (variable_scale_field)
+						{
+							ACCESS(Computed_field)(variable_scale_field);
+						}
 					}
 					number_of_components = 3;
 					visibility = graphic->visibility_flag;
@@ -6407,9 +6417,8 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
-								"No glyph specified for node_points");
-							return_code=0;
+							if (graphic->glyph)
+								DEACCESS(GT_object)(&graphic->glyph);
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -7134,18 +7143,22 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			orientation_scale_field = (struct Computed_field *)NULL;
 			variable_scale_field = (struct Computed_field *)NULL;
 			xi_point_density_field = (struct Computed_field *)NULL;
-			Cmiss_graphic_get_glyph_parameters(graphic,
-				&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
-				&orientation_scale_field, glyph_scale_factors,
-				&variable_scale_field);
-			ACCESS(GT_object)(glyph);
-			if (orientation_scale_field)
+			glyph = (GT_object *)NULL;
+			if (graphic->glyph)
 			{
-				ACCESS(Computed_field)(orientation_scale_field);
-			}
-			if (variable_scale_field)
-			{
-				ACCESS(Computed_field)(variable_scale_field);
+				Cmiss_graphic_get_glyph_parameters(graphic,
+					&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+					&orientation_scale_field, glyph_scale_factors,
+					&variable_scale_field);
+				ACCESS(GT_object)(glyph);
+				if (orientation_scale_field)
+				{
+					ACCESS(Computed_field)(orientation_scale_field);
+				}
+				if (variable_scale_field)
+				{
+					ACCESS(Computed_field)(variable_scale_field);
+				}
 			}
 			Cmiss_graphic_get_xi_discretization(graphic,
 				&xi_discretization_mode, &xi_point_density_field);
@@ -7367,9 +7380,8 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"No glyph specified for element_points");
-					return_code=0;
+					if (graphic->glyph)
+						DEACCESS(GT_object)(&graphic->glyph);
 				}
 				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 					&select_mode);

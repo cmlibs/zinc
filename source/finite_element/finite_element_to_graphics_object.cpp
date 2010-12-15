@@ -1390,9 +1390,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
-		glyph && centre && base_size && scale_factors &&
+		((glyph && centre && base_size && scale_factors &&
 		((!variable_scale_field) ||
-			(3 >=	Computed_field_get_number_of_components(variable_scale_field))) &&
+			(3 >=	Computed_field_get_number_of_components(variable_scale_field))))
+		|| !glyph) &&
 		((!label_density_field) ||
 			(3 >=	Computed_field_get_number_of_components(label_density_field))))
 	{
@@ -1439,7 +1440,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 				/* label_field is not a required field (if undefined, label is empty) EXCEPT
 				 * where glyph bases its glyph_labels_function bounds on it */
 				label_bounds_field = NULL;
-				if (Graphics_object_get_glyph_labels_function(glyph))
+				if (glyph && Graphics_object_get_glyph_labels_function(glyph))
 				{
 					if (label_field)
 					{

@@ -2392,8 +2392,8 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	struct GT_glyph_set *glyph_set;
 
 	ENTER(CREATE(GT_glyph_set));
-	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
-		axis3_list && scale_list && glyph && (!labels || font))
+	if ((0 < number_of_points) && point_list && ((glyph && axis1_list &&
+		axis2_list && axis3_list && scale_list) || (!glyph))  && (!labels || font))
 	{
 		if (ALLOCATE(glyph_set,struct GT_glyph_set,1))
 		{
@@ -2403,15 +2403,14 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 			glyph_set->axis2_list = axis2_list;
 			glyph_set->axis3_list = axis3_list;
 			glyph_set->scale_list = scale_list;
-			glyph_set->glyph = ACCESS(GT_object)(glyph);
-			if (font)
-			{
-				glyph_set->font = ACCESS(Graphics_font)(font);
-			}
+			if (glyph)
+				glyph_set->glyph = ACCESS(GT_object)(glyph);
 			else
-			{
-				glyph_set->font = (struct Graphics_font *)NULL;
-			}
+				glyph_set->glyph = (GT_object *)NULL;
+			if (font)
+				glyph_set->font = ACCESS(Graphics_font)(font);
+			else
+				glyph_set->font = (Graphics_font *)NULL;
 			glyph_set->labels = labels;
 			glyph_set->n_data_components = n_data_components;
  			glyph_set->data = data;

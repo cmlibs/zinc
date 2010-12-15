@@ -670,7 +670,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	GLfloat f, f0, f1, transformation[16], x, y, z;
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum;
-	int draw_all, i, j, mirror_mode, *name, name_selected, label_bounds_per_glyph,
+	int draw_all, i, j, *name, name_selected, label_bounds_per_glyph,
 		number_of_glyphs, return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
@@ -678,8 +678,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 		temp_axis3, temp_point;
 
 	ENTER(draw_glyphsetGL);
-	if (((0 == number_of_points) || ((0 < number_of_points) && point_list &&
-		axis1_list && axis2_list && axis3_list && scale_list)) && glyph)
+	if ((0 == number_of_points) || ((0 < number_of_points) && ((glyph && point_list &&
+		axis1_list && axis2_list && axis3_list && scale_list) || (!glyph && labels))))
 	{
 		/*if ((0==number_of_points) ||
 			(draw_selected&&((!names) || (!some_selected)))||
@@ -692,15 +692,6 @@ are selected, or all points if <selected_name_ranges> is NULL.
 		}
 		else
 		{
-			mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-			if (mirror_mode)
-			{
-				f = -1.0;
-			}
-			else
-			{
-				f = 0.0;
-			}
 #if defined (OPENGL_API)
 			if ((!data)||(render_data=spectrum_start_renderGL
 				(spectrum,material,number_of_data_components)))
@@ -738,7 +729,47 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					label_bounds_per_glyph = 1 << label_bounds_dimension;
 				}
 				/* try to draw points and lines faster */
-				if (0 == strcmp(glyph->name, "point"))
+				if (!glyph)
+				{
+					for (i=0;i<number_of_points;i++)
+					{
+						if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
+							((!name_selected)&&(!draw_selected)))
+						{
+							/* set the spectrum for this datum, if any */
+							if (data)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+							}
+							x = (*point)[0];
+							y = (*point)[1];
+							z = (*point)[2];
+							if (names)
+							{
+								glLoadName((GLuint)(*name));
+							}
+							if (labels && *label)
+							{
+								glRasterPos3f(x, y, z);
+								Graphics_font_rendergl_text(font, *label);
+							}
+						}
+						point++;
+						if (data)
+						{
+							datum += number_of_data_components;
+						}
+						if (names)
+						{
+							name++;
+						}
+						if (labels)
+						{
+							label++;
+						}
+					}					
+				}
+				else if (0 == strcmp(glyph->name, "point"))
 				{
 					/* disable lighting so rendered in flat diffuse colour */
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
@@ -1043,6 +1074,15 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				}
 				else
 				{
+					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
+					if (mirror_mode)
+					{
+						f = -1.0;
+					}
+					else
+					{
+						f = 0.0;
+					}
 					/* must push and pop the modelview matrix */
 					glMatrixMode(GL_MODELVIEW);
 					for (i = 0; i < number_of_points; i++)
@@ -4375,11 +4415,10 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								glyph_set = graphics_object->primitive_lists[i].gt_glyph_set.first;
 								if (glyph_set)
 								{
-									renderer->Graphics_object_compile(glyph_set->glyph);
+									if (glyph_set->glyph)
+										renderer->Graphics_object_compile(glyph_set->glyph);
 									if (glyph_set->font)
-									{
 										Graphics_font_compile(glyph_set->font, renderer->graphics_buffer);
-									}
 								}
 							}
 						}
