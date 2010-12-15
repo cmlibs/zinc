@@ -4395,7 +4395,7 @@ int Cmiss_graphic_set_glyph_parameters(
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && (glyph && glyph_centre && glyph_size &&
+	if (graphic && ((glyph && glyph_centre && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -4403,7 +4403,7 @@ int Cmiss_graphic_set_glyph_parameters(
 		((!orientation_scale_field) || Computed_field_is_orientation_scale_capable(
 			orientation_scale_field,(void *)NULL)) && glyph_scale_factors &&
 		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
-			variable_scale_field,(void *)NULL)) || !glyph))
+			variable_scale_field,(void *)NULL))) || !glyph))
 	{
 		if (graphic->glyph)
 		{

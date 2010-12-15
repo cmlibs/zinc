@@ -85,7 +85,7 @@ private:
 		return new Computed_field_format_output(field->number_of_components, format_string);
 	}
 
-	char *get_type_string()
+	const char *get_type_string()
 	{
 		return(computed_field_format_output_type_string);
 	}
@@ -93,7 +93,7 @@ private:
 	int compare(Computed_field_core* other_field)
 	{
 		Computed_field_format_output *other_format_output;
-		if (other_format_output = dynamic_cast<Computed_field_format_output*>(other_field))
+		if ((other_format_output = dynamic_cast<Computed_field_format_output*>(other_field)))
 		{
 			if (0 == strcmp(format_string, other_format_output->format_string))
 				return 1;

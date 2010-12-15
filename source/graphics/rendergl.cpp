@@ -667,11 +667,11 @@ are selected, or all points if <selected_name_ranges> is NULL.
 {
 	char **label;
 	float *label_bound;
-	GLfloat f, f0, f1, transformation[16], x, y, z;
+	GLfloat transformation[16], x, y, z;
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum;
 	int draw_all, i, j, *name, name_selected, label_bounds_per_glyph,
-		number_of_glyphs, return_code;
+		return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
 	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
@@ -846,6 +846,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				else if ((0 == strcmp(glyph->name, "line")) ||
 					(0 == strcmp(glyph->name, "mirror_line")))
 				{
+					GLfloat f0, f1;
+					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
 					/* disable lighting so rendered in flat diffuse colour */
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
 					glPushAttrib(GL_ENABLE_BIT);
@@ -867,10 +869,16 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								{
 									glLoadName((GLuint)(*name));
 								}
-								f0 = f*(*scale)[0];
-								x = (*point)[0] + f0*(*axis1)[0];
-								y = (*point)[1] + f0*(*axis1)[1];
-								z = (*point)[2] + f0*(*axis1)[2];
+								x = (*point)[0];
+								y = (*point)[1];
+								z = (*point)[2];
+								if (mirror_mode)
+								{
+									f0 = (*scale)[0];
+									x -= f0*(*axis1)[0];
+									y -= f0*(*axis1)[1];
+									z -= f0*(*axis1)[2];
+								}
 								if (labels && *label)
 								{
 									glRasterPos3f(x,y,z);
@@ -915,10 +923,16 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 								datum+=number_of_data_components;
 							}
-							f0 = f*(*scale)[0];
-							x = (*point)[0] + f0*(*axis1)[0];
-							y = (*point)[1] + f0*(*axis1)[1];
-							z = (*point)[2] + f0*(*axis1)[2];
+							x = (*point)[0];
+							y = (*point)[1];
+							z = (*point)[2];
+							if (mirror_mode)
+							{
+								f0 = (*scale)[0];
+								x -= f0*(*axis1)[0];
+								y -= f0*(*axis1)[1];
+								z -= f0*(*axis1)[2];
+							}
 							glVertex3f(x,y,z);
 							f1 = (*scale)[0];
 							x = (*point)[0] + f1*(*axis1)[0];
@@ -1075,14 +1089,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				else
 				{
 					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-					if (mirror_mode)
-					{
-						f = -1.0;
-					}
-					else
-					{
-						f = 0.0;
-					}
+					const int number_of_glyphs = (mirror_mode) ? 2 : 1;
 					/* must push and pop the modelview matrix */
 					glMatrixMode(GL_MODELVIEW);
 					for (i = 0; i < number_of_points; i++)
@@ -1098,14 +1105,6 @@ are selected, or all points if <selected_name_ranges> is NULL.
 							if (data)
 							{
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
-							}
-							if (mirror_mode)
-							{
-								number_of_glyphs = 2;
-							}
-							else
-							{
-								number_of_glyphs = 1;
 							}
 							for (j = 0; j < number_of_glyphs; j++)
 							{

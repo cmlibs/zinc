@@ -295,7 +295,7 @@ wrapper for field and add it to the manager.
 } /* set_Computed_field_conditional */
 
 int Option_table_add_Computed_field_conditional_entry(
-	struct Option_table *option_table, char *token, 
+	struct Option_table *option_table, const char *token,
 	struct Computed_field **field_address, 
 	struct Set_Computed_field_conditional_data *set_field_data)
 /*******************************************************************************
