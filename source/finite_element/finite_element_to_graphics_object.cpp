@@ -4295,14 +4295,15 @@ Note:
 	number_of_variable_scale_components = 0;
 	if (element && coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
-		(0 < number_of_xi_points) && xi_points && glyph &&
+		(0 < number_of_xi_points) && xi_points && ((glyph &&
 		centre && base_size && scale_factors &&
 		((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
 				(void *)NULL))) &&
 		((!variable_scale_field)||(3>=(number_of_variable_scale_components=
-			Computed_field_get_number_of_components(variable_scale_field)))))
+			Computed_field_get_number_of_components(variable_scale_field))))) ||
+			!glyph))
 	{
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0] = 0.0;

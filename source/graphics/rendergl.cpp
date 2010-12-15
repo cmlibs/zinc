@@ -731,6 +731,9 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				/* try to draw points and lines faster */
 				if (!glyph)
 				{
+					/* disable lighting so rendered in flat diffuse colour */
+					glPushAttrib(GL_ENABLE_BIT);
+					glDisable(GL_LIGHTING);
 					for (i=0;i<number_of_points;i++)
 					{
 						if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
@@ -768,6 +771,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 							label++;
 						}
 					}					
+					/* restore previous lighting state */
+					glPopAttrib();
 				}
 				else if (0 == strcmp(glyph->name, "point"))
 				{
