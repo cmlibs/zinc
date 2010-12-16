@@ -82,6 +82,7 @@ FE_region whose FE_fields are automatically wrapped.
 	/* must be cleared to NULL on destruction of owning_region */
 	struct Cmiss_region *owning_region;
 	struct MANAGER(Computed_field) *field_manager;
+	void *field_manager_callback_id;
 	struct FE_region *fe_region;
 	int access_count;
 };
@@ -128,6 +129,42 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_region_change, \
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region_fields);
 
+/***************************************************************************//**
+ * Computed field manager callback - for true regions only. Asks fields of
+ * parent region to propagate field changes if hierarchical.
+ * Initially supports Cmiss_field_group.
+ *
+ * @param message  The changes to the fields in the region's manager.
+ * @param region_void  Void pointer to changed region (not the parent).
+ */
+static void Cmiss_region_Computed_field_change(
+	struct MANAGER_MESSAGE(Computed_field) *message, void *region_void)
+{
+	Cmiss_region *region = (Cmiss_region *)region_void;
+	if (message && region)
+	{
+		int change_summary =
+			MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
+		if (change_summary & (MANAGER_CHANGE_RESULT(Computed_field) |
+			MANAGER_CHANGE_ADD(Computed_field)))
+		{
+			Cmiss_region *parent = Cmiss_region_get_parent(region);
+			if (parent)
+			{
+				Computed_field_manager_propagate_hierarchical_field_changes(
+					parent->fields->field_manager, message);
+				Cmiss_region_destroy(&parent);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_Computed_field_change.  Invalid argument(s)");
+	}
+	LEAVE;
+}
+
 struct Cmiss_region_fields *CREATE(Cmiss_region_fields)(
 	struct Cmiss_region *owning_region,
 	struct MANAGER(FE_basis) *basis_manager,
@@ -154,6 +191,9 @@ Created with access_count of 1 so call DEACCESS to clean up.
 		region_fields->owning_region = owning_region;
 		region_fields->field_manager = CREATE(MANAGER(Computed_field))();
 		Computed_field_manager_set_owner(region_fields->field_manager, region_fields);
+		region_fields->field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
+			Cmiss_region_Computed_field_change, (void *)owning_region,
+			region_fields->field_manager);
 		region_fields->fe_region = CREATE(FE_region)(
 			/*master_fe_region*/(struct FE_region *)NULL,
 			basis_manager, element_shape_list);
@@ -196,6 +236,9 @@ Frees the memory for the Cmiss_region_fields and sets
 		{
 			if (region_fields->owning_region)
 			{
+				MANAGER_DEREGISTER(Computed_field)(
+					region_fields->field_manager_callback_id, region_fields->field_manager);
+				region_fields->field_manager_callback_id = NULL;
 				FE_region_remove_callback(region_fields->fe_region,
 					Cmiss_region_FE_region_change, (void *)region_fields->owning_region);
 			}
@@ -604,6 +647,9 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 				// should be an assert
 				display_message(ERROR_MESSAGE,
 					"DESTROY(Cmiss_region).  Cmiss_region_fields owner destroyed early");
+				MANAGER_DEREGISTER(Computed_field)(
+					region->fields->field_manager_callback_id, region->fields->field_manager);
+				region->fields->field_manager_callback_id = NULL;
 				// remove link back from region_fields to this region
 				FE_region_remove_callback(region->fields->fe_region,
 					Cmiss_region_FE_region_change, (void *)region);

@@ -6097,3 +6097,63 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field)
 
 	return return_code;
 }
+
+/***************************************************************************//**
+ * Asks field to propagates changes from sub-region field, as appropriate to
+ * field type.
+ *
+ * @param field  Parent field.
+ * @param message_void  Child region field manager change message.
+ * @return 1
+ */
+static int Computed_field_propagate_hierarchical_field_changes(
+	Computed_field *field, void *message_void)
+{
+	if (field)
+	{
+		MANAGER_MESSAGE(Computed_field) *message =
+			(MANAGER_MESSAGE(Computed_field) *)message_void;
+		field->core->propagate_hierarchical_field_changes(message);
+	}
+	return 1;
+}
+
+void Computed_field_manager_propagate_hierarchical_field_changes(
+	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message)
+{
+	if (manager && message)
+	{
+		MANAGER_BEGIN_CACHE(Computed_field)(manager);
+		FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+			Computed_field_propagate_hierarchical_field_changes, (void *)message,
+			manager);
+		MANAGER_END_CACHE(Computed_field)(manager);
+	}
+}
+
+int Computed_field_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
+	const struct Cmiss_field_change_detail **change_detail_address)
+{
+	if (message && field && change_detail_address)
+	{
+		int i;
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field) *object_change;
+
+		object_change = message->object_changes;
+		for (i = message->number_of_changed_objects; 0 < i; i--)
+		{
+			if (field == object_change->object)
+			{
+				*change_detail_address = object_change->detail;
+				return (object_change->change);
+			}
+			object_change++;
+		}
+	}
+	if (change_detail_address)
+	{
+		*change_detail_address = NULL;
+	}
+	return (MANAGER_CHANGE_NONE(Computed_field));
+}

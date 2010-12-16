@@ -375,6 +375,12 @@ public:
 		return NULL;
 	}
 
+	/** override for hierarchical fields to merge changes from sub-region fields */
+	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message)
+	{
+		USE_PARAMETER(message);
+	}
+
 }; /* class Computed_field_core */
 
 struct Computed_field
@@ -988,5 +994,27 @@ inline int Computed_field_rebuild_cache_values(
 	return (return_code);
 }
 
+/***************************************************************************//**
+ * For each hierarchical field in manager, propagates changes from sub-region
+ * fields, if any.
+ *
+ * @param manager  Parent region field manager.
+ * @param message  Child region field manager change message.
+ */
+void Computed_field_manager_propagate_hierarchical_field_changes(
+	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message);
+
+/***************************************************************************//**
+ * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field) but also returns
+ * change_detail for field, if any.
+ *
+ * @param message  The field manager change message.
+ * @param field  The field to query about.
+ * @param change_detail_address  Address to put const change detail in.
+ * @return  manager change flags for the object.
+ */
+int Computed_field_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
+	const struct Cmiss_field_change_detail **change_detail_address);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

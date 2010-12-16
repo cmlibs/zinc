@@ -87,6 +87,7 @@ public:
 
 typedef std::map<Cmiss_region_id, Cmiss_field_id> Region_field_map;
 typedef std::map<Cmiss_region_id, Cmiss_field_id>::iterator Region_field_map_iterator;
+typedef std::map<Cmiss_region_id, Cmiss_field_id>::const_iterator Region_field_map_const_iterator;
 
 namespace {
 
@@ -234,6 +235,8 @@ public:
 
 	virtual int check_dependency();
 
+	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
+
 private:
 
 	Computed_field_core* copy()
@@ -269,6 +272,12 @@ private:
 	int contain_region_tree(struct Cmiss_region *child_region);
 
 	int isSubGroupEmpty(Computed_field_core *source_core) const;
+
+	int isSubRegionGroupEmpty(Computed_field_core *source_core) const;
+
+	Cmiss_field_group_change_type merge_change_details(
+		const Cmiss_field_group_change_type parent_change,
+		const Cmiss_field_group_change_type sub_group_change);
 
 	int check_sub_group_dependency(Computed_field_core *source_core);
 };
@@ -438,6 +447,11 @@ int Computed_field_group::isSubGroupEmpty(Computed_field_core *source_core) cons
 			return 0;
 		}
 	}
+	return 1;
+}
+
+int Computed_field_group::isSubRegionGroupEmpty(Computed_field_core *source_core) const
+{
 	const Computed_field_group *subregion_group =
 		dynamic_cast<const Computed_field_group *>(source_core);
 	if (subregion_group)
@@ -470,7 +484,49 @@ int Computed_field_group::isEmpty() const
 			return 0;
 		++it;
 	}
+	for (Region_field_map_const_iterator iter = sub_group_map.begin();
+		iter != sub_group_map.end(); iter++)
+	{
+		Cmiss_field_id sub_group_field = iter->second;
+		if (!isSubRegionGroupEmpty(sub_group_field->core))
+			return 0;
+	}
 	return 1;
+}
+
+Cmiss_field_group_change_type Computed_field_group::merge_change_details(
+	const Cmiss_field_group_change_type parent_change,
+	const Cmiss_field_group_change_type sub_group_change)
+{
+	Cmiss_field_group_change_type result = parent_change;
+	if ((sub_group_change != CMISS_FIELD_GROUP_NO_CHANGE) &&
+		(sub_group_change != parent_change))
+	{
+		if (sub_group_change == CMISS_FIELD_GROUP_CLEAR)
+		{
+			if (isEmpty())
+			{
+				result = CMISS_FIELD_GROUP_CLEAR;
+			}
+			else if (parent_change == CMISS_FIELD_GROUP_NO_CHANGE)
+			{
+				result = CMISS_FIELD_GROUP_REMOVE;
+			}
+			else if (parent_change == CMISS_FIELD_GROUP_ADD)
+			{
+				result = CMISS_FIELD_GROUP_REPLACE;
+			}
+		}
+		else if (parent_change == CMISS_FIELD_GROUP_NO_CHANGE)
+		{
+			result = sub_group_change;
+		}
+		else
+		{
+			result = CMISS_FIELD_GROUP_REPLACE;
+		}
+	}
+	return result;
 }
 
 int Computed_field_group::check_sub_group_dependency(Computed_field_core *source_core)
@@ -480,33 +536,10 @@ int Computed_field_group::check_sub_group_dependency(Computed_field_core *source
 		Computed_field_dependency_change_private(field);
 		const Cmiss_field_group_change_detail *sub_group_change_detail =
 			dynamic_cast<const Cmiss_field_group_change_detail *>(source_core->get_change_detail());
-		if (sub_group_change_detail &&
-			(sub_group_change_detail->change != CMISS_FIELD_GROUP_NO_CHANGE) &&
-			(sub_group_change_detail->change != change_detail.change))
+		if (sub_group_change_detail)
 		{
-			if (sub_group_change_detail->change == CMISS_FIELD_GROUP_CLEAR)
-			{
-				if (isEmpty())
-				{
-					change_detail.change = CMISS_FIELD_GROUP_CLEAR;
-				}
-				else if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
-				{
-					change_detail.change = CMISS_FIELD_GROUP_REMOVE;
-				}
-				else if (change_detail.change == CMISS_FIELD_GROUP_ADD)
-				{
-					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
-				}
-			}
-			else if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
-			{
-				change_detail.change = sub_group_change_detail->change;
-			}
-			else
-			{
-				change_detail.change = CMISS_FIELD_GROUP_REPLACE;
-			}
+			change_detail.change = merge_change_details(
+				change_detail.change, sub_group_change_detail->change);
 		}
 	}
 	return 1;
@@ -532,6 +565,42 @@ int Computed_field_group::check_dependency()
 		return (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field));
 	}
 	return 0;
+}
+
+void Computed_field_group::propagate_hierarchical_field_changes(
+	MANAGER_MESSAGE(Computed_field) *message)
+{
+	if (message)
+	{
+		for (Region_field_map_iterator iter = sub_group_map.begin();
+			iter != sub_group_map.end(); iter++)
+		{
+			Cmiss_field_id sub_group = iter->second;
+			// future optimisation: check subfield is from changed region
+			const Cmiss_field_change_detail *source_change_detail = NULL;
+			int change = Computed_field_manager_message_get_object_change_and_detail(message, sub_group, &source_change_detail);
+			if (change != MANAGER_CHANGE_NONE(Computed_field))
+			{
+				if (source_change_detail)
+				{
+					const Cmiss_field_group_change_detail *sub_group_change_detail =
+						dynamic_cast<const Cmiss_field_group_change_detail *>(source_change_detail);
+					if (sub_group_change_detail)
+					{
+						change_detail.change = merge_change_details(
+							change_detail.change, sub_group_change_detail->change);
+						Computed_field_dependency_changed(field);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE, "Sub-group changes could not be propagated.");
+					}
+				}
+				// can only be one subgroup per subregion:
+				break;
+			}
+		}
+	}
 }
 
 /***************************************************************************//**
