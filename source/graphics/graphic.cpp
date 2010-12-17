@@ -8244,7 +8244,7 @@ int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 				if (Coordinate_system_type_is_non_linear(type) ||
 					Computed_field_is_non_linear(graphic->coordinate_field))
 				{
-					int refinement_factors[max_dimensions];
+					int *refinement_factors = new int[max_dimensions];
 					if (Cmiss_tessellation_get_refinement_factors(graphic->tessellation,
 						max_dimensions, refinement_factors))
 					{
@@ -8253,6 +8253,7 @@ int Cmiss_graphic_get_top_level_number_in_xi(struct Cmiss_graphic *graphic,
 							top_level_number_in_xi[dim] *= refinement_factors[dim];
 						}
 					}
+					delete [] refinement_factors;
 				}
 			}
 		}
