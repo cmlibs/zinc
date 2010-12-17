@@ -49,6 +49,15 @@ Function prototypes for some general purpose string functions.
 #include <stddef.h>
 #include <stdio.h>
 
+#if defined (_MSC_VER)
+/* Alias the MSVC versions of these functions to the unix names.
+ * However be aware that if the MSVC version overflows it will not
+ * be null terminated, so I tend to use 1 less than the lenght and
+ * just add a null always.
+ */
+#define snprintf _snprintf
+#endif // defined (_MSC_VER)
+
 /*
 Functions
 ---------

@@ -139,6 +139,10 @@ int Computed_field_format_output::evaluate_cache_at_location(
 			if (field->string_cache)
 				DEALLOCATE(field->string_cache);
 			ALLOCATE(field->string_cache, char, output_allocation_size);
+#if defined (_MSC_VER)
+			/* If the MSVC _snprintf overflows then it won't be null terminated so ensure this 0. */
+			field->string_cache[output_allocation_size-1] = 0;
+#endif // defined (_MSC_VER)
 			switch (field->number_of_components)
 			{
 			case 1:
