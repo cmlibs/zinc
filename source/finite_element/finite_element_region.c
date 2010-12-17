@@ -2396,8 +2396,8 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 	if (fe_region && field && FE_region_contains_FE_field(fe_region, field) &&
 		is_standard_object_name(new_name))
 	{
-		return_code = 1;
 		struct LIST_IDENTIFIER_CHANGE_DATA(FE_field,name) *identifier_change_data = NULL;
+		return_code = 1;
 		if (FE_region_get_FE_field_from_name(fe_region, new_name))
 		{
 			display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name.  "
