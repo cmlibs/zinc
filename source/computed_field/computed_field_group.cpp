@@ -45,6 +45,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
 }
+#include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_sub_group_template.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
@@ -67,6 +68,102 @@ extern "C" {
 Module types
 ------------
 */
+
+struct Cmiss_field_hierarchical_group_change_detail : public Cmiss_field_group_base_change_detail
+{
+public:
+	Cmiss_field_hierarchical_group_change_detail() :
+		local_change(CMISS_FIELD_GROUP_NO_CHANGE),
+		non_local_change(CMISS_FIELD_GROUP_NO_CHANGE)
+	{
+	}
+
+	void clear()
+	{
+		local_change = CMISS_FIELD_GROUP_NO_CHANGE;
+		non_local_change = CMISS_FIELD_GROUP_NO_CHANGE;
+	}
+
+	/** note: if returns CLEAR or REMOVE, must check sub-group is empty */
+	Cmiss_field_group_change_type getChange() const
+	{
+		return merge(local_change, non_local_change);
+	}
+
+	Cmiss_field_group_change_type getLocalChange() const
+	{
+		return local_change;
+	}
+
+	Cmiss_field_group_change_type getNonLocalChange() const
+	{
+		return non_local_change;
+	}
+
+	/** Inform group has been cleared, but wasn't before */
+	void changeClear()
+	{
+		local_change = CMISS_FIELD_GROUP_CLEAR;
+		non_local_change = CMISS_FIELD_GROUP_CLEAR;
+	}
+
+	/** Inform local group has been cleared, but wasn't before */
+	void changeClearLocal()
+	{
+		local_change = CMISS_FIELD_GROUP_CLEAR;
+	}
+
+	/** Inform local group has been cleared, but wasn't before */
+	void changeClearNonLocal()
+	{
+		non_local_change = CMISS_FIELD_GROUP_CLEAR;
+	}
+
+	void changeMergeLocal(const Cmiss_field_group_base_change_detail *in_change_detail)
+	{
+		local_change = merge(local_change, in_change_detail->getChange());
+	}
+
+	void changeMergeNonLocal(const Cmiss_field_group_base_change_detail *in_change_detail)
+	{
+		non_local_change = merge(non_local_change, in_change_detail->getChange());
+	}
+
+private:
+	Cmiss_field_group_change_type local_change;
+	Cmiss_field_group_change_type non_local_change;
+
+	/** Warning: Assumes group is not empty. Caller must check empty -> clear */
+	static Cmiss_field_group_change_type merge(
+		Cmiss_field_group_change_type change1,
+		Cmiss_field_group_change_type change2)
+	{
+		Cmiss_field_group_change_type result = change1;
+		if ((change2 != CMISS_FIELD_GROUP_NO_CHANGE) && (change2 != change1))
+		{
+			if (change2 == CMISS_FIELD_GROUP_CLEAR)
+			{
+				if (change1 == CMISS_FIELD_GROUP_NO_CHANGE)
+				{
+					result = CMISS_FIELD_GROUP_REMOVE;
+				}
+				else if (change1 == CMISS_FIELD_GROUP_ADD)
+				{
+					result = CMISS_FIELD_GROUP_REPLACE;
+				}
+			}
+			else if (change1 == CMISS_FIELD_GROUP_NO_CHANGE)
+			{
+				result = change2;
+			}
+			else
+			{
+				result = CMISS_FIELD_GROUP_REPLACE;
+			}
+		}
+		return result;
+	}
+};
 
 class Computed_field_group_package : public Computed_field_type_package
 {
@@ -93,9 +190,10 @@ namespace {
 
 char computed_field_group_type_string[] = "group";
 
-class Computed_field_group : public Computed_field_core
+class Computed_field_group : public Computed_field_group_base
 {
-	Cmiss_field_group_change_detail change_detail;
+private:
+	Cmiss_field_hierarchical_group_change_detail change_detail;
 
 public:
 	Cmiss_region *region;
@@ -109,7 +207,7 @@ public:
 	Region_field_map_iterator child_group_pos;
 
 	Computed_field_group(Cmiss_region *region)
-		: Computed_field_core()
+		: Computed_field_group_base()
 		, region(region)
 		, selection_on(0)
 		, local_node_group(NULL)
@@ -214,16 +312,17 @@ public:
 
 	virtual Cmiss_field_change_detail *extract_change_detail()
 	{
-		if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+		if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 			return NULL;
-		Cmiss_field_group_change_detail *prior_change_detail =
-			new Cmiss_field_group_change_detail();
+		Cmiss_field_hierarchical_group_change_detail *prior_change_detail =
+			new Cmiss_field_hierarchical_group_change_detail();
 		*prior_change_detail = change_detail;
 #ifdef GRC
 		{
 			Cmiss_region *region = Computed_field_get_region(field);
 			char *path = Cmiss_region_get_path(region);
-			display_message(INFORMATION_MESSAGE, "Group %s%s change %d\n", path, field->name, prior_change_detail->change);
+			display_message(INFORMATION_MESSAGE, "Group %s%s change local %d non-local %d\n", path, field->name,
+				prior_change_detail->getLocalChange(), prior_change_detail->getNonLocalChange());
 			DEALLOCATE(path);
 		}
 #endif // GRC
@@ -231,11 +330,16 @@ public:
 		return prior_change_detail;
 	}
 
-	int isEmpty() const;
-
 	virtual int check_dependency();
 
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
+
+	virtual int isEmpty() const
+	{
+		return (isEmptyLocal() && isEmptyNonLocal());
+	}
+
+	virtual int clear();
 
 private:
 
@@ -271,13 +375,21 @@ private:
 
 	int contain_region_tree(struct Cmiss_region *child_region);
 
-	int isSubGroupEmpty(Computed_field_core *source_core) const;
+	inline int isSubGroupEmpty(Computed_field_core *source_core) const
+	{
+		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(source_core);
+		if (group_base)
+		{
+			return group_base->isEmpty();
+		}
+		display_message(ERROR_MESSAGE,
+			"Computed_field_group::isSubGroupEmpty.  Subgroup not derived from Computed_field_group_base");
+		return 0;
+	}
 
-	int isSubRegionGroupEmpty(Computed_field_core *source_core) const;
+	int isEmptyLocal() const;
 
-	Cmiss_field_group_change_type merge_change_details(
-		const Cmiss_field_group_change_type parent_change,
-		const Cmiss_field_group_change_type sub_group_change);
+	int isEmptyNonLocal() const;
 
 	int check_sub_group_dependency(Computed_field_core *source_core);
 };
@@ -437,34 +549,7 @@ Cmiss_field_id Computed_field_group::getNextChild()
 	return child_field;
 }
 
-int Computed_field_group::isSubGroupEmpty(Computed_field_core *source_core) const
-{
-	Computed_field_sub_group *sub_group = dynamic_cast<Computed_field_sub_group *>(source_core);
-	if (sub_group)
-	{
-		if (!sub_group->isEmpty())
-		{
-			return 0;
-		}
-	}
-	return 1;
-}
-
-int Computed_field_group::isSubRegionGroupEmpty(Computed_field_core *source_core) const
-{
-	const Computed_field_group *subregion_group =
-		dynamic_cast<const Computed_field_group *>(source_core);
-	if (subregion_group)
-	{
-		if (!subregion_group->isEmpty())
-		{
-			return 0;
-		}
-	}
-	return 1;
-}
-
-int Computed_field_group::isEmpty() const
+int Computed_field_group::isEmptyLocal() const
 {
 	if (selection_on)
 	{
@@ -484,62 +569,46 @@ int Computed_field_group::isEmpty() const
 			return 0;
 		++it;
 	}
+	return 1;
+}
+
+int Computed_field_group::isEmptyNonLocal() const
+{
 	for (Region_field_map_const_iterator iter = sub_group_map.begin();
 		iter != sub_group_map.end(); iter++)
 	{
 		Cmiss_field_id sub_group_field = iter->second;
-		if (!isSubRegionGroupEmpty(sub_group_field->core))
+		if (!isSubGroupEmpty(sub_group_field->core))
 			return 0;
 	}
 	return 1;
 }
 
-Cmiss_field_group_change_type Computed_field_group::merge_change_details(
-	const Cmiss_field_group_change_type parent_change,
-	const Cmiss_field_group_change_type sub_group_change)
+int Computed_field_group::clear()
 {
-	Cmiss_field_group_change_type result = parent_change;
-	if ((sub_group_change != CMISS_FIELD_GROUP_NO_CHANGE) &&
-		(sub_group_change != parent_change))
-	{
-		if (sub_group_change == CMISS_FIELD_GROUP_CLEAR)
-		{
-			if (isEmpty())
-			{
-				result = CMISS_FIELD_GROUP_CLEAR;
-			}
-			else if (parent_change == CMISS_FIELD_GROUP_NO_CHANGE)
-			{
-				result = CMISS_FIELD_GROUP_REMOVE;
-			}
-			else if (parent_change == CMISS_FIELD_GROUP_ADD)
-			{
-				result = CMISS_FIELD_GROUP_REPLACE;
-			}
-		}
-		else if (parent_change == CMISS_FIELD_GROUP_NO_CHANGE)
-		{
-			result = sub_group_change;
-		}
-		else
-		{
-			result = CMISS_FIELD_GROUP_REPLACE;
-		}
-	}
-	return result;
-}
+	// GRC not implemented yet
+	selection_on = 0;
+	return 0;
+};
 
 int Computed_field_group::check_sub_group_dependency(Computed_field_core *source_core)
 {
 	if (source_core->check_dependency())
 	{
 		Computed_field_dependency_change_private(field);
-		const Cmiss_field_group_change_detail *sub_group_change_detail =
-			dynamic_cast<const Cmiss_field_group_change_detail *>(source_core->get_change_detail());
+		const Cmiss_field_sub_group_change_detail *sub_group_change_detail =
+			dynamic_cast<const Cmiss_field_sub_group_change_detail *>(source_core->get_change_detail());
 		if (sub_group_change_detail)
 		{
-			change_detail.change = merge_change_details(
-				change_detail.change, sub_group_change_detail->change);
+			if ((sub_group_change_detail->getChange() == CMISS_FIELD_GROUP_CLEAR) &&
+				isEmptyLocal())
+			{
+				change_detail.changeClearLocal();
+			}
+			else
+			{
+				change_detail.changeMergeLocal(sub_group_change_detail);
+			}
 		}
 	}
 	return 1;
@@ -583,20 +652,32 @@ void Computed_field_group::propagate_hierarchical_field_changes(
 			{
 				if (source_change_detail)
 				{
-					const Cmiss_field_group_change_detail *sub_group_change_detail =
-						dynamic_cast<const Cmiss_field_group_change_detail *>(source_change_detail);
+					const Cmiss_field_group_base_change_detail *sub_group_change_detail =
+						dynamic_cast<const Cmiss_field_group_base_change_detail *>(source_change_detail);
 					if (sub_group_change_detail)
 					{
-						change_detail.change = merge_change_details(
-							change_detail.change, sub_group_change_detail->change);
-						Computed_field_dependency_changed(field);
+						Cmiss_field_group_change_type sub_group_change = sub_group_change_detail->getChange();
+						if (sub_group_change != CMISS_FIELD_GROUP_NO_CHANGE)
+						{
+							if (((sub_group_change == CMISS_FIELD_GROUP_CLEAR) ||
+								(sub_group_change == CMISS_FIELD_GROUP_REMOVE)) &&
+								isEmptyNonLocal())
+							{
+								change_detail.changeClearNonLocal();
+							}
+							else
+							{
+								change_detail.changeMergeNonLocal(sub_group_change_detail);
+							}
+							Computed_field_dependency_changed(field);
+						}
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE, "Sub-group changes could not be propagated.");
 					}
 				}
-				// can only be one subgroup per subregion:
+				// we have found only possible subgroup for sub-region:
 				break;
 			}
 		}

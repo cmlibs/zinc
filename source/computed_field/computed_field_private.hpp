@@ -175,42 +175,6 @@ struct Cmiss_field_change_detail
 	}
 };
 
-/***************************************************************************//**
- * Intermediate class for group field change details.
- * GRC: move elsewhere
- */
-enum Cmiss_field_group_change_type
-{
-	CMISS_FIELD_GROUP_NO_CHANGE,
-	CMISS_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
-	CMISS_FIELD_GROUP_ADD,       /*!< objects have been added only */
-	CMISS_FIELD_GROUP_REMOVE,    /*!< objects have been removed only */
-	CMISS_FIELD_GROUP_REPLACE    /*!< contents replaced: clear+add, add+remove */
-};
-
-/***************************************************************************//**
- * Intermediate class for all group field change details.
- * GRC: move elsewhere
- */
-struct Cmiss_field_group_change_detail : public Cmiss_field_change_detail
-{
-	Cmiss_field_group_change_type change;
-
-	Cmiss_field_group_change_detail() :
-		change(CMISS_FIELD_GROUP_NO_CHANGE)
-	{
-	}
-
-	virtual ~Cmiss_field_group_change_detail()
-	{
-	}
-
-	void clear()
-	{
-		change = CMISS_FIELD_GROUP_NO_CHANGE;
-	}
-};
-
 class Computed_field_core
 /*******************************************************************************
 LAST MODIFIED : 23 August 2006

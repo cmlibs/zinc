@@ -45,6 +45,7 @@ extern "C" {
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
 }
+#include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "general/debug.h"
@@ -55,12 +56,79 @@ extern "C" {
 #include <map>
 #include <iterator>
 
-class Computed_field_sub_group : public Computed_field_core
+/***************************************************************************//**
+ * Change details for simple object groups where a single change status is
+ * sufficient.
+ */
+struct Cmiss_field_sub_group_change_detail : public Cmiss_field_group_base_change_detail
+{
+private:
+	Cmiss_field_group_change_type change;
+
+public:
+	Cmiss_field_sub_group_change_detail() :
+		change(CMISS_FIELD_GROUP_NO_CHANGE)
+	{
+	}
+
+	void clear()
+	{
+		change = CMISS_FIELD_GROUP_NO_CHANGE;
+	}
+
+	Cmiss_field_group_change_type getChange() const
+	{
+		return change;
+	}
+
+	/** Inform object(s) have been added */
+	void changeAdd()
+	{
+		switch (change)
+		{
+		case CMISS_FIELD_GROUP_NO_CHANGE:
+			change = CMISS_FIELD_GROUP_ADD;
+			break;
+		case CMISS_FIELD_GROUP_CLEAR:
+		case CMISS_FIELD_GROUP_REMOVE:
+			change = CMISS_FIELD_GROUP_REPLACE;
+			break;
+		default:
+			// do nothing
+			break;
+		}
+	}
+
+	/** Inform object(s) have been removed (clear handled separately) */
+	void changeRemove()
+	{
+		switch (change)
+		{
+		case CMISS_FIELD_GROUP_NO_CHANGE:
+			change = CMISS_FIELD_GROUP_REMOVE;
+			break;
+		case CMISS_FIELD_GROUP_ADD:
+			change = CMISS_FIELD_GROUP_REPLACE;
+			break;
+		default:
+			// do nothing
+			break;
+		}
+	}
+
+	/** Inform group has been cleared, but wasn't before */
+	void changeClear()
+	{
+		change = CMISS_FIELD_GROUP_CLEAR;
+	}
+};
+
+class Computed_field_sub_group : public Computed_field_group_base
 {
 public:
 
 	Computed_field_sub_group() :
-		Computed_field_core()
+		Computed_field_group_base()
 	{
 	}
 
@@ -68,10 +136,6 @@ public:
 	{
 		return ("sub_group_object");
 	}
-
-	virtual int isEmpty() const = 0;
-
-	virtual int clear() = 0;
 };
 
 namespace {
@@ -96,19 +160,7 @@ namespace {
 		{
 			if (object_map.insert(std::make_pair(identifier,object)).second)
 			{
-				switch (change_detail.change)
-				{
-				case CMISS_FIELD_GROUP_NO_CHANGE:
-					change_detail.change = CMISS_FIELD_GROUP_ADD;
-					break;
-				case CMISS_FIELD_GROUP_CLEAR:
-				case CMISS_FIELD_GROUP_REMOVE:
-					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
-					break;
-				default:
-					// do nothing
-					break;
-				}
+				change_detail.changeAdd();
 				update();
 				return 1;
 			}
@@ -120,21 +172,13 @@ namespace {
 			if (object_map.find(identifier) != object_map.end())
 			{
 				object_map.erase(identifier);
-				switch (change_detail.change)
-				{
-				case CMISS_FIELD_GROUP_NO_CHANGE:
-					change_detail.change = CMISS_FIELD_GROUP_REMOVE;
-					break;
-				case CMISS_FIELD_GROUP_ADD:
-					change_detail.change = CMISS_FIELD_GROUP_REPLACE;
-					break;
-				default:
-					// do nothing
-					break;
-				}
 				if (0 == object_map.size())
 				{
-					change_detail.change = CMISS_FIELD_GROUP_CLEAR;
+					change_detail.changeClear();
+				}
+				else
+				{
+					change_detail.changeRemove();
 				}
 				update();
 				return 1;
@@ -147,7 +191,7 @@ namespace {
 			if (object_map.size())
 			{
 				object_map.clear();
-				change_detail.change = CMISS_FIELD_GROUP_CLEAR;
+				change_detail.changeClear();
 				update();
 			}
 			return 1;
@@ -207,10 +251,10 @@ namespace {
 
 		virtual Cmiss_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.change == CMISS_FIELD_GROUP_NO_CHANGE)
+			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 				return NULL;
-			Cmiss_field_group_change_detail *prior_change_detail =
-				new Cmiss_field_group_change_detail();
+			Cmiss_field_sub_group_change_detail *prior_change_detail =
+				new Cmiss_field_sub_group_change_detail();
 			*prior_change_detail = change_detail;
 			change_detail.clear();
 			return prior_change_detail;
@@ -224,7 +268,7 @@ namespace {
 	private:
 
 		std::map<int, T> object_map;
-		Cmiss_field_group_change_detail change_detail;
+		Cmiss_field_sub_group_change_detail change_detail;
 		typename std::map<int, T>::iterator object_pos;
 
 		Computed_field_core* copy()
