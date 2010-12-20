@@ -1408,13 +1408,37 @@ int Cmiss_region_append_child(struct Cmiss_region *region,
 int Cmiss_region_insert_child_before(struct Cmiss_region *region,
 	struct Cmiss_region *new_child, struct Cmiss_region *ref_child)
 {
-	int return_code = 0;
-	if (region && new_child &&
+	int return_code = 1;
+	if (!(region && new_child &&
 		((NULL == ref_child) || (ref_child->parent == region)) &&
 		(!Cmiss_region_contains_subregion(new_child, region)) &&
 		((NULL != new_child->name) && ((new_child->parent == region) ||
 		(NULL == Cmiss_region_find_child_by_name_internal(region,
-			new_child->name)))))
+			new_child->name))))))
+	{
+		return_code = 0;
+	}
+	if (region && Cmiss_region_is_group(region))
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_insert_child_before.  Can't add child to group region");
+		return_code = 0;
+	}
+	else if (region && new_child && Cmiss_region_is_group(new_child))
+	{
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		FE_region *child_fe_region = Cmiss_region_get_FE_region(new_child);
+		FE_region *master_fe_region = NULL;
+		if (fe_region &&
+			FE_region_get_immediate_master_FE_region(child_fe_region, &master_fe_region) &&
+			(master_fe_region && (master_fe_region != fe_region)))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_region_insert_child_before.  Group region must be a child of its master region");
+			return_code = 0;
+		}
+	}
+	if (return_code)
 	{
 		Cmiss_region_begin_change(region);
 		if (new_child->parent)
@@ -1465,7 +1489,6 @@ int Cmiss_region_insert_child_before(struct Cmiss_region *region,
 			REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
 		}
 		Cmiss_region_end_change(region);
-		return_code = 1;
 	}
 	return (return_code);
 }
@@ -1809,7 +1832,8 @@ indented from the left margin by <indent> spaces; this is incremented by
 		Cmiss_region *child = region->first_child;
 		while (child)
 		{
-			display_message(INFORMATION_MESSAGE, "%*s%s\n", indent, " ", child->name);
+			display_message(INFORMATION_MESSAGE, "%*s%s%s\n", indent, " ", child->name,
+				Cmiss_region_is_group(child) ? " (Group)" : "");
 			Cmiss_region_list(child, indent + indent_increment, indent_increment);
 			child = child->next_sibling;
 		}
