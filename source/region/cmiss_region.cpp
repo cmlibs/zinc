@@ -109,6 +109,10 @@ struct Cmiss_region
 
 	/* increment/decrement change_level to nest changes. Message sent when zero */
 	int change_level;
+	/* number of hierarchical changes in progress on this region tree. A region's
+	 * change_level will have one increment per ancestor hierarchical_change_level.
+	 * Must be tracked to safely transfer when re-parenting regions */
+	int hierarchical_change_level;
 	Cmiss_region_changes changes;
 	/* list of change callbacks */
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)) *change_callback_list;
@@ -367,6 +371,10 @@ region. No messages sent if change count positive or no changes have occurred.
 		if ((0 == region->change_level) && ((region->changes.children_changed) ||
 			(region->changes.name_changed)))
 		{
+			if (0 != region->hierarchical_change_level)
+			{
+				display_message(WARNING_MESSAGE, "Cmiss_region_update.  Hierarchical change level mismatch");
+			}
 			changes = region->changes;
 			/* must clear flags in the region before changes go out */
 			region->changes.name_changed = 0;
@@ -484,6 +492,7 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 		region->fields = NULL;
 		region->any_object_list = CREATE(LIST(Any_object))();
 		region->change_level = 0;
+		region->hierarchical_change_level = 0;
 		region->changes.name_changed = 0;
 		region->changes.children_changed = 0;
 		region->changes.child_added = NULL;
@@ -1094,16 +1103,6 @@ region path in <path_address> relative to the <root_region>.
 } /* Option_table_add_set_Cmiss_region_path */
 
 int Cmiss_region_begin_change(struct Cmiss_region *region)
-/*******************************************************************************
-LAST MODIFIED : 26 May 2008
-
-DESCRIPTION :
-Increments the change counter in <region>. No update callbacks will occur until
-change counter is restored to zero by calls to Cmiss_region_end_change.
-Also begins caching of changes to fields in <region>, which also begins
-automatically when fields are added during a change. 
-Note this is NOT Hierarchical: child region change caching is not affected. 
-==============================================================================*/
 {
 	int return_code;
 
@@ -1126,19 +1125,9 @@ Note this is NOT Hierarchical: child region change caching is not affected.
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_region_begin_change */
+}
 
 int Cmiss_region_end_change(struct Cmiss_region *region)
-/*******************************************************************************
-LAST MODIFIED : 26 May 2008
-
-DESCRIPTION :
-Decrements the change counter in <region>. No update callbacks occur until the
-change counter is restored to zero by this function.
-Also ends caching of changes to fields in <region>, which also ends
-automatically when fields are removed during a change. 
-Note this is NOT Hierarchical: child region change caching is not affected. 
-==============================================================================*/
 {
 	int return_code;
 
@@ -1174,7 +1163,71 @@ Note this is NOT Hierarchical: child region change caching is not affected.
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_region_end_change */
+}
+
+/***************************************************************************//**
+ * Returns the sum of the hierarchical_change_level members of region and all
+ * its ancestors. Equals the number of begin_change calls needed for new
+ * children of region.
+ */
+static int Cmiss_region_get_sum_hierarchical_change_level(struct Cmiss_region *region)
+{
+	int sum_hierarchical_change_level = 0;
+	while (region)
+	{
+		sum_hierarchical_change_level += region->hierarchical_change_level;
+		region = region->parent;
+	}
+	return sum_hierarchical_change_level;
+}
+
+/***************************************************************************//**
+ * Adds delta_change_level to change_level of region and all its descendents.
+ * Begins or ends change cache as many times as magnitude of delta_change_level.
+ */
+static void Cmiss_region_tree_change(struct Cmiss_region *region,
+	int delta_change_level)
+{
+	if (region)
+	{
+		for (int i = 0; i < delta_change_level; i++)
+		{
+			Cmiss_region_begin_change(region);
+		}
+		Cmiss_region *child = region->first_child;
+		while (child)
+		{
+			Cmiss_region_tree_change(child, delta_change_level);
+			child = child->next_sibling;
+		}
+		for (int i = 0; i > delta_change_level; i--)
+		{
+			Cmiss_region_end_change(region);
+		}
+	}
+}
+
+int Cmiss_region_begin_hierarchical_change(struct Cmiss_region *region)
+{
+	if (region)
+	{
+		region->hierarchical_change_level++;
+		Cmiss_region_tree_change(region, +1);
+		return 1;
+	}
+	return 0;
+}
+
+int Cmiss_region_end_hierarchical_change(struct Cmiss_region *region)
+{
+	if (region)
+	{
+		region->hierarchical_change_level--;
+		Cmiss_region_tree_change(region, -1);
+		return 1;
+	}
+	return 0;
+}
 
 int Cmiss_region_add_callback(struct Cmiss_region *region,
 	CMISS_CALLBACK_FUNCTION(Cmiss_region_change) *function, void *user_data)
@@ -1440,9 +1493,11 @@ int Cmiss_region_insert_child_before(struct Cmiss_region *region,
 	}
 	if (return_code)
 	{
+		int delta_change_level = Cmiss_region_get_sum_hierarchical_change_level(region);
 		Cmiss_region_begin_change(region);
 		if (new_child->parent)
 		{
+			delta_change_level -= Cmiss_region_get_sum_hierarchical_change_level(new_child->parent);
 			Cmiss_region_remove_child(new_child->parent, new_child);
 		}
 		new_child->parent = region;
@@ -1488,6 +1543,10 @@ int Cmiss_region_insert_child_before(struct Cmiss_region *region,
 			REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
 			REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
 		}
+		if (delta_change_level != 0)
+		{
+			Cmiss_region_tree_change(new_child, delta_change_level);
+		}
 		Cmiss_region_end_change(region);
 	}
 	return (return_code);
@@ -1501,6 +1560,7 @@ int Cmiss_region_remove_child(struct Cmiss_region *region,
 	{
 		if (old_child->parent == region)
 		{
+			int delta_change_level = Cmiss_region_get_sum_hierarchical_change_level(region);
 			if (old_child == region->first_child)
 			{
 				region->first_child = old_child->next_sibling;
@@ -1526,6 +1586,10 @@ int Cmiss_region_remove_child(struct Cmiss_region *region,
 				/* multiple changes */
 				REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
 				REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
+			}
+			if (delta_change_level != 0)
+			{
+				Cmiss_region_tree_change(old_child, delta_change_level);
 			}
 			Cmiss_region_update(region);
 			DEACCESS(Cmiss_region)(&old_child);

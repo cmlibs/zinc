@@ -75,35 +75,58 @@ Global functions
  */
 Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
 
+/*******************************************************************************
+ * Destroys this handle to the region, and sets it to NULL.
+ * Internally this just decrements the reference count.
+ */
 int Cmiss_region_destroy(Cmiss_region_id *region);
-/*******************************************************************************
-LAST MODIFIED : 3 January 2008
 
-DESCRIPTION :
-Destroys the <region> and sets the pointer to NULL.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Begin caching or increment cache level for this region only. Call this
+ * function before making multiple changes to the region or its fields to
+ * minimise number of change messages sent to clients.
+ * Must call Cmiss_region_end_change after making changes.
+ * Important: Do not pair with Cmiss_region_end_hierarchical_change.
+ *
+ * @param region  The region tree to begin change cache on.
+ * @return  1 on success, 0 on failure.
+ */
 int Cmiss_region_begin_change(Cmiss_region_id region);
-/*******************************************************************************
-LAST MODIFIED : 6 June 2008
 
-DESCRIPTION :
-Changes made to the <region> between Cmiss_region_begin_change and
-Cmiss_region_end_change do not generate events in the rest of cmgui until
-the change count returns to zero.  This allows many changes to be made 
-efficiently, resulting in only one update of the dependent objects.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Decrement cache level or end caching of changes for this region only.
+ * Call Cmiss_region_begin_change before making multiple field or region changes
+ * and call this afterwards. When change level is restored to zero in region,
+ * cached change messages are sent out to clients.
+ * Important: Do not pair with Cmiss_region_begin_hierarchical_change.
+ *
+ * @param region  The region tree to end change cache on.
+ * @return  1 on success, 0 on failure.
+ */
 int Cmiss_region_end_change(Cmiss_region_id region);
-/*******************************************************************************
-LAST MODIFIED : 6 June 2008
 
-DESCRIPTION :
-Changes made to the <region> between Cmiss_region_begin_change and
-Cmiss_region_end_change do not generate events in the rest of cmgui until
-the change count returns to zero.  This allows many changes to be made 
-efficiently, resulting in only one update of the dependent objects.
-==============================================================================*/
+/***************************************************************************//**
+ * Begin caching or increment cache level for all regions in a tree, used to
+ * efficiently and safely make hierarchical field changes or modify the tree.
+ * Must call Cmiss_region_begin_hierarchical_change after modifications made.
+ * Important: Do not pair with non-hierarchical Cmiss_region_end_change.
+ *
+ * @param region  The root of the region tree to begin change cache on.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Decrement cache level or end caching of changes for all regions in a tree.
+ * Call Cmiss_region_begin_hierarchical_change before making hierarchical field
+ * changes or modifying the region tree, and call this afterwards. When change
+ * level is restored to zero in any region, cached change messages are sent out.
+ * Important: Do not pair with non-hierarchical Cmiss_region_begin_change.
+ *
+ * @param region  The root of the region tree to end change cache on.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
 
 int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name);
 /*******************************************************************************
