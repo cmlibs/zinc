@@ -247,36 +247,6 @@ Returns the number of elements in the <region>.
 	return (number_of_elements);
 } /* Cmiss_region_get_number_of_elements */
 
-Cmiss_node_id Cmiss_region_merge_Cmiss_node(Cmiss_region_id region,
-	Cmiss_node_id node)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Checks <node> is compatible with <region> and any existing Cmiss_node
-using the same identifier, then merges it into <region>.
-If no FE_node of the same identifier exists in FE_region, <node> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_node and it is returned.
-==============================================================================*/
-{
-	Cmiss_node_id returned_node;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_merge_Cmiss_node);
-	returned_node = (Cmiss_node_id)NULL;
-	if (region&&node)
-	{
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			returned_node = ACCESS(FE_node)(FE_region_merge_FE_node(fe_region, node));
-		}
-	}
-	LEAVE;
-
-	return (returned_node);
-} /* Cmiss_region_merge_Cmiss_node */
-
 int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
 	Cmiss_node_iterator_function iterator_function, void *user_data)
 /*******************************************************************************

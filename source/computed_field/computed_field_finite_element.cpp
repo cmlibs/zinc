@@ -1364,49 +1364,6 @@ int Cmiss_field_finite_element_set_string_at_node(
 	return (return_code);
 }
 
-int Cmiss_field_finite_element_define_at_node(
-	Cmiss_field_finite_element *finite_element_field, struct FE_node *node,
-	struct FE_time_sequence *fe_time_sequence,
-	struct FE_node_field_creator *node_field_creator)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_field_finite_element_define_at_node);
-	if (finite_element_field && node)
-	{
-		Computed_field_finite_element* core =
-			Computed_field_finite_element_core_cast(finite_element_field);
-		struct FE_node_field_creator *local_node_field_creator;
-		if (node_field_creator)
-		{
-			local_node_field_creator = node_field_creator;
-		}
-		else
-		{
-			Computed_field *field = Computed_field_cast(finite_element_field);
-			local_node_field_creator = CREATE(FE_node_field_creator)(
-				field->number_of_components);
-		}
-		struct FE_region *fe_region = FE_node_get_FE_region(node);
-		return_code = FE_region_define_FE_field_at_FE_node(fe_region,
-			node, core->fe_field, fe_time_sequence,
-			local_node_field_creator);
-
-		if (!node_field_creator)
-		{
-			DESTROY(FE_node_field_creator)(&local_node_field_creator);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_finite_element_define_at_node.  Invalid argument(s).");
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 int Computed_field_is_type_finite_element(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006

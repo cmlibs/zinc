@@ -94,17 +94,4 @@ int Cmiss_field_finite_element_set_string_at_node(
 	Cmiss_field_finite_element_id finite_element_field, int component_number,
 	Cmiss_node_id node, double time, const char *string);
 
-/***************************************************************************//**
- * Defines the finite_element field at the specified node.
- * @param fe_time_sequence  Optionally defines multiple times for the field. If
- * it is NULL then the field will be defined as constant for all times.
- * @param node_field_creator  Optionally defines different versions and/or
- * derivative types. If it is NULL then a single nodal value for each component
- * will be defined.
- */
-int Cmiss_field_finite_element_define_at_node(
-	Cmiss_field_finite_element_id finite_element_field, Cmiss_node_id node,
-	struct Cmiss_time_sequence *time_sequence,
-	struct Cmiss_node_field_creator *node_field_creator);
-
 #endif /* !defined (CMISS_FIELD_FINITE_ELEMENT_H) */

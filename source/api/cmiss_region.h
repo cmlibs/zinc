@@ -302,19 +302,6 @@ DESCRIPTION :
 Returns node with <name> in <region> if it exists.
 ==============================================================================*/
 
-Cmiss_node_id Cmiss_region_merge_Cmiss_node(Cmiss_region_id region,
-	Cmiss_node_id node);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Checks <node> is compatible with <region> and any existing Cmiss_node
-using the same identifier, then merges it into <region>.
-If no Cmiss_node of the same identifier exists in FE_region, <node> is added
-to <region> and returned by this function, otherwise changes are merged into
-the existing Cmiss_node and it is returned.
-==============================================================================*/
-
 int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region);
 /*******************************************************************************
 LAST MODIFIED : 4 November 2004

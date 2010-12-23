@@ -3451,6 +3451,65 @@ used by element fields of <fe_field>.
 	return (return_code);
 } /* FE_region_undefine_FE_field_in_FE_node_list */
 
+struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
+	int identifier, struct FE_node *source)
+{
+	int number;
+	struct FE_node *new_node;
+
+	ENTER(FE_region_create_FE_node_copy);
+	new_node = (struct FE_node *)NULL;
+	if (fe_region && source)
+	{
+		if (fe_region->master_fe_region)
+		{
+			FE_region_begin_change(fe_region);
+			new_node = FE_region_create_FE_node_copy(
+				fe_region->master_fe_region, identifier, source);
+			if ((new_node) && ADD_OBJECT_TO_LIST(FE_node)(new_node,
+				fe_region->fe_node_list))
+			{
+				FE_REGION_FE_NODE_CHANGE(fe_region, new_node,
+					CHANGE_LOG_OBJECT_ADDED(FE_node), new_node);
+			}
+			FE_region_end_change(fe_region);
+		}
+		else if (FE_node_get_FE_region(source) == fe_region)
+		{
+			number = identifier;
+			if (identifier <= 0)
+			{
+				number = FE_region_get_next_FE_node_identifier(fe_region, 0);
+			}
+			new_node = CREATE(FE_node)(number, (struct FE_region *)NULL, source);
+			if (ADD_OBJECT_TO_LIST(FE_node)(new_node, fe_region->fe_node_list))
+			{
+				FE_REGION_FE_NODE_CHANGE(fe_region, new_node,
+					CHANGE_LOG_OBJECT_ADDED(FE_node), new_node);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_create_FE_node_copy.  node identifier in use.");
+				DESTROY(FE_node)(&new_node);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_region_create_FE_node_copy.  "
+				"Source node is incompatible with region");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_create_FE_node_copy.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (new_node);
+}
+
 struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 	struct FE_node *node)
 /*******************************************************************************
@@ -3564,6 +3623,58 @@ A NULL value is returned on any error.
 
 	return (merged_node);
 } /* FE_region_merge_FE_node */
+
+int FE_region_merge_FE_node_existing(struct FE_region *fe_region,
+	struct FE_node *destination, struct FE_node *source)
+{
+	int return_code;
+
+	ENTER(FE_region_merge_FE_node_existing);
+	return_code = 0;
+	if (fe_region && destination && source)
+	{
+		if (fe_region->master_fe_region)
+		{
+			FE_region_begin_change(fe_region);
+			if (FE_region_merge_FE_node_existing(fe_region->master_fe_region,
+				destination, source))
+			{
+				if (!IS_OBJECT_IN_LIST(FE_node)(destination, fe_region->fe_node_list))
+				{
+					if (ADD_OBJECT_TO_LIST(FE_node)(destination,fe_region->fe_node_list))
+					{
+						FE_REGION_FE_NODE_CHANGE(fe_region, destination,
+							CHANGE_LOG_OBJECT_ADDED(FE_node), destination);
+					}
+				}
+			}
+			FE_region_end_change(fe_region);
+		}
+		else if ((FE_node_get_FE_region(destination) == fe_region) &&
+			(FE_node_get_FE_region(source) == fe_region))
+		{
+			if (merge_FE_node(destination, source))
+			{
+				return_code = 1;
+				FE_REGION_FE_NODE_CHANGE(fe_region, destination,
+					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node), source);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_region_merge_FE_node_existing.  "
+				"Source and/or destination nodes are incompatible with region");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_merge_FE_node_existing.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return return_code;
+}
 
 int FE_region_merge_FE_node_iterator(struct FE_node *node,
 	void *fe_region_void)

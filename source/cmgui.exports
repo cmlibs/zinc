@@ -130,7 +130,6 @@ Cmiss_field_module_create_finite_element
 Cmiss_field_cast_finite_element
 Cmiss_field_finite_element_destroy
 Cmiss_field_finite_element_set_string_at_node
-Cmiss_field_finite_element_define_at_node
 
 /* api/cmiss_field_image.h */
 Cmiss_field_module_create_image
@@ -255,7 +254,6 @@ Cmiss_region_get_field_module
 
 Cmiss_region_get_element
 Cmiss_region_get_node
-Cmiss_region_merge_Cmiss_node
 Cmiss_region_get_number_of_nodes_in_region
 Cmiss_region_get_number_of_elements_in_region
 Cmiss_region_for_each_node_in_region
@@ -270,16 +268,23 @@ Cmiss_time_sequence_set_value
 Cmiss_time_sequence_package_get_matching_time_sequence
 
 /* api/cmiss_node.h */
-Cmiss_node_create
-Cmiss_node_create_from_template
-access_FE_node
-deaccess_FE_node
-create_FE_node_field_creator
-destroy_FE_node_field_creator
-Cmiss_node_get_identifier
-list_for_each_FE_node
-list_number_FE_node
+Cmiss_region_get_nodeset_by_name
+Cmiss_nodeset_access
+Cmiss_nodeset_destroy
+Cmiss_nodeset_contains_node
+Cmiss_nodeset_create_node_template
+Cmiss_nodeset_create_node
+Cmiss_nodeset_find_node_by_identifier
+Cmiss_node_template_destroy
+Cmiss_node_template_define_field
+Cmiss_node_template_define_derivative
+Cmiss_node_template_define_time_sequence
+Cmiss_node_template_define_versions
+Cmiss_node_template_finalise
+Cmiss_node_access
 Cmiss_node_destroy
+Cmiss_node_get_identifier
+Cmiss_node_merge
 
 /* api/cmiss_element.h */
 Cmiss_region_get_fe_mesh_by_name

@@ -576,6 +576,18 @@ number of nodes for which <fe_field> could not be undefined because they are
 used by element fields of <fe_field>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Checks the source node is compatible with region & that there is no
+ * existing node of supplied identifier, then creates node of that
+ * identifier as a copy of source and adds it to the fe_region.
+ *
+ * @param identifier  Positive integer identifier of new node, or <= 0 to
+ * automatically generate. Fails if already used by an existing node.
+ * @return  New node (non-accessed), or NULL if failed.
+ */
+struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
+	int identifier, struct FE_node *source);
+
 struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 	struct FE_node *node);
 /*******************************************************************************
@@ -594,6 +606,16 @@ node, the existing structure is maintained, but the new values are added from
 derivatives etc.
 A NULL value is returned on any error.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Merges field changes from source into destination node. Checks both
+ * elements are compatible with the same master region / fe_region, and adds
+ * destination to fe_region if it is not the master.
+ *
+ * @return  1 on success, 0 on error.
+ */
+int FE_region_merge_FE_node_existing(struct FE_region *fe_region,
+	struct FE_node *destination, struct FE_node *source);
 
 int FE_region_merge_FE_node_iterator(struct FE_node *node,
 	void *fe_region_void);
