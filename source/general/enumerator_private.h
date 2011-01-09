@@ -83,7 +83,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 ============================================================================*/ \
 { \
 	const char *enumerator_string, **valid_strings; \
-	enum enumerator_type enumerator_value; \
+	enum enumerator_type enumerator_value, first_enumerator_value; \
 	int i; \
 \
 	ENTER(ENUMERATOR_GET_VALID_STRINGS(enumerator_type)); \
@@ -91,8 +91,13 @@ Default version assumes all valid enumerator values are sequential from 0. \
 	if (number_of_valid_strings) \
 	{ \
 		*number_of_valid_strings = 0; \
-		/* valid modes are from 0 to the last one with a string */ \
-		for (enumerator_value = (enum enumerator_type)0; \
+		/* valid modes are from 0 or 1 to the last one with a string */ \
+		first_enumerator_value = (enum enumerator_type)0; \
+		if (NULL == ENUMERATOR_STRING(enumerator_type)(first_enumerator_value)) \
+		{ \
+			first_enumerator_value++; \
+		} \
+		for (enumerator_value = first_enumerator_value; \
 			ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
 			enumerator_value++) \
 		{ \
@@ -106,7 +111,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			ALLOCATE(valid_strings, const char *, *number_of_valid_strings)) \
 		{ \
 			i = 0; \
-			for (enumerator_value = (enum enumerator_type)0; enumerator_string = \
+			for (enumerator_value = first_enumerator_value; enumerator_string = \
 				ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
 				enumerator_value++) \
 			{ \

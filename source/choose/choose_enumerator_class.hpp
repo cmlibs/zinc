@@ -97,7 +97,7 @@ public:
 	typename Enumerator::Enumerator_type get_item()
 	{
 		return (static_cast<typename Enumerator::Enumerator_type>
-			(GetSelection()));
+			(GetSelection()+1));
 	}
 
 	int set_callback(Callback_base< typename Enumerator::Enumerator_type >
@@ -113,7 +113,7 @@ public:
 	{
 		unsigned int return_code;
 		
-		SetSelection(new_value);
+		SetSelection(new_value-1);
 
 		// Could check to see that the value was actually set
 		return_code = 1;

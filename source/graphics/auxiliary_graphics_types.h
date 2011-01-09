@@ -182,20 +182,21 @@ incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	XI_DISCRETIZATION_CELL_CENTRES,
-	XI_DISCRETIZATION_CELL_CORNERS,
+	XI_DISCRETIZATION_INVALID_MODE = 0,
+	XI_DISCRETIZATION_CELL_CENTRES = 1,
+	XI_DISCRETIZATION_CELL_CORNERS = 2,
 	/* number of points in each cell is rounded from the density*volume. Best
 		 choice for showing density when cells are near-uniform sizes and there are
 		 a reasonable number of points in most cells */
-	XI_DISCRETIZATION_CELL_DENSITY,
+	XI_DISCRETIZATION_CELL_DENSITY = 3,
 	/* same as XI_DISCRETIZATION_CELL_DENSITY but actual number of points per
 		 cell is sampled from a Poisson distribution with mean density*volume.
 		 May be better than CELL_DENSITY when cells are quite different in size,
 		 but adds noise to the density field being viewed. */
-	XI_DISCRETIZATION_CELL_POISSON,
+	XI_DISCRETIZATION_CELL_POISSON = 4,
 	/* exactly one point per cell at all times */
-	XI_DISCRETIZATION_CELL_RANDOM,
-	XI_DISCRETIZATION_EXACT_XI
+	XI_DISCRETIZATION_CELL_RANDOM = 5,
+	XI_DISCRETIZATION_EXACT_XI = 6
 }; /* enum Xi_discretization_mode */
 
 /*
