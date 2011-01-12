@@ -50,7 +50,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
@@ -268,14 +268,13 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
 									cad_tool->region);
 									Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
-									root_rendition);
+										root_rendition);
 									if (root_group_field)
 									{
 										Cmiss_field_group_id root_group =
 											Cmiss_field_cast_group(root_group_field);
 										Cmiss_field_group_clear_region_tree_cad_primitive(root_group);
-										Cmiss_field_destroy(&root_group_field);
-										root_group_field = reinterpret_cast<Computed_field *>(root_group);
+										Cmiss_field_group_destroy(&root_group);
 										Cmiss_field_destroy(&root_group_field);
 									}
 									Cmiss_rendition_destroy(&root_rendition);
@@ -325,9 +324,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 								}
 								if (sub_group)
 								{
-									sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-									Cmiss_field_destroy(&sub_group_field);
-									sub_group = NULL;
+									Cmiss_field_group_destroy(&sub_group);
 								}
 								if (cad_primitive_group)
 								{
@@ -404,7 +401,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 											Cmiss_field_id sub_group_field = NULL;
 											Cmiss_field_id element_group_field = NULL;
 											Cmiss_rendition *region_rendition = NULL;
-											Cmiss_field_element_group_template_id element_group = NULL;
+											Cmiss_field_element_group_id element_group = NULL;
 											Region_element_map::iterator pos;
 											for (pos = element_map->begin(); pos != element_map->end(); ++pos)
 											{
@@ -437,11 +434,16 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 													}
 													if (sub_group)
 													{
-														element_group_field = Cmiss_field_group_create_element_group(sub_group);
+														Cmiss_fe_mesh_id temp_mesh =
+														   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
+														element_group_field = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+														if (!element_group_field)
+															element_group_field = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+														Cmiss_fe_mesh_destroy(&temp_mesh);
 														if (element_group_field)
 														{
 															element_group =
-																Cmiss_field_cast_element_group_template(element_group_field);
+																Cmiss_field_cast_element_group(element_group_field);
 															Cmiss_field_destroy(&element_group_field);
 															element_group_field = reinterpret_cast<Computed_field *>(element_group);
 														}
@@ -449,7 +451,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 												}
 												if (sub_region && sub_group_field && element_group)
 												{
-													Cmiss_field_element_group_template_add_element(element_group,
+													Cmiss_field_element_group_add_element(element_group,
 														pos->second);
 												}
 											}
@@ -457,9 +459,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 											{
 												Computed_field_changed(sub_group_field);
 												Cmiss_field_destroy(&sub_group_field);
-												sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-												Cmiss_field_destroy(&sub_group_field);
-												sub_group = NULL;
+												Cmiss_field_group_destroy(&sub_group);
 											}
 											if (element_group_field)
 											{

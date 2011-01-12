@@ -61,7 +61,7 @@
 extern "C" {
 #include "api/cmiss_context.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
 #include "api/cmiss_rendition.h"
@@ -2489,10 +2489,7 @@ Executes a GFX CREATE SNAKE command.
 	  		struct Computed_field *group_field = NULL;
 	  		if (rendition)
 	  		{
-	  			if (Cmiss_rendition_has_selection_group(rendition))
-	  			{
-	  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-	  			}
+	  			group_field = Cmiss_rendition_get_selection_group(rendition);
 					Cmiss_rendition_destroy(&rendition);
 	  		}
 	  		if (group_field)
@@ -6186,10 +6183,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
-		  			if (Cmiss_rendition_has_selection_group(rendition))
-		  			{
-		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-		  			}
+		  			group_field = Cmiss_rendition_get_selection_group(rendition);
 						Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
@@ -6254,8 +6248,7 @@ Executes a GFX DESTROY ELEMENTS command.
 			  		{
 			  			Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
 			  			Cmiss_field_group_clear_region_tree_element(group);
-			  			Cmiss_field_destroy(&group_field);
-			  			group_field = reinterpret_cast<Cmiss_field_id>(group);
+			  			Cmiss_field_group_destroy(&group);
 			  		}
 					}
 					else
@@ -6616,10 +6609,7 @@ use node_manager and node_selection.
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
-		  			if (Cmiss_rendition_has_selection_group(rendition))
-		  			{
-		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-		  			}
+		  			group_field = Cmiss_rendition_get_selection_group(rendition);
 						Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
@@ -7151,7 +7141,6 @@ is the region where the fields are defined (the parent region in this case).
 	struct FE_region *fe_region;
 }; /* struct Apply_transformation_data */
 
-#if defined (TO_BE_EDITED)
 static int apply_transformation_to_node(struct FE_node *node,
 	void *data_void)
 /*******************************************************************************
@@ -7218,7 +7207,6 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 
 	return (return_code);
 } /* apply_transformation_to_node */
-#endif
 
 static int gfx_edit_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -7229,15 +7217,11 @@ DESCRIPTION :
 Executes a GFX EDIT GRAPHICS_OBJECT command.
 ==============================================================================*/
 {
-	char apply_flag, *graphics_object_name;
+	char apply_flag, *region_path;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	//struct Cmiss_region *region;
-	//struct FE_region *fe_region;
-#if defined (USE_SCENE_OBJECT)
-	struct Scene_object *scene_object;
-#endif
-	struct Scene *scene;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	struct Option_table *option_table;
 
 	ENTER(gfx_edit_graphics_object);
@@ -7246,45 +7230,37 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 	{
 		/* initialize defaults */
 		apply_flag = 0;
-		graphics_object_name = (char *)NULL;
-		scene = ACCESS(Scene)(command_data->default_scene);
+		region_path = (char *)NULL;
 
 		option_table = CREATE(Option_table)();
 		/* apply_transformation */
 		Option_table_add_entry(option_table, "apply_transformation",  &apply_flag,
 			NULL, set_char_flag);
 		/* name */
-		Option_table_add_entry(option_table, "name", &graphics_object_name,
+		Option_table_add_entry(option_table, "name", &region_path,
 			(void *)1, set_name);
-		/* scene */
-		Option_table_add_entry(option_table, "scene", &scene,
-			command_data->scene_manager, set_Scene);
 		/* default when token omitted (graphics_object_name) */
-		Option_table_add_entry(option_table, (char *)NULL, &graphics_object_name,
+		Option_table_add_entry(option_table, (char *)NULL, &region_path,
 			(void *)0, set_name);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-#if defined (USE_SCENE_OBJECT)
-			if (scene && graphics_object_name && (scene_object=
-				Scene_get_Scene_object_by_name(scene, graphics_object_name)))
+			if (region_path && Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
+					region_path, &region) && region)
 			{
 				if (apply_flag)
 				{							
 					/* SAB Temporary place for this command cause I really need to use it,
 						 not very general, doesn't work in prolate or rotate derivatives */
 					struct Apply_transformation_data data;
-					struct GT_element_group *gt_element_group;
+					struct Cmiss_rendition *rendition = NULL;
 					gtMatrix identity = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
-
-					if (Scene_object_has_transformation(scene_object)&&
-						Scene_object_get_transformation(scene_object, &(data.transformation)))
+					rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
+					if (rendition)
 					{
-						if (Scene_object_has_graphical_element_group(scene_object, NULL) &&
-							(gt_element_group = 
-								Scene_object_get_graphical_element_group(scene_object)))
+						if (Cmiss_rendition_has_transformation(rendition)&&
+								Cmiss_rendition_get_transformation(rendition, &(data.transformation)))
 						{
-							if ((region = GT_element_group_get_Cmiss_region(gt_element_group))
-								&& (fe_region = Cmiss_region_get_FE_region(region)))
+							if (fe_region = Cmiss_region_get_FE_region(region))
 							{
 								/* nodes */
 								data.fe_region = fe_region;
@@ -7304,7 +7280,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 								display_message(WARNING_MESSAGE, "Invalid region");
 								return_code = 0;
 							}
-							Scene_object_set_transformation(scene_object, &identity);
+							Cmiss_rendition_set_transformation(rendition, &identity);
 						}
 						else
 						{
@@ -7322,19 +7298,15 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 			else
 			{
 				display_message(WARNING_MESSAGE,
-					"Must specify name of graphics object in scene");
+					"Must specify region");
 				return_code = 0;
 			}
-			if (graphics_object_name)			
+			if (region_path)
 			{
-				DEALLOCATE(graphics_object_name);			
+				DEALLOCATE(region_path);
 			}
-#else
-			return_code = 1;
-#endif /* defined (USE_SCENE_OBJECT) */
 		}
 		DESTROY(Option_table)(&option_table);
-		DEACCESS(Scene)(&scene);
 	}
 	else
 	{
@@ -9790,10 +9762,7 @@ DESCRIPTION :
 								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
 							if (rendition)
 							{
-								if (Cmiss_rendition_has_selection_group(rendition))
-								{
-									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-								}
+				  			group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
 			  		}
@@ -9819,10 +9788,7 @@ DESCRIPTION :
 								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
 							if (rendition)
 							{
-								if (Cmiss_rendition_has_selection_group(rendition))
-								{
-									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-								}
+				  			group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
 			  		}
@@ -9848,10 +9814,7 @@ DESCRIPTION :
 								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
 							if (rendition)
 							{
-								if (Cmiss_rendition_has_selection_group(rendition))
-								{
-									group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-								}
+				  			group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
 			  		}
@@ -10306,10 +10269,7 @@ Executes a GFX LIST ELEMENT.
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
-		  			if (Cmiss_rendition_has_selection_group(rendition))
-		  			{
-		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-		  			}
+		  			group_field = Cmiss_rendition_get_selection_group(rendition);
 						Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
@@ -10485,10 +10445,7 @@ use node_manager and node_selection.
 		  		struct Computed_field *group_field = NULL;
 		  		if (rendition)
 		  		{
-		  			if (Cmiss_rendition_has_selection_group(rendition))
-		  			{
-		  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-		  			}
+		  			group_field = Cmiss_rendition_get_selection_group(rendition);
 						Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
@@ -11980,10 +11937,7 @@ be specified at once.
 				  		struct Computed_field *group_field = NULL;
 				  		if (rendition)
 				  		{
-				  			if (Cmiss_rendition_has_selection_group(rendition))
-				  			{
-				  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-				  			}
+				  			group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 				  		}
 				  		if (selected_flag && group_field)
@@ -12404,10 +12358,7 @@ use node_manager and node_selection.
 				  		struct Computed_field *group_field = NULL;
 				  		if (rendition)
 				  		{
-				  			if (Cmiss_rendition_has_selection_group(rendition))
-				  			{
-				  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-				  			}
+				  			group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 				  		}
 				  		if (selected_flag && group_field)
@@ -12989,10 +12940,7 @@ use node_manager and node_selection.
 			  		struct Computed_field *group_field = NULL;
 			  		if (rendition)
 			  		{
-			  			if (Cmiss_rendition_has_selection_group(rendition))
-			  			{
-			  				group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-			  			}
+			  			group_field = Cmiss_rendition_get_selection_group(rendition);
 							Cmiss_rendition_destroy(&rendition);
 			  		}
 			  		if (group_field)

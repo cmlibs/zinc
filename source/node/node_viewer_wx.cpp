@@ -48,10 +48,10 @@ this dialog.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_group.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -61,6 +61,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "time/time.h"
 }
+#include "computed_field/computed_field_sub_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include <wx/collpane.h>
 #include "wx/wx.h"
@@ -702,11 +703,7 @@ static void Node_viewer_Computed_field_change(
 		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_viewer->region);
 		if (rendition)
 		{
-			struct Computed_field *selection_group_field = NULL;
-			if (Cmiss_rendition_has_selection_group(rendition))
-			{
-			 selection_group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-			}
+			struct Computed_field *selection_group_field = Cmiss_rendition_get_selection_group(rendition);
 			changed_field_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
 					MANAGER_CHANGE_RESULT(Computed_field));
@@ -714,17 +711,18 @@ static void Node_viewer_Computed_field_change(
 					selection_group_field,Computed_field_is_in_list, (void *)changed_field_list))
 			{
 				Cmiss_field_group_id group= Cmiss_field_cast_group(selection_group_field);
-				Cmiss_field_id node_group_field = Cmiss_field_group_get_node_group(group);
-				Cmiss_field_destroy(&selection_group_field);
-				selection_group_field = reinterpret_cast<Cmiss_field_id>(group);
-				if (node_group_field)
+				Cmiss_field_node_group_id node_group = NULL;
+				Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(node_viewer->region, "cmiss_nodes");
+				if (nodeset)
 				{
-					Cmiss_field_node_group_template_id node_group =
-						Cmiss_field_cast_node_group_template(node_group_field);
-					Cmiss_field_destroy(&node_group_field);
-					node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
-					struct FE_node *node = Cmiss_field_node_group_template_get_first_node(node_group);
-					struct FE_node *next_node = Cmiss_field_node_group_template_get_next_node(node_group);
+					node_group = Cmiss_field_group_get_node_group(group, nodeset);
+					Cmiss_nodeset_destroy(&nodeset);
+				}
+				Cmiss_field_group_destroy(&group);
+				if (node_group)
+				{
+					struct FE_node *node = Cmiss_field_node_group_get_first_node(node_group);
+					struct FE_node *next_node = Cmiss_field_node_group_get_next_node(node_group);
 					/* make sure there is only one node selected in group */
 					if (node && !next_node && node != node_viewer->current_node)
 					{
@@ -738,7 +736,7 @@ static void Node_viewer_Computed_field_change(
 							Node_viewer_update_collpane(node_viewer);
 						}
 					}
-					Cmiss_field_destroy(&node_group_field);
+					Cmiss_field_node_group_destroy(&node_group);
 					if (node)
 					{
 						Cmiss_node_destroy(&node);

@@ -50,7 +50,7 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphic.h"
@@ -72,6 +72,8 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_group_base.hpp"
+#include "graphics/selection.hpp"
 #include "graphics/rendition.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
@@ -79,6 +81,8 @@ extern "C" {
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_transformation, \
 	struct Cmiss_rendition *, gtMatrix *);
+
+typedef std::list<Cmiss_selection_handler *> Selection_handler_list;
 
 struct Cmiss_rendition_callback_data
 {
@@ -137,6 +141,8 @@ Structure for maintaining a graphical rendition of region.
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)) *transformation_callback_list;
 	unsigned int position;
 	struct Computed_field *selection_group;
+	Selection_handler_list *selection_handler_list;
+	int selection_group_removed;
 }; /* struct Cmiss_rendition */
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_rendition_transformation, void)
@@ -460,6 +466,8 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->transformation_time_callback_flag = 0;
 				cmiss_rendition->name_prefix = Cmiss_region_get_path(cmiss_region);
 				cmiss_rendition->selection_group = NULL;
+				cmiss_rendition->selection_handler_list = NULL;
+				cmiss_rendition->selection_group_removed = 0;
  				Cmiss_rendition_update_default_coordinate(cmiss_rendition);
  				if (graphics_module)
  				{
@@ -650,29 +658,59 @@ static void Cmiss_rendition_Computed_field_change(
 {
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic_Computed_field_change_data change_data;
+	int selection_changed = 0, new_selection = 0, selection_removed = 0;
 
 	ENTER(Cmiss_rendition_Computed_field_change);
 	if (message &&
 		(rendition = (struct Cmiss_rendition *)rendition_void))
 	{
+		selection_removed = rendition->selection_group_removed;
+		selection_changed = selection_removed;
 		change_data.changed_field_list =
 			MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
 				MANAGER_CHANGE_RESULT(Computed_field));
-		if (change_data.changed_field_list)
+		//Cmiss_field_id selection_field = Cmiss_rendition_get_selection_group(rendition);
+		Cmiss_field_id selection_field = rendition->selection_group;
+		if (selection_field)
+		{
+			const Cmiss_field_change_detail *source_change_detail = NULL;
+			int change_flags = Computed_field_manager_message_get_object_change_and_detail(message, selection_field,
+				&source_change_detail);
+			if (change_flags & MANAGER_CHANGE_REMOVE(Computed_field))
+			{
+				rendition->selection_group = NULL;
+				selection_removed = 1;
+				selection_changed = 1;
+			}
+			else if (change_flags & MANAGER_CHANGE_ADD(Computed_field))
+			{
+				new_selection = 1;
+				selection_changed = 1;
+			}
+			else
+			{
+			  if (change_data.changed_field_list && Computed_field_or_ancestor_satisfies_condition(
+			  		selection_field,Computed_field_is_in_list, (void *)(change_data.changed_field_list)))
+			  {
+					if (source_change_detail)
+					{
+						const Cmiss_field_group_base_change_detail *group_change_detail =
+							dynamic_cast<const Cmiss_field_group_base_change_detail *>(source_change_detail);
+						Cmiss_field_group_change_type group_change = group_change_detail->getLocalChange();
+						if (group_change != CMISS_FIELD_GROUP_NO_CHANGE)
+							selection_changed = 1;
+					}
+			  }
+			}
+		}
+		if (change_data.changed_field_list || new_selection || selection_removed)
 		{
 			/*???RC Is there a better way of getting time to here? */
 			change_data.time = 0;
 			change_data.graphics_changed = 0;
 			change_data.default_coordinate_field =
 				rendition->default_coordinate_field;
-			if (Cmiss_rendition_has_selection_group(rendition))
-			{
-				change_data.group_field = rendition->selection_group;
-			}
-			else
-			{
-				change_data.group_field = NULL;
-			}
+			change_data.selection_changed = selection_changed;
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_Computed_field_change, (void *)&change_data,
 				rendition->list_of_graphics);
@@ -680,8 +718,10 @@ static void Cmiss_rendition_Computed_field_change(
 			{
 				Cmiss_rendition_changed(rendition);
 			}
-			DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
+			if(change_data.changed_field_list)
+				DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
 		}
+		rendition->selection_group_removed = 0;
 	}
 	else
 	{
@@ -1174,19 +1214,16 @@ static int Cmiss_rendition_build_graphics_objects(
 		graphic_to_object_data.selected_element_point_ranges_list =
 			Element_point_ranges_selection_get_element_point_ranges_list(
 				Cmiss_graphics_module_get_element_point_ranges_selection(rendition->graphics_module));
-		if (Cmiss_rendition_has_selection_group(rendition))
-		{
-			graphic_to_object_data.group_field = rendition->selection_group;
-		}
-		else
-		{
-			graphic_to_object_data.group_field = NULL;
-		}
+		graphic_to_object_data.group_field = Cmiss_rendition_get_selection_group(rendition);
 		graphic_to_object_data.iso_surface_specification = NULL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_to_graphics_object,(void *)&graphic_to_object_data,
 			rendition->list_of_graphics);
 		MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
+		if (graphic_to_object_data.group_field)
+		{
+			Cmiss_field_destroy(&graphic_to_object_data.group_field);
+		}
 	}
 	else
 	{
@@ -3230,6 +3267,16 @@ int DESTROY(Cmiss_rendition)(
 
 	if (cmiss_rendition_address && (cmiss_rendition = *cmiss_rendition_address))
 	{
+		if (cmiss_rendition->selection_handler_list)
+		{
+			for (Selection_handler_list::iterator iter = cmiss_rendition->selection_handler_list->begin();
+				iter != cmiss_rendition->selection_handler_list->end(); ++iter)
+			{
+				Cmiss_selection_handler_id selection_handler = *iter;
+				Cmiss_selection_handler_destroy(&selection_handler);
+			}
+			delete cmiss_rendition->selection_handler_list;
+		}
 		if (cmiss_rendition->computed_field_manager &&
 				cmiss_rendition->computed_field_manager_callback_id)
 		{
@@ -3259,10 +3306,6 @@ int DESTROY(Cmiss_rendition)(
 		if (cmiss_rendition->transformation)
 		{
 			DEALLOCATE(cmiss_rendition->transformation);
-		}
-		if (cmiss_rendition->selection_group)
-		{
-			DEACCESS(Computed_field)(&(cmiss_rendition->selection_group));
 		}
 		if (cmiss_rendition->list_of_scene)
 		{
@@ -3395,7 +3438,7 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 						&variable_scale_field)&&
 					Cmiss_graphic_set_glyph_parameters(
 						graphic, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size,	orientation_scale_field, glyph_scale_factors,
+						glyph_centre, glyph_size, orientation_scale_field, glyph_scale_factors,
 						variable_scale_field))
 				{
 					return_code = 1;
@@ -3415,142 +3458,128 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 	return return_code;
 }
 
-int Cmiss_rendition_has_selection_group(Cmiss_rendition_id rendition)
+int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition, Cmiss_field_id selection_field)
 {
 	int return_code = 0;
-
-	if (rendition)
+	if (rendition && rendition->graphics_module)
 	{
-		if (rendition->selection_group)
+		Cmiss_region_id child_region = Cmiss_region_get_first_child(rendition->region);
+		while (child_region)
 		{
-			return_code = 1;
+			Cmiss_rendition_id child_rendition = Cmiss_graphics_module_get_rendition(rendition->graphics_module,
+				child_region);
+			Cmiss_rendition_set_selection_group(child_rendition, selection_field);
+			Cmiss_rendition_destroy(&child_rendition);
+			Cmiss_region_reaccess_next_sibling(&child_region);
+		}
+		if (selection_field)
+		{
+			Cmiss_field_group_id group_field = Cmiss_field_cast_group(selection_field);
+			Cmiss_field_id child_group = Cmiss_field_group_get_subgroup(group_field, rendition->region);
+			rendition->selection_group = child_group;
+			Cmiss_field_group_destroy(&group_field);
+			Cmiss_field_destroy(&child_group);
 		}
 		else
 		{
-			/* this handles the case when selection is shared between "group" */
-			Cmiss_field_module_id field_module =
-				Cmiss_region_get_field_module(rendition->region);
-			if (field_module)
-			{
-				Computed_field *selection_field = Cmiss_field_module_find_field_by_name(
-					field_module, "cmiss_selection");
-				if (selection_field)
-				{
-					if (rendition->selection_group)
-					{
-						DEACCESS(Computed_field)(&rendition->selection_group);
-					}
-					rendition->selection_group = selection_field;
-					Cmiss_region *parent_region = Cmiss_region_get_parent(rendition->region);
-					if (parent_region)
-					{
-						Cmiss_rendition *parent_rendition =
-							Cmiss_region_get_rendition_internal(parent_region);
-						Cmiss_field_id parent_group_field = NULL;
-						if (parent_rendition)
-						{
-							parent_group_field =
-								Cmiss_rendition_get_or_create_selection_group(parent_rendition);
-							DEACCESS(Cmiss_rendition)(&parent_rendition);
-						}
-						if (parent_group_field)
-						{
-							if (parent_group_field == selection_field)
-							{
-								Cmiss_field_group_id parent_group =
-									Cmiss_field_cast_group(parent_group_field);
-								Cmiss_field_destroy(&parent_group_field);
-								Cmiss_field_group_add_region(parent_group, rendition->region);
-								parent_group_field = reinterpret_cast<Computed_field*>(parent_group);
-							}
-							Cmiss_field_destroy(&parent_group_field);
-						}
-						DEACCESS(Cmiss_region)(&parent_region);
-					}
-					return_code = 1;
-				}
-				Cmiss_field_module_destroy(&field_module);
-			}
+			if (rendition->selection_group)
+				rendition->selection_group_removed = 1;
+			rendition->selection_group = NULL;
 		}
+		return_code = 1;
 	}
 
 	return return_code;
 }
 
+Computed_field *Cmiss_rendition_get_any_selection_group(Cmiss_rendition_id rendition)
+{
+	return rendition->selection_group;
+}
+Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition)
+{
+	Cmiss_field_id selection_group = NULL;
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
+	if (rendition->selection_group)
+	{
+		char *name = Cmiss_field_get_name(rendition->selection_group);
+		selection_group = Cmiss_field_module_find_field_by_name(field_module, name);
+		if (!selection_group)
+		{
+			rendition->selection_group = NULL;
+			rendition->selection_group_removed = 1;
+		}
+		if (name)
+			DEALLOCATE(name);
+	}
+	else
+	{
+		selection_group = Cmiss_field_module_find_field_by_name(field_module, "cmiss_selection");
+		rendition->selection_group = selection_group;
+		rendition->selection_group_removed = 0;
+	}
+	Cmiss_field_module_destroy(&field_module);
+	return selection_group;
+}
+
 Computed_field *Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition)
 {
-	Computed_field *sub_group = NULL;
+	Computed_field *selection_group = NULL;
 
 	if (rendition)
 	{
 		if (rendition->selection_group)
 		{
-			sub_group = Cmiss_field_access(rendition->selection_group);
+			selection_group = Cmiss_rendition_get_selection_group(rendition);
 		}
-		else
+		if (!selection_group && rendition->region)
 		{
-			Computed_field *parent_group_field = NULL;
- 			Cmiss_region *region = ACCESS(Cmiss_region)(rendition->region);
-			Computed_field *selection_field = NULL;
-			Cmiss_region *parent_region = Cmiss_region_get_parent(region);
-			/* Making sure that parent rendition already has a group field,
-			 * this is not important for true region but is important for
-			 * group as they multiple renditions may share the same group
-			 * field, this would make sure the group field to have the right
-			 * hierarchy.
-			 */
-			/*Do This - Add region begin change and end change*/
-			if (parent_region)
+			Cmiss_region *root_region = Cmiss_region_get_root(rendition->region);
+			Cmiss_field_id root_selection_field = NULL;
+			if (root_region != rendition->region)
 			{
-				Cmiss_rendition *parent_rendition =
-					Cmiss_region_get_rendition_internal(parent_region);
-				if (parent_rendition)
-				{
-					parent_group_field =
-						Cmiss_rendition_get_or_create_selection_group(parent_rendition);
-					DEACCESS(Cmiss_rendition)(&parent_rendition);
-				}
-				DEACCESS(Cmiss_region)(&parent_region);
+				Cmiss_rendition_id root_redition = Cmiss_graphics_module_get_rendition(rendition->graphics_module, root_region);
+				root_selection_field = Cmiss_rendition_get_selection_group(root_redition);
+				Cmiss_rendition_destroy(&root_redition);
 			}
-			Cmiss_field_module_id field_module =
-				Cmiss_region_get_field_module(region);
-			if (field_module)
+			if (!root_selection_field)
 			{
-				selection_field = Cmiss_field_module_find_field_by_name(
-					field_module, "cmiss_selection");
-				if (!selection_field)
+				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(root_region);
+				if (field_module)
 				{
-					selection_field = Cmiss_field_module_create_group(field_module, region);
-					Cmiss_field_set_name(selection_field, "cmiss_selection");
-					Cmiss_field_set_persistent(selection_field, 0);
-				}
-				Cmiss_field_module_destroy(&field_module);
-			}
-			if (selection_field)
-			{
-				if (rendition->selection_group)
-				{
-					DEACCESS(Computed_field)(&rendition->selection_group);
-				}
-				rendition->selection_group = selection_field;
-				sub_group = Cmiss_field_access(rendition->selection_group);
-				if (parent_group_field)
-				{
-					Cmiss_field_group_id parent_group =
-						Cmiss_field_cast_group(parent_group_field);
-					Cmiss_field_destroy(&parent_group_field);
-					Cmiss_field_group_add_region(parent_group, region);
-					parent_group_field = reinterpret_cast<Computed_field*>(parent_group);
+					root_selection_field = Cmiss_field_module_find_field_by_name(field_module, "cmiss_selection");
+					if (!root_selection_field)
+					{
+						root_selection_field = ACCESS(Computed_field)(Cmiss_field_module_create_group(field_module));
+						Cmiss_field_set_name(root_selection_field, "cmiss_selection");
+						Cmiss_field_set_persistent(root_selection_field, 0);
+					}
+					Cmiss_field_module_destroy(&field_module);
 				}
 			}
-			DEACCESS(Cmiss_region)(&region);
-			if (parent_group_field)
+			if (root_selection_field && (root_region != rendition->region))
 			{
-				Cmiss_field_destroy(&parent_group_field);
+				Cmiss_field_group_id root_selection_group = Cmiss_field_cast_group(root_selection_field);
+				selection_group = Cmiss_field_group_get_subgroup(root_selection_group, rendition->region);
+				if (!selection_group)
+					selection_group = Cmiss_field_group_create_subgroup(root_selection_group, rendition->region);
+				Cmiss_rendition_id root_redition = Cmiss_graphics_module_get_rendition(rendition->graphics_module, root_region);
+				Cmiss_rendition_set_selection_group(root_redition, root_selection_field);
+				Cmiss_rendition_destroy(&root_redition);
+				Cmiss_field_group_destroy(&root_selection_group);
+				Cmiss_field_destroy(&root_selection_field);
 			}
+			else
+			{
+				selection_group = root_selection_field;
+			}
+			Cmiss_region_destroy(&root_region);
+			rendition->selection_group = selection_group;
+			rendition->selection_group_removed = 0;
 		}
 	}
-	return (sub_group);
+
+	return selection_group;
 }
 
 int Cmiss_rendition_remove_selection_group(Cmiss_rendition_id rendition)
@@ -3561,7 +3590,8 @@ int Cmiss_rendition_remove_selection_group(Cmiss_rendition_id rendition)
 	{
 		if (rendition->selection_group)
 		{
-			Cmiss_field_destroy(&rendition->selection_group);
+			rendition->selection_group = NULL;
+			rendition->selection_group_removed = 1;
 		}
 	}
 	else
@@ -3577,11 +3607,11 @@ int Cmiss_rendition_remove_selection_group(Cmiss_rendition_id rendition)
 int Cmiss_field_node_group_add_node_iterator(Cmiss_node_id node,
 	void *node_group_void)
 {
-	Cmiss_field_node_group_template_id node_group = 
-		(Cmiss_field_node_group_template_id)node_group_void;
+	Cmiss_field_node_group_id node_group = 
+		(Cmiss_field_node_group_id)node_group_void;
 	if (NULL != node_group)
 	{
-		Cmiss_field_node_group_template_add_node(node_group, node);
+		Cmiss_field_node_group_add_node(node_group, node);
 	}
 	return 1;
 }
@@ -3589,11 +3619,11 @@ int Cmiss_field_node_group_add_node_iterator(Cmiss_node_id node,
 int Cmiss_field_node_group_remove_node_iterator(Cmiss_node_id node,
 	void *node_group_void)
 {
-	Cmiss_field_node_group_template_id node_group =
-		(Cmiss_field_node_group_template_id)node_group_void;
+	Cmiss_field_node_group_id node_group =
+		(Cmiss_field_node_group_id)node_group_void;
 	if (NULL != node_group)
 	{
-		Cmiss_field_node_group_template_remove_node(node_group, node);
+		Cmiss_field_node_group_remove_node(node_group, node);
 	}
 	return 1;
 }
@@ -3607,47 +3637,45 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 	ENTER(Cmiss_rendition_add_selection_from_node_list);
 	if (rendition && node_list && (NUMBER_IN_LIST(FE_node)(node_list) > 0))
 	{
+		Cmiss_region_begin_change(rendition->region);
 		Cmiss_field_id sub_group_field = 
-			Cmiss_rendition_get_or_create_selection_group(rendition);
+				Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group_field)
 		{
 			Cmiss_field_group_id sub_group = 
 				Cmiss_field_cast_group(sub_group_field);
 			if (sub_group)
 			{
-				Cmiss_field_id node_group_field = NULL;
+				Cmiss_field_node_group_id node_group = NULL;
+				Cmiss_nodeset_id nodeset = NULL;
 				if (!use_data)
-				{
-					node_group_field = Cmiss_field_group_create_node_group(sub_group);
-				}
+					nodeset = Cmiss_region_get_nodeset_by_name(rendition->region, "cmiss_nodes");
 				else
+					nodeset = Cmiss_region_get_nodeset_by_name(rendition->region, "cmiss_data");
+				if (nodeset)
 				{
-					node_group_field = Cmiss_field_group_create_data_group(sub_group);
-				}
-				if (node_group_field)
-				{
-					Cmiss_field_node_group_template_id node_group = 
-						Cmiss_field_cast_node_group_template(node_group_field);
-					Cmiss_field_destroy(&node_group_field);
-					if (node_group)
+					node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+					if (!node_group)
 					{
-						if (add_flag)
-						{
-							FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								Cmiss_field_node_group_add_node_iterator,
-								(void *)node_group, node_list);
-						}
-						else
-						{
-							FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								Cmiss_field_node_group_remove_node_iterator,
-								(void *)node_group, node_list);
-						}
-						Computed_field_changed(sub_group_field);
-						Cmiss_field_id temporary_handle = 
-							reinterpret_cast<Computed_field *>(node_group);
-						Cmiss_field_destroy(&temporary_handle);
+						node_group = Cmiss_field_group_create_node_group(sub_group, nodeset);
 					}
+					Cmiss_nodeset_destroy(&nodeset);
+				}
+				if (node_group)
+				{
+					if (add_flag)
+					{
+						FOR_EACH_OBJECT_IN_LIST(FE_node)(
+							Cmiss_field_node_group_add_node_iterator,
+							(void *)node_group, node_list);
+					}
+					else
+					{
+						FOR_EACH_OBJECT_IN_LIST(FE_node)(
+							Cmiss_field_node_group_remove_node_iterator,
+							(void *)node_group, node_list);
+					}
+					Cmiss_field_node_group_destroy(&node_group);
 				}
 				Cmiss_field_id temp = reinterpret_cast<Computed_field *>(sub_group);
 				if (temp)
@@ -3657,6 +3685,7 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 			}
 			Cmiss_field_destroy(&sub_group_field);
 		}
+		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;
 
@@ -3672,26 +3701,59 @@ DESCRIPTION :
 Create a node list selection
 ==============================================================================*/
 {
-	return Cmiss_rendition_change_selection_from_node_list(rendition,
-		node_list, 1, use_data);
+	int return_code = 0;
+	return_code = Cmiss_rendition_change_selection_from_node_list(rendition,
+		node_list, /*add_or_remove_flag*/1, use_data);
+	return return_code;
+}
+
+void Cmiss_rendition_flush_tree_selections(Cmiss_rendition_id rendition)
+{
+	Cmiss_region *root_region = Cmiss_region_get_root(rendition->region);
+	Cmiss_field_id root_selection_field = NULL;
+	if (root_region)
+	{
+		Cmiss_rendition_id root_redition = Cmiss_graphics_module_get_rendition(rendition->graphics_module, root_region);
+		root_selection_field = Cmiss_rendition_get_selection_group(root_redition);
+		Cmiss_rendition_destroy(&root_redition);
+		Cmiss_region_destroy(&root_region);
+	}
+	if (root_selection_field)
+	{
+		Cmiss_field_group_id root_selection = Cmiss_field_cast_group(root_selection_field);
+		Cmiss_field_group_remove_empty_subgroups(root_selection);
+		if (Cmiss_field_group_is_empty(root_selection))
+		{
+			Cmiss_field_id root_selection_field_copy = root_selection_field;
+			Cmiss_field_destroy(&root_selection_field_copy);
+		}
+		Cmiss_field_group_destroy(&root_selection);
+		Cmiss_field_destroy(&root_selection_field);
+	}
 }
 
 int Cmiss_rendition_remove_selection_from_node_list(Cmiss_rendition_id rendition,
 	struct LIST(FE_node) *node_list, int use_data)
 {
-	return Cmiss_rendition_change_selection_from_node_list(rendition,
-		node_list, 0, use_data);
+	int return_code = 0;
+	if (Cmiss_rendition_change_selection_from_node_list(rendition,
+		node_list, /*add_or_remove_flag*/0, use_data))
+	{
+		Cmiss_rendition_flush_tree_selections(rendition);
+		return_code = 1;
+	}
+	return return_code;
 } /* Cmiss_rendition_remove_selection_from_node_list */
 
 
 int Cmiss_field_element_group_add_element_iterator(Cmiss_element_id element,
 	void *element_group_void)
 {
-	Cmiss_field_element_group_template_id element_group =
-		(Cmiss_field_element_group_template_id)element_group_void;
+	Cmiss_field_element_group_id element_group =
+		(Cmiss_field_element_group_id)element_group_void;
 	if (NULL != element_group)
 	{
-		Cmiss_field_element_group_template_add_element(element_group, element);
+		Cmiss_field_element_group_add_element(element_group, element);
 	}
 	return 1;
 }
@@ -3699,11 +3761,11 @@ int Cmiss_field_element_group_add_element_iterator(Cmiss_element_id element,
 int Cmiss_field_element_group_remove_element_iterator(Cmiss_element_id element,
 	void *element_group_void)
 {
-	Cmiss_field_element_group_template_id element_group =
-		(Cmiss_field_element_group_template_id)element_group_void;
+	Cmiss_field_element_group_id element_group =
+		(Cmiss_field_element_group_id)element_group_void;
 	if (NULL != element_group)
 	{
-		Cmiss_field_element_group_template_remove_element(element_group, element);
+		Cmiss_field_element_group_remove_element(element_group, element);
 	}
 	return 1;
 }
@@ -3716,41 +3778,38 @@ int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendit
 	ENTER(Cmiss_rendition_add_selection_from_element_list);
 	if (rendition && element_list && (NUMBER_IN_LIST(FE_element)(element_list) > 0))
 	{
+		Cmiss_region_begin_change(rendition->region);
 		Cmiss_field_id sub_group_field =
-			Cmiss_rendition_get_or_create_selection_group(rendition);
+				Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group_field)
 		{
 			Cmiss_field_group_id sub_group =
 				Cmiss_field_cast_group(sub_group_field);
 			if (sub_group)
 			{
-				Cmiss_field_id element_group_field = NULL;
-				element_group_field = Cmiss_field_group_create_element_group(sub_group);
-				if (element_group_field)
+				Cmiss_fe_mesh_id temp_mesh =
+				   Cmiss_region_get_fe_mesh_by_name(rendition->region, "cmiss_elements");
+				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+				if (!element_group)
+					element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+				Cmiss_fe_mesh_destroy(&temp_mesh);
+				if (element_group)
 				{
-					Cmiss_field_element_group_template_id element_group =
-						Cmiss_field_cast_element_group_template(element_group_field);
-					Cmiss_field_destroy(&element_group_field);
-					if (element_group)
+					if (add_flag)
 					{
-						if (add_flag)
-						{
-							FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								Cmiss_field_element_group_add_element_iterator,
-								(void *)element_group, element_list);
-						}
-						else
-						{
-							FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								Cmiss_field_element_group_remove_element_iterator,
-								(void *)element_group, element_list);
-						}
-						Computed_field_changed(sub_group_field);
-						Cmiss_field_id temporary_handle =
-							reinterpret_cast<Computed_field *>(element_group);
-						Cmiss_field_destroy(&temporary_handle);
+						FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							Cmiss_field_element_group_add_element_iterator,
+							(void *)element_group, element_list);
 					}
+					else
+					{
+						FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							Cmiss_field_element_group_remove_element_iterator,
+							(void *)element_group, element_list);
+					}
+					Cmiss_field_element_group_destroy(&element_group);
 				}
+
 				Cmiss_field_id temp = reinterpret_cast<Computed_field *>(sub_group);
 				if (temp)
 				{
@@ -3759,6 +3818,7 @@ int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendit
 			}
 			Cmiss_field_destroy(&sub_group_field);
 		}
+		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;
 
@@ -3780,8 +3840,14 @@ Create a element list selection
 int Cmiss_rendition_remove_selection_from_element_list(Cmiss_rendition_id rendition,
 	struct LIST(FE_element) *element_list)
 {
-	return Cmiss_rendition_change_selection_from_element_list(rendition,
-		element_list, 0);
+	int return_code = 0;
+	if (Cmiss_rendition_change_selection_from_element_list(rendition,
+			element_list, /*add_flag*/0))
+	{
+		Cmiss_rendition_flush_tree_selections(rendition);
+		return_code = 1;
+	}
+	return return_code;
 } /* Cmiss_rendition_remove_selection_from_element_list */
 
 int Cmiss_rendition_remove_field_manager_and_callback(struct Cmiss_rendition *rendition)
@@ -4110,5 +4176,19 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 		}
 	}
 	return graphic;
+}
 
+Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition)
+{
+	Cmiss_selection_handler_id selection_handler = NULL;
+	if (rendition)
+	{
+		selection_handler = Cmiss_selection_handler_create_private();
+		ACCESS(Cmiss_selection_handler)(selection_handler);
+		Cmiss_selection_handler_set_rendition(selection_handler, rendition);
+		if (!rendition->selection_handler_list)
+			rendition->selection_handler_list = new Selection_handler_list();
+		rendition->selection_handler_list->push_back(selection_handler);
+	}
+	return selection_handler;
 }

@@ -1,9 +1,3 @@
-/***************************************************************************//**
- *FILE : computed_field_group.h
- *
- * Implements a "group" computed_field which group regions, 
- * node and data point component.
- */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -40,38 +34,21 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (COMPUTED_FIELD_GROUP_H)
-#define COMPUTED_FIELD_GROUP_H
+#if !defined (SELECTION_EVENT_HPP)
+#define SELECTION_EVENT_HPP
 
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_group.h"
+extern "C" {
+#include "api/cmiss_selection.h"
+}
 
-/*****************************************************************************//**
- * Sets up command data for group field.
- * 
- * @param computed_field_package  Container for command data.
- * @param root_region  Root region for getting paths to fields in other regions.
- * @return 1 on success, 0 on failure.
- */
-int Computed_field_register_type_group(
-	struct Computed_field_package *computed_field_package);
+struct Cmiss_selection_event;
 
-/*****************************************************************************//**
- * A helper function to conveniently calls the same function for each child in
- * selection group.
- *
- * @param group  group field.
- * @param *function  pointer to the function to be called by each child.
- * @param recursive  if 1 the function will be called by all children down the tree.
- * @return 1 on success, 0 on failure.
- */
-int Cmiss_field_group_for_each_child(Cmiss_field_group_id group,
-		int (*function)(Cmiss_field_id child_field), int recursive);
+struct Cmiss_selection_handler;
 
-int Cmiss_field_group_clear_region_tree_node(Cmiss_field_group_id group);
+struct Cmiss_selection_handler *Cmiss_selection_handler_create_private();
 
-int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group);
+int Cmiss_selection_handler_set_rendition(Cmiss_selection_handler_id selection_handler,
+	struct Cmiss_rendition *rendition_in);
 
-int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group);
-
-#endif /* !defined (COMPUTED_FIELD_GROUP_H) */
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
+#endif /* (SELECTION_HANDLER_HPP) */

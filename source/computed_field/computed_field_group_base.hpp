@@ -62,6 +62,8 @@ enum Cmiss_field_group_change_type
 struct Cmiss_field_group_base_change_detail : public Cmiss_field_change_detail
 {
 	virtual Cmiss_field_group_change_type getChange() const = 0;
+
+	virtual Cmiss_field_group_change_type getLocalChange() const = 0;
 };
 
 /***************************************************************************//**

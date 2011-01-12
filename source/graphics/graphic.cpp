@@ -49,8 +49,7 @@ extern "C" {
 #include <stdio.h>
 #include <math.h>
 #include "api/cmiss_graphic.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "general/debug.h"
 #include "general/enumerator_private_cpp.hpp"
 #include "general/indexed_list_private.h"
@@ -60,6 +59,7 @@ extern "C" {
 #include "general/object.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -79,6 +79,7 @@ extern "C" {
 }
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
+#include "computed_field/computed_field_sub_group.hpp"
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"
 #	include "cad/computed_field_cad_topology.h"
@@ -846,24 +847,17 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					Cmiss_field_group_id group_id = Cmiss_field_cast_group(graphic_to_object_data->group_field);
 					if (group_id)
 					{
-						Cmiss_field_id temporary_handle = NULL;
-						Cmiss_field_id element_group_field =
-							Cmiss_field_group_get_element_group(group_id);
-						if (element_group_field)
+						Cmiss_fe_mesh_id temp_mesh =
+						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group_id, temp_mesh);
+						Cmiss_fe_mesh_destroy(&temp_mesh);
+						if (element_group)
 						{
-							Cmiss_field_element_group_template_id element_group =
-								Cmiss_field_cast_element_group_template(element_group_field);
-							Cmiss_field_destroy(&element_group_field);
-							if (element_group)
-							{
-								name_selected =
-									Cmiss_field_element_group_template_is_element_selected(element_group, element);
-								temporary_handle = reinterpret_cast<Computed_field *>(element_group);
-								Cmiss_field_destroy(&temporary_handle);
-							}
+							name_selected =
+								Cmiss_field_element_group_contains_element(element_group, element);
+							Cmiss_field_element_group_destroy(&element_group);
 						}
-						temporary_handle = reinterpret_cast<Computed_field *>(group_id);
-			      Cmiss_field_destroy(&temporary_handle);
+			      Cmiss_field_group_destroy(&group_id);
 					}
 				}
 				draw_element = ((draw_selected && name_selected) ||
@@ -1287,18 +1281,16 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								if (graphic_to_object_data->group_field)
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
-									Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
-									if (element_group_field)
+									Cmiss_fe_mesh_id temp_mesh =
+									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
+									Cmiss_fe_mesh_destroy(&temp_mesh);
+									if (element_group)
 									{
-										Cmiss_field_element_group_template_id element_group =
-											Cmiss_field_cast_element_group_template(element_group_field);
-										element_selected = Cmiss_field_element_group_template_is_element_selected(element_group, use_element);
-										Cmiss_field_destroy(&element_group_field);
-										element_group_field = (Cmiss_field_id)element_group;
-										Cmiss_field_destroy(&element_group_field);
+										element_selected = Cmiss_field_element_group_contains_element(element_group, use_element);
+										Cmiss_field_element_group_destroy(&element_group);
 									}
-									Cmiss_field_id group_field = (Cmiss_field_id)group;
-									Cmiss_field_destroy(&group_field);
+									Cmiss_field_group_destroy(&group);
 								}
 								base_size[0] = (FE_value)(graphic->glyph_size[0]);
 								base_size[1] = (FE_value)(graphic->glyph_size[1]);
@@ -3653,21 +3645,30 @@ int Cmiss_graphic_to_graphics_object(
 						{
 							case CMISS_GRAPHIC_DATA_POINTS:
 							{
+								Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(
+									graphic_to_object_data->region, "cmiss_data");
 								GT_object_set_node_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, /*use_data*/1);
+									(void *)graphic_to_object_data->group_field, nodeset);
+								Cmiss_nodeset_destroy(&nodeset);
 							} break;
 							case CMISS_GRAPHIC_NODE_POINTS:
 							{
-							  GT_object_set_node_highlight_functor(graphic->graphics_object,
-							  	(void *)graphic_to_object_data->group_field, /*use_data*/0);
+								Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(
+									graphic_to_object_data->region, "cmiss_nodes");
+								GT_object_set_node_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, nodeset);
+								Cmiss_nodeset_destroy(&nodeset);
 							} break;
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
 							case CMISS_GRAPHIC_SURFACES:
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
+								Cmiss_fe_mesh_id temp_mesh =
+								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
                 GT_object_set_element_highlight_functor(graphic->graphics_object,
-                  (void *)graphic_to_object_data->group_field);
+                  (void *)graphic_to_object_data->group_field, temp_mesh);
+								Cmiss_fe_mesh_destroy(&temp_mesh);
 							} break;
 							case CMISS_GRAPHIC_ELEMENT_POINTS:
 							{
@@ -3677,24 +3678,22 @@ int Cmiss_graphic_to_graphics_object(
 								if (graphic_to_object_data->group_field)
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
-									Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(group);
-									if (element_group_field)
+									Cmiss_fe_mesh_id temp_mesh =
+									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
+									Cmiss_fe_mesh_destroy(&temp_mesh);
+									if (element_group)
 									{
-										Cmiss_field_element_group_template_id element_group =
-											Cmiss_field_cast_element_group_template(element_group_field);
-										Cmiss_element_id element = Cmiss_field_element_group_template_get_first_element(element_group);
+										Cmiss_element_id element = Cmiss_field_element_group_get_first_element(element_group);
 										while (element)
 										{
 											FE_element_select_graphics_element_points(element, (void *)&select_data);
 											Cmiss_element_destroy(&element);
-											Cmiss_field_element_group_template_get_next_element(element_group);
+											Cmiss_field_element_group_get_next_element(element_group);
 										}
-										Cmiss_field_destroy(&element_group_field);
-										element_group_field = (Cmiss_field_id)element_group;
-										Cmiss_field_destroy(&element_group_field);
+										Cmiss_field_element_group_destroy(&element_group);
 									}
-									Cmiss_field_id group_field = (Cmiss_field_id)group;
-									Cmiss_field_destroy(&group_field);
+									Cmiss_field_group_destroy(&group);
 								}
 
 								/* select Element_point_ranges for glyph_sets not already
@@ -3703,8 +3702,11 @@ int Cmiss_graphic_to_graphics_object(
 									Element_point_ranges_select_in_graphics_object,
 									(void *)&select_data,
 									graphic_to_object_data->selected_element_point_ranges_list);
-                GT_object_set_element_highlight_functor(graphic->graphics_object,
-                  (void *)graphic_to_object_data->group_field);
+								Cmiss_fe_mesh_id temp_mesh =
+								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+								GT_object_set_element_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, temp_mesh);
+								Cmiss_fe_mesh_destroy(&temp_mesh);
 							} break;
 							case CMISS_GRAPHIC_STATIC:
 							case CMISS_GRAPHIC_STREAMLINES:
@@ -4037,17 +4039,15 @@ int Cmiss_graphic_Computed_field_change(
 		(struct Cmiss_graphic_Computed_field_change_data *)change_data_void))
 	{
 		return_code = 1;
-		if (Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
+		if (change_data->changed_field_list && Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 			graphic, change_data->default_coordinate_field,
 			Computed_field_is_in_list, (void *)change_data->changed_field_list))
 		{
 			Cmiss_graphic_clear_graphics(graphic);
 			change_data->graphics_changed = 1;
 		}
-	  if (change_data->group_field && Computed_field_or_ancestor_satisfies_condition(
-	  		change_data->group_field,
-	  		Computed_field_is_in_list, (void *)change_data->changed_field_list))
-	  {
+		if(change_data->selection_changed)
+		{
 	  	if (graphic->graphics_object&&
 	  			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 	  				(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
@@ -4082,7 +4082,7 @@ int Cmiss_graphic_Computed_field_change(
 					} break;
 	  		}
 	  	}
-	  }
+		}
 	}
 	else
 	{

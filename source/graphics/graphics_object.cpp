@@ -57,10 +57,10 @@ gtObject/gtWindow management routines.
 
 extern "C" {
 #include "api/cmiss_field.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_group.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -84,7 +84,7 @@ extern "C" {
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "computed_field/computed_field_sub_group_template.hpp"
+#include "computed_field/computed_field_sub_group.hpp"
 /*
 Global variables
 ----------------
@@ -6917,8 +6917,7 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 		}
 		if (sub_group)
 		{
-			struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-			Cmiss_field_destroy(&sub_group_field);
+			Cmiss_field_group_destroy(&sub_group);
 		}
 		return_code = 1;
 	}
@@ -6928,7 +6927,7 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 #endif /* defined (USE_OPENCASCADE) */
 
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
-    void *group_field_void)
+    void *group_field_void, Cmiss_fe_mesh_id mesh)
 {
   struct Computed_field *group_field =
     (struct Computed_field *)group_field_void;
@@ -6941,30 +6940,20 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
   if (graphics_object && group_field)
   {
     Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-    Cmiss_field_id element_group_field = Cmiss_field_group_get_element_group(sub_group);
-    Cmiss_field_element_group_template_id element_group = NULL;
-    if (element_group_field)
-    {
-      element_group =
-        Cmiss_field_cast_element_group_template(element_group_field);
-      Cmiss_field_destroy(&element_group_field);
-      if (element_group)
-      {
-        Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-          Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-          Cmiss_field_element_group_template_id>(element_group);
-        graphics_object->highlight_functor =
-          new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
-              &Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
-        Cmiss_field_id temporary_handle =
-          reinterpret_cast<Computed_field *>(element_group);
-        Cmiss_field_destroy(&temporary_handle);
-      }
-    }
+    Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
+		if (element_group)
+		{
+			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+				Cmiss_field_element_group_id>(element_group);
+			graphics_object->highlight_functor =
+				new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
+						&Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
+			Cmiss_field_element_group_destroy(&element_group);
+		}
     if (sub_group)
     {
-      struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-      Cmiss_field_destroy(&sub_group_field);
+      Cmiss_field_group_destroy(&sub_group);
     }
     return_code = 1;
   }
@@ -6973,7 +6962,7 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
 }
 
 int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
-		void *group_field_void, int use_data)
+		void *group_field_void, Cmiss_nodeset_id nodeset)
 {
 	struct Computed_field *group_field =
 		(struct Computed_field *)group_field_void;
@@ -6986,34 +6975,20 @@ int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
 	if (graphics_object && group_field)
 	{
 	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-	  Cmiss_field_id node_group_field = NULL;
-	  if (!use_data)
-	  	node_group_field = Cmiss_field_group_get_node_group(sub_group);
-	  else
-	  	node_group_field = Cmiss_field_group_get_data_group(sub_group);
-	  Cmiss_field_node_group_template_id node_group = NULL;
-    if (node_group_field)
-    {
-    	node_group =
-    		Cmiss_field_cast_node_group_template(node_group_field);
-    	Cmiss_field_destroy(&node_group_field);
-    	if (node_group)
-    	{
-    		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-    			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-    			Cmiss_field_node_group_template_id>(node_group);
-    		graphics_object->highlight_functor =
-    			new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
-    				  &Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
-    		Cmiss_field_id temporary_handle =
-    			reinterpret_cast<Computed_field *>(node_group);
-    		Cmiss_field_destroy(&temporary_handle);
-    	}
-    }
+	  Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+		if (node_group)
+		{
+			Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+				Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+				Cmiss_field_node_group_id>(node_group);
+			graphics_object->highlight_functor =
+				new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
+						&Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
+			Cmiss_field_node_group_destroy(&node_group);
+		}
     if (sub_group)
 		{
-    	struct Computed_field *sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-    	Cmiss_field_destroy(&sub_group_field);
+    	Cmiss_field_group_destroy(&sub_group);
 		}
 	  return_code = 1;
 	}

@@ -972,7 +972,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_format_output.cpp \
 	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_group.cpp \
-	computed_field/computed_field_sub_group_template.cpp \
+	computed_field/computed_field_sub_group.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
@@ -1123,6 +1123,7 @@ GRAPHICS_SRCS = \
 	graphics/render_triangularisation.cpp \
 	graphics/quaternion.cpp\
 	graphics/selected_graphic.c \
+	graphics/selection.cpp \
 	graphics/spectrum.cpp \
 	graphics/spectrum_settings.c \
 	graphics/tessellation.cpp \

@@ -5,7 +5,7 @@
  */
 /* ***** BEGIN LICENSE BLOCK *****
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
-*
+*element_group
 * The contents of this file are subject to the Mozilla Public License Version
 * 1.1 (the "License"); you may not use this file except in compliance with
 * the License. You may obtain a copy of the License at
@@ -43,14 +43,14 @@ extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_node.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 }
 
-#include "computed_field/computed_field_sub_group_template.hpp"
+#include "computed_field/computed_field_sub_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -82,12 +82,12 @@ public:
 };
 
 
-Cmiss_field_node_group_template *Cmiss_field_cast_node_group_template(Cmiss_field_id field)
+Cmiss_field_node_group *Cmiss_field_cast_node_group(Cmiss_field_id field)
 {
 	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_node_id>*>(field->core))
 	{
 		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_node_group_template_id>(field));
+		return (reinterpret_cast<Cmiss_field_node_group_id>(field));
 	}
 	else
 	{
@@ -96,12 +96,12 @@ Cmiss_field_node_group_template *Cmiss_field_cast_node_group_template(Cmiss_fiel
 }
 
 inline Computed_field *Computed_field_cast(
-	Cmiss_field_node_group_template *node_group_field)
+	Cmiss_field_node_group *node_group_field)
 {
 	return (reinterpret_cast<Computed_field*>(node_group_field));
 }
 
-int Cmiss_field_node_group_template_add_node(Cmiss_field_node_group_template_id node_group,
+int Cmiss_field_node_group_add_node(Cmiss_field_node_group_id node_group,
 		Cmiss_node_id node)
 {
 	int return_code = 1;
@@ -111,7 +111,7 @@ int Cmiss_field_node_group_template_add_node(Cmiss_field_node_group_template_id 
 	  int identifier = get_FE_node_identifier(node);
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		group_core->add_object(identifier, node);
 	}
 	else
@@ -122,7 +122,7 @@ int Cmiss_field_node_group_template_add_node(Cmiss_field_node_group_template_id 
 	return return_code;
 }
 
-int Cmiss_field_node_group_template_remove_node(Cmiss_field_node_group_template_id node_group,
+int Cmiss_field_node_group_remove_node(Cmiss_field_node_group_id node_group,
 		Cmiss_node_id node)
 {
 	int return_code = 1;
@@ -132,7 +132,7 @@ int Cmiss_field_node_group_template_remove_node(Cmiss_field_node_group_template_
 	  int identifier = get_FE_node_identifier(node);
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		group_core->remove_object(identifier);
 	}
 	else
@@ -143,7 +143,7 @@ int Cmiss_field_node_group_template_remove_node(Cmiss_field_node_group_template_
 	return return_code;
 }
 
-int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id node_group)
+int Cmiss_field_node_group_clear(Cmiss_field_node_group_id node_group)
 {
 	int return_code = 1;
 
@@ -151,7 +151,7 @@ int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id nod
 	{
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		group_core->clear();
 	}
 	else
@@ -162,8 +162,8 @@ int Cmiss_field_node_group_template_clear(Cmiss_field_node_group_template_id nod
 	return return_code;
 }
 
-int Cmiss_field_node_group_template_is_node_selected(
-	Cmiss_field_node_group_template_id node_group,	Cmiss_node_id node)
+int Cmiss_field_node_group_contains_node(
+	Cmiss_field_node_group_id node_group,	Cmiss_node_id node)
 {
 	int return_code = 0;
 
@@ -172,22 +172,22 @@ int Cmiss_field_node_group_template_is_node_selected(
 		int identifier = get_FE_node_identifier(node);
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id, 
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		return_code = group_core->get_object_selected(identifier, node);
 	}
 
 	return return_code;
 }
 
-Cmiss_node_id Cmiss_field_node_group_template_get_first_node(
-	Cmiss_field_node_group_template_id node_group)
+Cmiss_node_id Cmiss_field_node_group_get_first_node(
+	Cmiss_field_node_group_id node_group)
 {
 	Cmiss_node_id node = NULL;
 	if (node_group)
 	{
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		node = group_core->getFirstObject();
 		if (node)
 			ACCESS(FE_node)(node);
@@ -196,15 +196,15 @@ Cmiss_node_id Cmiss_field_node_group_template_get_first_node(
 	return node;
 }
 
-Cmiss_node_id Cmiss_field_node_group_template_get_next_node(
-	Cmiss_field_node_group_template_id node_group)
+Cmiss_node_id Cmiss_field_node_group_get_next_node(
+	Cmiss_field_node_group_id node_group)
 {
 	Cmiss_node_id node = NULL;
 	if (node_group)
 	{
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_template_id>(node_group);
+			Cmiss_field_node_group_id>(node_group);
 		node = group_core->getNextObject();
 		if (node)
 			ACCESS(FE_node)(node);
@@ -213,13 +213,32 @@ Cmiss_node_id Cmiss_field_node_group_template_get_next_node(
 	return node;
 }
 
-Computed_field *Cmiss_field_module_create_node_group_template(Cmiss_field_module_id field_module)
+int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group)
+{
+	int return_code = 0;
+	if (node_group)
+	{
+		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+			Cmiss_field_node_group_id>(node_group);
+		return_code = group_core->isEmpty();
+	}
+
+	return return_code;
+}
+
+int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(node_group_address));
+}
+
+Computed_field *Cmiss_field_module_create_node_group(Cmiss_field_module_id field_module, Cmiss_nodeset_id nodeset)
 {
 	Computed_field *field;
 
 	ENTER(Computed_field_create_group);
 	field = (Computed_field *)NULL;
-	if (field_module)
+	if (field_module && nodeset)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
@@ -237,12 +256,12 @@ Computed_field *Cmiss_field_module_create_node_group_template(Cmiss_field_module
 	return (field);
 } /* Cmiss_field_module_create_group */
 
-Cmiss_field_element_group_template *Cmiss_field_cast_element_group_template(Cmiss_field_id field)
+Cmiss_field_element_group *Cmiss_field_cast_element_group(Cmiss_field_id field)
 {
 	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_element_id>*>(field->core))
 	{
 		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_element_group_template_id>(field));
+		return (reinterpret_cast<Cmiss_field_element_group_id>(field));
 	}
 	else
 	{
@@ -251,12 +270,12 @@ Cmiss_field_element_group_template *Cmiss_field_cast_element_group_template(Cmis
 }
 
 inline Computed_field *Computed_field_cast(
-	Cmiss_field_element_group_template *element_group_field)
+	Cmiss_field_element_group *element_group_field)
 {
 	return (reinterpret_cast<Computed_field*>(element_group_field));
 }
 
-int Cmiss_field_element_group_template_add_element(Cmiss_field_element_group_template_id element_group,
+int Cmiss_field_element_group_add_element(Cmiss_field_element_group_id element_group,
 	Cmiss_element_id element)
 {
 	int return_code = 1;
@@ -267,7 +286,7 @@ int Cmiss_field_element_group_template_add_element(Cmiss_field_element_group_tem
 		{
 			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_template_id>(element_group);
+			Cmiss_field_element_group_id>(element_group);
 			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
 			group_core->add_object(identifier, element);
 		}
@@ -280,7 +299,7 @@ int Cmiss_field_element_group_template_add_element(Cmiss_field_element_group_tem
 	return return_code;
 }
 
-int Cmiss_field_element_group_template_remove_element(Cmiss_field_element_group_template_id element_group,
+int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id element_group,
 		Cmiss_element_id element)
 {
 	int return_code = 1;
@@ -291,7 +310,7 @@ int Cmiss_field_element_group_template_remove_element(Cmiss_field_element_group_
 	  {
 	  	Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 	  		Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-	  		Cmiss_field_element_group_template_id>(element_group);
+	  		Cmiss_field_element_group_id>(element_group);
 			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
 	  	group_core->remove_object(identifier);
 	  }
@@ -304,7 +323,7 @@ int Cmiss_field_element_group_template_remove_element(Cmiss_field_element_group_
 	return return_code;
 }
 
-int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_id element_group)
+int Cmiss_field_element_group_clear(Cmiss_field_element_group_id element_group)
 {
 	int return_code = 1;
 
@@ -312,7 +331,7 @@ int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_
 	{
 		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_template_id>(element_group);
+			Cmiss_field_element_group_id>(element_group);
 		group_core->clear();
 	}
 	else
@@ -323,8 +342,8 @@ int Cmiss_field_element_group_template_clear(Cmiss_field_element_group_template_
 	return return_code;
 }
 
-int Cmiss_field_element_group_template_is_element_selected(
-	Cmiss_field_element_group_template_id element_group, Cmiss_element_id element)
+int Cmiss_field_element_group_contains_element(
+	Cmiss_field_element_group_id element_group, Cmiss_element_id element)
 {
 	int return_code = 0;
 	struct CM_element_information cm_identifier;
@@ -334,7 +353,7 @@ int Cmiss_field_element_group_template_is_element_selected(
 		{
 			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-				Cmiss_field_element_group_template_id>(element_group);
+				Cmiss_field_element_group_id>(element_group);
 			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
 			return_code = group_core->get_object_selected(identifier, element);
 		}
@@ -343,13 +362,29 @@ int Cmiss_field_element_group_template_is_element_selected(
 	return return_code;
 }
 
-Computed_field *Cmiss_field_module_create_element_group_template(Cmiss_field_module_id field_module)
+int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group)
+{
+	int return_code = 0;
+	if (element_group)
+	{
+		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+			Cmiss_field_element_group_id>(element_group);
+		return_code = group_core->isEmpty();
+	}
+
+	return return_code;
+}
+
+
+Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
+		Cmiss_fe_mesh_id mesh)
 {
 	Computed_field *field;
 
 	ENTER(Computed_field_create_group);
 	field = (Computed_field *)NULL;
-	if (field_module)
+	if (field_module && mesh)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
@@ -367,15 +402,15 @@ Computed_field *Cmiss_field_module_create_element_group_template(Cmiss_field_mod
 	return (field);
 } /* Cmiss_field_module_create_group */
 
-Cmiss_element_id Cmiss_field_element_group_template_get_first_element(
-	Cmiss_field_element_group_template_id element_group)
+Cmiss_element_id Cmiss_field_element_group_get_first_element(
+	Cmiss_field_element_group_id element_group)
 {
 	Cmiss_element_id element = NULL;
 	if (element_group)
 	{
 		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_template_id>(element_group);
+			Cmiss_field_element_group_id>(element_group);
 		element = group_core->getFirstObject();
 		if (element)
 			ACCESS(FE_element)(element);
@@ -384,21 +419,26 @@ Cmiss_element_id Cmiss_field_element_group_template_get_first_element(
 	return element;
 }
 
-Cmiss_element_id Cmiss_field_element_group_template_get_next_element(
-	Cmiss_field_element_group_template_id element_group)
+Cmiss_element_id Cmiss_field_element_group_get_next_element(
+	Cmiss_field_element_group_id element_group)
 {
 	Cmiss_element_id element = NULL;
 	if (element_group)
 	{
 		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_template_id>(element_group);
+			Cmiss_field_element_group_id>(element_group);
 		element = group_core->getNextObject();
 		if (element)
 			ACCESS(FE_element)(element);
 	}
 
 	return element;
+}
+
+int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
 }
 
 

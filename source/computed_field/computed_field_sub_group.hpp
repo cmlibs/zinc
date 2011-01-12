@@ -39,10 +39,11 @@
 *
 * ***** END LICENSE BLOCK ***** */
 
-#if !defined (COMPUTED_FIELD_SUB_GROUP_TEMPLATE_HPP)
-#define COMPUTED_FIELD_SUB_GROUP_TEMPLATE_HPP
+#if !defined (COMPUTED_FIELD_SUB_GROUP_HPP)
+#define COMPUTED_FIELD_SUB_GROUP_HPP
 extern "C" {
 #include <stdlib.h>
+#include "api/cmiss_field_sub_group.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_group_base.hpp"
@@ -77,6 +78,11 @@ public:
 	}
 
 	Cmiss_field_group_change_type getChange() const
+	{
+		return change;
+	}
+
+	Cmiss_field_group_change_type getLocalChange() const
 	{
 		return change;
 	}
@@ -186,7 +192,7 @@ namespace {
 			return 0;
 		};
 
-		int clear()
+		virtual int clear()
 		{
 			if (object_map.size())
 			{
@@ -329,7 +335,17 @@ Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_cor
 		reinterpret_cast<Computed_field*>(object_group_field)->core));
 }
 
+Cmiss_node_id Cmiss_field_node_group_get_first_node(
+	Cmiss_field_node_group_id node_group);
 
+Cmiss_node_id Cmiss_field_node_group_get_next_node(
+	Cmiss_field_node_group_id node_group);
 
-#endif /* COMPUTED_FIELD_SUB_GROUP_TEMPLATE_HPP */
+Cmiss_element_id Cmiss_field_element_group_get_first_element(
+	Cmiss_field_element_group_id element_group);
+
+Cmiss_element_id Cmiss_field_element_group_get_next_element(
+	Cmiss_field_element_group_id element_group);
+
+#endif /* COMPUTED_FIELD_SUB_GROUP_HPP */
 

@@ -60,6 +60,12 @@ typedef struct Cmiss_rendition * Cmiss_rendition_id;
 #define CMISS_RENDITION_ID_DEFINED
 #endif /* CMISS_RENDITION_ID_DEFINED */
 
+#ifndef CMISS_SELECTION_HANDLER_ID_DEFINED
+struct Cmiss_selection_handler;
+typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
+#define CMISS_SELECTION_HANDLER_ID_DEFINED
+#endif
+
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -185,5 +191,18 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
  */
 int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
 	const char *command_string);
+
+Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition);
+
+/***************************************************************************//**
+ * Get and return an accessed handle to the selection group of rendition.
+ * This function will only return selection group that is still being managed.
+ * Caller must destroy the reference to the handler.
+ *
+ * @param cmiss_rendition  pointer to the cmiss_rendition.
+ *
+ * @return Return selection group if successfully otherwise null.
+ */
+Cmiss_field_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
 
 #endif /* __CMISS_RENDITION_H__ */

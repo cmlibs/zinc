@@ -61,7 +61,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -89,6 +89,7 @@ static char node_tool_uidh[] =
 #include "user_interface/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_sub_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -312,28 +313,30 @@ static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use
 			fe_region = FE_region_get_data_FE_region(fe_region);
 		if (group && fe_region)
 		{
-			Cmiss_field_id node_group_field = NULL;
+			Cmiss_field_node_group_id node_group = NULL;
+			Cmiss_nodeset_id nodeset = NULL;
 			if (!use_data)
-				node_group_field = Cmiss_field_group_get_node_group(group);
+				nodeset = Cmiss_region_get_nodeset_by_name(region, "cmiss_nodes");
 			else
-				node_group_field = Cmiss_field_group_get_data_group(group);
-			if (node_group_field)
+				nodeset = Cmiss_region_get_nodeset_by_name(region, "cmiss_data");
+			if (nodeset)
 			{
-				Cmiss_field_node_group_template_id node_group =
-					Cmiss_field_cast_node_group_template(node_group_field);
-				Cmiss_field_destroy(&node_group_field);
-				node_group_field = reinterpret_cast<Computed_field *>(node_group);
+				node_group = Cmiss_field_group_get_node_group(group, nodeset);
+				Cmiss_nodeset_destroy(&nodeset);
+			}
+			if (node_group)
+			{
 				FE_region_begin_change(fe_region);
 				Cmiss_node_id node =
-					Cmiss_field_node_group_template_get_first_node(node_group);
+					Cmiss_field_node_group_get_first_node(node_group);
 				while (node)
 				{
 					FE_region_remove_FE_node(fe_region, node);
 					DEACCESS(FE_node)(&node);
-					node = Cmiss_field_node_group_template_get_next_node(node_group);
+					node = Cmiss_field_node_group_get_next_node(node_group);
 				}
 				FE_region_end_change(fe_region);
-				Cmiss_field_destroy(&node_group_field);
+				Cmiss_field_node_group_destroy(&node_group);
 			}
 			Cmiss_field_destroy(&field);
 		}
@@ -360,7 +363,7 @@ int Node_tool_remove_selected_node(struct Node_tool *node_tool)
 	{
 		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 			node_tool->root_region);
-		Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
+		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
 			root_rendition);
 		if (root_group_field)
 		{
@@ -379,10 +382,10 @@ int Node_tool_remove_selected_node(struct Node_tool *node_tool)
 				Cmiss_field_group_clear_region_tree_data(root_group);
 			}
 			Cmiss_field_destroy(&root_group_field);
-			root_group_field = reinterpret_cast<Computed_field *>(root_group);
-			Cmiss_field_destroy(&root_group_field);
+			Cmiss_field_group_destroy(&root_group);
 		}
 		return_code = 1;
+		Cmiss_rendition_flush_tree_selections(root_rendition);
 		Cmiss_rendition_destroy(&root_rendition);
 	}
 
@@ -1960,8 +1963,7 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 		Cmiss_region *sub_region = NULL;
 		Cmiss_field_group_id sub_group = NULL;
 		Cmiss_field_id sub_group_field = NULL;
-		Cmiss_field_id node_group_field = NULL;
-		Cmiss_field_node_group_template_id node_group = NULL;
+		Cmiss_field_node_group_id node_group = NULL;
 		if (node_tool->rendition)
 		{
 			sub_region = Cmiss_rendition_get_region(node_tool->rendition);
@@ -1969,22 +1971,26 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 			sub_group = Cmiss_field_cast_group(sub_group_field);
 			if (sub_group)
 			{
+				Cmiss_nodeset_id nodeset = NULL;
 				if (!node_tool->use_data)
-					node_group_field = Cmiss_field_group_create_node_group(sub_group);
+					nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_nodes");
 				else
-					node_group_field = Cmiss_field_group_create_data_group(sub_group);
-				if (node_group_field)
+					nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_data");
+				if (nodeset)
 				{
-					node_group =
-						Cmiss_field_cast_node_group_template(node_group_field);
-					Cmiss_field_destroy(&node_group_field);
+					node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+					if (!node_group)
+					{
+						node_group = Cmiss_field_group_create_node_group(sub_group, nodeset);
+					}
+					Cmiss_nodeset_destroy(&nodeset);
 				}
 			}
 		}
 
 		if (sub_region && sub_group_field && node_group)
 		{
-			Cmiss_field_node_group_template_add_node(node_group,
+			Cmiss_field_node_group_add_node(node_group,
 				picked_node);
 			Computed_field_changed(sub_group_field);
 		}
@@ -1994,15 +2000,11 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 		}
 		if (sub_group)
 		{
-			sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-			Cmiss_field_destroy(&sub_group_field);
-			sub_group = NULL;
+			Cmiss_field_group_destroy(&sub_group);
 		}
 		if (node_group)
 		{
-			Cmiss_field_id temporary_handle =
-				reinterpret_cast<Computed_field *>(node_group);
-			Cmiss_field_destroy(&temporary_handle);
+			Cmiss_field_node_group_destroy(&node_group);
 		}
 	}
 	else
@@ -2050,6 +2052,7 @@ release.
 	if (device_id&&event&&(node_tool=
 		(struct Node_tool *)node_tool_void))
 	{
+		Cmiss_region_begin_hierarchical_change(node_tool->root_region);
 		interaction_volume=Interactive_event_get_interaction_volume(event);
 		if (scene=Interactive_event_get_scene(event))
 		{
@@ -2096,29 +2099,31 @@ release.
 							}
 							if (picked_node)
 							{
-								if (Cmiss_rendition_has_selection_group(rendition))
+								node_tool->picked_node_was_unselected=1;
+								Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(rendition);
+								if (group_field)
 								{
-									node_tool->picked_node_was_unselected=1;
-									Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 									Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-									Cmiss_field_id node_group_field = NULL;
+									Cmiss_field_node_group_id node_group = NULL;
+									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
+									Cmiss_nodeset_id nodeset = NULL;
 									if (!node_tool->use_data)
-										node_group_field = Cmiss_field_group_get_node_group(sub_group);
+										nodeset = Cmiss_region_get_nodeset_by_name(temp_region, "cmiss_nodes");
 									else
-										node_group_field = Cmiss_field_group_get_data_group(sub_group);
-									if (node_group_field)
+										nodeset = Cmiss_region_get_nodeset_by_name(temp_region, "cmiss_data");
+									if (nodeset)
 									{
-										Cmiss_field_node_group_template_id node_group =
-											Cmiss_field_cast_node_group_template(node_group_field);
+										node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+										Cmiss_nodeset_destroy(&nodeset);
+									}
+									if (node_group)
+									{
 										node_tool->picked_node_was_unselected =
-											!Cmiss_field_node_group_template_is_node_selected(node_group, picked_node);
-										Cmiss_field_destroy(&node_group_field);
-										node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
-										Cmiss_field_destroy(&node_group_field);
+											!Cmiss_field_node_group_contains_node(node_group, picked_node);
+										Cmiss_field_node_group_destroy(&node_group);
 									}
 									Cmiss_field_destroy(&group_field);
-									group_field = reinterpret_cast<Cmiss_field_id>(sub_group);
-									Cmiss_field_destroy(&group_field);
+									Cmiss_field_group_destroy(&sub_group);
 								}
 								REACCESS(Scene_picked_object)(
 									&(node_tool->scene_picked_object),scene_picked_object);
@@ -2189,23 +2194,19 @@ release.
 								{
 									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 										node_tool->root_region);
-									if (Cmiss_rendition_has_selection_group(root_rendition))
+									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(root_rendition);
+									if (root_group_field)
 									{
-										Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
-											root_rendition);
-										if (root_group_field)
-										{
-											Cmiss_field_group_id root_group =
-												Cmiss_field_cast_group(root_group_field);
-											if (!node_tool->use_data)
-												Cmiss_field_group_clear_region_tree_node(root_group);
-											else
-												Cmiss_field_group_clear_region_tree_data(root_group);
-											Cmiss_field_destroy(&root_group_field);
-											root_group_field = reinterpret_cast<Computed_field *>(root_group);
-											Cmiss_field_destroy(&root_group_field);
-										}
+										Cmiss_field_group_id root_group =
+											Cmiss_field_cast_group(root_group_field);
+										if (!node_tool->use_data)
+											Cmiss_field_group_clear_region_tree_node(root_group);
+										else
+											Cmiss_field_group_clear_region_tree_data(root_group);
+										Cmiss_field_group_destroy(&root_group);
+										Cmiss_field_destroy(&root_group_field);
 									}
+									//Cmiss_rendition_flush_tree_selections(root_rendition);
 									Cmiss_rendition_destroy(&root_rendition);
 								}
 							}
@@ -2362,20 +2363,23 @@ release.
 								}
 								if (return_code)
 								{
-									if (node_tool->rendition &&
-											Cmiss_rendition_has_selection_group(node_tool->rendition))
+									Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(node_tool->rendition);
+									if (node_tool->rendition && group_field)
 									{
-										Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(node_tool->rendition);
 										Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-										Cmiss_field_id node_group_field = NULL;
+										Cmiss_field_node_group_id node_group = NULL;
+										Cmiss_nodeset_id nodeset = NULL;
 										if (!node_tool->use_data)
-											node_group_field = Cmiss_field_group_get_node_group(sub_group);
+											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_nodes");
 										else
-											node_group_field = Cmiss_field_group_get_data_group(sub_group);
-										if (node_group_field)
+											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_data");
+										if (nodeset)
 										{
-											Cmiss_field_node_group_template_id node_group =
-												Cmiss_field_cast_node_group_template(node_group_field);
+											node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+											Cmiss_nodeset_destroy(&nodeset);
+										}
+										if (node_group)
+										{
 											FE_region_begin_change(node_tool->fe_region);
 											/* edit vectors if non-constant orientation_scale field */
 											if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode)
@@ -2390,13 +2394,13 @@ release.
 														node_tool->last_picked_node, (void *) &edit_info))
 												{
 													Cmiss_node_id edit_node =
-														Cmiss_field_node_group_template_get_first_node(node_group);
+														Cmiss_field_node_group_get_first_node(node_group);
 													while (edit_node)
 													{
 														FE_node_edit_vector(edit_node, (void *)&edit_info);
 														DEACCESS(FE_node)(&edit_node);
 														edit_node =
-															Cmiss_field_node_group_template_get_next_node(node_group);
+															Cmiss_field_node_group_get_next_node(node_group);
 													}
 												}
 											}
@@ -2409,13 +2413,13 @@ release.
 															node_tool->last_picked_node, (void *) &edit_info))
 													{
 														Cmiss_node_id edit_node =
-															Cmiss_field_node_group_template_get_first_node(node_group);
+															Cmiss_field_node_group_get_first_node(node_group);
 														while (edit_node)
 														{
 															FE_node_edit_position(edit_node, (void *)&edit_info);
 															DEACCESS(FE_node)(&edit_node);
 															edit_node =
-																Cmiss_field_node_group_template_get_next_node(node_group);
+																Cmiss_field_node_group_get_next_node(node_group);
 														}
 													}
 												}
@@ -2427,13 +2431,10 @@ release.
 												}
 											}
 											FE_region_end_change(node_tool->fe_region);
-											Cmiss_field_destroy(&node_group_field);
-											node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
-											Cmiss_field_destroy(&node_group_field);
+											Cmiss_field_node_group_destroy(&node_group);
 										}
 										Cmiss_field_destroy(&group_field);
-										group_field = reinterpret_cast<Cmiss_field_id>(sub_group);
-										Cmiss_field_destroy(&group_field);
+										Cmiss_field_group_destroy(&sub_group);
 									}
 									else
 									{
@@ -2508,9 +2509,8 @@ release.
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
 											Cmiss_field_id sub_group_field = NULL;
-											Cmiss_field_id node_group_field = NULL;
 											Cmiss_rendition *region_rendition = NULL;
-											Cmiss_field_node_group_template_id node_group = NULL;
+											Cmiss_field_node_group_id node_group = NULL;
 											Region_node_map::iterator pos;
 											for (pos = node_map->begin(); pos != node_map->end(); ++pos)
 											{
@@ -2524,9 +2524,9 @@ release.
 														Cmiss_field_destroy(&sub_group_field);
 														sub_group = NULL;
 													}
-													if (node_group_field)
+													if (node_group)
 													{
-														Cmiss_field_destroy(&node_group_field);
+														Cmiss_field_node_group_destroy(&node_group);
 													}
 													if (region_rendition)
 													{
@@ -2541,22 +2541,25 @@ release.
 													}
 													if (sub_group)
 													{
+														Cmiss_nodeset_id nodeset = NULL;
 														if (!node_tool->use_data)
-															node_group_field = Cmiss_field_group_create_node_group(sub_group);
+															nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_nodes");
 														else
-															node_group_field = Cmiss_field_group_create_data_group(sub_group);
-														if (node_group_field)
+															nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_data");
+														if (nodeset)
 														{
-															node_group = 
-																Cmiss_field_cast_node_group_template(node_group_field);
-															Cmiss_field_destroy(&node_group_field);
-															node_group_field = reinterpret_cast<Computed_field *>(node_group);
+															node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+															if (!node_group)
+															{
+																node_group = Cmiss_field_group_create_node_group(sub_group, nodeset);
+															}
+															Cmiss_nodeset_destroy(&nodeset);
 														}
 													}
 												}
 												if (sub_region && sub_group_field && node_group)
 												{
-													Cmiss_field_node_group_template_add_node(node_group,
+													Cmiss_field_node_group_add_node(node_group,
 														pos->second);
 												}
 											}
@@ -2564,13 +2567,11 @@ release.
 											{
 												Computed_field_changed(sub_group_field);
 												Cmiss_field_destroy(&sub_group_field);
-												sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-												Cmiss_field_destroy(&sub_group_field);
-												sub_group = NULL;
+												Cmiss_field_group_destroy(&sub_group);
 											}
-											if (node_group_field)
+											if (node_group)
 											{
-												Cmiss_field_destroy(&node_group_field);
+												Cmiss_field_node_group_destroy(&node_group);
 											}
 											if (region_rendition)
 											{
@@ -2629,6 +2630,14 @@ release.
 				} break;
 			}
 		}
+		if (node_tool->root_region)
+		{
+			Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
+				node_tool->root_region);
+			Cmiss_rendition_flush_tree_selections(root_rendition);
+			Cmiss_rendition_destroy(&root_rendition);
+		}
+		Cmiss_region_end_hierarchical_change(node_tool->root_region);
 	}
 	else
 	{
@@ -3094,9 +3103,9 @@ Set the selected option in the Coordinate Field chooser.
 			Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_tool->region);
 			if (rendition)
 			{
-				if (Cmiss_rendition_has_selection_group(rendition))
+				Cmiss_field_id group_field  = Cmiss_rendition_get_selection_group(rendition);
+				if (group_field)
 				{
-					Cmiss_field_id group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
 					node_list = FE_node_list_from_region_and_selection_group(
 						node_tool->region, NULL, group_field, NULL, 0, node_tool->use_data);
 					FE_region_begin_change(node_tool->fe_region);
@@ -3522,11 +3531,7 @@ static void Node_tool_Computed_field_change(
 		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_tool->region);
 		if (rendition)
 		{
-			struct Computed_field *selection_group_field = NULL;
-			if (Cmiss_rendition_has_selection_group(rendition))
-			{
-			 selection_group_field = Cmiss_rendition_get_or_create_selection_group(rendition);
-			}
+			struct Computed_field *selection_group_field = Cmiss_rendition_get_selection_group(rendition);
 			changed_field_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
 					MANAGER_CHANGE_RESULT(Computed_field));
@@ -3534,20 +3539,21 @@ static void Node_tool_Computed_field_change(
 					selection_group_field,Computed_field_is_in_list, (void *)changed_field_list))
 			{
 				Cmiss_field_group_id group= Cmiss_field_cast_group(selection_group_field);
-				Cmiss_field_id node_group_field = NULL;
+				Cmiss_field_node_group_id node_group = NULL;
+				Cmiss_nodeset_id nodeset = NULL;
 				if (!node_tool->use_data)
-					node_group_field = Cmiss_field_group_get_node_group(group);
+					nodeset = Cmiss_region_get_nodeset_by_name(node_tool->region, "cmiss_nodes");
 				else
-					node_group_field = Cmiss_field_group_get_data_group(group);
-				Cmiss_field_destroy(&selection_group_field);
-				selection_group_field = reinterpret_cast<Cmiss_field_id>(group);
-				Cmiss_field_node_group_template_id node_group =
-					Cmiss_field_cast_node_group_template(node_group_field);
-				Cmiss_field_destroy(&node_group_field);
-				node_group_field = reinterpret_cast<Cmiss_field_id>(node_group);
-				Cmiss_field_destroy(&node_group_field);
-				struct FE_node *node = Cmiss_field_node_group_template_get_first_node(node_group);
-				struct FE_node *next_node = Cmiss_field_node_group_template_get_next_node(node_group);
+					nodeset = Cmiss_region_get_nodeset_by_name(node_tool->region, "cmiss_data");
+				if (nodeset)
+				{
+					node_group = Cmiss_field_group_get_node_group(group, nodeset);
+					Cmiss_nodeset_destroy(&nodeset);
+				}
+				Cmiss_field_group_destroy(&group);
+				struct FE_node *node = Cmiss_field_node_group_get_first_node(node_group);
+				struct FE_node *next_node = Cmiss_field_node_group_get_next_node(node_group);
+				Cmiss_field_node_group_destroy(&node_group);
 				/* make sure there is only one node selected in group */
 				if (node && !next_node)
 				{

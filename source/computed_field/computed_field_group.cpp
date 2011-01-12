@@ -46,10 +46,10 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 }
 #include "computed_field/computed_field_group_base.hpp"
-#include "computed_field/computed_field_sub_group_template.hpp"
+#include "computed_field/computed_field_sub_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
-#include "api/cmiss_field_sub_group_template.h"
+#include "api/cmiss_field_sub_group.h"
 #include "api/cmiss_rendition.h"
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
@@ -57,7 +57,6 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "graphics/rendition.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
@@ -197,7 +196,7 @@ private:
 
 public:
 	Cmiss_region *region;
-	int selection_on;
+	int contains_all;
 	Computed_field *local_node_group, *local_data_group, *local_element_group;
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
 #if defined (USE_OPENCASCADE)
@@ -209,7 +208,7 @@ public:
 	Computed_field_group(Cmiss_region *region)
 		: Computed_field_group_base()
 		, region(region)
-		, selection_on(0)
+		, contains_all(0)
 		, local_node_group(NULL)
 		, local_data_group(NULL)
 		, local_element_group(NULL)
@@ -223,68 +222,29 @@ public:
 
 	~Computed_field_group()
 	{
-		if (local_node_group)
-		{
-			Cmiss_field_destroy(&local_node_group);
-		}
-		if (local_data_group)
-		{
-			Cmiss_field_destroy(&local_data_group);
-		}
-		if (local_element_group)
-		{
-			Cmiss_field_destroy(&local_element_group);
-		}
+		clear();
 #if defined (USE_OPENCASCADE)
 		if (local_cad_primitive_group)
 		{
 			Cmiss_field_destroy(&local_cad_primitive_group);
 		}
 #endif /* defined (USE_OPENCASCADE) */
+		remove_empty_subgroups();
 		std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 		for (;it != domain_selection_group.end(); it++)
 		{
 			//Cmiss_field_destroy(&(it->first)); don't destroy this it is not a reference just a key
 			Cmiss_field_destroy(&(it->second));
 		}
-		/* the child selection is responsible for informing the parent selection that this group is now
-		 * removed */
-		Cmiss_region *parent_region = Cmiss_region_get_parent(region);
-		if (parent_region)
-		{
-			Cmiss_rendition_id parent_rendition = Cmiss_region_get_rendition_internal(parent_region);
-			if (parent_rendition)
-			{
-				if (Cmiss_rendition_has_selection_group(parent_rendition))
-				{
-					Cmiss_field *parent_group_field =
-						Cmiss_rendition_get_or_create_selection_group(parent_rendition);
-					Cmiss_field_group *parent_group = Cmiss_field_cast_group(parent_group_field);
-					Cmiss_field_destroy(&parent_group_field);
-					Computed_field_group *group_core = static_cast<Computed_field_group*>(
-							reinterpret_cast<Computed_field*>(parent_group)->core);
-					if (group_core != this)
-						group_core->remove_child_group(region);
-					parent_group_field = reinterpret_cast<Cmiss_field *>(parent_group);
-					Cmiss_field_destroy(&parent_group_field);
-				}
-				Cmiss_rendition_destroy(&parent_rendition);
-			}
-			Cmiss_region_destroy(&parent_region);
-		}
 	}
 
-	Cmiss_field_id create_node_group();
+	Cmiss_field_node_group_id create_node_group(Cmiss_nodeset_id nodeset);
 
-	Cmiss_field_id get_node_group();
+	Cmiss_field_node_group_id get_node_group(Cmiss_nodeset_id nodeset);
 
-	Cmiss_field_id create_data_group();
+	Cmiss_field_element_group_id create_element_group(Cmiss_fe_mesh_id mesh);
 
-	Cmiss_field_id get_data_group();
-
-	Cmiss_field_id create_element_group();
-
-	Cmiss_field_id get_element_group();
+	Cmiss_field_element_group_id get_element_group(Cmiss_fe_mesh_id mesh);
 
 	Cmiss_field_id get_subgroup_for_domain(Cmiss_field_id domain);
 
@@ -296,19 +256,19 @@ public:
 	int clear_region_tree_cad_primitive();
 #endif /*defined (USE_OPENCASCADE) */
 
-	Cmiss_field_id create_sub_group(Cmiss_region_id sub_region);
+	Cmiss_field_id getSubgroup(Cmiss_region_id subregion);
+
+	Cmiss_field_id createSubgroup(Cmiss_region_id subregion);
 
 	int clear_region_tree_node(int use_data);
 
 	int clear_region_tree_element();
 
-	int add_region(struct Cmiss_region *child_region);
-
-	int clear_group_if_empty();
-
 	Cmiss_field_id getFirstChild();
 
 	Cmiss_field_id getNextChild();
+
+	int remove_empty_subgroups();
 
 	virtual Cmiss_field_change_detail *extract_change_detail()
 	{
@@ -334,6 +294,8 @@ public:
 
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
 
+	int isEmptyLocal() const;
+
 	virtual int isEmpty() const
 	{
 		return (isEmptyLocal() && isEmptyNonLocal());
@@ -341,12 +303,24 @@ public:
 
 	virtual int clear();
 
+	int clearLocal();
+
+	int addThisRegion();
+
+	int containsThisRegion();
+
+	int addRegion(struct Cmiss_region *child_region);
+
+	int removeRegion(struct Cmiss_region *region);
+
+	int containsRegion(struct Cmiss_region *region);
+
 private:
 
 	Computed_field_core* copy()
 	{
 		Computed_field_group *core = new Computed_field_group(region);
-		core->selection_on = this->selection_on;
+		core->contains_all = this->contains_all;
 		return (core);
 	};
 
@@ -365,13 +339,13 @@ private:
 
 	char* get_command_string();
 
+	int getSubgroupLocal();
+
 	int add_region_tree(struct Cmiss_region *region_tree);
 
 	int remove_region(struct Cmiss_region *child_region);
 
 	int remove_region_tree(struct Cmiss_region *child_region);
-
-	int contain_region(struct Cmiss_region *child_region);
 
 	int contain_region_tree(struct Cmiss_region *child_region);
 
@@ -387,11 +361,10 @@ private:
 		return 0;
 	}
 
-	int isEmptyLocal() const;
-
 	int isEmptyNonLocal() const;
 
 	int check_sub_group_dependency(Computed_field_core *source_core);
+
 };
 
 /***************************************************************************//**
@@ -427,7 +400,7 @@ int Computed_field_group::evaluate_cache_at_location(
 	if (field && location)
 	{
 			field->values[0] = 0;
-		if (selection_on)
+		if (contains_all)
 		{
 			field->values[0] = 1;
 		}
@@ -439,24 +412,21 @@ int Computed_field_group::evaluate_cache_at_location(
 			FE_region *fe_region = FE_node_get_FE_region(node);
 			Cmiss_region_id node_region = NULL;
 			FE_region_get_Cmiss_region(fe_region, &node_region);
-			Cmiss_field_id temporary_handle = NULL;
 			if (local_node_group)
 			{
-				Cmiss_field_node_group_template_id node_group_id = 
-					Cmiss_field_cast_node_group_template(local_node_group);
-				field->values[0] = Cmiss_field_node_group_template_is_node_selected(
+				Cmiss_field_node_group_id node_group_id = 
+					Cmiss_field_cast_node_group(local_node_group);
+				field->values[0] = Cmiss_field_node_group_contains_node(
 					node_group_id, node);
-				temporary_handle = reinterpret_cast<Computed_field *>(node_group_id);
-				Cmiss_field_destroy(&temporary_handle);
+				Cmiss_field_node_group_destroy(&node_group_id);
 			}
 			if (!(field->values[0]) &&  local_data_group)
 			{
-				Cmiss_field_node_group_template_id data_group_id =
-					Cmiss_field_cast_node_group_template(local_data_group);
-				field->values[0] = Cmiss_field_node_group_template_is_node_selected(
+				Cmiss_field_node_group_id data_group_id =
+					Cmiss_field_cast_node_group(local_data_group);
+				field->values[0] = Cmiss_field_node_group_contains_node(
 					data_group_id, node);
-				temporary_handle = reinterpret_cast<Computed_field *>(data_group_id);
-				Cmiss_field_destroy(&temporary_handle);
+				Cmiss_field_node_group_destroy(&data_group_id);
 			}
 			if (!field->values[0] && node_region != region)
 			{
@@ -483,16 +453,15 @@ int Computed_field_group::evaluate_cache_at_location(
  				}
  				else
  				{
- 					Cmiss_field_id temporary_field_handle = pos->second;
  					Cmiss_field_group *temporary_group_field_handle =
- 						Cmiss_field_cast_group(temporary_field_handle);
+ 						Cmiss_field_cast_group(pos->second);
  					Computed_field_group *group_core = static_cast<Computed_field_group*>(
  						reinterpret_cast<Computed_field*>(temporary_group_field_handle)->core);
  					if (group_core)
  					{
  						temporary_handle = group_core->local_element_group;
  					}
- 					Cmiss_field_destroy(&temporary_field_handle);
+ 					Cmiss_field_group_destroy(&temporary_group_field_handle);
  				}
  			}
  			else
@@ -501,9 +470,9 @@ int Computed_field_group::evaluate_cache_at_location(
  			}
  			if (temporary_handle)
  			{
- 				Cmiss_field_element_group_template_id element_group_id =
- 					Cmiss_field_cast_element_group_template(temporary_handle);
- 				field->values[0] = Cmiss_field_element_group_template_is_element_selected(
+ 				Cmiss_field_element_group_id element_group_id =
+ 					Cmiss_field_cast_element_group(temporary_handle);
+ 				field->values[0] = Cmiss_field_element_group_contains_element(
  					element_group_id, element);
  				Cmiss_field_destroy(&temporary_handle);
  			}
@@ -551,7 +520,7 @@ Cmiss_field_id Computed_field_group::getNextChild()
 
 int Computed_field_group::isEmptyLocal() const
 {
-	if (selection_on)
+	if (contains_all)
 	{
 		return 0;
 	}
@@ -577,17 +546,56 @@ int Computed_field_group::isEmptyNonLocal() const
 	for (Region_field_map_const_iterator iter = sub_group_map.begin();
 		iter != sub_group_map.end(); iter++)
 	{
-		Cmiss_field_id sub_group_field = iter->second;
-		if (!isSubGroupEmpty(sub_group_field->core))
-			return 0;
+		if (!Cmiss_region_is_group(iter->first))
+		{
+			Cmiss_field_id sub_group_field = iter->second;
+			if (!isSubGroupEmpty(sub_group_field->core))
+				return 0;
+		}
 	}
 	return 1;
 }
 
+int Computed_field_group::clearLocal()
+{
+	int return_code = 1;
+	contains_all = 0;
+	if (local_node_group)
+	{
+		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_node_group->core);
+		return_code = group_base->clear();
+		Cmiss_field_destroy(&local_node_group);
+	}
+	if (local_data_group)
+	{
+		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_data_group->core);
+		return_code = group_base->clear();
+		Cmiss_field_destroy(&local_data_group);
+	}
+	if (local_element_group)
+	{
+		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_element_group->core);
+		return_code = group_base->clear();
+		Cmiss_field_destroy(&local_element_group);
+	}
+
+	return return_code;
+};
+
 int Computed_field_group::clear()
 {
-	// GRC not implemented yet
-	selection_on = 0;
+	int return_code = 0;
+	for (Region_field_map_iterator iter = sub_group_map.begin();
+		iter != sub_group_map.end(); iter++)
+	{
+		if (!Cmiss_region_is_group(iter->first))
+		{
+			Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>((iter->second)->core);
+			group_base->clear();
+		}
+	}
+	return_code = clearLocal();
+
 	return 0;
 };
 
@@ -746,179 +754,297 @@ char *Computed_field_group::get_command_string()
 	return (command_string);
 } /* Computed_field_group::get_command_string */
 
-Cmiss_field_id Computed_field_group::create_sub_group(Cmiss_region_id sub_region)
+int Computed_field_group::removeRegion(Cmiss_region_id region)
+{
+	int return_code = 0;
+	Cmiss_field_id subgroup = getSubgroup(region);
+	if (subgroup)
+	{
+		Computed_field_group *local_group = static_cast<Computed_field_group*>(subgroup->core);
+		local_group->contains_all = 0;
+		Cmiss_field_destroy(&subgroup);
+	}
+
+	return return_code;
+}
+
+int Computed_field_group::containsRegion(Cmiss_region_id region)
+{
+	int return_code = 0;
+	Cmiss_field_id subgroup = getSubgroup(region);
+	if (subgroup)
+	{
+		Computed_field_group *local_group = static_cast<Computed_field_group*>(subgroup->core);
+		return_code = local_group->containsThisRegion();
+		Cmiss_field_destroy(&subgroup);
+	}
+
+	return return_code;
+}
+
+Cmiss_field_id Computed_field_group::getSubgroup(Cmiss_region_id subregion)
 {
 	Cmiss_field_id sub_group = NULL;
-	if (Cmiss_region_contains_subregion(region, sub_region) && region != sub_region)
+	if (Cmiss_region_contains_subregion(region, subregion))
 	{
-		Region_field_map_iterator pos;
-
-		pos = sub_group_map.find(sub_region);
-		if (pos == sub_group_map.end())
+		if (region == subregion)
 		{
-			Cmiss_field_module_id field_module =
-				Cmiss_region_get_field_module(sub_region);
-			sub_group = Cmiss_field_module_create_group(field_module, sub_region);
-			Cmiss_field_set_name(sub_group, "cmiss_selection");
-			Cmiss_field_module_destroy(&field_module);
-			sub_group_map.insert(std::make_pair(sub_region,sub_group));
+			sub_group = ACCESS(Computed_field)(this->getField());
 		}
 		else
 		{
-			sub_group = Cmiss_field_access(pos->second);
+			Region_field_map_iterator iter = sub_group_map.find(subregion);
+			if (iter != sub_group_map.end())
+			{
+				sub_group = Cmiss_field_access(iter->second);
+			}
+			if (!sub_group && !sub_group_map.empty())
+			{
+				for (iter = sub_group_map.begin(); iter != sub_group_map.end(); iter++)
+				{
+					if (!Cmiss_region_is_group(iter->first))
+					{
+						Cmiss_field_id temp = iter->second;
+						Computed_field_group *local_group = static_cast<Computed_field_group*>(temp->core);
+						sub_group = local_group->getSubgroup(subregion);
+					}
+					if (sub_group)
+						break;
+				}
+			}
 		}
 	}
 
 	return sub_group;
 }
 
-Cmiss_field_id Computed_field_group::create_node_group()
+Cmiss_field_id Computed_field_group::createSubgroup(Cmiss_region_id subregion)
 {
-	if (!local_node_group)
+	Cmiss_field_id sub_group = NULL;
+	if (Cmiss_region_contains_subregion(region, subregion) && region != subregion)
+	{
+		Region_field_map_iterator pos;
+		Cmiss_region_id parent_region = Cmiss_region_get_parent(subregion);
+		Cmiss_field_id temp = NULL;
+		if (parent_region != region)
+		{
+			/* this will construct the hierarchy tree */
+			temp = getSubgroup(subregion);
+			if (!temp)
+				temp = getSubgroup(parent_region);
+			if (!temp)
+				temp = createSubgroup(parent_region);
+		}
+		if (parent_region == region)
+		{
+			pos = sub_group_map.find(subregion);
+			if (pos == sub_group_map.end())
+			{
+				Cmiss_field_module_id field_module =
+					Cmiss_region_get_field_module(subregion);
+				if (!Cmiss_region_is_group(subregion))
+				{
+					/* Note - should also check group type if name matched an existing field */
+					sub_group = Cmiss_field_module_find_field_by_name(field_module, this->getField()->name);
+					if (!sub_group)
+					{
+						Cmiss_field_module_set_field_name(field_module, this->getField()->name);
+						sub_group = ACCESS(Computed_field)(Cmiss_field_module_create_group(field_module));
+					}
+					else
+					{
+						ACCESS(Computed_field)(sub_group);
+					}
+					Cmiss_field_set_persistent(sub_group, 0);
+				}
+				else
+				{
+					/* Access twice, once for putting into the map, one for the returning value */
+					sub_group = ACCESS(Computed_field)(this->getField());
+					ACCESS(Computed_field)(this->getField());
+				}
+				Cmiss_field_module_destroy(&field_module);
+				sub_group_map.insert(std::make_pair(subregion,sub_group));
+			}
+			else
+			{
+				/* set to null as it already exist */
+				sub_group = NULL;
+			}
+		}
+
+		else if (temp)
+		{
+			Cmiss_field_group_id temp_group = reinterpret_cast<Cmiss_field_group_id>(temp);
+			sub_group = Cmiss_field_group_create_subgroup(temp_group, subregion);
+		}
+		if (temp)
+			Cmiss_field_destroy(&temp);
+		if (parent_region)
+			Cmiss_region_destroy(&parent_region);
+	}
+
+	return sub_group;
+}
+
+Cmiss_field_node_group_id Computed_field_group::create_node_group(Cmiss_nodeset_id nodeset)
+{
+	int use_data = 0;
+	Cmiss_field_node_group_id node_field = NULL;
+	struct FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+	if (!FE_region_get_data_FE_region(fe_region))
+	{
+		use_data = 1;
+	}
+	if ((!use_data && !local_node_group) || (use_data && !local_data_group))
 	{
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
-		local_node_group = get_node_group();
-		if (!local_node_group)
+		node_field = get_node_group(nodeset);
+		if (node_field)
+		{
+			Cmiss_field_node_group_destroy(&node_field);
+		}
+		if (!use_data && !local_node_group)
 		{
 			char *temp_string = Cmiss_field_get_name(this->getField());
 			int error = 0;
 			append_string(&temp_string, ".nodes", &error);
-			local_node_group = Cmiss_field_module_create_node_group_template(field_module);
-			Cmiss_field_set_name(local_node_group, temp_string);
-			Cmiss_field_access(local_node_group);
+			local_node_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
+			if (!local_node_group)
+			{
+				Cmiss_field_module_set_field_name(field_module, temp_string);
+				local_node_group = Cmiss_field_module_create_node_group(field_module, nodeset);
+			}
+			Cmiss_field_set_persistent(local_node_group, 0);
+			node_field = Cmiss_field_cast_node_group(local_node_group);
 			DEALLOCATE(temp_string);
 		}
-		Cmiss_field_module_destroy(&field_module);
-	}
-	else
-	{
-		Cmiss_field_access(local_node_group);
-	}
-
-	return (local_node_group);
-}
-
-Cmiss_field_id Computed_field_group::get_node_group()
-{
-	if (local_node_group)
-	{
-		Cmiss_field_access(local_node_group);
-	}
-	else
-	{
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		char *temp_string = Cmiss_field_get_name(this->getField());
-		int error = 0;
-		append_string(&temp_string, ".nodes", &error);
-		local_node_group = Cmiss_field_module_find_field_by_name(
-			field_module, temp_string);
-		DEALLOCATE(temp_string);
-		if (local_node_group)
-			Cmiss_field_access(local_node_group);
-		Cmiss_field_module_destroy(&field_module);
-	}
-
-	return (local_node_group);
-}
-
-Cmiss_field_id Computed_field_group::create_data_group()
-{
-	if (!local_data_group)
-	{
-		Cmiss_field_module_id field_module =
-			Cmiss_region_get_field_module(region);
-		local_data_group = get_data_group();
-		if (!local_data_group)
+		if (use_data && !local_data_group)
 		{
 			char *temp_string = Cmiss_field_get_name(this->getField());
 			int error = 0;
 			append_string(&temp_string, ".data", &error);
-			local_data_group = Cmiss_field_module_create_node_group_template(field_module);
-			Cmiss_field_set_name(local_data_group, temp_string);
-			Cmiss_field_access(local_data_group);
+			local_data_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
+			if (!local_data_group)
+			{
+				Cmiss_field_module_set_field_name(field_module, temp_string);
+				local_data_group = Cmiss_field_module_create_node_group(field_module, nodeset);
+			}
+			Cmiss_field_set_persistent(local_data_group, 0);
+			node_field = Cmiss_field_cast_node_group(local_data_group);
 			DEALLOCATE(temp_string);
 		}
 		Cmiss_field_module_destroy(&field_module);
 	}
-	else
-	{
-		Cmiss_field_access(local_data_group);
-	}
 
-	return (local_data_group);
+	return (node_field);
 }
 
-Cmiss_field_id Computed_field_group::get_data_group()
+Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id nodeset)
 {
-	if (local_data_group)
+	int use_data = 0;
+	Cmiss_field_node_group_id node_field = NULL;
+	if (!contains_all)
 	{
-		Cmiss_field_access(local_data_group);
+		struct FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		if (!FE_region_get_data_FE_region(fe_region))
+		{
+			use_data = 1;
+		}
+		if (!use_data && local_node_group)
+		{
+			node_field = Cmiss_field_cast_node_group(local_node_group);
+		}
+		else if (use_data && local_data_group)
+		{
+			node_field = Cmiss_field_cast_node_group(local_data_group);
+		}
+		if (!node_field)
+		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			char *temp_string = Cmiss_field_get_name(this->getField());
+			int error = 0;
+			if (!use_data)
+			{
+				append_string(&temp_string, ".nodes", &error);
+				local_node_group = Cmiss_field_module_find_field_by_name(
+					field_module, temp_string);
+				if (local_node_group)
+					node_field= Cmiss_field_cast_node_group(local_node_group);
+			}
+			else
+			{
+				append_string(&temp_string, ".data", &error);
+				local_data_group = Cmiss_field_module_find_field_by_name(
+					field_module, temp_string);
+				if (local_data_group)
+					node_field= Cmiss_field_cast_node_group(local_data_group);
+			}
+			DEALLOCATE(temp_string);
+			Cmiss_field_module_destroy(&field_module);
+		}
 	}
-	else
-	{
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		char *temp_string = Cmiss_field_get_name(this->getField());
-		int error = 0;
-		append_string(&temp_string, ".data", &error);
-		local_data_group = Cmiss_field_module_find_field_by_name(
-			field_module, temp_string);
-		DEALLOCATE(temp_string);
-		if (local_data_group)
-			Cmiss_field_access(local_data_group);
-		Cmiss_field_module_destroy(&field_module);
-	}
-
-	return (local_data_group);
+	return (node_field);
 }
 
-Cmiss_field_id Computed_field_group::create_element_group()
+Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe_mesh_id mesh)
 {
-	if (!local_element_group)
+	Cmiss_field_element_group_id element_field = NULL;
+	if (!local_element_group && mesh)
 	{
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
-		local_element_group = get_element_group();
+		element_field = get_element_group(mesh);
+		if (element_field)
+		{
+			Cmiss_field_element_group_destroy(&element_field);
+		}
 		if (!local_element_group)
 		{
 			char *temp_string = Cmiss_field_get_name(this->getField());
 			int error = 0;
 			append_string(&temp_string, ".elements", &error);
-			local_element_group = Cmiss_field_module_create_element_group_template(field_module);
-			Cmiss_field_set_name(local_element_group, temp_string);
-			Cmiss_field_access(local_element_group);
+			local_element_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
+			if (!local_element_group)
+			{
+				Cmiss_field_module_set_field_name(field_module, temp_string);
+				local_element_group = Cmiss_field_module_create_element_group(field_module, mesh);
+			}
+			Cmiss_field_set_persistent(local_element_group, 0);
+			element_field = Cmiss_field_cast_element_group(local_element_group);
 			DEALLOCATE(temp_string);
 		}
 		Cmiss_field_module_destroy(&field_module);
 	}
-	else
-	{
-		Cmiss_field_access(local_element_group);
-	}
 
-	return (local_element_group);
+	return (element_field);
 }
 
-Cmiss_field_id Computed_field_group::get_element_group()
+Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_fe_mesh_id mesh)
 {
-	if (local_element_group)
+	Cmiss_field_element_group_id element_field = NULL;
+	if (!contains_all && mesh)
 	{
-		Cmiss_field_access(local_element_group);
-	}
-	else
-	{
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		char *temp_string = Cmiss_field_get_name(this->getField());
-		int error = 0;
-		append_string(&temp_string, ".elements", &error);
-		local_element_group = Cmiss_field_module_find_field_by_name(
-			field_module, temp_string);
-		DEALLOCATE(temp_string);
 		if (local_element_group)
-			Cmiss_field_access(local_element_group);
-		Cmiss_field_module_destroy(&field_module);
+		{
+			element_field = Cmiss_field_cast_element_group(local_element_group);
+		}
+		else
+		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			char *temp_string = Cmiss_field_get_name(this->getField());
+			int error = 0;
+			append_string(&temp_string, ".elements", &error);
+			local_element_group = Cmiss_field_module_find_field_by_name(
+				field_module, temp_string);
+			DEALLOCATE(temp_string);
+			if (local_element_group)
+				element_field = Cmiss_field_cast_element_group(local_element_group);
+			Cmiss_field_module_destroy(&field_module);
+		}
 	}
-	return (local_element_group);
+	return (element_field);
 }
 
 Cmiss_field_id Computed_field_group::get_subgroup_for_domain(Cmiss_field_id domain)
@@ -955,8 +1081,8 @@ Cmiss_field_id Computed_field_group::create_cad_primitive_group(Cmiss_field_cad_
 
 		Cmiss_field_module_id field_module =
 			Cmiss_region_get_field_module(region);
+		Cmiss_field_module_set_field_name(field_module, field_name);
 		field = Cmiss_field_module_create_cad_primitive_group_template(field_module);
-		Cmiss_field_set_name(field, field_name);
 		Computed_field *cad_topology_key = reinterpret_cast<Cmiss_field_id>(cad_topology_domain);
 		domain_selection_group.insert(std::pair<Computed_field *, Computed_field *>(cad_topology_key, field));
 
@@ -1016,16 +1142,15 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 			group_field = Cmiss_field_cast_group(pos->second);
 			Computed_field_group *temp_group = static_cast<Computed_field_group*>(
 				reinterpret_cast<Computed_field*>(group_field)->core);
-			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this)
 			{
 				pos++;
 				Cmiss_field_group_clear_region_tree_cad_primitive(group_field);
-				Cmiss_field_group_clear_group_if_empty(group_field);
+				//Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
-				if (!local_node_group && selection_on == 0)
+				if (!local_node_group && contains_all == 0)
 				{
 					if (pos->first != region)
 					{
@@ -1041,6 +1166,7 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 						Cmiss_field_id temporary_handle2 = pos->second;
 						Cmiss_field_destroy(&temporary_handle2);
 					}
+					Cmiss_field_destroy(&(pos->second));
 					sub_group_map.erase(pos++);
 				}
 				else
@@ -1048,11 +1174,12 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 					++pos;
 				}
 			}
-			Cmiss_field_destroy(&temporary_handle);
+			if (group_field)
+				Cmiss_field_group_destroy(&group_field);
 		}
 	}
-	if (sub_group_map.empty())
-		clear_group_if_empty();
+	//if (sub_group_map.empty())
+	//	clear_group_if_empty();
 
 	return (return_code);
 }
@@ -1060,30 +1187,23 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 #endif /* defined (USE_OPENCASCADE) */
 
 
-int Computed_field_group::add_region(struct Cmiss_region *child_region)
+int Computed_field_group::addRegion(struct Cmiss_region *child_region)
 {
 	int return_code = 0;
 	if (Cmiss_region_contains_subregion(region, child_region))
 	{
-		Cmiss_rendition *child_rendition = Cmiss_region_get_rendition_internal(
-			child_region);
-		if (child_rendition)
-		{
-			Computed_field *child_group_field = 
-				Cmiss_rendition_get_or_create_selection_group(child_rendition);
-			if (child_group_field)
-			{
-				sub_group_map.insert(std::make_pair(child_region,child_group_field));
-				Cmiss_field_destroy(&child_group_field);
-				return_code = 1;
-			}
-		}
-		DEACCESS(Cmiss_rendition)(&child_rendition);
+		Computed_field *child_group_field = getSubgroup(child_region);
+		if (!child_group_field)
+			child_group_field = createSubgroup(child_region);
+		Computed_field_group *subregion_group =
+			dynamic_cast<Computed_field_group *>(child_group_field->core);
+		subregion_group->addThisRegion();
+		Cmiss_field_destroy(&child_group_field);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_group::add_region.  Sub region is not a child region"
+			"Computed_field_group::addRegion.  Sub region is not a child region"
 			"or part of the parent region");
 		return_code = 0;
 	}
@@ -1095,79 +1215,70 @@ void Computed_field_group::remove_child_group(struct Cmiss_region *child_region)
 {
 	if (Cmiss_region_contains_subregion(region, child_region))
 	{
-		sub_group_map.erase(child_region);
+		Region_field_map_iterator pos = sub_group_map.find(child_region);
+		if (pos != sub_group_map.end())
+		{
+			Cmiss_region_id region = pos->first;
+			if (region)
+			{
+				Cmiss_field_id temp = pos->second;
+				sub_group_map.erase(child_region);
+				Cmiss_field_destroy(&temp);
+			}
+		}
 	}
-	this->clear_group_if_empty();
 }
 
-int Computed_field_group::clear_group_if_empty()
+int Computed_field_group::remove_empty_subgroups()
 {
-	int return_code = 0;
-	if (local_node_group)
+	/* remove_empty_subgroups */
+	int has_group = 0;
+	for (Region_field_map_iterator iter = sub_group_map.begin();
+		iter != sub_group_map.end();)
 	{
-		Cmiss_field_node_group_template_id node_group_id =
-			Cmiss_field_cast_node_group_template(local_node_group);
-		Cmiss_node_id node = Cmiss_field_node_group_template_get_first_node(node_group_id);
-		if (node)
+		Cmiss_region_id local_region = iter->first;
+		if (!Cmiss_region_is_group(local_region))
 		{
-			Cmiss_node_destroy(&node);
+			Cmiss_field_id sub_group_field = iter->second;
+			Computed_field_group *subregion_group =
+				dynamic_cast<Computed_field_group *>(sub_group_field->core);
+			subregion_group->remove_empty_subgroups();
+			if (subregion_group->isEmpty())
+			{
+				sub_group_map.erase(iter++);
+				Cmiss_field_destroy(&sub_group_field);
+			}
+			else
+			{
+				++iter;
+			}
 		}
 		else
 		{
-			Cmiss_field_destroy(&local_node_group);
+			/* handle group separately */
+			++iter;
+			has_group = 1;
 		}
-		Cmiss_field_id node_group_field = reinterpret_cast<Computed_field*>(node_group_id);
-		Cmiss_field_destroy(&node_group_field);
 	}
-	if (local_data_group)
+	/* handle group now */
+	if (isEmpty())
 	{
-		Cmiss_field_node_group_template_id data_group_id =
-			Cmiss_field_cast_node_group_template(local_data_group);
-		Cmiss_node_id node = Cmiss_field_node_group_template_get_first_node(data_group_id);
-		if (node)
+		for (Region_field_map_iterator iter = sub_group_map.begin();
+			iter != sub_group_map.end();)
 		{
-			Cmiss_node_destroy(&node);
+			Cmiss_field_id sub_group_field = iter->second;
+			if (Cmiss_region_is_group(iter->first))
+			{
+				sub_group_map.erase(iter++);
+				Cmiss_field_destroy(&sub_group_field);
+			}
+			else
+			{
+				++iter;
+			}
 		}
-		else
-		{
-			Cmiss_field_destroy(&local_data_group);
-		}
-		Cmiss_field_id data_group_field = reinterpret_cast<Computed_field*>(data_group_id);
-		Cmiss_field_destroy(&data_group_field);
 	}
-	if (local_element_group)
-	{
-		Cmiss_field_element_group_template_id element_group_id =
-			Cmiss_field_cast_element_group_template(local_element_group);
-		Cmiss_element_id element = Cmiss_field_element_group_template_get_first_element(element_group_id);
-		if (element)
-		{
-			Cmiss_element_destroy(&element);
-		}
-		else
-		{
-			Cmiss_field_destroy(&local_element_group);
-		}
-		Cmiss_field_id element_group_field = reinterpret_cast<Computed_field*>(element_group_id);
-		Cmiss_field_destroy(&element_group_field);
-	}
-
-	if (!local_node_group && !local_element_group && !local_data_group
-#if defined (USE_OPENCASCADE)
-		&& !local_cad_primitive_group
-#endif /* defined (USE_OPENCASCADE) */
-		&& selection_on == 0 &&
-		sub_group_map.empty())
-	{
-		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
-		if (rendition)
-		{
-			Cmiss_rendition_remove_selection_group(rendition);
-			Cmiss_rendition_destroy(&rendition);
-		}
-		return_code = 1;
-	}
-	return return_code;
+	return 1;
 }
 
 int Computed_field_group::clear_region_tree_node(int use_data)
@@ -1177,23 +1288,19 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 	Cmiss_field_group_id group_field = NULL;
 	if (!use_data && local_node_group)
 	{
-		Cmiss_field_node_group_template_id node_group =
-			Cmiss_field_cast_node_group_template(local_node_group);
-		return_code = Cmiss_field_node_group_template_clear(node_group);
+		Cmiss_field_node_group_id node_group =
+			Cmiss_field_cast_node_group(local_node_group);
+		return_code = Cmiss_field_node_group_clear(node_group);
 		Computed_field_changed(this->field);
-		Cmiss_field_id node_group_field = reinterpret_cast<Computed_field*>(node_group);
-		Cmiss_field_destroy(&node_group_field);
-		Cmiss_field_destroy(&local_node_group);
+		Cmiss_field_node_group_destroy(&node_group);
 	}
 	if (use_data && local_data_group)
 	{
-		Cmiss_field_node_group_template_id data_group =
-			Cmiss_field_cast_node_group_template(local_data_group);
-		return_code = Cmiss_field_node_group_template_clear(data_group);
+		Cmiss_field_node_group_id data_group =
+			Cmiss_field_cast_node_group(local_data_group);
+		return_code = Cmiss_field_node_group_clear(data_group);
 		Computed_field_changed(this->field);
-		Cmiss_field_id data_group_field = reinterpret_cast<Computed_field*>(data_group);
-		Cmiss_field_destroy(&data_group_field);
-		Cmiss_field_destroy(&local_data_group);
+		Cmiss_field_node_group_destroy(&data_group);
 	}
 	if (!sub_group_map.empty())
 	{
@@ -1202,7 +1309,6 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 			group_field = Cmiss_field_cast_group(pos->second);
 			Computed_field_group *temp_group = static_cast<Computed_field_group*>(
 				reinterpret_cast<Computed_field*>(group_field)->core);
-			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this) /* if it is a true region */
 			{
 				pos++;
@@ -1210,26 +1316,17 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 					Cmiss_field_group_clear_region_tree_node(group_field);
 				else
 					Cmiss_field_group_clear_region_tree_data(group_field);
-				Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
-				if (!local_element_group && selection_on == 0)
+				if (!local_element_group && contains_all == 0)
 				{
-					if (pos->first != region)
-					{
-						Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(pos->first);
-						if (rendition)
-						{
-							Cmiss_rendition_remove_selection_group(rendition);
-							Cmiss_rendition_destroy(&rendition);
-						}
-					}
-					else
+					if (pos->first == region)
 					{
 						Cmiss_field_id temporary_handle2 = pos->second;
 						Cmiss_field_destroy(&temporary_handle2);
 					}
+					Cmiss_field_destroy(&(pos->second));
 					sub_group_map.erase(pos++);
 				}
 				else
@@ -1237,13 +1334,24 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 					++pos;
 				}
 			}
-			Cmiss_field_destroy(&temporary_handle);
+			if (group_field)
+				Cmiss_field_group_destroy(&group_field);
 		}
 	}
-	if (sub_group_map.empty())
-		clear_group_if_empty();
 
 	return (return_code);
+}
+
+int Computed_field_group::addThisRegion()
+{
+	clearLocal();
+	contains_all = 1;
+	return 1;
+}
+
+int Computed_field_group::containsThisRegion()
+{
+	return contains_all;
 }
 
 int Computed_field_group::clear_region_tree_element()
@@ -1253,13 +1361,12 @@ int Computed_field_group::clear_region_tree_element()
   Cmiss_field_group_id group_field = NULL;
 	if (local_element_group)
 	{
-		Cmiss_field_element_group_template_id element_group =
-			Cmiss_field_cast_element_group_template(local_element_group);
-		return_code = Cmiss_field_element_group_template_clear(element_group);
+		Cmiss_field_element_group_id element_group =
+			Cmiss_field_cast_element_group(local_element_group);
+		return_code = Cmiss_field_element_group_clear(element_group);
 		Computed_field_changed(this->field);
-		Cmiss_field_id element_group_field = reinterpret_cast<Computed_field*>(element_group);
-		Cmiss_field_destroy(&element_group_field);
-		Cmiss_field_destroy(&local_element_group);
+		Cmiss_field_element_group_destroy(&element_group);
+		//Cmiss_field_destroy(&local_element_group);
 	}
 	if (!sub_group_map.empty())
 	{
@@ -1268,31 +1375,21 @@ int Computed_field_group::clear_region_tree_element()
 			group_field = Cmiss_field_cast_group(pos->second);
 			Computed_field_group *temp_group = static_cast<Computed_field_group*>(
 				reinterpret_cast<Computed_field*>(group_field)->core);
-			Cmiss_field_id temporary_handle = pos->second;
 			if (temp_group != this)
 			{
 				pos++;
 				Cmiss_field_group_clear_region_tree_element(group_field);
-				Cmiss_field_group_clear_group_if_empty(group_field);
 			}
 			else
 			{
-				if (!local_node_group && selection_on == 0)
+				if (!local_node_group && contains_all == 0)
 				{
-					if (pos->first != region)
-					{
-						Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(pos->first);
-						if (rendition)
-						{
-							Cmiss_rendition_remove_selection_group(rendition);
-							Cmiss_rendition_destroy(&rendition);
-						}
-					}
-					else
+					if (pos->first == region)
 					{
 						Cmiss_field_id temporary_handle2 = pos->second;
 						Cmiss_field_destroy(&temporary_handle2);
 					}
+					Cmiss_field_destroy(&(pos->second));
 					sub_group_map.erase(pos++);
 				}
 				else
@@ -1300,11 +1397,10 @@ int Computed_field_group::clear_region_tree_element()
 					++pos;
 				}
 			}
-			Cmiss_field_destroy(&temporary_handle);
+			if (group_field)
+				Cmiss_field_group_destroy(&group_field);
 		}
 	}
-	if (sub_group_map.empty())
-		clear_group_if_empty();
 
 	return (return_code);
 }
@@ -1337,112 +1433,66 @@ inline Computed_field_group *Computed_field_group_core_cast(
 		reinterpret_cast<Computed_field*>(group_field)->core));
 }
 
-int Cmiss_field_group_add_region(
-	Cmiss_field_group_id group, Cmiss_region_id sub_region)
+Cmiss_field_node_group_id Cmiss_field_group_create_node_group(Cmiss_field_group_id group, Cmiss_nodeset_id nodeset)
 {
-	int return_code = 0;
-	if (group)
+	Cmiss_field_node_group_id field = NULL;
+	if (group && nodeset)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			return_code = group_core->add_region(sub_region);
-		}
-	}
-	return return_code;
-}
-
-Cmiss_field_id Cmiss_field_group_create_node_group(Cmiss_field_group_id group)
-{
-	Cmiss_field_id field = NULL;
-	if (group)
-	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
-		if (group_core)
-		{
-			field = group_core->create_node_group();
+			field = group_core->create_node_group(nodeset);
 		}
 	}
 
 	return field;
 }
 
-Cmiss_field_id Cmiss_field_group_get_node_group(Cmiss_field_group_id group)
+Cmiss_field_node_group_id Cmiss_field_group_get_node_group(Cmiss_field_group_id group, Cmiss_nodeset_id nodeset)
 {
-	Cmiss_field_id field = NULL;
-	if (group)
+	Cmiss_field_node_group_id field = NULL;
+	if (group && nodeset)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->get_node_group();
+			field = group_core->get_node_group(nodeset);
 		}
 	}
 
 	return field;
 }
 
-Cmiss_field_id Cmiss_field_group_create_data_group(Cmiss_field_group_id group)
+Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group,
+	Cmiss_fe_mesh_id mesh)
 {
-	Cmiss_field_id field = NULL;
-	if (group)
+	Cmiss_field_element_group_id field = NULL;
+	if (group && mesh)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->create_data_group();
+			field = group_core->create_element_group(mesh);
 		}
 	}
 
 	return field;
 }
 
-Cmiss_field_id Cmiss_field_group_get_data_group(Cmiss_field_group_id group)
+Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group,
+	Cmiss_fe_mesh_id mesh)
 {
-	Cmiss_field_id field = NULL;
-	if (group)
+	Cmiss_field_element_group_id field = NULL;
+	if (group && mesh)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->get_data_group();
-		}
-	}
-
-	return field;
-}
-
-Cmiss_field_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group)
-{
-	Cmiss_field_id field = NULL;
-	if (group)
-	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
-		if (group_core)
-		{
-			field = group_core->create_element_group();
-		}
-	}
-
-	return field;
-}
-
-Cmiss_field_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group)
-{
-	Cmiss_field_id field = NULL;
-	if (group)
-	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
-		if (group_core)
-		{
-			field = group_core->get_element_group();
+			field = group_core->get_element_group(mesh);
 		}
 	}
 
@@ -1500,9 +1550,8 @@ int Cmiss_field_group_clear_region_tree_cad_primitive(Cmiss_field_group_id group
 
 #endif /* defined (USE_OPENCASCADE) */
 
-
-Cmiss_field_id Cmiss_field_group_create_sub_group(
-	Cmiss_field_group_id group, Cmiss_region_id sub_region)
+Cmiss_field_id Cmiss_field_group_get_subgroup(
+	Cmiss_field_group_id group, Cmiss_region_id subregion)
 {
 	Cmiss_field_id field = NULL;
 	if (group)
@@ -1511,7 +1560,23 @@ Cmiss_field_id Cmiss_field_group_create_sub_group(
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->create_sub_group(sub_region);
+			field = group_core->getSubgroup(subregion);
+		}
+	}
+	return field;
+}
+
+Cmiss_field_id Cmiss_field_group_create_subgroup(
+	Cmiss_field_group_id group, Cmiss_region_id subregion)
+{
+	Cmiss_field_id field = NULL;
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			field = group_core->createSubgroup(subregion);
 		}
 	}
 	return field;
@@ -1547,19 +1612,18 @@ int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group)
 	return return_code;
 }
 
-int Cmiss_field_group_clear_group_if_empty(Cmiss_field_group_id group)
+int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group)
 {
-	int return_code = 0;
 	if (group)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			return_code = group_core->clear_group_if_empty();
+			return group_core->remove_empty_subgroups();
 		}
 	}
-	return return_code;
+	return 0;
 }
 
 int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group)
@@ -1628,21 +1692,27 @@ int Cmiss_field_group_for_each_child(Cmiss_field_group_id group,
 	return return_code;
 }
 
-Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_module,
-	Cmiss_region *region)
+int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(group_address));
+}
+
+Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_module)
 {
 	Computed_field *field;
 
 	ENTER(Computed_field_create_group);
 	field = (Computed_field *)NULL;
 	// GRC original_field->manager check will soon be unnecessary
-	if (field_module && region)
+	if (field_module)
 	{
+		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_group(region));
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{
@@ -1725,8 +1795,7 @@ int define_Computed_field_type_group(Parse_state *state,
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_module_create_group(field_modify->get_field_module(),
-						region));
+					Cmiss_field_module_create_group(field_modify->get_field_module()));
 				Cmiss_region_destroy(&region);
 			}
 		}
@@ -1778,4 +1847,133 @@ int Computed_field_register_type_group(
 
 	return (return_code);
 } /* Computed_field_register_type_group */
+
+int Cmiss_field_group_clear(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->clear();
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_clear_local(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->clearLocal();
+		}
+	}
+	return 0;
+}
+
+
+int Cmiss_field_group_is_empty(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->isEmpty();
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->isEmptyLocal();
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_add_this_region(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->addThisRegion();
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_contains_this_region(Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->containsThisRegion();
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss_region_id region)
+{
+	if (group && region)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->containsRegion(region);
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_region_id region)
+{
+	if (group && region)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->removeRegion(region);
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id region)
+{
+	if (group && region)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->addRegion(region);
+		}
+	}
+	return 0;
+}
+
+
 

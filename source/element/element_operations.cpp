@@ -47,8 +47,8 @@ extern "C" {
 #include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
-#include "api/cmiss_field_sub_group_template.h"
-#include "api/cmiss_field_group.h"
+#include "api/cmiss_field_sub_group.h"
+#include "computed_field/computed_field_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
@@ -471,9 +471,9 @@ DESCRIPTION :
 			if (selected && data->group_field)
 			{
 				Cmiss_field_id element_group_field = data->group_field;
-        Cmiss_field_element_group_template_id element_group =
-        	Cmiss_field_cast_element_group_template(element_group_field);
-				selected = Cmiss_field_element_group_template_is_element_selected(
+        Cmiss_field_element_group_id element_group =
+        	Cmiss_field_cast_element_group(element_group_field);
+				selected = Cmiss_field_element_group_contains_element(
 					element_group, element);
         Cmiss_field_destroy(&element_group_field);
 			}
@@ -566,20 +566,16 @@ Up to the calling function to destroy the returned element list.
 			{
 				sub_group = Cmiss_field_cast_group(group_field);
 			}
-      Cmiss_field_id temp_field = NULL;
-      Cmiss_field_element_group_template_id element_group = NULL;
+      Cmiss_field_element_group_id element_group = NULL;
       if (sub_group)
       {
-      	Cmiss_field_id element_group_field = Cmiss_field_group_create_element_group(sub_group);
-        if (element_group_field)
-        {
-          element_group =
-            Cmiss_field_cast_element_group_template(element_group_field);
-          Cmiss_field_destroy(&element_group_field);
-        }
-        temp_field = (struct Computed_field *)sub_group;
-        Cmiss_field_destroy(&temp_field);
-        sub_group = NULL;
+				Cmiss_fe_mesh_id temp_mesh =
+				   Cmiss_region_get_fe_mesh_by_name(region, "cmiss_elements");
+				element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+				if (!element_group)
+					element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+				Cmiss_fe_mesh_destroy(&temp_mesh);
+        Cmiss_field_group_destroy(&sub_group);
       }
 			if (data.element_ranges
 				&& (elements_in_ranges < elements_in_region))
@@ -598,7 +594,7 @@ Up to the calling function to destroy the returned element list.
 							selected = 1;
 							if (selected && element_group)
 							{
-								selected = Cmiss_field_element_group_template_is_element_selected(
+								selected = Cmiss_field_element_group_contains_element(
 									element_group, element);
 							}
 							if (selected)
@@ -618,8 +614,7 @@ Up to the calling function to destroy the returned element list.
 			}
       if (element_group)
       {
-        temp_field = (struct Computed_field *)element_group;
-        Cmiss_field_destroy(&temp_field);
+      	Cmiss_field_element_group_destroy(&element_group);
       }
 			if (!return_code)
 			{

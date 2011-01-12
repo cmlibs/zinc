@@ -194,10 +194,11 @@ struct Cmiss_graphic_Computed_field_change_data
 	int graphics_changed;
 	/* the default coordinate field for the whole GT_element_group for when
 		 not overridden by settings->coordinate_field */
-	struct Computed_field *default_coordinate_field, *group_field;
+	struct Computed_field *default_coordinate_field;
 	/* the list of fields that have changed
 		 before passing, enlarge to include all other fields that depend on them */
 	struct LIST(Computed_field) *changed_field_list;
+	int selection_changed;
 };
 
 DECLARE_LIST_TYPES(Cmiss_graphic);

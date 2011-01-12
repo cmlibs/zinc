@@ -344,8 +344,8 @@ be DEALLOCATED by the calling function.
 				string_size = 2 * BLOCKSIZE;
 				last_char = 0xff;
 				index = 0;
-				if (return_string = ALLOCATE(return_string, char,
-					2 * BLOCKSIZE))
+				ALLOCATE(return_string, char, 2 * BLOCKSIZE);
+				if (return_string)
 				{
 					FILE* fp = _popen(example_string,"rt");
 					while(!feof(fp) && return_string)
