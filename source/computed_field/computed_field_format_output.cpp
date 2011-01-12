@@ -306,7 +306,7 @@ struct Computed_field *Computed_field_create_format_output(
 int Computed_field_get_type_format_output(struct Computed_field *field,
 	struct Computed_field **source_field, char **format_string_out)
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Computed_field_get_type_format_output);
 	Computed_field_format_output *this_field;
