@@ -317,7 +317,7 @@ int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handle
 	return DEACCESS(Cmiss_selection_handler)(selection_handler_address);
 }
 
-const enum Cmiss_selection_change_type Cmiss_selection_event_get_change_detail(
+enum Cmiss_selection_change_type Cmiss_selection_event_get_change_detail(
 	Cmiss_selection_event_id selection_event)
 {
 	return selection_event->change_type;
