@@ -1,12 +1,12 @@
 /*******************************************************************************
-FILE : element_operations.cpp
+ FILE : element_operations.cpp
 
-LAST MODIFIED : 3 March 2003
+ LAST MODIFIED : 3 March 2003
 
-DESCRIPTION :
-FE_element functions that utilise non finite element data structures and
-therefore cannot reside in finite element modules.
-==============================================================================*/
+ DESCRIPTION :
+ FE_element functions that utilise non finite element data structures and
+ therefore cannot reside in finite element modules.
+ ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -43,7 +43,8 @@ therefore cannot reside in finite element modules.
  *
  * ***** END LICENSE BLOCK ***** */
 
-extern "C" {
+extern "C"
+{
 #include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
@@ -57,16 +58,16 @@ extern "C" {
 }
 
 /*
-Global functions
-----------------
-*/
+ Global functions
+ ----------------
+ */
 
 struct FE_element_fe_region_selection_ranges_condition_data
 /*******************************************************************************
-LAST MODIFIED : 15 May 2006
+ LAST MODIFIED : 15 May 2006
 
-DESCRIPTION :
-==============================================================================*/
+ DESCRIPTION :
+ ==============================================================================*/
 {
 	enum CM_element_type cm_element_type;
 	struct FE_region *fe_region;
@@ -80,11 +81,11 @@ DESCRIPTION :
 
 struct FE_element_values_number
 /*******************************************************************************
-LAST MODIFIED : 22 December 2000
+ LAST MODIFIED : 22 December 2000
 
-DESCRIPTION :
-Data for changing element identifiers.
-==============================================================================*/
+ DESCRIPTION :
+ Data for changing element identifiers.
+ ==============================================================================*/
 {
 	struct FE_element *element;
 	int number_of_values;
@@ -93,28 +94,28 @@ Data for changing element identifiers.
 };
 
 static int compare_FE_element_values_number_values(
-	const void *element_values1_void, const void *element_values2_void)
+		const void *element_values1_void, const void *element_values2_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 2000
+ LAST MODIFIED : 22 December 2000
 
-DESCRIPTION :
-Compares the values in <element_values1> and <element_values2> from the last to
-then first, returning -1 as soon as a value in <element_values1> is less than
-its counterpart in <element_values2>, or 1 if greater. 0 is returned if all
-values are identival. Used as a compare function for qsort.
-==============================================================================*/
+ DESCRIPTION :
+ Compares the values in <element_values1> and <element_values2> from the last to
+ then first, returning -1 as soon as a value in <element_values1> is less than
+ its counterpart in <element_values2>, or 1 if greater. 0 is returned if all
+ values are identival. Used as a compare function for qsort.
+ ==============================================================================*/
 {
 	int i, number_of_values, return_code;
 	struct FE_element_values_number *element_values1, *element_values2;
 
 	ENTER(compare_FE_element_values_number_values);
 	return_code = 0;
-	if ((element_values1 =
-		(struct FE_element_values_number *)element_values1_void) &&
-		(element_values2 =
-			(struct FE_element_values_number *)element_values2_void) &&
-		(0 < (number_of_values = element_values1->number_of_values)) &&
-		(number_of_values == element_values2->number_of_values))
+	if ((element_values1
+			= (struct FE_element_values_number *) element_values1_void)
+			&& (element_values2
+				= (struct FE_element_values_number *) element_values2_void)
+			&& (0 < (number_of_values = element_values1->number_of_values))
+			&& (number_of_values == element_values2->number_of_values))
 	{
 		for (i = number_of_values - 1; (!return_code) && (0 <= i); i--)
 		{
@@ -132,8 +133,7 @@ values are identival. Used as a compare function for qsort.
 	{
 		display_message(ERROR_MESSAGE,
 			"compare_FE_element_values_number_values.  Invalid argument(s)");
-	}
-	LEAVE;
+	}LEAVE;
 
 	return (return_code);
 } /* compare_FE_element_values_number_values */
@@ -147,12 +147,12 @@ struct FE_element_and_values_to_array_data
 }; /* FE_element_and_values_to_array_data */
 
 static int FE_element_and_values_to_array(struct FE_element *element,
-	void *array_data_void)
+		void *array_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 January 2003
+ LAST MODIFIED : 16 January 2003
 
-DESCRIPTION :
-==============================================================================*/
+ DESCRIPTION :
+ ==============================================================================*/
 {
 	struct CM_element_information cm_element_identifier;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_xi_points;
@@ -162,9 +162,10 @@ DESCRIPTION :
 	FE_value_triple *xi_points;
 
 	ENTER(FE_element_and_values_to_array);
-	if (element && get_FE_element_identifier(element, &cm_element_identifier) &&
-		(array_data = (struct FE_element_and_values_to_array_data *)array_data_void)
-		&& array_data->element_values)
+	if (element && get_FE_element_identifier(element, &cm_element_identifier)
+			&& (array_data
+				= (struct FE_element_and_values_to_array_data *) array_data_void)
+			&& array_data->element_values)
 	{
 		return_code = 1;
 		if (cm_element_identifier.type == array_data->cm_type)
@@ -178,18 +179,23 @@ DESCRIPTION :
 				{
 					number_in_xi[i] = 1;
 				}
-				if (get_FE_element_shape(element, &element_shape) &&
-					FE_element_shape_get_xi_points_cell_centres(element_shape,
-						number_in_xi, &number_of_xi_points, &xi_points))
+				if (get_FE_element_shape(element, &element_shape)
+						&& FE_element_shape_get_xi_points_cell_centres(
+							element_shape, number_in_xi,
+							&number_of_xi_points, &xi_points))
 				{
-					if (!(array_data->element_values->values &&
-						Computed_field_evaluate_in_element(array_data->sort_by_field,
-							element, *xi_points, array_data->time,
-							/*top_level_element*/(struct FE_element *)NULL,
-							array_data->element_values->values,
-							/*derivatives*/(FE_value *)NULL)))
+					if (!(array_data->element_values->values
+							&& Computed_field_evaluate_in_element(
+								array_data->sort_by_field,
+								element,
+								*xi_points,
+								array_data->time,
+								/*top_level_element*/(struct FE_element *) NULL,
+								array_data->element_values->values,
+								/*derivatives*/(FE_value *) NULL)))
 					{
-						display_message(ERROR_MESSAGE, "FE_element_and_values_to_array.  "
+						display_message(ERROR_MESSAGE,
+							"FE_element_and_values_to_array.  "
 							"sort_by field could not be evaluated in element");
 						return_code = 0;
 					}
@@ -210,30 +216,29 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"FE_element_and_values_to_array.  Invalid argument(s)");
 		return_code = 0;
-	}
-	LEAVE;
+	}LEAVE;
 
 	return (return_code);
 } /* FE_element_and_values_to_array */
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
-	enum CM_element_type cm_type,	int element_offset,
+	enum CM_element_type cm_type, int element_offset,
 	struct Computed_field *sort_by_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2003
+ LAST MODIFIED : 18 February 2003
 
-DESCRIPTION :
-Changes the identifiers of all elements of <cm_type> in <fe_region>.
-If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
-If <sort_by_field> is specified, it is evaluated at the centre of all elements
-in <fe_region> and they are sorted by it - changing fastest with the first
-component and keeping the current order where the field has the same values.
-Checks for and fails if attempting to give any of the elements in <fe_region> an
-identifier already used by an element in the same master FE_region.
-Calls to this function should be enclosed in FE_region_begin_change/end_change.
-Note function avoids iterating through FE_region element lists as this is not
-allowed during identifier changes.
-==============================================================================*/
+ DESCRIPTION :
+ Changes the identifiers of all elements of <cm_type> in <fe_region>.
+ If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
+ If <sort_by_field> is specified, it is evaluated at the centre of all elements
+ in <fe_region> and they are sorted by it - changing fastest with the first
+ component and keeping the current order where the field has the same values.
+ Checks for and fails if attempting to give any of the elements in <fe_region> an
+ identifier already used by an element in the same master FE_region.
+ Calls to this function should be enclosed in FE_region_begin_change/end_change.
+ Note function avoids iterating through FE_region element lists as this is not
+ allowed during identifier changes.
+ ==============================================================================*/
 {
 	int i, number_of_elements, number_of_values, return_code;
 	struct CM_element_information cm, tmp_cm, next_spare_element_identifier;
@@ -252,9 +257,10 @@ allowed during identifier changes.
 		count_data.cm_type = cm_type;
 		count_data.number_of_elements = 0;
 		if (!FE_region_for_each_FE_element(fe_region, FE_element_count_if_type,
-			(void *)&count_data))
+			(void *) &count_data))
 		{
-			display_message(ERROR_MESSAGE, "FE_region_change_element_identifiers.  "
+			display_message(ERROR_MESSAGE,
+				"FE_region_change_element_identifiers.  "
 				"Could not count elements of given type");
 			return_code = 0;
 		}
@@ -264,8 +270,8 @@ allowed during identifier changes.
 			cm.type = cm_type;
 			if (sort_by_field)
 			{
-				number_of_values =
-					Computed_field_get_number_of_components(sort_by_field);
+				number_of_values = Computed_field_get_number_of_components(
+					sort_by_field);
 			}
 			else
 			{
@@ -277,7 +283,7 @@ allowed during identifier changes.
 				for (i = 0; i < number_of_elements; i++)
 				{
 					element_values[i].number_of_values = number_of_values;
-					element_values[i].values = (FE_value *)NULL;
+					element_values[i].values = (FE_value *) NULL;
 				}
 				if (sort_by_field)
 				{
@@ -299,7 +305,8 @@ allowed during identifier changes.
 					array_data.time = time;
 					array_data.cm_type = cm_type;
 					if (!FE_region_for_each_FE_element(fe_region,
-						FE_element_and_values_to_array, (void *)&array_data))
+						FE_element_and_values_to_array,
+						(void *) &array_data))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_region_change_element_identifiers.  "
@@ -326,9 +333,11 @@ allowed during identifier changes.
 						/* offset element numbers by element_offset */
 						for (i = 0; (i < number_of_elements) && return_code; i++)
 						{
-							if (get_FE_element_identifier(element_values[i].element, &tmp_cm))
+							if (get_FE_element_identifier(
+								element_values[i].element, &tmp_cm))
 							{
-								element_values[i].new_number = tmp_cm.number + element_offset;
+								element_values[i].new_number = tmp_cm.number
+									+ element_offset;
 							}
 						}
 					}
@@ -342,8 +351,8 @@ allowed during identifier changes.
 								"element_offset gives negative element numbers");
 							return_code = 0;
 						}
-						else if ((0 < i) && (element_values[i].new_number <=
-							element_values[i - 1].new_number))
+						else if ((0 < i) && (element_values[i].new_number
+							<= element_values[i - 1].new_number))
 						{
 							display_message(ERROR_MESSAGE,
 								"FE_region_change_element_identifiers.  "
@@ -355,14 +364,15 @@ allowed during identifier changes.
 				if (return_code)
 				{
 					/* check none of the new numbers are in use by other elements
-						 in the master_fe_region */
+					 in the master_fe_region */
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						cm.number = element_values[i].new_number;
-						if ((element_with_identifier =
-							FE_region_get_FE_element_from_identifier(master_fe_region, &cm))
-							&& (!FE_region_contains_FE_element(fe_region,
-								element_with_identifier)))
+						if ((element_with_identifier
+								= FE_region_get_FE_element_from_identifier(
+									master_fe_region, &cm))
+								&& (!FE_region_contains_FE_element(fe_region,
+									element_with_identifier)))
 						{
 							display_message(ERROR_MESSAGE,
 								"FE_region_change_element_identifiers.  "
@@ -375,33 +385,39 @@ allowed during identifier changes.
 				{
 					/* change identifiers */
 					/* maintain next_spare_element_number to renumber elements in same
-						 group which already have the same number as the new_number */
+					 group which already have the same number as the new_number */
 					next_spare_element_identifier.type = cm_type;
-					next_spare_element_identifier.number =
-						element_values[number_of_elements - 1].new_number + 1;
+					next_spare_element_identifier.number
+						= element_values[number_of_elements - 1].new_number + 1;
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						cm.number = element_values[i].new_number;
-						element_with_identifier =
-							FE_region_get_FE_element_from_identifier(fe_region, &cm);
+						element_with_identifier
+							= FE_region_get_FE_element_from_identifier(
+								fe_region, &cm);
 						/* only modify if element doesn't already have correct identifier */
-						if (element_with_identifier != element_values[i].element)
+						if (element_with_identifier
+							!= element_values[i].element)
 						{
 							if (element_with_identifier)
 							{
-								while ((struct FE_element *)NULL !=
-									FE_region_get_FE_element_from_identifier(fe_region,
+								while ((struct FE_element *) NULL
+									!= FE_region_get_FE_element_from_identifier(
+										fe_region,
 										&next_spare_element_identifier))
 								{
 									next_spare_element_identifier.number++;
 								}
-								if (!FE_region_change_FE_element_identifier(master_fe_region,
-									element_with_identifier, &next_spare_element_identifier))
+								if (!FE_region_change_FE_element_identifier(
+									master_fe_region,
+									element_with_identifier,
+									&next_spare_element_identifier))
 								{
 									return_code = 0;
 								}
 							}
-							if (!FE_region_change_FE_element_identifier(master_fe_region,
+							if (!FE_region_change_FE_element_identifier(
+								master_fe_region,
 								element_values[i].element, &cm))
 							{
 								display_message(ERROR_MESSAGE,
@@ -434,27 +450,27 @@ allowed during identifier changes.
 		display_message(ERROR_MESSAGE,
 			"FE_region_change_element_identifiers.  Invalid argument(s)");
 		return_code = 0;
-	}
-	LEAVE;
+	}LEAVE;
 
 	return (return_code);
 } /* FE_region_change_element_identifiers */
 
 static int FE_element_add_if_selection_ranges_condition_with_group(
-		struct FE_element *element,	void *data_void)
+		struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 March 2008
+ LAST MODIFIED : 10 March 2008
 
-DESCRIPTION :
-==============================================================================*/
+ DESCRIPTION :
+ ==============================================================================*/
 {
 	int return_code, selected;
 	struct CM_element_information identifier;
 	struct FE_element_fe_region_selection_ranges_condition_data *data;
 
 	ENTER(FE_element_add_if_selection_ranges_condition);
-	if (element &&
-		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
+	if (element
+		&& (data
+			= (struct FE_element_fe_region_selection_ranges_condition_data *) data_void))
 	{
 		return_code = get_FE_element_identifier(element, &identifier);
 		if (identifier.type == data->cm_element_type)
@@ -462,29 +478,33 @@ DESCRIPTION :
 			selected = 1;
 			if (selected && data->selected_flag)
 			{
-				selected = IS_OBJECT_IN_LIST(FE_element)(element, data->element_selection_list);
+				selected = IS_OBJECT_IN_LIST(FE_element)(element,
+					data->element_selection_list);
 			}
 			if (selected && data->element_ranges)
 			{
-				selected = Multi_range_is_value_in_range(data->element_ranges, identifier.number);
+				selected = Multi_range_is_value_in_range(data->element_ranges,
+					identifier.number);
 			}
 			if (selected && data->group_field)
 			{
 				Cmiss_field_id element_group_field = data->group_field;
-        Cmiss_field_element_group_id element_group =
-        	Cmiss_field_cast_element_group(element_group_field);
+				Cmiss_field_element_group_id element_group =
+					Cmiss_field_cast_element_group(element_group_field);
 				selected = Cmiss_field_element_group_contains_element(
 					element_group, element);
-        Cmiss_field_destroy(&element_group_field);
+				Cmiss_field_destroy(&element_group_field);
 			}
 			if (selected && data->conditional_field)
 			{
-				selected = Computed_field_is_true_in_element(data->conditional_field,
-					element, data->conditional_field_time);
+				selected = Computed_field_is_true_in_element(
+					data->conditional_field, element,
+					data->conditional_field_time);
 			}
 			if (selected)
 			{
-				return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+				return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
+					data->element_list);
 			}
 		}
 	}
@@ -493,30 +513,28 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"FE_element_add_if_selection_ranges_condition.  Invalid argument(s)");
 		return_code = 0;
-	}
-	LEAVE;
+	}LEAVE;
 
 	return (return_code);
 } /* FE_element_add_if_selection_ranges_condition */
 
 struct LIST(FE_element) *
-	FE_element_list_from_region_and_selection_group(
-		struct Cmiss_region *region, enum CM_element_type cm_element_type,
-		struct Multi_range *element_ranges,
-		struct Computed_field *group_field,
+FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
+		enum CM_element_type cm_element_type,
+		struct Multi_range *element_ranges, struct Computed_field *group_field,
 		struct Computed_field *conditional_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 March 2003
+ LAST MODIFIED : 3 March 2003
 
-DESCRIPTION :
-Creates and returns an element list that is the intersection of:
-- all the elements in <fe_region>;
-- all elements in the <element_selection> if <selected_flag> is set;
-- all elements in the given <element_ranges>, if any.
-- all elements for which the <conditional_field> evaluates as "true"
-  in its centre at the specified <time>
-Up to the calling function to destroy the returned element list.
-==============================================================================*/
+ DESCRIPTION :
+ Creates and returns an element list that is the intersection of:
+ - all the elements in <fe_region>;
+ - all elements in the <element_selection> if <selected_flag> is set;
+ - all elements in the given <element_ranges>, if any.
+ - all elements for which the <conditional_field> evaluates as "true"
+ in its centre at the specified <time>
+ Up to the calling function to destroy the returned element list.
+ ==============================================================================*/
 {
 	int i, element_number, elements_in_region, elements_in_ranges = 0,
 		number_of_ranges = 0, return_code, selected, start, stop;
@@ -530,7 +548,7 @@ Up to the calling function to destroy the returned element list.
 	{
 		fe_region = Cmiss_region_get_FE_region(region);
 	}
-	data.element_list = (struct LIST(FE_element) *)NULL;
+	data.element_list = (struct LIST(FE_element) *) NULL;
 	if (fe_region)
 	{
 		data.element_list = CREATE(LIST(FE_element))();
@@ -539,7 +557,8 @@ Up to the calling function to destroy the returned element list.
 			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
 			if (element_ranges)
 			{
-				elements_in_ranges = Multi_range_get_total_number_in_ranges(element_ranges);
+				elements_in_ranges = Multi_range_get_total_number_in_ranges(
+					element_ranges);
 			}
 
 			data.fe_region = fe_region;
@@ -547,15 +566,15 @@ Up to the calling function to destroy the returned element list.
 			data.selected_flag = 0;
 			data.element_selection_list = NULL;
 			/* Seems odd to specify an empty element_ranges but I have
-				maintained the previous behaviour */
-			if (element_ranges &&
-				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(element_ranges))))
+			 maintained the previous behaviour */
+			if (element_ranges && (0 < (number_of_ranges
+				= Multi_range_get_number_of_ranges(element_ranges))))
 			{
 				data.element_ranges = element_ranges;
 			}
 			else
 			{
-				data.element_ranges = (struct Multi_range *)NULL;
+				data.element_ranges = (struct Multi_range *) NULL;
 			}
 			data.group_field = group_field;
 			data.conditional_field = conditional_field;
@@ -566,29 +585,30 @@ Up to the calling function to destroy the returned element list.
 			{
 				sub_group = Cmiss_field_cast_group(group_field);
 			}
-      Cmiss_field_element_group_id element_group = NULL;
-      if (sub_group)
-      {
+			Cmiss_field_element_group_id element_group = NULL;
+			if (sub_group)
+			{
 				Cmiss_fe_mesh_id temp_mesh =
-				   Cmiss_region_get_fe_mesh_by_name(region, "cmiss_elements");
+					Cmiss_region_get_fe_mesh_by_name(region, "cmiss_elements");
 				element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 				if (!element_group)
 					element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
 				Cmiss_fe_mesh_destroy(&temp_mesh);
-        Cmiss_field_group_destroy(&sub_group);
-      }
+				Cmiss_field_group_destroy(&sub_group);
+			}
 			if (data.element_ranges
-				&& (elements_in_ranges < elements_in_region))
+					&& (elements_in_ranges < elements_in_region))
 			{
 				return_code = 1;
-				for (i = 0 ; i < number_of_ranges ; i++)
+				for (i = 0; i < number_of_ranges; i++)
 				{
 					Multi_range_get_range(element_ranges, i, &start, &stop);
-					for (element_number = start ; element_number <= stop ; element_number++)
+					for (element_number = start; element_number <= stop; element_number++)
 					{
 						element_id.type = cm_element_type;
 						element_id.number = element_number;
-						element = FE_region_get_FE_element_from_identifier(fe_region, &element_id);
+						element = FE_region_get_FE_element_from_identifier(
+							fe_region, &element_id);
 						if (element)
 						{
 							selected = 1;
@@ -599,7 +619,8 @@ Up to the calling function to destroy the returned element list.
 							}
 							if (selected)
 							{
-								ADD_OBJECT_TO_LIST(FE_element)(element, data.element_list);
+								ADD_OBJECT_TO_LIST(FE_element)(element,
+									data.element_list);
 							}
 						}
 					}
@@ -607,15 +628,17 @@ Up to the calling function to destroy the returned element list.
 			}
 			else
 			{
-				data.group_field = (struct Computed_field *)element_group;
+				data.group_field = (struct Computed_field *) element_group;
 				data.conditional_field = conditional_field;
-				return_code =  FE_region_for_each_FE_element(fe_region,
-					FE_element_add_if_selection_ranges_condition_with_group, (void *)&data);
+				return_code
+					= FE_region_for_each_FE_element(fe_region,
+						FE_element_add_if_selection_ranges_condition_with_group,
+						(void *) &data);
 			}
-      if (element_group)
-      {
-      	Cmiss_field_element_group_destroy(&element_group);
-      }
+			if (element_group)
+			{
+				Cmiss_field_element_group_destroy(&element_group);
+			}
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,

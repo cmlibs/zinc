@@ -5161,10 +5161,10 @@ void export_object_name_parser(const char *path_name, const char **scene_name,
 	if (path_name)
 	{
 		total_length = strlen(path_name);
-		slash_pointer = strchr(path_name,'/');
+		slash_pointer = strchr(path_name, '/');
 		dot_pointer = strrchr(path_name, '.');
 		if (dot_pointer)
-		{	
+		{
 			if ((dot_pointer - path_name) < total_length)
 			{
 				*graphic_name = duplicate_string(dot_pointer + 1);
