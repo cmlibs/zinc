@@ -5711,6 +5711,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
 					glyph = (GT_object *)NULL;
+					glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 					if (graphic->glyph)
 					{
 						Cmiss_graphic_get_glyph_parameters(graphic,

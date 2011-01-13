@@ -1532,33 +1532,36 @@ Returns NULL with error if <fe_region> is itself a data region.
 
 	ENTER(FE_region_get_data_FE_region);
 	data_fe_region = (struct FE_region *)NULL;
-	if (fe_region && (!fe_region->base_fe_region))
+	if (fe_region)
 	{
-		if (fe_region->data_fe_region)
+		if (!fe_region->base_fe_region)
 		{
-			data_fe_region = fe_region->data_fe_region;
-		}
-		else
-		{
-			if (fe_region->master_fe_region)
+			if (fe_region->data_fe_region)
 			{
-				data_master_fe_region =
-					FE_region_get_data_FE_region(fe_region->master_fe_region);
+				data_fe_region = fe_region->data_fe_region;
 			}
 			else
 			{
-				data_master_fe_region = fe_region;
-			}
-			if (data_fe_region = CREATE(FE_region)(data_master_fe_region,
-				(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
-			{
-				fe_region->data_fe_region = ACCESS(FE_region)(data_fe_region);
-				data_fe_region->base_fe_region = fe_region;
-				/* decrement access count of master to avoid circular reference */
-				data_master_fe_region->access_count--;
-				if (data_master_fe_region == fe_region)
+				if (fe_region->master_fe_region)
 				{
-					data_fe_region->top_data_hack = 1;
+					data_master_fe_region =
+						FE_region_get_data_FE_region(fe_region->master_fe_region);
+				}
+				else
+				{
+					data_master_fe_region = fe_region;
+				}
+				if (data_fe_region = CREATE(FE_region)(data_master_fe_region,
+					(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
+				{
+					fe_region->data_fe_region = ACCESS(FE_region)(data_fe_region);
+					data_fe_region->base_fe_region = fe_region;
+					/* decrement access count of master to avoid circular reference */
+					data_master_fe_region->access_count--;
+					if (data_master_fe_region == fe_region)
+					{
+						data_fe_region->top_data_hack = 1;
+					}
 				}
 			}
 		}
