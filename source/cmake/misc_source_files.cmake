@@ -88,13 +88,9 @@ SET( REGION_HDRS source/region/cmiss_region.h
 	source/region/cmiss_region_write_info.h )
 
 SET( SELECTION_SRCS source/selection/any_object_selection.c
-	source/selection/element_point_ranges_selection.c
-	source/selection/element_selection.c
-	source/selection/node_selection.c )
+	source/selection/element_point_ranges_selection.c )
 SET( SELECTION_HDRS source/selection/any_object_selection.h
-	source/selection/element_point_ranges_selection.h
-	source/selection/element_selection.h
-	source/selection/node_selection.h )
+	source/selection/element_point_ranges_selection.h )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( THREE_D_DRAWING_SRCS

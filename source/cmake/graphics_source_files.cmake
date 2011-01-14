@@ -26,6 +26,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
 	source/graphics/selected_graphic.c
+	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
 	source/graphics/spectrum_settings.c
 	source/graphics/tessellation.cpp
@@ -75,6 +76,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/scene_editor.h
 	source/graphics/scene_filters.hpp
 	source/graphics/selected_graphic.h
+	source/graphics/selection.hpp
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
 	source/graphics/spectrum_editor.h
@@ -121,10 +123,12 @@ ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	
 IF( WX_USER_INTERFACE )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
+		source/dialog/tessellation_dialog.cpp
 		source/graphics/region_tree_viewer_wx.cpp
 		source/graphics/spectrum_editor_wx.cpp
 		source/graphics/spectrum_editor_dialog_wx.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
+		source/dialog/tessellation_dialog.hpp
 		source/graphics/region_tree_viewer_wx.h
 		source/graphics/spectrum_editor_wx.h
 		source/graphics/spectrum_editor_dialog_wx.h )

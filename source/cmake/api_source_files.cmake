@@ -5,13 +5,11 @@ SET( API_SRCS
 	source/api/cmiss_context.c
 	source/api/cmiss_core.c
 	source/api/cmiss_element.cpp
-	source/api/cmiss_graphic.c
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c
 	source/api/cmiss_material.c
 	source/api/cmiss_node.cpp
 	source/api/cmiss_region.c
-	source/api/cmiss_rendition.c
 	source/api/cmiss_scene_viewer.cpp
 	source/api/cmiss_texture.c
 	source/api/cmiss_time.c
@@ -28,14 +26,17 @@ SET( API_HDRS
 	source/api/cmiss_field_arithmetic_operators.h
 	source/api/cmiss_field_composite.h
 	source/api/cmiss_field_conditional.h
+	source/api/cmiss_field_ensemble.h
+	source/api/cmiss_field_finite_element.h
 	source/api/cmiss_field_group.h
 	source/api/cmiss_field_image.h
 	source/api/cmiss_field_image_processing.h
 	source/api/cmiss_field_logical_operators.h
 	source/api/cmiss_field_module.h
 	source/api/cmiss_field_parameters.h
-	source/api/cmiss_field_sub_group_template.h
+	source/api/cmiss_field_sub_group.h
 	source/api/cmiss_field_trigonometry.h
+	source/api/cmiss_field_window_projection.h
 	source/api/cmiss_graphic.h
 	source/api/cmiss_graphics_window.h
 	source/api/cmiss_idle.h
@@ -45,7 +46,11 @@ SET( API_HDRS
 	source/api/cmiss_rendition.h
 	source/api/cmiss_scene.h
 	source/api/cmiss_scene_filter.h
+	source/api/cmiss_scene_viewer.h
+	source/api/cmiss_selection.h
+	source/api/cmiss_spectrum.h
 	source/api/cmiss_tessellation.h
+	source/api/cmiss_texture.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
 	source/api/cmiss_time_sequence.h
@@ -62,7 +67,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/api/cmiss_texture.c )
 	SET( API_HDRS ${API_HDRS}
 		source/api/cmiss_scene_viewer.h
-		source/api/cmiss_scene_viewer_private.h
 		source/api/cmiss_texture.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 

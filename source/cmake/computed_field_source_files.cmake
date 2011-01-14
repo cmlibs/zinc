@@ -7,7 +7,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_composite.cpp
 	source/computed_field/computed_field_conditional.cpp
 	source/computed_field/computed_field_group.cpp
-	source/computed_field/computed_field_sub_group_template.cpp
+	source/computed_field/computed_field_sub_group.cpp
 	source/computed_field/field_ensemble.cpp
 	source/computed_field/field_parameters.cpp
 	source/computed_field/computed_field_find_xi.cpp
@@ -20,7 +20,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_composite.h
 	source/computed_field/computed_field_conditional.h
 	source/computed_field/computed_field_group.h
-	source/computed_field/computed_field_sub_group_template.hpp
+	source/computed_field/computed_field_sub_group.hpp
 	source/computed_field/field_ensemble.hpp
 	source/computed_field/computed_field_find_xi.h
 	source/computed_field/computed_field_finite_element.h
@@ -42,7 +42,9 @@ SET( COMPUTED_FIELD_SRCS
 	source/computed_field/computed_field_coordinate.cpp
 	source/computed_field/computed_field_deformation.cpp
 	source/computed_field/computed_field_fibres.cpp
+	source/computed_field/computed_field_format_output.cpp
 	source/computed_field/computed_field_function.cpp
+	source/computed_field/computed_field_group.cpp
 	source/computed_field/computed_field_image.cpp
 	source/computed_field/computed_field_integration.cpp
 	source/computed_field/computed_field_logical_operators.cpp
@@ -50,6 +52,7 @@ SET( COMPUTED_FIELD_SRCS
 	source/computed_field/computed_field_matrix_operations.cpp
 	source/computed_field/computed_field_region_operations.cpp
 	source/computed_field/computed_field_string_constant.cpp
+	source/computed_field/computed_field_sub_group.cpp
 	source/computed_field/computed_field_time.cpp
 	source/computed_field/computed_field_trigonometry.cpp
 	source/computed_field/computed_field_update.cpp
