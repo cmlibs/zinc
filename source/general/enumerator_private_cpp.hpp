@@ -163,6 +163,12 @@ Default version assumes all valid enumerator values are sequential from 0. \
 	if (enumerator_string && enumerator_value_address) \
 	{ \
 		enumerator_value = (enum enumerator_type)0; \
+		/* valid modes are from 0 or 1 to the last one with a string */ \
+		if (NULL == ENUMERATOR_STRING(enumerator_type)( \
+			static_cast<enum enumerator_type >(enumerator_value))) \
+		{ \
+			enumerator_value++; \
+		} \
 		while ((other_enumerator_string = \
 			ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type>(enumerator_value))) && \
 			(!fuzzy_string_compare_same_length(enumerator_string, \
@@ -172,7 +178,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		} \
 		if (other_enumerator_string) \
 		{ \
-		        *enumerator_value_address = static_cast<enum enumerator_type>(enumerator_value); \
+			*enumerator_value_address = static_cast<enum enumerator_type>(enumerator_value); \
 			return_code = 1; \
 		} \
 		else \
