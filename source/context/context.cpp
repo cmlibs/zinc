@@ -113,14 +113,17 @@ int Cmiss_context_destroy(struct Context **context_address)
 			Cmiss_field_id root_selection_field_copy = NULL;
 			if (context->root_region)
 			{
-				Cmiss_rendition_id root_redition = Cmiss_graphics_module_get_rendition(context->graphics_module, context->root_region);
-				Cmiss_field_id root_selection_field = Cmiss_rendition_get_selection_group(root_redition);
-				if (root_selection_field)
+				Cmiss_rendition_id root_rendition = Cmiss_graphics_module_get_rendition(context->graphics_module, context->root_region);
+				if (root_rendition)
 				{
-					root_selection_field_copy = root_selection_field;
-					Cmiss_field_destroy(&root_selection_field);
+					Cmiss_field_id root_selection_field = Cmiss_rendition_get_selection_group(root_rendition);
+					if (root_selection_field)
+					{
+						root_selection_field_copy = root_selection_field;
+						Cmiss_field_destroy(&root_selection_field);
+					}
+					Cmiss_rendition_destroy(&root_rendition);
 				}
-				Cmiss_rendition_destroy(&root_redition);
 			}
 			if (context->graphics_module)
 				Cmiss_graphics_module_destroy(&context->graphics_module);

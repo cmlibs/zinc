@@ -3496,29 +3496,39 @@ Computed_field *Cmiss_rendition_get_any_selection_group(Cmiss_rendition_id rendi
 {
 	return rendition->selection_group;
 }
+
 Computed_field *Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition)
 {
 	Cmiss_field_id selection_group = NULL;
-	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
-	if (rendition->selection_group)
+	if (rendition)
 	{
-		char *name = Cmiss_field_get_name(rendition->selection_group);
-		selection_group = Cmiss_field_module_find_field_by_name(field_module, name);
-		if (!selection_group)
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
+		if (rendition->selection_group)
 		{
-			rendition->selection_group = NULL;
-			rendition->selection_group_removed = 1;
+			char *name = Cmiss_field_get_name(rendition->selection_group);
+			selection_group = Cmiss_field_module_find_field_by_name(field_module, name);
+			if (!selection_group)
+			{
+				rendition->selection_group = NULL;
+				rendition->selection_group_removed = 1;
+			}
+			if (name)
+				DEALLOCATE(name);
 		}
-		if (name)
-			DEALLOCATE(name);
+		else
+		{
+			selection_group = Cmiss_field_module_find_field_by_name(field_module, "cmiss_selection");
+			rendition->selection_group = selection_group;
+			rendition->selection_group_removed = 0;
+		}
+		Cmiss_field_module_destroy(&field_module);
 	}
 	else
 	{
-		selection_group = Cmiss_field_module_find_field_by_name(field_module, "cmiss_selection");
-		rendition->selection_group = selection_group;
-		rendition->selection_group_removed = 0;
+		display_message(ERROR_MESSAGE,	"Cmiss_rendition_get_any_selection_group."
+				"  Invalid argument.");
 	}
-	Cmiss_field_module_destroy(&field_module);
+
 	return selection_group;
 }
 
