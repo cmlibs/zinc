@@ -5878,7 +5878,11 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						else
 						{
 							if (graphic->glyph)
+							{
+								GT_object_remove_callback(graphic->glyph,
+									Cmiss_graphic_glyph_change, (void *)graphic);
 								DEACCESS(GT_object)(&graphic->glyph);
+							}
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -6144,7 +6148,11 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						else
 						{
 							if (graphic->glyph)
+							{
+								GT_object_remove_callback(graphic->glyph,
+									Cmiss_graphic_glyph_change, (void *)graphic);
 								DEACCESS(GT_object)(&graphic->glyph);
+							}
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -6419,7 +6427,11 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						else
 						{
 							if (graphic->glyph)
+							{
+								GT_object_remove_callback(graphic->glyph,
+									Cmiss_graphic_glyph_change, (void *)graphic);
 								DEACCESS(GT_object)(&graphic->glyph);
+							}
 						}
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
@@ -7382,7 +7394,11 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				else
 				{
 					if (graphic->glyph)
+					{
+						GT_object_remove_callback(graphic->glyph,
+							Cmiss_graphic_glyph_change, (void *)graphic);
 						DEACCESS(GT_object)(&graphic->glyph);
+					}
 				}
 				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 					&select_mode);
