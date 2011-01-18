@@ -35,6 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <cstdlib>
+#include "api/cmiss_field_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
@@ -176,7 +177,7 @@ int DESTROY(Cmiss_selection_handler)(struct Cmiss_selection_handler **selection_
 
 } /* anonymous namespace */
 
-static void  Cmiss_selection_handler_callback(
+static void Cmiss_selection_handler_callback(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *selection_handler_void)
 {
 	if (message)
@@ -186,11 +187,11 @@ static void  Cmiss_selection_handler_callback(
 		const Cmiss_field_change_detail *source_change_detail = NULL;
 		if (selection_handler)
 		{
-			struct Computed_field *group_field = Cmiss_rendition_get_any_selection_group(selection_handler->rendition);
+			Cmiss_field_group_id group_field = Cmiss_rendition_get_internal_selection_group(selection_handler->rendition);
 			if (group_field)
 			{
-				int change = Computed_field_manager_message_get_object_change_and_detail(message, group_field,
-					&source_change_detail);
+				int change = Computed_field_manager_message_get_object_change_and_detail(
+					message, Cmiss_field_group_base_cast(group_field), &source_change_detail);
 				Cmiss_selection_event_id event = new Cmiss_selection_event();
 				event->change_type = CMISS_SELECTION_NO_CHANGE;
 				if (change & MANAGER_CHANGE_RESULT(Computed_field))

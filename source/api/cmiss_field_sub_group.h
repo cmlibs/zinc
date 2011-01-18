@@ -47,8 +47,17 @@
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 
-struct Cmiss_field_node_group;
-typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
+#ifndef CMISS_FIELD_NODE_GROUP_ID_DEFINED
+	struct Cmiss_field_node_group;
+	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
+	#define CMISS_FIELD_NODE_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_NODE_GROUP_ID_DEFINED */
+
+#ifndef CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
+	struct Cmiss_field_element_group;
+	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
+	#define CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED */
 
 /*****************************************************************************//**
  * Creates a field where nodes from the same nodeset can be put into group.
@@ -69,6 +78,26 @@ Cmiss_field_id Cmiss_field_module_create_node_group(Cmiss_field_module_id field_
  * @return  handle of the cast field, or NULL
 */
 Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
+
+/*****************************************************************************//**
+ * Cast node group field back to its base field and return the field.  Otherwise
+ * return NULL.
+ *
+ * @param group  handle to the node group field to cast
+ * @return  handle of the field, or NULL
+ */
+static inline Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_group_id group)
+{
+	return (Cmiss_field_id)(group);
+}
+
+/*****************************************************************************//**
+ * Destroy the reference to the node group.
+ *
+ * @param group_address  address to the handle to the node group field
+ * @return  1 if successfully destroy the node group, otherwise 0.
+ */
+int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
 /*****************************************************************************//**
  * Add specified node to node group.
@@ -116,29 +145,6 @@ int Cmiss_field_node_group_contains_node(
 int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group);
 
 /*****************************************************************************//**
- * Cast node group field back to its base field and return the field.  Otherwise
- * return NULL.
- *
- * @param group  handle to the node group field to cast
- * @return  handle of the field, or NULL
- */
-static inline Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_group_id group)
-{
-	return (Cmiss_field_id)(group);
-}
-
-/*****************************************************************************//**
- * Destroy the reference to the node group.
- *
- * @param group_address  address to the handle to the node group field
- * @return  1 if successfully destroy the node group, otherwise 0.
- */
-int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
-
-struct Cmiss_field_element_group;
-typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
-
-/*****************************************************************************//**
  * Creates a field where elements from the same mesh can be put into group.
  *
  * @param field_module  Region field module which will own new field.
@@ -157,6 +163,26 @@ Cmiss_field_id Cmiss_field_module_create_element_group(Cmiss_field_module_id fie
  * @return  handle of the cast field, or NULL
 */
 Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field);
+
+/*****************************************************************************//**
+ * Cast element group field back to its base field and return the field.  Otherwise
+ * return NULL.
+ *
+ * @param group  handle to the element group field to cast
+ * @return  handle of the field, or NULL
+ */
+static inline Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_element_group_id group)
+{
+	return (Cmiss_field_id)(group);
+}
+
+/*****************************************************************************//**
+ * Destroy the reference to the element group.
+ *
+ * @param element_group_address  address to the handle to the element group field
+ * @return  1 if successfully destroy the element group, otherwise 0.
+ */
+int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 
 /*****************************************************************************//**
  * Add specified element to element group.
@@ -202,25 +228,5 @@ int Cmiss_field_element_group_contains_element(
  * @return  1 if element group does not contain any element, otherwise 0.
  */
 int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group);
-
-/*****************************************************************************//**
- * Cast element group field back to its base field and return the field.  Otherwise
- * return NULL.
- *
- * @param group  handle to the element group field to cast
- * @return  handle of the field, or NULL
- */
-static inline Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_element_group_id group)
-{
-	return (Cmiss_field_id)(group);
-}
-
-/*****************************************************************************//**
- * Destroy the reference to the element group.
- *
- * @param element_group_address  address to the handle to the element group field
- * @return  1 if successfully destroy the element group, otherwise 0.
- */
-int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 
 #endif /* !defined (CMISS_FIELD_GROUP_H) */

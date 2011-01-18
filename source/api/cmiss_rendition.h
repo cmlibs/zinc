@@ -48,23 +48,28 @@ The public interface to the Cmiss_rendition.
 #include "api/cmiss_graphic.h"
 #include "api/cmiss_region.h"
 
-struct Cmiss_rendition;
-
 #ifndef CMISS_RENDITION_ID_DEFINED
 /***************************************************************************//**
  * A handle to a Cmiss rendition. 
  * Cmiss rendition is the graphical represnetation of a region, each region
  * has maximum one rendition at a time. Rendition is created when requested.
  */
-typedef struct Cmiss_rendition * Cmiss_rendition_id;
-#define CMISS_RENDITION_ID_DEFINED
+	struct Cmiss_rendition;
+	typedef struct Cmiss_rendition * Cmiss_rendition_id;
+	#define CMISS_RENDITION_ID_DEFINED
 #endif /* CMISS_RENDITION_ID_DEFINED */
 
 #ifndef CMISS_SELECTION_HANDLER_ID_DEFINED
-struct Cmiss_selection_handler;
-typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
-#define CMISS_SELECTION_HANDLER_ID_DEFINED
+	struct Cmiss_selection_handler;
+	typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
+	#define CMISS_SELECTION_HANDLER_ID_DEFINED
 #endif
+
+#ifndef CMISS_FIELD_GROUP_ID_DEFINED
+	struct Cmiss_field_group;
+	typedef struct Cmiss_field_group *Cmiss_field_group_id;
+	#define CMISS_FIELD_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_GROUP_ID_DEFINED */
 
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.
@@ -203,6 +208,6 @@ Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendit
  *
  * @return Return selection group if successfully otherwise null.
  */
-Cmiss_field_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
+Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition);
 
 #endif /* __CMISS_RENDITION_H__ */

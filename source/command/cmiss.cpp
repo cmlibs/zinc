@@ -2486,16 +2486,16 @@ Executes a GFX CREATE SNAKE command.
 			if (return_code)
 			{
 	  		Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, source_region);
-	  		struct Computed_field *group_field = NULL;
+	  		Cmiss_field_group_id group_field = NULL;
 	  		if (rendition)
 	  		{
 	  			group_field = Cmiss_rendition_get_selection_group(rendition);
-					Cmiss_rendition_destroy(&rendition);
+				Cmiss_rendition_destroy(&rendition);
 	  		}
 	  		if (group_field)
 	  		{
 	  			struct LIST(FE_node) *data_list = FE_node_list_from_region_and_selection_group(
-	  				source_region, NULL,	group_field, NULL, 0, /*use_data*/1);
+	  				source_region, NULL,	Cmiss_field_group_base_cast(group_field), NULL, 0, /*use_data*/1);
 	  			return_code = create_FE_element_snake_from_data_points(
 	  				fe_region, coordinate_field, weight_field,
 	  				number_of_fitting_fields, fitting_fields,
@@ -2503,7 +2503,7 @@ Executes a GFX CREATE SNAKE command.
 	  				number_of_elements,
 	  				density_factor,
 	  				stiffness);
-	  			Cmiss_field_destroy(&group_field);
+	  			Cmiss_field_group_destroy(&group_field);
 	  			DESTROY(LIST(FE_node))(&data_list);
 	  		}
 	  		else
@@ -6180,16 +6180,16 @@ Executes a GFX DESTROY ELEMENTS command.
 		  	if (region)
 		  	{
 		  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-		  		struct Computed_field *group_field = NULL;
+		  		Cmiss_field_group_id group_field = NULL;
 		  		if (rendition)
 		  		{
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
-						Cmiss_rendition_destroy(&rendition);
+					Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
 		  		{
 		  			destroy_element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, group_field, conditional_field,
+		  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 		  				time);
 		  		}
 		  		else if (selected_flag && !group_field)
@@ -6246,9 +6246,7 @@ Executes a GFX DESTROY ELEMENTS command.
 						DESTROY(LIST(FE_element))(&destroy_element_list);
 			  		if (group_field)
 			  		{
-			  			Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
-			  			Cmiss_field_group_clear_region_tree_element(group);
-			  			Cmiss_field_group_destroy(&group);
+			  			Cmiss_field_group_clear_region_tree_element(group_field);
 			  		}
 					}
 					else
@@ -6259,7 +6257,7 @@ Executes a GFX DESTROY ELEMENTS command.
 					}
 		  		if (group_field)
 		  		{
-		  			Cmiss_field_destroy(&group_field);
+		  			Cmiss_field_group_destroy(&group_field);
 		  		}
 		  	}
 			}
@@ -6606,16 +6604,16 @@ use node_manager and node_selection.
 		  	if (region)
 		  	{
 		  		Cmiss_rendition *rendition= Cmiss_region_get_rendition_internal(region);
-		  		struct Computed_field *group_field = NULL;
+		  		Cmiss_field_group_id group_field = NULL;
 		  		if (rendition)
 		  		{
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
-						Cmiss_rendition_destroy(&rendition);
+					Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
 		  		{
 		  			destroy_node_list = FE_node_list_from_region_and_selection_group(
-		  				region, node_ranges, group_field, conditional_field, time, (use_data != NULL));
+		  				region, node_ranges, Cmiss_field_group_base_cast(group_field), conditional_field, time, (use_data != NULL));
 		  		}
 		  		else if (selected_flag && !group_field)
 		  		{
@@ -6627,7 +6625,7 @@ use node_manager and node_selection.
 		  				region, node_ranges, NULL, conditional_field, time,(use_data != NULL));
 		  		}
 		  		if (group_field)
-		  			Cmiss_field_destroy(&group_field);
+		  			Cmiss_field_group_destroy(&group_field);
 		  	}
 				if (destroy_node_list)
 				{
@@ -9755,22 +9753,22 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						data_region_path, &region))
 					{
-			  		struct Computed_field *group_field = NULL;
+			  		Cmiss_field_group_id group_field = NULL;
 			  		if (selected_flag)
 			  		{
 							Cmiss_rendition_id rendition =
 								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
 							if (rendition)
 							{
-				  			group_field = Cmiss_rendition_get_selection_group(rendition);
+								group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
 			  		}
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, /*use_data*/1, group_field, time);
+							destination_field, source_field, region, /*use_data*/1, Cmiss_field_group_base_cast(group_field), time);
 						if (group_field)
 						{
-							Cmiss_field_destroy(&group_field);
+							Cmiss_field_group_destroy(&group_field);
 						}
 					}
 				}
@@ -9781,7 +9779,7 @@ DESCRIPTION :
 						element_region_path, &region))
 					{
 
-						struct Computed_field *group_field = NULL;
+						Cmiss_field_group_id group_field = NULL;
 			  		if (selected_flag)
 			  		{
 							Cmiss_rendition_id rendition =
@@ -9794,10 +9792,10 @@ DESCRIPTION :
 			  		}
 						Computed_field_update_element_values_from_source(
 							destination_field, source_field, region,
-							element_point_ranges_selection, group_field, time);
+							element_point_ranges_selection, Cmiss_field_group_base_cast(group_field), time);
 						if (group_field)
 						{
-							Cmiss_field_destroy(&group_field);
+							Cmiss_field_group_destroy(&group_field);
 						}
 					}
 				}
@@ -9807,7 +9805,7 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						node_region_path, &region))
 					{
-			  		struct Computed_field *group_field = NULL;
+			  		Cmiss_field_group_id group_field = NULL;
 			  		if (selected_flag)
 			  		{
 							Cmiss_rendition_id rendition =
@@ -9819,10 +9817,10 @@ DESCRIPTION :
 							}
 			  		}
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, /*use_data*/0, group_field, time);
+							destination_field, source_field, region, /*use_data*/0, Cmiss_field_group_base_cast(group_field), time);
 						if (group_field)
 						{
-							Cmiss_field_destroy(&group_field);
+							Cmiss_field_group_destroy(&group_field);
 						}
 					}
 				}
@@ -10263,19 +10261,19 @@ Executes a GFX LIST ELEMENT.
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region))
 			{
-		  	if (region)
+			if (region)
 		  	{
-					struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-		  		struct Computed_field *group_field = NULL;
+				struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+		  		Cmiss_field_group_id group_field = NULL;
 		  		if (rendition)
 		  		{
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
-						Cmiss_rendition_destroy(&rendition);
+		  			Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		if (selected_flag && group_field)
 		  		{
 		  			element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, group_field, NULL,0);
+		  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), NULL,0);
 		  		}
 		  		else if (selected_flag && !group_field)
 		  		{
@@ -10287,7 +10285,7 @@ Executes a GFX LIST ELEMENT.
 		  				region, cm_element_type, element_ranges, NULL, NULL, 0);
 		  		}
 		  		if (group_field)
-		  			Cmiss_field_destroy(&group_field);
+		  			Cmiss_field_group_destroy(&group_field);
 		  	}
 				if (element_list)
 				{
@@ -10442,7 +10440,7 @@ use node_manager and node_selection.
 		  	if (region)
 		  	{
 		  		rendition = Cmiss_region_get_rendition_internal(region);
-		  		struct Computed_field *group_field = NULL;
+		  		Cmiss_field_group_id group_field = NULL;
 		  		if (rendition)
 		  		{
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
@@ -10451,7 +10449,7 @@ use node_manager and node_selection.
 		  		if (selected_flag && group_field)
 		  		{
 		  			node_list = FE_node_list_from_region_and_selection_group(
-		  				region, node_ranges, group_field, NULL, 0, (use_data != NULL));
+		  				region, node_ranges, Cmiss_field_group_base_cast(group_field), NULL, 0, (use_data != NULL));
 		  		}
 		  		else if (selected_flag && !group_field)
 		  		{
@@ -10463,7 +10461,7 @@ use node_manager and node_selection.
 		  				region, node_ranges, NULL, NULL, 0,(use_data != NULL));
 		  		}
 		  		if (group_field)
-		  			Cmiss_field_destroy(&group_field);
+		  			Cmiss_field_group_destroy(&group_field);
 		  	}
 		  	if (node_list)
 		  	{
@@ -11934,16 +11932,16 @@ be specified at once.
 				  	if (region)
 				  	{
 				  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-				  		struct Computed_field *group_field = NULL;
+				  		Cmiss_field_group_id group_field = NULL;
 				  		if (rendition)
 				  		{
 				  			group_field = Cmiss_rendition_get_selection_group(rendition);
-								Cmiss_rendition_destroy(&rendition);
+							Cmiss_rendition_destroy(&rendition);
 				  		}
 				  		if (selected_flag && group_field)
 				  		{
 				  			element_list = FE_element_list_from_region_and_selection_group(
-				  				region, cm_element_type, element_ranges, group_field, conditional_field,
+				  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 				  				time);
 				  		}
 				  		else if (selected_flag && !group_field)
@@ -11957,7 +11955,7 @@ be specified at once.
 				  				time);
 				  		}
 				  		if (group_field)
-				  			Cmiss_field_destroy(&group_field);
+				  			Cmiss_field_group_destroy(&group_field);
 				  	}
 						if (element_list)
 						{
@@ -12355,7 +12353,7 @@ use node_manager and node_selection.
 				  	if (region)
 				  	{
 				  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-				  		struct Computed_field *group_field = NULL;
+				  		Cmiss_field_group_id group_field = NULL;
 				  		if (rendition)
 				  		{
 				  			group_field = Cmiss_rendition_get_selection_group(rendition);
@@ -12364,7 +12362,7 @@ use node_manager and node_selection.
 				  		if (selected_flag && group_field)
 				  		{
 				  			node_list = FE_node_list_from_region_and_selection_group(
-				  				region, node_ranges, group_field, conditional_field,
+				  				region, node_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 				  				time, (use_data != NULL));
 				  		}
 				  		else if (selected_flag && !group_field)
@@ -12378,7 +12376,7 @@ use node_manager and node_selection.
 				  				time,(use_data != NULL));
 				  		}
 				  		if (group_field)
-				  			Cmiss_field_destroy(&group_field);
+				  			Cmiss_field_group_destroy(&group_field);
 				  	}
 
 						if (node_list)
@@ -12937,7 +12935,7 @@ use node_manager and node_selection.
 		  		if (selected_flag)
 		  		{
 			  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-			  		struct Computed_field *group_field = NULL;
+			  		Cmiss_field_group_id group_field = NULL;
 			  		if (rendition)
 			  		{
 			  			group_field = Cmiss_rendition_get_selection_group(rendition);
@@ -12946,9 +12944,9 @@ use node_manager and node_selection.
 			  		if (group_field)
 			  		{
 			  			node_list = FE_node_list_from_region_and_selection_group(
-			  				region, node_ranges, group_field, conditional_field,
+			  				region, node_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 			  				time, (use_data != NULL));
-			  			Cmiss_field_destroy(&group_field);
+			  			Cmiss_field_group_destroy(&group_field);
 			  		}
 			  		else
 			  		{

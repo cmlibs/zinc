@@ -49,214 +49,239 @@
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 
-struct Cmiss_field_group;
-typedef struct Cmiss_field_group *Cmiss_field_group_id;
+#ifndef CMISS_FIELD_GROUP_ID_DEFINED
+	struct Cmiss_field_group;
+	typedef struct Cmiss_field_group *Cmiss_field_group_id;
+	#define CMISS_FIELD_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_GROUP_ID_DEFINED */
 
-struct Cmiss_field_node_group;
-typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
+#ifndef CMISS_FIELD_NODE_GROUP_ID_DEFINED
+	struct Cmiss_field_node_group;
+	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
+	#define CMISS_FIELD_NODE_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_NODE_GROUP_ID_DEFINED */
 
-struct Cmiss_field_element_group;
+#ifndef CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
+	struct Cmiss_field_element_group;
+	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
+	#define CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
+#endif /* CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED */
 
-typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
-
-/*new API*/
-/*****************************************************************************//**
- * Remove all empty child groups in this group field.
- *
- * @param group  handle to target group field.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Check if this group and all its child groups are empty.
- *
- * @param group  handle to target group field.
- * @return  1 if group and all its child groups are empty, otherwise 0.
- */
-int Cmiss_field_group_is_empty(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Check if this group is empty.
- *
- * @param group  handle to target group field.
- * @return  1 if group is empty locally, otherwise 0.
- */
-int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Clear any selection made in this group and its child groups.
- *
- * @param group  handle to target group field.
- * @return  1 if group and its child groups are cleared successfully, otherwise 0.
- */
-int Cmiss_field_group_clear(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Clear any selection made in this group only.
- *
- * @param group  handle to target group field.
- * @return  1 if local group is cleared successfully, otherwise 0.
- */
-int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Include all domains of the region this group belongs to into the group.
- *
- * @param group  handle to target group field.
- * @return  1 if all domains are added to this group successfully, otherwise 0.
- */
-int Cmiss_field_group_add_this_region(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Check if all domains of the region this group belongs too are included.
- *
- * @param group  handle to target group field.
- * @return  1 if all domains are included in this group successfully, otherwise 0.
- */
-int Cmiss_field_group_contains_this_region(Cmiss_field_group_id group);
-
-/*****************************************************************************//**
- * Add specified region to group including all of its domains.
- * The specified region must be a child region of
- * the region which group belongs to and it is not already included in the group.
- *
- * @param group  handle to target group field.
- * @param region  handle to target region to be added.
- * @return  1 if successfully add region into group, otherwise 0.
- */
-int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id region);
-
-/*****************************************************************************//**
- * Remove specified region to group if it is in group. The specified region must
- * be a child region of the region which group belongs to.
- *
- * @param group  handle to target group field.
- * @param region  handle to target region to be removed.
- * @return  1 if successfully remove region from group, otherwise 0.
- */
-int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_region_id region);
-
-/*****************************************************************************//**
- * Check if specified region is included in group.
- *
- * @param group  handle to target group field.
- * @param region  handle to target region.
- * @return  1 if group contains region, otherwise 0.
- */
-int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss_region_id region);
-
-/*****************************************************************************//**
- * Creates a field which can put regions and theirs domains into group.
+/***************************************************************************//**
+ * Creates a group field which can contain an arbitrary set of subregions or
+ * region subobjects, and works as a boolean-valued field returning 1 on domains
+ * in the group, 0 otherwise.
  *
  * @param field_module  Region field module which will own new field.
- * @return Newly created field
+ * @return  Handle to newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_group(Cmiss_field_module_id field_module);
 
-/*****************************************************************************//**
- * If field can be cast to a Cmiss_field_group_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new reference.
+/***************************************************************************//**
+ * If the field is of group type, then this function returns the group specific
+ * representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived field reference.
  *
- * @param field  handle to the field to cast
- * @return  handle of the cast field, or NULL
+ * @param field  The generic field to be cast.
+ * @return  Group specific representation if the input field is of this type,
+ * otherwise NULL.
  */
 Cmiss_field_group_id Cmiss_field_cast_group(Cmiss_field_id field);
 
-/*****************************************************************************//**
- * Cast group field back to its base field and return the field.  Otherwise
- * return NULL.
+/***************************************************************************//**
+ * Cast group field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the group argument.
+ * Use this function to call base-class API, e.g.:
+ * Cmiss_field_set_name(Cmiss_field_group_base_cast(group_field), "bob");
  *
- * @param group  handle to the group field to cast
- * @return  handle of the field, or NULL
+ * @param group  Handle to the group field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
  */
 static inline Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id group)
 {
 	return (Cmiss_field_id)(group);
 }
 
-/*****************************************************************************//**
- * Destroy the reference to the group.
+/***************************************************************************//**
+ * Destroys this reference to the group field (and sets it to NULL).
+ * Internally this just decrements the reference count.
  *
- * @param group_address  address to the handle to the group field
- * @return  1 if successfully destroy the group, otherwise 0.
+ * @param group_address  Address of handle to the group field.
+ * @return  1 if successfully destroyed the group handle, otherwise 0.
  */
 int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
 
-/*****************************************************************************//**
- * Create a group field of subregion, include it in the specified group and return
- * a handle to the newly created field.
- * Region specified must be a child region of the region which field belongs
- * to and it is not already included in the group. User must destroy the reference
- * of the returned field.
+/***************************************************************************//**
+ * Remove and destroy all empty subregion or subobject subgroups of this group.
+ * Empty subgroups in use by other clients may remain in group after call.
  *
- * @param group  handle to target group field.
- * @param subregion  handle to target region to be added.
- * @return  field if successfully add region into group and create a group field,
- * 		otherwise 0.
+ * @param group  Handle to group field to modify.
+ * @return  1 on success, 0 on failure.
  */
-Cmiss_field_id Cmiss_field_group_create_subgroup(
+int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Query if this group and all its subgroups are empty.
+ *
+ * @param group  Handle to group field to query.
+ * @return  1 if group and all its subgroups are empty, otherwise 0.
+ */
+int Cmiss_field_group_is_empty(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Query if this group contains no objects from the local region.
+ *
+ * @param group  Handle to group field to query.
+ * @return  1 if group is empty locally, otherwise 0.
+ */
+int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Remove all objects from this group, clear all its subgroups, and remove &
+ * destroy them if possible.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  1 if group and its child groups cleared successfully, otherwise 0.
+ */
+int Cmiss_field_group_clear(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Remove all local objects from group, but leave subregion subgroups intact.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  1 if group is successfully cleared locally, otherwise 0.
+ */
+int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Add the local/owning region of this group field to the group, i.e. all local
+ * objects/domains. Local sub-object groups are cleared and destroyed.
+ * This function is not hierarchical: subregions are not added.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  1 if this region is successfully added, otherwise 0.
+ */
+int Cmiss_field_group_add_local_region(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Query if group contains its local/owning region, i.e. all local objects/
+ * domains.
+ * This function is not hierarchical: subregions are not checked.
+ *
+ * @param group  Handle to group field to query.
+ * @return  1 if this region is in the group, otherwise 0.
+ */
+int Cmiss_field_group_contains_local_region(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Add the specified region to the group i.e. all its objects/domains.
+ * The specified region must be in the tree of this group's local/owning region
+ * and not already in the group.
+ * This function is not hierarchical: subregions are not added.
+ *
+ * @param group  Handle to group field to modify.
+ * @param region  Handle to region to be added.
+ * @return  1 if successfully add region into group, otherwise 0.
+ */
+int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Remove specified region from group if currently in it.
+ * The specified region must be in the tree of this group's local/owning region.
+ * This function is not hierarchical: subregions are not removed.
+ *
+ * @param group  Handle to group field to modify.
+ * @param region  Handle to region to be removed.
+ * @return  1 if region successfully removed from group, otherwise 0.
+ */
+int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Query if specified region is in the group i.e. all its objects/domains.
+ * The specified region must be in the tree of this group's local/owning region.
+ * This function is not hierarchical: subregions are not checked.
+ *
+ * @param group  Handle to group field to query.
+ * @param region  Handle to region to check.
+ * @return  1 if group contains region, otherwise 0.
+ */
+int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss_region_id region);
+
+/***************************************************************************//**
+ * Create a group field for the specified subregion, include it in the specified
+ * group and return a handle to the newly created sub-group field.
+ * The specified region must be in the tree of this group's local/owning region
+ * and not already in the group.
+ * Caller is responsible for destroying the returned group field handle.
+ *
+ * @param group  Handle to group field to modify.
+ * @param subregion  Handle to region to create a subgroup for.
+ * @return  Handle to new, empty sub-group field on success, NULL on failure.
+ */
+Cmiss_field_group_id Cmiss_field_group_create_subgroup(
 	Cmiss_field_group_id group, Cmiss_region_id subregion);
 
-/*****************************************************************************//**
- * Get the group field of subregion from the specified group if it exists.
- * Region specified must be a child region of the region which field belongs
- * to and it is not already included in the group. User must destroy the reference
- * of the returned field.
+/***************************************************************************//**
+ * Get the group field for subregion in the specified group if it exists.
+ * The specified region must be in the tree of this group's local/owning region.
+ * Caller is responsible for destroying the returned group field handle.
  *
- * @param group  handle to target group field.
- * @param subregion  handle to target region
- * @return  field if successfully get region from group, otherwise 0.
+ * @param group  Handle to group field to query.
+ * @param subregion  Handle to region to get the subgroup for.
+ * @return  Handle to sub-group field or NULL if none.
  */
-Cmiss_field_id Cmiss_field_group_get_subgroup(
-	Cmiss_field_group_id group, Cmiss_region_id subregion);
+Cmiss_field_group_id Cmiss_field_group_get_subgroup(Cmiss_field_group_id group,
+	Cmiss_region_id subregion);
 
-/*****************************************************************************//**
- * Create a node group for a nodeset if node group of the same nodeset is not
- * readily available in group and return a handle to the node group field.
+/***************************************************************************//**
+ * Create and return a handle to a node group for the specified nodeset in the
+ * local region of the specified group. Fails if already exists.
+ * Caller is responsible for destroying the returned node group field handle.
  *
- * @param group  handle to target group field.
- * @param nodeset  handle to target nodeset
- * @return  field if successfully create node group, otherwise 0.
+ * @param group  Handle to group field to modify.
+ * @param nodeset  Handle to nodeset to create node group for.
+ * @return  Handle to new node group field, or NULL on failure.
  */
-Cmiss_field_node_group_id Cmiss_field_group_create_node_group(Cmiss_field_group_id group,
-	Cmiss_nodeset_id nodeset);
+Cmiss_field_node_group_id Cmiss_field_group_create_node_group(
+	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
 
-/*****************************************************************************//**
- * Get a node group for the specified nodeset in group if it exists and return
- * a handle to the node group field.
+/***************************************************************************//**
+ * Find and return handle to node group for the specified nodeset in the local
+ * region of the specified group, if one exists.
  *
- * @param group  handle to target group field.
- * @param nodeset  handle to target nodeset
- * @return  field if successfully get node group, otherwise 0.
- * */
-Cmiss_field_node_group_id Cmiss_field_group_get_node_group(Cmiss_field_group_id group,
- Cmiss_nodeset_id nodeset);
+ * @param group  Handle to group field to query.
+ * @param nodeset  Handle to nodeset to get node group for.
+ * @return  Handle to node group field, or NULL if none.
+ */
+Cmiss_field_node_group_id Cmiss_field_group_get_node_group(
+	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
 
-/*****************************************************************************//**
- * Create an element group for a mesh if element group of the same mesh is not
- * readily available in group and return a handle to the element group field.
+/***************************************************************************//**
+ * Create and return a handle to an element group for the specified fe_mesh in
+ * the local region of the specified group. Fails if already exists.
+ * Caller is responsible for destroying the returned element group field handle.
  *
- * @param group  handle to target group field.
- * @param mesh  handle to target mesh
- * @return  field if successfully element node group, otherwise 0.
+ * @param group  Handle to group field to modify.
+ * @param mesh  Handle to fe_mesh to create element group for.
+ * @return  Handle to new element group field, or NULL on failure.
  */
 Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group,
 	Cmiss_fe_mesh_id mesh);
 
-/*****************************************************************************//**
- * Get an element group for the specified mesh in group if it exists and return
- * a handle to the element group field.
+/***************************************************************************//**
+ * Find and return handle to element group for the specified fe_mesh in the
+ * local region of the specified group, if one exists.
  *
- * @param group  handle to target group field.
- * @param mesh  handle to target mesh
- * @return  field if successfully get element group, otherwise 0.
+ * @param group  Handle to group field to query.
+ * @param nodeset  Handle to fe_mesh to get element group for.
+ * @return  Handle to element group field, or NULL if none.
  * */
 Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group,
 	Cmiss_fe_mesh_id mesh);
 
-/**
+/***************************************************************************//**
  * Get a subgroup of the given group for the specified domain.
  * 
  * @param group the group field

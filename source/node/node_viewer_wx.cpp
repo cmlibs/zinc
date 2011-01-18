@@ -703,22 +703,20 @@ static void Node_viewer_Computed_field_change(
 		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(node_viewer->region);
 		if (rendition)
 		{
-			struct Computed_field *selection_group_field = Cmiss_rendition_get_selection_group(rendition);
+			Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
 			changed_field_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
 					MANAGER_CHANGE_RESULT(Computed_field));
-			if (selection_group_field && changed_field_list && Computed_field_or_ancestor_satisfies_condition(
-					selection_group_field,Computed_field_is_in_list, (void *)changed_field_list))
+			if (selection_group && changed_field_list && Computed_field_or_ancestor_satisfies_condition(
+				Cmiss_field_group_base_cast(selection_group), Computed_field_is_in_list, (void *)changed_field_list))
 			{
-				Cmiss_field_group_id group= Cmiss_field_cast_group(selection_group_field);
 				Cmiss_field_node_group_id node_group = NULL;
 				Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(node_viewer->region, "cmiss_nodes");
 				if (nodeset)
 				{
-					node_group = Cmiss_field_group_get_node_group(group, nodeset);
+					node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);
 					Cmiss_nodeset_destroy(&nodeset);
 				}
-				Cmiss_field_group_destroy(&group);
 				if (node_group)
 				{
 					struct FE_node *node = Cmiss_field_node_group_get_first_node(node_group);
@@ -750,9 +748,9 @@ static void Node_viewer_Computed_field_change(
 			if (changed_field_list)
 				DESTROY(LIST(Computed_field))(&changed_field_list);
 			Cmiss_rendition_destroy(&rendition);
-			if (selection_group_field)
+			if (selection_group)
 			{
-				Cmiss_field_destroy(&selection_group_field);
+				Cmiss_field_group_destroy(&selection_group);
 			}
 		}
 	}

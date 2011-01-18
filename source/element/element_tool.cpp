@@ -208,17 +208,14 @@ int Element_tool_remove_selected_element(struct Element_tool *element_tool)
 	{
 		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 			element_tool->region);
-		Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(root_rendition);
-		if (root_group_field)
+		Cmiss_field_group_id root_group = Cmiss_rendition_get_selection_group(root_rendition);
+		if (root_group)
 		{
-			Cmiss_field_group_id root_group =
-				Cmiss_field_cast_group(root_group_field);
 			Cmiss_field_group_for_each_child(root_group, Element_tool_remove_region_selected_elements,1);
-			Element_tool_remove_region_selected_elements(root_group_field);
+			Element_tool_remove_region_selected_elements(Cmiss_field_group_base_cast(root_group));
 			Cmiss_field_group_clear_region_tree_element(root_group);
 			Cmiss_rendition_flush_tree_selections(root_rendition);
 			Cmiss_field_group_destroy(&root_group);
-			Cmiss_field_destroy(&root_group_field);
 		}
 		return_code = 1;
 		Cmiss_rendition_destroy(&root_rendition);
@@ -609,26 +606,21 @@ release.
 										}
 									}
 								}
-								Cmiss_field_id group_field = Cmiss_rendition_get_selection_group(rendition);
-								if (group_field)
+								Cmiss_field_group_id group = Cmiss_rendition_get_selection_group(rendition);
+								if (group)
 								{
-									if (group_field)
+									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
+									Cmiss_fe_mesh_id temp_mesh =
+										Cmiss_region_get_fe_mesh_by_name(temp_region, "cmiss_elements");
+									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
+									Cmiss_fe_mesh_destroy(&temp_mesh);
+									if (element_group)
 									{
-										Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
-										Cmiss_field_destroy(&group_field);
-										Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
-										Cmiss_fe_mesh_id temp_mesh =
-										   Cmiss_region_get_fe_mesh_by_name(temp_region, "cmiss_elements");
-										Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
-										Cmiss_fe_mesh_destroy(&temp_mesh);
-										if (element_group)
-										{
-											element_tool->picked_element_was_unselected =
-												!Cmiss_field_element_group_contains_element(element_group,picked_element);
-											Cmiss_field_element_group_destroy(&element_group);
-										}
-										Cmiss_field_group_destroy(&group);
+										element_tool->picked_element_was_unselected =
+											!Cmiss_field_element_group_contains_element(element_group,picked_element);
+										Cmiss_field_element_group_destroy(&element_group);
 									}
+									Cmiss_field_group_destroy(&group);
 								}
 							}
 							REACCESS(FE_element)(&(element_tool->last_picked_element),
@@ -640,17 +632,14 @@ release.
 							{
 								if (element_tool->region)
 								{
-									Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
-										element_tool->region);
-									Cmiss_field_id root_group_field = Cmiss_rendition_get_selection_group(
-										root_rendition);
-									if (root_group_field)
+									Cmiss_rendition *root_rendition =
+										Cmiss_region_get_rendition_internal(element_tool->region);
+									Cmiss_field_group_id root_group =
+										Cmiss_rendition_get_selection_group(root_rendition);
+									if (root_group)
 									{
-										Cmiss_field_group_id root_group =
-											Cmiss_field_cast_group(root_group_field);
 										Cmiss_field_group_clear_region_tree_element(root_group);
 										Cmiss_field_group_destroy(&root_group);
-										Cmiss_field_destroy(&root_group_field);
 									}
 									Cmiss_rendition_destroy(&root_rendition);
 								}
@@ -661,13 +650,11 @@ release.
 									rendition);
 								Cmiss_region *sub_region = NULL;
 								Cmiss_field_group_id sub_group = NULL;
-								Cmiss_field_id sub_group_field = NULL;
 								Cmiss_field_element_group_id element_group = NULL;
 								if (element_tool->rendition)
 								{
 									sub_region = Cmiss_rendition_get_region(element_tool->rendition);
-									sub_group_field = Cmiss_rendition_get_or_create_selection_group(element_tool->rendition);
-									sub_group = Cmiss_field_cast_group(sub_group_field);
+									sub_group = Cmiss_rendition_get_or_create_selection_group(element_tool->rendition);
 									if (sub_group)
 									{
 										Cmiss_fe_mesh_id temp_mesh =
@@ -679,15 +666,11 @@ release.
 									}
 								}
 
-								if (sub_region && sub_group_field && element_group)
+								if (sub_region && sub_group && element_group)
 								{
 									Cmiss_field_element_group_add_element(element_group,
 										picked_element);
-									Computed_field_changed(sub_group_field);
-								}
-								if (sub_group_field)
-								{
-									Cmiss_field_destroy(&sub_group_field);
+									Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 								}
 								if (sub_group)
 								{
@@ -777,7 +760,6 @@ release.
 										{
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
-											Cmiss_field_id sub_group_field = NULL;
 											Cmiss_rendition *region_rendition = NULL;
 											Cmiss_field_element_group_id element_group = NULL;
 											Region_element_map::iterator pos;
@@ -785,13 +767,10 @@ release.
 											{
 												if (pos->first != sub_region)
 												{
-													if (sub_region && sub_group_field)
+													if (sub_region && sub_group)
 													{
-														Computed_field_changed(sub_group_field);
-														Cmiss_field_destroy(&sub_group_field);
-														sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-														Cmiss_field_destroy(&sub_group_field);
-														sub_group = NULL;
+														Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
+														Cmiss_field_group_destroy(&sub_group);
 													}
 													if (element_group)
 													{
@@ -805,8 +784,7 @@ release.
 													if (sub_region)
 													{
 														region_rendition= Cmiss_region_get_rendition_internal(sub_region);
-														sub_group_field = Cmiss_rendition_get_or_create_selection_group(region_rendition);
-														sub_group = Cmiss_field_cast_group(sub_group_field);
+														sub_group = Cmiss_rendition_get_or_create_selection_group(region_rendition);
 													}
 													if (sub_group)
 													{
@@ -818,16 +796,15 @@ release.
 														Cmiss_fe_mesh_destroy(&temp_mesh);
 													}
 												}
-												if (sub_region && sub_group_field && element_group)
+												if (sub_region && sub_group && element_group)
 												{
 													Cmiss_field_element_group_add_element(element_group,
 														pos->second);
 												}
 											}
-											if (sub_region && sub_group_field)
+											if (sub_region && sub_group)
 											{
-												Computed_field_changed(sub_group_field);
-												Cmiss_field_destroy(&sub_group_field);
+												Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 												Cmiss_field_group_destroy(&sub_group);
 											}
 											if (element_group)

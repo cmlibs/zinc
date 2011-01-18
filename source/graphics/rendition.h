@@ -329,12 +329,11 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
  * used internally for callback functions.
  *
  * @param cmiss_rendition  pointer to the cmiss_rendition.
- *
  * @return Return selection group if successfully otherwise null.
  */
-Cmiss_field_id Cmiss_rendition_get_any_selection_group(Cmiss_rendition_id rendition);
+Cmiss_field_group_id Cmiss_rendition_get_internal_selection_group(Cmiss_rendition_id rendition);
 
-struct Computed_field *Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);
+Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);
 
 void Cmiss_rendition_flush_tree_selections(Cmiss_rendition_id rendition);
 
