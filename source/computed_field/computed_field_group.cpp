@@ -802,7 +802,7 @@ Cmiss_field_group_id Computed_field_group::getSubgroup(Cmiss_region_id subregion
 	}
 	if (region == subregion)
 	{
-		sub_group = reinterpret_cast<Cmiss_field_group_id>(this->getField());
+		sub_group = Cmiss_field_cast_group(this->getField());
 	}
 	else
 	{
