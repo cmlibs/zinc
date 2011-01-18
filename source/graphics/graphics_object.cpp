@@ -6940,16 +6940,25 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
   if (graphics_object && group_field)
   {
     Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-    Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
-		if (element_group)
-		{
-			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-				Cmiss_field_element_group_id>(element_group);
-			graphics_object->highlight_functor =
-				new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
-						&Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
-			Cmiss_field_element_group_destroy(&element_group);
+	  if (Cmiss_field_group_contains_local_region(sub_group))
+	  {
+	  	graphics_object->highlight_functor =
+	  		new SubGroupHighlightFunctor<Cmiss_element_id>(NULL, NULL);
+	  	graphics_object->highlight_functor->setContainsAll(1);
+	  }
+	  else
+	  {
+	  	Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
+			if (element_group)
+			{
+				Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+					Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+					Cmiss_field_element_group_id>(element_group);
+				graphics_object->highlight_functor =
+					new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
+					&Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
+				Cmiss_field_element_group_destroy(&element_group);
+		}
 		}
     if (sub_group)
     {
@@ -6975,17 +6984,26 @@ int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
 	if (graphics_object && group_field)
 	{
 	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-	  Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
-		if (node_group)
-		{
-			Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-				Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-				Cmiss_field_node_group_id>(node_group);
-			graphics_object->highlight_functor =
-				new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
-						&Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
-			Cmiss_field_node_group_destroy(&node_group);
-		}
+	  if (Cmiss_field_group_contains_local_region(sub_group))
+	  {
+	  	graphics_object->highlight_functor =
+	  		new SubGroupHighlightFunctor<Cmiss_node_id>(NULL, NULL);
+	  	graphics_object->highlight_functor->setContainsAll(1);
+	  }
+	  else
+	  {
+	  	Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+	  	if (node_group)
+	  	{
+	  		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
+	  			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
+	  			Cmiss_field_node_group_id>(node_group);
+	  		graphics_object->highlight_functor =
+	  			new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
+	  			&Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
+	  		Cmiss_field_node_group_destroy(&node_group);
+	  	}
+	  }
     if (sub_group)
 		{
     	Cmiss_field_group_destroy(&sub_group);

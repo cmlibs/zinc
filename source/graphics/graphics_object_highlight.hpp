@@ -19,7 +19,7 @@ FILE : graphics_object_highlight.hpp
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -47,6 +47,8 @@ class GraphicsObjectHighlightBaseFunctor
 public:
   virtual int call(int identifier)=0;
 
+  virtual int setContainsAll(int flag)=0;
+
   virtual ~GraphicsObjectHighlightBaseFunctor()
   {
   };
@@ -58,17 +60,30 @@ public:
 private:
   int(Computed_field_sub_group_object<ObjectType>::*function_pointer)(int);
   Computed_field_sub_group_object<ObjectType> *group;
+  int contains_all;
 
 public:
 
   SubGroupHighlightFunctor(Computed_field_sub_group_object<ObjectType>* group_in,
       int(Computed_field_sub_group_object<ObjectType>::*function_pointer_in)(int))
-  { group = group_in;  function_pointer=function_pointer_in; };
+  { group = group_in;  function_pointer=function_pointer_in; contains_all = 0;};
 
    virtual int call(int identifier)
    {
-  	 return (*group.*function_pointer)(identifier);
+  	 if (contains_all)
+  	 {
+  		 return 1;
+  	 }
+  	 else
+  	 {
+  		 return (*group.*function_pointer)(identifier);
+  	 }
    };
+
+   virtual int setContainsAll(int flag)
+   {
+  	 return contains_all = flag;
+   }
 
    ~SubGroupHighlightFunctor()
    {
