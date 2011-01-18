@@ -61,7 +61,7 @@ enum Cmiss_selection_change_type
 	CMISS_SELECTION_REPLACE = 4   /*!< contents replaced: clear+add, add+remove */
 };
 
-enum Cmiss_selection_change_type Cmiss_selection_event_get_change_detail(
+enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
 	Cmiss_selection_event_id selection_event);
 
 /***************************************************************************//**
