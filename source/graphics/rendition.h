@@ -392,5 +392,15 @@ int Cmiss_rendition_add_selection_from_element_list(Cmiss_rendition_id rendition
 
 int Cmiss_rendition_remove_selection_from_element_list(Cmiss_rendition_id rendition,
 	struct LIST(FE_element) *element_list);
+
+/***************************************************************************//**
+ * Returns the status of the inherited visibility flag of the rendition.
+ * This function returns 0 if the specified rendition or any of its parents along
+ * the path has the visibility flag set to 0 otherwise return 1;
+ *
+ * @param rendition  The handle to the rendition.
+ * @return  1 if rendition and all its parent are visible, otherwise 0.
+ */
+int Cmiss_rendition_is_visible_hierarchical(Cmiss_rendition_id rendition);
 #endif /* !defined (RENDITION_H) */
 

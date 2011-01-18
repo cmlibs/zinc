@@ -2664,6 +2664,35 @@ int Cmiss_rendition_set_visibility_flag(struct Cmiss_rendition *rendition,
 	return 0;
 }
 
+int Cmiss_rendition_is_visible_hierarchical(
+	struct Cmiss_rendition *rendition)
+{
+	int return_code = 1;
+	if (rendition)
+	{
+		return_code = rendition->visibility_flag;
+		if (return_code)
+		{
+			if (rendition->region)
+			{
+				Cmiss_region *parent_region = Cmiss_region_get_parent(rendition->region);
+				if (parent_region)
+				{
+					Cmiss_rendition *parent_rendition = Cmiss_region_get_rendition_internal(parent_region);
+					if (parent_rendition)
+					{
+						return_code = Cmiss_rendition_is_visible_hierarchical(parent_rendition);
+						Cmiss_rendition_destroy(&parent_rendition);
+					}
+					Cmiss_region_destroy(&parent_region);
+				}
+			}
+		}
+	}
+
+	return return_code;
+}
+
 int Cmiss_rendition_get_visibility_flag(
 	struct Cmiss_rendition *rendition)
 {

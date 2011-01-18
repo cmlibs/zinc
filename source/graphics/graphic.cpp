@@ -1932,7 +1932,7 @@ int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graph
 	ENTER(Cmiss_graphic_and_rendition_visibility_flags_set);
 	if (graphic)
 	{
-		if (graphic->visibility_flag && Cmiss_rendition_get_visibility_flag(graphic->rendition))
+		if (graphic->visibility_flag && Cmiss_rendition_is_visible_hierarchical(graphic->rendition))
 		{
 			return_code = 1;
 		}

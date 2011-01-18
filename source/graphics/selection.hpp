@@ -34,8 +34,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (SELECTION_EVENT_HPP)
-#define SELECTION_EVENT_HPP
+#if !defined (SELECTION_HPP)
+#define SELECTION_HPP
 
 extern "C" {
 #include "api/cmiss_selection.h"
@@ -51,4 +51,4 @@ int Cmiss_selection_handler_set_rendition(Cmiss_selection_handler_id selection_h
 	struct Cmiss_rendition *rendition_in);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
-#endif /* (SELECTION_HANDLER_HPP) */
+#endif /* (SELECTION_HPP) */
