@@ -200,6 +200,22 @@ int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
 Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
+ * Set the specified selection field to be the highlighting and selection group
+ * of the specified rendition. This function will also set the selection field
+ * for all of its subregion renditions if the a corresponding subregion selection
+ * group is found in the selection field, otherwise the selection group of
+ * the child rendition will be set to NULL;
+ * Selection field set in the rendition using this function will not have its
+ * access count increased.
+ *
+ * @param cmiss_rendition  pointer to the cmiss_rendition.
+ * @param selection_field  selection field to be set for this group.
+ * @return Return 1 if succesfully set selection group otherwise 0.
+ */
+int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
+	Cmiss_field_group_id selection_field);
+
+/***************************************************************************//**
  * Get and return an accessed handle to the selection group of rendition.
  * This function will only return selection group that is still being managed.
  * Caller must destroy the reference to the handler.

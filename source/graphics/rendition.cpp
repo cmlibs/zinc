@@ -3491,23 +3491,22 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition, Cmiss_field_group_id selection_field)
 {
 	int return_code = 0;
+	Cmiss_field_group_id selection_field_to_be_set = NULL;
 	if (rendition && rendition->graphics_module)
 	{
-		Cmiss_region_id child_region = Cmiss_region_get_first_child(rendition->region);
-		while (child_region)
-		{
-			Cmiss_rendition_id child_rendition = Cmiss_graphics_module_get_rendition(rendition->graphics_module,
-				child_region);
-			Cmiss_rendition_set_selection_group(child_rendition, selection_field);
-			Cmiss_rendition_destroy(&child_rendition);
-			Cmiss_region_reaccess_next_sibling(&child_region);
-		}
+		return_code = 1;
 		if (selection_field)
 		{
 			Cmiss_field_group_id child_group = Cmiss_field_group_get_subgroup(selection_field, rendition->region);
 			rendition->selection_group = child_group;
 			if (child_group)
+			{
+				/* only pass on the selection_field down the tree if a subregion group of
+					 current rendition region exists, otherwise set the selection group of
+					 all of its child rendiiton to NULL.*/
+				selection_field_to_be_set = selection_field;
 				Cmiss_field_group_destroy(&child_group);
+			}
 		}
 		else
 		{
@@ -3515,7 +3514,15 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition, Cmiss_fiel
 				rendition->selection_group_removed = 1;
 			rendition->selection_group = NULL;
 		}
-		return_code = 1;
+		Cmiss_region_id child_region = Cmiss_region_get_first_child(rendition->region);
+		while (child_region)
+		{
+			Cmiss_rendition_id child_rendition = Cmiss_graphics_module_get_rendition(rendition->graphics_module,
+				child_region);
+			return_code &= Cmiss_rendition_set_selection_group(child_rendition, selection_field_to_be_set);
+			Cmiss_rendition_destroy(&child_rendition);
+			Cmiss_region_reaccess_next_sibling(&child_region);
+		}
 	}
 
 	return return_code;
@@ -3604,6 +3611,9 @@ Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_renditi
 					}
 					if (!root_selection_group)
 					{
+						/* The following block will leave root_selection_group to have one extra access count.
+						 * This is currently necessary otherwise, the group will be destroyed.
+						 */
 						Cmiss_field_module_set_field_name(field_module, "cmiss_selection");
 						generic_field = ACCESS(Computed_field)(Cmiss_field_module_create_group(field_module));
 						root_selection_group = Cmiss_field_cast_group(generic_field);
