@@ -210,6 +210,7 @@ public:
 		child_region = Cmiss_region_get_first_child(parent_region);
 		while (child_region)
 		{
+			return_code = 0;
 			child_name = Cmiss_region_get_name(child_region);
 			wxTreeItemId child_id = GetFirstChild(parent_id, cookie);
 			while (child_id.IsOk() && !return_code)
@@ -226,6 +227,10 @@ public:
 			{
 				child_id = InsertItem(parent_id, i, child_name,0,0);
 				SetTreeIdRegionWithCallback(child_id, child_region);
+			}
+			if (child_id.IsOk())
+			{
+				update_current_tree_item(child_id);
 			}
 			DEALLOCATE(child_name);
 			Cmiss_region_reaccess_next_sibling(&child_region);
@@ -250,6 +255,7 @@ public:
 					char *name = Cmiss_region_get_name(child_region);
 					wxTreeItemId child_id = AppendItem(parent_id,name,0,0);
 					SetTreeIdRegionWithCallback(child_id, child_region);
+					update_current_tree_item(child_id);
 					DEALLOCATE(name);
 				}
 				else if (region_changes->child_removed)
