@@ -133,13 +133,13 @@ form of arguments is used.
 
 	ENTER(display_message);
 	va_start(ap,format);
-/*	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);*/
-	return_code=vsprintf(message_string,format,ap);
+	message_string[MESSAGE_STRING_SIZE-1] = '\0';
+	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE-1,format,ap);
 	if (return_code >= (MESSAGE_STRING_SIZE-1))
 	{
 		char error_string[100];
 		sprintf(error_string,"Overflow of message_string.  "
-			"Following is truncated to %d characters:",return_code);
+			"Following is truncated to %d characters:",MESSAGE_STRING_SIZE-1);
 		if (display_error_message_function)
 		{
 			return_code=(*display_error_message_function)(error_string,

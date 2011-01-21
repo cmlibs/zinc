@@ -309,6 +309,26 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   endif
 endif
 
+# Always include Opt++ in all builds of Cmgui if it exists
+MINIMISE_DEFINES =
+MINIMISE_LIB =
+MINIMISE_INC =
+ifneq ($(wildcard "$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/*newmat*"),"")
+  # Opt++ found, so include
+  MINIMISE_DEFINES = -DHAVE_OPTPP_CONFIG_H
+  MINIMISE_INC = -I$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/include
+  MINIMISE_LIB = -L$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib -lnewton -lbase -lconstraints -lgss -lpds -lutils -lopt -lnewmat 
+else
+  # Opt++ not found so don't include
+  $(warning "Opt++ not found, expect problems...")
+endif
+# Required prior to switching to the CMake Opt++ build and including these defines in the patch applied to the Opt++ source. Fortran and BLAS libraries not required after switching to internal implementation with no observable performance hits, might want to reevaluate at some point.
+#MINIMISE_DEFINES = -DHAVE_STD -DHAVE_NAMESPACES
+#MINIMISE_LIB = -L/home/andre/applications/opt++/lib -lopt -lnewmat -lcblas -lf77blas -latlas -lgfortran
+#MINIMISE_INC = -I/home/andre/applications/opt++/include
+#MINIMISE_LIB = -L/home/andre/applications/opt++-no-blas/lib -lopt -lnewmat
+#MINIMISE_INC = -I/home/andre/applications/opt++-no-blas/include
+
 FIELDML_LIB_PREFIX = lib
 FIELDML_LIB_SUFFIX = .a
 ifeq ($(COMPILER),msvc)
@@ -431,7 +451,7 @@ endif # ! USE_IMAGEMAGICK
 
 ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
-   ITK_DIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)
+   ITK_DIR = $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)
    ITK_SRCDIR = $(ITK_DIR)/include/InsightToolkit
    ITK_INC = -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core
    ITK_LIBPATH_PREFIX = -L
@@ -863,11 +883,13 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	$(UNEMAP_DEFINES) $(ITK_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
-	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES) $(NETGEN_DEFINES) $(MSAA_DEFINES) $(GLEW_DEFINES)
+	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES) $(NETGEN_DEFINES) \
+	$(MSAA_DEFINES) $(GLEW_DEFINES) $(MINIMISE_DEFINES)
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) $(OPENCASCADE_INC) \
-	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(NETGEN_INC) $(FIELDML_INC)
+	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(NETGEN_INC) $(FIELDML_INC) \
+	$(MINIMISE_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
@@ -876,7 +898,7 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) $(OPENCASCADE_LIB) \
 	$(MOVIE_FILE_LIB) $(FIELDML_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) \
-	$(SYSTEM_LIB) $(NETGEN_LIB)
+	$(SYSTEM_LIB) $(NETGEN_LIB) $(MINIMISE_LIB)
 
 API_SRCS = \
 	api/cmiss_context.c \

@@ -1295,6 +1295,63 @@ convenience function for building a composite field which has <number_of_values>
 	return (field);
 } /* Computed_field_create_constant */
 
+/** FIXME: Andre hacking to test if this actually works before spending time on a
+ * constant field type specific interface (tracker item 2628).
+ */
+int Computed_field_constant_set_value(struct Computed_field *field, int index,
+		const FE_value value)
+{
+	int return_code = 0;
+	ENTER(Computed_field_constant_set_value);
+	if (field && (index < field->number_of_components))
+	{
+		field->source_values[index] = value;
+		Computed_field_changed(field);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"Computed_field_constant_set_value.  Invalid argument(s)");
+	}
+	LEAVE;
+	return(return_code);
+}
+
+FE_value Computed_field_constant_get_value(struct Computed_field *field, int index)
+{
+	FE_value return_value = 0;
+	ENTER(Computed_field_constant_get_value);
+	if (field && (index < field->number_of_components))
+	{
+		return_value = field->source_values[index];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"Computed_field_constant_get_value.  Invalid argument(s)");
+	}
+	LEAVE;
+	return(return_value);
+}
+
+FE_value *Computed_field_constant_get_value_storage(struct Computed_field *field, int index)
+{
+	FE_value *return_value = NULL;
+	ENTER(Computed_field_constant_get_value);
+	if (field && (index < field->number_of_components))
+	{
+		return_value = field->source_values + index;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"Computed_field_constant_get_value_storage.  Invalid argument(s)");
+	}
+	LEAVE;
+	return(return_value);
+}
+
 int Computed_field_is_constant(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006

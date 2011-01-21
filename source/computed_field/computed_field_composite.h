@@ -54,6 +54,14 @@ and real values in any order into a single vector field.
 #define Computed_field_create_component Cmiss_field_module_create_component
 #define Computed_field_create_concatenate Cmiss_field_module_create_concatenate
 
+/** FIXME: Andre hacking to test if this actually works before spending time on a
+ * constant field type specific interface (tracker item 2628).
+ */
+int Computed_field_constant_set_value(struct Computed_field *field, int index,
+		const double value);
+FE_value Computed_field_constant_get_value(struct Computed_field *field, int index);
+FE_value *Computed_field_constant_get_value_storage(struct Computed_field *field, int index);
+
 int Computed_field_is_constant(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 14 December 2001

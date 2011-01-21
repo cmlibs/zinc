@@ -1,11 +1,11 @@
 /*******************************************************************************
-FILE : cmiss.c
+ FILE : cmiss.c
 
-LAST MODIFIED : 12 April 2006
+ LAST MODIFIED : 12 April 2006
 
-DESCRIPTION :
-Functions for executing cmiss commands.
-==============================================================================*/
+ DESCRIPTION :
+ Functions for executing cmiss commands.
+ ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -45,8 +45,10 @@ Functions for executing cmiss commands.
 extern "C" {
 #include <stdio.h>
 #include <math.h>
+#include "api/cmiss_field.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -65,36 +67,87 @@ extern "C" {
 #include "user_interface/message.h"
 #include "minimise/minimise.h"
 }
+#include "general/enumerator_private_cpp.hpp"
 #include <iostream>
+#include <sstream>
+#include <map>
 using namespace std;
 
-struct Minimisation_package
-{
+// OPT++ includes and namespaces
+#include <LSQNLF.h>
+#include <NLF.h>
+#include <NLP.h>
+#include <OptQNewton.h>
+#include <OptNewton.h>
+using NEWMAT::ColumnVector;
+using namespace ::OPTPP;
+
+static void* UserData = NULL;
+
+enum MinimisationMethod {
+	NSDGSL, // Duane's original steepest descent with golden section line search
+	OPTPP_QuasiNewton, // Opt++ with quasi-Newton - naive approach based on Duane's code
+	OPTPP_LSQ_Newton, // Opt++ least squares with Newton
+	UNKNOWN_MINIMISATION_METHOD
+};
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(MinimisationMethod)
+;
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(MinimisationMethod) {
+	const char *enumerator_string;
+	ENTER(ENUMERATOR_STRING(MinimisationMethod));
+	switch (enumerator_value) {
+	case NSDGSL: {
+		enumerator_string = "NSDGSL";
+	}
+		break;
+	case OPTPP_QuasiNewton: {
+		enumerator_string = "QN";
+	}
+		break;
+	case OPTPP_LSQ_Newton: {
+		enumerator_string = "LSQN";
+	}
+		break;
+	default: {
+		enumerator_string = (const char *) NULL;
+	}
+		break;
+	}LEAVE;
+	return (enumerator_string);
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( MinimisationMethod)
+;
+
+struct Minimisation_package {
 	struct Time_keeper *time_keeper;
 	struct Computed_field_package *computed_field_package;
 	struct Cmiss_region *root_region;
+	enum MinimisationMethod method;
 };
 
 struct Minimisation_package *CREATE(Minimisation_package)(
-	struct Time_keeper *time_keeper,
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region)
+		struct Time_keeper *time_keeper,
+		struct Computed_field_package *computed_field_package,
+		struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2007
+ LAST MODIFIED : 7 May 2007
 
-DESCRIPTION :
-Creates the package required for minimisation.
-==============================================================================*/
+ DESCRIPTION :
+ Creates the package required for minimisation.
+ ==============================================================================*/
 {
 	struct Minimisation_package *package;
-	
+
 	ENTER(CREATE(Minimisation_package));
-	if (time_keeper)
-	{
+	if (time_keeper) {
 		ALLOCATE(package, struct Minimisation_package, 1);
 		package->time_keeper = time_keeper;
 		package->computed_field_package = computed_field_package;
 		package->root_region = root_region;
+		package->method = UNKNOWN_MINIMISATION_METHOD;
 	}
 	else
 	{
@@ -109,17 +162,16 @@ Creates the package required for minimisation.
 
 int DESTROY(Minimisation_package)(struct Minimisation_package **package)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2007
+ LAST MODIFIED : 7 May 2007
 
-DESCRIPTION :
-Destroys the package required for minimisation.
-==============================================================================*/
+ DESCRIPTION :
+ Destroys the package required for minimisation.
+ ==============================================================================*/
 {
 	int return_code;
-	
+
 	ENTER(DESTROY(Minimisation_package));
-	if (*package)
-	{
+	if (*package) {
 		DEALLOCATE(*package);
 		return_code = 1;
 	}
@@ -134,148 +186,288 @@ Destroys the package required for minimisation.
 	return (return_code);
 } /* DESTROY(Minimisation_package) */
 
-
-
-
 namespace {
 
-class Minimisation
+void display_chunked_message(std::string& message)
 {
-//These parameters are protected to this file using a NULL namespace
-public:
-  Computed_field *objective_field;
-  Computed_field *independent_field;
-	FE_region *fe_region;
-	FE_value current_time;
-	int total_dof;
+	unsigned int i,chunkSize=512;
+	for (i=0;i<message.length();i+=chunkSize)
+	{
+		std::string m = message.substr(i,chunkSize);
+		display_message(INFORMATION_MESSAGE,"%s",m.c_str());
+	}
+}
 
-	Minimisation(Computed_field* objective_field, Computed_field* independent_field,
-		FE_region* fe_region) : 
-		objective_field(objective_field), independent_field(independent_field),
-		fe_region(fe_region)
+typedef std::pair<ColumnVector*,class Minimisation*> UDP;
+
+struct Projection {
+	FE_value_tuple xi;
+	struct FE_element* element;
+};
+
+class Minimisation {
+	//These parameters are protected to this file using a NULL namespace
+public:
+	Computed_field *objective_field;
+	Computed_field **independent_fields;
+	int number_of_independent_fields;
+	int independent_fields_are_constant;
+	Computed_field *data_field;
+	Computed_field *mesh_field;
+	FE_region *fe_region;
+	Cmiss_region *region;
+	Cmiss_region* data_group;
+	FE_value current_time;
+	int maximum_iterations;
+	int dimension;
+	int total_dof;
+	int number_of_data_components,number_of_data_points;
+	int currentDataPointIndex;
+	std::map< const FE_node*, Projection > projections;
+
+	Minimisation(Computed_field* objective_field,
+			Computed_field* data_field,
+			Computed_field* mesh_field, FE_region* fe_region,
+			Cmiss_region* region, Cmiss_region* data_group,
+			int maximum_iterations, int dimension) :
+				objective_field(objective_field),
+				data_field(data_field), mesh_field(mesh_field),
+				fe_region(fe_region), region(region), data_group(data_group),
+				maximum_iterations(maximum_iterations), dimension(dimension)
 	{
 		current_time = 0.0;
 		total_dof = 0;
-		dof_storage_array = static_cast<FE_value**>(NULL);
-		dof_initial_values = static_cast<FE_value*>(NULL);
+		number_of_data_points = 0;
+		number_of_independent_fields = 0;
+		independent_fields_are_constant = 0;
+		independent_fields = static_cast<Computed_field**> (NULL);
+		dof_storage_array = static_cast<FE_value**> (NULL);
+		dof_initial_values = static_cast<FE_value*> (NULL);
 	};
 
 	~Minimisation();
 
 private:
-	
+
 	FE_value **dof_storage_array;
-	FE_value *dof_initial_values;
-	
+
 public:
+	// FIXME: andre tmp make public until function pointers sorted out.
+	FE_value *dof_initial_values;
+
+
 	static int construct_dof_arrays(struct FE_node *node,
-		void *minimisation_object_void);
+			void *minimisation_object_void);
+	static int calculate_projection(struct FE_node *node,
+			void *minimisation_object_void);
 
 	void set_dof_value(int dof_index, FE_value new_value);
-	
+
 	void list_dof_values();
-	
+
 	FE_value evaluate_objective_function();
 
-	void minimise();
-	
+	/*void init_QN(int ndim, ColumnVector& x);
+	 void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
+	 int& result);*/
+
+	void minimise_NSDGSL();
+	void minimise_QN();
+	void minimise_LSQN();
+
+	// FIXME: should allow for different types of projection calculations?
+	void calculate_data_projections();
+
+	int add_independent_field(Cmiss_field_module_id module,const char* name);
 };
 
 Minimisation::~Minimisation()
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+ LAST MODIFIED : 24 August 2006
 
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
+ DESCRIPTION :
+ Clear the type specific data used by this type.
+ ==============================================================================*/
 {
+	int i;
 	ENTER(Minimisation::~Minimisation);
-	
-	if (dof_storage_array)
-	{
+
+	if (dof_storage_array) {
 		DEALLOCATE(dof_storage_array);
 	}
-	if (dof_initial_values)
-	{
+	if (dof_initial_values) {
 		DEALLOCATE(dof_initial_values);
+	}
+	for (i=0;i<number_of_independent_fields;i++) {
+		Cmiss_field_destroy(independent_fields+i);
 	}
 	LEAVE;
 } /* Minimisation::~Minimisation */
 
+int Minimisation::add_independent_field(Cmiss_field_module_id module,const char* name)
+{
+	int return_code = 1;
+	// FIXME: need to check if adding the same field more than once.
+	Cmiss_field_id field = Cmiss_field_module_find_field_by_name(module,name);
+	if (independent_fields_are_constant && !Computed_field_is_constant(field)) {
+		display_message(ERROR_MESSAGE, "Minimisation::add_independent_field.  "
+				"All independent fields must be constant if any are.");
+		Cmiss_field_destroy(&field);
+		return_code = 0;
+	} else if (Computed_field_is_type_finite_element(field) && (number_of_independent_fields > 0)) {
+		display_message(ERROR_MESSAGE, "Minimisation::add_independent_field.  "
+				"Can only have one finite element type independent field.");
+		Cmiss_field_destroy(&field);
+		return_code = 0;
+	}
+	if (return_code) {
+		number_of_independent_fields++;
+		REALLOCATE(independent_fields, independent_fields, Computed_field *, number_of_independent_fields);
+		independent_fields[number_of_independent_fields - 1] = field;
+		if (Computed_field_is_constant(field)) independent_fields_are_constant = 1;
+	}
+	return return_code;
+}
+
+int Minimisation::calculate_projection(struct FE_node *node,
+		void *minimisation_object_void)
+{
+	Minimisation *minimisation;
+	minimisation = static_cast<Minimisation *> (minimisation_object_void);
+	FE_value* values = static_cast<FE_value*>(NULL);
+	ALLOCATE(values,FE_value,minimisation->number_of_data_components);
+	Projection projection = minimisation->projections[node];
+	Computed_field_evaluate_at_node(minimisation->data_field, node,
+			minimisation->current_time, values);
+	Computed_field_find_element_xi(minimisation->mesh_field,
+		values, minimisation->number_of_data_components, minimisation->current_time,
+		&(projection.element), projection.xi,
+		/*element_dimension*/minimisation->dimension, \
+		/*search_region*/minimisation->region, /*propagate_field*/0,
+		/*find_nearest_location*/1);
+	minimisation->projections[node] = projection;
+	//std::cout << "Element: " << FE_element_get_cm_number(projection.element) << ";";
+	//std::cout << " xi: " << projection.xi[0] << "," << projection.xi[1] << ",";
+	//std::cout << projection.xi[2] << std::endl;
+	return 1;
+}
+
+void Minimisation::calculate_data_projections()
+{
+	//std::cout << "Minimisation::calculate_data_projections" << std::endl;
+	struct Cmiss_region* dRegion = Computed_field_get_region(this->data_field);
+	struct FE_region* fe_region = Cmiss_region_get_FE_region(dRegion);
+	FE_region_for_each_FE_node(fe_region,Minimisation::calculate_projection,this);
+}
+
 int Minimisation::construct_dof_arrays(struct FE_node *node,
 		void *minimisation_object_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2007
+ LAST MODIFIED : 7 June 2007
 
-DESCRIPTION :
-Populates the array of pointers to the dof values and the array of the dof
-initial values. Notice the population includes both nodal values and derivatives
-but does NOT handle versions - this needs to be added by someone who understands
-and can test versions.
-==============================================================================*/
+ DESCRIPTION :
+ Populates the array of pointers to the dof values and the array of the dof
+ initial values. Notice the population includes both nodal values and derivatives
+ but does NOT handle versions - this needs to be added by someone who understands
+ and can test versions.
+ ==============================================================================*/
 {
 	enum FE_nodal_value_type *nodal_value_types;
-  FE_field *fe_field;
-	int i, component_number, return_code, number_of_components, number_of_values;
+	FE_field *fe_field;
+	int i, component_number, return_code, number_of_components,
+			number_of_values;
 	Minimisation *minimisation;
 
 	ENTER(Minimisation::construct_dof_arrays);
-	if (node && (minimisation = 
-		static_cast<Minimisation *>(minimisation_object_void)))
-	{
-		
-		Computed_field_get_type_finite_element(minimisation->independent_field,
-			&fe_field);
-		
-		//Get number of components
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		
-		//for each component in field
-		for(component_number=0; component_number<number_of_components; 
-				component_number++)
-		{
-			number_of_values=1+get_FE_node_field_component_number_of_derivatives(node,
-				fe_field, component_number);
-		
-			nodal_value_types=get_FE_node_field_component_nodal_value_types(node,
-			fe_field,component_number);
-			
-			for(i=0;i<number_of_values;i++)
-			{
-				
-				// increment total_dof
-				minimisation->total_dof++;
-				
-				// reallocate arrays
-				REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
-					FE_value *, minimisation->total_dof);
-				REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
-					FE_value, minimisation->total_dof);
-				
-				// get value storage pointer
-				get_FE_nodal_FE_value_storage(node,
-					fe_field,/*component_number*/component_number, /*version_number*/0,
-					/*nodal_value_type*/nodal_value_types[i], minimisation->current_time,
-					&(minimisation->dof_storage_array[minimisation->total_dof-1]));
-					
-				// get initial value from value storage pointer
-				minimisation->dof_initial_values[minimisation->total_dof-1] =
-					*minimisation->dof_storage_array[minimisation->total_dof-1];
-				
-				cout << minimisation->dof_storage_array[minimisation->total_dof-1]<<"   "<<
-				  minimisation->dof_initial_values[minimisation->total_dof-1] << endl;
+	if (minimisation
+			= static_cast<Minimisation *> (minimisation_object_void)) {
+
+		if (node) {
+			// should only have one independent field
+			Computed_field_get_type_finite_element(minimisation->independent_fields[0],
+					&fe_field);
+
+			//Get number of components
+			number_of_components = get_FE_field_number_of_components(fe_field);
+
+			//for each component in field
+			for (component_number = 0; component_number < number_of_components; component_number++) {
+				number_of_values = 1
+						+ get_FE_node_field_component_number_of_derivatives(node,
+								fe_field, component_number);
+
+				// FIXME: tmp remove derivatives
+				//number_of_values = 1;
+
+				nodal_value_types = get_FE_node_field_component_nodal_value_types(
+						node, fe_field, component_number);
+
+				for (i = 0; i < number_of_values; i++) {
+
+					// increment total_dof
+					minimisation->total_dof++;
+
+					// reallocate arrays
+					REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
+							FE_value *, minimisation->total_dof);
+					REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
+							FE_value, minimisation->total_dof);
+
+					// get value storage pointer
+					// FIXME: need to handle versions for the femur mesh?
+					get_FE_nodal_FE_value_storage(
+							node,
+							fe_field,/*component_number*/
+							component_number, /*version_number*/ 0,
+							/*nodal_value_type*/nodal_value_types[i],
+							minimisation->current_time,
+							&(minimisation->dof_storage_array[minimisation->total_dof
+									- 1]));
+
+					// get initial value from value storage pointer
+					minimisation->dof_initial_values[minimisation->total_dof - 1]
+							= *minimisation->dof_storage_array[minimisation->total_dof
+									- 1];
+
+					/*cout << minimisation->dof_storage_array[minimisation->total_dof
+							- 1] << "   "
+							<< minimisation->dof_initial_values[minimisation->total_dof
+									- 1] << endl;*/
+				}
+
+				DEALLOCATE(nodal_value_types);
+
 			}
-			
-			DEALLOCATE(nodal_value_types);
-			
+		} else {
+			// constant field(s) - could have many
+			for (i=0;i<minimisation->number_of_independent_fields;i++) {
+				//Get number of components
+				number_of_components = Computed_field_get_number_of_components(minimisation->independent_fields[i]);
+				//for each component in field
+				for (component_number = 0; component_number < number_of_components; component_number++) {
+					// increment total_dof
+					minimisation->total_dof++;
+					// reallocate arrays
+					REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
+							FE_value *, minimisation->total_dof);
+					REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
+							FE_value, minimisation->total_dof);
+					// get value storage pointer
+					minimisation->dof_storage_array[minimisation->total_dof - 1] =
+							Computed_field_constant_get_value_storage(minimisation->independent_fields[i],component_number);
+					// get initial value from value storage pointer
+					minimisation->dof_initial_values[minimisation->total_dof - 1]
+							= *minimisation->dof_storage_array[minimisation->total_dof - 1];
+					/*cout << minimisation->dof_storage_array[minimisation->total_dof
+							- 1] << "   "
+							<< minimisation->dof_initial_values[minimisation->total_dof
+									- 1] << endl;*/
+				}
+			}
 		}
-	
-	  return_code = 1;		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Minimisation::count_dof.  "
+		return_code = 1;
+	} else {
+		display_message(ERROR_MESSAGE, "Minimisation::count_dof.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
@@ -286,85 +478,82 @@ and can test versions.
 
 void Minimisation::set_dof_value(int dof_index, FE_value new_value)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2007
+ LAST MODIFIED : 8 May 2007
 
-DESCRIPTION :
-Sets the dof value to <new_value>
-==============================================================================*/
+ DESCRIPTION :
+ Sets the dof value to <new_value>
+ ==============================================================================*/
 {
-  
+
 	ENTER(Minimisation::set_dof_value);
-	
-	*dof_storage_array[dof_index] = new_value;	
-	
+
+	*dof_storage_array[dof_index] = new_value;
+
 	LEAVE;
-	
+
 } /* Minimisation::set_dof_value */
 
 void Minimisation::list_dof_values()
 /*******************************************************************************
-LAST MODIFIED : 8 May 2007
+ LAST MODIFIED : 8 May 2007
 
-DESCRIPTION :
-Simple function to list the dof values. This is mainly for debugging purposes
-and may be removed later.
-==============================================================================*/
+ DESCRIPTION :
+ Simple function to list the dof values. This is mainly for debugging purposes
+ and may be removed later.
+ ==============================================================================*/
 {
-  int i;
-	
-	ENTER(Minimisation::list_dof_values);
-	
-	for (i = 0 ; i < total_dof ; i++)
-	{
-		cout << "dof["<<i<<"] = "<<*dof_storage_array[i] << endl;
-	}
-	
-	LEAVE;
-	
-} /* Minimisation::list_dof_values */
+	int i;
 
+	ENTER(Minimisation::list_dof_values);
+
+	for (i = 0; i < total_dof; i++) {
+		cout << "dof[" << i << "] = " << *dof_storage_array[i] << endl;
+	}
+
+	LEAVE;
+
+} /* Minimisation::list_dof_values */
 
 FE_value Minimisation::evaluate_objective_function()
 /*******************************************************************************
-LAST MODIFIED : 8 May 2007
+ LAST MODIFIED : 8 May 2007
 
-DESCRIPTION :
-Evalulates the objective function value given the currents dof values.
-==============================================================================*/
+ DESCRIPTION :
+ Evalulates the objective function value given the currents dof values.
+ ==============================================================================*/
 {
-  FE_value objective_value[3];
+	FE_value objective_value[3];
 	FE_node *node;
 
 	ENTER(Minimisation::evaluate_objective_function);
-	
+
 	node = FE_region_get_first_FE_node_that(fe_region, NULL, NULL);
-	
-	Computed_field_clear_cache(objective_field); 
-	
-	Computed_field_evaluate_at_node(objective_field, node, 
-		current_time, objective_value);
-		
+
+	Computed_field_clear_cache(objective_field);
+
+	Computed_field_evaluate_at_node(objective_field, node, current_time,
+			objective_value);
+
 	LEAVE;
-	
-	return(sqrt(objective_value[0]/3.0));
-	
+
+	return (sqrt(objective_value[0] / 3.0));
+
 } /* Minimisation::evaluate_objective_function */
 
-
-void Minimisation::minimise()
+void Minimisation::minimise_NSDGSL()
 /*******************************************************************************
-LAST MODIFIED : 8 May 2007
+ LAST MODIFIED : 8 May 2007
 
-DESCRIPTION :
-Calculates the normalised steepest decent vector and does a Golden section line
-search in the direction of the steepest decent vector to find the minimum along
-the line. This is repeated until the stopping criteria is met and overall
-minimum is found. The intention is to replace this minimisations function with
-the non-linear minimisation function in PetSc. This should be more efficient
-and may be parallelised.
-==============================================================================*/
+ DESCRIPTION :
+ Calculates the normalised steepest decent vector and does a Golden section line
+ search in the direction of the steepest decent vector to find the minimum along
+ the line. This is repeated until the stopping criteria is met and overall
+ minimum is found. The intention is to replace this minimisations function with
+ the non-linear minimisation function in PetSc. This should be more efficient
+ and may be parallelised.
+ ==============================================================================*/
 {
-  int i, iteration, max_iterations, stop;
+	int i, iteration, max_iterations, stop;
 	FE_value h, tol, lstol, line_size;
 	FE_value phi, LFa, LFb;
 	FE_value *dFdx, sum;
@@ -373,154 +562,379 @@ and may be parallelised.
 	// otherwise irix compilation will fail
 	//	FE_value F0, F1, Fa, Fb, Fi, Ff;	
 	FE_value F0, Fa, Fb, Fi, Ff = 0.0;
-	
+
 	ALLOCATE(dFdx,FE_value,total_dof);
 
-	ENTER(Minimisation::minimise);
-	
+	ENTER(Minimisation::minimise_NSDGSL);
+
 	// Initialisation
 	h = 1E-5; // independent variable perturbation value
 	tol = 1E-5; // outside loop tolerance
-	lstol = 0.1*tol; // inside loop (line search) tolerance
+	lstol = 0.1 * tol; // inside loop (line search) tolerance
 	line_size = 0.5; // line size for line search
 	max_iterations = 10000; // for outside loop
-		
-	phi = (1.0 + sqrt(5.0))/2.0;
-	LFa = 1.0/(1.0+phi);
-	LFb = 1-LFa;
-	
+
+	phi = (1.0 + sqrt(5.0)) / 2.0;
+	LFa = 1.0 / (1.0 + phi);
+	LFb = 1 - LFa;
+
 	// initialise independent values to initial values
-	for (i=0;i<total_dof;i++)
-	{
-		set_dof_value(i,dof_initial_values[i]);
+	for (i = 0; i < total_dof; i++) {
+		set_dof_value(i, dof_initial_values[i]);
 	}
-	
-	iteration=0;
-	ds = tol+1.0;
+
+	iteration = 0;
+	ds = tol + 1.0;
 	stop = 0;
 	Fi = evaluate_objective_function();
 	// Outside loop searching for the overall minimum
-	while((ds>tol) && (iteration<max_iterations) && (stop==0))
-	{
+	while ((ds > tol) && (iteration < max_iterations) && (stop == 0)) {
 		iteration++;
-		
+
 		// Construct dFdx, the steepest decent vector
 		F0 = evaluate_objective_function();
-		for (i=0;i<total_dof;i++)
-		{
-			set_dof_value(i,dof_initial_values[i]-h);
-			Fa = F0-evaluate_objective_function();
-			set_dof_value(i,dof_initial_values[i]+h);
-			Fb = evaluate_objective_function()-F0;
-			dFdx[i] = 0.5*(Fb+Fa);
-			set_dof_value(i,dof_initial_values[i]);
+		for (i = 0; i < total_dof; i++) {
+			set_dof_value(i, dof_initial_values[i] - h);
+			Fa = F0 - evaluate_objective_function();
+			set_dof_value(i, dof_initial_values[i] + h);
+			Fb = evaluate_objective_function() - F0;
+			dFdx[i] = 0.5 * (Fb + Fa);
+			set_dof_value(i, dof_initial_values[i]);
 		}
-		
+
 		// Normalise dFdx
 		sum = 0.0;
-		for (i=0;i<total_dof;i++)
-		{
-			sum += dFdx[i]*dFdx[i];
+		for (i = 0; i < total_dof; i++) {
+			sum += dFdx[i] * dFdx[i];
 		}
 		sum = sqrt(sum);
-		
-		if(sum==0.0)
-		{
+
+		if (sum == 0.0) {
 			stop = 1;
-		}
-		else // Line search
+		} else // Line search
 		{
-			for (i=0;i<total_dof;i++)
-			{
-				dFdx[i] = dFdx[i]/sum;
+			for (i = 0; i < total_dof; i++) {
+				dFdx[i] = dFdx[i] / sum;
 			}
-			
+
 			s0 = 0;
 			F0 = evaluate_objective_function();
-			
+
 			s1 = line_size;
-			for (i=0;i<total_dof;i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i]*s1));
+			for (i = 0; i < total_dof; i++) {
+				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * s1));
 			}
 			// F1 = evaluate_objective_function();
-			
-			sa = s0 + LFa*(s1-s0);
-			for (i=0;i<total_dof;i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i]*sa));
+
+			sa = s0 + LFa * (s1 - s0);
+			for (i = 0; i < total_dof; i++) {
+				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sa));
 			}
 			Fa = evaluate_objective_function();
-	
-			sb = s0 + LFb*(s1-s0);
-			for (i=0;i<total_dof;i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i]*sb));
+
+			sb = s0 + LFb * (s1 - s0);
+			for (i = 0; i < total_dof; i++) {
+				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sb));
 			}
 			Fb = evaluate_objective_function();
-			
+
 			// Golden Section Line Search, searching for line minimum
-			while (((s1-s0) > lstol)&&(stop==0)){
-			
-				if (Fb > Fa)
-				{
+			while (((s1 - s0) > lstol) && (stop == 0)) {
+
+				if (Fb > Fa) {
 					s1 = sb;
 					// F1 = Fb;
 					sb = sa;
 					Fb = Fa;
-					sa = s0 + LFa*(s1-s0);
-					for (i=0;i<total_dof;i++)
-					{
-						set_dof_value(i, (dof_initial_values[i] - dFdx[i]*sa));
+					sa = s0 + LFa * (s1 - s0);
+					for (i = 0; i < total_dof; i++) {
+						set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sa));
 					}
 					Fa = evaluate_objective_function();
 					ds = sb;
 					Ff = Fb;
-				}
-				else
-				{
+				} else {
 					s0 = sa;
 					F0 = Fa;
 					sa = sb;
 					Fa = Fb;
-					sb = s0 + LFb*(s1-s0);
-					for (i=0;i<total_dof;i++)
-					{
-						set_dof_value(i, (dof_initial_values[i] - dFdx[i]*sb));
+					sb = s0 + LFb * (s1 - s0);
+					for (i = 0; i < total_dof; i++) {
+						set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sb));
 					}
 					Fb = evaluate_objective_function();
 					ds = sa;
 					Ff = Fa;
 				}
-		
+
 			} // Line Search
-			
+
 			// Update dof
-			for (i=0;i<total_dof;i++)
-			{
-				dof_initial_values[i] -= dFdx[i]*ds;
-				set_dof_value(i,dof_initial_values[i]);
+			for (i = 0; i < total_dof; i++) {
+				dof_initial_values[i] -= dFdx[i] * ds;
+				set_dof_value(i, dof_initial_values[i]);
 			}
-			
+
 			// Precision of FE_value
-			if(fabs(Fi-Ff)<1E-7) stop = 1;
+			if (fabs(Fi - Ff) < 1E-7)
+				stop = 1;
 			Fi = Ff;
-			
+
 		}
-		
-		cout << "Objective Value = " << evaluate_objective_function() <<endl;
-		
+
+		//cout << "Objective Value = " << evaluate_objective_function() << endl;
+
 	} // Outside loop
-		
-	if(iteration>=max_iterations) cout << "Max number of iterations reached" << endl;
-	list_dof_values();
+
+	if (iteration >= max_iterations)
+		cout << "Max number of iterations reached" << endl;
+	//list_dof_values();
 
 	DEALLOCATE(dFdx);
 
 	LEAVE;
-	
+
 } /* Minimisation::minimise */
 
+void init_QN(int ndim, ColumnVector& x)
+/**
+ * One time initialisation code required by the Opt++ quasi-Newton minimisation.
+ */
+{
+	// copy over the initial DOFs
+	int i;
+	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	for (i = 0; i < ndim; i++) {
+		x(i+1) = static_cast<double>(minimisation->dof_initial_values[i]);
+	}
+}
+
+void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
+		int& result)
+/**
+ * The objective function for the Opt++ quasi-Newton minimisation.
+ */
+{
+	int i;
+	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	// ColumnVector's index'd from 1...
+	for (i = 0; i < ndim; i++) {
+		minimisation->set_dof_value(i, x(i + 1));
+	}
+	//minimisation->list_dof_values();
+	// need to clear the cache of the independent field for the DOF changes to take effect.
+	for (i=0;i<minimisation->number_of_independent_fields;i++) {
+		Computed_field_clear_cache(minimisation->independent_fields[i]);
+	}
+	fx = static_cast<double> (minimisation->evaluate_objective_function());
+	//cout << "Objective Value = " << fx << endl;
+	result = NLPFunction;
+}
+
+void Minimisation::minimise_QN()
+/**
+ * Naive wrapper around a quasi-Newton minimisation.
+ */
+{
+	char message[] = { "Solution from quasi-newton" };
+	ENTER(Minimisation::minimise_QN);
+	// need a handle on this object...
+	UserData = static_cast<void*> (this);
+
+	FDNLF1 nlp(total_dof, objective_function_QN, init_QN);
+	OptQNewton objfcn(&nlp);
+	objfcn.setSearchStrategy(TrustRegion);
+	//objfcn.setMaxFeval(200);
+//	objfcn.setFcnTol(1.e-4);
+//	objfcn.setMinStep(1.0e-4);
+//	objfcn.setStepTol(1.0e-4);
+//	objfcn.setConTol(1.0e-4);
+//	objfcn.setGradTol(1.0e-4);
+//	objfcn.setLineSearchTol(1.0e-4);
+
+	// create a string stream to store messages from Opt++ and set that for all output.
+	std::stringbuf optppMessages;
+	std::ostream optppMessageStream(&optppMessages);
+	if (!objfcn.setOutputFile(optppMessageStream))
+		cerr << "main: output file open failed" << endl;
+	objfcn.setMaxIter(this->maximum_iterations);
+	objfcn.optimize();
+	objfcn.printStatus(message);
+	objfcn.cleanup();
+
+	ColumnVector solution = nlp.getXc();
+	int i,j;
+	for (i = 0; i < total_dof; i++) this->set_dof_value(i, solution(i + 1));
+	if (independent_fields_are_constant) {
+		// FIXME: need to "set values" in order to get the manager change message queued up.
+		int c = 0;
+		for (i=0;i<number_of_independent_fields;i++) {
+			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
+			for (j = 0; j < number_of_components; j++) {
+				Computed_field_constant_set_value(independent_fields[i],j,*dof_storage_array[c++]);
+			}
+		}
+	}
+
+	//list_dof_values();
+	// write out messages?
+	std::string m = optppMessages.str();
+	display_chunked_message(m);
+	LEAVE;
+}
+
+void init_LSQ(int ndim, ColumnVector& x)
+/**
+ * One time initialisation code required by the Opt++ least-squares minimisation.
+ */
+{
+	// copy over the initial DOFs
+	int i;
+	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	for (i = 0; i < ndim; i++) {
+		x(i+1) = static_cast<double>(minimisation->dof_initial_values[i]);
+	}
+	// compute the initial data projections
+	minimisation->calculate_data_projections();
+}
+
+int calculate_LS_term(struct FE_node *node,void *user_data_void)
+{
+	UDP* ud = static_cast<UDP*>(user_data_void);
+	Minimisation *minimisation = ud->second;
+	int i,number_of_mesh_components = Computed_field_get_number_of_components(
+			minimisation->mesh_field);
+	FE_value* actualValues = static_cast<FE_value*>(NULL);
+	FE_value* currentValues = static_cast<FE_value*>(NULL);
+	ALLOCATE(actualValues,FE_value,minimisation->number_of_data_components);
+	ALLOCATE(currentValues,FE_value,number_of_mesh_components);
+	Projection projection = minimisation->projections[node];
+	// FIXME: really should check return values!
+	Computed_field_evaluate_at_node(minimisation->data_field, node,
+			minimisation->current_time, actualValues);
+	Computed_field_evaluate_in_element(minimisation->mesh_field,projection.element,
+			projection.xi, minimisation->current_time, (struct FE_element*)NULL,
+			currentValues, (FE_value *)NULL);
+	for (i=0;i<number_of_mesh_components;i++)
+	{
+		//std::cout << "current: " << currentValues[i] << "; actual: " << actualValues[i] << std::endl;
+		double diff = (double)(currentValues[i] - actualValues[i]);
+		ud->first->element(minimisation->currentDataPointIndex) = diff;
+		//std::cout << "LS term " << minimisation->currentDataPointIndex << ": "
+		//		<< diff << std::endl;
+		minimisation->currentDataPointIndex ++;
+	}
+	//diff = sqrt(diff);
+	return 1;
+}
+
+void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
+		int& result, void* iterationCounterVoid)
+/**
+ * The objective function for the Opt++ quasi-Newton minimisation.
+ */
+{
+#if 0
+	UDP ud;
+	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	struct Cmiss_region* dRegion = Computed_field_get_region(minimisation->objective_field);
+	struct FE_region* fe_region = Cmiss_region_get_FE_region(dRegion);
+	ud.first = &fx;
+	ud.second = minimisation;
+	minimisation->currentDataPointIndex = 0;
+	minimisation->list_dof_values();
+	FE_region_for_each_FE_node(fe_region,calculate_LS_term,&ud);
+	minimisation->set_dof_value(0, -100);
+	minimisation->currentDataPointIndex = 0;
+	minimisation->list_dof_values();
+	FE_region_for_each_FE_node(fe_region,calculate_LS_term,&ud);
+	Computed_field_clear_cache(minimisation->objective_field);
+	Computed_field_clear_cache(minimisation->independent_field);
+	minimisation->currentDataPointIndex = 0;
+	FE_region_for_each_FE_node(fe_region,calculate_LS_term,&ud);
+	exit(1);
+#endif
+	//int* iterationCounter = static_cast<int*>(iterationCounterVoid);
+	//std::cout << "objective function called " << ++(*iterationCounter) << " times." << std::endl;
+	int i;
+	UDP ud;
+	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	// ColumnVector's index'd from 1...
+	for (i = 0; i < ndim; i++) {
+		minimisation->set_dof_value(i, x(i + 1));
+	}
+	//minimisation->list_dof_values();
+	// need to clear the cache of the independent field for the DOF changes to take effect.
+	for (i=0;i<minimisation->number_of_independent_fields;i++) {
+		Computed_field_clear_cache(minimisation->independent_fields[i]);
+	}
+	//minimisation->calculate_data_projections();
+
+	// evaluate the least-squares terms
+	ud.first = &fx;
+	ud.second = minimisation;
+	minimisation->currentDataPointIndex = 0;
+	FE_region_for_each_FE_node(Cmiss_region_get_FE_region(minimisation->data_group),
+			calculate_LS_term,&ud);
+	result = NLPFunction;
+}
+
+/**
+ * Dummy for Opt++ least squares...
+ */
+void update_model_dummy(int, int, ColumnVector) {}
+
+void Minimisation::minimise_LSQN()
+/*
+ * Least-squares minimisation using Opt++
+ */
+{
+	int iterationCounter = 0;
+	char message[] = { "Solution from newton least squares" };
+	ENTER(Minimisation::minimise_LSQN);
+	// need a handle on this object...
+	UserData = static_cast<void*> (this);
+	// FIXME: using objective field as the data field...
+	this->number_of_data_points =
+			Cmiss_region_get_number_of_nodes_in_region(this->data_group);
+	this->number_of_data_components = Computed_field_get_number_of_components(
+			this->data_field);
+	LSQNLF nlp(total_dof, this->number_of_data_points * this->number_of_data_components,
+			objective_function_LSQ, init_LSQ, (OPTPP::INITCONFCN)NULL,
+			(void*)(&iterationCounter));
+	OptNewton objfcn(&nlp);
+	objfcn.setSearchStrategy(LineSearch);
+	// create a string stream to store messages from Opt++ and set that for all output.
+	std::stringbuf optppMessages;
+	std::ostream optppMessageStream(&optppMessages);
+	if (!objfcn.setOutputFile(optppMessageStream))
+		cerr << "main: output file open failed" << endl;
+	objfcn.setMaxIter(this->maximum_iterations);
+	//objfcn.setMaxFeval(this->maximum_iterations);
+	//objfcn.setTRSize(1.0e3);
+	//nlp.setIsExpensive(false);
+	//nlp.setDebug();
+	objfcn.optimize();
+	objfcn.printStatus(message);
+	ColumnVector solution = nlp.getXc();
+	int i,j;
+	for (i = 0; i < total_dof; i++) this->set_dof_value(i, solution(i + 1));
+	if (independent_fields_are_constant) {
+		// FIXME: need to "set values" in order to get the manager change message queued up.
+		int c = 0;
+		for (i=0;i<number_of_independent_fields;i++) {
+			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
+			for (j = 0; j < number_of_components; j++) {
+				Computed_field_constant_set_value(independent_fields[i],j,*dof_storage_array[c++]);
+			}
+		}
+	}
+	//list_dof_values();
+	// write out messages?
+	std::string m = optppMessages.str();
+	display_chunked_message(m);
+	LEAVE;
+}
 
 } //namespace
 
@@ -529,133 +943,201 @@ and may be parallelised.
 /*=====================================================*/
 /*=====================================================*/
 
-
 int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
-	void *package_void)
+		void *package_void)
 /*******************************************************************************
-LAST MODIFIED : 04 May 2007
+ LAST MODIFIED : 04 May 2007
 
-DESCRIPTION : Minimises the <objective_field> by changing the <independent_field>
-over a <region>
-==============================================================================*/
+ DESCRIPTION : Minimises the <objective_field> by changing the <independent_field>
+ over a <region>
+ ==============================================================================*/
 {
-	char *region_path;
-	// pjb: temporarily removed declaration of time as it is not yet used,
-	// otherwise irix compilation will fail
-	//	FE_value time;
-	int return_code;
-	struct Cmiss_region *region;
-	struct Computed_field *objective_field, *independent_field;
+	char *data_group_name,*region_path;
+	int dimension, number_of_valid_strings, maxIters, return_code, i;
+	struct Cmiss_region *region,*data_group;
+	struct Computed_field *objective_field, *data_field, *mesh_field;
+	struct Multiple_strings field_names;
 	struct Minimisation_package *package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_objective_field_data,
-		set_independent_field_data;
+		set_data_field_data,set_mesh_field_data;
+	const char *minimisation_method_string, **valid_strings;
 
 	ENTER(gfx_minimise);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (package = (struct Minimisation_package *)package_void))
-	{
-		region_path = (char *)NULL;
-		objective_field = (struct Computed_field *)NULL;
-		independent_field = (struct Computed_field *)NULL;
-		if (package->time_keeper)
-		{
+	if (state && (package = (struct Minimisation_package *) package_void)) {
+		region_path = (char *) NULL;
+		data_group_name = (char *) NULL;
+		objective_field = (struct Computed_field *) NULL;
+		data_field = (struct Computed_field *) NULL;
+		mesh_field = (struct Computed_field *) NULL;
+		if (package->time_keeper) {
 			// time = Time_keeper_get_time(package->time_keeper);
-		}
-		else
-		{
+		} else {
 			// time = 0;
 		}
-		
+
+		/* the default maximum number of iterations to take */
+		maxIters = 100;
+
+		/* the default dimension of the elements to be fit */
+		dimension = 2;
+
 		option_table = CREATE(Option_table)();
 		/* objective function */
-		set_objective_field_data.conditional_function =
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-		set_objective_field_data.conditional_function_user_data = (void *)NULL;
-		set_objective_field_data.computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				package->computed_field_package);
-		Option_table_add_entry(option_table, "objective_field", &objective_field,
-			&set_objective_field_data, set_Computed_field_conditional);
-		/* independent field */
-		set_independent_field_data.conditional_function =
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-		set_independent_field_data.conditional_function_user_data = (void *)NULL;
-		set_independent_field_data.computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				package->computed_field_package);
-		Option_table_add_entry(option_table, "independent_field", &independent_field,
-			&set_independent_field_data, set_Computed_field_conditional);
-		/* region */
-		Option_table_add_entry(option_table, "region", &region_path,
-			package->root_region, set_Cmiss_region_path);
+		set_objective_field_data.conditional_function
+				= (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *) NULL;
+		set_objective_field_data.conditional_function_user_data = (void *) NULL;
+		set_objective_field_data.computed_field_manager
+				= Computed_field_package_get_computed_field_manager(
+						package->computed_field_package);
+		Option_table_add_entry(option_table, "objective_field",
+				&objective_field, &set_objective_field_data,
+				set_Computed_field_conditional);
+		/* independent field(s) */
+		field_names.number_of_strings = 0;
+		field_names.strings = (char **)NULL;
+		Option_table_add_multiple_strings_entry(option_table, "independent_fields",
+			&field_names, "FIELD_NAME [& FIELD_NAME [& ...]]");
+		/* data field */
+		set_data_field_data.conditional_function
+				= (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *) NULL;
+		set_data_field_data.conditional_function_user_data
+				= (void *) NULL;
+		set_data_field_data.computed_field_manager
+				= Computed_field_package_get_computed_field_manager(
+						package->computed_field_package);
+		Option_table_add_entry(option_table, "data_field",
+				&data_field, &set_data_field_data,
+				set_Computed_field_conditional);
+		/* mesh field */
+		set_mesh_field_data.conditional_function
+				= (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *) NULL;
+		set_mesh_field_data.conditional_function_user_data
+				= (void *) NULL;
+		set_mesh_field_data.computed_field_manager
+				= Computed_field_package_get_computed_field_manager(
+						package->computed_field_package);
+		Option_table_add_entry(option_table, "mesh_field",
+				&mesh_field, &set_mesh_field_data,
+				set_Computed_field_conditional);
+		/* region/groups */
+		Option_table_add_entry(option_table, "group", &region_path,
+				package->root_region, set_Cmiss_region_path);
+		Option_table_add_entry(option_table, "data_group", &data_group_name,
+				package->root_region, set_Cmiss_region_path);
+		/* method to use */
+		minimisation_method_string = ENUMERATOR_STRING(MinimisationMethod)(
+				package->method);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(MinimisationMethod)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(MinimisationMethod) *) NULL,
+				(void *) NULL);
+		Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &minimisation_method_string);
+		/* limit the number of iterations (really the number of objective
+		   function evaluations) */
+		Option_table_add_entry(option_table, "maximum_iterations", &maxIters,
+			NULL, set_int_positive);
+		/* the dimension of the elements to be fit */
+		// FIXME: should be restricted to 1 or 2?
+		Option_table_add_entry(option_table, "dimension", &dimension,
+					NULL, set_int_positive);
 
-		if (return_code = Option_table_multi_parse(option_table,state))
-		{
-			if (objective_field && independent_field)
-			{
-				if (region_path)
-				{
-					if (Cmiss_region_get_region_from_path_deprecated(package->root_region, region_path, &region))
-					{
-						FE_region *fe_region = Cmiss_region_get_FE_region(region);
-						
-						FE_region_begin_change(fe_region);
-						
-						// Create minimisation object
-						Minimisation minimisation(objective_field, independent_field, fe_region);
-						
-						// Populate the dof pointers and initial values for each node
-						if (Computed_field_is_type_finite_element(independent_field))
-						{
-							FE_region_for_each_FE_node(fe_region, Minimisation::construct_dof_arrays,
-								&minimisation);
+		if (return_code = Option_table_multi_parse(option_table, state)) {
+			if ((field_names.number_of_strings > 0) && (objective_field || (data_field && mesh_field))) {
+				if (region_path && data_group_name) {
+					if ((region = Cmiss_region_find_subregion_at_path(package->root_region,
+							region_path)) && (data_group =
+									Cmiss_region_find_subregion_at_path(package->root_region,
+											data_group_name))) {
+
+						if (minimisation_method_string) {
+							STRING_TO_ENUMERATOR(MinimisationMethod)(
+									minimisation_method_string,
+									&(package->method));
 						}
-						
+
+						FE_region *fe_region = Cmiss_region_get_FE_region(
+								region);
+
+						FE_region_begin_change(fe_region);
+
+						// Create minimisation object
+						Minimisation minimisation(objective_field,
+								data_field, mesh_field, fe_region, region,
+								data_group, maxIters, dimension);
+
+						// Need the field module
+						// FIXME: is this the best way to get it?
+						Cmiss_field_module_id field_module = Cmiss_field_get_field_module(objective_field ? objective_field : mesh_field);
+						for (i=0;i<field_names.number_of_strings;i++) {
+							minimisation.add_independent_field(field_module,field_names.strings[i]);
+						}
+						Cmiss_field_module_destroy(&field_module);
+
+						// Populate the dof pointers and initial values for each node
+						if (Computed_field_is_type_finite_element(minimisation.independent_fields[0])) {
+							FE_region_for_each_FE_node(fe_region,
+									Minimisation::construct_dof_arrays,
+									&minimisation);
+						} else if (minimisation.independent_fields_are_constant) {
+							Minimisation::construct_dof_arrays(NULL,&minimisation);
+						}
+
 						// Minimise the objective function
-						minimisation.minimise();
-						
+						switch (package->method) {
+						case NSDGSL:
+							minimisation.minimise_NSDGSL();
+							break;
+						case OPTPP_QuasiNewton:
+							minimisation.minimise_QN();
+							break;
+						case OPTPP_LSQ_Newton:
+							minimisation.minimise_LSQN();
+							break;
+						default:
+							display_message(ERROR_MESSAGE, "gfx minimise. "
+								"Unknown minimisation method.");
+							return_code = 0;
+							break;
+						}
+
 						FE_region_end_change(fe_region);
-						
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_minimise"
+
+					} else {
+						display_message(ERROR_MESSAGE, "gfx_minimise"
 							"Invalid argument(s)");
 						return_code = 0;
 					}
-				}
-				else
-				{
+				} else {
 					display_message(ERROR_MESSAGE,
-						"gfx_minimise.  Must specify a region");
+							"gfx_minimise.  Must specify a region and data group");
 					return_code = 0;
 				}
-			}
-			else
-			{
+			} else {
 				display_message(ERROR_MESSAGE,
-					"gfx_minimise.  Must specify objective function and independent field");
+						"gfx_minimise.  Must specify independent field and either an objective field or a data and a mesh field");
 				return_code = 0;
 			}
 		}
 		DESTROY(Option_table)(&option_table);
-		if (region_path)
-		{
+		if (region_path) {
 			DEALLOCATE(region_path);
 		}
-		if (independent_field)
-		{
-			DEACCESS(Computed_field)(&independent_field);
+		if (data_group_name) {
+			DEALLOCATE(data_group_name);
 		}
-		if (objective_field)
-		{
+		if (objective_field) {
 			DEACCESS(Computed_field)(&objective_field);
 		}
-	}
-	else
-	{
+		if (data_field) {
+			DEACCESS(Computed_field)(&data_field);
+		}
+		if (mesh_field) {
+			DEACCESS(Computed_field)(&mesh_field);
+		}
+	} else {
 		display_message(ERROR_MESSAGE, "gfx_minimise.  Invalid argument(s)");
 		return_code = 0;
 	}
