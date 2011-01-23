@@ -856,6 +856,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 #endif
 	//int* iterationCounter = static_cast<int*>(iterationCounterVoid);
 	//std::cout << "objective function called " << ++(*iterationCounter) << " times." << std::endl;
+	USE_PARAMETER(iterationCounterVoid);
 	int i;
 	UDP ud;
 	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
