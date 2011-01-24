@@ -316,8 +316,8 @@ MINIMISE_INC =
 ifneq ($(wildcard "$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/*newmat*"),"")
   # Opt++ found, so include
   MINIMISE_DEFINES = -DHAVE_OPTPP_CONFIG_H
-  MINIMISE_INC = -I$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/include
-  MINIMISE_LIB = -L$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib -lnewton -lbase -lconstraints -lgss -lpds -lutils -lopt -lnewmat 
+  MINIMISE_INC = -I$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/include/optpp
+  MINIMISE_LIB = -L$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/optpp -lnewton -lbase -lconstraints -lgss -lpds -lutils -lopt -lnewmat 
 else
   # Opt++ not found so don't include
   $(warning "Opt++ not found, expect problems...")
