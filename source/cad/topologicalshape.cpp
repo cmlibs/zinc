@@ -143,8 +143,6 @@ int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identif
 	//printf("Getting  TopologicalShape::surfaceColour(%d,) size %d\n", surface_index, colourMap.size());
 	static int local_count = 0;
 	local_count++;
-	if ( local_count < 4 )
-		printf("Getting  TopologicalShape::surfaceColour(%d,) size %d\n", surface_identifier, colourMap.size());
 	Quantity_Color surfaceColour = Quantity_NOC_WHITE;
 	Cad_topology_primitive_identifier topology_surface_identifier(surface_identifier);
 	Cad_colour_map_const_iterator iter = colourMap.find(topology_surface_identifier);
@@ -158,8 +156,6 @@ int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identif
 			colour[0] = surfaceColour.Red();
 			colour[1] = surfaceColour.Green();
 			colour[2] = surfaceColour.Blue();
-			if ( local_count < 4 )
-				printf("Found surface colour with index %d, type %d\n", surface_identifier, cad_colour.getColourType());
 			return 1;
 		}
 	}
@@ -176,13 +172,10 @@ int TopologicalShape::surfaceColour(Cmiss_cad_surface_identifier surface_identif
 			colour[0] = surfaceColour.Red();
 			colour[1] = surfaceColour.Green();
 			colour[2] = surfaceColour.Blue();
-			if ( local_count < 4 )
-				printf("Found surface colour of type %d\n", cad_colour.getColourType());
 			return 1;
 		}
 	}
 
-	//printf("Bum using colour %.3f, %.3f %.3f\n", surfaceColour.Red(), surfaceColour.Green(), surfaceColour.Blue());
 	colour[0] = surfaceColour.Red();
 	colour[1] = surfaceColour.Green();
 	colour[2] = surfaceColour.Blue();

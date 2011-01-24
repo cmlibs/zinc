@@ -465,6 +465,11 @@ Cmiss_field_id Cmiss_field_module_create_cad_primitive_group_template(Cmiss_fiel
 	return (field);
 }
 
+int Cmiss_field_cad_primitive_group_template_destroy(Cmiss_field_cad_primitive_group_template_id *cad_primitive_group_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(cad_primitive_group_address));
+}
+
 Cmiss_field_cad_primitive_group_template_id Cmiss_field_cast_cad_primitive_group_template(Cmiss_field_id field)
 {
 	if (dynamic_cast<Computed_field_sub_group_object<Cmiss_cad_identifier_id>*>(field->core))
@@ -481,20 +486,16 @@ Cmiss_field_cad_primitive_group_template_id Cmiss_field_cast_cad_primitive_group
 int Cmiss_field_cad_primitive_group_template_add_cad_primitive(Cmiss_field_cad_primitive_group_template_id cad_primitive_group,
 	Cmiss_cad_identifier_id cad_primitive)
 {
-	int return_code = 1;
-	//struct CM_element_information cm_identifier;
+	int return_code = 0;
 	if (cad_primitive_group && cad_primitive)
 	{
 		Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
 			Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
-		//int identifier = CM_element_information_to_graphics_name(&cm_identifier);
 		int identifier = cad_primitive->identifier.number;
+		printf("=== Adding cad primitive object %d\n", identifier);
 		group_core->add_object(identifier, cad_primitive);
-	}
-	else
-	{
-		return_code = 0;
+		return_code = 1;
 	}
 
 	return return_code;

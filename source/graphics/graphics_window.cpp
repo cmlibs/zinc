@@ -6762,7 +6762,7 @@ graphics window on screen.
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
-#if defined (OPENGL_API) &&defined (USE_MSAA) && defined (WX_USER_INTERFACE)
+#if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
 	int multisample_framebuffer_flag = 0;
 #endif
 	struct Graphics_buffer *offscreen_buffer;

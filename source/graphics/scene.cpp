@@ -2897,7 +2897,7 @@ stored in the nearest_element_data.
 						//display_message(INFORMATION_MESSAGE, "CAD element is type %d element %d\n", cad.type, cad.number);
 						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
 						return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
-						if	( return_code )
+						if ( return_code )
 						{
 							struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
 								( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );

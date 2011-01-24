@@ -76,12 +76,16 @@ OpenCascadeFormatReader::FileFormat OpenCascadeFormatReader::determineFileFormat
 		format = FormatBREP;
 	}
 	else if ( fileName.rfind( ".step" ) != std::string::npos ||
-		fileName.rfind( ".stp" ) != std::string::npos )
+		fileName.rfind( ".STEP" ) != std::string::npos ||
+		fileName.rfind( ".stp" ) != std::string::npos ||
+		fileName.rfind( ".STP" ) != std::string::npos )
 	{
 		format = FormatSTEP;
 	}
 	else if ( fileName.rfind( ".iges" ) != std::string::npos ||
-		fileName.rfind( ".igs" ) != std::string::npos )
+		fileName.rfind( ".IGES" ) != std::string::npos ||
+		fileName.rfind( ".igs" ) != std::string::npos ||
+		fileName.rfind( ".IGS" ) != std::string::npos )
 	{
 		format = FormatIGES;
 	}
@@ -224,7 +228,7 @@ bool OpenCascadeFormatReader::importSTEP( const std::string& file )
 	//m_doc = new TDocStd_Document( "MDTV-XCAF" );
 	XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", m_doc);
 
-#if defined (_DEBUG)
+#if defined (DEBUG_PRINT)
 	if (XCAFDoc_DocumentTool::IsXCAFDocument(m_doc))
 	{
 		std::cout << "Yep She's structured for use with XDE" << std::endl;
@@ -245,7 +249,7 @@ bool OpenCascadeFormatReader::importSTEP( const std::string& file )
 	{
 		if ( !reader.Transfer( m_doc ) )
 		{
-			// If the transfer to the xcaf document fails then just grap the shapes
+			// If the transfer to the xcaf document fails then just grab the shapes
 			// and save them as a sequence of shapes, all higher level information is 
 			// lost at this point
 			m_doc.Nullify();

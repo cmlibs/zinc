@@ -773,6 +773,13 @@ Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field)
 	return Cmiss_region_get_field_module(region);
 }
 
+#if defined (DEBUG)
+int Cmiss_field_get_access_count(Cmiss_field_id field)
+{
+	return field->access_count;
+}
+#endif /* defined (DEBUG) */
+
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
 /*****************************************************************************
 LAST MODIFIED : 6 September 2007
@@ -3322,6 +3329,18 @@ int recursively_add_source_fields_to_list( struct Computed_field *field, struct 
 	}
 
 	return return_code;
+}
+
+int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use)
+{
+	USE_PARAMETER(not_in_use);
+	int response = 0;
+	if (field && field->core->is_coordinate_field())
+	{
+		response = 1;
+	}
+
+	return response;
 }
 
 int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )

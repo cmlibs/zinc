@@ -273,6 +273,11 @@ int Computed_field_cad_topology::get_domain( struct LIST(Computed_field) *domain
 		{
 			return_code = 1;
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_cad_topology::get_domain.  Failed to add object to list" );
+		}
 	}
 	else
 	{

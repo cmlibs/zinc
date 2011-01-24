@@ -291,6 +291,13 @@ public:
 	{
 	}
 
+	/* override if field type is a type of coordinate field */
+	virtual bool is_coordinate_field() const
+	{
+		return false;
+	}
+
+	/* override if field is a domain */
 	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 
 	// override for customised response to propagating field changes to dependencies

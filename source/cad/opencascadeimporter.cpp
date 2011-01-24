@@ -102,6 +102,8 @@ extern "C" {
 //#include "cad/element_identifier.h"
 
 void performLabelAnalysis( Handle_TDocStd_Document doc, const TDF_Label& aLabel );
+char *Get_default_cad_subregion_name(Cmiss_region_id region);
+bool modify_if_not_standard_name(char *name);
 
 OpenCascadeImporter::OpenCascadeImporter( const char *fileName )
 	: CADImporter( fileName )
@@ -124,25 +126,25 @@ bool OpenCascadeImporter::import( struct Cmiss_region *region )
 		if ( reader.readModel( m_fileName ) )
 		{
 			end = clock();
-#if !defined(OPTIMISED)
+#if defined (DEBUG_PRINT)
 			printf( "File read took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
-#endif
+#endif /* defined (DEBUG_PRINT) */
 			start = clock();
 			if ( reader.hasXDEInformation() )
 			{
 				//success = remapDocToRegionsAndFields( reader.xDEInformation(), region );
 				success = convertDocToRegionsAndFields( reader.xDEInformation(), region );
 				end = clock();
-#if !defined(OPTIMISED)
+#if defined (DEBUG_PRINT)
 				printf( "Shape re-mapping took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
-#endif
+#endif /* defined (DEBUG_PRINT) */
 			}
 			else
 			{
 				end = clock();
-#if !defined(OPTIMISED)
+#if defined (DEBUG_PRINT)
 				printf( "Don't have XDE information, also no fall back plan!!!!\n" );
-#endif
+#endif /* defined (DEBUG_PRINT) */
 			}
 		}
 	}
@@ -154,85 +156,118 @@ bool OpenCascadeImporter::labelTraversal( Handle_TDocStd_Document xdeDoc, const 
 {
 	Handle_XCAFDoc_ShapeTool shapeTool = XCAFDoc_DocumentTool::ShapeTool( xdeDoc->Main() );
 	
-	//TCollection_AsciiString entry;
-	//TDF_Tool::Entry( label, entry );
-	//const char *parent_name = Cmiss_region_get_name(parent);
-	////printf( "Creating region '%s', parent name '%s'\n", entry.ToCString(), parent_name );
-	//Cmiss_region_id region = 0;
-	//if (parent_name != 0 && strstr(entry.ToCString(), parent_name) != 0)
-	//{
-	//	char *entry_name = duplicate_string(entry.ToCString());
-	//	int parent_name_length = strlen(parent_name);
-	//	/** Invalid to have non-alpha-numeric character first, so the name pointer is moved on one*/
-	//	char *entry_name_short = duplicate_string((entry_name+parent_name_length+1));
-	//	region = Cmiss_region_create_child(parent, entry_name_short);
-	//	DEALLOCATE(entry_name);
-	//	DEALLOCATE(entry_name_short);
-	//}
-	//else
-	//{
-	//	region = Cmiss_region_create_child(parent, entry.ToCString());
-	//}
-
+	int status = 0;
+	char *original_name = 0;
 	bool addedShape = false;
+
+	char *name = getLabelName(label);
+	append_string(&original_name, name, &status);
+	bool modified_name = modify_if_not_standard_name(name);
+	if (is_standard_object_name(name) == 0)
+	{
+		free(name);
+		name = Get_default_cad_subregion_name(parent);
+	}
 	TDF_Label referenceLabel;
 	shapeTool->GetReferredShape(label, referenceLabel);
 	TDF_LabelSequence components;
 	if ( shapeTool->GetComponents(label, components, (Standard_Boolean)0) )
 	{
 		/** If this label is an assembly */
-		char *name = getLabelName(label);
-		//Cmiss_region_id region = Cmiss_region_create_child(parent, name);
+		if (modified_name)
+		{
+			display_message(INFORMATION_MESSAGE, "Modified invalid region name '%s' to\n\tvalid region name '%s'\n", original_name, name);
+		}
 		Cmiss_region_id region = Cmiss_region_create_subregion(parent, name);
-		free(name);
 		if ( !region )
 		{
 			display_message(ERROR_MESSAGE, "OpenCascadeImporter.  "
-				"Unable to create child region.");
+				"Unable to create child region.  With name '%s'", name);
+			free(name);
+
 			return false;
 		}
 
-		for ( int i = 1; i <= components.Length(); i++ )
+		if (components.Length() > 0)
+		{
+			addedShape = true;
+		}
+		for ( int i = 1; i <= components.Length() && addedShape; i++ )
 		{
 			addedShape = labelTraversal(xdeDoc, components.Value(i), location, region);
 		}
-		DEACCESS(Cmiss_region)(&region);
+		Cmiss_region_destroy(&region);
 	}
 	else if ( !referenceLabel.IsNull() && shapeTool->GetComponents(referenceLabel, components) )
 	{
 		/** else if this label is a reference for an assembly */
 		/** I'm expecting to have to propogate a location here */
-		char *name = getLabelName(referenceLabel);
-		//Cmiss_region_id region = Cmiss_region_create_child(parent, name);
+		if (modified_name)
+		{
+			display_message(INFORMATION_MESSAGE, "Modified invalid region name '%s' to\n\tvalid region name '%s'\n", original_name, name);
+		}
 		Cmiss_region_id region = Cmiss_region_create_subregion(parent, name);
-		free(name);
 		if ( !region )
 		{
 			display_message(ERROR_MESSAGE, "OpenCascadeImporter.  "
-				"Unable to create child region.");
+				"Unable to create child region.  With name '%s'", name);
+			free(name);
+
 			return false;
 		}
 
 		TopLoc_Location currentLocation = shapeTool->GetLocation(label);
 		location = location.Multiplied(currentLocation);
 
-		for ( int i = 1; i <= components.Length(); i++ )
+		if (components.Length() > 0)
+		{
+			addedShape = true;
+		}
+		for ( int i = 1; i <= components.Length() && addedShape; i++ )
 		{
 			addedShape = labelTraversal(xdeDoc, components.Value(i), location, region);
 		}
-		DEACCESS(Cmiss_region)(&region);
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{
-		/** else this label is just a shape and we can add it */
-		addedShape = addShapeToRegion( xdeDoc, label, location, parent );
+		/** else this label is just a shape or a compound shape */
+		TopoDS_Shape shape;
+		if ( shapeTool->GetShape(label, shape) && !shape.IsNull() )
+		{
+			if (shape.ShapeType() == TopAbs_COMPOUND)
+			{
+				performLabelAnalysis(xdeDoc, label);
+				if (modified_name)
+				{
+					display_message(INFORMATION_MESSAGE, "Modified invalid region name '%s' to\n\tvalid region name '%s'\n", original_name, name);
+				}
+				Cmiss_region_id region = Cmiss_region_create_subregion(parent, name);
+				if ( !region )
+				{
+					display_message(ERROR_MESSAGE, "OpenCascadeImporter.  "
+						"Unable to create child region '%s'.", name);
+					free(name);
+
+					return false;
+				}
+				addedShape = addCompoundShapeToRegion(xdeDoc, shape, location, region);
+				Cmiss_region_destroy(&region);
+			}
+			else
+			{
+				addedShape = addLabelsShapeToRegion( xdeDoc, label, location, parent );
+			}
+		}
 	}
+	free(name);
 
 	return addedShape;
 }
 
 void performLabelAnalysis( Handle_TDocStd_Document xdeDoc, const TDF_Label& aLabel )
 {
+//#if defined (DEBUG_PRINT)
 	Handle_XCAFDoc_ShapeTool shapeTool = XCAFDoc_DocumentTool::ShapeTool( xdeDoc->Main() );
 	Handle_XCAFDoc_ColorTool colorTool = XCAFDoc_DocumentTool::ColorTool( xdeDoc->Main() );
 	//XCAFDoc_Location::Get();
@@ -298,21 +333,20 @@ void performLabelAnalysis( Handle_TDocStd_Document xdeDoc, const TDF_Label& aLab
 	{
 		
 		std::cout << "- Attribute " << aLabel.NbAttributes() << " ";
-		//for (int i = 1; i <= aLabel.NbAttributes(); i++ )
-		//{
-		
-			Handle_TDataStd_Name name = 0;
-			if ( aLabel.FindAttribute(TDataStd_Name::GetID(), name) )
-			{
-				std::cout << " Found " << aLabel.Depth() << " " << name->Get();
-			}
-			//delete name;
-		//}
+		Handle_TDataStd_Name name = 0;
+		if ( aLabel.FindAttribute(TDataStd_Name::GetID(), name) )
+		{
+			std::cout << " Found " << aLabel.Depth() << " " << name->Get();
+		}
 	}
 	std::cout << std::endl;
+//#else /* defined (DEBUG_PRINT) */
+//	USE_PARAMETER(aLabel);
+//	USE_PARAMETER(xdeDoc);
+//#endif /* defined (DEBUG_PRINT) */
 }
 
-Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopAbs_ShapeEnum type )
+Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopAbs_ShapeEnum /*type*/ )
 {
 	XCAFDoc_ColorType colorTypes[3] = {XCAFDoc_ColorGen, XCAFDoc_ColorSurf, XCAFDoc_ColorCurv};
 	Handle_XCAFDoc_ColorTool colorTool = XCAFDoc_DocumentTool::ColorTool( xdeDoc->Main() );
@@ -337,16 +371,17 @@ Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Doc
 {
 	XCAFDoc_ColorType colorTypes[3] = {XCAFDoc_ColorGen, XCAFDoc_ColorSurf, XCAFDoc_ColorCurv};
 	Handle_XCAFDoc_ColorTool colorTool = XCAFDoc_DocumentTool::ColorTool( xdeDoc->Main() );
-	//Quantity_Color aColor;
 	for ( int j = 0; j < 3; j++ )
 	{
 		if ( colorTool->IsSet(shape, colorTypes[j]) )
 		{
 			colorTool->GetColor(shape, colorTypes[j], aColor);
+#if defined (DEBUG_PRINT)
 			std::cout << "Colour type " << j << " and it's value is ";
 			std::cout << "[ " << aColor.Red() << ", ";
 			std::cout << aColor.Green() << ", ";
 			std::cout << aColor.Blue() << " ]" << std::endl;
+#endif /* defined (DEBUG_PRINT) */
 			return (Cmiss_cad_colour::Cmiss_cad_colour_type)j;
 		}
 	}
@@ -354,25 +389,21 @@ Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Doc
 	return Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED;
 }
 
-void updateColourMapFromShape( Handle_TDocStd_Document xdeDoc, Cad_colour_map& colourMap, const TopoDS_Shape& shape, bool usingReferredShape = false)
+void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& colourMap, const TopoDS_Shape& shape)
 {
-	//Cad_colour_map colourMap;
 	Quantity_Color color = Quantity_NOC_WHITE;
 	Cmiss_cad_colour::Cmiss_cad_colour_type colour_type = Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED;
 	{
-		//std::cout << "Color hunt (referred " << usingReferredShape << " )" << std::endl;
 		TopExp_Explorer Ex1, Ex2, Ex3, Ex4, Ex5, Ex6;
 		int solid_index = 0;
 		for (Ex1.Init(shape,TopAbs_SOLID); Ex1.More(); Ex1.Next()) 
 		{
 			examineShapeForColor(xdeDoc, Ex1.Current(), TopAbs_SOLID);
 			colour_type = examineShapeForColor(xdeDoc, Ex1.Current(), color);
-			//printf("Solid colour type: %d\n", colour_type);
 			if (colour_type != Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
 			{
 				Cad_topology_primitive_identifier cad_id;
 				Cmiss_cad_colour cad_colour(colour_type, color);
-				//printf("Adding to colour map\n");
 				colourMap.insert(std::pair<Cad_topology_primitive_identifier,Cmiss_cad_colour>(cad_id, cad_colour));
 			}
 			solid_index++;
@@ -382,15 +413,15 @@ void updateColourMapFromShape( Handle_TDocStd_Document xdeDoc, Cad_colour_map& c
 				int face_index = 0;
 				for (Ex3.Init(Ex2.Current(),TopAbs_FACE); Ex3.More(); Ex3.Next()) 
 				{
+#if defined (DEBUG_PRINT)
 					printf("Checking face %d, on surface %d\n", face_index, solid_index);
+#endif /* defined (DEBUG_PRINT) */
 					examineShapeForColor(xdeDoc, Ex3.Current(), TopAbs_FACE);
 					colour_type = examineShapeForColor(xdeDoc, Ex3.Current(), color);
-					//printf("Face colour type: %d\n", colour_type);
 					if (colour_type != Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
 					{
 						Cad_topology_primitive_identifier cad_id(face_index);
 						Cmiss_cad_colour cad_colour(colour_type, color);
-						//printf("adding to map face_index %d", face_index);
 						colourMap.insert(std::pair<Cad_topology_primitive_identifier,Cmiss_cad_colour>(cad_id, cad_colour));
 					}
 					face_index++;
@@ -402,12 +433,10 @@ void updateColourMapFromShape( Handle_TDocStd_Document xdeDoc, Cad_colour_map& c
 						{
 							examineShapeForColor(xdeDoc, Ex5.Current(), TopAbs_EDGE);
 							colour_type = examineShapeForColor(xdeDoc, Ex4.Current(), color);
-							//printf("Edge colour type: %d\n", colour_type);
 							if (colour_type != Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
 							{
 								Cad_topology_primitive_identifier cad_id(face_index, edge_index);
 								Cmiss_cad_colour cad_colour(colour_type, color);
-								//printf("adding to map face_index %d, %d\n", face_index, edge_index);
 								colourMap.insert(std::pair<Cad_topology_primitive_identifier,Cmiss_cad_colour>(cad_id, cad_colour));
 							}
 							edge_index++;
@@ -421,9 +450,6 @@ void updateColourMapFromShape( Handle_TDocStd_Document xdeDoc, Cad_colour_map& c
 			}
 		}
 	}
-
-	//printf("Colour map size %d\n", colourMap.size());
-	//return colourMap;
 }
 
 Cad_colour_map createColourMap( Handle_TDocStd_Document xdeDoc, const TDF_Label& label )
@@ -441,12 +467,129 @@ Cad_colour_map createColourMap( Handle_TDocStd_Document xdeDoc, const TDF_Label&
 	if ( !referenceLabel.IsNull() )
 	{
 		TopoDS_Shape referredShape = shapeTool->GetShape(referenceLabel);
-		updateColourMapFromShape(xdeDoc, colourMap, referredShape, true);
+		updateColourMapFromShape(xdeDoc, colourMap, referredShape);
 	}
 	
+#if defined (DEBUG_PRINT)
 	printf("colour map size %d\n", colourMap.size());
+#endif /* defined (DEBUG_PRINT) */
 
 	return colourMap;
+}
+
+char *Next_cad_field_name_in_series(Cmiss_field_module_id field_module, const char *name)
+{
+	Cmiss_field_id existing_field;
+	int field_number = 1;
+	char name_buffer[255];
+	int n = sprintf(name_buffer, "%s_%d", name, field_number);
+	while (n > 0 && n < 250 && (NULL != (existing_field = Cmiss_field_module_find_field_by_name(field_module, name_buffer))))
+	{
+		field_number++;
+		Cmiss_field_destroy(&existing_field);
+		n = sprintf(name_buffer, "%s_%d", name, field_number);
+	}
+
+	if (n > 0 && n < 250 && (existing_field == NULL))
+	{
+		char *next_name = duplicate_string(name_buffer);
+		return next_name;
+	}
+
+	return NULL;
+}
+
+int Set_default_cad_field_name(Cmiss_field_id field, Cmiss_field_module_id field_module)
+{
+	int return_code = 0;
+	Cmiss_field_id existing_field;
+	int field_number = 1;
+	char name_buffer[255];
+	int n = sprintf(name_buffer, "cad_field_%d", field_number);
+	while (n > 0 && n < 250 && (NULL != (existing_field = Cmiss_field_module_find_field_by_name(field_module, name_buffer))))
+	{
+		field_number++;
+		Cmiss_field_destroy(&existing_field);
+		n = sprintf(name_buffer, "cad_field_%d", field_number);
+	}
+
+	if (n > 0 && n < 250 && (existing_field == NULL))
+	{
+		Cmiss_field_set_name(field, name_buffer);
+		return_code = 1;
+	}
+
+	return return_code;
+}
+
+char *Get_default_cad_subregion_name(Cmiss_region_id region)
+{
+	Cmiss_region_id existing_region;
+	int region_number = 1;
+	char name_buffer[255];
+	int n = sprintf(name_buffer, "cad_region_%d", region_number);
+	while(n > 0 && n < 250 && (NULL != (existing_region = Cmiss_region_find_child_by_name(region, name_buffer))))
+	{
+		region_number++;
+		Cmiss_region_destroy(&existing_region);
+		n = sprintf(name_buffer, "cad_region_%d", region_number);
+	}
+
+	if (n > 0 && n < 250 && (existing_region == NULL))
+	{
+		char *name = duplicate_string(name_buffer);
+		return name;
+	}
+
+	return NULL;
+}
+
+/**
+ * test if the string is empty.  This extends zero length
+ * strings to include those that are entirely made up of spaces
+ *
+ * @param name the string to test
+ * @return true if the string has zero length or zero 
+ * non-whitespace characters, false otherwise
+ */
+bool is_empty_string(char *name)
+{
+	bool empty = true;
+	int length = strlen(name);
+	for (int i = 0; i < length; i++)
+	{
+		if (!isspace(name[i]))
+		{
+			return false;
+		}
+	}
+
+	return empty;
+}
+
+bool modify_if_not_standard_name(char *name)
+{	
+	bool modified = false;
+
+	if (is_standard_object_name(name) == 0 && !is_empty_string(name))
+	{
+		// Try to modify this name so that it conforms
+		modified = true;
+		if (!isalnum(name[0]))
+		{
+			name[0] = 'm';
+		}
+		int length = strlen(name);
+		for (int i = 1; i < length; i++)
+		{
+			if ((name[i] != '_') && (name[i] != '.') && (name[i] != ':') && (!isalnum(name[i])))
+			{
+				name[i] = '_';
+			}
+		}
+	}
+
+	return modified;
 }
 
 char *OpenCascadeImporter::getLabelName(const TDF_Label& label)
@@ -462,24 +605,145 @@ char *OpenCascadeImporter::getLabelName(const TDF_Label& label)
 	return string_name;
 }
 
-bool OpenCascadeImporter::addShapeToRegion( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location, Cmiss_region_id parent )
+bool OpenCascadeImporter::addCompoundShapeToRegion(Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopLoc_Location location, Cmiss_region_id parent)
+{
+	bool addedShape = false;
+	TopoDS_Iterator anExplorer(shape);
+	static int depth = 0;
+	int count = 0;
+	for (int i = 0; i < depth; i++)
+	{
+		printf("-");
+	}
+	while(anExplorer.More())
+	{
+		printf("%d (%d) ", count++, anExplorer.Value().ShapeType());
+		TopoDS_Shape subShape = anExplorer.Value();
+		if (subShape.ShapeType() == TopAbs_COMPOUND)
+		{
+			depth++;
+			char *name = Get_default_cad_subregion_name(parent);
+			Cmiss_region_id region = Cmiss_region_create_subregion(parent, name);
+			if ( !region )
+			{
+				display_message(ERROR_MESSAGE, "OpenCascadeImporter.  "
+					"Unable to create child region '%s'.", name);
+				free(name);
+				return false;
+			}
+			free(name);
+			addedShape = addCompoundShapeToRegion(xdeDoc, subShape, location, region);
+			Cmiss_region_destroy(&region);
+		}
+		else
+		{
+			// Can I add this shape to the region???
+			printf("add \n\t");
+			Cad_colour_map colour_map;
+			const char name[] = "";
+			addedShape = addShapeToRegion(subShape, parent, name, colour_map);
+		}
+		anExplorer.Next();
+	}
+	if (depth == 1)
+		printf("\n");
+	depth--;
+
+	return addedShape;
+}
+
+bool OpenCascadeImporter::addShapeToRegion(const TopoDS_Shape& shape, Cmiss_region_id region, const char *name, const Cad_colour_map& colourMap)
+{
+	bool addedShape = false;
+
+	TopologicalShape* ts = new TopologicalShape( shape, colourMap );
+
+	// Create field and add to current region
+	char *top_name = 0, *geo_name = 0, *col_name = 0;
+	char *next_name = 0, *temp_name = 0;
+	int status = 0;
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_id cad_topology_field = Cmiss_field_module_create_cad_topology( field_module, ts );
+	//if (name && (strlen(name) > 0) )
+	append_string(&temp_name, name, &status);
+	if (modify_if_not_standard_name(temp_name))
+	{
+		display_message(INFORMATION_MESSAGE, "Modifying invalid field name '%s' to\n\tvalid field name '%s'\n", name, temp_name);
+		next_name = Next_cad_field_name_in_series(field_module, temp_name);
+	}
+	else if (is_standard_object_name(name))
+	{
+		next_name = Next_cad_field_name_in_series(field_module, name);
+	}
+	else
+	{	
+		const char default_cad_field_name[] = "cad_field";
+		next_name = Next_cad_field_name_in_series(field_module, default_cad_field_name);
+	}
+	free(temp_name);
+	append_string(&top_name, next_name, &status);
+	//append_string(&top_name, "_top", &status);
+	Cmiss_field_set_name(cad_topology_field, top_name);
+
+	Cmiss_field_set_persistent(cad_topology_field, 1);
+	Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology( cad_topology_field );
+
+	// Create shape gs
+	GeometricShape* gs = new GeometricShape();
+	ts->tessellate(gs);
+	Cmiss_field_cad_topology_set_geometric_shape(cad_topology, gs);
+	// sketchy:
+	Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
+
+	append_string(&geo_name, next_name, &status);
+	append_string(&geo_name, "_geo", &status);
+	append_string(&col_name, next_name, &status);
+	append_string(&col_name, "_col", &status);
+
+	Cmiss_field_id cad_geometry_field = Computed_field_module_create_cad_geometry(field_module, cad_topology_field);
+	Cmiss_field_set_name(cad_geometry_field, geo_name);
+	Cmiss_field_set_persistent(cad_geometry_field, 1);
+
+	Cmiss_field_id cad_colour_field = Computed_field_module_create_cad_colour(field_module, cad_topology_field);
+	Cmiss_field_set_name(cad_colour_field, col_name);
+	Cmiss_field_set_persistent(cad_colour_field, 1);
+
+	if ( cad_topology_field && cad_geometry_field && cad_colour_field )
+	{
+		addedShape = true;
+	}
+	Cmiss_field_destroy(&cad_colour_field);
+	Cmiss_field_destroy(&cad_geometry_field);
+	Cmiss_field_destroy(&cad_topology_field);
+
+	DEALLOCATE(next_name);
+	DEALLOCATE(top_name);
+	DEALLOCATE(geo_name);
+	DEALLOCATE(col_name);
+
+	Cmiss_field_module_destroy(&field_module);
+
+	return addedShape;
+}
+
+bool OpenCascadeImporter::addLabelsShapeToRegion( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, TopLoc_Location location, Cmiss_region_id parent )
 {
 	bool addedShape = false;
 	Handle_XCAFDoc_ShapeTool shapeTool = XCAFDoc_DocumentTool::ShapeTool( xdeDoc->Main() );
 	TopoDS_Shape shape;
-	if ( ! shapeTool->GetShape(label, shape) || shape.IsNull() )
+	if ( !shapeTool->GetShape(label, shape) || shape.IsNull() )
 		return addedShape;
 
 	// Catch compounds with no topological shapes
 	if (shape.ShapeType() == TopAbs_COMPOUND)
 	{
-		display_message(INFORMATION_MESSAGE, "addShapeToRegion() test for COMPOUND shape, shouldn't get here because I am already looking for it earlier???\n");
+		display_message(INFORMATION_MESSAGE, "addLabelsShapeToRegion() test for COMPOUND shape, shouldn't get here because I am already looking for it earlier???\n");
 		performLabelAnalysis(xdeDoc, label);
 		TDF_Label referenceLabel;
 		shapeTool->GetReferredShape(label, referenceLabel);
 		performLabelAnalysis(xdeDoc, referenceLabel);
-		TopoDS_Iterator anExplor(shape);
-		if (!anExplor.More())
+		TopoDS_Iterator anExplorer(shape);
+		if (!anExplorer.More())
 		{
 			display_message(INFORMATION_MESSAGE, "and it contains no shapes\n");
 			return addedShape;
@@ -489,7 +753,9 @@ bool OpenCascadeImporter::addShapeToRegion( Handle_TDocStd_Document xdeDoc, cons
 	char *string_name = 0;
 	if (shapeTool->IsReference(label))
 	{
+#if defined (DEBUG_PRINT)
 		printf("Getting a name from a referred label.\n");
+#endif /* defined (DEBUG_PRINT) */
 		TDF_Label referenceLabel;
 		shapeTool->GetReferredShape(label, referenceLabel);
 		string_name = getLabelName(referenceLabel);
@@ -500,70 +766,9 @@ bool OpenCascadeImporter::addShapeToRegion( Handle_TDocStd_Document xdeDoc, cons
 	}
 
 	Cad_colour_map colourMap = createColourMap(xdeDoc, label);
-	{
-		shape.Move(location);
-		TopologicalShape* ts = new TopologicalShape( shape, colourMap );
-
-		// Create field and add to current region
-		char *top_name = 0, *geo_name = 0, *col_name = 0;
-		int status = 0;
-		//printf( "Creating field in region\n" );
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(parent);
-		Cmiss_field_id cad_topology_field = Cmiss_field_module_create_cad_topology( field_module, ts );
-		if (string_name && (strlen(string_name) > 0) )
-		{
-			Cmiss_field_set_name(cad_topology_field, string_name);
-		}
-		else
-		{
-			int field_number = 1;
-			char name_buffer[50];
-			int n = sprintf(name_buffer, "cad_field%d", field_number);
-			while (Cmiss_field_set_name(cad_topology_field, name_buffer) == 0)
-			{
-				field_number++;
-				n = sprintf(name_buffer, "cad_field%d", field_number);
-			}
-		}
-		Cmiss_field_set_persistent(cad_topology_field, 1);
-		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology( cad_topology_field );
-
-		// Create shape gs
-		GeometricShape* gs = new GeometricShape();
-		ts->tessellate(gs);
-		Cmiss_field_cad_topology_set_geometric_shape(cad_topology, gs);
-		// sketchy:
-		Cmiss_field_destroy((Cmiss_field_id *)&cad_topology);
-
-		GET_NAME(Computed_field)(cad_topology_field, &top_name);
-		append_string(&geo_name, top_name, &status);
-		append_string(&geo_name, "-geo", &status);
-		append_string(&col_name, top_name, &status);
-		append_string(&col_name, "-col", &status);
-
-		Cmiss_field_id cad_geometry_field = Computed_field_module_create_cad_geometry(field_module, cad_topology_field);
-		Cmiss_field_set_name(cad_geometry_field, geo_name);
-		Cmiss_field_set_persistent(cad_geometry_field, 1);
-
-		Cmiss_field_id cad_colour_field = Computed_field_module_create_cad_colour(field_module, cad_topology_field);
-		Cmiss_field_set_name(cad_colour_field, col_name);
-		Cmiss_field_set_persistent(cad_colour_field, 1);
-
-		if ( cad_topology_field && cad_geometry_field && cad_colour_field )
-		{
-			addedShape = true;
-		}
-		Cmiss_field_destroy(&cad_colour_field);
-		Cmiss_field_destroy(&cad_geometry_field);
-		Cmiss_field_destroy(&cad_topology_field);
-
-		DEALLOCATE(top_name);
-		DEALLOCATE(geo_name);
-		DEALLOCATE(col_name);
-
-		Cmiss_field_module_destroy(&field_module);
-
-	}
+	shape.Move(location);
+	
+	addedShape = addShapeToRegion(shape, parent, string_name, colourMap);
 
 	if (string_name)
 		free(string_name);
@@ -581,7 +786,7 @@ int iterateOverLabel( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, in
 	if ( shapeTool->IsAssembly(label) )
 	{
 		TDF_LabelSequence components;
-		Standard_Boolean isAssembly = shapeTool->GetComponents(label, components, (Standard_Boolean)0);
+		//Standard_Boolean isAssembly = shapeTool->GetComponents(label, components, (Standard_Boolean)0);
 
 		for ( int i = 1; i <= components.Length(); i++ )
 		{
@@ -607,7 +812,9 @@ int iterateOverLabel( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, in
 	//}
 
 	{
-		std::cout << "Color hunt ";
+#if defined (DEBUG_PRINT)
+		printf("Color hunt ");
+#endif /* defined (DEBUG_PRINT) */
 		performLabelAnalysis(xdeDoc, label);
 		TopExp_Explorer Ex1, Ex2, Ex3, Ex4, Ex5, Ex6;
 		TopoDS_Shape shape = shapeTool->GetShape(label);
@@ -660,7 +867,7 @@ bool OpenCascadeImporter::convertDocToRegionsAndFields( Handle_TDocStd_Document 
 	TDF_LabelSequence freeShapes;
 	shapeTool->GetFreeShapes( freeShapes );
 
-#if defined(DEBUG)
+#if defined (DEBUG_PRINT)
 	Quantity_Color aColor;
 	TDF_LabelSequence colLabels;
 	colorTool->GetColors(colLabels);
@@ -679,24 +886,19 @@ bool OpenCascadeImporter::convertDocToRegionsAndFields( Handle_TDocStd_Document 
 		}
 	}
 	printf("\n\n");
-#endif /* defined(DEBUG) */
-
+#endif /* defined (DEBUG_PRINT) */
 	Cmiss_region_begin_change(region);
 	for ( Standard_Integer i = 1; i <= freeShapes.Length(); i++ )
 	{
 		TDF_Label label = freeShapes.Value( i );
 
+#if defined (DEBUG_PRINT)
 		TCollection_AsciiString entry;
 		TDF_Tool::Entry( label, entry );
-#if defined(DEBUG)
 		printf( "root region '%s'\n", entry.ToCString() );
-#endif
+#endif /* defined (DEBUG_PRINT) */
 		if ( label.IsNull() )
 			continue;
-
-		//std::cout << std::endl << std::endl << "Iterate over label" << std::endl << std::endl;
-		//iterateOverLabel( xdeDoc, label, 0 );
-		//printf("\n\n");
 
 		addedShape = labelTraversal( xdeDoc, label, location, region );
 	}
@@ -712,21 +914,21 @@ int Cmiss_region_import_cad_file(struct Cmiss_region *region, const char *file_n
 	if (region && file_name)
 	{
 		OpenCascadeImporter occImporter( file_name );
-		if ( !occImporter.import( region ) )
+		if ( occImporter.import( region ) )
 		{
-			display_message( ERROR_MESSAGE, "Failed to load %s into region %s", file_name, Cmiss_region_get_name(region) );
+			return_code = 1;
 		}
 		else
 		{
-			return_code = 1;
+			display_message( ERROR_MESSAGE, "Failed to load file '%s' into region '%s'", file_name, Cmiss_region_get_name(region) );
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_region_import_cad_file.  Invalid argument(s)\n");
-		return_code = 0;
 	}
+
 	return return_code;
 }
 

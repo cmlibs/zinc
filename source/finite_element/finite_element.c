@@ -2839,10 +2839,10 @@ A debug function to print a node fields (to stdout)
 	printf("count = %d\n",*the_count);
 	if (node_field)
 	{	
-		printf("node_field = %x \n",node_field);
+		printf("node_field = %p \n",node_field);
 		if (node_field->field)
 		{	
-			printf("   node_field->field = %x \n",node_field->field);
+			printf("   node_field->field = %p \n",node_field->field);
 			printf("   name = %s \n",node_field->field->name);
 			printf("   number of values = %d \n",node_field->field->number_of_values);
 			printf("   number of components = %d \n",node_field->field->number_of_components);		
@@ -2880,7 +2880,6 @@ A debug function to print all a node's node fields (to stdout)
 =======================================================================*/
 {
 	int return_code,count;
-	FE_value *values;
 	ENTER(show_FE_nodal_node_fields);
 	if (node)
 	{
@@ -34533,10 +34532,6 @@ Outputs the information contained at the element.
 	FE_value *scale_factor;
 	int i,return_code;
 	struct FE_element **face;
-#if defined (DEBUG)
-	/*???debug*/
-	struct LIST(FE_node) *nodes_on_face;
-#endif /* defined (DEBUG) */
 
 	ENTER(list_FE_element);
 	USE_PARAMETER(dummy);

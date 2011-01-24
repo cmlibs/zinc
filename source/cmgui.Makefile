@@ -994,7 +994,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_format_output.cpp \
 	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_group.cpp \
-	computed_field/computed_field_sub_group.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
@@ -1002,6 +1001,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_string_constant.cpp \
+	computed_field/computed_field_sub_group.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_trigonometry.cpp \
 	computed_field/computed_field_update.cpp \
@@ -1172,14 +1172,14 @@ endif
 GRAPHICS_INTERFACE_SRCS = \
 	graphics/movie_graphics.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-GRAPHICS_SRCS += \
-    graphics/region_tree_viewer_wx.cpp\
-    graphics/spectrum_editor_wx.cpp \
-	graphics/spectrum_editor_dialog_wx.cpp \
-	dialog/tessellation_dialog.cpp
+	GRAPHICS_SRCS += \
+		graphics/region_tree_viewer_wx.cpp\
+		graphics/spectrum_editor_wx.cpp \
+		graphics/spectrum_editor_dialog_wx.cpp \
+		dialog/tessellation_dialog.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-   GRAPHICS_INTERFACE_SRCS += \
+	GRAPHICS_INTERFACE_SRCS += \
 		graphics/graphics_window.cpp \
 		graphics/spectrum_editor.c \
 		graphics/spectrum_editor_dialog.c \

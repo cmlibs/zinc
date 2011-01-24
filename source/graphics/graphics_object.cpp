@@ -6894,14 +6894,14 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 		
 		//Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
-		Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_subgroup_for_domain(sub_group, 
+		Cmiss_field_id cad_primitive_subgroup_field = Cmiss_field_group_get_subgroup_for_domain(sub_group, 
 			reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
 		Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
-		if (cad_primitive_group_field)
+		if (cad_primitive_subgroup_field)
 		{
 			cad_primitive_group =
-				Cmiss_field_cast_cad_primitive_group_template(cad_primitive_group_field);
-			Cmiss_field_destroy(&cad_primitive_group_field);
+				Cmiss_field_cast_cad_primitive_group_template(cad_primitive_subgroup_field);
+			Cmiss_field_destroy(&cad_primitive_subgroup_field);
 			if (cad_primitive_group)
 			{
 				Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =

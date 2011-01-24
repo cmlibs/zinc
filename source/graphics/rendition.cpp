@@ -43,6 +43,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "api/cmiss_core.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_rendition.h"
 #include "computed_field/computed_field.h"
@@ -320,9 +321,8 @@ static int Cmiss_rendition_void_detach_from_Cmiss_region(void *cmiss_rendition_v
 static int Cmiss_rendition_update_default_coordinate(
 	struct Cmiss_rendition *rendition)
 {
-	int return_code;
+	int return_code = 0;
 	struct Computed_field *computed_field;
-	struct FE_field *fe_field;
 
 	ENTER(Cmiss_rendition_changed);
 	if (rendition)
@@ -340,20 +340,14 @@ static int Cmiss_rendition_update_default_coordinate(
 			else
 			{
 				/* Try to find one */
-				if (FE_region_get_default_coordinate_FE_field(
-					rendition->fe_region, &fe_field) ||
-					(rendition->data_fe_region && 
-					FE_region_get_default_coordinate_FE_field(
-						rendition->data_fe_region, &fe_field)))
+				computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_coordinate_field, (void *)NULL, rendition->computed_field_manager);
+
+				if (computed_field != NULL )
 				{
 					/* Find the computed_field wrapper */
-					if (NULL != (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_wraps_fe_field,
-						(void *)fe_field, rendition->computed_field_manager)))
-					{
-						rendition->default_coordinate_field = 
-							ACCESS(Computed_field)(computed_field);
-					}
+					rendition->default_coordinate_field =
+						ACCESS(Computed_field)(computed_field);
 				}
 			}
 		}

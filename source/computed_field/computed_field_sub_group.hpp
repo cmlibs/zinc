@@ -234,7 +234,7 @@ namespace {
 		{
 			T return_object = NULL;
 			object_pos = object_map.begin();
-			if (object_pos !=object_map.end())
+			if (object_pos != object_map.end())
 			{
 				return_object = object_pos->second;
 			}
@@ -244,10 +244,10 @@ namespace {
 		T getNextObject()
 		{
 			T return_object = NULL;
-			if (object_pos !=object_map.end())
+			if (object_pos != object_map.end())
 			{
 				object_pos++;
-				if (object_pos !=object_map.end())
+				if (object_pos != object_map.end())
 				{
 					return_object = object_pos->second;
 				}

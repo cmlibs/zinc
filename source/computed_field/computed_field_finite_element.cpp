@@ -122,6 +122,8 @@ private:
 
 	int list();
 
+	bool is_coordinate_field() const;
+	
 	char* get_command_string();
 
 	int clear_cache();
@@ -1155,6 +1157,20 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_finite_element::get_command_string */
+
+bool Computed_field_finite_element::is_coordinate_field() const
+{
+	bool result = false;
+	if (field)
+	{
+		if (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD )
+		{
+			result = true;
+		}
+	}
+
+	return result;
+}
 
 } //namespace
 

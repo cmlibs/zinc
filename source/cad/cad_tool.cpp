@@ -140,7 +140,7 @@ static void Cad_tool_reset(void *cad_tool_void)
 	struct Cad_tool *cad_tool;
 
 	ENTER(Cad_tool_reset);
-	if (cad_tool = (struct Cad_tool *)cad_tool_void)
+	if (NULL != (cad_tool = (struct Cad_tool *)cad_tool_void))
 	{
 		REACCESS(FE_element)(&(cad_tool->last_picked_element),
 			(struct FE_element *)NULL);
@@ -163,27 +163,28 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *cad_tool_void,
 	struct Graphics_buffer *graphics_buffer)
 {
-	char *command_string;
 	enum Interactive_event_type event_type;
-	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int clear_selection, element_dimension, i, input_modifier,
-		number_of_xi_points, shift_pressed;
-	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	//char *command_string;
+	//FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int clear_selection, /*element_dimension, i,*/ input_modifier,
+		/*number_of_xi_points,*/ shift_pressed;
+	//int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	//struct FE_element_shape *element_shape;
+	//FE_value_triple *xi_points;
 	Cmiss_cad_identifier_id picked_element;
-	struct FE_element_shape *element_shape;
 	struct Cad_tool *cad_tool;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *scene;
 	struct Cmiss_rendition *rendition = NULL;
-	FE_value_triple *xi_points;
 
 	ENTER(Cad_tool_interactive_event_handler);
 	if (device_id&&event&&(cad_tool=
 		(struct Cad_tool *)cad_tool_void))
 	{
+		Cmiss_region_begin_hierarchical_change(cad_tool->region);
 		interaction_volume=Interactive_event_get_interaction_volume(event);
-		if (scene=Interactive_event_get_scene(event))
+		if (NULL != (scene=Interactive_event_get_scene(event)))
 		{
 			event_type=Interactive_event_get_type(event);
 			input_modifier=Interactive_event_get_input_modifier(event);
@@ -195,114 +196,57 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 					/* interaction only works with first mouse button */
 					if (1==Interactive_event_get_button_number(event))
 					{
-						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
+						if (NULL != (scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer)))
 						{
+							clear_selection = !shift_pressed;
+							if (clear_selection)
+							{
+								printf("--- clear selection\n");
+								if (cad_tool->region)
+								{
+									Cmiss_rendition *rendition = 
+										Cmiss_region_get_rendition_internal(cad_tool->region);
+									Cmiss_field_group_id group = 
+										Cmiss_rendition_get_or_create_selection_group(rendition);
+									if (group)
+									{
+										Cmiss_field_group_clear_region_tree_cad_primitive(group);
+										Cmiss_field_group_destroy(&group);
+									}
+									Cmiss_rendition_destroy(&rendition);
+								}
+							}
 							cad_tool->picked_element_was_unselected=0;
-							if (picked_element=Scene_picked_object_list_get_cad_primitive(
+							picked_element = Scene_picked_object_list_get_cad_primitive(
 								scene_picked_object_list,(struct Cmiss_region *)NULL,
 								cad_tool->select_surfaces_enabled,
 								cad_tool->select_lines_enabled,
 								(struct Scene_picked_object **)NULL,
-								&rendition,	(struct Cmiss_graphic **)NULL))
-							{
-								printf("Picked element = %d\n", picked_element->identifier.number);
-								/* Open command_field of picked_element in browser */
-								if (cad_tool->command_field)
-								{
-									//if (Computed_field_is_defined_in_element(cad_tool->command_field,
-									//	picked_element))
-									//{
-									//	if (cad_tool->time_keeper)
-									//	{
-									//		time = Time_keeper_get_time(cad_tool->time_keeper);
-									//	}
-									//	else
-									//	{
-									//		time = 0;
-									//	}
-									//	/* since we don't really have fields constant over an
-									//		 element, evaluate at its centre */
-									//	element_dimension =
-									//		get_FE_element_dimension(picked_element);
-									//	for (i = 0; i < element_dimension; i++)
-									//	{
-									//		number_in_xi[i] = 1;
-									//	}
-									//	get_FE_element_shape(picked_element, &element_shape);
-									//	if (FE_element_shape_get_xi_points_cell_centres(
-									//		element_shape, number_in_xi,
-									//		&number_of_xi_points, &xi_points))
-									//	{
-									//		/*???debug*/printf("cad_tool: xi =");
-									//		for (i = 0; i < element_dimension; i++)
-									//		{
-									//			xi[i] = xi_points[0][i];
-									//			/*???debug*/printf(" %g",xi[i]);
-									//		}
-									//		/*???debug*/printf("\n");
-									//		if (cad_tool->execute_command && (NULL != (command_string =
-									//					Computed_field_evaluate_as_string_in_element(
-									//						cad_tool->command_field, /*component_number*/-1,
-									//						picked_element, xi, time, (struct FE_element *)NULL))))
-									//		{
-									//			Execute_command_execute_string(cad_tool->execute_command,
-									//				command_string);
-									//			DEALLOCATE(command_string);
-									//		}
-									//		DEALLOCATE(xi_points);
-									//	}
-									//}
-								}
-							}
-							//REACCESS(FE_element)(&(cad_tool->last_picked_element),
-							//	picked_element);
-							if (clear_selection = !shift_pressed)
-#if defined (OLD_CODE)
-								&&((!picked_element)||
-									(cad_tool->picked_element_was_unselected))))
-#endif /*defined (OLD_CODE) */
-							{
-								if (cad_tool->region)
-								{
-									Cmiss_rendition *root_rendition = Cmiss_rendition_get_from_region(
-									cad_tool->region);
-									Cmiss_field_id root_group_field = Cmiss_rendition_get_or_create_selection_group(
-										root_rendition);
-									if (root_group_field)
-									{
-										Cmiss_field_group_id root_group =
-											Cmiss_field_cast_group(root_group_field);
-										Cmiss_field_group_clear_region_tree_cad_primitive(root_group);
-										Cmiss_field_group_destroy(&root_group);
-										Cmiss_field_destroy(&root_group_field);
-									}
-									Cmiss_rendition_destroy(&root_rendition);
-								}
-							}
+								&rendition, (struct Cmiss_graphic **)NULL);
 							if (picked_element)
 							{
+								//printf("Picked element = %d\n", picked_element->identifier.number);
 								REACCESS(Cmiss_rendition)(&(cad_tool->rendition),
 									rendition);
 								Cmiss_region *sub_region = NULL;
 								Cmiss_field_group_id sub_group = NULL;
-								Cmiss_field_id sub_group_field = NULL;
 								Cmiss_field_id cad_primitive_group_field = NULL;
 								Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 								if (cad_tool->rendition)
 								{
 									sub_region = Cmiss_rendition_get_region(cad_tool->rendition);
-									sub_group_field = Cmiss_rendition_get_or_create_selection_group(cad_tool->rendition);
-									sub_group = Cmiss_field_cast_group(sub_group_field);
+									sub_group = Cmiss_rendition_get_or_create_selection_group(cad_tool->rendition);
 									if (sub_group)
 									{
 										cad_primitive_group_field = Cmiss_field_group_get_subgroup_for_domain(sub_group,
 											reinterpret_cast<Cmiss_field_id>(picked_element->cad_topology));
 										if (!cad_primitive_group)
 										{
-											cad_primitive_group_field = Cmiss_field_group_create_cad_primitive_group(sub_group, picked_element->cad_topology);
+											cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, picked_element->cad_topology);
+											if (cad_primitive_group_field == NULL)
+												cad_primitive_group_field = Cmiss_field_group_create_cad_primitive_group(sub_group, picked_element->cad_topology);
 										}
-										//cad_primitive_group_field = Cmiss_field_group_create_cad_primitive_group(sub_group, picked_element->cad_topology);
 										if (cad_primitive_group_field)
 										{
 											cad_primitive_group =
@@ -312,15 +256,11 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									}
 								}
 
-								if (sub_region && sub_group_field && cad_primitive_group)
+								if (sub_region && cad_primitive_group)
 								{
 									Cmiss_field_cad_primitive_group_template_add_cad_primitive(cad_primitive_group,
 										picked_element);
-									Computed_field_changed(sub_group_field);
-								}
-								if (sub_group_field)
-								{
-									Cmiss_field_destroy(&sub_group_field);
+									Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 								}
 								if (sub_group)
 								{
@@ -354,9 +294,9 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 						if (cad_tool->motion_detected)
 						{
 							/* rubber band select */
-							if (temp_interaction_volume=
+							if (NULL != (temp_interaction_volume=
 								create_Interaction_volume_bounding_box(
-								cad_tool->last_interaction_volume,interaction_volume))
+								cad_tool->last_interaction_volume,interaction_volume)))
 							{
 								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
@@ -385,21 +325,20 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
-									if (scene_picked_object_list=
+									if (NULL != (scene_picked_object_list=
 										Scene_pick_objects(scene,temp_interaction_volume,
-										graphics_buffer))
+										graphics_buffer)))
 									{
 										Region_element_map *element_map = NULL;
 											//(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
 											//	scene_picked_object_list,
 											//	cad_tool->select_surfaces_enabled,
 											//	cad_tool->select_lines_enabled);
+										printf("Hello region element map ------------------------\n");
 										if (element_map)
 										{
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
-											Cmiss_field_id sub_group_field = NULL;
-											Cmiss_field_id element_group_field = NULL;
 											Cmiss_rendition *region_rendition = NULL;
 											Cmiss_field_element_group_id element_group = NULL;
 											Region_element_map::iterator pos;
@@ -407,17 +346,14 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 											{
 												if (pos->first != sub_region)
 												{
-													if (sub_region && sub_group_field)
+													if (sub_region && sub_group)
 													{
-														Computed_field_changed(sub_group_field);
-														Cmiss_field_destroy(&sub_group_field);
-														sub_group_field = reinterpret_cast<Computed_field *>(sub_group);
-														Cmiss_field_destroy(&sub_group_field);
-														sub_group = NULL;
+														Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
+														Cmiss_field_group_destroy(&sub_group);
 													}
-													if (element_group_field)
+													if (element_group)
 													{
-														Cmiss_field_destroy(&element_group_field);
+														Cmiss_field_element_group_destroy(&element_group);
 													}
 													if (region_rendition)
 													{
@@ -428,42 +364,31 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 													sub_region = pos->first;
 													if (sub_region)
 													{
-														region_rendition= Cmiss_rendition_get_from_region(sub_region);
-														sub_group_field = Cmiss_rendition_get_or_create_selection_group(region_rendition);
-														sub_group = Cmiss_field_cast_group(sub_group_field);
+														region_rendition = Cmiss_region_get_rendition_internal(sub_region);
+														sub_group = Cmiss_rendition_get_or_create_selection_group(region_rendition);
 													}
 													if (sub_group)
 													{
 														Cmiss_fe_mesh_id temp_mesh =
 														   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
-														element_group_field = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-														if (!element_group_field)
-															element_group_field = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+														element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 														Cmiss_fe_mesh_destroy(&temp_mesh);
-														if (element_group_field)
-														{
-															element_group =
-																Cmiss_field_cast_element_group(element_group_field);
-															Cmiss_field_destroy(&element_group_field);
-															element_group_field = reinterpret_cast<Computed_field *>(element_group);
-														}
 													}
 												}
-												if (sub_region && sub_group_field && element_group)
+												if (sub_region && element_group)
 												{
 													Cmiss_field_element_group_add_element(element_group,
 														pos->second);
 												}
 											}
-											if (sub_region && sub_group_field)
+											if (sub_region && sub_group)
 											{
-												Computed_field_changed(sub_group_field);
-												Cmiss_field_destroy(&sub_group_field);
+												Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 												Cmiss_field_group_destroy(&sub_group);
 											}
-											if (element_group_field)
+											if (element_group)
 											{
-												Cmiss_field_destroy(&element_group_field);
+												Cmiss_field_element_group_destroy(&element_group);
 											}
 											if (region_rendition)
 											{
@@ -491,6 +416,15 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 				} break;
 			}
 		}
+		if (cad_tool->region)
+		{
+			Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
+				cad_tool->region);
+			Cmiss_rendition_flush_tree_selections(rendition);
+			Cmiss_rendition_destroy(&rendition);
+		}
+		Cmiss_region_end_hierarchical_change(cad_tool->region);
+
 	}
 	else
 	{
@@ -570,7 +504,7 @@ Function to call DESTROY
 	int return_code;
 	return_code=0;
 
-	if (cad_tool = (struct Cad_tool *)*cad_tool_void)
+	if (NULL != (cad_tool = (struct Cad_tool *)*cad_tool_void))
 	{
 		 return_code = DESTROY(Cad_tool)(&cad_tool);
 	}

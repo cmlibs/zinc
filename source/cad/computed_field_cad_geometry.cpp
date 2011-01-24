@@ -100,6 +100,7 @@ public:
 		DEALLOCATE(field->source_fields);
 	}
 
+	bool is_coordinate_field() const;
 	//int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 	//int surface_count() const;
 	//int surface_point_count( int i ) const;
@@ -289,6 +290,11 @@ char *Computed_field_cad_geometry::get_command_string()
 
 	return (command_string);
 } /* Computed_field_cad_geometry::get_command_string */
+
+bool Computed_field_cad_geometry::is_coordinate_field() const
+{
+	return 1;
+}
 
 } //namespace
 

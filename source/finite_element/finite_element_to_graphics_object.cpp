@@ -3529,9 +3529,6 @@ faces.
 	struct FE_element_shape *shape;
 	struct GT_voltex *voltex;
 	struct VT_iso_triangle **triangle_list;	struct VT_iso_vertex **vertex_list;
-#if defined (DEBUG)
-	int bad_triangle;
-#endif /* defined (DEBUG) */
 	FE_value_triple *xi_points;
 
 	int tex_number_of_components;

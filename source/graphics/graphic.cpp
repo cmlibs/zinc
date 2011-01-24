@@ -2313,7 +2313,7 @@ int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail)
 {
-	char *graphic_string,temp_string[100],*name;
+	char *graphic_string = NULL,temp_string[100],*name;
 	int dimension,error,i;
 
 	ENTER(Cmiss_graphic_string);
@@ -3004,51 +3004,65 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 	int return_code = 0;
 	float time = 0.0;
 	struct Cmiss_graphic *graphic = graphic_to_object_data->graphic;
+	Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field);
 
-	switch (graphic->graphic_type)
+	if (cad_topology)
 	{
-		case CMISS_GRAPHIC_SURFACES:
+		switch (graphic->graphic_type)
 		{
-			//printf( "Building cad geometry surfaces\n" );
-			struct GT_surface *surface = create_surface_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type);
-			if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
+			case CMISS_GRAPHIC_SURFACES:
 			{
-				//printf( "Surface added to graphics object\n" );
-				return_code = 1;
+				//printf( "Building cad geometry surfaces\n" );
+				int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
+				if (surface_count > 0)
+				{
+					return_code = 1;
+				}
+				for (int i = 0; i < surface_count && return_code; i++)
+				{
+					Cmiss_cad_surface_identifier identifier = i;
+					struct GT_surface *surface = create_surface_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->render_type, identifier);
+					if (surface && GT_OBJECT_ADD(GT_surface)(graphic->graphics_object, time, surface))
+					{
+						//printf( "Surface added to graphics object\n" );
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				break;
 			}
-			else
+			case CMISS_GRAPHIC_LINES:
 			{
-				DESTROY(GT_surface)(&surface);
-			}
-			break;
-		}
-		case CMISS_GRAPHIC_LINES:
-		{
-			//struct GT_object *graphics_object = settings->graphics_object;
-			/*
-			GT_polyline_vertex_buffers *lines =
-				CREATE(GT_polyline_vertex_buffers)(
-				g_PLAIN, settings->line_width);
-			*/
-			GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(field, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
-			if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-				graphic->graphics_object, lines))
+				//struct GT_object *graphics_object = settings->graphics_object;
+				/*
+				GT_polyline_vertex_buffers *lines =
+					CREATE(GT_polyline_vertex_buffers)(
+					g_PLAIN, settings->line_width);
+				*/
+				GT_polyline_vertex_buffers *lines = create_curves_from_cad_shape(cad_topology, graphic_to_object_data->rc_coordinate_field, graphic->data_field, graphic->graphics_object);
+				if (lines && GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+					graphic->graphics_object, lines))
+				{
+					//printf("Adding lines for cad shape\n");
+					return_code = 1;
+				}
+				else
+				{
+					//DESTROY(GT_polyline_vertex_buffers)(&lines);
+					return_code = 0;
+				}
+			} break;
+			default:
 			{
-				printf("Adding lines for cad shape\n");
-				return_code = 1;
-			}
-			else
-			{
-				//DESTROY(GT_polyline_vertex_buffers)(&lines);
+				display_message(ERROR_MESSAGE,"Cad_geometry_to_graphics_object.  "
+					"Can't handle this type of graphic");
 				return_code = 0;
 			}
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,"Cad_geometry_to_graphics_object.  "
-				"Can't handle this type of graphic");
-			return_code = 0;
 		}
+		Cmiss_field_destroy((Cmiss_field_id*)&cad_topology);
 	}
 
 	return return_code;
@@ -3132,8 +3146,8 @@ int Cmiss_graphic_to_graphics_object(
 					{
 #if defined (DEBUG)
 						/*???debug*/
-						if (graphic_string = Cmiss_graphic_string(graphic,
-								GRAPHIC_STRING_COMPLETE_PLUS))
+						if ((graphic_string = Cmiss_graphic_string(graphic,
+								GRAPHIC_STRING_COMPLETE_PLUS)) != NULL)
 						{
 							printf("> building %s\n", graphic_string);
 							DEALLOCATE(graphic_string);
@@ -3347,18 +3361,15 @@ int Cmiss_graphic_to_graphics_object(
 #if defined(USE_OPENCASCADE)
 									// test here for domain of rc_coordinate_field
 									// if it is a cad_geometry do something about it
-									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
 									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
 									int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
 									if ( return_code )
 									{
-										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
 										// so test for topology domain
 										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
 											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
 										if ( cad_topology_field )
 										{
-											//printf( "hurrah, we have a cad topology domain.\n" );
 											// if topology domain then draw item at location
 											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
 											DESTROY_LIST(Computed_field)(&domain_field_list);
@@ -3662,12 +3673,37 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
 							case CMISS_GRAPHIC_SURFACES:
+#if defined(USE_OPENCASCADE)
+							{
+								// test here for domain of object coordinate_field
+								// if it is a cad_geometry do something about it
+								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+								int return_code = Computed_field_get_domain( graphic->coordinate_field, domain_field_list );
+								if ( return_code )
+								{
+									// so test for topology domain
+									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+										( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+									if ( cad_topology_field )
+									{
+										Cmiss_field_cad_topology_id cad_topology_domain = 
+											Cmiss_field_cast_cad_topology(cad_topology_field);
+										GT_object_set_cad_primitive_highlight_functor(graphic->graphics_object,
+											(void *)graphic_to_object_data->group_field, cad_topology_domain);
+										DESTROY_LIST(Computed_field)(&domain_field_list);
+										break;
+									}
+								}
+								if ( domain_field_list )
+									DESTROY_LIST(Computed_field)(&domain_field_list);
+							}
+#endif /* defined(USE_OPENCASCADE) */
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
 								Cmiss_fe_mesh_id temp_mesh =
-								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
-                GT_object_set_element_highlight_functor(graphic->graphics_object,
-                  (void *)graphic_to_object_data->group_field, temp_mesh);
+									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+								GT_object_set_element_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
 							} break;
 							case CMISS_GRAPHIC_ELEMENT_POINTS:
@@ -5676,7 +5712,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 {
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
 		visibility;
@@ -5949,7 +5985,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 {
 	char *font_name; 
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
@@ -6219,7 +6255,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 {
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
 		visibility, overlay_flag = 0;
@@ -7123,7 +7159,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, 
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;

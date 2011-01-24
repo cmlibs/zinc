@@ -957,6 +957,14 @@ int Computed_field_set_managed_status(struct Computed_field *field,
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
+/** 
+ * Returns true if the field is a coordinate field, false otherwise
+ *
+ * @param field the field to determine whether or not it is a coordinate field
+ * @return 1 if the field is a coordinate field, 0 otherwise
+ */
+int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use);
+
 /*******************************************************************************
  * Returns the domains of the given field by recursively searching through the
  * field's source fields
@@ -994,6 +1002,17 @@ char *Cmiss_field_module_get_unique_field_name(
  * @return  1 if field is not a source field of others otherwise 0.
  */
 int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
+
+#if defined (DEBUG)
+/**
+ * Returns the access count for the supplied field.  This function is only
+ * available when DEBUG is defined.
+ *
+ * @param field the field to query the access count from
+ * @return the access count
+ */
+int Cmiss_field_get_access_count(Cmiss_field_id field);
+#endif /* defined (DEBUG) */
 
 #ifdef __cplusplus
 }

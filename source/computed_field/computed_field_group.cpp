@@ -52,6 +52,7 @@ extern "C" {
 #include "api/cmiss_field_sub_group.h"
 #include "api/cmiss_rendition.h"
 #if defined (USE_OPENCASCADE)
+#include "graphics/rendition.h"
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"
@@ -60,6 +61,9 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
+#if defined (USE_OPENCASCADE)
+#include "cad/field_location.hpp"
+#endif /* defined (USE_OPENCASCADE) */
 #include <list>
 #include <map>
 
@@ -199,9 +203,6 @@ public:
 	int contains_all;
 	Computed_field *local_node_group, *local_data_group, *local_element_group;
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
-#if defined (USE_OPENCASCADE)
-	Computed_field *local_cad_primitive_group;
-#endif /* defined (USE_OPENCASCADE) */
 	Region_field_map sub_group_map;
 	Region_field_map_iterator child_group_pos;
 
@@ -212,9 +213,6 @@ public:
 		, local_node_group(NULL)
 		, local_data_group(NULL)
 		, local_element_group(NULL)
-#if defined (USE_OPENCASCADE)
-		, local_cad_primitive_group(NULL)
-#endif /* defined (USE_OPENCASCADE) */
 		, sub_group_map()
 	{		//ACCESS(Cmiss_region)(region);
 		child_group_pos = sub_group_map.begin();
@@ -223,12 +221,6 @@ public:
 	~Computed_field_group()
 	{
 		clear();
-#if defined (USE_OPENCASCADE)
-		if (local_cad_primitive_group)
-		{
-			Cmiss_field_destroy(&local_cad_primitive_group);
-		}
-#endif /* defined (USE_OPENCASCADE) */
 		remove_empty_subgroups();
 		std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 		for (;it != domain_selection_group.end(); it++)
@@ -250,8 +242,6 @@ public:
 
 #if defined (USE_OPENCASCADE)
 	Cmiss_field_id create_cad_primitive_group(Cmiss_field_cad_topology_id cad_topology_domain);
-
-	Cmiss_field_id get_cad_primitive_group();
 
 	int clear_region_tree_cad_primitive();
 #endif /*defined (USE_OPENCASCADE) */
@@ -417,6 +407,12 @@ int Computed_field_group::evaluate_cache_at_location(
 		{
 			field->values[0] = 1;
 		}
+#if defined (USE_OPENCASCADE)
+		else if (dynamic_cast<Field_cad_geometry_location*>(location))
+		{
+			printf("=== Cad geometry field location\n");
+		}
+#endif /* defined (USE_OPENCASCADE) */
 		else if (dynamic_cast<Field_node_location*>(location))
 		{
 			Field_node_location *node_location = 
@@ -605,7 +601,7 @@ int Computed_field_group::clear()
 	}
 	return_code = clearLocal();
 
-	return 0;
+	return return_code;
 };
 
 int Computed_field_group::check_sub_group_dependency(Computed_field_core *source_core)
@@ -1068,14 +1064,12 @@ Cmiss_field_id Computed_field_group::get_subgroup_for_domain(Cmiss_field_id doma
 Cmiss_field_id Computed_field_group::create_cad_primitive_group(Cmiss_field_cad_topology_id cad_topology_domain)
 {
 	Computed_field *field = NULL;
-	//field = get_subgroup_for_domain(cad_topology_domain)
 	if (cad_topology_domain)
 	{
 		const char *base_name = "cad_primitive_selection";
 		const char *domain_field_name = Cmiss_field_get_name(reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
 		char *field_name = NULL;
 		int error = 0;
-		//printf( "string lengths: %d, %d\n", strlen(base_name), strlen(domain_field_name));
 		ALLOCATE(field_name, char, strlen(base_name)+strlen(domain_field_name)+2);
 		field_name[0] = '\0';
 		append_string(&field_name, base_name, &error);
@@ -1101,88 +1095,31 @@ Cmiss_field_id Computed_field_group::create_cad_primitive_group(Cmiss_field_cad_
 	return (field);
 }
 
-Cmiss_field_id Computed_field_group::get_cad_primitive_group()
-{
-	if (local_cad_primitive_group)
-	{
-		Cmiss_field_access(local_cad_primitive_group);
-	}
-
-	return (local_cad_primitive_group);
-}
-
 int Computed_field_group::clear_region_tree_cad_primitive()
 {
 	Region_field_map_iterator pos;
 	int return_code = 1;
 	Cmiss_field_group_id group_field = NULL;
 	std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
-	for (;it != domain_selection_group.end();)
+	while (it != domain_selection_group.end())
 	{
 		Cmiss_field_cad_primitive_group_template_id cad_primitive_group =
 			Cmiss_field_cast_cad_primitive_group_template(it->second);
 		return_code = Cmiss_field_cad_primitive_group_template_clear(cad_primitive_group);
 		Computed_field_changed(this->field);
 		Cmiss_field_id cad_primitive_group_field = reinterpret_cast<Computed_field*>(cad_primitive_group);
-		Cmiss_field_destroy(&cad_primitive_group_field);
+		Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 		Cmiss_field_destroy(&it->second);
 		domain_selection_group.erase(it++);
 	}
-	//if (local_cad_primitive_group)
-	//{
-	//	Cmiss_field_cad_primitive_group_template_id cad_primitive_group =
-	//		Cmiss_field_cast_cad_primitive_group_template(local_cad_primitive_group);
-	//	return_code = Cmiss_field_cad_primitive_group_template_clear(cad_primitive_group);
-	//	Computed_field_changed(this->field);
-	//	Cmiss_field_id cad_primitive_group_field = reinterpret_cast<Computed_field*>(cad_primitive_group);
-	//	Cmiss_field_destroy(&cad_primitive_group_field);
-	//	Cmiss_field_destroy(&local_cad_primitive_group);
-	//}
 	if (!sub_group_map.empty())
 	{
-		for (pos = sub_group_map.begin(); pos != sub_group_map.end();)
+		for (pos = sub_group_map.begin(); pos != sub_group_map.end(); pos++)
 		{
-			group_field = Cmiss_field_cast_group(pos->second);
-			Computed_field_group *temp_group = static_cast<Computed_field_group*>(
-				reinterpret_cast<Computed_field*>(group_field)->core);
-			if (temp_group != this)
-			{
-				pos++;
-				Cmiss_field_group_clear_region_tree_cad_primitive(group_field);
-				//Cmiss_field_group_clear_group_if_empty(group_field);
-			}
-			else
-			{
-				if (!local_node_group && contains_all == 0)
-				{
-					if (pos->first != region)
-					{
-						Cmiss_rendition_id rendition = Cmiss_rendition_get_from_region(pos->first);
-						if (rendition)
-						{
-							Cmiss_rendition_remove_selection_group(rendition);
-							Cmiss_rendition_destroy(&rendition);
-						}
-					}
-					else
-					{
-						Cmiss_field_id temporary_handle2 = pos->second;
-						Cmiss_field_destroy(&temporary_handle2);
-					}
-					Cmiss_field_destroy(&(pos->second));
-					sub_group_map.erase(pos++);
-				}
-				else
-				{
-					++pos;
-				}
-			}
-			if (group_field)
-				Cmiss_field_group_destroy(&group_field);
+			group_field = pos->second;
+			Cmiss_field_group_clear_region_tree_cad_primitive(group_field);
 		}
 	}
-	//if (sub_group_map.empty())
-	//	clear_group_if_empty();
 
 	return (return_code);
 }
@@ -1430,7 +1367,7 @@ Cmiss_field_id Cmiss_field_group_get_cad_primitive_group(Cmiss_field_group_id gr
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->get_cad_primitive_group();
+			field = group_core->get_subgroup_for_domain(reinterpret_cast< Computed_field * >(cad_topology_domain));//cad_primitive_group();
 		}
 	}
 

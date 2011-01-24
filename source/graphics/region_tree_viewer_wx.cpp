@@ -150,7 +150,7 @@ class wxCmguiHierachicalTree : public wxTreeCtrl
 public:
 	wxCmguiHierachicalTree(wxRegionTreeViewer *region_tree_viewer_widget, wxPanel *parent) :
 		wxTreeCtrl(parent, CmguiTree_Ctrl, wxDefaultPosition, wxDefaultSize,
-							 wxTR_HAS_BUTTONS|wxTR_MULTIPLE), region_tree_viewer_widget(region_tree_viewer_widget)
+							wxTR_HAS_BUTTONS|wxTR_MULTIPLE), region_tree_viewer_widget(region_tree_viewer_widget)
 	{
 		wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
 		sizer->Add(this, wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
@@ -185,7 +185,7 @@ public:
 		while (child_id.IsOk())
 		{
 			/* if child_region is NULL then find an item with region that does not
-				 belong to the parent region and remove it from the tree */
+				belong to the parent region and remove it from the tree */
 			Cmiss_region * current_region = dynamic_cast<wxCmguiHierachicalTreeItemData *>
 				(GetItemData(child_id))->GetRegion();
 			if ((child_region && child_region == current_region)
@@ -328,7 +328,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	/* if autoapply flag is set, any changes to the currently edited graphical
-		 element will automatically be applied globally */
+		element will automatically be applied globally */
 	int auto_apply, child_edited, child_expanded,
 		transformation_expanded, transformation_callback_flag,
 		gt_element_group_callback_flag, rendition_callback_flag;
@@ -338,49 +338,50 @@ DESCRIPTION :
 	Scene *scene;
 	/* keep address of pointer to editor so can self-destroy */
 	struct Region_tree_viewer **region_tree_viewer_address;
-	 struct MANAGER(Graphical_material) *graphical_material_manager;
-	 struct Graphical_material *default_material, *selected_material;
-	 struct Graphics_font *default_font;
-	 struct MANAGER(Scene) *scene_manager;
-	 struct User_interface *user_interface;
-	 enum Cmiss_graphic_type current_graphic_type;
-	 struct Cmiss_graphic *current_graphic;
-	 struct MANAGER(GT_object) *glyph_manager;
-	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	 struct MANAGER(Computed_field) *field_manager;
-	 struct MANAGER(Graphics_font) *font_manager;
-	 struct Computed_field *radius_scalar_field ;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct Graphical_material *default_material, *selected_material;
+	struct Graphics_font *default_font;
+	struct MANAGER(Scene) *scene_manager;
+	struct User_interface *user_interface;
+	enum Cmiss_graphic_type current_graphic_type;
+	struct Cmiss_graphic *current_graphic;
+	struct MANAGER(GT_object) *glyph_manager;
+	struct MANAGER(VT_volume_texture) *volume_texture_manager;
+	struct MANAGER(Computed_field) *field_manager;
+	struct MANAGER(Graphics_font) *font_manager;
+	struct Computed_field *radius_scalar_field ;
 	struct Cmiss_region *root_region, *current_region;
-	 enum Graphics_select_mode select_mode;
-	 enum Use_element_type use_element_type;
-	 enum Xi_discretization_mode xi_discretization_mode;
-	 enum Streamline_type streamline_type;
-	 enum Streamline_data_type streamline_data_type;
-	 float constant_radius,radius_scale_factor;
-	 struct MANAGER(Spectrum) *spectrum_manager;
-	 struct Spectrum *spectrum;
-	 enum Render_type render_type;
-	 struct FE_element *fe_element;
+	enum Graphics_select_mode select_mode;
+	enum Use_element_type use_element_type;
+	enum Xi_discretization_mode xi_discretization_mode;
+	enum Streamline_type streamline_type;
+	enum Streamline_data_type streamline_data_type;
+	float constant_radius,radius_scale_factor;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Spectrum *spectrum;
+	enum Render_type render_type;
+	struct FE_element *fe_element;
 #if defined (WX_USER_INTERFACE)
-	 Transformation_editor *transformation_editor;
-	 wxRegionTreeViewer *wx_region_tree_viewer;
-	 wxPanel *top_collpane_panel;
-	 wxScrolledWindow *sceneediting;
-	 wxFrame *frame;
+	Transformation_editor *transformation_editor;
+	wxRegionTreeViewer *wx_region_tree_viewer;
+	wxPanel *top_collpane_panel;
+	wxScrolledWindow *sceneediting;
+	wxFrame *frame;
 	wxCheckListBox *checklistbox;
 	wxCheckListBox *graphiclistbox;
-	 wxCmguiHierachicalTree *testing_tree_ctrl;
-	 wxImageList *ImageList;
-	 wxSplitterWindow *lowersplitter, *verticalsplitter;
-	 wxCheckBox *autocheckbox;
-	 wxButton *applybutton;
-	 wxButton *revertbutton;
-	 wxCollapsiblePane *top_collpane;
+	wxCmguiHierachicalTree *testing_tree_ctrl;
+	wxImageList *ImageList;
+	wxSplitterWindow *lowersplitter;
+	wxSplitterWindow *verticalsplitter;
+	wxCheckBox *autocheckbox;
+	wxButton *applybutton;
+	wxButton *revertbutton;
+	wxCollapsiblePane *top_collpane;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct region_tree_viewer*/
 
 void Region_tree_viewer_wx_transformation_change(struct Cmiss_rendition *rendition,
-	 gtMatrix *transformation_matrix, void *region_tree_viewer_void);
+	gtMatrix *transformation_matrix, void *region_tree_viewer_void);
 
 /***************************************************************************//**
 * Revert changes done on the edit gt element group.
@@ -425,11 +426,11 @@ static int Region_tree_viewer_wx_rendition_change(
 *
 */
 void Region_tree_viewer_wx_transformation_change(struct Cmiss_rendition *rendition,
-	 gtMatrix *transformation_matrix, void *region_tree_viewer_void)
+	gtMatrix *transformation_matrix, void *region_tree_viewer_void)
 {
 	struct Region_tree_viewer *region_tree_viewer =
 		(struct Region_tree_viewer *)region_tree_viewer_void;
-	 
+	
 	if (region_tree_viewer)
 	{
 		if (rendition == region_tree_viewer->rendition)
@@ -519,14 +520,13 @@ class wxRegionTreeViewer : public wxFrame
 	wxPanel	*coordinate_field_chooser_panel, *data_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
-		 *label_chooser_panel, *font_chooser_panel, *select_mode_chooser_panel,
-		 *use_element_type_chooser_panel, *xi_discretization_mode_chooser_panel,
-		 *tessellation_chooser_panel,
-		 *native_discretization_field_chooser_panel, *density_field_chooser_panel, 
-		 *streamline_type_chooser_panel, *stream_vector_chooser_panel, 
-		 *streamline_data_type_chooser_panel, *spectrum_chooser_panel,
-		 *texture_coordinates_chooser_panel, *render_type_chooser_panel,
-		 *seed_element_panel, *visibility_field_chooser_panel;
+		*label_chooser_panel, *font_chooser_panel, *select_mode_chooser_panel,
+		*use_element_type_chooser_panel, *xi_discretization_mode_chooser_panel,
+		*native_discretization_field_chooser_panel, *density_field_chooser_panel, 
+		*streamline_type_chooser_panel, *stream_vector_chooser_panel, 
+		*streamline_data_type_chooser_panel, *spectrum_chooser_panel,
+		*texture_coordinates_chooser_panel, *render_type_chooser_panel,
+		*seed_element_panel, *visibility_field_chooser_panel, *tessellation_chooser_panel;
 	wxWindow *glyphbox,*glyphline;
 	wxChoice *facechoice;
 	wxString TempText;
@@ -551,14 +551,14 @@ class wxRegionTreeViewer : public wxFrame
 	*data_field_chooser;
 	DEFINE_MANAGER_CLASS(Spectrum);
 	Managed_object_chooser<Spectrum,MANAGER_CLASS(Spectrum)>
-	 *spectrum_chooser;
+	*spectrum_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *radius_scalar_chooser;	
+	*radius_scalar_chooser;	
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *iso_scalar_chooser;	
+	*iso_scalar_chooser;	
 	DEFINE_MANAGER_CLASS(GT_object);
 	Managed_object_chooser<GT_object,MANAGER_CLASS(GT_object)>
-	 *glyph_chooser;
+	*glyph_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*orientation_scale_field_chooser;		
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
@@ -567,9 +567,9 @@ class wxRegionTreeViewer : public wxFrame
 	*label_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*visibility_field_chooser;
-	 DEFINE_MANAGER_CLASS(Graphics_font); 
-	 	 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
-	 *font_chooser;	
+	DEFINE_MANAGER_CLASS(Graphics_font); 
+		 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
+	*font_chooser;	
 	DEFINE_ENUMERATOR_TYPE_CLASS(Use_element_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
 		*use_element_type_chooser;
@@ -580,10 +580,10 @@ class wxRegionTreeViewer : public wxFrame
 	Managed_object_chooser<Cmiss_tessellation,MANAGER_CLASS(Cmiss_tessellation)>
 	 *tessellation_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *native_discretization_field_chooser;
+	*native_discretization_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *xi_point_density_field_chooser;
-	 wxFeElementTextChooser *seed_element_chooser;
+	*xi_point_density_field_chooser;
+	wxFeElementTextChooser *seed_element_chooser;
 	DEFINE_ENUMERATOR_TYPE_CLASS(Streamline_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_type)>
 	*streamline_type_chooser;
@@ -593,7 +593,7 @@ class wxRegionTreeViewer : public wxFrame
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_data_type)>
 	*streamline_data_type_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *texture_coord_field_chooser;
+	*texture_coord_field_chooser;
 	DEFINE_ENUMERATOR_TYPE_CLASS(Render_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Render_type)>
 	*render_type_chooser;
@@ -603,17 +603,17 @@ public:
   wxRegionTreeViewer(Region_tree_viewer *region_tree_viewer) :
   	region_tree_viewer(region_tree_viewer)
   {
-		 wxXmlInit_region_tree_viewer_wx();
-		 region_tree_viewer->wx_region_tree_viewer = (wxRegionTreeViewer *)NULL;
-		 wxXmlResource::Get()->LoadFrame(this,
+		wxXmlInit_region_tree_viewer_wx();
+		region_tree_viewer->wx_region_tree_viewer = (wxRegionTreeViewer *)NULL;
+		wxXmlResource::Get()->LoadFrame(this,
 				(wxWindow *)NULL, _T("CmguiRegionTreeViewer"));
-		 this->SetIcon(cmiss_icon_xpm);
+		this->SetIcon(cmiss_icon_xpm);
 
 #if defined (__WXMSW__)
-		 region_tree_viewer_size.previous_width = 0;
-		 region_tree_viewer_size.previous_height = 0;
-		 region_tree_viewer_size.current_width = 0;
-		 region_tree_viewer_size.current_height = 0;
+		region_tree_viewer_size.previous_width = 0;
+		region_tree_viewer_size.previous_height = 0;
+		region_tree_viewer_size.current_width = 0;
+		region_tree_viewer_size.current_height = 0;
 #endif /* defined (__WXMSW__) */
 
 
@@ -621,44 +621,44 @@ public:
 	coordinate_field_chooser = NULL;
 	/* Set the graphical_material_chooser_panel*/
 	wxPanel *graphical_material_chooser_panel =
-		 XRCCTRL(*this, "GraphicalMaterialChooserPanel",wxPanel);
+		XRCCTRL(*this, "GraphicalMaterialChooserPanel",wxPanel);
 	graphical_material_chooser = 
-		 new Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
-		 (graphical_material_chooser_panel, region_tree_viewer->default_material, region_tree_viewer->graphical_material_manager,
+		new Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
+		(graphical_material_chooser_panel, region_tree_viewer->default_material, region_tree_viewer->graphical_material_manager,
 				(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL, (void *)NULL, region_tree_viewer->user_interface);
 	Callback_base< Graphical_material* > *graphical_material_callback = 
-		 new Callback_member_callback< Graphical_material*, 
+		new Callback_member_callback< Graphical_material*, 
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Graphical_material *) >
-		 (this, &wxRegionTreeViewer::graphical_material_callback);
+		(this, &wxRegionTreeViewer::graphical_material_callback);
 	graphical_material_chooser->set_callback(graphical_material_callback);
 	graphical_material_chooser_panel->Fit();
 	/* Set the selected_material_chooser_panel*/
 	wxPanel *selected_material_chooser_panel =
-		 XRCCTRL(*this, "SelectedMaterialChooserPanel",wxPanel);
+		XRCCTRL(*this, "SelectedMaterialChooserPanel",wxPanel);
 	selected_material_chooser = 
-		 new Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
-		 (selected_material_chooser_panel, region_tree_viewer->selected_material, region_tree_viewer->graphical_material_manager,
+		new Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
+		(selected_material_chooser_panel, region_tree_viewer->selected_material, region_tree_viewer->graphical_material_manager,
 				(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL, (void *)NULL, region_tree_viewer->user_interface);
 	Callback_base< Graphical_material* > *selected_material_callback = 
-		 new Callback_member_callback< Graphical_material*, 
+		new Callback_member_callback< Graphical_material*, 
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Graphical_material *) >
-		 (this, &wxRegionTreeViewer::selected_material_callback);
+		(this, &wxRegionTreeViewer::selected_material_callback);
 	selected_material_chooser->set_callback(selected_material_callback);
 	selected_material_chooser_panel->Fit();
 	tessellationWindowID = 0;
 	wxPanel *graphic_type_chooser_panel =
-		 XRCCTRL(*this, "TypeFormChooser", wxPanel);
+		XRCCTRL(*this, "TypeFormChooser", wxPanel);
 	graphic_type_chooser = 
-		 new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphic_type)>
-		 (graphic_type_chooser_panel, 
+		new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphic_type)>
+		(graphic_type_chooser_panel, 
 				region_tree_viewer->current_graphic_type,
 				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_type) *)NULL,
 				(void *)NULL, region_tree_viewer->user_interface);
   graphic_type_chooser_panel->Fit();
 	Callback_base< enum Cmiss_graphic_type > *graphic_type_callback = 
-		 new Callback_member_callback< enum Cmiss_graphic_type, 
+		new Callback_member_callback< enum Cmiss_graphic_type, 
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Cmiss_graphic_type) >
-		 (this, &wxRegionTreeViewer::Region_tree_viewer_graphic_type_callback);
+		(this, &wxRegionTreeViewer::Region_tree_viewer_graphic_type_callback);
 	graphic_type_chooser->set_callback(graphic_type_callback);
 	graphic_type_chooser->set_value(region_tree_viewer->current_graphic_type);
 
@@ -674,15 +674,15 @@ public:
 	data_field_chooser = NULL;
 	/* Set the spectrum_chooser*/
 	wxPanel *spectrum_chooser_panel =
-		 XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
+		XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
 	spectrum_chooser = 
-		 new Managed_object_chooser<Spectrum,MANAGER_CLASS(Spectrum)>
-		 (spectrum_chooser_panel, region_tree_viewer->spectrum, region_tree_viewer->spectrum_manager,
+		new Managed_object_chooser<Spectrum,MANAGER_CLASS(Spectrum)>
+		(spectrum_chooser_panel, region_tree_viewer->spectrum, region_tree_viewer->spectrum_manager,
 				(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL, (void *)NULL, region_tree_viewer->user_interface);
 	Callback_base< Spectrum* > *spectrum_callback = 
-		 new Callback_member_callback< Spectrum*, 
+		new Callback_member_callback< Spectrum*, 
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Spectrum *) >
-		 (this, &wxRegionTreeViewer::spectrum_callback);
+		(this, &wxRegionTreeViewer::spectrum_callback);
 	spectrum_chooser->set_callback(spectrum_callback);
 	spectrum_chooser_panel->Fit();
 
@@ -784,60 +784,60 @@ public:
   };
 
   ~wxRegionTreeViewer()
-	 {
+	{
 			if (font_chooser)
-				 delete font_chooser;
+				delete font_chooser;
 			if (coordinate_field_chooser)
-				 delete coordinate_field_chooser;
+				delete coordinate_field_chooser;
 			if (graphical_material_chooser)
-				 delete graphical_material_chooser;
+				delete graphical_material_chooser;
 			if (selected_material_chooser)
-				 delete selected_material_chooser;
+				delete selected_material_chooser;
 			if (graphic_type_chooser)		
-				 delete graphic_type_chooser;
+				delete graphic_type_chooser;
 			if (select_mode_chooser)
-				 delete select_mode_chooser;
+				delete select_mode_chooser;
 			if (data_field_chooser)
-				 delete data_field_chooser;
+				delete data_field_chooser;
 			if (spectrum_chooser)
-				 delete spectrum_chooser;
+				delete spectrum_chooser;
 			if (radius_scalar_chooser)
-				 delete radius_scalar_chooser;
+				delete radius_scalar_chooser;
 			if (iso_scalar_chooser)
-				 delete iso_scalar_chooser;
+				delete iso_scalar_chooser;
 			if (glyph_chooser)
-				 delete glyph_chooser;
+				delete glyph_chooser;
 			if (orientation_scale_field_chooser)
-				 delete orientation_scale_field_chooser;
+				delete orientation_scale_field_chooser;
 			if (variable_scale_field_chooser)
-				 delete variable_scale_field_chooser;
+				delete variable_scale_field_chooser;
 			if (label_field_chooser)
-				 delete label_field_chooser;
+				delete label_field_chooser;
 			if (visibility_field_chooser)
-				 delete visibility_field_chooser;
+				delete visibility_field_chooser;
 			if (use_element_type_chooser)
-				 delete use_element_type_chooser;
+				delete use_element_type_chooser;
 			if (xi_discretization_mode_chooser)
-				 delete xi_discretization_mode_chooser;
+				delete xi_discretization_mode_chooser;
 			if (tessellation_chooser)
 				 delete tessellation_chooser;
 			if (native_discretization_field_chooser)
-				 delete native_discretization_field_chooser;
+				delete	 native_discretization_field_chooser;
 			if (xi_point_density_field_chooser)
-				 delete  xi_point_density_field_chooser;
+				delete  xi_point_density_field_chooser;
 			if (streamline_type_chooser)
-				 delete streamline_type_chooser;
+				delete streamline_type_chooser;
 			if (stream_vector_chooser)
-				 delete stream_vector_chooser;
+				delete stream_vector_chooser;
 			if (streamline_data_type_chooser)
-				 delete streamline_data_type_chooser;
+				delete streamline_data_type_chooser;
 			if (texture_coord_field_chooser)
-				 delete texture_coord_field_chooser;
+				delete texture_coord_field_chooser;
 			if (render_type_chooser)
-				 delete render_type_chooser;
+				delete render_type_chooser;
 			if (seed_element_chooser)
-				 delete seed_element_chooser;
-	 }
+				delete seed_element_chooser;
+	}
 
 /***************************************************************************//**
 * Set manager in different field manager object choosers.
@@ -846,29 +846,29 @@ public:
 */
 void Region_tree_viewer_wx_set_manager_in_field_choosers(struct Region_tree_viewer *region_tree_viewer)
 {
-	 if (coordinate_field_chooser != NULL)
+	if (coordinate_field_chooser != NULL)
 			coordinate_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (data_field_chooser != NULL)
+	if (data_field_chooser != NULL)
 			data_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (radius_scalar_chooser != NULL)
+	if (radius_scalar_chooser != NULL)
 			radius_scalar_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (iso_scalar_chooser != NULL)
+	if (iso_scalar_chooser != NULL)
 			iso_scalar_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (orientation_scale_field_chooser != NULL)
+	if (orientation_scale_field_chooser != NULL)
 			orientation_scale_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (variable_scale_field_chooser != NULL)
+	if (variable_scale_field_chooser != NULL)
 			variable_scale_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (label_field_chooser != NULL)
+	if (label_field_chooser != NULL)
 			label_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (visibility_field_chooser != NULL)
-		  visibility_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (native_discretization_field_chooser != NULL)
+	if (visibility_field_chooser != NULL)
+		 visibility_field_chooser->set_manager(region_tree_viewer->field_manager);
+	if (native_discretization_field_chooser != NULL)
 			native_discretization_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (xi_point_density_field_chooser != NULL)
+	if (xi_point_density_field_chooser != NULL)
 			xi_point_density_field_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (stream_vector_chooser != NULL)
+	if (stream_vector_chooser != NULL)
 			stream_vector_chooser->set_manager(region_tree_viewer->field_manager);
-	 if (texture_coord_field_chooser != NULL)
+	if (texture_coord_field_chooser != NULL)
 			texture_coord_field_chooser->set_manager(region_tree_viewer->field_manager);
 }
 
@@ -881,9 +881,9 @@ Callback from wxChooser<Coordinate Field> when choice is made.
 ==============================================================================*/
 	{
 		Cmiss_graphic_set_coordinate_field(
-			 region_tree_viewer->current_graphic, coordinate_field);
+			region_tree_viewer->current_graphic, coordinate_field);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-			 region_tree_viewer->edit_rendition);
+			region_tree_viewer->edit_rendition);
 		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 		return(1);
 	}
@@ -1016,15 +1016,15 @@ DESCRIPTION :
 Set the selected option in the Scene Object chooser.
 ==============================================================================*/
 	{
-		 scene_chooser->set_object(scene);
-		 if (region_tree_viewer->lowersplitter)
-		 {
+		scene_chooser->set_object(scene);
+		if (region_tree_viewer->lowersplitter)
+		{
 				int width, height;
 				region_tree_viewer->lowersplitter->GetSize(&width, &height);
 				region_tree_viewer->lowersplitter->SetSize(width-1, height-1);
 				region_tree_viewer->lowersplitter->SetSize(width+1, height+1);
-		 }
-		 return 1;
+		}
+		return 1;
 	}
 int radius_scalar_callback(Computed_field *radius_scalar_field)
 /*******************************************************************************
@@ -1141,13 +1141,13 @@ Callback from wxChooser<Orientation Scale> when choice is made.
 	{
 		enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 		if (Cmiss_graphic_get_glyph_parameters(
-		     region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode,
-		     glyph_centre, glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
-		     &variable_scale_field)&&
-		    Cmiss_graphic_set_glyph_parameters(
-		     region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-		     glyph_centre, glyph_size,orientation_scale_field, glyph_scale_factors,
-		     variable_scale_field))
+		    region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode,
+		    glyph_centre, glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
+		    &variable_scale_field)&&
+		   Cmiss_graphic_set_glyph_parameters(
+		    region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
+		    glyph_centre, glyph_size,orientation_scale_field, glyph_scale_factors,
+		    variable_scale_field))
 		{
 			/* inform the client of the change */
 			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -1184,13 +1184,13 @@ Callback from wxChooser<Variable Scale> when choice is made.
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
 	Cmiss_graphic_get_glyph_parameters(
-	  region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
-	  glyph_size, &orientation_scale_field, glyph_scale_factors,
-	  &temp_variable_scale_field);
+	 region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+	 glyph_size, &orientation_scale_field, glyph_scale_factors,
+	 &temp_variable_scale_field);
 	Cmiss_graphic_set_glyph_parameters(
-	  region_tree_viewer->current_graphic,glyph, glyph_scaling_mode, glyph_centre,
-	  glyph_size, orientation_scale_field, glyph_scale_factors,
-	  variable_scale_field);		
+	 region_tree_viewer->current_graphic,glyph, glyph_scaling_mode, glyph_centre,
+	 glyph_size, orientation_scale_field, glyph_scale_factors,
+	 variable_scale_field);		
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
@@ -1210,9 +1210,9 @@ Callback from wxChooser<label> when choice is made.
 	Cmiss_graphic_get_label_field(region_tree_viewer->current_graphic,
 		&temp_label_field, &font);
 	Cmiss_graphic_set_label_field(region_tree_viewer->current_graphic,
-		 label_field, font);
+		label_field, font);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	    region_tree_viewer->edit_rendition);
+	   region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
@@ -1241,9 +1241,9 @@ Callback from wxChooser<font> when choice is made.
 	Cmiss_graphic_get_label_field(region_tree_viewer->current_graphic,
 		&temp_label_field, &font);
 	Cmiss_graphic_set_label_field(region_tree_viewer->current_graphic,
-		 temp_label_field, graphics_font);
+		temp_label_field, graphics_font);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	  region_tree_viewer->edit_rendition);
+	 region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
@@ -1258,57 +1258,57 @@ DESCRIPTION :
 Callback from wxChooser<Use Element Type> when choice is made.
 ==============================================================================*/
  {
-	 int face;
+	int face;
 
-	 Cmiss_graphic_set_use_element_type(
+	Cmiss_graphic_set_use_element_type(
 		region_tree_viewer->current_graphic,use_element_type);
-	 exteriorcheckbox=XRCCTRL(*this,"ExteriorCheckBox",wxCheckBox);
-	 facecheckbox=XRCCTRL(*this, "FaceCheckBox",wxCheckBox);
-	 facechoice=XRCCTRL(*this, "FaceChoice",wxChoice);
+	exteriorcheckbox=XRCCTRL(*this,"ExteriorCheckBox",wxCheckBox);
+	facecheckbox=XRCCTRL(*this, "FaceCheckBox",wxCheckBox);
+	facechoice=XRCCTRL(*this, "FaceChoice",wxChoice);
 
-	 if (CMISS_GRAPHIC_ISO_SURFACES==region_tree_viewer->current_graphic_type)
-	 {
-		 linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
-		 if (USE_FACES != use_element_type) 
-		 {
-			 linewidthtextctrl->Disable();
-		 }
-		 else
-		 {
-			 linewidthtextctrl->Enable();
-		 }
-	 }
-	 if  (USE_ELEMENTS != use_element_type) 
-	 {
-		 exteriorcheckbox->Enable();
-		 facecheckbox->Enable();
-		 Cmiss_graphic_set_exterior(region_tree_viewer->current_graphic,
-			 exteriorcheckbox->IsChecked());
-		 if (facecheckbox->IsChecked()) 
-		 {
-			 facechoice->Enable();
-			 face = facechoice->GetSelection();
-		 }
-		 else
-		 {
-			 facechoice->Disable();
-			 face= -1;
-		 }
-		 Cmiss_graphic_set_face(region_tree_viewer->current_graphic,face);
-	 }
+	if (CMISS_GRAPHIC_ISO_SURFACES==region_tree_viewer->current_graphic_type)
+	{
+		linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
+		if (USE_FACES != use_element_type) 
+		{
+			linewidthtextctrl->Disable();
+		}
+		else
+		{
+			linewidthtextctrl->Enable();
+		}
+	}
+	if  (USE_ELEMENTS != use_element_type) 
+	{
+		exteriorcheckbox->Enable();
+		facecheckbox->Enable();
+		Cmiss_graphic_set_exterior(region_tree_viewer->current_graphic,
+			exteriorcheckbox->IsChecked());
+		if (facecheckbox->IsChecked()) 
+		{
+			facechoice->Enable();
+			face = facechoice->GetSelection();
+		}
+		else
+		{
+			facechoice->Disable();
+			face= -1;
+		}
+		Cmiss_graphic_set_face(region_tree_viewer->current_graphic,face);
+	}
 	else
-	 {
-		 exteriorcheckbox->Disable();
-		 facecheckbox->Disable();
-		 facechoice->Disable();
-		 Cmiss_graphic_set_exterior(region_tree_viewer->current_graphic,0);
-		 Cmiss_graphic_set_face(region_tree_viewer->current_graphic,-1);
-	 }
+	{
+		exteriorcheckbox->Disable();
+		facecheckbox->Disable();
+		facechoice->Disable();
+		Cmiss_graphic_set_exterior(region_tree_viewer->current_graphic,0);
+		Cmiss_graphic_set_face(region_tree_viewer->current_graphic,-1);
+	}
 
-	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	   region_tree_viewer->edit_rendition);
-	 Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-	 return 1;
+	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+	  region_tree_viewer->edit_rendition);
+	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	return 1;
  }
 
 int xi_discretization_mode_callback(enum Xi_discretization_mode xi_discretization_mode)
@@ -1354,7 +1354,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 			{
 				/* inform the client of the change */
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				  region_tree_viewer->edit_rendition);
+				 region_tree_viewer->edit_rendition);
 				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 			}
 			else
@@ -1375,11 +1375,11 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 				xitextctrl->Disable();
 				if 	((struct FE_field *)NULL != native_discretization_field)
 				{
-				 native_discretization_field_chooser_panel->Enable();
+				native_discretization_field_chooser_panel->Enable();
 				}
 				else
 				{
-				 native_discretization_field_chooser_panel->Disable();
+				native_discretization_field_chooser_panel->Disable();
 				}
 			}			
 			else
@@ -1392,7 +1392,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 				xitextctrl->Enable();
 			}
 			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)||
-			    (XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
+			   (XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
 			{
 				densityfieldtext->Enable();
 				density_field_chooser_panel->Enable();
@@ -1421,16 +1421,16 @@ Callback from wxChooser<Native discretization> when choice is made.
 	if (Computed_field_get_type_finite_element(native_discretization_field,
 			&temp_native_discretization_field))
 	{
-	  Cmiss_graphic_set_native_discretization_field(
-	    region_tree_viewer->current_graphic, temp_native_discretization_field);
-	  Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	    region_tree_viewer->edit_rendition);
-	  Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	 Cmiss_graphic_set_native_discretization_field(
+	   region_tree_viewer->current_graphic, temp_native_discretization_field);
+	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+	   region_tree_viewer->edit_rendition);
+	 Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	else
 	{
-	  display_message(ERROR_MESSAGE, "wxRegionTreeViewer::native_discretization_callback.  "
-	    "Could not modify native discretization field");
+	 display_message(ERROR_MESSAGE, "wxRegionTreeViewer::native_discretization_callback.  "
+	   "Could not modify native discretization field");
 	}
 	return 1;
 }
@@ -1454,7 +1454,7 @@ Callback from wxChooser<xi Point Denstiy Field> when choice is made.
 		region_tree_viewer->current_graphic, xi_discretization_mode,
 		xi_point_density_field);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	  region_tree_viewer->edit_rendition);
+	 region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
@@ -1492,8 +1492,8 @@ Callback from wxChooser<Streamline Type> when choice is made.
 				region_tree_viewer->current_graphic, &temp_streamline_type, &stream_vector_field,
 				&reverse_track, &streamline_length, &streamline_width) &&
 		Cmiss_graphic_set_streamline_parameters(
-		  region_tree_viewer->current_graphic, streamline_type, stream_vector_field,
-		  reverse_track, streamline_length, streamline_width))
+		 region_tree_viewer->current_graphic, streamline_type, stream_vector_field,
+		 reverse_track, streamline_length, streamline_width))
 	{
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
@@ -1516,13 +1516,13 @@ Callback from wxChooser<Stream Vector> when choice is made.
 	struct Computed_field *temp_stream_vector_field;
 
 	if (Cmiss_graphic_get_streamline_parameters(
-		    region_tree_viewer->current_graphic,&streamline_type,
-			 &temp_stream_vector_field,&reverse_track,
-			 &streamline_length,&streamline_width)&&
-		 Cmiss_graphic_set_streamline_parameters(
-			 region_tree_viewer->current_graphic,streamline_type,
-			 stream_vector_field,reverse_track,
-		    streamline_length,streamline_width))
+		   region_tree_viewer->current_graphic,&streamline_type,
+			&temp_stream_vector_field,&reverse_track,
+			&streamline_length,&streamline_width)&&
+		Cmiss_graphic_set_streamline_parameters(
+			region_tree_viewer->current_graphic,streamline_type,
+			stream_vector_field,reverse_track,
+		   streamline_length,streamline_width))
 	{
  		/* inform the client of the change */
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -1550,8 +1550,8 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 	spectrum_chooser_panel=XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
 
  	if (Cmiss_graphic_get_data_spectrum_parameters_streamlines(
-		 region_tree_viewer->current_graphic,&old_streamline_data_type,
-		 &data_field,&spectrum))
+		region_tree_viewer->current_graphic,&old_streamline_data_type,
+		&data_field,&spectrum))
 		{
 			if (streamline_data_type != old_streamline_data_type)
 			{
@@ -1709,7 +1709,7 @@ Callback from wxChooser<Texture Coord Field> when choice is made.
 		region_tree_viewer->current_graphic, texture_coord_field);
 			/* inform the client of the change */
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-			       region_tree_viewer->edit_rendition);
+			      region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
@@ -1786,32 +1786,32 @@ void FrameGetSize(wxSizeEvent &event)
  */
 void Region_tree_viewer_autoapply(Cmiss_rendition *destination, Cmiss_rendition *source)
 {
-	 if(region_tree_viewer->auto_apply)
-	 {
-		 if (region_tree_viewer->rendition_callback_flag)
-		 {
-			 if (Cmiss_rendition_remove_callback(region_tree_viewer->rendition,
-					 Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
-			 {
-				 region_tree_viewer->rendition_callback_flag = 0;
-			 }
-		 }
-		 if (!Cmiss_rendition_modify(destination,source))
-		 {
-			 display_message(ERROR_MESSAGE, "wxRegionTreeViewer::Region_tree_viewer_autoapply"
-				 "Could not modify rendition");
-		 }
-		 if (Cmiss_rendition_add_callback(region_tree_viewer->rendition,
-				 Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
-		 {
-			 region_tree_viewer->rendition_callback_flag = 1;
-		 }
-	 }
-	 else
-	 {
-		 applybutton->Enable();
-		 revertbutton->Enable();
-	 }
+	if(region_tree_viewer->auto_apply)
+	{
+		if (region_tree_viewer->rendition_callback_flag)
+		{
+			if (Cmiss_rendition_remove_callback(region_tree_viewer->rendition,
+					Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
+			{
+				region_tree_viewer->rendition_callback_flag = 0;
+			}
+		}
+		if (!Cmiss_rendition_modify(destination,source))
+		{
+			display_message(ERROR_MESSAGE, "wxRegionTreeViewer::Region_tree_viewer_autoapply"
+				"Could not modify rendition");
+		}
+		if (Cmiss_rendition_add_callback(region_tree_viewer->rendition,
+				Region_tree_viewer_wx_rendition_change, (void *)region_tree_viewer))
+		{
+			region_tree_viewer->rendition_callback_flag = 1;
+		}
+	}
+	else
+	{
+		applybutton->Enable();
+		revertbutton->Enable();
+	}
 }
 
 void Region_tree_viewer_wx_set_list_string(Cmiss_graphic *graphic)
@@ -1823,7 +1823,7 @@ void Region_tree_viewer_wx_set_list_string(Cmiss_graphic *graphic)
 	selection=graphicalitemschecklist->GetSelection();
 	check = graphicalitemschecklist->IsChecked(selection);
 	graphic_string = Cmiss_graphic_string(graphic,
-		 GRAPHIC_STRING_COMPLETE_PLUS);
+		GRAPHIC_STRING_COMPLETE_PLUS);
 	graphicalitemschecklist->SetString(selection, graphic_string);
 	graphicalitemschecklist->Check(selection,check);
 	DEALLOCATE(graphic_string);
@@ -1832,7 +1832,7 @@ void Region_tree_viewer_wx_set_list_string(Cmiss_graphic *graphic)
 /***************************************************************************//**
  * When changes have been made by the user, renew the label on the list
  */
-	void Region_tree_viewer_renew_label_on_list(Cmiss_graphic *graphic)
+void Region_tree_viewer_renew_label_on_list(Cmiss_graphic *graphic)
 {
 	int position, check;
 	char *graphic_string;
@@ -1852,18 +1852,18 @@ void Region_tree_viewer_wx_set_list_string(Cmiss_graphic *graphic)
 void ResetWindow(wxSplitterEvent& event)
 {
 	USE_PARAMETER(event);
-	 frame = 
+	frame = 
 			XRCCTRL(*this, "CmguiRegionTreeViewer", wxFrame);
-	 frame->Layout();
-	 frame->SetMinSize(wxSize(50,100));
-	 verticalsplitter=XRCCTRL(*this,"VerticalSplitter",wxSplitterWindow);
-	 verticalsplitter->Layout();
-	 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-	 lowersplitter->Layout();
-	 sceneediting = 
-			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-	 sceneediting->Layout();
-	 sceneediting->SetScrollbars(10,10,40,40);
+	frame->Layout();
+	frame->SetMinSize(wxSize(50,100));
+	verticalsplitter=XRCCTRL(*this,"VerticalSplitter",wxSplitterWindow);
+	verticalsplitter->Layout();	
+	lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+	lowersplitter->Layout();
+	sceneediting = 
+		XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+	sceneediting->Layout();
+	sceneediting->SetScrollbars(10,10,40,40);
 }
 
 	void AutoChecked(wxCommandEvent &event)
@@ -1874,17 +1874,17 @@ void ResetWindow(wxSplitterEvent& event)
 		revertbutton = XRCCTRL(*this,"RevertButton", wxButton);
 		if(autocheckbox->IsChecked())
 		{
-			 applybutton->Disable();
-			 revertbutton->Disable();
-			 region_tree_viewer->auto_apply = 1;
-			 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				 region_tree_viewer->edit_rendition);
+			applybutton->Disable();
+			revertbutton->Disable();
+			region_tree_viewer->auto_apply = 1;
+			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+				region_tree_viewer->edit_rendition);
 		}
 		else
 		{
-			 applybutton->Disable();
-			 revertbutton->Disable();
-			 region_tree_viewer->auto_apply = 0;
+			applybutton->Disable();
+			revertbutton->Disable();
+			region_tree_viewer->auto_apply = 0;
 		}
 	}
 
@@ -1924,36 +1924,36 @@ void ApplyClicked(wxCommandEvent &event)
 
 void Region_tree_viewer_wx_update_graphic_type(Cmiss_graphic *graphic)
 {
-	 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
-	 sceneeditingpanel->Enable();
-	 sceneeditingpanel->Show();
-	 graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
-	 REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic, graphic);
-	 if (graphic)
-	 {
-		 region_tree_viewer->current_graphic_type = Cmiss_graphic_get_graphic_type(graphic);
-		 graphic_type_chooser->set_value(region_tree_viewer->current_graphic_type);
-	 }
-	 else
-	 {
-		 graphic_type_chooser->set_value(CMISS_GRAPHIC_LINES);
-	 }
+	wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+	sceneeditingpanel->Enable();
+	sceneeditingpanel->Show();
+	graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
+	REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic, graphic);
+	if (graphic)
+	{
+		region_tree_viewer->current_graphic_type = Cmiss_graphic_get_graphic_type(graphic);
+		graphic_type_chooser->set_value(region_tree_viewer->current_graphic_type);
+	}
+	else
+	{
+		graphic_type_chooser->set_value(CMISS_GRAPHIC_LINES);
+	}
 }
 
 void Region_tree_viewer_wx_update_graphic_widgets()
 {
-	 wxScrolledWindow *sceneeditingpanel = XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
-	 sceneeditingpanel->Freeze();
-	 get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
-	 sceneeditingpanel->Thaw();
-	 sceneeditingpanel->Layout();
-	 if (region_tree_viewer->lowersplitter)
-	 {
+	wxScrolledWindow *sceneeditingpanel = XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+	sceneeditingpanel->Freeze();
+	get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
+	sceneeditingpanel->Thaw();
+	sceneeditingpanel->Layout();
+	if (region_tree_viewer->lowersplitter)
+	{
 			int width, height;
 			region_tree_viewer->lowersplitter->GetSize(&width, &height);
 			region_tree_viewer->lowersplitter->SetSize(width-1, height-1);
-				 region_tree_viewer->lowersplitter->SetSize(width+1, height+1);
-	 }
+				region_tree_viewer->lowersplitter->SetSize(width+1, height+1);
+	}
 }
 
 void GraphicListBoxProcessSelection(int selection)
@@ -2009,6 +2009,48 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 		}
 		else
 		{
+//==mine==
+//			/* set materials for all graphic */
+//			Cmiss_graphic_set_material(graphic,
+//				region_tree_viewer->default_material);
+//			Cmiss_graphic_set_label_field(graphic,
+//				(struct Computed_field *)NULL, region_tree_viewer->default_font);
+//			Cmiss_graphic_set_selected_material(graphic,
+//				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+//					"default_selected",region_tree_viewer->graphical_material_manager));
+//			Computed_field *default_coordinate_field=
+//				Cmiss_rendition_get_default_coordinate_field(
+//					region_tree_viewer->edit_rendition);
+//			Cmiss_graphic_set_coordinate_field(graphic, default_coordinate_field);
+//			/* for data_points, ensure either there are points with
+//				default_coordinate defined at them. If not, and any have
+//				the element_xi_coordinate field defined over them, use that */
+//			if (CMISS_GRAPHIC_DATA_POINTS==graphic_type)
+//			{
+//				FE_region *data_fe_region = FE_region_get_data_FE_region(
+//					Cmiss_region_get_FE_region(
+//						Cmiss_rendition_get_region(
+//							region_tree_viewer->edit_rendition)));
+//				if (!FE_region_get_first_FE_node_that(data_fe_region,
+//						FE_node_has_Computed_field_defined,
+//						(void *)default_coordinate_field))
+//				{
+//					MANAGER(Computed_field) *computed_field_manager=  
+//						Cmiss_region_get_Computed_field_manager(
+//							Cmiss_rendition_get_region(region_tree_viewer->edit_rendition));
+//					Computed_field *element_xi_coordinate_field;
+//					if ((element_xi_coordinate_field=
+//							FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+///								"element_xi_coordinate",computed_field_manager)) &&
+//						FE_region_get_first_FE_node_that(data_fe_region,
+//							FE_node_has_Computed_field_defined,
+//							(void *)element_xi_coordinate_field))
+//					{
+//						Cmiss_graphic_set_coordinate_field(graphic,
+//							element_xi_coordinate_field);
+//					}
+//				}
+//			}
 			Cmiss_rendition_set_graphic_defaults(region_tree_viewer->edit_rendition, graphic);
 			/* set iso_scalar_field for iso_surfaces */
 			if (CMISS_GRAPHIC_ISO_SURFACES==graphic_type)
@@ -2152,17 +2194,17 @@ void AddGraphicItemFromMenu(wxCommandEvent &event)
 
 void RemoveFromGraphicList(wxCommandEvent &event)
 {
-	 unsigned int position;
+	unsigned int position;
 
-	 USE_PARAMETER(event);
+	USE_PARAMETER(event);
 
-	 if (region_tree_viewer->edit_rendition)
-	 {
+	if (region_tree_viewer->edit_rendition)
+	{
 			graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
 			position = Cmiss_rendition_get_graphic_position(
-				 region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic);
+				region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic);
 			Cmiss_rendition_remove_graphic(
-				 region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic);
+				region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic);
 			/* inform the client of the changes */
 			if (graphicalitemschecklist->GetCount()>1)
 			{
@@ -2170,30 +2212,30 @@ void RemoveFromGraphicList(wxCommandEvent &event)
 				graphicalitemschecklist->Clear();
 				for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
 					Region_tree_viewer_add_graphic_item, (void *)region_tree_viewer);
-				 if (position>1)
-				 {
-					 Cmiss_graphic *temp_graphic = NULL;
-					 if (graphicalitemschecklist->GetCount()>=position)
-					 {
-						 graphicalitemschecklist->SetSelection(position-1);
-						 temp_graphic = Cmiss_rendition_get_graphic_at_position(
-							 region_tree_viewer->edit_rendition, position);
-					 }
-					 else
-					 {
-						 graphicalitemschecklist->SetSelection(position-2);
-						 temp_graphic = Cmiss_rendition_get_graphic_at_position(
-							 region_tree_viewer->edit_rendition, position - 1);
-					 }
-					 if (temp_graphic)
-					 {
-						 Region_tree_viewer_wx_update_graphic_type(temp_graphic);
-						 Region_tree_viewer_wx_update_graphic_widgets();
-						 Cmiss_graphic_destroy(&temp_graphic);
-					 }
+				if (position>1)
+				{
+					Cmiss_graphic *temp_graphic = NULL;
+					if (graphicalitemschecklist->GetCount()>=position)
+					{
+						graphicalitemschecklist->SetSelection(position-1);
+						temp_graphic = Cmiss_rendition_get_graphic_at_position(
+							region_tree_viewer->edit_rendition, position);
+					}
+					else
+					{
+						graphicalitemschecklist->SetSelection(position-2);
+						temp_graphic = Cmiss_rendition_get_graphic_at_position(
+							region_tree_viewer->edit_rendition, position - 1);
+					}
+					if (temp_graphic)
+					{
+						Region_tree_viewer_wx_update_graphic_type(temp_graphic);
+						Region_tree_viewer_wx_update_graphic_widgets();
+						Cmiss_graphic_destroy(&temp_graphic);
+					}
 						Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 							region_tree_viewer->edit_rendition);
-				 }
+				}
 			}
 			else
 			{
@@ -2203,57 +2245,57 @@ void RemoveFromGraphicList(wxCommandEvent &event)
 				sceneeditingpanel->Disable();
 				sceneeditingpanel->Hide();
 			}
-	 }
-	 else
-	 {
+	}
+	else
+	{
 			display_message(ERROR_MESSAGE,
 				"RemoveFromGraphicList.  Invalid argument(s)");
-	 }
-	 /*check if autoapply*/
-	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		 region_tree_viewer->edit_rendition);
+	}
+	/*check if autoapply*/
+	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+		region_tree_viewer->edit_rendition);
 }
 
 void MoveUpInGraphicList(wxCommandEvent &event)
 {
-	 USE_PARAMETER(event);
-	 int position;
-	 Cmiss_graphic *graphic;
-	 if (region_tree_viewer->edit_rendition)
-	 {
-		 if (1 < (position = Cmiss_rendition_get_graphic_position(
+	USE_PARAMETER(event);
+	int position;
+	Cmiss_graphic *graphic;
+	if (region_tree_viewer->edit_rendition)
+	{
+		if (1 < (position = Cmiss_rendition_get_graphic_position(
 								region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic)))
-		 {
-			 graphic = region_tree_viewer->current_graphic;
-			 ACCESS(Cmiss_graphic)(graphic);
-			 Cmiss_rendition_remove_graphic(region_tree_viewer->edit_rendition,
-				 region_tree_viewer->current_graphic);
-			 Cmiss_rendition_add_graphic(region_tree_viewer->edit_rendition,
-				 region_tree_viewer->current_graphic, position - 1);
-			 DEACCESS(Cmiss_graphic)(&graphic);
-			 graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
-			 graphicalitemschecklist->SetSelection(wxNOT_FOUND);
-			 graphicalitemschecklist->Clear();
-			 for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
-				 Region_tree_viewer_add_graphic_item, (void *)region_tree_viewer);
-			 graphicalitemschecklist->SetSelection(position-2);
-			 Cmiss_graphic *temp_graphic = Cmiss_rendition_get_graphic_at_position(
-				 region_tree_viewer->edit_rendition, position-1);
-			 Region_tree_viewer_wx_update_graphic_type(temp_graphic);
-			 Region_tree_viewer_wx_update_graphic_widgets();
-			 Cmiss_graphic_destroy(&temp_graphic);
-			 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				 region_tree_viewer->edit_rendition);
-			 /* By default the graphic name is the position, so it needs to be updated
+		{
+			graphic = region_tree_viewer->current_graphic;
+			ACCESS(Cmiss_graphic)(graphic);
+			Cmiss_rendition_remove_graphic(region_tree_viewer->edit_rendition,
+				region_tree_viewer->current_graphic);
+			Cmiss_rendition_add_graphic(region_tree_viewer->edit_rendition,
+				region_tree_viewer->current_graphic, position - 1);
+			DEACCESS(Cmiss_graphic)(&graphic);
+			graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
+			graphicalitemschecklist->SetSelection(wxNOT_FOUND);
+			graphicalitemschecklist->Clear();
+			for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
+				Region_tree_viewer_add_graphic_item, (void *)region_tree_viewer);
+			graphicalitemschecklist->SetSelection(position-2);
+			Cmiss_graphic *temp_graphic = Cmiss_rendition_get_graphic_at_position(
+				region_tree_viewer->edit_rendition, position-1);
+			Region_tree_viewer_wx_update_graphic_type(temp_graphic);
+			Region_tree_viewer_wx_update_graphic_widgets();
+			Cmiss_graphic_destroy(&temp_graphic);
+			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+				region_tree_viewer->edit_rendition);
+			/* By default the graphic name is the position, so it needs to be updated
 					even though the graphic hasn't actually changed */
-			 /* inform the client of the change */
-		 }
-	 }
-	 else
-	 {
-		 display_message(ERROR_MESSAGE,
-			 "MoveUpInGraphicList.  Invalid argument(s)");
-	 }
+			/* inform the client of the change */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MoveUpInGraphicList.  Invalid argument(s)");
+	}
 }
 
 	void MoveDownInGraphicList(wxCommandEvent &event)
@@ -2262,14 +2304,14 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		int position;
 		Cmiss_graphic *graphic;
 
-	  USE_PARAMETER(event);
+	 USE_PARAMETER(event);
 
 		if 	(region_tree_viewer->edit_rendition)
 		{
 			if (Cmiss_rendition_get_number_of_graphic(
 						region_tree_viewer->edit_rendition) >
 				(position = Cmiss_rendition_get_graphic_position(
-					 region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic)))
+					region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic)))
 			{
 				graphic = region_tree_viewer->current_graphic;
 				ACCESS(Cmiss_graphic)(graphic);
@@ -2292,7 +2334,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 					region_tree_viewer->edit_rendition);
 				/* By default the graphic name is the position, so it needs to be updated
-					 even though the graphic hasn't actually changed */
+					even though the graphic hasn't actually changed */
 				/* inform the client of the change */
 			}
 		}
@@ -2309,7 +2351,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		const char *name = NULL;
 		wxString temp;
 
-	  USE_PARAMETER(event);
+	 USE_PARAMETER(event);
 
 		if (region_tree_viewer->current_graphic)
 		{
@@ -2342,8 +2384,8 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		}
 		else
 		{
-		 	display_message(ERROR_MESSAGE,
-		      "graphic_editor_constant_radius_text_CB.  Invalid argument(s)");
+			display_message(ERROR_MESSAGE,
+		     "graphic_editor_constant_radius_text_CB.  Invalid argument(s)");
 		}
 	}
 
@@ -2369,7 +2411,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				scalefactorstextctrl->Enable();
 				radius_scalar_chooser_panel->Enable();
 				scalefactor ->Enable();
-		  	   radius_scalar_field=radius_scalar_chooser->get_object();
+		 	   radius_scalar_field=radius_scalar_chooser->get_object();
 			}
 		else	
 			{
@@ -2397,7 +2439,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		struct Computed_field *scalar_field = NULL;
 #define VARIABLE_LENGTH_ALLOCATION_STEP (10)
 
-	  USE_PARAMETER(event);
+	 USE_PARAMETER(event);
 		
 		if (region_tree_viewer && region_tree_viewer->current_graphic)
 		{
@@ -2551,13 +2593,13 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				
 				/* always restore strings to actual value in use */
 				sprintf(temp_string,"%d",new_number_of_iso_values);
-				isovaluesequencenumbertextctrl->SetValue(temp_string);			 
+				isovaluesequencenumbertextctrl->SetValue(temp_string);			
 				
 				sprintf(temp_string,"%g",first_iso_value);
-				isovaluesequencefirsttextctrl->SetValue(temp_string);			 
+				isovaluesequencefirsttextctrl->SetValue(temp_string);			
 				
 				sprintf(temp_string,"%g",last_iso_value);
-				isovaluesequencelasttextctrl->SetValue(temp_string);			 
+				isovaluesequencelasttextctrl->SetValue(temp_string);			
 				
 			}
 			else
@@ -2737,7 +2779,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 							glyph_centre, glyph_size, orientation_scale_field,
 							glyph_scale_factors, variable_scale_field);
 						Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-						        region_tree_viewer->edit_rendition);
+						       region_tree_viewer->edit_rendition);
 						Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 						destroy_Parse_state(&temp_state);
 						Cmiss_graphic_get_glyph_parameters(
@@ -2802,9 +2844,9 @@ void EnterGlyphSize(wxCommandEvent &event)
 	USE_PARAMETER(event);
 
 	Cmiss_graphic_get_glyph_parameters(
-		 region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
-		 glyph_size, &orientation_scale_field, glyph_scale_factors,
-		 &variable_scale_field);
+		region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+		glyph_size, &orientation_scale_field, glyph_scale_factors,
+		&variable_scale_field);
 	variable_scale_field_chooser_panel=XRCCTRL(*this,"VariableScaleChooserPanel",wxPanel);
 	variablescalecheckbox=XRCCTRL(*this,"VariableScaleCheckBox",wxCheckBox);
 	if (variablescalecheckbox->IsChecked())
@@ -2818,11 +2860,11 @@ void EnterGlyphSize(wxCommandEvent &event)
 		variable_scale_field=(Computed_field *)NULL;
 	}
         Cmiss_graphic_set_glyph_parameters(
-	  region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-	  glyph_centre, glyph_size, orientation_scale_field,
-	  glyph_scale_factors, variable_scale_field);
+	 region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
+	 glyph_centre, glyph_size, orientation_scale_field,
+	 glyph_scale_factors, variable_scale_field);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	  region_tree_viewer->edit_rendition);
+	 region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 }
 
@@ -2836,16 +2878,16 @@ void LabelChecked(wxCommandEvent &event)
 	label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
 	Cmiss_graphic_get_label_field(region_tree_viewer->current_graphic,
 		&label_field, &font);
-	 if (labelcheckbox->IsChecked())
-	 {
-		 label_chooser_panel->Enable();				
-		 label_field=label_field_chooser->get_object();
-	 }
-	 else
-	 {
-		 label_chooser_panel->Disable();		
-		 label_field=(Computed_field *)NULL;
-	 }
+	if (labelcheckbox->IsChecked())
+	{
+		label_chooser_panel->Enable();				
+		label_field=label_field_chooser->get_object();
+	}
+	else
+	{
+		label_chooser_panel->Disable();		
+		label_field=(Computed_field *)NULL;
+	}
 	Cmiss_graphic_set_label_field(region_tree_viewer->current_graphic,
 		label_field, font);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -2997,23 +3039,23 @@ void NativeDiscretizationChecked(wxCommandEvent &event)
 
 void SeedElementChecked(wxCommandEvent &event)
 {
-	 seed_element_panel = XRCCTRL(*this, "SeedElementPanel", wxPanel);
-	 seedelementcheckbox = XRCCTRL(*this, "SeedElementCheckBox", wxCheckBox);
+	seed_element_panel = XRCCTRL(*this, "SeedElementPanel", wxPanel);
+	seedelementcheckbox = XRCCTRL(*this, "SeedElementCheckBox", wxCheckBox);
 
 	USE_PARAMETER(event);
-	 if (seedelementcheckbox->IsChecked())
-	 {
+	if (seedelementcheckbox->IsChecked())
+	{
 			Cmiss_graphic_set_seed_element(region_tree_viewer->current_graphic, seed_element_chooser->get_object());
 			seed_element_panel->Enable();
-	 }
-	 else
-	 {
+	}
+	else
+	{
 			Cmiss_graphic_set_seed_element(region_tree_viewer->current_graphic,(FE_element*)NULL);
 			seed_element_panel->Disable();
-	 }
-	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		 region_tree_viewer->edit_rendition);
-	 Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	}
+	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+		region_tree_viewer->edit_rendition);
+	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 
 }
 
@@ -3053,7 +3095,7 @@ void EnterSeedXi(wxCommandEvent &event)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-			   "settings_editor_seed_xi_text_CB.  Missing text");
+			  "settings_editor_seed_xi_text_CB.  Missing text");
 		}
 		/* always re-display the values actually set */
 		sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
@@ -3089,10 +3131,10 @@ void EnterLength(wxCommandEvent &event)
 		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	else
-	 {
-		 display_message(ERROR_MESSAGE,
+	{
+		display_message(ERROR_MESSAGE,
 			"settings_editor_streamline_length_text_CB.  Missing text");
-	 }
+	}
 	sprintf(temp_string,"%g",streamline_length);
 	lengthtextctrl->SetValue(temp_string);		
 }
@@ -3127,11 +3169,11 @@ void EnterWidth(wxCommandEvent &event)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-		   "settings_editor_streamline_width_text_CB.  Missing text");
+		  "settings_editor_streamline_width_text_CB.  Missing text");
 	}
 	/* always restore streamline_width to actual value in use */
 	sprintf(temp_string,"%g",streamline_width);
-	widthtextctrl->SetValue(temp_string);			 
+	widthtextctrl->SetValue(temp_string);			
 }
 
 void ReverseChecked(wxCommandEvent &event)
@@ -3178,14 +3220,14 @@ void EnterLineWidth(wxCommandEvent &event)
 				region_tree_viewer->current_graphic, new_line_width);
 			/* inform the client of the change */
 			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-				       region_tree_viewer->edit_rendition);
+				      region_tree_viewer->edit_rendition);
 			Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-		  "settings_editor_line_width_text_CB.  Missing text");
+		 "settings_editor_line_width_text_CB.  Missing text");
 	}
 	/* always restore streamline_width to actual value in use */
 	sprintf(temp_string,"%d",new_line_width);
@@ -3307,28 +3349,28 @@ void SetBothMaterialChooser(Cmiss_graphic *graphic)
 
 void SetGraphic(Cmiss_graphic *graphic)
 {
-		int error,number_of_iso_values, i,reverse_track,line_width, face;
-		double decimation_threshold, *iso_values, first_iso_value,
-			last_iso_value;
-		char temp_string[50], *vector_temp_string;
-		struct Computed_field *radius_scalar_field, *iso_scalar_field, 
-			*orientation_scale_field, *variable_scale_field,	*label_field, 
-			*visibility_field, *xi_point_density_field, *stream_vector_field,
-			*data_field, *texture_coord_field;
-		float constant_radius,scale_factor,streamline_length,streamline_width;
-		struct GT_object *glyph;
-		enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-		enum Xi_discretization_mode xi_discretization_mode;
-		Triple glyph_centre, glyph_size, glyph_scale_factors, seed_xi;
-		struct Graphics_font *font;
-		struct Element_discretization discretization;
-		enum Streamline_type streamline_type;
-		enum Streamline_data_type streamline_data_type;
-		struct Spectrum *spectrum;
-		enum Render_type render_type;
-		struct FE_element *seed_element;
-		struct FE_region *fe_region;
-	
+	int error,number_of_iso_values, i,reverse_track,line_width, face;
+	double decimation_threshold, *iso_values, first_iso_value,
+		last_iso_value;
+	char temp_string[50], *vector_temp_string;
+	struct Computed_field *radius_scalar_field, *iso_scalar_field, 
+		*orientation_scale_field, *variable_scale_field,	*label_field, 
+		*visibility_field, *xi_point_density_field, *stream_vector_field,
+		*data_field, *texture_coord_field;
+	float constant_radius,scale_factor,streamline_length,streamline_width;
+	struct GT_object *glyph;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+	enum Xi_discretization_mode xi_discretization_mode;
+	Triple glyph_centre, glyph_size, glyph_scale_factors, seed_xi;
+	struct Graphics_font *font;
+	struct Element_discretization discretization;
+	enum Streamline_type streamline_type;
+	enum Streamline_data_type streamline_data_type;
+	struct Spectrum *spectrum;
+	enum Render_type render_type;
+	struct FE_element *seed_element;
+	struct FE_region *fe_region;
+
 	coordinate_field_chooser_panel =
 		XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 	wxStaticText *coordinatefieldstatictext=
@@ -3370,85 +3412,85 @@ void SetGraphic(Cmiss_graphic *graphic)
 		coordinatefieldstatictext->Hide();
 	}
 
-		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
-		radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
-		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
-		 radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
-		 constantradius = XRCCTRL(*this,"ConstantRadiusText",wxStaticText);
-		 scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
-		 if ((CMISS_GRAPHIC_CYLINDERS==region_tree_viewer->current_graphic_type)&&
-				 Cmiss_graphic_get_radius_parameters(graphic,
-				 &constant_radius,&scale_factor,&radius_scalar_field))
-		 {
-				constantradiustextctrl->Show();
-				radiusscalarcheckbox->Show();
-				scalefactorstextctrl->Show();
-				constantradius->Show();
-				radius_scalar_chooser_panel->Show();
-				scalefactor->Show();
-				sprintf(temp_string,"%g",constant_radius);
-				constantradiustextctrl->SetValue(temp_string);
-				sprintf(temp_string,"%g",scale_factor);
-				scalefactorstextctrl->SetValue(temp_string);
-				
-				if (radius_scalar_chooser == NULL)
-				{
-					 radius_scalar_chooser = 
-							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-							(radius_scalar_chooser_panel, region_tree_viewer->radius_scalar_field, region_tree_viewer->field_manager,
-								 Computed_field_is_scalar, (void *)NULL, region_tree_viewer->user_interface);
-					 Callback_base< Computed_field* > *radius_scalar_callback = 
-							new Callback_member_callback< Computed_field*, 
-							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
-							(this, &wxRegionTreeViewer::radius_scalar_callback);
-					 radius_scalar_chooser->set_callback(radius_scalar_callback);
-					 radius_scalar_chooser_panel->Fit();
-				}
-				if ((struct Computed_field *)NULL!=radius_scalar_field)
-				{
-					 radius_scalar_chooser->set_object(radius_scalar_field);
-					 scalefactorstextctrl->Enable();
-					 radiusscalarcheckbox->SetValue(1);
-					 radius_scalar_chooser_panel->Enable();
-					 scalefactor->Enable();
-				}
-				else
-				{
-					 scalefactorstextctrl->Disable();
-					 radiusscalarcheckbox->SetValue(0);
-					 radius_scalar_chooser_panel->Disable();
-					 scalefactor->Disable();
-				}
-		 }
-		 else
-		 {
-				constantradiustextctrl->Hide();
-				radiusscalarcheckbox->Hide();
-				scalefactorstextctrl->Hide();
-				radius_scalar_chooser_panel->Hide();
-				scalefactor->Hide();
-				constantradius->Hide();
-		 }
+	constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
+	radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
+	scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
+	radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
+	constantradius = XRCCTRL(*this,"ConstantRadiusText",wxStaticText);
+	scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
+	if ((CMISS_GRAPHIC_CYLINDERS==region_tree_viewer->current_graphic_type)&&
+		Cmiss_graphic_get_radius_parameters(graphic,
+		&constant_radius,&scale_factor,&radius_scalar_field))
+	{
+		constantradiustextctrl->Show();
+		radiusscalarcheckbox->Show();
+		scalefactorstextctrl->Show();
+		constantradius->Show();
+		radius_scalar_chooser_panel->Show();
+		scalefactor->Show();
+		sprintf(temp_string,"%g",constant_radius);
+		constantradiustextctrl->SetValue(temp_string);
+		sprintf(temp_string,"%g",scale_factor);
+		scalefactorstextctrl->SetValue(temp_string);
+		
+		if (radius_scalar_chooser == NULL)
+		{
+			radius_scalar_chooser = 
+			new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+				(radius_scalar_chooser_panel, region_tree_viewer->radius_scalar_field, region_tree_viewer->field_manager,
+				Computed_field_is_scalar, (void *)NULL, region_tree_viewer->user_interface);
+			Callback_base< Computed_field* > *radius_scalar_callback = 
+				new Callback_member_callback< Computed_field*, 
+			wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
+				(this, &wxRegionTreeViewer::radius_scalar_callback);
+			radius_scalar_chooser->set_callback(radius_scalar_callback);
+			radius_scalar_chooser_panel->Fit();
+		}
+		if ((struct Computed_field *)NULL!=radius_scalar_field)
+		{
+			radius_scalar_chooser->set_object(radius_scalar_field);
+			scalefactorstextctrl->Enable();
+			radiusscalarcheckbox->SetValue(1);
+			radius_scalar_chooser_panel->Enable();
+			scalefactor->Enable();
+		}
+		else
+		{
+			scalefactorstextctrl->Disable();
+			radiusscalarcheckbox->SetValue(0);
+			radius_scalar_chooser_panel->Disable();
+			scalefactor->Disable();
+		}
+	}
+	else
+	{
+		constantradiustextctrl->Hide();
+		radiusscalarcheckbox->Hide();
+		scalefactorstextctrl->Hide();
+		radius_scalar_chooser_panel->Hide();
+		scalefactor->Hide();
+		constantradius->Hide();
+	}
 
-		 //iso-surface
-		 iso_scalar_chooser_panel=XRCCTRL(*this, "IsoScalarChooserPanel",wxPanel);
-		 isoscalartextctrl = XRCCTRL(*this, "IsoScalarTextCtrl",wxTextCtrl);
-		 isoscalartext=XRCCTRL(*this,"IsoScalarText",wxStaticText);
-		 isovalueoptionspane=XRCCTRL(*this,"IsoValueOptions",wxPanel);
+	//iso-surface
+	iso_scalar_chooser_panel=XRCCTRL(*this, "IsoScalarChooserPanel",wxPanel);
+	isoscalartextctrl = XRCCTRL(*this, "IsoScalarTextCtrl",wxTextCtrl);
+	isoscalartext=XRCCTRL(*this,"IsoScalarText",wxStaticText);
+	isovalueoptionspane=XRCCTRL(*this,"IsoValueOptions",wxPanel);
 
-		 isovaluelistradiobutton=XRCCTRL(*this,"IsoValueListRadioButton",wxRadioButton);
-		 isovaluesequenceradiobutton=XRCCTRL(*this,"IsoValueSequenceRadioButton",wxRadioButton);
-		 
-		 isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
-		 isovaluesequencenumbertextctrl=XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl",wxTextCtrl);
-		 isovaluesequencefirsttextctrl=XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl",wxTextCtrl);
-		 isovaluesequencelasttextctrl=XRCCTRL(*this,"IsoValueSequenceLastTextCtrl",wxTextCtrl);
+	isovaluelistradiobutton=XRCCTRL(*this,"IsoValueListRadioButton",wxRadioButton);
+	isovaluesequenceradiobutton=XRCCTRL(*this,"IsoValueSequenceRadioButton",wxRadioButton);
+
+	isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
+	isovaluesequencenumbertextctrl=XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl",wxTextCtrl);
+	isovaluesequencefirsttextctrl=XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl",wxTextCtrl);
+	isovaluesequencelasttextctrl=XRCCTRL(*this,"IsoValueSequenceLastTextCtrl",wxTextCtrl);
 
 		if ((CMISS_GRAPHIC_ISO_SURFACES==region_tree_viewer->current_graphic_type)&&
 				Cmiss_graphic_get_iso_surface_parameters(graphic,
-					 &iso_scalar_field,&number_of_iso_values,&iso_values,
-					 &first_iso_value,&last_iso_value,
-					 &decimation_threshold)&&iso_scalar_field)
+					&iso_scalar_field,&number_of_iso_values,&iso_values,
+					&first_iso_value,&last_iso_value,
+					&decimation_threshold)&&iso_scalar_field)
 			{
 				iso_scalar_chooser_panel->Show();
 				isoscalartextctrl->Show();
@@ -3456,16 +3498,16 @@ void SetGraphic(Cmiss_graphic *graphic)
 				isovalueoptionspane->Show();
 				if (iso_scalar_chooser == NULL)
 				{
-					 iso_scalar_chooser = 
+					iso_scalar_chooser = 
 							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 							(iso_scalar_chooser_panel, iso_scalar_field, region_tree_viewer->field_manager,
-								 Computed_field_is_scalar, (void *)NULL, region_tree_viewer->user_interface);
-					 Callback_base< Computed_field* > *iso_scalar_callback = 
+								Computed_field_is_scalar, (void *)NULL, region_tree_viewer->user_interface);
+					Callback_base< Computed_field* > *iso_scalar_callback = 
 							new Callback_member_callback< Computed_field*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
 							(this, &wxRegionTreeViewer::iso_scalar_callback);
-					 iso_scalar_chooser->set_callback(iso_scalar_callback);
-					 iso_scalar_chooser_panel->Fit();
+					iso_scalar_chooser->set_callback(iso_scalar_callback);
+					iso_scalar_chooser_panel->Fit();
 				}
 				if (iso_values)
 				{
@@ -3558,9 +3600,9 @@ void SetGraphic(Cmiss_graphic *graphic)
 				(CMISS_GRAPHIC_DATA_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_ELEMENT_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_STATIC == region_tree_viewer->current_graphic_type)) &&
-			 Cmiss_graphic_get_glyph_parameters(graphic,
-				  &glyph, &glyph_scaling_mode,glyph_centre, glyph_size,
-				  &orientation_scale_field, glyph_scale_factors,&variable_scale_field))
+			Cmiss_graphic_get_glyph_parameters(graphic,
+				 &glyph, &glyph_scaling_mode,glyph_centre, glyph_size,
+				 &orientation_scale_field, glyph_scale_factors,&variable_scale_field))
 			{
 				/* turn on callbacks */
 				glyph_chooser_panel->Show();
@@ -3588,54 +3630,54 @@ void SetGraphic(Cmiss_graphic *graphic)
 				}
 				if (glyph_chooser == NULL)
 				{
-					 glyph_chooser = 
+					glyph_chooser = 
 							new Managed_object_chooser<GT_object, MANAGER_CLASS(GT_object)>
 							(glyph_chooser_panel, glyph, region_tree_viewer->glyph_manager,
-								 (LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL, (void *)NULL, 
-								 region_tree_viewer->user_interface);
-					 Callback_base< GT_object* > *glyph_callback = 
+								(LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL, (void *)NULL, 
+								region_tree_viewer->user_interface);
+					Callback_base< GT_object* > *glyph_callback = 
 							new Callback_member_callback< GT_object*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(GT_object *) >
 							(this, &wxRegionTreeViewer::glyph_callback);
-					 glyph_chooser->include_null_item(true);
-					 glyph_chooser->set_callback(glyph_callback);	
-					 glyph_chooser_panel->Fit();
+					glyph_chooser->include_null_item(true);
+					glyph_chooser->set_callback(glyph_callback);	
+					glyph_chooser_panel->Fit();
 				}
 			
 				if (orientation_scale_field_chooser == NULL)
 				{
-					 orientation_scale_field_chooser=
+					orientation_scale_field_chooser=
 							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 							(orientation_scale_field_chooser_panel, orientation_scale_field, region_tree_viewer->field_manager,
-								 Computed_field_is_orientation_scale_capable, NULL,
-								 region_tree_viewer->user_interface);
-					 Callback_base< Computed_field* > *orientation_scale_callback = 
+								Computed_field_is_orientation_scale_capable, NULL,
+								region_tree_viewer->user_interface);
+					Callback_base< Computed_field* > *orientation_scale_callback = 
 							new Callback_member_callback< Computed_field*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
 							(this, &wxRegionTreeViewer::orientation_scale_callback);
-					 orientation_scale_field_chooser->set_callback(orientation_scale_callback);
-					 orientation_scale_field_chooser_panel->Fit();
+					orientation_scale_field_chooser->set_callback(orientation_scale_callback);
+					orientation_scale_field_chooser_panel->Fit();
 				}
 				if (variable_scale_field_chooser  ==NULL)
 				{
-					 variable_scale_field_chooser=
+					variable_scale_field_chooser=
 							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 							(variable_scale_field_chooser_panel, variable_scale_field, region_tree_viewer->field_manager,
-								 Computed_field_has_up_to_3_numerical_components, (void *)NULL, 
-								 region_tree_viewer->user_interface);
-					 Callback_base< Computed_field* > *variable_scale_callback = 
+								Computed_field_has_up_to_3_numerical_components, (void *)NULL, 
+								region_tree_viewer->user_interface);
+					Callback_base< Computed_field* > *variable_scale_callback = 
 							new Callback_member_callback< Computed_field*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
 							(this, &wxRegionTreeViewer::variable_scale_callback);
-					 variable_scale_field_chooser->set_callback(variable_scale_callback);
-					 variable_scale_field_chooser_panel->Fit();
+					variable_scale_field_chooser->set_callback(variable_scale_callback);
+					variable_scale_field_chooser_panel->Fit();
 				}
 
 				if (glyph != NULL)
 				{
-					 glyph_chooser ->set_object(glyph);
+					glyph_chooser ->set_object(glyph);
 				}
-					 
+					
 				sprintf(temp_string,"%g,%g,%g",
 					glyph_centre[0],glyph_centre[1],glyph_centre[2]);
 				centretextctrl->SetValue(temp_string);
@@ -3648,29 +3690,29 @@ void SetGraphic(Cmiss_graphic *graphic)
 			
 				if ((struct Computed_field *)NULL!=orientation_scale_field)
 				{
-				  orientation_scale_field_chooser->set_object(orientation_scale_field);
-				  glyphscalefactorstextctrl->Enable();
-				  orientationscalecheckbox->SetValue(1);
-				  orientation_scale_field_chooser_panel->Enable();
-				  glyphscalefactorstext->Enable();
+				 orientation_scale_field_chooser->set_object(orientation_scale_field);
+				 glyphscalefactorstextctrl->Enable();
+				 orientationscalecheckbox->SetValue(1);
+				 orientation_scale_field_chooser_panel->Enable();
+				 glyphscalefactorstext->Enable();
 				}
 				else
 				{
-				  glyphscalefactorstextctrl->Disable();
-				  orientationscalecheckbox->SetValue(0);
-				  orientation_scale_field_chooser_panel->Disable();
-				  glyphscalefactorstext->Disable();
+				 glyphscalefactorstextctrl->Disable();
+				 orientationscalecheckbox->SetValue(0);
+				 orientation_scale_field_chooser_panel->Disable();
+				 glyphscalefactorstext->Disable();
 				}
 				if ((struct Computed_field *)NULL!=variable_scale_field)
 				{
-				  variable_scale_field_chooser->set_object(variable_scale_field);
-				  variablescalecheckbox->SetValue(1);
-				  variable_scale_field_chooser_panel->Enable();
+				 variable_scale_field_chooser->set_object(variable_scale_field);
+				 variablescalecheckbox->SetValue(1);
+				 variable_scale_field_chooser_panel->Enable();
 				}
 				else
 				{
-				  variablescalecheckbox->SetValue(0);
-				  variable_scale_field_chooser_panel->Disable();
+				 variablescalecheckbox->SetValue(0);
+				 variable_scale_field_chooser_panel->Disable();
 				}
 			}
 		else
@@ -3703,66 +3745,66 @@ void SetGraphic(Cmiss_graphic *graphic)
 				(CMISS_GRAPHIC_STATIC==region_tree_viewer->current_graphic_type)) &&
 				Cmiss_graphic_get_label_field(graphic,&label_field, &font))
 			{
-				 if (label_field_chooser == NULL)
-				 {
+				if (label_field_chooser == NULL)
+				{
 						label_field_chooser =
-							 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-							 (label_chooser_panel, label_field, region_tree_viewer->field_manager,
+							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+							(label_chooser_panel, label_field, region_tree_viewer->field_manager,
 									(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL, 
 									region_tree_viewer->user_interface);
 						Callback_base< Computed_field* > *label_callback = 
-							 new Callback_member_callback< Computed_field*, 
-							 wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
-							 (this, &wxRegionTreeViewer::label_callback);
+							new Callback_member_callback< Computed_field*, 
+							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
+							(this, &wxRegionTreeViewer::label_callback);
 						label_field_chooser->set_callback(label_callback);
 						label_chooser_panel->Fit();
-				 }
-				 if (font_chooser == NULL)
-				 {
+				}
+				if (font_chooser == NULL)
+				{
 						font_chooser =
-							 new Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
-							 (font_chooser_panel, font, region_tree_viewer->font_manager,
+							new Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
+							(font_chooser_panel, font, region_tree_viewer->font_manager,
 									(MANAGER_CONDITIONAL_FUNCTION(Graphics_font) *)NULL , (void *)NULL, 
 									region_tree_viewer->user_interface);
 						Callback_base< Graphics_font* > *font_callback = 
-							 new Callback_member_callback< Graphics_font*, 
-							 wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Graphics_font *) >
-							 (this, &wxRegionTreeViewer::font_callback);
+							new Callback_member_callback< Graphics_font*, 
+							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Graphics_font *) >
+							(this, &wxRegionTreeViewer::font_callback);
 						font_chooser->set_callback(font_callback);
 						font_chooser_panel->Fit();
-				 }
-				 labelcheckbox->Show();
-				 label_chooser_panel->Show();
-				 fonttext->Show();
-				 font_chooser_panel->Show();
-				 if ((struct Computed_field *)NULL!=label_field)
-				 {
+				}
+				labelcheckbox->Show();
+				label_chooser_panel->Show();
+				fonttext->Show();
+				font_chooser_panel->Show();
+				if ((struct Computed_field *)NULL!=label_field)
+				{
 						label_field_chooser->set_object(label_field);
 						labelcheckbox->SetValue(1);
 						label_chooser_panel->Enable();
-				 }
-				 else
-				 {
+				}
+				else
+				{
 						labelcheckbox->SetValue(0);
 						label_chooser_panel->Disable();
-				 }
-				 if ((struct Graphics_font *)NULL!=font)
-				 {
+				}
+				if ((struct Graphics_font *)NULL!=font)
+				{
 						font_chooser->set_object(font);
 						font_chooser_panel->Enable();
-				 }
-				 else
-				 {
+				}
+				else
+				{
 						font_chooser_panel->Disable();
-				 }
+				}
 
 			}
 		else
 		{
-			 labelcheckbox->Hide();
-			 label_chooser_panel->Hide();
-			 font_chooser_panel->Hide();
-			 fonttext->Hide();
+			labelcheckbox->Hide();
+			label_chooser_panel->Hide();
+			font_chooser_panel->Hide();
+			fonttext->Hide();
 		}
 		
 		/* Visibility field */
@@ -3844,31 +3886,31 @@ void SetGraphic(Cmiss_graphic *graphic)
 				XRCCTRL(*this, "UseElementTypeChooserPanel", wxPanel);
 			useelementtypetext=XRCCTRL(*this,"UseElementTypeText",wxStaticText);
 			if ((CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)||
-			     (CMISS_GRAPHIC_ISO_SURFACES==region_tree_viewer->current_graphic_type))
+			    (CMISS_GRAPHIC_ISO_SURFACES==region_tree_viewer->current_graphic_type))
 			{
-				 if (use_element_type_chooser == NULL)
-				 {
+				if (use_element_type_chooser == NULL)
+				{
 						use_element_type_chooser = 
-							 new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
-							 (use_element_type_chooser_panel, 
+							new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
+							(use_element_type_chooser_panel, 
 									region_tree_viewer->use_element_type,
 									(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
 									(void *)NULL, region_tree_viewer->user_interface);
 						use_element_type_chooser_panel->Fit();
 						Callback_base< enum Use_element_type > *use_element_type_callback = 
-							 new Callback_member_callback< enum Use_element_type, 
-							 wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Use_element_type) >
-							 (this, &wxRegionTreeViewer::use_element_type_callback);
+							new Callback_member_callback< enum Use_element_type, 
+							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Use_element_type) >
+							(this, &wxRegionTreeViewer::use_element_type_callback);
 						use_element_type_chooser->set_callback(use_element_type_callback);
-				 }
-				 use_element_type_chooser_panel->Show();
-				 useelementtypetext->Show();
-				 use_element_type_chooser->set_value(Cmiss_graphic_get_use_element_type(graphic));
+				}
+				use_element_type_chooser_panel->Show();
+				useelementtypetext->Show();
+				use_element_type_chooser->set_value(Cmiss_graphic_get_use_element_type(graphic));
 			}
 			else
 			{
-				 use_element_type_chooser_panel->Hide();
-				 useelementtypetext->Hide();	 
+				use_element_type_chooser_panel->Hide();
+				useelementtypetext->Hide();	 
 			}
 		discretizationtext=XRCCTRL(*this,"DiscretizationText",wxStaticText);
 		discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
@@ -4071,27 +4113,27 @@ void SetGraphic(Cmiss_graphic *graphic)
 			seedelementcheckbox->Show();
 			fe_region = Cmiss_region_get_FE_region(region_tree_viewer->root_region);
 			seed_element =
-				 Cmiss_graphic_get_seed_element(graphic);
+				Cmiss_graphic_get_seed_element(graphic);
 			if (seed_element_chooser == NULL)
 			{
-				 seed_element_chooser = new wxFeElementTextChooser(seed_element_panel,
+				seed_element_chooser = new wxFeElementTextChooser(seed_element_panel,
 						seed_element, fe_region, FE_element_is_top_level,(void *)NULL); 
-				 Callback_base<FE_element *> *seed_element_callback = 
+				Callback_base<FE_element *> *seed_element_callback = 
 						new Callback_member_callback< FE_element*, 
 						wxRegionTreeViewer, int (wxRegionTreeViewer::*)(FE_element *) >
 						(this, &wxRegionTreeViewer::seed_element_callback);
-				 seed_element_chooser->set_callback(seed_element_callback);
-				 seed_element_panel->Fit();
+				seed_element_chooser->set_callback(seed_element_callback);
+				seed_element_panel->Fit();
 			}
 			if (NULL != seed_element)
 			{
-				 seedelementcheckbox->SetValue(1);
-				 seed_element_panel->Enable();
+				seedelementcheckbox->SetValue(1);
+				seed_element_panel->Enable();
 			}
 			else
 			{
-				 seedelementcheckbox->SetValue(0);
-				 seed_element_panel->Disable();
+				seedelementcheckbox->SetValue(0);
+				seed_element_panel->Disable();
 			}
 			seed_element_chooser->set_object(seed_element);
 		}
@@ -4164,17 +4206,17 @@ void SetGraphic(Cmiss_graphic *graphic)
 					&streamline_length,&streamline_width);
 				if (streamline_type_chooser == NULL)
 				{
-					 streamline_type_chooser = 
+					streamline_type_chooser = 
 							new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_type)>
 							(streamline_type_chooser_panel, streamline_type,
-								 (ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
-								 (void *)NULL, region_tree_viewer->user_interface);
-					 streamline_type_chooser_panel->Fit();
-					 Callback_base< enum Streamline_type > *streamline_type_callback = 
+								(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
+								(void *)NULL, region_tree_viewer->user_interface);
+					streamline_type_chooser_panel->Fit();
+					Callback_base< enum Streamline_type > *streamline_type_callback = 
 							new Callback_member_callback< enum Streamline_type, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Streamline_type) >
 							(this, &wxRegionTreeViewer::streamline_type_callback);
-					 streamline_type_chooser->set_callback(streamline_type_callback);
+					streamline_type_chooser->set_callback(streamline_type_callback);
 				}
 				streamline_type_chooser->set_value(streamline_type);
 				sprintf(temp_string,"%g",streamline_length);
@@ -4183,17 +4225,17 @@ void SetGraphic(Cmiss_graphic *graphic)
 				widthtextctrl->SetValue(temp_string);
 				if (stream_vector_chooser == NULL)
 				{
-					 stream_vector_chooser =
+					stream_vector_chooser =
 							new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 							(stream_vector_chooser_panel, stream_vector_field, region_tree_viewer->field_manager,
-								 Computed_field_is_stream_vector_capable, (void *)NULL, 
-								 region_tree_viewer->user_interface);
-					 Callback_base< Computed_field* > *stream_vector_callback = 
+								Computed_field_is_stream_vector_capable, (void *)NULL, 
+								region_tree_viewer->user_interface);
+					Callback_base< Computed_field* > *stream_vector_callback = 
 							new Callback_member_callback< Computed_field*, 
 							wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
 							(this, &wxRegionTreeViewer::stream_vector_callback);
-					 stream_vector_chooser->set_callback(stream_vector_callback);
-					 stream_vector_chooser_panel->Fit();
+					stream_vector_chooser->set_callback(stream_vector_callback);
+					stream_vector_chooser_panel->Fit();
 				}
 				stream_vector_chooser ->set_object(stream_vector_field);
 				reversecheckbox->SetValue(reverse_track);
@@ -4349,28 +4391,28 @@ void SetGraphic(Cmiss_graphic *graphic)
 			texture_coord_field = Cmiss_graphic_get_texture_coordinate_field(graphic);
 			if (texture_coord_field_chooser == NULL)
 			{
-				 texture_coord_field_chooser =
+				texture_coord_field_chooser =
 						new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-				    (texture_coordinates_chooser_panel,texture_coord_field, region_tree_viewer->field_manager,
-							 Computed_field_has_up_to_3_numerical_components, (void *)NULL, 
-							 region_tree_viewer->user_interface);
-				 Callback_base< Computed_field* > *texture_coord_field_callback = 
+				   (texture_coordinates_chooser_panel,texture_coord_field, region_tree_viewer->field_manager,
+							Computed_field_has_up_to_3_numerical_components, (void *)NULL, 
+							region_tree_viewer->user_interface);
+				Callback_base< Computed_field* > *texture_coord_field_callback = 
 						new Callback_member_callback< Computed_field*, 
 					wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
 						(this, &wxRegionTreeViewer::texture_coord_field_callback);
-				 texture_coord_field_chooser->set_callback(texture_coord_field_callback);
-				 texture_coordinates_chooser_panel->Fit();
+				texture_coord_field_chooser->set_callback(texture_coord_field_callback);
+				texture_coordinates_chooser_panel->Fit();
 			}
 			if ((struct Computed_field *)NULL != texture_coord_field)
 			{
 				texturecoordinatescheckbox->SetValue(1);
 				texture_coord_field_chooser->set_object(texture_coord_field);
-			 	texture_coordinates_chooser_panel->Enable();
-			 }
+				texture_coordinates_chooser_panel->Enable();
+			}
 			else
 			{
 				texturecoordinatescheckbox->SetValue(0);
-			 	texture_coordinates_chooser_panel->Disable();
+				texture_coordinates_chooser_panel->Disable();
 			}
 		}
 		else
@@ -4392,17 +4434,17 @@ void SetGraphic(Cmiss_graphic *graphic)
 			render_type=Cmiss_graphic_get_render_type(graphic);
 			if (render_type_chooser == NULL)
 			{
-				 render_type_chooser = 
+				render_type_chooser = 
 						new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Render_type)>
 						(render_type_chooser_panel, render_type,
-							 (ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL,
-							 (void *)NULL, region_tree_viewer->user_interface);
-				 render_type_chooser_panel->Fit();
-				 Callback_base< enum Render_type > *render_type_callback = 
+							(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL,
+							(void *)NULL, region_tree_viewer->user_interface);
+				render_type_chooser_panel->Fit();
+				Callback_base< enum Render_type > *render_type_callback = 
 						new Callback_member_callback< enum Render_type, 
 						wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Render_type) >
 						(this, &wxRegionTreeViewer::render_type_callback);
-				 render_type_chooser->set_callback(render_type_callback);
+				render_type_chooser->set_callback(render_type_callback);
 			}
 			render_type_chooser->set_value(render_type);
 		}
@@ -4698,10 +4740,10 @@ void OnMenuSelectionOff(wxCommandEvent &event)
 
 void CloseRegionTreeViewer(wxCloseEvent &event)
 {
-	 ENTER(CloseRegionTreeViewer);
+	ENTER(CloseRegionTreeViewer);
 	USE_PARAMETER(event);
-	 DESTROY(Region_tree_viewer)(region_tree_viewer->region_tree_viewer_address);
-	 LEAVE;
+	DESTROY(Region_tree_viewer)(region_tree_viewer->region_tree_viewer_address);
+	LEAVE;
 }
 
 void EditTessellation(wxCommandEvent &event)
@@ -4788,9 +4830,9 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_MENU(AddMenuItemStreamlines, wxRegionTreeViewer::AddGraphicItemFromMenu)
 	EVT_MENU(AddMenuItemStaticGraphic, wxRegionTreeViewer::AddGraphicItemFromMenu)
 #if defined (__WXMSW__)
-	 EVT_SIZE(wxRegionTreeViewer::FrameGetSize)
+	EVT_SIZE(wxRegionTreeViewer::FrameGetSize)
 #endif /*!defined (__WXMSW__)*/
-	 EVT_CLOSE(wxRegionTreeViewer::CloseRegionTreeViewer)
+	EVT_CLOSE(wxRegionTreeViewer::CloseRegionTreeViewer)
 END_EVENT_TABLE()
 
 int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
@@ -4874,7 +4916,7 @@ int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
 */
 
 void Region_tree_viewer_set_active_rendition(
-	 struct Region_tree_viewer *region_tree_viewer, struct Cmiss_rendition *rendition)
+	struct Region_tree_viewer *region_tree_viewer, struct Cmiss_rendition *rendition)
 {
 	if (region_tree_viewer->rendition)
 	{
@@ -4902,11 +4944,11 @@ void Region_tree_viewer_set_active_rendition(
 	{
 		int previous_selection;
 		if (region_tree_viewer->edit_rendition
-				&& region_tree_viewer->current_graphic)
+			&& region_tree_viewer->current_graphic)
 		{
 			previous_selection = Cmiss_rendition_get_graphic_position(
-					region_tree_viewer->edit_rendition,
-					region_tree_viewer->current_graphic);
+				region_tree_viewer->edit_rendition,
+				region_tree_viewer->current_graphic);
 		}
 		else
 		{
@@ -4917,7 +4959,7 @@ void Region_tree_viewer_set_active_rendition(
 		if (region_tree_viewer->rendition)
 		{
 			edit_rendition = create_editor_copy_Cmiss_rendition(
-					region_tree_viewer->rendition);
+				region_tree_viewer->rendition);
 			if (!edit_rendition)
 			{
 				display_message(ERROR_MESSAGE, "Rendition_editor_set_rendition.  "
@@ -4929,7 +4971,7 @@ void Region_tree_viewer_set_active_rendition(
 			edit_rendition = (struct Cmiss_rendition *) NULL;
 		}
 		REACCESS(Cmiss_rendition)(&(region_tree_viewer->edit_rendition),
-				edit_rendition);
+			edit_rendition);
 		DEACCESS(Cmiss_rendition)(&edit_rendition);
 		if (previous_selection == 0)
 		{
@@ -4938,39 +4980,37 @@ void Region_tree_viewer_set_active_rendition(
 		if (!region_tree_viewer->graphiclistbox)
 		{
 			region_tree_viewer->graphiclistbox
-					= XRCCTRL(
-							*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
+				= XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		}
 		region_tree_viewer->graphiclistbox->SetSelection(wxNOT_FOUND);
 		region_tree_viewer->graphiclistbox->Clear();
 		if (region_tree_viewer->edit_rendition)
 		{
 			if (Cmiss_rendition_get_number_of_graphic(
-					region_tree_viewer->edit_rendition) > 0)
+				region_tree_viewer->edit_rendition) > 0)
 			{
 				for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
-						Region_tree_viewer_add_graphic, (void *) region_tree_viewer);
+					Region_tree_viewer_add_graphic, (void *) region_tree_viewer);
 				int num = Cmiss_rendition_get_number_of_graphic(
-						region_tree_viewer->edit_rendition);
+					region_tree_viewer->edit_rendition);
 				Cmiss_graphic *temp_graphic = NULL;
 				if (num > previous_selection)
 				{
 					num = previous_selection;
 				}
 				temp_graphic = Cmiss_rendition_get_graphic_at_position(
-						region_tree_viewer->edit_rendition, num);
+					region_tree_viewer->edit_rendition, num);
 				region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(
-						temp_graphic);
+					temp_graphic);
 				region_tree_viewer->graphiclistbox->SetSelection(num - 1);
 				REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic,
-						temp_graphic);
+					temp_graphic);
 				if (temp_graphic)
 					Cmiss_graphic_destroy(&temp_graphic);
 				if (region_tree_viewer->current_graphic)
 				{
 					region_tree_viewer->current_graphic_type
-							= Cmiss_graphic_get_graphic_type(
-									region_tree_viewer->current_graphic);
+						= Cmiss_graphic_get_graphic_type(region_tree_viewer->current_graphic);
 				}
 				region_tree_viewer->lowersplitter->Enable();
 				region_tree_viewer->lowersplitter->Show();
@@ -4983,32 +5023,31 @@ void Region_tree_viewer_set_active_rendition(
 				}
 				region_tree_viewer->lowersplitter->Enable();
 				region_tree_viewer->lowersplitter->Show();
-				region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(
-						NULL);
+				region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(NULL);
 				region_tree_viewer->current_graphic_type = CMISS_GRAPHIC_LINES;
 			}
 			region_tree_viewer->field_manager
-					= Cmiss_region_get_Computed_field_manager(Cmiss_rendition_get_region(
-							region_tree_viewer->edit_rendition));
+				= Cmiss_region_get_Computed_field_manager(Cmiss_rendition_get_region(
+					region_tree_viewer->edit_rendition));
 		}
 		if (region_tree_viewer->rendition)
 		{
 			gtMatrix transformation_matrix;
 			Cmiss_rendition_get_transformation(region_tree_viewer->rendition,
-					&transformation_matrix);
+				&transformation_matrix);
 			region_tree_viewer->transformation_editor->set_rendition(
-					region_tree_viewer->rendition);
+				region_tree_viewer->rendition);
 			region_tree_viewer->transformation_editor->set_transformation(
-					&transformation_matrix);
+				&transformation_matrix);
 			if (Cmiss_rendition_add_transformation_callback(
-					region_tree_viewer->rendition,
-					Region_tree_viewer_wx_transformation_change,
-					(void *) region_tree_viewer))
+				region_tree_viewer->rendition,
+				Region_tree_viewer_wx_transformation_change,
+				(void *) region_tree_viewer))
 			{
 				region_tree_viewer->transformation_callback_flag = 1;
 			}
 			if (Cmiss_rendition_add_callback(region_tree_viewer->rendition,
-					Region_tree_viewer_wx_rendition_change, (void *) region_tree_viewer))
+				Region_tree_viewer_wx_rendition_change, (void *) region_tree_viewer))
 			{
 				region_tree_viewer->rendition_callback_flag = 1;
 			}
@@ -5032,16 +5071,16 @@ static int get_and_set_Cmiss_graphic_widgets(void *region_tree_viewer_void)
 	/*for the text field*/
 	if (region_tree_viewer->current_graphic)
 	{
-		 const char *name;
-		 Cmiss_graphic_get_name(region_tree_viewer->current_graphic,
+		const char *name;
+		Cmiss_graphic_get_name(region_tree_viewer->current_graphic,
 				&name);
-		 wxTextCtrl *nametextfield = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "NameTextField", wxTextCtrl);
-		 nametextfield->SetValue(name);
-		 DEALLOCATE(name);
+		wxTextCtrl *nametextfield = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "NameTextField", wxTextCtrl);
+		nametextfield->SetValue(name);
+		DEALLOCATE(name);
 
-		 /*for the selected and material chooser*/
-		 region_tree_viewer->wx_region_tree_viewer->SetBothMaterialChooser(region_tree_viewer->current_graphic);
-		 region_tree_viewer->wx_region_tree_viewer->SetGraphic(region_tree_viewer->current_graphic);
+		/*for the selected and material chooser*/
+		region_tree_viewer->wx_region_tree_viewer->SetBothMaterialChooser(region_tree_viewer->current_graphic);
+		region_tree_viewer->wx_region_tree_viewer->SetGraphic(region_tree_viewer->current_graphic);
 	}
 	wxFrame *frame=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmguiRegionTreeViewer", wxFrame);
 	frame->Layout();
@@ -5052,7 +5091,7 @@ static int get_and_set_Cmiss_graphic_widgets(void *region_tree_viewer_void)
  * Iterator function for rendition_editor_update_Graphic_item.
  */
 static int Region_tree_viewer_add_graphic_item(
-	 struct Cmiss_graphic *graphic, void *region_tree_viewer_void)
+	struct Cmiss_graphic *graphic, void *region_tree_viewer_void)
 {
 	char *graphic_string;
 	int return_code;
@@ -5060,16 +5099,16 @@ static int Region_tree_viewer_add_graphic_item(
 	ENTER(Region_tree_viewer_add_graphic_item);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		 graphic_string = Cmiss_graphic_string(graphic,
+		graphic_string = Cmiss_graphic_string(graphic,
 				GRAPHIC_STRING_COMPLETE_PLUS);
-		 wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
-		 graphicalitemschecklist->Append(graphic_string);
-		 if (Cmiss_graphic_get_visibility_flag(graphic))
-		 {
+		wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
+		graphicalitemschecklist->Append(graphic_string);
+		if (Cmiss_graphic_get_visibility_flag(graphic))
+		{
 				graphicalitemschecklist->Check((graphicalitemschecklist->GetCount()-1),1);
-		 }
-		 DEALLOCATE(graphic_string);
-		 return_code = 1;
+		}
+		DEALLOCATE(graphic_string);
+		return_code = 1;
 	}
 	else
 	{
@@ -5169,109 +5208,111 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(region_tree_viewer,struct Region_tree_viewer,1))
 		{		
-			 region_tree_viewer->auto_apply = 1;
-			 region_tree_viewer->child_edited =1;
-			 region_tree_viewer->child_expanded=1;
-			 region_tree_viewer->transformation_expanded=1;
-			 region_tree_viewer->transformation_callback_flag = 0;
-			 region_tree_viewer->gt_element_group_callback_flag = 0;
-			 region_tree_viewer->rendition_callback_flag = 0;
-			 region_tree_viewer->graphics_module = graphics_module;
-			 region_tree_viewer->scene = scene;
-			 region_tree_viewer->graphical_material_manager = graphical_material_manager;
-			 region_tree_viewer->region_tree_viewer_address = (struct Region_tree_viewer **)NULL;
-			 region_tree_viewer->default_material=default_material;
-			 region_tree_viewer->selected_material=default_material;
-			 region_tree_viewer->default_font=default_font;
-			 region_tree_viewer->glyph_manager=glyph_manager;
-			 region_tree_viewer->scene_manager = scene_manager;
-			 region_tree_viewer->user_interface=user_interface;
-			 region_tree_viewer->current_graphic_type=CMISS_GRAPHIC_LINES;
-			 region_tree_viewer->current_graphic = (Cmiss_graphic *)NULL;
-			 region_tree_viewer->volume_texture_manager=volume_texture_manager;
-			 region_tree_viewer->field_manager=(MANAGER(Computed_field)*)NULL;
- 			 region_tree_viewer->font_manager=Graphics_font_package_get_font_manager(font_package);
-			 region_tree_viewer->select_mode=(Graphics_select_mode)NULL;
-			 region_tree_viewer->constant_radius=0.0;
-			 region_tree_viewer->radius_scale_factor=1.0;
-			 region_tree_viewer->radius_scalar_field = (Computed_field *)NULL;
-			 region_tree_viewer->use_element_type= (Use_element_type)NULL;
-			 region_tree_viewer->xi_discretization_mode= (Xi_discretization_mode)NULL;
-			 region_tree_viewer->streamline_type=(Streamline_type)NULL;
-			 region_tree_viewer->streamline_data_type=(Streamline_data_type)NULL;
-			 region_tree_viewer->spectrum_manager=spectrum_manager;
-			 region_tree_viewer->spectrum = default_spectrum;
-			 region_tree_viewer->render_type =(Render_type)NULL;
-			 region_tree_viewer->fe_element =(FE_element *)NULL;
-			 region_tree_viewer->root_region = root_region;
-			 region_tree_viewer->current_region = NULL;
-			 region_tree_viewer->wx_region_tree_viewer = (wxRegionTreeViewer *)NULL;
-			 region_tree_viewer->graphiclistbox = (wxCheckListBox *)NULL;
-			 region_tree_viewer->rendition = (Cmiss_rendition *)NULL;
-			 region_tree_viewer->edit_rendition = (Cmiss_rendition *)NULL;
-			 wxLogNull logNo;
-			 region_tree_viewer->wx_region_tree_viewer = new
-					wxRegionTreeViewer(region_tree_viewer);
-			 region_tree_viewer->frame=
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmguiRegionTreeViewer", wxFrame);
-			 region_tree_viewer->frame->SetMinSize(wxSize(50,100));
-			 region_tree_viewer->frame->SetSize(wxSize(600,800));
-			 region_tree_viewer->frame->SetMaxSize(wxSize(2000,2000));
-			 region_tree_viewer->lowersplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"LowerSplitter",wxSplitterWindow);
-			 region_tree_viewer->top_collpane = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
-					"RegionTreeViewerTopCollapsiblePane", wxCollapsiblePane);
-			 wxWindow *top_collpane_win = region_tree_viewer->top_collpane->GetPane();
-			 region_tree_viewer->top_collpane_panel = new wxPanel(top_collpane_win);
-			 region_tree_viewer->transformation_editor = new Transformation_editor(
- 					region_tree_viewer->top_collpane_panel, "transformation_editor", NULL,
-					&region_tree_viewer->auto_apply);
-			 wxSizer *top_collpane_sizer = new wxBoxSizer(wxVERTICAL);
-			 top_collpane_sizer->Add(region_tree_viewer->top_collpane_panel, 1, wxEXPAND|wxALL, 2);
-			 top_collpane_win->SetSizer(top_collpane_sizer);
-			 top_collpane_sizer->SetSizeHints(top_collpane_win);
-			 top_collpane_sizer->Layout();
-			 top_collpane_win->Layout();
-			 region_tree_viewer->top_collpane->Collapse(1);
-			 region_tree_viewer->autocheckbox =
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "AutoCheckBox", wxCheckBox);
-			 region_tree_viewer->autocheckbox->SetValue(true);
-			 region_tree_viewer->applybutton =
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "ApplyButton", wxButton);
-			 region_tree_viewer->applybutton->Disable();
-			 region_tree_viewer->revertbutton =
+			region_tree_viewer->auto_apply = 1;
+			region_tree_viewer->child_edited =1;
+			region_tree_viewer->child_expanded=1;
+			region_tree_viewer->transformation_expanded=1;
+			region_tree_viewer->transformation_callback_flag = 0;
+			region_tree_viewer->gt_element_group_callback_flag = 0;
+			region_tree_viewer->rendition_callback_flag = 0;
+			region_tree_viewer->graphics_module = graphics_module;
+			region_tree_viewer->scene = scene;
+			region_tree_viewer->graphical_material_manager = graphical_material_manager;
+			region_tree_viewer->region_tree_viewer_address = (struct Region_tree_viewer **)NULL;
+			region_tree_viewer->default_material=default_material;
+			region_tree_viewer->selected_material=default_material;
+			region_tree_viewer->default_font=default_font;
+			region_tree_viewer->glyph_manager=glyph_manager;
+			region_tree_viewer->scene_manager = scene_manager;
+			region_tree_viewer->user_interface=user_interface;
+			region_tree_viewer->current_graphic_type=CMISS_GRAPHIC_LINES;
+			region_tree_viewer->current_graphic = (Cmiss_graphic *)NULL;
+			region_tree_viewer->volume_texture_manager=volume_texture_manager;
+			region_tree_viewer->field_manager=(MANAGER(Computed_field)*)NULL;
+			region_tree_viewer->font_manager=Graphics_font_package_get_font_manager(font_package);
+			region_tree_viewer->select_mode=(Graphics_select_mode)NULL;
+			region_tree_viewer->constant_radius=0.0;
+			region_tree_viewer->radius_scale_factor=1.0;
+			region_tree_viewer->radius_scalar_field = (Computed_field *)NULL;
+			region_tree_viewer->use_element_type= (Use_element_type)NULL;
+			region_tree_viewer->xi_discretization_mode= (Xi_discretization_mode)NULL;
+			region_tree_viewer->streamline_type=(Streamline_type)NULL;
+			region_tree_viewer->streamline_data_type=(Streamline_data_type)NULL;
+			region_tree_viewer->spectrum_manager=spectrum_manager;
+			region_tree_viewer->spectrum = default_spectrum;
+			region_tree_viewer->render_type =(Render_type)NULL;
+			region_tree_viewer->fe_element =(FE_element *)NULL;
+			region_tree_viewer->root_region = root_region;
+			region_tree_viewer->current_region = NULL;
+			region_tree_viewer->wx_region_tree_viewer = (wxRegionTreeViewer *)NULL;
+			region_tree_viewer->graphiclistbox = (wxCheckListBox *)NULL;
+			region_tree_viewer->rendition = (Cmiss_rendition *)NULL;
+			region_tree_viewer->edit_rendition = (Cmiss_rendition *)NULL;
+			wxLogNull logNo;
+			region_tree_viewer->wx_region_tree_viewer = new
+				wxRegionTreeViewer(region_tree_viewer);
+			region_tree_viewer->frame=
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmguiRegionTreeViewer", wxFrame);
+			region_tree_viewer->frame->SetMinSize(wxSize(50,100));
+			region_tree_viewer->frame->SetSize(wxSize(600,800));
+			region_tree_viewer->frame->SetMaxSize(wxSize(2000,2000));
+			region_tree_viewer->lowersplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"LowerSplitter",wxSplitterWindow);
+			region_tree_viewer->top_collpane = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
+				"RegionTreeViewerTopCollapsiblePane", wxCollapsiblePane);
+			wxWindow *top_collpane_win = region_tree_viewer->top_collpane->GetPane();
+			region_tree_viewer->top_collpane_panel = new wxPanel(top_collpane_win);
+			region_tree_viewer->transformation_editor = new Transformation_editor(
+				region_tree_viewer->top_collpane_panel, "transformation_editor", NULL,
+				&region_tree_viewer->auto_apply);
+			wxSizer *top_collpane_sizer = new wxBoxSizer(wxVERTICAL);
+			top_collpane_sizer->Add(region_tree_viewer->top_collpane_panel, 1, wxEXPAND|wxALL, 2);
+			top_collpane_win->SetSizer(top_collpane_sizer);
+			top_collpane_sizer->SetSizeHints(top_collpane_win);
+			top_collpane_sizer->Layout();
+			top_collpane_win->Layout();
+			region_tree_viewer->top_collpane->Collapse(1);
+			region_tree_viewer->autocheckbox =
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "AutoCheckBox", wxCheckBox);
+			region_tree_viewer->autocheckbox->SetValue(true);
+			region_tree_viewer->applybutton =
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "ApplyButton", wxButton);
+			region_tree_viewer->applybutton->Disable();
+			region_tree_viewer->revertbutton =
 					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "RevertButton", wxButton);
-			 region_tree_viewer->revertbutton->Disable();
-			 region_tree_viewer->frame->Layout();
-			 region_tree_viewer->sceneediting =
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "SceneEditing", wxScrolledWindow);
-			 region_tree_viewer->graphiclistbox =
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
-			 region_tree_viewer->sceneediting->Layout();
-			 region_tree_viewer->sceneediting->SetScrollbars(10,10,40,40);
-			 region_tree_viewer->verticalsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
-					"VerticalSplitter",wxSplitterWindow);
-			 region_tree_viewer->verticalsplitter->SetSashPosition(150);
-			 region_tree_viewer->lowersplitter->SetSashPosition(100);
-			 wxPanel *lowest_panel = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
-				 "LowestPanel",wxPanel);
-			 lowest_panel->SetMinSize(wxSize(-1,150));
-			 region_tree_viewer->lowersplitter->Layout();
-			 region_tree_viewer->lowersplitter->Hide();
-			 region_tree_viewer->verticalsplitter->Layout();
-				wxPanel *rightpanel=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"RightPanel",
-					wxPanel);
-				rightpanel->Layout();
-			 wxPanel *tree_control_panel =
-					XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TreeControlPanel",wxPanel);
-			 region_tree_viewer->testing_tree_ctrl =
-					new wxCmguiHierachicalTree(region_tree_viewer->wx_region_tree_viewer, tree_control_panel);
-			 region_tree_viewer->ImageList = new wxImageList(13,13);
-			 region_tree_viewer->ImageList->Add(wxIcon(tickbox_xpm));
-			 region_tree_viewer->ImageList->Add(wxIcon(unticked_box_xpm));
-			 region_tree_viewer->testing_tree_ctrl->AssignImageList(region_tree_viewer->ImageList);
-			 Region_tree_viewer_setup_region_tree(region_tree_viewer);
-			 region_tree_viewer->testing_tree_ctrl->ExpandAll();
-			 tree_control_panel->Layout();
+			region_tree_viewer->revertbutton->Disable();
+			region_tree_viewer->frame->Layout();
+			region_tree_viewer->sceneediting =
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "SceneEditing", wxScrolledWindow);
+			region_tree_viewer->graphiclistbox =
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
+			region_tree_viewer->sceneediting->Layout();
+			region_tree_viewer->sceneediting->SetScrollbars(10,10,40,40);
+			region_tree_viewer->verticalsplitter=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"VerticalSplitter",wxSplitterWindow);
+			region_tree_viewer->verticalsplitter->SetSashPosition(150);
+			region_tree_viewer->lowersplitter->SetSashPosition(160);
+			region_tree_viewer->lowersplitter->Layout();
+			region_tree_viewer->lowersplitter->Hide();
+			region_tree_viewer->verticalsplitter->Layout();
+			region_tree_viewer->lowersplitter->SetSashPosition(100);
+			wxPanel *lowest_panel = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,
+				"LowestPanel",wxPanel);
+			lowest_panel->SetMinSize(wxSize(-1,150));
+			region_tree_viewer->lowersplitter->Layout();
+			region_tree_viewer->lowersplitter->Hide();
+			region_tree_viewer->verticalsplitter->Layout();
+			wxPanel *rightpanel=XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "RightPanel", wxPanel);
+			rightpanel->Layout();
+			wxPanel *tree_control_panel =
+				XRCCTRL(*region_tree_viewer->wx_region_tree_viewer,"TreeControlPanel",wxPanel);
+			region_tree_viewer->testing_tree_ctrl =
+				new wxCmguiHierachicalTree(region_tree_viewer->wx_region_tree_viewer, tree_control_panel);
+			region_tree_viewer->ImageList = new wxImageList(13,13);
+			region_tree_viewer->ImageList->Add(wxIcon(tickbox_xpm));
+			region_tree_viewer->ImageList->Add(wxIcon(unticked_box_xpm));
+			region_tree_viewer->testing_tree_ctrl->AssignImageList(region_tree_viewer->ImageList);
+			Region_tree_viewer_setup_region_tree(region_tree_viewer);
+			region_tree_viewer->testing_tree_ctrl->ExpandAll();
+			tree_control_panel->Layout();
 		}
 		else
 		{
@@ -5389,7 +5430,7 @@ Returns the root scene of the <region_tree_viewer>.
 	scene = (struct Scene*)NULL;
 	if (region_tree_viewer)
 	{
-		 scene = region_tree_viewer->scene;
+		scene = region_tree_viewer->scene;
 	}
 	else
 	{
@@ -5417,28 +5458,28 @@ Sets the root scene of the <region_tree_viewer>. Updates widgets.
 	ENTER(Region_tree_viewer_set_scene);
 	if (region_tree_viewer && scene)
 	{
-		 if (scene == Region_tree_viewer_get_scene(region_tree_viewer))
-		 {
+		if (scene == Region_tree_viewer_get_scene(region_tree_viewer))
+		{
 				return_code = 1;
-		 }
-		 else 
-		 {
+		}
+		else 
+		{
 				if(region_tree_viewer->wx_region_tree_viewer)
 				{
-					 region_tree_viewer->wx_region_tree_viewer->setSceneObject(scene);
-					 return_code = 1;
+					region_tree_viewer->wx_region_tree_viewer->setSceneObject(scene);
+					return_code = 1;
 				}
 				else
 				{
-					 display_message(ERROR_MESSAGE,
+					display_message(ERROR_MESSAGE,
 							"Region_tree_viewer_set_scene.  Could not set new scene");
-					 return_code = 0;
+					return_code = 0;
 				}
-		 }
-		 if (return_code)
-		 {
+		}
+		if (return_code)
+		{
 				region_tree_viewer->scene = scene;
-		 }
+		}
 	}
 	else
 	{
@@ -5458,16 +5499,16 @@ Sets the root scene of the <region_tree_viewer>. Updates widgets.
 */
 void Region_tree_viewer_set_graphic_widgets_for_rendition(Region_tree_viewer *region_tree_viewer)
 {
-	 ENTER(Region_tree_viewer_set_graphic_widgets_for_rendition);
-	 if (region_tree_viewer && region_tree_viewer->rendition)
-	 {
-		 region_tree_viewer->wx_region_tree_viewer->
-			 Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
-		 get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
-		 region_tree_viewer->lowersplitter->Enable();
-		 region_tree_viewer->lowersplitter->Show();
-	 }
-	 LEAVE;
+	ENTER(Region_tree_viewer_set_graphic_widgets_for_rendition);
+	if (region_tree_viewer && region_tree_viewer->rendition)
+	{
+		region_tree_viewer->wx_region_tree_viewer->
+			Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
+		get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
+		region_tree_viewer->lowersplitter->Enable();
+		region_tree_viewer->lowersplitter->Show();
+	}
+	LEAVE;
 }
 
 static int Region_tree_viewer_wx_rendition_change(
@@ -5510,7 +5551,7 @@ static int Region_tree_viewer_wx_rendition_change(
 }
 
 static int Region_tree_viewer_add_graphic(
-	 struct Cmiss_graphic *graphic, void *region_tree_viewer_void)
+	struct Cmiss_graphic *graphic, void *region_tree_viewer_void)
 {
 	char *graphic_string;
 	int return_code;
@@ -5518,15 +5559,15 @@ static int Region_tree_viewer_add_graphic(
 	ENTER(Region_tree_viewer_add_graphic);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		 graphic_string = Cmiss_graphic_string(graphic,	GRAPHIC_STRING_COMPLETE_PLUS);
-		 wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
-		 graphicchecklist->Append(graphic_string);
-		 if (Cmiss_graphic_get_visibility_flag(graphic))
-		 {
+		graphic_string = Cmiss_graphic_string(graphic,	GRAPHIC_STRING_COMPLETE_PLUS);
+		wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
+		graphicchecklist->Append(graphic_string);
+		if (Cmiss_graphic_get_visibility_flag(graphic))
+		{
 			graphicchecklist->Check((graphicchecklist->GetCount()-1),1);
-		 }
-		 DEALLOCATE(graphic_string);
-		 return_code = 1;
+		}
+		DEALLOCATE(graphic_string);
+		return_code = 1;
 	}
 	else
 	{

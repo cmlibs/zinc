@@ -131,7 +131,7 @@ bool FileImportExport::importSTEP( const std::string& file )
 	{
 		if ( !reader.Transfer( m_doc ) )
 		{
-			// If the transfer to the xcaf document fails then just grap the shapes
+			// If the transfer to the xcaf document fails then just grab the shapes
 			// and save them as a sequence of shapes, all higher level information is 
 			// lost at this point
 			m_doc.Nullify();
