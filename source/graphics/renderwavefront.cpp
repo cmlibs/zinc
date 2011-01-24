@@ -329,8 +329,13 @@ points  given by the positions in <point_list> and oriented and scaled by
 			/* try to draw points and lines faster */
 			if (0==strcmp(glyph->name,"point"))
 			{
-				display_message(WARNING_MESSAGE,"draw_glyph_set_wavefront.  "
-					"pointset glyphs not currently rendered in wavefront files (use a surface glyph).");
+				for (int i = 0; i < number_of_points; i++)
+				{
+					fprintf(wavefront_file, "v %.8f %.8f %.8f\n",
+						point_list[i][0],
+						point_list[i][1],
+						point_list[i][2]);
+				}
 			}
 			else if (0==strcmp(glyph->name,"line"))
 			{
