@@ -403,7 +403,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 
 static int draw_surface_wavefront(FILE *file, Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int npts1,int npts2, gtPolygonType polygon_type,
-  int number_of_data_components, GTDATA *data,
+	int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material, struct Spectrum *spectrum,
 	struct LIST(Wavefront_vertex) *vertex_list,
 	struct Graphical_material **current_material)
@@ -450,7 +450,7 @@ DESCRIPTION :
 							}
 							else
 							{
-								fprintf(file, "v %f %f %f\n",
+								fprintf(file, "v %.8f %.8f %.8f\n",
 									surfpts[i+npts1*j][0],
 									surfpts[i+npts1*j][1],
 									surfpts[i+npts1*j][2]);
@@ -466,7 +466,7 @@ DESCRIPTION :
 						}
 						else
 						{
-							fprintf(file, "v %f %f %f\n",
+							fprintf(file, "v %.8f %.8f %.8f\n",
 								surfpts[i+npts1*j][0],
 								surfpts[i+npts1*j][1],
 								surfpts[i+npts1*j][2]);
@@ -564,7 +564,7 @@ DESCRIPTION :
 							}
 							else
 							{
-								fprintf(file, "v %f %f %f\n",
+								fprintf(file, "v %.8f %.8f %.8f\n",
 									(*surface_point_1)[0],
 									(*surface_point_1)[1],
 									(*surface_point_1)[2]);
@@ -580,7 +580,7 @@ DESCRIPTION :
 						}
 						else
 						{
-							fprintf(file, "v %f %f %f\n",
+							fprintf(file, "v %.8f %.8f %.8f\n",
 								(*surface_point_1)[0],
 								(*surface_point_1)[1],
 								(*surface_point_1)[2]);
@@ -1205,7 +1205,8 @@ Convert graphical object into Wavefront object file.
 
 struct Export_to_wavefront_data
 {
-	char *base_filename;
+	char *file_basename;
+	char *file_path;
 	FILE *wavefront_file;
 	int full_comments;
 	struct Scene *scene;
@@ -1220,10 +1221,14 @@ DESCRIPTION :
 Write the window object to the <wavefront_file_void>.
 ==============================================================================*/
 {
-	char filename[150];
 	FILE *wavefront_global_file, *wavefront_object_file;
 	int return_code;
 	struct Export_to_wavefront_data *export_to_wavefront_data;
+#if defined(WIN32_SYSTEM)
+	const char *system_dir_seperator = "\\";
+#else
+	const char *system_dir_seperator = "/";
+#endif /* defined(WIN32_SYSTEM) */
 
 	ENTER(graphics_object_export_to_wavefront);
 	/* check arguments */
@@ -1238,29 +1243,36 @@ Write the window object to the <wavefront_file_void>.
 			case g_SURFACE:
 			case g_NURBS:
 			{
-
-				const char *parsed_name = duplicate_string(gt_object->name);
-				char *temp_string = NULL;
-				const char *num_string = "";
-				if ((temp_string = (char *)strrchr(parsed_name, '/')))
+				int error;
+				char *parsed_name = duplicate_string(gt_object->name);
+				char *split_str = strtok(parsed_name, "/");
+				char *file_name = NULL;
+				if (export_to_wavefront_data->file_path != NULL)
+					file_name = duplicate_string(export_to_wavefront_data->file_path);
+				char *file_basename = duplicate_string(export_to_wavefront_data->file_basename);
+				while (split_str != NULL)
 				{
-					num_string = temp_string+2;
-					temp_string[0] = '\0';
+					if ((strlen(file_basename) > 0) && (strncmp(split_str, ".", 1) != 0))
+					{
+						append_string(&file_basename, "_", &error);
+					}
+					append_string(&file_basename, split_str, &error);
+					split_str = strtok(NULL, "/");
 				}
-				while ((temp_string = (char *)strchr(parsed_name, '/')))
-				{
-					temp_string[0] = '_';
-				}
-				sprintf(filename,"%s%s_%s.obj",export_to_wavefront_data->base_filename,
-					parsed_name,num_string);
+				append_string(&file_basename, ".obj", &error);
 
 				DEALLOCATE(parsed_name);
-				fprintf(wavefront_global_file,"call %s\n",filename);
+				fprintf(wavefront_global_file,"call %s\n",file_basename);
+				if ((file_name != NULL) && (strlen(file_name) > 0))
+				{
+					append_string(&file_name, system_dir_seperator, &error);
+				}
+				append_string(&file_name, file_basename, &error);
 					
-				if ( wavefront_object_file = fopen(filename, "w"))
+				if ( wavefront_object_file = fopen(file_name, "w"))
 				{
 					fprintf(wavefront_object_file,
-						"# CMGUI Wavefront Object file generator\n#%s \n",filename);
+						"# CMGUI Wavefront Object file generator\n#%s \n",file_basename);
 					fprintf(wavefront_object_file,"mtllib global.mtl\n\n");
 					file_vertex_index = 0;
 					file_normal_vertex_index = 0;
@@ -1273,9 +1285,11 @@ Write the window object to the <wavefront_file_void>.
 				else
 				{
 					display_message(ERROR_MESSAGE,"graphics_object_export_to_wavefront.  "
-						"Could not open wavefront object file %s", filename);
+						"Could not open wavefront object file %s", file_name);
 					return_code=0;
 				}
+				DEALLOCATE(file_basename);
+				DEALLOCATE(file_name);
 			} break;
 			default:
 			{
@@ -1309,6 +1323,13 @@ Renders the visible objects to Wavefront object files.
 ==============================================================================*/
 {
 	char *extension;
+#if defined(WIN32_SYSTEM)
+	const char system_dir_seperator = '\\';
+#else
+	const char system_dir_seperator = '/';
+#endif /* defined(WIN32_SYSTEM) */
+	char *file_path = NULL;
+	char *file_basename = NULL;
 	FILE *wavefront_global_file;
 	int return_code;
 	struct Export_to_wavefront_data export_to_wavefront_data;
@@ -1337,12 +1358,30 @@ Renders the visible objects to Wavefront object files.
 			{
 				*extension = 0;
 			}
-			export_to_wavefront_data.base_filename = file_name;
+			file_basename = strrchr(file_name, system_dir_seperator);
+			if (file_basename == NULL)
+			{
+				export_to_wavefront_data.file_path = NULL;
+				export_to_wavefront_data.file_basename = duplicate_string(file_name);
+			}
+			else
+			{
+				int file_path_length = static_cast<int>(file_basename-file_name);
+				ALLOCATE(file_path, char, file_path_length+1);
+				strncpy(file_path, file_name, file_path_length);
+				file_path[file_path_length] = '\0';
+				export_to_wavefront_data.file_path = file_path;
+				export_to_wavefront_data.file_basename = duplicate_string(file_basename+1);
+			}
 			export_to_wavefront_data.full_comments = full_comments;
 
 			return_code=for_each_graphics_object_in_scene(scene,
 				graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 			
+			if (export_to_wavefront_data.file_path)
+				DEALLOCATE(export_to_wavefront_data.file_path);
+			if (export_to_wavefront_data.file_basename)
+				DEALLOCATE(export_to_wavefront_data.file_basename);
 			fclose (wavefront_global_file);
 			return_code = 1;
 		}
