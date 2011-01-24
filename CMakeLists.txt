@@ -147,6 +147,7 @@ SET( CMAKE_PREFIX_PATH ${CMGUI_THIRD_PARTY_INSTALL_PREFIX} )
 # Must have dependencies
 #FIND_PACKAGE( LibXml2 REQUIRED ) <-- pulled in by fieldml
 FIND_PACKAGE( fieldml REQUIRED HINTS ${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/cmake )
+FIND_PACKAGE( Opt++ REQUIRED COMPONENTS opt newton base constraints gss pds utils newmat )
 
 # Should have dependencies
 FIND_PACKAGE( ZLIB QUIET )
@@ -206,7 +207,8 @@ OPTION_WITH_DEFAULT( CMGUI_USE_ZLIB "Do you want to use zlib?" ON )
 OPTION_WITH_DEFAULT( CMGUI_USE_BZip2 "Do you want to use bzip2?" ON )
 OPTION_WITH_DEFAULT( CMGUI_USE_JPEG "Do you want to use jpeg?" ON )
 # Could have dependent library options
-OPTION_WITH_DEFAULT( CMGUI_USE_IMAGEMAGICK "Do you want to use Image Magick?" ${ImageMagick_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_IMAGEMAGICK "Do you want to use Image Magick?"
+	OFF ) # ${ImageMagick_FOUND} )
 OPTION_WITH_DEFAULT( CMGUI_USE_ITK "Do you want to use ITK?" ${ITK_FOUND} )
 OPTION_WITH_DEFAULT( CMGUI_USE_GDCM "Do you want to use libGDCM?" OFF )
 OPTION_WITH_DEFAULT( CMGUI_USE_OPENCASCADE "Do you want to use OpenCASCADE?" OFF )
@@ -277,10 +279,12 @@ SET_OPERATING_SYSTEM_DEFINES( ) # <-- mostly set automatically by cmake just add
 SET_GRAPHICS_DEFINES( )
 
 # Start loading in the dependent libraries
-# fieldml
-SET( DEPENDENT_LIBS ${FIELDML_LIBRARIES} )
-SET( INCLUDE_DIRS ${FIELDML_INCLUDE_DIRS} )
+# fieldml, opt++
+SET( DEPENDENT_LIBS ${FIELDML_LIBRARIES} ${OPTPP_LIBRARIES} )
+SET( INCLUDE_DIRS ${FIELDML_INCLUDE_DIRS} ${OPTPP_INCLUDE_DIRS} )
+SET( EXTRA_COMPILER_DEFINITIONS ${OPTPP_DEFINITIONS} )
 SET( USE_FIELDML TRUE )
+SET( USE_OPTPP TRUE )
 DBG_MSG( "FieldML include dirs ${FIELDML_INCLUDE_DIRS}" )
 DBG_MSG( "FieldML libraries ${FIELDML_LIBRARIES}" )
 
