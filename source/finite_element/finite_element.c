@@ -35369,7 +35369,7 @@ storage for the <value> should have been allocated outside the function.
 ???DB.  Picks up the first version for the node.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(calculate_FE_field);
 	if (field&&((node&&!element&&!xi_coordinates)||

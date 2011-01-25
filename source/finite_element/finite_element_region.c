@@ -2719,7 +2719,7 @@ DESCRIPTION :
 Adds an entry for selecting an FE_field.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct FE_region *master_fe_region;
 
 	ENTER(Option_table_add_set_FE_field_from_FE_region);
@@ -2734,12 +2734,12 @@ Adds an entry for selecting an FE_field.
 		Option_table_add_entry(option_table, entry_string,
 			(void *)fe_field_address, master_fe_region->fe_field_list,
 			set_FE_field);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Option_table_add_set_FE_field_from_FE_region.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
