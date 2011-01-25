@@ -45,6 +45,7 @@ extern "C" {
 #include "api++/CmissField.hpp"
 #include "api++/CmissFieldTypesArithmeticOperators.hpp"
 #include "api++/CmissFieldTypesComposite.hpp"
+#include "api++/CmissFieldTypesGroup.hpp"
 #include "api++/CmissFieldTypesImage.hpp"
 #include "api++/CmissFieldTypesTrigonometry.hpp"
 
@@ -53,6 +54,7 @@ namespace Cmiss
 
 class FieldAdd;
 class FieldConstant;
+class FieldGroup;
 class FieldImage;
 class FieldSin;
 
@@ -109,6 +111,13 @@ public:
 	{
 		return FieldConstant(reinterpret_cast<Cmiss_field_constant_id>(
 			Cmiss_field_module_create_constant(id, numValues, values)));
+	}
+
+	// factory methods for creating new fields
+	FieldGroup createGroup()
+	{
+		return FieldGroup(reinterpret_cast<Cmiss_field_group_id>(
+			Cmiss_field_module_create_group(id)));
 	}
 
 	FieldImage createImage(const Field& domain)

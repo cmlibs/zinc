@@ -962,4 +962,6 @@ int Cmiss_graphic_selected_element_points_change(
 int Cmiss_graphic_set_rendition_for_list_private(
 		struct Cmiss_graphic *graphic, void *rendition_void);
 
+int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_void);
+
 #endif

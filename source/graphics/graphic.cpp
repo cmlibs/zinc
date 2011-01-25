@@ -2120,6 +2120,17 @@ int Cmiss_graphic_set_exterior(struct Cmiss_graphic *graphic,
 	return (return_code);
 }
 
+int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_void)
+{
+	USE_PARAMETER(dummy_void);
+	if (graphic)
+	{
+		graphic->selected_graphics_changed = 1;
+		return 1;
+	}
+	return 0;
+}
+
 int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 {
 	int return_code = 0;
@@ -3642,7 +3653,6 @@ int Cmiss_graphic_to_graphics_object(
 					}
 				}
 			}
-
 
 			if (graphic->selected_graphics_changed)
 			{

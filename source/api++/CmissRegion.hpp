@@ -173,6 +173,11 @@ public:
 		return Cmiss_region_contains_subregion(id, subregion.id);
 	}
 
+	Cmiss_region_id getId()
+	{
+		return id;
+	}
+
 };
 
 } // namespace Cmiss
