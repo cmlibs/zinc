@@ -129,7 +129,7 @@ void TessellationItem::update_divisions_string_for_dialog()
 	wxString temp;
 	if (number_of_divisions > 0)
 	{
-		int divisions[number_of_divisions];
+		int *divisions = new int[number_of_divisions];
 		Cmiss_tessellation_get_minimum_divisions(tessellation,
 				number_of_divisions, divisions);
 		temp.Printf("%d", divisions[0]);
@@ -139,6 +139,7 @@ void TessellationItem::update_divisions_string_for_dialog()
 			sprintf(temp_char, "*%d", divisions[i]);
 			temp.append(temp_char);
 		}
+		delete [] divisions;
 	}
 	else
 	{
@@ -155,7 +156,7 @@ void TessellationItem::update_refinement_string_for_dialog()
 	wxString temp;
 	if (number_of_refinements > 0)
 	{
-		int refinements[number_of_refinements];
+		int *refinements = new int[number_of_refinements];
 		Cmiss_tessellation_get_refinement_factors(tessellation,
 				number_of_refinements, refinements);
 		temp.Printf("%d", refinements[0]);
@@ -165,6 +166,7 @@ void TessellationItem::update_refinement_string_for_dialog()
 			sprintf(temp_char, "*%d", refinements[i]);
 			temp.append(temp_char);
 		}
+		delete [] refinements;
 	}
 	else
 	{
