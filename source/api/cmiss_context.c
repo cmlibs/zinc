@@ -43,7 +43,7 @@
 #include "context/context.h"
 #include "context/user_interface_module.h"
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 int Cmiss_context_enable_user_interface(Cmiss_context_id context, 
 	int in_argc, const char *in_argv[])
 #else
@@ -54,7 +54,7 @@ int Cmiss_context_enable_user_interface(
 #endif
 {
 	int return_code = 0;
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
 		context, in_argc, in_argv);
 #else

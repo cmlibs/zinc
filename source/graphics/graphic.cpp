@@ -3401,7 +3401,7 @@ int Cmiss_graphic_to_graphics_object(
 									}
 									else
 									{
-										//DESTROY(GT_polyline_vertex_buffers)(lines);
+										//DESTROY(GT_polyline_vertex_buffers)(&lines);
 										return_code = 0;
 									}
 								} break;

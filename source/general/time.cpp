@@ -47,10 +47,20 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 
 #if defined (WIN32_SYSTEM)
 extern "C" {
+#if defined (_MSC_VER)
+	#define WINDOWS_LEAN_AND_MEAN
+	#ifndef _CRTDBG_MAP_ALLOC
+		#define _CRTDBG_MAP_ALLOC
+	#endif
+	#include <stdlib.h>
+	#include <crtdbg.h>
+#endif /* defined (_MSC_VER) */
 #include <windows.h>
 #include "general/time.h"
 #include "general/debug.h"
 }
+
+/*
 int gettimeofday(struct timeval *time, void *timezone)
 {
 	USE_PARAMETER(timezone);
@@ -62,6 +72,7 @@ int gettimeofday(struct timeval *time, void *timezone)
 	time->tv_usec = (gettime - (time->tv_sec*1000)) * 1000;
 	return 0;
 }
+*/
 
 clock_t times(struct tms *buffer)
 {

@@ -81,7 +81,7 @@ DESCRIPTION :
 } User_settings;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface_module *User_interface_module_create(
 	struct Context *context, int in_argc, const char *in_argv[])
 #else

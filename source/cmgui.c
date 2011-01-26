@@ -65,9 +65,9 @@ Global functions
 ----------------
 */
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 int main(int argc,const char *argv[])
-#else /* !defined (WIN32_USER_INTERFACE) */
+#else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state)
 	/* using WinMain as the entry point tells Windows that it is a gui and to use
@@ -76,7 +76,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 		loop.  Other application interfaces may expect something else.  Should this
 		failure code be #define'd ? */
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
-#endif /* !defined (WIN32_USER_INTERFACE) */
+#endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 /*******************************************************************************
 LAST MODIFIED : 7 January 2003
 
@@ -84,8 +84,8 @@ DESCRIPTION :
 Main program for the CMISS Graphical User Interface
 ==============================================================================*/
 {
-	int return_code;
-#if defined (WIN32_USER_INTERFACE)
+	int return_code = 0;
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 	int argc = 1, i;
 	char **argv, *p, *q;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -93,10 +93,12 @@ Main program for the CMISS Graphical User Interface
 	struct User_interface_module *UI_module = NULL;
 	struct Cmiss_command_data *command_data;
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 	ENTER(main);
-#else /* !defined (WIN32_USER_INTERFACE) */
+#else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 	ENTER(WinMain);
+
+	//_CrtSetBreakAlloc(28336);
 
 	for (p = command_line; p != NULL && *p != 0;)
 	{
@@ -119,7 +121,7 @@ Main program for the CMISS Graphical User Interface
 			argv[i++] = p;
 		p = q;
 	}
-#endif /* !defined (WIN32_USER_INTERFACE) */
+#endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, "%s version %s  %s\n%s\n"
@@ -127,7 +129,7 @@ Main program for the CMISS Graphical User Interface
 		CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
 		CMISS_SVN_REVISION_STRING);
 
-#if defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) && (DARWIN)
+#if defined (CARBON_USER_INTERFACE) || (defined (WX_USER_INTERFACE) && defined (DARWIN))
 	ProcessSerialNumber PSN;
 	GetCurrentProcess(&PSN);
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
@@ -135,12 +137,12 @@ Main program for the CMISS Graphical User Interface
 	context = Cmiss_context_create("default");
 	if (context)
 	{
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv);
-#else /* !defined (WIN32_USER_INTERFACE) */
+#else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		UI_module = Cmiss_context_create_user_interface(context, argc,argv, current_instance,
 			previous_instance, command_line, initial_main_window_state);
-#endif
+#endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		if (UI_module)
 		{
 			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
@@ -168,6 +170,9 @@ Main program for the CMISS Graphical User Interface
 	{
 		return_code = 1;
 	}
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
+	free(argv)
+#endif
 	LEAVE;
 	
 	return (return_code);

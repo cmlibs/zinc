@@ -297,7 +297,7 @@ struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct 
 	return command_data;
 }
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface_module *Cmiss_context_create_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[])
 #else
@@ -313,7 +313,7 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 	{
 		if (!context->UI_module)
 		{
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv);
 #else

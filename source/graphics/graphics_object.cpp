@@ -5663,10 +5663,10 @@ int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
 			ALLOCATE(graphics_object->times, float, 1))
 		{
-		  graphics_object->primitive_lists->gt_polyline_vertex_buffers = primitive;
-		  graphics_object->times[0] = 0.0;
-		  graphics_object->number_of_times = 1;
-		  return_code = 1;
+			graphics_object->primitive_lists->gt_polyline_vertex_buffers = primitive;
+			graphics_object->times[0] = 0.0;
+			graphics_object->number_of_times = 1;
+			return_code = 1;
 		}
 	}
 	else
