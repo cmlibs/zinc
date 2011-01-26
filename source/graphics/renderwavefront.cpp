@@ -1222,7 +1222,7 @@ Write the window object to the <wavefront_file_void>.
 ==============================================================================*/
 {
 	FILE *wavefront_global_file, *wavefront_object_file;
-	int return_code;
+	int return_code = 0;
 	struct Export_to_wavefront_data *export_to_wavefront_data;
 #if defined(WIN32_SYSTEM)
 	const char *system_dir_seperator = "\\";
@@ -1243,7 +1243,7 @@ Write the window object to the <wavefront_file_void>.
 			case g_SURFACE:
 			case g_NURBS:
 			{
-				int error;
+				int error = 0;
 				char *parsed_name = duplicate_string(gt_object->name);
 				char *split_str = strtok(parsed_name, "/");
 				char *file_name = NULL;
@@ -1281,6 +1281,7 @@ Write the window object to the <wavefront_file_void>.
 						export_to_wavefront_data->full_comments,
 						gt_object, time);
 					fclose(wavefront_object_file);
+					return_code = 1;
 				}
 				else
 				{
@@ -1295,6 +1296,7 @@ Write the window object to the <wavefront_file_void>.
 			{
 				display_message(ERROR_MESSAGE,"graphics_object_export_to_wavefront.  "
 					"The graphics object %s is of a type not yet supported", gt_object->name);
+				return_code=0;
 			} break;
 		}
 	}
@@ -1352,8 +1354,8 @@ Renders the visible objects to Wavefront object files.
 			
 			/* Draw objects */
 			
-			export_to_wavefront_data.wavefront_file=wavefront_global_file;
-			export_to_wavefront_data.scene=scene;
+			export_to_wavefront_data.wavefront_file = wavefront_global_file;
+			export_to_wavefront_data.scene = scene;
 			if ( extension = strrchr ( file_name, '.' ))
 			{
 				*extension = 0;
