@@ -2200,7 +2200,7 @@ and allows its contents to be modified.
 	Option_table *option_table;
 	Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_integrand_field_data;
-
+	Cmiss_region *target_field_region = NULL;
 	ENTER(define_Computed_field_type_integration);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_integration_package=
@@ -2214,7 +2214,7 @@ and allows its contents to be modified.
 		magnitude_coordinates = 0;
 		seed_element = (FE_element *)NULL;
 		time_update = 0;
-
+		target_field_region = field_modify->get_region();
 		if ((NULL != field_modify->get_field()) &&
 			Computed_field_is_type_integration(field_modify->get_field()))
 		{
@@ -2266,7 +2266,7 @@ and allows its contents to be modified.
 					option_table = CREATE(Option_table)();
 					/* region */
 					Option_table_add_set_Cmiss_region_path(option_table, "region", 
-						computed_field_integration_package->root_region, &region_path);
+						target_field_region, &region_path);
 					/* Ignore everything else */
 					Option_table_ignore_all_unmatched_entries(option_table);
 					return_code = Option_table_multi_parse(option_table,state);
@@ -2278,8 +2278,7 @@ and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = Cmiss_region_get_region_from_path_deprecated(
-						computed_field_integration_package->root_region, 
-						region_path, &region);
+						target_field_region, region_path, &region);
 					ACCESS(Cmiss_region)(region);
 				}
 				if (return_code)
@@ -2393,7 +2392,7 @@ and allows its contents to be modified.
 					&magnitude_coordinates_flag);
 				/* region */
 				Option_table_add_set_Cmiss_region_path(option_table, "region", 
-					computed_field_integration_package->root_region, &region_path);
+					target_field_region, &region_path);
 				/* seed_element */
 				Option_table_add_entry(option_table,"seed_element",
 					&seed_element,
@@ -2456,6 +2455,7 @@ and allows its contents to be modified.
 	Computed_field_modify_data *field_modify;
 	FE_element *seed_element;	
 	Option_table *option_table;
+	Cmiss_region *target_field_region = NULL;
 
 	ENTER(define_Computed_field_type_xi_texture_coordinates);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
@@ -2467,6 +2467,7 @@ and allows its contents to be modified.
 		return_code=1;
 		region_path = Cmiss_region_get_root_region_path();
 		seed_element = (FE_element *)NULL;
+		target_field_region = field_modify->get_region();
 		if ((!state->current_token) ||
 			(strcmp(PARSER_HELP_STRING, state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
@@ -2474,11 +2475,10 @@ and allows its contents to be modified.
 			if (return_code)
 			{
 				previous_state_index = state->current_index;
-
 				option_table = CREATE(Option_table)();
 				/* region */
 				Option_table_add_set_Cmiss_region_path(option_table, "region", 
-					computed_field_integration_package->root_region, &region_path);
+						target_field_region, &region_path);
 				/* Ignore everything else */
 				Option_table_ignore_all_unmatched_entries(option_table);
 				return_code = Option_table_multi_parse(option_table,state);
@@ -2490,8 +2490,7 @@ and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Cmiss_region_get_region_from_path_deprecated(
-					computed_field_integration_package->root_region, 
-					region_path, &region);
+					target_field_region, region_path, &region);
 				ACCESS(Cmiss_region)(region);
 			}
 			if (return_code)
@@ -2560,11 +2559,10 @@ and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* region */
 			Option_table_add_set_Cmiss_region_path(option_table, "region", 
-				computed_field_integration_package->root_region, &region_path);
+				target_field_region, &region_path);
 			/* seed_element */
 			Option_table_add_entry(option_table,"seed_element",
-				&seed_element,
-				Cmiss_region_get_FE_region(computed_field_integration_package->root_region),
+				&seed_element, Cmiss_region_get_FE_region(target_field_region),
 				set_FE_element_top_level_FE_region);
 			return_code = Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
