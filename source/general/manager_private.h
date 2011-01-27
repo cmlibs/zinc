@@ -83,7 +83,7 @@ struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
 struct MANAGER_MESSAGE(object_type) \
 /*************************************************************************//** \
  * A message that will be sent when one of more of the objects being managed \
- * has changed. \
+ * has added, removed or changed. \
  */ \
 { \
 	int change_summary; /* bitwise OR of all object changes */ \
@@ -112,8 +112,10 @@ DECLARE_MANAGER_TYPE(object_type) \
 	/* the list of callbacks invoked when manager has changed */ \
 	struct MANAGER_CALLBACK_ITEM(object_type) *callback_list; \
 	int locked; \
-	/* the list of objects changed since the last update message */ \
+	/* lists of objects added/changed OR removed since the last update message; \
+	 * separate so can add new object with same identifier as one removed. */ \
 	struct LIST(object_type) *changed_object_list; \
+	struct LIST(object_type) *removed_object_list; \
 	/* pointer to owning object which exists for lifetime of this manager, if any */ \
 	owner_type *owner; \
 	/* flag indicating whether caching is on */ \
@@ -133,33 +135,37 @@ Local functions
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 /*************************************************************************//** \
- * Send a manager message listing all changes to date of the <change> type in \
- * the <changed_object_list> of <manager> to registered clients. \
- * Once <change> and <changed_object_list> are put in the <message>, they are \
- * cleared from the manager, then the message is sent. \
- * Copies the message, leaving the message in the manager blank before sending \
- * since it is sometimes possible to have messages sent while others are out. \
+ * Send a manager message to registered clients about changes to objects in \
+ * the manager's changed_object_list and removed_object_list, if any. \
+ * Change information is copied out of the manager and objects before the \
+ * message is sent. \
+ * Note Computed_field has a custom implementation which must be compatible. \
  */ \
 { \
 	ENTER(MANAGER_UPDATE(object_type)); \
 	if (manager) \
 	{ \
-		if (0 < NUMBER_IN_LIST(object_type)(manager->changed_object_list)) \
+		int number_of_changed_objects, number_of_removed_objects; \
+		\
+		number_of_changed_objects = \
+			NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
+		number_of_removed_objects = \
+			NUMBER_IN_LIST(object_type)(manager->removed_object_list); \
+		if (number_of_changed_objects || number_of_removed_objects) \
 		{ \
-			int i, number_of_changed_objects; \
+			int i; \
 			struct MANAGER_CALLBACK_ITEM(object_type) *item; \
 			struct MANAGER_MESSAGE(object_type) message; \
 			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
 			\
 			/* prepare message, transferring change details from objects to it */ \
-			number_of_changed_objects = \
-				NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
 			if (ALLOCATE(message.object_changes, \
 				struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type), \
-					number_of_changed_objects)) \
+					number_of_changed_objects + number_of_removed_objects)) \
 			{ \
 				message.change_summary = MANAGER_CHANGE_NONE(object_type); \
-				message.number_of_changed_objects = number_of_changed_objects; \
+				message.number_of_changed_objects = \
+					number_of_changed_objects + number_of_removed_objects; \
 				object_change = message.object_changes; \
 				for (i = 0; i < number_of_changed_objects; i++) \
 				{ \
@@ -176,6 +182,19 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 					message.change_summary |= object_change->change; \
 					object_change++; \
 				} \
+				for (i = 0; i < number_of_removed_objects; i++) \
+				{ \
+					object_change->object = ACCESS(object_type)( \
+						FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+							(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
+							manager->removed_object_list)); \
+					object_change->change = object_change->object->manager_change_status; \
+					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
+						manager->removed_object_list); \
+					object_change->detail = 0; \
+					message.change_summary |= object_change->change; \
+					object_change++; \
+				} \
 				/* send message to clients */ \
 				item = manager->callback_list; \
 				while (item) \
@@ -185,7 +204,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 				} \
 				/* clean up message */ \
 				object_change = message.object_changes; \
-				for (i = 0; i < number_of_changed_objects; i++) \
+				for (i = message.number_of_changed_objects; i > 0; i--) \
 				{ \
 					DEACCESS(object_type)(&(object_change->object)); \
 					object_change++; \
@@ -325,6 +344,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	{ \
 		manager->object_list = CREATE_LIST(object_type)(); \
 		manager->changed_object_list = CREATE_LIST(object_type)(); \
+		manager->removed_object_list = CREATE_LIST(object_type)(); \
 		if (manager->object_list && manager->changed_object_list) \
 		{ \
 			manager->callback_list = \
@@ -336,6 +356,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"MANAGER_CREATE(" #object_type ").  Could not create object lists"); \
+			DESTROY(LIST(object_type))(&(manager->removed_object_list)); \
 			DESTROY(LIST(object_type))(&(manager->changed_object_list)); \
 			DESTROY(LIST(object_type))(&(manager->object_list)); \
 			DEALLOCATE(manager); \
@@ -370,6 +391,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 				")).  manager->cache = %d != 0", manager->cache); \
 		} \
 		DESTROY_LIST(object_type)(&(manager->changed_object_list)); \
+		DESTROY_LIST(object_type)(&(manager->removed_object_list)); \
 		/* remove the manager_pointer from each object */ \
 		FOR_EACH_OBJECT_IN_LIST(object_type)(OBJECT_CLEAR_MANAGER(object_type), \
 			(void *)NULL, manager->object_list); \
@@ -487,21 +509,17 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 				{ \
 					/* clear manager pointer first so list DEACCESS doesn't remove from manager again */ \
 					object->object_manager = (struct MANAGER(object_type) *)NULL; \
-					if (object->manager_change_status == MANAGER_CHANGE_ADD(object_type)) \
+					if (object->manager_change_status != MANAGER_CHANGE_NONE(object_type)) \
 					{ \
-						/* send no change message for objects added and removed while caching */ \
-						object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
 						REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
 					} \
-					else \
+					/* do not inform clients about objects added and removed during caching */ \
+					if (object->manager_change_status != MANAGER_CHANGE_ADD(object_type)) \
 					{ \
-						if (object->manager_change_status == MANAGER_CHANGE_NONE(object_type)) \
-						{ \
-							/* changed_object_list ACCESSes removed objects until message sent */ \
-							ADD_OBJECT_TO_LIST(object_type)(object, manager->changed_object_list); \
-						} \
-						object->manager_change_status = MANAGER_CHANGE_REMOVE(object_type); \
+						/* removed_object_list ACCESSes removed objects until message sent */ \
+						ADD_OBJECT_TO_LIST(object_type)(object, manager->removed_object_list); \
 					} \
+					object->manager_change_status = MANAGER_CHANGE_REMOVE(object_type); \
 					return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
 					if (!manager->cache) \
 					{ \
@@ -981,7 +999,7 @@ objects. In general, a true result is sufficient to indicate the object may be \
 removed from the manager or modified. \
 This default version may be used for any object that cannot be accessed by \
 other objects in the manager. It only checks the object is accessed just by \
-the manager's object_list and changed_object_list. \
+the manager's object_list and changed_object_list or removed_object_list. \
 FE_element type requires a special version due to face/parent accessing. \
 ============================================================================*/ \
 { \

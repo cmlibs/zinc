@@ -273,20 +273,24 @@ static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manag
  * Special version for Computed_field which handles:
  * - propagating field changes to dependencies
  * - field type-specific change details
- * Send a manager message listing all changes to date of the <change> type in
- * the <changed_object_list> of <manager> to registered clients.
- * Once <change> and <changed_object_list> are put in the <message>, they are
- * cleared from the manager, then the message is sent.
- * Copies the message, leaving the message in the manager blank before sending
- * since it is sometimes possible to have messages sent while others are out.
+ * Send a manager message to registered clients about changes to objects in
+ * the manager's changed_object_list and removed_object_list, if any.
+ * Change information is copied out of the manager and objects before the
+ * message is sent.
  */
 {
 	ENTER(MANAGER_UPDATE(Computed_field));
 	if (manager)
 	{
-		if (0 < NUMBER_IN_LIST(Computed_field)(manager->changed_object_list))
+		int number_of_changed_objects, number_of_removed_objects;
+
+		number_of_changed_objects =
+			NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
+		number_of_removed_objects =
+			NUMBER_IN_LIST(Computed_field)(manager->removed_object_list);
+		if (number_of_changed_objects || number_of_removed_objects)
 		{
-			int i, number_of_changed_objects;
+			int i;
 			struct MANAGER_CALLBACK_ITEM(Computed_field) *item;
 			struct MANAGER_MESSAGE(Computed_field) message;
 			struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field) *object_change;
@@ -295,14 +299,13 @@ static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manag
 			FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 				Computed_field_check_dependency_iterator, (void *)NULL, manager);
 			/* prepare message, transferring change details from objects to it */
-			number_of_changed_objects =
-				NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
 			if (ALLOCATE(message.object_changes,
 				struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field),
-				number_of_changed_objects))
+				number_of_changed_objects + number_of_removed_objects))
 			{
 				message.change_summary = MANAGER_CHANGE_NONE(Computed_field);
-				message.number_of_changed_objects = number_of_changed_objects;
+				message.number_of_changed_objects =
+					number_of_changed_objects + number_of_removed_objects;
 				object_change = message.object_changes;
 				for (i = 0; i < number_of_changed_objects; i++)
 				{
@@ -319,6 +322,19 @@ static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manag
 					message.change_summary |= object_change->change;
 					object_change++;
 				}
+				for (i = 0; i < number_of_removed_objects; i++)
+				{
+					object_change->object = ACCESS(Computed_field)(
+						FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
+							(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL,
+							manager->removed_object_list));
+					object_change->change = object_change->object->manager_change_status;
+					REMOVE_OBJECT_FROM_LIST(Computed_field)(object_change->object,
+						manager->removed_object_list);
+					object_change->detail = object_change->object->core->extract_change_detail();
+					message.change_summary |= object_change->change;
+					object_change++;
+				}
 				/* send message to clients */
 				item = manager->callback_list;
 				while (item)
@@ -328,7 +344,7 @@ static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manag
 				}
 				/* clean up message */
 				object_change = message.object_changes;
-				for (i = 0; i < number_of_changed_objects; i++)
+				for (i = message.number_of_changed_objects; i > 0; i--)
 				{
 					delete object_change->detail;
 					DEACCESS(Computed_field)(&(object_change->object));

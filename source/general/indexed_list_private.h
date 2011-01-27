@@ -1922,9 +1922,7 @@ Should only be declared with manager functions. \
 				   display_message(ERROR_MESSAGE, \
 					   "LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
 					   ").  Failed: object may be missing from lists"); \
-				   DEALLOCATE(identifier_change_data); \
 			   } \
-				DEACCESS(object_type)(&(identifier_change_data->object)); \
 			} \
 			/* else nothing to do */ \
 		} \
@@ -1935,6 +1933,7 @@ Should only be declared with manager functions. \
 				").  Not allowed during list iteration"); \
 			return_code = 0; \
 		} \
+		DEACCESS(object_type)(&(identifier_change_data->object)); \
 		DEALLOCATE(identifier_change_data->lists_containing_object); \
 		DEALLOCATE(*identifier_change_data_address); \
 		*identifier_change_data_address = (struct \
