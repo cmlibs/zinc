@@ -45,6 +45,11 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define WINDOW_SYSTEM_EXTENSIONS_H
 
 #if defined (WIN32_USER_INTERFACE)
+
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
 int Window_system_extensions_load_wgl_extension(const char *extension_name);
 /*******************************************************************************
 LAST MODIFIED : 3 October 2007

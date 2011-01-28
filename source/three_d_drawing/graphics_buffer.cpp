@@ -81,8 +81,11 @@ extern "C" {
 /* Minimum supported version to allow use of AlphaBlend function */
 #define WINVER Windows98
 #endif /* defined (__CYGWIN__) || defined (__MINGW32__) */
-#include <GL/gl.h>
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+#include <GL/glew.h>
+#include <GL/gl.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 #include <OpenGL/glu.h>
@@ -93,8 +96,9 @@ extern "C" {
 #if defined (WX_USER_INTERFACE)
 extern "C" {
 #if defined (WIN32)
-#  define WINDOWS_LEAN_AND_MEAN
-#  include <windows.h>
+//#	define WINDOWS_LEAN_AND_MEAN
+#	define NOMINMAX
+#	include <windows.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
 #include "graphics/graphics_library.h"

@@ -48,6 +48,8 @@ Window routines.
 #error not implemented
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "user_interface/gui_prototype.h"

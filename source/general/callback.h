@@ -47,6 +47,8 @@ Macro definition for lists of callbacks between objects.
 #include "general/object.h"
 
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #define UWM_IDLE	(WM_APP + 1)
 #define UWM_NETWORK     (WM_APP + 2)

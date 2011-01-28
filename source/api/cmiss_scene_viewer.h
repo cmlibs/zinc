@@ -52,6 +52,8 @@ scenes.
 #include <carbon/carbon.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE)

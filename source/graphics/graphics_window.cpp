@@ -144,6 +144,8 @@ extern "C" {
 #include "user_interface/confirmation.h"
 #include "user_interface/printer.h"
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 }

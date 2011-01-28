@@ -48,13 +48,15 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #if defined (WIN32_SYSTEM)
 extern "C" {
 #if defined (_MSC_VER)
-	#define WINDOWS_LEAN_AND_MEAN
+	//#define WINDOWS_LEAN_AND_MEAN
 	#ifndef _CRTDBG_MAP_ALLOC
 		#define _CRTDBG_MAP_ALLOC
 	#endif
 	#include <stdlib.h>
 	#include <crtdbg.h>
 #endif /* defined (_MSC_VER) */
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include "general/time.h"
 #include "general/debug.h"

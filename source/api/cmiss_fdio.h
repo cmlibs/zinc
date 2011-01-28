@@ -49,6 +49,8 @@ extern "C" {
 #endif /* __cplusplus */
 
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 

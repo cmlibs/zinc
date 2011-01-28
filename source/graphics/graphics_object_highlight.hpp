@@ -45,49 +45,53 @@ FILE : graphics_object_highlight.hpp
 class GraphicsObjectHighlightBaseFunctor
 {
 public:
-  virtual int call(int identifier)=0;
+	virtual int call(int identifier) = 0;
 
-  virtual int setContainsAll(int flag)=0;
+	virtual int setContainsAll(int flag) = 0;
 
-  virtual ~GraphicsObjectHighlightBaseFunctor()
-  {
-  };
+	virtual ~GraphicsObjectHighlightBaseFunctor()
+	{
+	};
 };
 
- template <typename ObjectType> class SubGroupHighlightFunctor :
-  public GraphicsObjectHighlightBaseFunctor
+template <typename ObjectType> class SubGroupHighlightFunctor :
+	public GraphicsObjectHighlightBaseFunctor
 {
 private:
-  int(Computed_field_sub_group_object<ObjectType>::*function_pointer)(int);
-  Computed_field_sub_group_object<ObjectType> *group;
-  int contains_all;
+	int(Computed_field_sub_group_object<ObjectType>::*function_pointer)(int);
+	Computed_field_sub_group_object<ObjectType> *group;
+	int contains_all;
 
 public:
 
-  SubGroupHighlightFunctor(Computed_field_sub_group_object<ObjectType>* group_in,
-      int(Computed_field_sub_group_object<ObjectType>::*function_pointer_in)(int))
-  { group = group_in;  function_pointer=function_pointer_in; contains_all = 0;};
+	SubGroupHighlightFunctor(Computed_field_sub_group_object<ObjectType>* group_in,
+		int(Computed_field_sub_group_object<ObjectType>::*function_pointer_in)(int))
+	{
+		group = group_in;
+		function_pointer=function_pointer_in;
+		contains_all = 0;
+	};
 
-   virtual int call(int identifier)
-   {
-  	 if (contains_all)
-  	 {
-  		 return 1;
-  	 }
-  	 else
-  	 {
-  		 return (*group.*function_pointer)(identifier);
-  	 }
-   };
+	virtual int call(int identifier)
+	{
+		if (contains_all)
+		{
+			return 1;
+		}
+		else
+		{
+			return (*group.*function_pointer)(identifier);
+		}
+	};
 
-   virtual int setContainsAll(int flag)
-   {
-  	 return contains_all = flag;
-   }
+	virtual int setContainsAll(int flag)
+	{
+		return contains_all = flag;
+	}
 
-   ~SubGroupHighlightFunctor()
-   {
-   };
+	~SubGroupHighlightFunctor()
+	{
+	};
 };
 
 #endif /* GRAPHICS_OBJECT_HIGHLIGHT_HPP */

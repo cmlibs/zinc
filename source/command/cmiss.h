@@ -56,6 +56,8 @@ This should only be included in cmgui.c and command/cmiss.c
 #include "general/manager.h"
 #include "region/cmiss_region.h"
 #if defined (WIN32_USER_INTERFACE)
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 

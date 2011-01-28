@@ -53,6 +53,8 @@ Functions and structures for interfacing with the graphics library.
 #	define GLX_GLXEXT_PROTOTYPES
 #	if defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN)
 #		if defined (WIN32_SYSTEM)
+//#			define WINDOWS_LEAN_AND_MEAN
+#			define NOMINMAX
 #			include <windows.h>
 #		endif
 #if defined (USE_GLEW)

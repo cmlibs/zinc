@@ -44,8 +44,10 @@ This provides a Cmgui interface to the window system specific OpenGL binding
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (WIN32_USER_INTERFACE)
-#include <GL/gl.h>
+//#define WINDOWS_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+#include <GL/gl.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/debug.h"
 
