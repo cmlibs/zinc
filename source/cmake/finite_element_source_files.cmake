@@ -51,6 +51,15 @@ SET( FINITE_ELEMENT_ADDITIONAL_HDRS
 	source/finite_element/snake.h
 	source/finite_element/write_fieldml.h )
 
+IF( USE_NETGEN )
+	SET( FINITE_ELEMENT_CORE_SRCS
+		${FINITE_ELEMENT_CORE_SRCS}
+		source/finite_element/generate_mesh_netgen.cpp )
+	SET( FINITE_ELEMENT_CORE_HDRS
+		${FINITE_ELEMENT_CORE_HDRS}
+		source/finite_element/generate_mesh_netgen.h )
+ENDIF( USE_NETGEN )
+
 SET( FINITE_ELEMENT_SRCS
 	${FINITE_ELEMENT_CORE_SRCS}
 	${FINITE_ELEMENT_GRAPHICS_SRCS}
@@ -60,11 +69,3 @@ SET(  FINITE_ELEMENT_HDRS
 	${FINITE_ELEMENT_GRAPHICS_HDRS}
 	${FINITE_ELEMENT_ADDITIONAL_HDRS} )
 
-IF( USE_NETGEN )
-	SET( FINITE_ELEMENT_SRCS
-		${FINITE_ELEMENT_SRCS}
-		source/finite_element/generate_mesh_netgen.cpp )
-	SET( FINITE_ELEMENT_HDRS
-		${FINITE_ELEMENT_HDRS}
-		source/finite_element/generate_mesh_netgen.h )
-ENDIF( USE_NETGEN )
