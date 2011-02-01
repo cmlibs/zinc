@@ -122,8 +122,6 @@ private:
 
 	int list();
 
-	bool is_coordinate_field() const;
-	
 	char* get_command_string();
 
 	int clear_cache();
@@ -160,11 +158,11 @@ private:
 		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
-	virtual int get_property_flag(enum Cmiss_field_property_flag property_flag)
+	virtual bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
 	{
 		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
-		return 0;
+		return false;
 	}
 
 	virtual int set_property_flag(enum Cmiss_field_property_flag property_flag, int flag_value)
@@ -1157,20 +1155,6 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_finite_element::get_command_string */
-
-bool Computed_field_finite_element::is_coordinate_field() const
-{
-	bool result = false;
-	if (field)
-	{
-		if (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD )
-		{
-			result = true;
-		}
-	}
-
-	return result;
-}
 
 } //namespace
 

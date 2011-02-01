@@ -100,12 +100,6 @@ public:
 		DEALLOCATE(field->source_fields);
 	}
 
-	bool is_coordinate_field() const;
-	//int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
-	//int surface_count() const;
-	//int surface_point_count( int i ) const;
-	//float surface_point( int surface_index, int point_index, int coord_index );
-
 private:
 	Computed_field_core* copy();
 
@@ -123,6 +117,13 @@ private:
 	//int has_multiple_times() {return 1;}
 
 	char* get_command_string();
+
+	bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
+	{
+		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
+			return true;
+		return false;
+	}
 
 };
 
@@ -290,11 +291,6 @@ char *Computed_field_cad_geometry::get_command_string()
 
 	return (command_string);
 } /* Computed_field_cad_geometry::get_command_string */
-
-bool Computed_field_cad_geometry::is_coordinate_field() const
-{
-	return 1;
-}
 
 } //namespace
 

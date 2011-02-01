@@ -291,12 +291,6 @@ public:
 	{
 	}
 
-	/* override if field type is a type of coordinate field */
-	virtual bool is_coordinate_field() const
-	{
-		return false;
-	}
-
 	/* override if field is a domain */
 	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 
@@ -318,10 +312,10 @@ public:
 	}
 
 	// override if property supported by field type
-	virtual int get_property_flag(enum Cmiss_field_property_flag property_flag)
+	virtual bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
 	{
 		USE_PARAMETER(property_flag);
-		return 0;
+		return false;
 	}
 
 	// override if property can be set for field type

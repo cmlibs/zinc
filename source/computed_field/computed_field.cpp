@@ -3351,7 +3351,7 @@ int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_i
 {
 	USE_PARAMETER(not_in_use);
 	int response = 0;
-	if (field && field->core->is_coordinate_field())
+	if (field && field->core->get_property_flag(CMISS_FIELD_PROPERTY_FLAG_COORDINATE))
 	{
 		response = 1;
 	}
@@ -5370,8 +5370,8 @@ int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent)
 int Cmiss_field_get_property_flag(Cmiss_field_id field,
 	enum Cmiss_field_property_flag property_flag)
 {
-	if (field)
-		return field->core->get_property_flag(property_flag);
+	if (field && field->core->get_property_flag(property_flag))
+		return 1;
 	return 0;
 }
 
