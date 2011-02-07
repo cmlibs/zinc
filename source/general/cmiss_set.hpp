@@ -184,7 +184,12 @@ public:
 		return Base_class::size();
 	}
 
-	iterator find(const Key &object) const
+	const_iterator find(const Key &object) const
+	{
+		return Base_class::find(object);
+	}
+
+	iterator find(const Key &object)
 	{
 		return Base_class::find(object);
 	}
