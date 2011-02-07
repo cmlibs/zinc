@@ -124,6 +124,13 @@ PROTOTYPE_CREATE_LIST_FUNCTION(object_type) \
 	return (list); \
 } /* CREATE_LIST(object_type) */
 
+#define DECLARE_CREATE_RELATED_LIST_FUNCTION( object_type ) \
+PROTOTYPE_CREATE_RELATED_LIST_FUNCTION(object_type) \
+{ \
+	USE_PARAMETER(other_list); \
+	return CREATE_LIST(object_type)(); \
+}
+
 #define DECLARE_DESTROY_LIST_FUNCTION( object_type ) \
 PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 { \
@@ -738,6 +745,7 @@ DECLARE_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
 
 #define DECLARE_LIST_FUNCTIONS( object_type ) \
 DECLARE_CREATE_LIST_FUNCTION(object_type) \
+DECLARE_CREATE_RELATED_LIST_FUNCTION(object_type) \
 DECLARE_DESTROY_LIST_FUNCTION(object_type) \
 DECLARE_COPY_LIST_FUNCTION(object_type) \
 DECLARE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \

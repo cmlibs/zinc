@@ -110,6 +110,18 @@ DESCRIPTION : \
 Creates a object_type list. \
 ==============================================================================*/
 
+#define CREATE_RELATED_LIST_( object_type ) list_create_related_ ## object_type
+#define CREATE_RELATED_LIST( object_type ) CREATE_RELATED_LIST_(object_type)
+
+#define PROTOTYPE_CREATE_RELATED_LIST_FUNCTION( object_type ) \
+struct LIST(object_type) *CREATE_RELATED_LIST(object_type)( \
+	struct LIST(object_type) *other_list) \
+/***************************************************************************** \
+Creates a list of object_type which is to contain related objects to the \
+supplied <other_list>. By making lists related, object renaming of indexed \
+lists / sets can be safely and efficiently done. \
+==============================================================================*/
+
 #define DESTROY_LIST( object_type )  DESTROY(LIST(object_type))
 
 #define PROTOTYPE_DESTROY_LIST_FUNCTION( object_type ) \
@@ -381,6 +393,7 @@ DECLARE_LIST_ITERATOR_FUNCTION(object_type)
 
 #define PROTOTYPE_LIST_FUNCTIONS( object_type ) \
 PROTOTYPE_CREATE_LIST_FUNCTION(object_type); \
+PROTOTYPE_CREATE_RELATED_LIST_FUNCTION(object_type); \
 PROTOTYPE_DESTROY_LIST_FUNCTION(object_type); \
 PROTOTYPE_COPY_LIST_FUNCTION(object_type); \
 PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type); \

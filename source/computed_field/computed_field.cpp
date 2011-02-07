@@ -164,6 +164,8 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "general/cmiss_set.hpp"
+#include "general/indexed_list_stl_private.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
@@ -186,7 +188,18 @@ extern "C" {
 #include <typeinfo>
 #include "user_interface/process_list_or_write_command.hpp"
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
+/** functor for ordering Cmiss_set<Computed_field> by field name */
+struct Computed_field_compare_name
+{
+	bool operator() (const Computed_field* field1, const Computed_field* field2) const
+	{
+		return strcmp(field1->name, field2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Computed_field;
+
+FULL_DECLARE_INDEXED_LIST_STL_TYPE(Computed_field); // Does nothing now
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields, struct Cmiss_field_change_detail *);
 
@@ -245,8 +258,6 @@ struct Cmiss_field_module
 Module functions
 ----------------
 */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,const char *,strcmp)
 
 /***************************************************************************//**
  * Field iterator function ensuring field and any of its source fields are
@@ -835,12 +846,9 @@ in computed_field_set.cpp.
 	return (return_code);
 } /* GET_NAME(Computed_field) */
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(Computed_field)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Computed_field,name,
-	const char *,strcmp)
-
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_field,name)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Computed_field,name,const char *)
 
 /***************************************************************************//**
  * Copy the type specific parts of <source> field to <destination>, namely the
@@ -1185,8 +1193,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 ==============================================================================*/
 {
 	int return_code;
-	struct LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name)
-		*identifier_change_data;
 	struct Computed_field *tmp_object;
 
 	ENTER(MANAGER_MODIFY(Computed_field,name));
@@ -1246,8 +1252,9 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 							{
 								return_code = 0;
 							}
-							if (NULL != (identifier_change_data =
-								LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object)))
+							Cmiss_set_Computed_field *manager_field_list =
+								reinterpret_cast<Cmiss_set_Computed_field *>(manager->object_list);
+							if (manager_field_list->begin_identifier_change(object))
 							{
 								if (!(MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
 									name)(object, new_data)))
@@ -1257,14 +1264,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 										"Could not copy object");
 									return_code = 0;
 								}
-								if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
-									name)(&identifier_change_data))
-								{
-									display_message(ERROR_MESSAGE,
-										"MANAGER_MODIFY(Computed_field,name).  "
-										"Could not restore object to all indexed lists");
-									return_code = 0;
-								}
+								manager_field_list->end_identifier_change();
 								if (return_code)
 								{
 									MANAGED_OBJECT_CHANGE(Computed_field)(object,
@@ -1417,7 +1417,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 	return (return_code);
 } /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
 
-DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
+//DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 
 DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
@@ -5427,34 +5427,34 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 	ENTER(Cmiss_field_set_name);
 	if (field && is_standard_object_name(name))
 	{
-		LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data = NULL;
 		return_code = 1;
+		Cmiss_set_Computed_field *manager_field_list = 0;
+		bool restore_changed_object_to_lists = false;
 		if (field->manager)
 		{
+			manager_field_list = reinterpret_cast<Cmiss_set_Computed_field *>(field->manager->object_list);
 			// cache manager changes to prevent finite_element field wrapper change
 			// messages while objects are temporarily removed from indexed lists
 			MANAGER_BEGIN_CACHE(Computed_field)(field->manager);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
 					 const_cast<char *>(name), field->manager))
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_field_set_name.  "
+				display_message(ERROR_MESSAGE, "Cmiss_field_set_name.  "
 					"Field named \"%s\" already exists in this field manager.",
 					name);
 				return_code = 0;
 			}
-		}
-		if (return_code)
-		{
-			// this temporarily removes the object from all indexed lists
-			identifier_change_data =
-				LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(field);
-			if (NULL == identifier_change_data)
+			if (return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_field_set_name.  "
-					"Could not safely change identifier in indexed lists");
-				return_code = 0;
+				// this temporarily removes the object from all indexed lists
+				restore_changed_object_to_lists =
+					manager_field_list->begin_identifier_change(field);
+				if (!restore_changed_object_to_lists)
+				{
+					display_message(ERROR_MESSAGE, "Cmiss_field_set_name.  "
+						"Could not safely change identifier in manager");
+					return_code = 0;
+				}
 			}
 		}
 		if (return_code)
@@ -5479,13 +5479,9 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 				return_code = 0;
 			}
 		}
-		// Must restore objects to indexed lists if removed:
-		if ((identifier_change_data) && (!LIST_END_IDENTIFIER_CHANGE
-			(Computed_field,name)(&identifier_change_data)))
+		if (restore_changed_object_to_lists)
 		{
-			display_message(ERROR_MESSAGE, "Cmiss_field_set_name  "
-				"Could not restore object to all indexed lists");
-			return_code = 0;
+			manager_field_list->end_identifier_change();
 		}
 		if (return_code)
 		{

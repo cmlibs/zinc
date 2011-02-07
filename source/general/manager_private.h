@@ -343,9 +343,9 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	if (ALLOCATE(manager, struct MANAGER(object_type), 1)) \
 	{ \
 		manager->object_list = CREATE_LIST(object_type)(); \
-		manager->changed_object_list = CREATE_LIST(object_type)(); \
-		manager->removed_object_list = CREATE_LIST(object_type)(); \
-		if (manager->object_list && manager->changed_object_list) \
+		manager->changed_object_list = CREATE_RELATED_LIST(object_type)(manager->object_list); \
+		manager->removed_object_list = CREATE_RELATED_LIST(object_type)(manager->object_list); \
+		if (manager->object_list && manager->changed_object_list && manager->removed_object_list) \
 		{ \
 			manager->callback_list = \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \

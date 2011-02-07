@@ -440,7 +440,41 @@ DESCRIPTION :
 	/** Mode/flags controlling how this field is managed by a region. */
 	enum Computed_field_managed_status managed_status;
 
+	inline Computed_field *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(Computed_field **field_address)
+	{
+		return DEACCESS(Computed_field)(field_address);
+	}
+
 }; /* struct Computed_field */
+
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class Computed_field_identifier : private Computed_field
+{
+public:
+	Computed_field_identifier(const char *name)
+	{
+		Computed_field::name = name;
+	}
+
+	~Computed_field_identifier()
+	{
+		Computed_field::name = NULL;
+	}
+
+	Computed_field *getPseudoObject()
+	{
+		return this;
+	}
+};
 
 /*
 Computed field functions
