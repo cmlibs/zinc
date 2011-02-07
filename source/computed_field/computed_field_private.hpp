@@ -546,6 +546,16 @@ struct Cmiss_region *Computed_field_manager_get_region(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
+ * Gets a reference to the set of fields in the manager.
+ * Intended only for immediately iterating over. Do not keep this handle.
+ *
+ * @param manager  Computed field manager.
+ * @return  The set of fields in the manager.
+ */
+const Cmiss_set_Computed_field &Computed_field_manager_get_fields(
+	struct MANAGER(Computed_field) *manager);
+
+/***************************************************************************//**
  * Record that field data has changed.
  * Notify clients if not caching changes.
  * 

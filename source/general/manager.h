@@ -198,6 +198,20 @@ DESCRIPTION : \
 Destroys the <**manager> and sets <*manager> to NULL. \
 ==============================================================================*/
 
+#define MANAGER_CREATE_LIST_( object_type ) \
+	manager_create_list_ ## object_type
+#define MANAGER_CREATE_LIST( object_type ) \
+	MANAGER_CREATE_LIST_(object_type)
+
+#define PROTOTYPE_MANAGER_CREATE_LIST_FUNCTION( object_type ) \
+struct LIST(object_type) *MANAGER_CREATE_LIST(object_type)( \
+	struct MANAGER(object_type) *manager) \
+/***************************************************************************** \
+Creates an empty list for adding objects from this manager. This list is \
+related to the manager's own list meaning it is updated automatically when \
+object identifiers change in the manager. \
+==============================================================================*/
+
 #define REMOVE_OBJECT_FROM_MANAGER_( object_type ) \
 	manager_remove_object_ ## object_type
 #define REMOVE_OBJECT_FROM_MANAGER( object_type ) \
@@ -664,6 +678,7 @@ DECLARE_MANAGER_ITERATOR_FUNCTION(object_type)
 #define PROTOTYPE_MANAGER_FUNCTIONS( object_type ) \
 PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_CREATE_LIST_FUNCTION(object_type); \
 PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_NUMBER_IN_MANAGER_FUNCTION(object_type); \

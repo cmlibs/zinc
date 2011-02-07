@@ -5525,6 +5525,13 @@ struct Cmiss_region *Computed_field_manager_get_region(
 	return (region);
 }
 
+const Cmiss_set_Computed_field &Computed_field_manager_get_fields(
+	struct MANAGER(Computed_field) *manager)
+{
+	return const_cast<const Cmiss_set_Computed_field&>(
+		*(reinterpret_cast<Cmiss_set_Computed_field*>(manager->object_list)));
+}
+
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 {
 	struct Cmiss_region *region;

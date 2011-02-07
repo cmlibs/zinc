@@ -417,6 +417,27 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	return (return_code); \
 } /* DESTROY_MANAGER(object_type) */
 
+#define DECLARE_MANAGER_CREATE_LIST_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_CREATE_LIST_FUNCTION(object_type) \
+{ \
+	struct LIST(object_type) *list; \
+\
+	ENTER(MANAGER_CREATE_LIST(object_type)); \
+	list = NULL; \
+	if (manager) \
+	{ \
+		list = CREATE_RELATED_LIST(object_type)(manager->object_list); \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGER_CREATE_LIST(" #object_type ").  Missing manager"); \
+	} \
+	LEAVE; \
+\
+	return (list); \
+}
+
 #define DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION( object_type , \
 	identifier_field_name , object_manager ) \
 PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
@@ -1381,6 +1402,7 @@ DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(object_type)
 DECLARE_CREATE_MANAGER_FUNCTION(object_type) \
 DECLARE_OBJECT_CLEAR_MANAGER_FUNCTION(object_type,object_manager) \
 DECLARE_DESTROY_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_MANAGER_CREATE_LIST_FUNCTION(object_type) \
 DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type,object_manager) \
 DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type,object_manager) \
 DECLARE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
