@@ -164,7 +164,6 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
@@ -187,17 +186,6 @@ extern "C" {
 }
 #include <typeinfo>
 #include "user_interface/process_list_or_write_command.hpp"
-
-/** functor for ordering Cmiss_set<Computed_field> by field name */
-struct Computed_field_compare_name
-{
-	bool operator() (const Computed_field* field1, const Computed_field* field2) const
-	{
-		return strcmp(field1->name, field2->name) < 0;
-	}
-};
-
-typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Computed_field;
 
 FULL_DECLARE_INDEXED_LIST_STL_TYPE(Computed_field); // Does nothing now
 

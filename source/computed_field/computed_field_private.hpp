@@ -55,6 +55,7 @@ Computed field types
 Types used only internally to computed fields.
 */
 
+#include "general/cmiss_set.hpp"
 #include "computed_field/field_location.hpp"
 extern "C" {
 #include "general/debug.h"
@@ -475,6 +476,17 @@ public:
 		return this;
 	}
 };
+
+/** functor for ordering Cmiss_set<Computed_field> by field name */
+struct Computed_field_compare_name
+{
+	bool operator() (const Computed_field* field1, const Computed_field* field2) const
+	{
+		return strcmp(field1->name, field2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Computed_field;
 
 /*
 Computed field functions

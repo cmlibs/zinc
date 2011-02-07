@@ -43,9 +43,6 @@
 #if !defined (CMISS_SET_HPP)
 #define CMISS_SET_HPP
 
-extern "C" {
-#include "general/list.h"
-}
 #include <set>
 
 /*
@@ -74,6 +71,10 @@ private:
 		next(source.next),
 		prev(&source)
 	{
+		for (iterator iter = begin(); iter != end(); ++iter)
+		{
+			(*iter)->access();
+		}
 		source.next = this;
 		next->prev = this;
 	}
