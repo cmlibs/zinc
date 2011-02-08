@@ -1067,7 +1067,7 @@ FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/finite_element.cpp \
 	finite_element/finite_element_discretization.cpp \
 	finite_element/finite_element_helper.cpp \
-	finite_element/finite_element_region.c \
+	finite_element/finite_element_region.cpp \
 	finite_element/finite_element_time.c \
 	finite_element/import_finite_element.cpp \
 	finite_element/read_fieldml.c \

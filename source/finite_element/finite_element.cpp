@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : finite_element.c
+FILE : finite_element.cpp
 
 LAST MODIFIED : 20 December 2005
 

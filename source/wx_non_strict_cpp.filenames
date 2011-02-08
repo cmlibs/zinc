@@ -46,6 +46,7 @@ element/element_tool.cpp
 emoter/emoter_dialog.cpp
 finite_element/export_finite_element.cpp
 finite_element/finite_element.cpp
+finite_element/finite_element_region.cpp
 finite_element/finite_element_to_graphics_object.cpp
 finite_element/finite_element_to_iso_lines.cpp
 finite_element/finite_element_to_streamlines.cpp

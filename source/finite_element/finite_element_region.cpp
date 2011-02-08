@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : finite_element_region.c
+FILE : finite_element_region.cpp
 
 LAST MODIFIED : 8 August 2006
 
@@ -42,7 +42,9 @@ finite element fields defined on or interpolated over them.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdio.h>
+
+#include <cstdio>
+extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -58,6 +60,7 @@ finite element fields defined on or interpolated over them.
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
+}
 
 /*
 Module types
@@ -1173,6 +1176,7 @@ Called when the access_count of <fe_node_field_info> drops to 1 so that
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_region_remove_FE_node_field_info.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1324,6 +1328,7 @@ Called when the access_count of <fe_element_field_info> drops to 1 so that
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_region_remove_FE_element_field_info.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4110,11 +4115,12 @@ Used in command parsing to translate a node name into an node from <fe_region>.
 {
 	const char *current_token;
 	int identifier, return_code;
-	struct FE_node *node, **node_address;
+	struct FE_node *node;
 	struct FE_region *fe_region;
 
 	ENTER(set_FE_node_FE_region);
-	if (state && (node_address = node_address_void) &&
+	struct FE_node **node_address = reinterpret_cast<struct FE_node **>(node_address_void);
+	if ((state) && (node_address) &&
 		(fe_region = (struct FE_region *)fe_region_void))
 	{
 		if (current_token=state->current_token)
@@ -6729,7 +6735,7 @@ Note order: <fe_region> is to be merged into <global_fe_region>.
 				}
 				/* check all fields of the same name have same definitions */
 				if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
-					(void *)global_fe_field_list, (void *)fe_region->fe_field_list))
+					(void *)global_fe_field_list, fe_region->fe_field_list))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_regions_can_be_merged.  Fields are not compatible");
