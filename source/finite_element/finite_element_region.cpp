@@ -4309,22 +4309,15 @@ in use by an element in the same ultimate master FE_region.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_region *master_fe_region;
-	struct LIST_IDENTIFIER_CHANGE_DATA(FE_element,identifier)
-		*identifier_change_data;
 
 	ENTER(FE_region_change_FE_element_identifier);
 	if (fe_region && element && new_identifier)
 	{
 		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
 		{
-			/* work with the ultimate master fe_region */
-			master_fe_region = fe_region;
-			while (master_fe_region->master_fe_region)
-			{
-				master_fe_region = master_fe_region->master_fe_region;
-			}
 			return_code = 1;
+			struct FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
 				new_identifier, master_fe_region->fe_element_list))
 			{
@@ -4335,24 +4328,12 @@ in use by an element in the same ultimate master FE_region.
 			}
 			else
 			{
-				if (identifier_change_data =
-					LIST_BEGIN_IDENTIFIER_CHANGE(FE_element,identifier)(element))
+				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_element,identifier)(
+					master_fe_region->fe_element_list, element))
 				{
-					if (!set_FE_element_identifier(element, new_identifier))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_region_change_FE_element_identifier.  "
-							"Could not change identifier");
-						return_code = 0;
-					}
-					if (!LIST_END_IDENTIFIER_CHANGE(FE_element,identifier)(
-						&identifier_change_data))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_region_change_FE_element_identifier.  "
-							"Could not restore object to all indexed lists");
-						return_code = 0;
-					}
+					return_code = set_FE_element_identifier(element, new_identifier);
+					LIST_END_IDENTIFIER_CHANGE(FE_element,identifier)(
+						master_fe_region->fe_element_list);
 					if (return_code)
 					{
 						FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(master_fe_region, element);

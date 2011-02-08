@@ -520,7 +520,7 @@ FE_element_field_info which had fields in it and was output. The last such
 output FE_element_field_info is expected to be at this address too.
 ==============================================================================*/
 
-PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier);
+PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier);
 
 struct FE_element_field_info *FE_element_get_FE_element_field_info(
 	struct FE_element *element);

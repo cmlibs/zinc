@@ -894,9 +894,8 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 {
-	/* identifier points to <cm> and is used for the <find_by_identifier>
-		function */
-	struct CM_element_information cm,*identifier;
+	/* unique identifier of element in region as CM_element_type, number */
+	struct CM_element_information identifier;
 
 	/* a description of the shape/geometry of the element in Xi space */
 	struct FE_element_shape *shape;
@@ -918,9 +917,51 @@ variables.
 	/* the number of structures that point to this element.  The element cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
+
+	inline FE_element *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(FE_element **element_address)
+	{
+		return DEACCESS(FE_element)(element_address);
+	}
 }; /* struct FE_element */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_element);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class FE_element_identifier : private FE_element
+{
+public:
+	FE_element_identifier(struct CM_element_information *identifier)
+	{
+		FE_element::identifier = *identifier;
+	}
+
+	FE_element *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<FE_element> by struct CM_element_information */
+struct FE_element_compare_identifier
+{
+	bool operator() (const FE_element* element1, const FE_element* element2) const
+	{
+		if (element1->identifier.type < element2->identifier.type)
+			return true;
+		else if (element1->identifier.type > element2->identifier.type)
+			return false;
+		return (element1->identifier.number < element2->identifier.number);
+	}
+};
+
+typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_FE_element;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_element);
 
@@ -4870,6 +4911,8 @@ Returns -1 if basis_type_1 < basis_type_2, 0 if basis_type_1 = basis_type_2 and
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_basis,type,int *,compare_FE_basis_type)
 
+#ifdef OLD_CODE
+// not used by STL set; see FE_element_compare_identifier
 static int compare_CM_element_information(
 	struct CM_element_information *cmiss_1,
 	struct CM_element_information *cmiss_2)
@@ -4912,9 +4955,7 @@ cmiss_2.
 
 	return (return_code);
 } /* compare_CM_element_information */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element,identifier, \
-	struct CM_element_information *, compare_CM_element_information)
+#endif /* OLD_CODE */
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_element)
 
@@ -5024,7 +5065,7 @@ uses them to find faces and lines for elements without them, if they exist.
 				struct FE_element_type_node_sequence_identifier,1)&&
 				ALLOCATE(node_numbers,int,number_of_nodes))
 			{
-				element_type_node_sequence->identifier->cm_type=element->cm.type;
+				element_type_node_sequence->identifier->cm_type=element->identifier.type;
 				element_type_node_sequence->identifier->number_of_nodes=number_of_nodes;
 				element_type_node_sequence->identifier->node_numbers=node_numbers;
 				element_type_node_sequence->element=ACCESS(FE_element)(element);
@@ -5064,7 +5105,7 @@ uses them to find faces and lines for elements without them, if they exist.
 #if defined (DEBUG)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %s %d has nodes: ",
-					CM_element_type_string(element->cm.type), element->cm.number);
+					CM_element_type_string(element->identifier.type), element->identifier.number);
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -6196,8 +6237,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												if (embedding_element)
 												{
 													display_message(INFORMATION_MESSAGE,"%s %d xi",
-															CM_element_type_string(embedding_element->cm.type),
-															embedding_element->cm.number);
+															CM_element_type_string(embedding_element->identifier.type),
+															embedding_element->identifier.number);
 													xi_dimension=embedding_element->shape->dimension;
 													value=values_storage+sizeof(struct FE_element *);
 													for (xi_index=0;xi_index<xi_dimension;xi_index++)
@@ -6637,35 +6678,35 @@ obtained from the node_field_component for the field at the node.
 											{
 												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 													"Node %d used in element %d has no fields defined.",
-													node->cm_node_identifier, element->cm.number);
+													node->cm_node_identifier, element->identifier.number);
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 												"Node reference missing for element %d.",
-												element->cm.number);
+												element->identifier.number);
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 											"Node element map specifies a node index out of range for element %d.",
-											element->cm.number);
+											element->identifier.number);
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 										"No map values for element %d.",
-										element->cm.number);
+										element->identifier.number);
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 									"No standard node map for element %d.",
-									element->cm.number);
+									element->identifier.number);
 							}
 						}
 					}
@@ -6835,7 +6876,7 @@ obtained from the node_field_component for the field at the node.
 									display_message(ERROR_MESSAGE,
 										"global_to_element_map_values.  Cannot evaluate field %s "
 										"in element %d because it is not defined at node %d",
-										field->name,element->cm.number,node->cm_node_identifier);
+										field->name,element->identifier.number,node->cm_node_identifier);
 									return_code=0;
 								}
 								standard_node_map_address++;
@@ -8689,7 +8730,7 @@ function fails if two faces have the same shape and share the same nodes.
 		element_type_node_sequence_list_void))
 	{
 		return_code=1;
-		if ((element->cm.type==CM_LINE)||(element->cm.type==CM_FACE))
+		if ((element->identifier.type==CM_LINE)||(element->identifier.type==CM_FACE))
 		{
 			if (element_type_node_sequence=
 				CREATE(FE_element_type_node_sequence)(element))
@@ -8700,7 +8741,7 @@ function fails if two faces have the same shape and share the same nodes.
 					display_message(ERROR_MESSAGE,
 						"FE_element_face_line_to_element_type_node_sequence_list.  "
 						"Could not add FE_element_type_node_sequence to list for element %s %d",
-						CM_element_type_string(element->cm.type), element->cm.number);
+						CM_element_type_string(element->identifier.type), element->identifier.number);
 					DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
 					return_code=0;
 				}
@@ -14492,7 +14533,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 					component_number,version,type,&element,xi)&&element->shape)
 				{
 					error=0;
-					switch (element->cm.type)
+					switch (element->identifier.type)
 					{
 						case CM_ELEMENT:
 						{
@@ -14511,7 +14552,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 							error=1;
 						} break;
 					}
-					sprintf(temp_string," %d",element->cm.number);
+					sprintf(temp_string," %d",element->identifier.number);
 					append_string(string,temp_string,&error);
 					for (i=0;i<element->shape->dimension;i++)
 					{
@@ -28334,7 +28375,7 @@ points <*name_ptr> at it.
 	ENTER(FE_element_to_element_string);
 	if (element&&name_ptr)
 	{
-		sprintf(temp_string,"%d",element->cm.number);
+		sprintf(temp_string,"%d",element->identifier.number);
 		*name_ptr=duplicate_string(temp_string);
 		return_code=1;
 	}
@@ -28398,14 +28439,14 @@ write element for CM_ELEMENT types.
 	ENTER(FE_element_to_any_element_string);
 	if (element&&name_ptr)
 	{
-		if (CM_ELEMENT==element->cm.type)
+		if (CM_ELEMENT==element->identifier.type)
 		{
-			sprintf(temp_string,"%d",element->cm.number);
+			sprintf(temp_string,"%d",element->identifier.number);
 		}
 		else
 		{
-			sprintf(temp_string,"%s %d",CM_element_type_string(element->cm.type),
-				element->cm.number);
+			sprintf(temp_string,"%s %d",CM_element_type_string(element->identifier.type),
+				element->identifier.number);
 		}
 		*name_ptr=duplicate_string(temp_string);
 		return_code=1;
@@ -28559,10 +28600,8 @@ Note that the element number in <cm> must be non-negative.
 		{
 			return_code = 1;
 			/* clear the new element so we can destroy it if anything fails */
-			element->cm.type = cm->type;
-			element->cm.number = cm->number;
-			/* used for find_by_identifier function */
-			element->identifier = &(element->cm);
+			element->identifier.type = cm->type;
+			element->identifier.number = cm->number;
 			element->shape = (struct FE_element_shape *)NULL;
 			element->faces = (struct FE_element **)NULL;
 			element->fields = (struct FE_element_field_info *)NULL;
@@ -28733,12 +28772,9 @@ Frees the memory for the element, sets <*element_address> to NULL.
 
 DECLARE_OBJECT_FUNCTIONS(FE_element)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_element)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element, \
-	identifier,struct CM_element_information *, \
-	compare_CM_element_information)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_element)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_element,identifier,struct CM_element_information *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)
 
@@ -28790,7 +28826,7 @@ column of the <coordinate_transformation> matrix.
 		coordinate_transformation=(FE_value *)NULL;
 #if defined (DEBUG)
 		/*???debug */
-		printf("element %d \n",element->cm.number);
+		printf("element %d \n",element->identifier.number);
 #endif /* defined (DEBUG) */
 		/* check if the field is defined for the element */
 		if ((field_info = element->fields) && element->information)
@@ -29196,7 +29232,7 @@ sense for the element, eg. for n-D elements in an n-D mesh.
 	if (element)
 	{
 		if ((dimension == get_FE_element_dimension(element)) ||
-			(cm_element_type == element->cm.type))
+			(cm_element_type == element->identifier.type))
 		{
 			return_code = 1;
 			if (0 < element->number_of_parents)
@@ -29358,8 +29394,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 			return_code=1;
 #if defined (DEBUG)
 			/*???debug */
-			printf("element : %d \n",element->cm.number);
-			printf("field element : %d \n",field_element->cm.number);
+			printf("element : %d \n",element->identifier.number);
+			printf("field element : %d \n",field_element->identifier.number);
 #endif /* defined (DEBUG) */
 			element_dimension=element->shape->dimension;
 			field_element_dimension=field_element->shape->dimension;
@@ -29977,13 +30013,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_values.  %s not defined for (%d)",
-					field->name,(element->cm).number);
+					field->name,(element->identifier).number);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
 					"No coordinate fields defined for (%d)",
-					(element->cm).number);
+					(element->identifier).number);
 			}
 			return_code=0;
 #if defined (DEBUG)
@@ -30663,13 +30699,13 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_nodes.  %s not defined for (%d )",
-					field->name,(element->cm).number);
+					field->name,(element->identifier).number);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_nodes.  No coordinate fields defined for (%d )",
-					(element->cm).number);
+					(element->identifier).number);
 			}
 			return_code=0;
 		}
@@ -30815,8 +30851,8 @@ the derivatives will start at the first position of <jacobian>.
 					display_message(ERROR_MESSAGE,"calculate_FE_element_field.  "
 						"Could not calculate index field %s for field %s at %s %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->cm.type),
-						element_field_values->element->cm.number);
+						CM_element_type_string(element_field_values->element->identifier.type),
+						element_field_values->element->identifier.number);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -31352,8 +31388,8 @@ single component, the value will be put in the first position of <values>.
 						"calculate_FE_element_field_int_values.  "
 						"Could not calculate index field %s for field %s at %s %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->cm.type),
-						element_field_values->element->cm.number);
+						CM_element_type_string(element_field_values->element->identifier.type),
+						element_field_values->element->identifier.number);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -31512,8 +31548,8 @@ It is up to the calling function to deallocate the returned string values.
 						"calculate_FE_element_field_string_values.  "
 						"Could not calculate index field %s for field %s at %s %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->cm.type),
-						element_field_values->element->cm.number);
+						CM_element_type_string(element_field_values->element->identifier.type),
+						element_field_values->element->identifier.number);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -32081,7 +32117,7 @@ Returns the cm number of the <element> or an error if it does not have a shape.
 	cm_number=0;
 	if (element)
 	{
-		cm_number=element->cm.number;
+		cm_number=element->identifier.number;
 	}
 	else
 	{
@@ -32106,8 +32142,8 @@ Fills in the <identifier> of <element>.
 	ENTER(get_FE_element_identifier);
 	if (element && identifier)
 	{
-		identifier->type = element->cm.type;
-		identifier->number = element->cm.number;
+		identifier->type = element->identifier.type;
+		identifier->number = element->identifier.number;
 		return_code = 1;
 	}
 	else
@@ -32139,8 +32175,8 @@ afterwards. FE_region should be the only object that needs to call this.
 	ENTER(set_FE_element_identifier);
 	if (element && identifier && (0 < identifier->number))
 	{
-		element->cm.type = identifier->type;
-		element->cm.number = identifier->number;
+		element->identifier.type = identifier->type;
+		element->identifier.number = identifier->number;
 		return_code = 1;
 	}
 	else
@@ -33095,8 +33131,8 @@ Should only be called for unmanaged elements.
 		{
 			display_message(ERROR_MESSAGE,
 				"define_FE_field_at_element.  Field %s already defined at %s %d",
-				field->name, CM_element_type_string(element->cm.type),
-				element->cm.number);
+				field->name, CM_element_type_string(element->identifier.type),
+				element->identifier.number);
 			return_code = 0;
 		}
 		int number_of_values = 0;
@@ -33119,7 +33155,7 @@ Should only be called for unmanaged elements.
 					display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
 						"Indexer field %s for field %s not defined at %s %d",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element->cm.type), element->cm.number);
+						CM_element_type_string(element->identifier.type), element->identifier.number);
 					return_code = 0;
 				}
 #endif /* defined (OLD_CODE) */
@@ -33809,9 +33845,9 @@ Second argument is a struct CM_element_type_Multi_range_data.
 		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
 		return_code =
-			(element_type_ranges_data->cm_element_type == element->cm.type) &&
+			(element_type_ranges_data->cm_element_type == element->identifier.type) &&
 			Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
-				element->cm.number);
+				element->identifier.number);
 	}
 	else
 	{
@@ -33843,9 +33879,9 @@ Second argument is a struct CM_element_type_Multi_range_data.
 		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
 		return_code =
-			(element_type_ranges_data->cm_element_type == element->cm.type) &&
+			(element_type_ranges_data->cm_element_type == element->identifier.type) &&
 			(!Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
-				element->cm.number));
+				element->identifier.number));
 	}
 	else
 	{
@@ -33877,10 +33913,10 @@ Second argument is a struct CM_element_type_Multi_range_data.
 	if (element && (element_type_ranges_data =
 		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
-		if (element->cm.type == element_type_ranges_data->cm_element_type)
+		if (element->identifier.type == element_type_ranges_data->cm_element_type)
 		{
 			return_code = Multi_range_add_range(element_type_ranges_data->multi_range,
-				element->cm.number, element->cm.number);
+				element->identifier.number, element->identifier.number);
 		}
 		else
 		{
@@ -34015,7 +34051,7 @@ If <element> is of the given CM_type, increment number_of_elements.
 		(struct FE_element_count_if_type_data *)count_data_void))
 	{
 		return_code = 1;
-		if (element->cm.type == count_data->cm_type)
+		if (element->identifier.type == count_data->cm_type)
 		{
 			(count_data->number_of_elements)++;
 		}
@@ -34186,7 +34222,7 @@ same as the element from <global_element_list1>.
 							((!global_element_list1) && (*face1 == *face2)) ||
 							(global_element_list1 &&
 								(FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-									(*face1)->identifier, global_element_list1) == *face2)))
+									&((*face1)->identifier), global_element_list1) == *face2)))
 						{
 							face1++;
 							face2++;
@@ -34581,7 +34617,7 @@ Outputs the name of the element as element/face/line #.
 		return_code=1;
 		/* write the identifier */
 		display_message(INFORMATION_MESSAGE,"%s %d\n",
-			CM_element_type_string(element->cm.type),element->cm.number);
+			CM_element_type_string(element->identifier.type),element->identifier.number);
 	}
 	else
 	{
@@ -34612,7 +34648,7 @@ Outputs the information contained at the element.
 	{
 		return_code=1;
 		/* write the identifier */
-		display_message(INFORMATION_MESSAGE,"element : %d \n",element->cm.number);
+		display_message(INFORMATION_MESSAGE,"element : %d \n",element->identifier.number);
 		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
 		if (element->shape)
 		{
@@ -34626,7 +34662,7 @@ Outputs the information contained at the element.
 				{
 					if (*face)
 					{
-						display_message(INFORMATION_MESSAGE," (%d)",(*face)->cm.number);
+						display_message(INFORMATION_MESSAGE," (%d)",(*face)->identifier.number);
 					}
 					else
 					{
@@ -34651,7 +34687,7 @@ Outputs the information contained at the element.
 				{
 					if (element->parents[i])
 					{
-						sprintf(line+strlen(line)," (%d)", element->parents[i]->cm.number);
+						sprintf(line+strlen(line)," (%d)", element->parents[i]->identifier.number);
 						if (70<=strlen(line))
 						{
 							display_message(INFORMATION_MESSAGE,line);
@@ -35758,7 +35794,7 @@ Returns true if <top_level_element> is indeed a top_level parent of <element>.
 
 	ENTER(FE_element_has_top_level_element);
 	if (element&&(top_level_element=(struct FE_element *)top_level_element_void)&&
-		(CM_ELEMENT==top_level_element->cm.type))
+		(CM_ELEMENT==top_level_element->identifier.type))
 	{
 		if ((element==top_level_element)||
 			FE_element_ancestor_matches_recursive(element, top_level_element))
@@ -35796,7 +35832,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 	ENTER(FE_element_is_top_level_parent_of_element);
 	if (top_level_element&&(element=(struct FE_element *)element_void))
 	{
-		if ((CM_ELEMENT==top_level_element->cm.type)&&
+		if ((CM_ELEMENT==top_level_element->identifier.type)&&
 			((element==top_level_element)||
 				FE_element_ancestor_matches_recursive(element, top_level_element)))
 		{
@@ -35996,7 +36032,7 @@ is checked and the <top_level_xi> calculated.
 	if (element&&xi&&top_level_element&&top_level_xi&&top_level_element_dimension)
 	{
 		return_code = 1;
-		if (CM_ELEMENT == element->cm.type)
+		if (CM_ELEMENT == element->identifier.type)
 		{
 			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
@@ -36639,7 +36675,7 @@ Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
 	USE_PARAMETER(dummy_void);
 	if (element)
 	{
-		return_code=(CM_ELEMENT==element->cm.type);
+		return_code=(CM_ELEMENT==element->identifier.type);
 	}
 	else
 	{
@@ -36666,7 +36702,7 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 	USE_PARAMETER(dummy_void);
 	if (element)
 	{
-		return_code=(CM_ELEMENT != element->cm.type);
+		return_code=(CM_ELEMENT != element->identifier.type);
 	}
 	else
 	{
@@ -36816,7 +36852,7 @@ After using the function, deallocate data->compatible_element_field_info!
 		data->global_element_list)
 	{
 		global_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier, data->global_element_list);
+			&(element->identifier), data->global_element_list);
 		unspecified_element_shape = FE_element_shape_is_unspecified(element->shape);
 		dimension = get_FE_element_dimension(element);
 		if (unspecified_element_shape)
@@ -36835,7 +36871,7 @@ After using the function, deallocate data->compatible_element_field_info!
 			{
 				display_message(ERROR_MESSAGE,
 					"%s %d is not found in global element list",
-					CM_element_type_string(element->cm.type), element->cm.number);
+					CM_element_type_string(element->identifier.type), element->identifier.number);
 			}
 		}
 		else
@@ -36935,7 +36971,7 @@ Iterator function for adding <element> to <element_list> if not currently in it.
 	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
 	{
 		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier,element_list))
+			&(element->identifier),element_list))
 		{
 			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
 		}
@@ -37022,7 +37058,7 @@ Iterator function for removing <element> from <element_list> if currently in it.
 	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
 	{
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier,element_list))
+			&(element->identifier),element_list))
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
 		}
@@ -37058,7 +37094,7 @@ If <element> is in <element_list> it is taken out, otherwise it is added.
 	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
 	{
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier,element_list))
+			&(element->identifier),element_list))
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
 		}
@@ -37095,7 +37131,7 @@ to the element_list if not currently in it.
 	if (element && (element_list_type_data =
 		(struct FE_element_list_CM_element_type_data *)element_list_type_data_void))
 	{
-		if ((element->cm.type == element_list_type_data->cm_element_type) &&
+		if ((element->identifier.type == element_list_type_data->cm_element_type) &&
 			(!IS_OBJECT_IN_LIST(FE_element)(element,
 				element_list_type_data->element_list)))
 		{
@@ -37191,7 +37227,7 @@ ensures none of its nodes are in <node_list>.
 	{
 		return_code=1;
 		/* only nodes in parentless elements need be added */
-		if (CM_ELEMENT==element->cm.type)
+		if (CM_ELEMENT==element->identifier.type)
 		{
 			if (element->information)
 			{

@@ -130,13 +130,18 @@ PROTOTYPE_REMOVE_OBJECTS_FROM_LIST_THAT_FUNCTION(object_type) \
 	if (conditional && list) \
 	{ \
 		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
-		for (CMISS_SET(object_type)::iterator iter = cmiss_set->begin(); iter != cmiss_set->end(); ++iter) \
+		CMISS_SET(object_type)::iterator iter = cmiss_set->begin(); \
+		while (iter != cmiss_set->end()) \
 		{ \
 			if ((conditional)(*iter,user_data)) \
 			{ \
 				CMISS_SET(object_type)::iterator tmp = iter; \
 				++iter; \
 				cmiss_set->erase(tmp); \
+			} \
+			else \
+			{ \
+				++iter; \
 			} \
 		} \
 		return_code = 1; \
