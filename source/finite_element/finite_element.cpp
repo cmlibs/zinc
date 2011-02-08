@@ -5274,7 +5274,7 @@ This function returns the tensor product (memory allocated within the function)
 of <matrix_1> and <matrix_2>.  All matricies are assumed to be stored row-wise.
 ==============================================================================*/
 {
-	FE_value *product,*row_start_1,*row_start_2,*value,*value_1,*value_2;
+	FE_value *product,*row_start_1,*row_start_2,*value,*value_1 = NULL, *value_2 = NULL;
 	int i,j,k,l;
 
 	ENTER(tensor_product);
@@ -6541,7 +6541,7 @@ obtained from the node_field_component for the field at the node.
 	char *basis_string;
 	FE_value *array,*blended_element_value,*blended_element_values,
 		*blending_matrix,*element_value,*element_values,
-		*scale_factors,temp_value,xi;
+		*scale_factors = NULL,temp_value,xi;
 	int *coefficient_index,*global_value_index,i,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
 		number_of_element_values,number_of_global_values,number_of_map_values,
@@ -6551,7 +6551,7 @@ obtained from the node_field_component for the field at the node.
 	struct FE_basis *basis;
 	struct FE_element_field_component *component;
 	struct FE_field *field;
-	struct FE_node *node,**nodes;
+	struct FE_node *node = NULL,**nodes;
 	struct FE_node_field *node_field;
 	struct FE_node_field_component *node_field_component;
 	struct FE_node_field_info *node_field_info;
@@ -21594,7 +21594,7 @@ Creates and returns an exact copy of the struct FE_element_field_component
 <source_component>.
 ==============================================================================*/
 {
-	int  i,number_of_maps;
+	int  i,number_of_maps = 0;
 	struct FE_element_field_component *component;
 
 	ENTER(copy_create_FE_element_field_component);
@@ -25865,7 +25865,7 @@ On a failed return no such array is allocated and returned.
 	struct FE_element_node_scale_field_info *node_scale_field_info;
 	struct FE_node *node, **tmp_node;
 	void *scale_factor_set_identifier, **tmp_scale_factor_set_identifier,
-		**changed_existing_scale_factor_set_identifiers;
+		**changed_existing_scale_factor_set_identifiers = NULL;
 
 	ENTER(merge_create_FE_element_node_scale_field_info);
 	node_scale_field_info = (struct FE_element_node_scale_field_info *)NULL;
