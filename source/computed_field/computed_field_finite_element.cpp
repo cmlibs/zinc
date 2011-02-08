@@ -4827,7 +4827,7 @@ struct FE_field_to_Computed_field_change_data
 int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	void *field_change_data_void)
 {
-	enum CHANGE_LOG_CHANGE(FE_field) change;
+	int change;
 	int return_code;
 	struct FE_field_to_Computed_field_change_data *field_change_data;
 
@@ -4901,7 +4901,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void)
 {
 	Cmiss_region *cmiss_region;
-	enum CHANGE_LOG_CHANGE(FE_field) field_change_summary;
+	int field_change_summary;
 	int add_cmiss_number_field, add_xi_field, check_field_wrappers;
 	struct FE_field_to_Computed_field_change_data field_change_data;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -4988,7 +4988,7 @@ changed, added or removed in <fe_field_change_log>.
 <fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
 ==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_field) fe_field_change;
+	int fe_field_change;
 	enum FE_nodal_value_type nodal_value_type;
 	int return_code, version_number;
 	struct CHANGE_LOG(FE_field) *fe_field_change_log;
@@ -5273,8 +5273,8 @@ element_xi type fe_field.
 		return_code = 0;
 		if (core = dynamic_cast<Computed_field_finite_element*>(field->core))
 		{
-			return_code = FE_field_has_value_type(core->fe_field,
-				(void *)ELEMENT_XI_VALUE);
+			enum Value_type field_value_type = get_FE_field_value_type(core->fe_field);
+			return_code = (field_value_type == ELEMENT_XI_VALUE);
 		}
 	}
 	else

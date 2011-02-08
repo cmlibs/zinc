@@ -53,6 +53,7 @@ Functions for manipulating finite element structures.
 /*???DB.  Testing */
 #define DOUBLE_FOR_DOT_PRODUCT
 
+extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -64,7 +65,9 @@ Functions for manipulating finite element structures.
 #include "general/change_log_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/heapsort.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
@@ -75,6 +78,7 @@ Functions for manipulating finite element structures.
 #include "general/object.h"
 #include "general/value.h"
 #include "user_interface/message.h"
+}
 
 /*
 Module Constants
@@ -578,7 +582,7 @@ calculated from the element field as required and are then destroyed.
 	/* the standard basis function for each component */
 	Standard_basis_function **component_standard_basis_functions;
 	/* the arguments for the standard basis function for each component */
-	void *component_standard_basis_function_arguments;
+	int **component_standard_basis_function_arguments;
 	/* working space for evaluating basis */
 	FE_value *basis_function_values;
 
@@ -2927,6 +2931,7 @@ Use with caution!
 	struct FE_node_field_component *component_1, *component_2;
 
 	ENTER(FE_node_fields_match);
+	return_code=0;
 	if (node_field_1 && node_field_2)
 	{
 		if (ignore_field_and_time_sequence ||
@@ -2979,15 +2984,10 @@ Use with caution!
 				}
 			}
 		}
-		else
-		{
-			return_code=0;
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"FE_node_fields_match.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -4803,24 +4803,24 @@ cmiss_2.
 
 	ENTER(compare_CM_element_information);
 	if (cmiss_1&&cmiss_2)
-	{		
+	{
 		if (cmiss_1->type==cmiss_2->type )
-		{		
+		{
 			if (cmiss_1->number==cmiss_2->number)
 				return_code=0;
 			else if (cmiss_1->number < cmiss_2->number)
 				return_code=-1;
-			else					 
-				return_code =1;		
+			else
+				return_code =1;
 		}
 		else
 		{
 			if (cmiss_1->type<cmiss_2->type )
 				return_code=-1;
-			else					 
-				return_code =1;		
+			else
+				return_code =1;
 		}
-		
+
 	}
 	else
 	{
@@ -4952,11 +4952,11 @@ uses them to find faces and lines for elements without them, if they exist.
 				{
 					node_number=(nodes_in_element[i])->cm_node_identifier;
 					node_numbers[i]=node_number;
-					/* SAB Reenabled the matching of differently ordered faces as 
-						detecting the continuity correctly is more important than the 
-						problems with lines matching to different nodes when 
+					/* SAB Reenabled the matching of differently ordered faces as
+						detecting the continuity correctly is more important than the
+						problems with lines matching to different nodes when
 						inheriting from different parents.
-						OLDCOMMENT 
+						OLDCOMMENT
 						We do not want to sort these node numbers as the order of the nodes
 						determines which ordering the faces are in and if these do not match
 						we will get the lines matched to different pairs of the nodes. */
@@ -5650,7 +5650,7 @@ times the size of <node_field->field->value_type> .
 struct Merge_FE_node_field_into_list_data
 {
 	int requires_merged_storage;
-	int values_storage_size; 
+	int values_storage_size;
 	int number_of_values;
 	struct LIST(FE_node_field) *list;
 }; /* struct Merge_FE_node_field_into_list_data */
@@ -5723,7 +5723,7 @@ appropriately.
 				{
 					if (existing_node_field->time_sequence)
 					{
-						/* Merging two time fields.  Make a node_field with the 
+						/* Merging two time fields.  Make a node_field with the
 							 combined list */
 						if (merged_time_sequence =
 							FE_region_get_FE_time_sequence_merging_two_time_series(
@@ -5769,7 +5769,7 @@ appropriately.
 					else
 					{
 						/* Overwriting a single valued field with a time based
-							 field, the values storage size will change, need to 
+							 field, the values storage size will change, need to
 							 write the code */
 						display_message(ERROR_MESSAGE,
 							"merge_FE_node_field_into_list.  "
@@ -5783,7 +5783,7 @@ appropriately.
 					if (existing_node_field->time_sequence)
 					{
 						/* Overwriting a time based field with a single valued
-							 field, the values storage size will change, need to 
+							 field, the values storage size will change, need to
 							 write the code */
 						display_message(ERROR_MESSAGE,
 							"merge_FE_node_field_into_list.  "
@@ -5972,7 +5972,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 					display_message(INFORMATION_MESSAGE,".  ");
 					/* display field based information */
 					if (field->number_of_values)
-					{	
+					{
 						int count;
 
 						display_message(INFORMATION_MESSAGE,"field based values: ");
@@ -5981,10 +5981,10 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							case FE_VALUE_VALUE:
 							{
 								display_message(INFORMATION_MESSAGE,"\n");
-								display_message(INFORMATION_MESSAGE,"    "); 
+								display_message(INFORMATION_MESSAGE,"    ");
 								/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 								for (count=0;count<field->number_of_values;count++)
-								{	
+								{
 									display_message(INFORMATION_MESSAGE," %" FE_VALUE_STRING,
 										*((FE_value *)(field->values_storage+
 											  count*sizeof(FE_value))));
@@ -5992,8 +5992,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 										(0==((count+1)%DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 									{
 										display_message(INFORMATION_MESSAGE,"\n");
-									}											
-								}	
+									}
+								}
 								display_message(INFORMATION_MESSAGE,"\n");
 							} break;
 							case STRING_VALUE:
@@ -6008,7 +6008,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 										display_message(INFORMATION_MESSAGE, " %s", string_value);
 										DEALLOCATE(string_value);
 									}
-								}	
+								}
 								display_message(INFORMATION_MESSAGE, "\n");
 							} break;
 							default:
@@ -6021,7 +6021,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 					/* display node based information*/
 					if ((values_storage=node->values_storage)&&(type=node_field_component->
 							 nodal_value_types))
-					{					
+					{
 						values_storage += node_field_component->value;
 						version=0;
 						while (return_code&&(version<number_of_versions))
@@ -6043,7 +6043,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 								{
 									int count;
 
-									display_message(INFORMATION_MESSAGE,"times: ");							
+									display_message(INFORMATION_MESSAGE,"times: ");
 									switch (field->time_value_type)
 									{
 										case FE_VALUE_VALUE:
@@ -6058,8 +6058,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 													(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 												{
 													display_message(INFORMATION_MESSAGE,"\n");
-												}											
-											}																							
+												}
+											}
 										} break;
 										default:
 										{
@@ -6069,7 +6069,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 										} break;
 									}
 								}
-#endif /* defined (NEW_CODE) */				
+#endif /* defined (NEW_CODE) */
 								/* display node based field information */
 								if (field->number_of_times)
 								{
@@ -6079,7 +6079,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 									display_message(INFORMATION_MESSAGE," Time based field ");
 								}
 								else
-								{							
+								{
 									if (node_field->time_sequence)
 									{
 										switch (field->value_type)
@@ -6093,7 +6093,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 											{
 												display_message(INFORMATION_MESSAGE,"%d",
 													*(*((int **)values_storage) + time_index));
-											} break;	
+											} break;
 											default:
 											{
 												display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
@@ -6131,12 +6131,12 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												{
 													display_message(INFORMATION_MESSAGE,"UNDEFINED");
 												}
-											} break;	
+											} break;
 											case INT_VALUE:
 											{
 												display_message(INFORMATION_MESSAGE,"%d",
 													*((int *)values_storage));
-											} break;	
+											} break;
 											case STRING_VALUE:
 											{
 												char *name;
@@ -6159,11 +6159,11 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 											{
 												double *array;
 												int number_of_values,count;
-									
+
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
 													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
-												{									
+												{
 													if (ALLOCATE(array,double,number_of_values))
 													{
 														get_FE_nodal_double_array_value(node,field,
@@ -6180,8 +6180,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 																(0==((count+1)%DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 															{
 																display_message(INFORMATION_MESSAGE,"\n");
-															}											
-														}										
+															}
+														}
 														DEALLOCATE(array);
 													}
 													else
@@ -6189,28 +6189,28 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 														display_message(ERROR_MESSAGE,"list_FE_node_field."
 															"  Could not allocate double array");
 														return_code =0;
-													}	
+													}
 												}
 												else
 												{
 													/* this is NOT an error */
 													display_message(INFORMATION_MESSAGE,"array length 0");
 												}
-											} break;	
+											} break;
 											case FE_VALUE_ARRAY_VALUE:
 											{
 												FE_value *array;
 												int number_of_values,count;
-									
+
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
 													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
-												{																			
+												{
 													if (ALLOCATE(array,FE_value,number_of_values))
 													{
 														get_FE_nodal_FE_value_array(node,field,
 															/*component_number*/i,version,
-															*type,array,number_of_values);	
+															*type,array,number_of_values);
 														display_message(INFORMATION_MESSAGE,"\n");
 														/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS>0 */
 														for (count=0;count<number_of_values;count++)
@@ -6221,8 +6221,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 																(0==((count+1) % FE_VALUE_MAX_OUTPUT_COLUMNS)))
 															{
 																display_message(INFORMATION_MESSAGE,"\n");
-															}											
-														}									
+															}
+														}
 														DEALLOCATE(array);
 													}
 													else
@@ -6236,17 +6236,17 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												{
 													/* this is NOT an error */
 													display_message(INFORMATION_MESSAGE,"array length 0");
-												}										
-											} break;	
+												}
+											} break;
 											case SHORT_ARRAY_VALUE:
 											{
 												short *array;
-												int number_of_values,count;									
+												int number_of_values,count;
 
 												number_of_values=get_FE_nodal_array_number_of_elements(node,
 													field,/*component_number*/i,version,*type);
 												if (number_of_values>0)
-												{								
+												{
 													if (ALLOCATE(array,short,number_of_values))
 													{
 														get_FE_nodal_short_array(node,field,
@@ -6263,8 +6263,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 																(0==((count+1) % SHORT_VALUE_MAX_OUTPUT_COLUMNS)))
 															{
 																display_message(INFORMATION_MESSAGE,"\n");
-															}											
-														}										
+															}
+														}
 														DEALLOCATE(array);
 													}
 													else
@@ -6273,13 +6273,13 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 															"  Could not allocate short array");
 														return_code=0;
 													}
-												}																		
+												}
 												else
 												{
 													/* this is NOT an error */
 													display_message(INFORMATION_MESSAGE,"array length 0");
 												}
-											} break;									
+											} break;
 #endif /* defined (UNEMAP_USE_NODES) */
 											default:
 											{
@@ -6290,7 +6290,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 									} /* (node_field->time_sequence) */
 								} /* if (field->number_of_times) */
 								values_storage += get_Value_storage_size(field->value_type,
-									node_field->time_sequence); 
+									node_field->time_sequence);
 								type++;
 								k--;
 								if (k>0)
@@ -6626,7 +6626,7 @@ obtained from the node_field_component for the field at the node.
 									{
 										node_field_component=
 											node_field->components + component_number;
-										
+
 										node_field_info=node->fields;
 										time_sequence = node_field->time_sequence;
 										if (time_sequence)
@@ -6675,7 +6675,7 @@ obtained from the node_field_component for the field at the node.
 														{
 															*element_value=((1.0 - xi)*array[time_index_one]
 																+xi*array[time_index_two]);
-														}												
+														}
 													}
 													else
 													{
@@ -6711,7 +6711,7 @@ obtained from the node_field_component for the field at the node.
 														{
 															*element_value=((1.0 - xi)*(FE_value)short_array[time_index_one]
 																+xi*(FE_value)short_array[time_index_two]);
-														}												
+														}
 													}
 													else
 													{
@@ -6738,7 +6738,7 @@ obtained from the node_field_component for the field at the node.
 													return_code=0;
 												}
 											}
-										
+
 										}
 										else
 										{
@@ -6950,7 +6950,7 @@ obtained from the node_field_component for the field at the node.
 				if ((element->information)&&
 					(scale_factors=element->information->scale_factors)&&
 					((number_of_scale_factors=element->information->
-						number_of_scale_factors)>0)&&					 						
+						number_of_scale_factors)>0)&&
 					(field->value_type==FE_VALUE_VALUE)&&
 					((number_of_global_values=field->number_of_values)>0))
 				{
@@ -8424,7 +8424,7 @@ can use this function to determing if either are defined.
 			if (node_field_component=node_field->components)
 			{
 				if (node_field->field->value_type == value_type)
-				{					
+				{
 					node_field_component += component_number;
 					if (version < node_field_component->number_of_versions)
 					{
@@ -8713,6 +8713,7 @@ Cannot guarantee that <normal> is inward.
 	int dimension,i,j,k,*pivot_index,return_code;
 
 	ENTER(face_calculate_xi_normal);
+	dimension = 0;
 	if (shape&&get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension)&&
 		(0<=face_number)&&(face_number<shape->number_of_faces)&&normal)
 	{
@@ -8833,14 +8834,15 @@ on the boundary of the shape.
 {
 	double determinant,*face_matrix,*face_rhs,*face_rhsB,step_size_local;
 	FE_value *face_to_element;
-	int dimension,face_number,i,j,k,*pivot_index,return_code;
-	/* While we are calculating this in doubles all the xi locations are 
+	int face_number,i,j,k,*pivot_index,return_code;
+	/* While we are calculating this in doubles all the xi locations are
 		stored in floats and so when we change_element and are numerically just
 		outside it can be a value as large as this */
 #define SMALL_STEP (1e-4)
 
 	ENTER(FE_element_shape_xi_increment);
 	return_code=0;
+	int dimension = 0;
 	if (shape&&xi&&increment&&face_number_address&&
 		get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension))
 	{
@@ -8869,7 +8871,7 @@ on the boundary of the shape.
 						face_to_element++;
 					}
 				}
-				/* Don't terminate if the LU_decompose fails as the matrix is 
+				/* Don't terminate if the LU_decompose fails as the matrix is
 					probably singular, just implying that we are travelling parallel
 					to the face */
 				if (LU_decompose(dimension,face_matrix,pivot_index,
@@ -9016,7 +9018,7 @@ common object.
 	if (fe_region)
 	{
 		if (ALLOCATE(fe_field_info, struct FE_field_info, 1))
-		{						
+		{
 			/* maintain pointer to the the FE_region this information belongs to.
 				 It is not ACCESSed since FE_region is the owning object and it
 				 would prevent the FE_region from being destroyed. */
@@ -9057,7 +9059,7 @@ memory for the information and sets <*field_info_address> to NULL.
 		(fe_field_info = *fe_field_info_address))
 	{
 		if (0 == fe_field_info->access_count)
-		{	
+		{
 			DEALLOCATE(*fe_field_info_address);
 			return_code = 1;
 		}
@@ -9307,7 +9309,7 @@ Frees the memory for the field and sets <*field_address> to NULL.
 			{
 				/* free any arrays pointed to by field->values_storage */
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_sequence *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);
 				/* free the global values */
 				DEALLOCATE(field->values_storage);
 			}
@@ -9378,7 +9380,7 @@ Outputs the information contained in <field>.
 			}
 			/* display field based information*/
 			if (field->number_of_values)
-			{	
+			{
 				int count;
 
 				display_message(INFORMATION_MESSAGE,"field based values: ");
@@ -9396,20 +9398,20 @@ Outputs the information contained in <field>.
 								(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 							{
 								display_message(INFORMATION_MESSAGE,"\n");
-							}											
-						}																							
+							}
+						}
 					} break;
 					default:
 					{
 						display_message(INFORMATION_MESSAGE,"list_FE_field: "
 							"Can't display that field value_type yet. Write the code!");
 					} break;
-				}	/* switch () */							
+				}	/* switch () */
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
 			i++;
 		}
-		
+
 	}
 	else
 	{
@@ -10375,41 +10377,6 @@ may be destroyed here - ie. in the 'all' case.
 
 	return (return_code);
 } /* set_FE_fields */
-
-int FE_field_has_value_type(struct FE_field *field,
-	void *user_data_value_type)
-/*******************************************************************************
-LAST MODIFIED : 4 May 1999
-
-DESCRIPTION :
-Returns true if the VALUE_TYPE specified in the <user_data_value_type> matches
-the VALUE_TYPE of the <field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_field_value_type);
-	if (field)
-	{
-		if (((enum Value_type)user_data_value_type)==field->value_type)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_has_value_type.  Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_has_value_type */
 
 struct FE_region *FE_field_get_FE_region(struct FE_field *fe_field)
 /*******************************************************************************
@@ -12356,7 +12323,8 @@ component.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (field_component_name=strchr(current_token,'.'))
+				field_component_name = const_cast<char *>(strrchr(current_token,'.'));
+				if (field_component_name)
 				{
 					*field_component_name='\0';
 					field_component_name++;
@@ -13339,6 +13307,7 @@ Defines a field at a node (does not assign values)
 			fe_node_field_creator->nodal_value_types) &&
 		(field->number_of_components == fe_node_field_creator->number_of_components))
 	{
+		new_values_storage_size = 0;
 		value_type = field->value_type;
 		size = get_Value_storage_size(value_type, fe_time_sequence);
 		return_code = 1;
@@ -13358,7 +13327,6 @@ Defines a field at a node (does not assign values)
 			{
 				i = field->number_of_components;
 				component = node_field->components;
-				new_values_storage_size = 0;
 				while (return_code && (i > 0))
 				{
 					/*???DB.  Inline assign_FE_node_field_component and get rid of
@@ -17424,12 +17392,15 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 						component = &(node_field->components[i]);
 						if (time_sequence)
 						{
+							source = 0;
 							the_value_storage = (node->values_storage + component->value);
 							size = get_Value_storage_size(FE_VALUE_VALUE, time_sequence);
 						}
 						else
 						{
 							source = (FE_value *)(node->values_storage + component->value);
+							the_value_storage = 0;
+							size = 0;
 						}
 						number_of_versions = component->number_of_versions;
 						number_of_derivatives = component->number_of_derivatives;
@@ -17785,7 +17756,8 @@ It is up to the calling function to DEALLOCATE the returned array.
 						}
 						else
 						{
-							source = (int *)(node->values_storage + component->value);
+							the_value_storage = 0;
+							size = 0;
 						}
 						source=(int *)(node->values_storage + component->value);
 						number_of_versions = component->number_of_versions;
@@ -18479,7 +18451,7 @@ returned.
 		number_of_basis_functions,
 		number_of_polygon_verticies,number_of_standard_basis_functions,
 		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
-		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_offset,simplex_order,
+		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_offset,
 		simplex_type,step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,
 		temp_int_2,temp_int_3,*type_column,*type_entry,xi_coordinate;
 	Standard_basis_function *standard_basis;
@@ -18517,6 +18489,7 @@ returned.
 			xi_coordinate=0;
 			type_entry=type+1;
 			standard_basis=monomial_basis_functions;
+			polygon_offset = 0;
 			/* for non-tensor product bases (simplex and polygon), the blending
 				matrix is initially calculated as the tensor product of the current
 				blending matrix and the blending matrix for the non-tensor product
@@ -19018,6 +18991,7 @@ returned.
 					case LINEAR_SIMPLEX:
 					case QUADRATIC_SIMPLEX:
 					{
+						int simplex_order = 0;
 						/* simplex */
 						/* to avoid increment/check of row */
 						valid_type=2;
@@ -19756,8 +19730,7 @@ DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_basis,type)
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 {
 	char **destination_value_names,**source_value_name,**value_name;
-	FE_value *blending_matrix,*destination_blending_matrix,
-		*source_blending_matrix;
+	FE_value *blending_matrix;
 	int *argument,*destination_arguments,i,return_code,*source_argument;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type));
@@ -19822,9 +19795,11 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 		}
 		if (return_code)
 		{
+			FE_value *destination_blending_matrix = 0;
 			/* copy the source blending matrix */
-			if (source_blending_matrix=source->blending_matrix)
+			if (source->blending_matrix)
 			{
+				FE_value *source_blending_matrix = source->blending_matrix;
 				i=(source->number_of_basis_functions)*
 					(source->number_of_standard_basis_functions);
 				if (ALLOCATE(destination_blending_matrix,FE_value,i))
@@ -23734,7 +23709,6 @@ No values_storage arrays are allocated or copied by this function.
 	struct FE_element_node_scale_field_info *merge_info, *source_info;
 	struct FE_field *field;
 	struct FE_node *new_node, **node;
-	struct General_node_to_element_map **new_general_node_map, **general_node_map;
 	struct Linear_combination_of_global_values **element_value,
 		**new_element_value;
 	struct Standard_node_to_element_map **new_standard_node_map,
@@ -23823,6 +23797,7 @@ No values_storage arrays are allocated or copied by this function.
 								{
 									case STANDARD_NODE_TO_ELEMENT_MAP:
 									{
+										scale_factor_set_identifier = (void **)NULL;
 										if ((new_standard_node_map = (*new_component)->map.
 											standard_node_based.node_to_element_maps) &&
 											((j = (*new_component)->map.standard_node_based.
@@ -23981,6 +23956,7 @@ No values_storage arrays are allocated or copied by this function.
 									} break;
 									case GENERAL_NODE_TO_ELEMENT_MAP:
 									{
+										struct General_node_to_element_map **new_general_node_map, **general_node_map;
 										if ((new_general_node_map=(*new_component)->map.
 											general_node_based.node_to_element_maps)&&
 											((j=(*new_component)->map.general_node_based.
@@ -24138,7 +24114,10 @@ No values_storage arrays are allocated or copied by this function.
 													FE_element_field_component)(FIELD_TO_ELEMENT_MAP,j,
 														(*new_component)->basis,(*new_component)->modify)))
 										{
-											element_value=(*general_node_map)->element_values;
+											// GRC: this code has never run; the following 2 lines fix compiler
+											// warnings. m was used without initiallisation
+											m = 0; // GRC remove this line
+											element_value=(*component)->map.field_based.element_values;
 											while (return_code&&(j>0))
 											{
 												if ((*new_element_value)&&((k=(*new_element_value)->
@@ -26209,7 +26188,7 @@ field information structure.  Note that the arguments are duplicated.
 			{
 				node_scale_field_info=(struct FE_element_node_scale_field_info *)NULL;
 				temp_values_storage=(Value_storage *)NULL;
-				scale_factor_set_identifier=(void *)NULL;
+				scale_factor_set_identifier=(void **)NULL;
 				number_in_scale_factor_set=(int *)NULL;
 				scale_factor=(FE_value *)NULL;
 				if ((node_scale_field_info =
@@ -28223,7 +28202,7 @@ static struct FE_element *FE_element_get_parent_on_face_number(
 	return (NULL);
 }
 
-char *CM_element_type_string(enum CM_element_type cm_element_type)
+const char *CM_element_type_string(enum CM_element_type cm_element_type)
 /*******************************************************************************
 LAST MODIFIED : 26 August 1999
 
@@ -28232,7 +28211,7 @@ Returns a static string describing the <cm_element_type>, eg. CM_LINE = 'line'.
 Returned string must not be deallocated!
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(CM_element_type_string);
 	switch (cm_element_type)
@@ -28253,7 +28232,7 @@ Returned string must not be deallocated!
 		{
 			display_message(ERROR_MESSAGE,
 				"CM_element_type_string.  Unknown CM element type");
-			return_string=(char *)NULL;
+			return_string=0;
 		} break;
 	}
 	LEAVE;
@@ -28291,7 +28270,7 @@ points <*name_ptr> at it.
 	return (return_code);
 } /* FE_element_to_element_string */
 
-struct FE_element *element_string_to_FE_element(char *name,
+struct FE_element *element_string_to_FE_element(const char *name,
 	struct LIST(FE_element) *element_list)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -28363,7 +28342,7 @@ write element for CM_ELEMENT types.
 	return (return_code);
 } /* FE_element_to_any_element_string */
 
-struct FE_element *any_element_string_to_FE_element(char *name,
+struct FE_element *any_element_string_to_FE_element(const char *name,
 	struct LIST(FE_element) *element_list)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -28373,7 +28352,7 @@ Converts name string of format "TYPE NUMBER" to a CM_element_information and
 returns the element in the <element_list> with that CM_element_information.
 ==============================================================================*/
 {
-	char *number_string, *type_string;
+	const char *number_string, *type_string;
 	struct FE_element *element;
 	struct CM_element_information cm;
 
@@ -28661,6 +28640,7 @@ Frees the memory for the element, sets <*element_address> to NULL.
 				"DESTROY(FE_element).  Element has non-zero access count %d",
 				element->access_count);
 			*element_address=(struct FE_element *)NULL;
+			return_code=0;
 		}
 	}
 	else
@@ -29225,7 +29205,7 @@ structure unused for some time so it is not accessing objects.
 		element_field_values->component_standard_basis_functions =
 			(Standard_basis_function **)NULL;
 		element_field_values->component_standard_basis_function_arguments =
-			(void *)NULL;
+			(int **)NULL;
 		element_field_values->basis_function_values = (FE_value *)NULL;
 		element_field_values->access_count = 0;
 	}
@@ -29260,7 +29240,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 		*second_derivative_value,*transformation,*value,**values_address;
 	int component_number,cn,**component_number_in_xi,element_dimension,
 		*component_base_grid_offset, *element_value_offsets,
-		field_element_dimension,**component_grid_offset_in_xi,i,
+		field_element_dimension,i,
 		j,k,grid_maximum_number_of_values, maximum_number_of_values,number_of_components,
 		number_of_grid_based_components,
 		number_of_inherited_values,number_of_polygon_verticies,number_of_values,
@@ -29354,7 +29334,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 					element_field_values->component_standard_basis_functions=
 						(Standard_basis_function **)NULL;
 					element_field_values->component_standard_basis_function_arguments=
-						(void *)NULL;
+						(int **)NULL;
 					element_field_values->basis_function_values=(FE_value *)NULL;
 					element_field_values->time_dependent = 0;
 					element_field_values->time = time;
@@ -29431,7 +29411,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 						element_field_values->component_standard_basis_functions=
 							standard_basis_address;
 						element_field_values->component_standard_basis_function_arguments=
-							(void *)standard_basis_arguments_address;
+							standard_basis_arguments_address;
 						/* maximum_number_of_values starts off big enough for linear grid with derivatives */
 						grid_maximum_number_of_values=element_dimension+1;
 						for (i=element_dimension;i>0;i--)
@@ -29445,6 +29425,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 						component_number=0;
 						return_code=1;
 						number_of_grid_based_components = 0;
+						int **component_grid_offset_in_xi = 0;
 						while (return_code&&(component_number<number_of_components))
 						{
 							if (ELEMENT_GRID_MAP == (*component)->type)
@@ -29989,7 +29970,7 @@ must have already been calculated.  Currently only implemented for monomials.
 				value = element_field_values->component_values[k];
 				derivative_value = value + number_of_values;
 
-				orders= ((int**)element_field_values->component_standard_basis_function_arguments)[k];
+				orders= element_field_values->component_standard_basis_function_arguments[k];
 				offset = 1;
 
 				for (i=element_dimension;i>0;i--)
@@ -30048,7 +30029,7 @@ function must be called before calling calculate_FE_element_field_values again.
 {
 	FE_value **component_values;
 	int element_dimension,i,return_code;
-	void **component_standard_basis_function_arguments;
+	int **component_standard_basis_function_arguments;
 
 	ENTER(clear_FE_element_field_values);
 	return_code=0;
@@ -30116,8 +30097,7 @@ function must be called before calling calculate_FE_element_field_values again.
 			if (element_field_values->destroy_standard_basis_arguments)
 			{
 				component_standard_basis_function_arguments=
-					(void **)(element_field_values->
-					component_standard_basis_function_arguments);
+					element_field_values->component_standard_basis_function_arguments;
 				for (i=element_field_values->number_of_components;i>0;i--)
 				{
 					if (*component_standard_basis_function_arguments&&((1==i)||
@@ -30327,8 +30307,8 @@ the following numbers are the order of the monomial in each direction, where
 		monomial_info)
 	{
 		if ((element_field_values->component_standard_basis_function_arguments)&&
-			(source_monomial_info=((int **)(element_field_values->
-			component_standard_basis_function_arguments))[component_number])&&
+			(source_monomial_info=element_field_values->
+			component_standard_basis_function_arguments[component_number])&&
 			standard_basis_function_is_monomial(element_field_values->
 			component_standard_basis_functions[component_number],
 			(void *)source_monomial_info))
@@ -30644,17 +30624,16 @@ the derivatives will start at the first position of <jacobian>.
 ==============================================================================*/
 {
 	int cn,comp_no,*component_number_of_values,components_to_calculate,
-		*element_value_offset,*element_value_offsets,i,j,k,l,m,
-		*last_number_in_xi,*number_in_xi,
-		number_of_values,number_of_xi_coordinates,offset,recompute_basis,
+		i,j,k,l,m, *last_number_in_xi,*number_in_xi,
+		number_of_xi_coordinates,recompute_basis,
 		return_code,size,this_comp_no,xi_offset;
-	FE_value *basis_function_values,*basis_value,*calculated_value,
+	FE_value *basis_value,*calculated_value,
 		**component_values,*derivative,*element_value,temp,xi_coordinate;
 	Standard_basis_function *current_standard_basis_function,
 		**component_standard_basis_function;
 	struct FE_field *field;
-	void **component_standard_basis_function_arguments,
-		**current_standard_basis_function_arguments;
+	int **component_standard_basis_function_arguments,
+		*current_standard_basis_function_arguments;
 	Value_storage **component_grid_values_storage,*element_values_storage;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
 	double sum;
@@ -30664,6 +30643,7 @@ the derivatives will start at the first position of <jacobian>.
 
 	ENTER(calculate_FE_element_field);
 	return_code=0;
+	FE_value *basis_function_values = 0;
 	if (element_field_values&&xi_coordinates&&values&&
 		(!jacobian||(jacobian&&(element_field_values->derivatives_calculated)))&&
 		(field=element_field_values->field)&&
@@ -30767,7 +30747,7 @@ the derivatives will start at the first position of <jacobian>.
 				return_code=1;
 				/* calculate a value for each component */
 				current_standard_basis_function=(Standard_basis_function *)NULL;
-				current_standard_basis_function_arguments=(void *)NULL;
+				current_standard_basis_function_arguments=(int *)NULL;
 				component_number_of_values=
 					element_field_values->component_number_of_values;
 				component_values=element_field_values->component_values;
@@ -30790,6 +30770,10 @@ the derivatives will start at the first position of <jacobian>.
 				component_standard_basis_function_arguments += comp_no;
 				number_of_xi_coordinates=
 					element_field_values->element->shape->dimension;
+				int *element_value_offsets = 0;
+				int *element_value_offset = 0;
+				int number_of_values = 0;
+				int offset = 0;
 				for (cn=0;(cn<components_to_calculate)&&return_code;cn++)
 				{
 					this_comp_no = comp_no + cn;
@@ -31585,7 +31569,7 @@ nine values returned, regardless of the element dimension.
 							/* clear z components of 2-component, 2-D elements */
 							coordinates[2]=0;
 							d_xi1_2=0.0;
-							d_xi1_2=0.0;
+							d_xi2_2=0.0;
 						}
 						else
 						{
@@ -31609,6 +31593,12 @@ nine values returned, regardless of the element dimension.
 						d_xi3_0=derivative_xi[2];
 						d_xi3_1=derivative_xi[5];
 						d_xi3_2=derivative_xi[8];
+					} break;
+					default:
+					{
+						d_xi1_0 = d_xi1_1 = d_xi1_2 = 0.0;
+						d_xi2_0 = d_xi2_1 = d_xi2_2 = 0.0;
+						d_xi3_0 = d_xi3_1 = d_xi3_2 = 0.0;
 					} break;
 				}
 				if (RECTANGULAR_CARTESIAN!=coordinate_system->type)
@@ -31650,6 +31640,10 @@ nine values returned, regardless of the element dimension.
 						f31=jacobian[0]*d_xi3_0+jacobian[1]*d_xi3_1+jacobian[2]*d_xi3_2;
 						f32=jacobian[3]*d_xi3_0+jacobian[4]*d_xi3_1+jacobian[5]*d_xi3_2;
 						f33=jacobian[6]*d_xi3_0+jacobian[7]*d_xi3_1+jacobian[8]*d_xi3_2;
+					}
+					else
+					{
+						f11 = f12 = f13 = f21 = f22 = f23 = f31 = f32 = f33 = 0.0;
 					}
 				}
 				else
@@ -32097,8 +32091,8 @@ changed if it or any of its parents uses a node listed in the
 OBJECT_NOT_IDENTIFIER_CHANGED.
 ==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_element) element_change;
-	enum CHANGE_LOG_CHANGE(FE_node) node_change;
+	int element_change;
+	int node_change;
 	int i, number_of_nodes, return_code;
 	struct FE_node *node, **nodes;
 
@@ -32994,7 +32988,7 @@ Should only be called for unmanaged elements.
 {
 	enum FE_basis_type grid_basis_type;
 	int component_number_of_values, dimension, i, j, number_of_components,
-		number_of_grid_based_components, number_of_values, old_values_storage_size,
+		number_of_grid_based_components, old_values_storage_size,
 		return_code, *this_number_in_xi;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component **component;
@@ -33026,6 +33020,7 @@ Should only be called for unmanaged elements.
 				element->cm.number);
 			return_code = 0;
 		}
+		int number_of_values = 0;
 		switch (field->fe_field_type)
 		{
 			case CONSTANT_FE_FIELD:
@@ -33055,7 +33050,6 @@ Should only be called for unmanaged elements.
 				/* check the components are all there, and if grid-based ensure they
 					 have consistent number_in_xi and all have value_index set to 0 */
 				number_of_grid_based_components = 0;
-				number_of_values = 0;
 				component = components;
 				for (i = 0; (i < number_of_components) && return_code; i++)
 				{
@@ -34709,10 +34703,8 @@ Modifies the already calculated <values>.
 	enum Coordinate_system_type coordinate_system_type;
 	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
 		value_xi1,value_xi2,value_xi3;
-	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
-		number_of_nodes_in_xi3,return_code,xi2_basis_type;
+	int *basis_type,i,j,k,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
-	struct FE_element_field_component *axis_component;
 	struct FE_node **node;
 	struct Standard_node_to_element_map **node_to_element_map,
 		**node_to_element_map_2;
@@ -34735,6 +34727,7 @@ Modifies the already calculated <values>.
 			(PROLATE_SPHEROIDAL==coordinate_system_type)||
 			(SPHERICAL_POLAR==coordinate_system_type)))
 		{
+			struct FE_element_field_component *axis_component = 0;
 			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 				field,element->fields->element_field_list);
 			if (element_field)
@@ -34779,6 +34772,9 @@ Modifies the already calculated <values>.
 			}
 			if (element_field)
 			{
+				int number_of_nodes_in_xi1 = 0;
+				int number_of_nodes_in_xi2 = 0;
+				int number_of_nodes_in_xi3 = 0;
 				/* determine the number of nodes in the xi1 direction */
 				switch (basis_type[1])
 				{
@@ -36549,35 +36545,6 @@ Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
 
 	return (return_code);
 } /* FE_element_is_dimension_3 */
-
-int FE_element_has_CM_element_type(struct FE_element *element,
-	void *cm_element_type_void)
-/*******************************************************************************
-LAST MODIFIED : 28 November 2000
-
-DESCRIPTION :
-Returns true if <element> has the given CM_element_type: CM_ELEMENT, CM_FACE or
-CM_LINE. Note the enum CM_element_type is directly cast to (void *).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_has_CM_element_type);
-	if (element)
-	{
-		return_code =
-			((enum CM_element_type)cm_element_type_void == element->cm.type);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_CM_element_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_CM_element_type */
 
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 /*******************************************************************************
@@ -40547,16 +40514,19 @@ and do not take into account the relative orientation of the parents.
 ==============================================================================*/
 {
 	double dot_product;
-	FE_value *face_to_element,*local_xi_face,*temp_increment;
-	int dimension,i,j,new_face_number,return_code;
+	FE_value *face_to_element,*local_xi_face;
+	int i,j,new_face_number,return_code;
 	struct FE_element *element,*face,*new_element;
-	FE_value *face_normal;
 
 	ENTER(FE_element_change_to_adjacent_element);
 	return_code=0;
-	if ((element=*element_address)&&(0<(dimension=get_FE_element_dimension(element)))&&
+	int dimension = 0;
+	if ((element_address) && (element = *element_address) &&
+		(0 < (dimension = get_FE_element_dimension(element))) &&
 		(0<=*face_number)&&(*face_number<element->shape->number_of_faces))
 	{
+		FE_value *temp_increment = 0;
+		FE_value *face_normal = 0;
 		if (increment)
 		{
 			ALLOCATE(face_normal,FE_value,dimension);
@@ -40766,7 +40736,8 @@ and do not take into account the relative orientation of the parents.
 	else
 	{
 		display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-			"Invalid argument(s).  %p %p %d %p %p %d %p",element_address,element,dimension,
+			"Invalid argument(s).  %p %p %d %p %p %d %p",element_address,
+			element_address ? *element_address : 0, dimension,
 			xi,increment,*face_number,xi_face);
 		return_code=0;
 	}
@@ -40789,17 +40760,19 @@ the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 {
 	FE_value fraction,*local_increment,*local_xi,*xi_face;
-	int dimension,face_number,i,return_code;
+	int face_number,i,return_code;
 	struct FE_element *element;
 
 	ENTER(FE_element_xi_increment);
 	return_code=0;
+	int dimension = 0;
 	if (element_address&&(element= *element_address)&&
 		(0<(dimension=get_FE_element_dimension(element)))&&xi&&increment)
 	{
-		if (ALLOCATE(xi_face,FE_value,dimension) &&
-			ALLOCATE(local_xi,FE_value,dimension) &&
-			ALLOCATE(local_increment,FE_value,dimension))
+		ALLOCATE(xi_face,FE_value,dimension);
+		ALLOCATE(local_xi,FE_value,dimension);
+		ALLOCATE(local_increment,FE_value,dimension);
+		if ((xi_face) && (local_xi) && (local_increment))
 		{
 			for (i = 0 ; i < dimension ; i++)
 			{
@@ -40835,9 +40808,6 @@ the <increment> will contain the fraction of the increment not used.
 					increment[i] = local_increment[i];
 				}
 			}
-			DEALLOCATE(local_xi);
-			DEALLOCATE(local_increment);
-			DEALLOCATE(xi_face);
 		}
 		else
 		{
@@ -40846,11 +40816,15 @@ the <increment> will contain the fraction of the increment not used.
 				"<xi_face) (%p).", local_xi, local_increment, xi_face);
 			return_code=0;
 		}
+		DEALLOCATE(local_xi);
+		DEALLOCATE(local_increment);
+		DEALLOCATE(xi_face);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"FE_element_xi_increment.  "
-			"Invalid argument(s).  %p %p %d %p %p",element_address,element,dimension,
+			"Invalid argument(s).  %p %p %d %p %p",element_address,
+			element_address ? *element_address : 0, dimension,
 			xi,increment);
 		return_code=0;
 	}
@@ -41077,7 +41051,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 				{
 					set_FE_element_number_of_scale_factor_sets(
 						element, /*number_of_scale_factor_sets*/1,
-						/*scale_factor_set_identifiers*/(void *)&element_basis,
+						/*scale_factor_set_identifiers*/(void **)&element_basis,
 						/*numbers_in_scale_factor_sets*/&number_of_scale_factors);
 				}
 				if (return_code)

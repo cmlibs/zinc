@@ -84,7 +84,7 @@ change_log. \
 	/* ACCESSed pointer to changed object */ \
 	struct object_type *the_object; \
 	/* what has changed about the object */ \
-	enum CHANGE_LOG_CHANGE(object_type) change; \
+	int change; \
 	/* access_count for using list macros */ \
 	int access_count; \
 }; /* struct CHANGE_LOG_ENTRY(object_type) */ \
@@ -105,7 +105,7 @@ find more info is needed later so leave for now. \
 ============================================================================*/ \
 { \
 	/* bitwise OR of all change enumerators in entry_list */ \
-	enum CHANGE_LOG_CHANGE(object_type) change_summary; \
+	int change_summary; \
 	/* all_change indicates that a large number of objects have changed and the \
 		 log is no longer remembering individual changes; all objects are \
 		 considered as having undergone change_summary except for remove, which \

@@ -2388,7 +2388,7 @@ The <tolerance> allows the location to go slightly outside.  If the values for
 are modified to put it on the nearest face.  
 ==============================================================================*/
 
-char *CM_element_type_string(enum CM_element_type cm_element_type);
+const char *CM_element_type_string(enum CM_element_type cm_element_type);
 /*******************************************************************************
 LAST MODIFIED : 26 August 1999
 
@@ -2406,7 +2406,7 @@ Writes the cm.number of <element> into a newly allocated string and
 points <*name_ptr> at it.
 ==============================================================================*/
 
-struct FE_element *element_string_to_FE_element(char *name,
+struct FE_element *element_string_to_FE_element(const char *name,
 	struct LIST(FE_element) *element_list);
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -2427,7 +2427,7 @@ Writes the element as an allocated string containing TYPE NUMBER. Now does not
 write element for CM_ELEMENT types.
 ==============================================================================*/
 
-struct FE_element *any_element_string_to_FE_element(char *name,
+struct FE_element *any_element_string_to_FE_element(const char *name,
 	struct LIST(FE_element) *element_list);
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -3333,15 +3333,6 @@ returned by this function, however, any such structure passed to this function
 may be destroyed here - ie. in the 'all' case.
 ==============================================================================*/
 
-int FE_field_has_value_type(struct FE_field *field,void *user_data_value_type);
-/*******************************************************************************
-LAST MODIFIED : 4 May 1999
-
-DESCRIPTION :
-Returns true if the VALUE_TYPE specified in the <user_data_value_type> matches
-the VALUE_TYPE of the <field>.
-==============================================================================*/
-
 struct FE_region *FE_field_get_FE_region(struct FE_field *fe_field);
 /*******************************************************************************
 LAST MODIFIED : 26 February 2003
@@ -3941,16 +3932,6 @@ LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
-==============================================================================*/
-
-int FE_element_has_CM_element_type(struct FE_element *element,
-	void *cm_element_type_void);
-/*******************************************************************************
-LAST MODIFIED : 28 November 2000
-
-DESCRIPTION :
-Returns true if <element> has the given CM_element_type: CM_ELEMENT, CM_FACE or
-CM_LINE. Note the enum CM_element_type is directly cast to (void *).
 ==============================================================================*/
 
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);

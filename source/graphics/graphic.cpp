@@ -4035,7 +4035,7 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	struct Cmiss_graphic *graphic,
 	struct CHANGE_LOG(FE_field) *fe_field_change_log)
 {
-	enum CHANGE_LOG_CHANGE(FE_field) fe_field_change;
+	int fe_field_change;
 	int return_code;
 
 	ENTER(Cmiss_graphic_uses_changed_FE_field);

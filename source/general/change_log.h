@@ -252,7 +252,7 @@ Clears all entries/flags in the change_log. \
 #define PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION( object_type ) \
 int CHANGE_LOG_ALL_CHANGE(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log, \
-	enum CHANGE_LOG_CHANGE(object_type) change) \
+	int change) \
 /***************************************************************************** \
 LAST MODIFIED : 17 February 2003 \
 \
@@ -273,7 +273,7 @@ Not to be used when max_changes is negative. \
 #define PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION( object_type ) \
 int CHANGE_LOG_OBJECT_CHANGE(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log, \
-	struct object_type *object, enum CHANGE_LOG_CHANGE(object_type) change) \
+	struct object_type *object, int change) \
 /***************************************************************************** \
 LAST MODIFIED : 3 February 2003 \
 \
@@ -293,7 +293,7 @@ Tells the <change_log> that <object> has undergone the <change>. \
 #define PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION( object_type ) \
 int CHANGE_LOG_GET_CHANGE_SUMMARY(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log, \
-	enum CHANGE_LOG_CHANGE(object_type) *change_summary_address) \
+	int *change_summary_address) \
 /***************************************************************************** \
 LAST MODIFIED : 4 February 2003 \
 \
@@ -334,7 +334,7 @@ changed since some objects may have been changed more than once. \
 #define PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION( object_type ) \
 int CHANGE_LOG_QUERY(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log, struct object_type *object, \
-	enum CHANGE_LOG_CHANGE(object_type) *change_address) \
+	int *change_address) \
 /***************************************************************************** \
 LAST MODIFIED : 3 February 2003 \
 \

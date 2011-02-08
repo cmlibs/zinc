@@ -1093,7 +1093,7 @@ here as the select widget does this for us. Only changes to the content of the
 object cause updates.
 ==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_node) change;
+	int fe_node_change;
 	struct Node_viewer *node_viewer;
 
 	ENTER(Node_viewer_Cmiss_region_change);
@@ -1104,9 +1104,9 @@ object cause updates.
 		 {
 				if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
 							node_viewer->wx_node_viewer->get_selected_node(),
-							&change))
+							&fe_node_change))
 				{
-					 if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+					 if (fe_node_change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 					 {
 							Node_viewer_set_viewer_node(node_viewer);
 					 }

@@ -812,8 +812,8 @@ DESCRIPTION :
 Callback from <master_fe_region> with its <changes>.
 ==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change_summary;
-	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change_summary;
+	int fe_element_change_summary;
+	int fe_node_change_summary;
 	struct FE_region *fe_region;
 	struct FE_element_add_faces_not_in_list_data data;
 
@@ -4062,7 +4062,7 @@ Returns the number of FE_nodes in <fe_region>.
 } /* FE_region_get_number_of_FE_nodes */
 
 struct FE_node *FE_region_node_string_to_FE_node(
-	struct FE_region *fe_region, char *node_string)
+	struct FE_region *fe_region, const char *node_string)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
 
@@ -6001,7 +6001,7 @@ Calls FE_element_meets_topological_criteria with the <element_list> private to
 } /* FE_region_FE_element_meets_topological_criteria */
 
 struct FE_element *FE_region_element_string_to_FE_element(
-	struct FE_region *fe_region, char *name)
+	struct FE_region *fe_region, const char *name)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -6029,7 +6029,7 @@ Calls element_string_to_FE_element with the <element_list> private to
 } /* FE_region_element_string_to_FE_element */
 
 struct FE_element *FE_region_any_element_string_to_FE_element(
-	struct FE_region *fe_region, char *name)
+	struct FE_region *fe_region, const char *name)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 

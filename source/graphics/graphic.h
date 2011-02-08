@@ -849,14 +849,14 @@ int Cmiss_graphic_Computed_field_change(
 struct Cmiss_graphic_FE_region_change_data
 {
 	/* changes to fields with summary */
-	enum CHANGE_LOG_CHANGE(FE_field) fe_field_change_summary;
+	int fe_field_change_summary;
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
 	/* changes to nodes with summary and number_of_changes */
-	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change_summary;
+	int fe_node_change_summary;
 	int number_of_fe_node_changes;
 	struct CHANGE_LOG(FE_node) *fe_node_changes;
 	/* changes to elements with summary and number_of_changes */
-	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change_summary;
+	int fe_element_change_summary;
 	int number_of_fe_element_changes;
 	struct CHANGE_LOG(FE_element) *fe_element_changes;
 	FE_value time;

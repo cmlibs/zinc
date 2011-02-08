@@ -248,7 +248,7 @@ DESCRIPTION :
 Updates the chosen object and text field in response to messages. 
 ============================================================================*/ 
 { 
-	enum CHANGE_LOG_CHANGE(FE_element) change; 
+	int fe_element_change;
 	wxFeElementTextChooser *chooser;
 	 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(FE_element));
@@ -261,10 +261,11 @@ Updates the chosen object and text field in response to messages.
 		{ 
 			if (CHANGE_LOG_QUERY(FE_element)( 
 				FE_region_changes_get_FE_element_changes(changes), 
-				chooser->current_object, &change)) 
+				chooser->current_object, &fe_element_change))
 				{ 
-						if (change & (CHANGE_LOG_OBJECT_CHANGED(FE_element) | 
-										  CHANGE_LOG_OBJECT_REMOVED(FE_element))) 
+						if (fe_element_change &
+							(CHANGE_LOG_OBJECT_CHANGED(FE_element) |
+							 CHANGE_LOG_OBJECT_REMOVED(FE_element)))
 					{ 
 						chooser->select_object((struct FE_element *)NULL); 
 					} 

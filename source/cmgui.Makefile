@@ -1063,13 +1063,13 @@ EMOTER_SRCS = \
 FIELD_IO_SRCS = \
 	field_io/read_fieldml_02.cpp
 FINITE_ELEMENT_CORE_SRCS = \
-	finite_element/export_finite_element.c \
-	finite_element/finite_element.c \
+	finite_element/export_finite_element.cpp \
+	finite_element/finite_element.cpp \
 	finite_element/finite_element_discretization.cpp \
 	finite_element/finite_element_helper.cpp \
 	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
-	finite_element/import_finite_element.c \
+	finite_element/import_finite_element.cpp \
 	finite_element/read_fieldml.c \
 	finite_element/write_fieldml.c
 FINITE_ELEMENT_GRAPHICS_SRCS = \

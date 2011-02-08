@@ -96,7 +96,7 @@ Global macros
 class FE_region_FE_object_method_class( object_type ) \
 { \
  public: \
-	 typedef enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_change_object_type; \
+	 typedef int change_log_change_object_type; \
 	 typedef struct CHANGE_LOG(FE_ ## object_type) change_log_object_type;	\
 	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_unchanged = \
 			CHANGE_LOG_OBJECT_UNCHANGED(FE_ ## object_type);	\
@@ -112,7 +112,7 @@ class FE_region_FE_object_method_class( object_type ) \
 			CHANGE_LOG_OBJECT_CHANGED(FE_ ## object_type); \
 	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_related_object_changed = \
 			CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_ ## object_type); \
-	 static inline FE_ ## object_type* string_to_object(struct FE_region *fe_region, char *string) \
+	 static inline FE_ ## object_type* string_to_object(struct FE_region *fe_region, const char *string) \
 	 { \
 			return FE_region_ ## object_type ## _string_to_FE_ ## object_type(fe_region, string); \
 	 } \
@@ -141,7 +141,7 @@ class FE_region_FE_object_method_class( object_type ) \
 	 } \
 \
 	 static inline int change_log_query(struct CHANGE_LOG(FE_ ##object_type) *change_log, \
-			struct FE_ ##object_type *object,	enum CHANGE_LOG_CHANGE(FE_ ##object_type) *change_address )	\
+			struct FE_ ##object_type *object, int *change_address )	\
 	 { \
 			return CHANGE_LOG_QUERY(FE_ ##object_type)( \
 				 change_log, object, change_address); \
@@ -701,7 +701,7 @@ Returns the number of FE_nodes in <fe_region>.
 int FE_region_get_last_FE_nodes_idenifier(struct FE_region *fe_region);
 
 struct FE_node *FE_region_node_string_to_FE_node(
-	struct FE_region *fe_region, char *node_string);
+	struct FE_region *fe_region, const char *node_string);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
 
@@ -1076,7 +1076,7 @@ Calls FE_element_meets_topological_criteria with the <element_list> private to
 ==============================================================================*/
 
 struct FE_element *FE_region_element_string_to_FE_element(
-	struct FE_region *fe_region, char *name);
+	struct FE_region *fe_region, const char *name);
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -1086,7 +1086,7 @@ Calls element_string_to_FE_element with the <element_list> private to
 ==============================================================================*/
 
 struct FE_element *FE_region_any_element_string_to_FE_element(
-	struct FE_region *fe_region, char *name);
+	struct FE_region *fe_region, const char *name);
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 

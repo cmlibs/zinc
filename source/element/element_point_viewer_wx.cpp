@@ -941,8 +941,8 @@ here as the select widget does this for us. Only changes to the content of the
 object cause updates.
 ==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change;
-	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change;
+	int fe_element_change;
+	int fe_node_change;
 	int i, number_of_nodes, refresh;
 	struct Element_point_viewer *element_point_viewer;
 	struct FE_element *top_level_element;

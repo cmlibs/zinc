@@ -410,7 +410,7 @@ If the node we are looking at changes generate a computed field change message.
 {
 	Computed_field *field;
 	Computed_field_nodal_lookup *core;
-	enum CHANGE_LOG_CHANGE(FE_node) change;
+	int node_change;
 
 	ENTER(Computed_field_FE_region_change);
 	USE_PARAMETER(fe_region);
@@ -420,9 +420,9 @@ If the node we are looking at changes generate a computed field change message.
 		/* I'm not sure if we could also check if we depend on an FE_field change
 			and so reduce the total number of changes? */
 		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
-				core->lookup_node, &change))
+				core->lookup_node, &node_change))
 		{
-			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			if (node_change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
 				Computed_field_dependency_changed(field);
 			}
@@ -1032,7 +1032,7 @@ If the node we are looking at changes generate a computed field change message.
 {
 	Computed_field *field;
 	Computed_field_quaternion_SLERP *core;
-	enum CHANGE_LOG_CHANGE(FE_node) change;
+	int node_change;
 
 	ENTER(Computed_field_FE_region_change);
 	USE_PARAMETER(fe_region);
@@ -1042,9 +1042,9 @@ If the node we are looking at changes generate a computed field change message.
 		/* I'm not sure if we could also check if we depend on an FE_field change
 			and so reduce the total number of changes? */
 		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
-				core->nodal_lookup_node, &change))
+				core->nodal_lookup_node, &node_change))
 		{
-			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			if (node_change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
 				Computed_field_dependency_changed(field);
 			}
