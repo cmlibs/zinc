@@ -100,6 +100,16 @@ public:
 		return Field(Cmiss_field_module_find_field_by_name(id, field_name));
 	}
 
+	int defineField(const char *command_string)
+	{
+		return Cmiss_field_module_define_field(id, command_string);
+	}
+
+	Field createField(const char *field_name, const char *command_string)
+	{
+		return Cmiss_field_module_create_field(id, field_name, command_string);
+	}
+
 	// factory methods for creating new fields
 	FieldAdd createAdd(const Field& operand1, const Field& operand2)
 	{

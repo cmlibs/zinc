@@ -86,4 +86,35 @@ int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
 Cmiss_field_id Cmiss_field_module_find_field_by_name(
 	Cmiss_field_module_id field_module, const char *field_name);
 
+/***************************************************************************//**
+ * Define a field as per the 'gfx define field' command in the standalone cmgui
+ * application. However this define field only enables "region-safe" fields.
+ *
+ * NOTE: This function may be removed in the future once more API functions are
+ * made available to the users.
+ *
+ * @param field_module Handle to the field module to use.
+ * @param command  Command to be executed.
+ * @return  1 if command completed successfully, otherwise 0.
+ */
+int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
+	const char *command_string);
+
+/***************************************************************************//**
+ * Create a named field as per the 'gfx define field' command in the standalone
+ * cmgui application. Unlike Cmiss_field_module_define_field, this function only
+ * succeeds if an existing field with the given name does not already exist. The
+ * returned field handle needs to be destroyed by the calling application.
+ *
+ * NOTE: This function may be removed in the future once more API functions are
+ * made available to the users.
+ *
+ * @param field_module Handle to the field module to use.
+ * @param field_name The name of the field to create.
+ * @param command  Command to be executed (excluding the field name).
+ * @return  The newly created field if successful, NULL otherwise.
+ */
+Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_module,
+		const char* field_name, const char *command_string);
+
 #endif /* __CMISS_FIELD_MODULE_H__ */

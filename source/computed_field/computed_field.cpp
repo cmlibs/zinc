@@ -167,6 +167,9 @@ extern "C" {
 #include "general/indexed_list_stl_private.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_arithmetic_operators.h"
+#include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_trigonometry.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
@@ -185,6 +188,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include <typeinfo>
+#include <string>
 #include "user_interface/process_list_or_write_command.hpp"
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields, struct Cmiss_field_change_detail *);
@@ -6180,4 +6184,76 @@ int Computed_field_manager_message_get_object_change_and_detail(
 		*change_detail_address = NULL;
 	}
 	return (MANAGER_CHANGE_NONE(Computed_field));
+}
+
+int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
+	const char *command_string)
+{
+	int return_code = 0;
+	struct MANAGER(Computed_field) *manager;
+	struct Computed_field_package* package;
+
+	ENTER(Cmiss_field_module_define_field);
+	if (field_module && command_string &&
+		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
+	{
+		package = CREATE(Computed_field_package)(manager);
+		/* Add "safe" Computed_fields to the Computed_field_package */
+		if (package)
+		{
+			Computed_field_register_types_arithmetic_operators(package);
+			Computed_field_register_types_trigonometry(package);
+			Computed_field_register_types_composite(package);
+			// execute command
+			struct Parse_state *state = create_Parse_state(command_string);
+			return_code = define_Computed_field(state,static_cast<void*>(field_module->region),static_cast<void*>(package));
+			destroy_Parse_state(&state);
+			// tidy up
+			Computed_field_package_remove_types(package);
+			DESTROY(Computed_field_package)(&package);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_define_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_module,
+	const char *field_name, const char *command_string)
+{
+	Cmiss_field_id return_field = NULL;
+
+	ENTER(Cmiss_field_module_create_field);
+	if (field_module && field_name && command_string)
+	{
+		return_field = Cmiss_field_module_find_field_by_name(field_module,field_name);
+		if (return_field)
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_field_module_create_field.  Field '%s' already exists.",field_name);
+			Cmiss_field_destroy(&return_field);
+			return_field = NULL;
+		}
+		else
+		{
+			std::string fullCommand(field_name);
+			fullCommand += command_string;
+			if (Cmiss_field_module_define_field(field_module,fullCommand.c_str()))
+				return_field = Cmiss_field_module_find_field_by_name(field_module,field_name);
+			else display_message(ERROR_MESSAGE,
+					"Cmiss_field_module_create_field.  Error defining field '%s'.", field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_create_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_field);
 }
