@@ -306,6 +306,82 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	return (object); \
 }
 
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_begin_identifier_change_ ## object_type ## identifier
+
+#define PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+int LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct LIST(object_type) *list, struct object_type *object) \
+/***************************************************************************** \
+MANAGER functions using indexed object lists must call this before modifying \
+the identifier of any object, and afterwards call the companion function \
+LIST_END_IDENTIFIER_CHANGE with the returned \
+identifier_change_data. These functions temporarily remove the object from \
+any list it is in, then re-add it later so it is in the correct indexed \
+position. <object> is ACCESSed between these two functions. \
+Should only be declared with manager functions. \
+============================================================================*/
+
+#define DECLARE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier) \
+{ \
+	if (list && object) \
+	{ \
+		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		return cmiss_set->begin_identifier_change(object); \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
+	} \
+	return (0); \
+}
+
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	list_end_identifier_change_ ## object_type ## identifier
+
+#define PROTOTYPE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION( \
+	object_type , identifier ) \
+void LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct LIST(object_type) *list) \
+/***************************************************************************** \
+Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
+Re-adds the changed object to all the lists it was in. \
+Should only be declared with manager functions. \
+============================================================================*/
+
+#define DECLARE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION(object_type ,  \
+	identifier ) \
+PROTOTYPE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier) \
+{ \
+	if (list) \
+	{ \
+		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+		cmiss_set->end_identifier_change(); \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+			").  Invalid argument(s)"); \
+	} \
+}
+
+/* prototypes for private headers, eg. finite_element_private.h */
+#define PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
+PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, identifier); \
+PROTOTYPE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
+
+#define DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
+DECLARE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier) \
+DECLARE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
+
 #define DECLARE_INDEXED_LIST_STL_FUNCTIONS( object_type ) \
 DECLARE_CREATE_INDEXED_LIST_STL_FUNCTION(object_type) \
 DECLARE_CREATE_RELATED_INDEXED_LIST_STL_FUNCTION(object_type) \

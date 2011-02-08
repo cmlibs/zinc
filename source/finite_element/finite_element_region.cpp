@@ -1423,6 +1423,8 @@ them to be specified allows sharing across regions).
 			/* request callbacks from master_fe_region */
 			FE_region_add_callback(master_fe_region,
 				FE_region_master_fe_region_change, (void *)fe_region);
+			fe_region->fe_node_list = CREATE_RELATED_LIST(FE_node)(master_fe_region->fe_node_list);
+			fe_region->fe_element_list = CREATE_RELATED_LIST(FE_element)(master_fe_region->fe_element_list);
 		}
 		else
 		{
@@ -1452,14 +1454,14 @@ them to be specified allows sharing across regions).
 			fe_region->fe_node_field_info_list = CREATE(LIST(FE_node_field_info))();
 			fe_region->fe_element_field_info_list =
 				CREATE(LIST(FE_element_field_info))();
+			fe_region->fe_node_list = CREATE_LIST(FE_node)();
+			fe_region->fe_element_list = CREATE_LIST(FE_element)();
 		}
 		fe_region->top_data_hack = 0;
 		fe_region->data_fe_region = (struct FE_region *)NULL;
 		fe_region->base_fe_region = (struct FE_region *)NULL;
 		fe_region->cmiss_region = (struct Cmiss_region *)NULL;
 		fe_region->fe_field_info = (struct FE_field_info *)NULL;
-		fe_region->fe_node_list = CREATE(LIST(FE_node))();
-		fe_region->fe_element_list = CREATE(LIST(FE_element))();
 
 		/* change log information */
 		fe_region->change_level = 0;
@@ -2404,7 +2406,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 	if (fe_region && field && FE_region_contains_FE_field(fe_region, field) &&
 		is_standard_object_name(new_name))
 	{
-		struct LIST_IDENTIFIER_CHANGE_DATA(FE_field,name) *identifier_change_data = NULL;
+		int restore_changed_object_to_lists = 0;
 		return_code = 1;
 		if (FE_region_get_FE_field_from_name(fe_region, new_name))
 		{
@@ -2415,9 +2417,9 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 		if (return_code)
 		{
 			// this temporarily removes the object from all indexed lists
-			identifier_change_data =
-				LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(field);
-			if (NULL == identifier_change_data)
+			restore_changed_object_to_lists =
+				LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list, field);
+			if (!restore_changed_object_to_lists)
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_region_set_FE_field_name.  "
@@ -2429,13 +2431,9 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 		{
 			return_code = set_FE_field_name(field, new_name);
 		}
-		// Must restore objects to indexed lists if removed:
-		if ((identifier_change_data) && (!LIST_END_IDENTIFIER_CHANGE
-			(FE_field,name)(&identifier_change_data)))
+		if (restore_changed_object_to_lists)
 		{
-			display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name  "
-				"Could not restore object to all indexed lists");
-			return_code = 0;
+			LIST_END_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list);
 		}
 		if (return_code)
 		{

@@ -47,6 +47,7 @@ modules such as finite_element_region.c.
 
 #include "finite_element/finite_element.h"
 #include "general/indexed_list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/list.h"
 #include "general/object.h"
 
@@ -135,7 +136,7 @@ Private functions
 -----------------
 */
 
-PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name);
+PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name);
 
 struct FE_field_info *CREATE(FE_field_info)(struct FE_region *fe_region);
 /*******************************************************************************

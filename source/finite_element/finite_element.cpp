@@ -53,6 +53,8 @@ Functions for manipulating finite element structures.
 /*???DB.  Testing */
 #define DOUBLE_FOR_DOT_PRODUCT
 
+#include "general/cmiss_set.hpp"
+#include "general/indexed_list_stl_private.hpp"
 extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
@@ -168,9 +170,53 @@ the point and the Xi coordinates of the point within the element.
 	/* the number of structures that point to this field.  The field cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
+
+	inline FE_field *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(FE_field **field_address)
+	{
+		return DEACCESS(FE_field)(field_address);
+	}
 }; /* struct FE_field */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_field);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class FE_field_identifier : private FE_field
+{
+public:
+	FE_field_identifier(const char *name)
+	{
+		// const_cast OK as must never be modified & cleared in destructor
+		FE_field::name = const_cast<char *>(name);
+	}
+
+	~FE_field_identifier()
+	{
+		FE_field::name = NULL;
+	}
+
+	FE_field *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<FE_field> by field name */
+struct FE_field_compare_name
+{
+	bool operator() (const FE_field* field1, const FE_field* field2) const
+	{
+		return strcmp(field1->name, field2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<FE_field *,FE_field_compare_name> Cmiss_set_FE_field;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_field);
 
@@ -5179,8 +5225,6 @@ Returns a pointer to the identifier of the <element_type_node_sequence>.
 	return (identifier);
 } /* FE_element_type_node_sequence_get_identifier */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_field,name,const char *,strcmp)
-
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_field)
 
 static FE_value *tensor_product(int row_dimension_1,int column_dimension_1,
@@ -9427,9 +9471,9 @@ DECLARE_OBJECT_FUNCTIONS(FE_field)
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(FE_field)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_field)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_field,name,const char *,strcmp)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_field)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_field,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_field)
 

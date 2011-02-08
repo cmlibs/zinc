@@ -187,8 +187,6 @@ extern "C" {
 #include <typeinfo>
 #include "user_interface/process_list_or_write_command.hpp"
 
-FULL_DECLARE_INDEXED_LIST_STL_TYPE(Computed_field); // Does nothing now
-
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields, struct Cmiss_field_change_detail *);
 
 struct Computed_field_type_data
