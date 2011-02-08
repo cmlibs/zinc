@@ -361,7 +361,7 @@ Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
 in <fe_field_change_log>.
 ==============================================================================*/
 
-PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier);
+PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier);
 
 int set_FE_node_identifier(struct FE_node *node, int identifier);
 /*******************************************************************************

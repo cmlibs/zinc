@@ -328,9 +328,47 @@ DESCRIPTION :
 	/* the number of structures that point to this node.  The node cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
+
+	inline FE_node *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(FE_node **node_address)
+	{
+		return DEACCESS(FE_node)(node_address);
+	}
 }; /* struct FE_node */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_node);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class FE_node_identifier : private FE_node
+{
+public:
+	FE_node_identifier(int identifier)
+	{
+		FE_node::cm_node_identifier = identifier;
+	}
+
+	FE_node *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<FE_node> by cm_node_identifier */
+struct FE_node_compare_number
+{
+	bool operator() (const FE_node* node1, const FE_node* node2) const
+	{
+		return node1->cm_node_identifier < node2->cm_node_identifier;
+	}
+};
+
+typedef Cmiss_set<FE_node *,FE_node_compare_number> Cmiss_set_FE_node;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
 
@@ -4744,8 +4782,6 @@ in <fe_field_change_log>.
 
 	return (return_code);
 } /* FE_node_field_info_log_FE_field_changes */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_node,cm_node_identifier,int,compare_int)
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
 
@@ -18471,10 +18507,9 @@ Outputs the information contained at the node.
 } /* list_FE_node */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_node)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_node,cm_node_identifier,int,compare_int)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_node)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_node,cm_node_identifier,int)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
 

@@ -224,11 +224,6 @@ PROTOTYPE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 			{ \
 				return_code = 1; \
 			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"IS_OBJECT_IN_LIST(" #object_type ").  Different object found at matching index"); \
-			} \
 		} \
 	} \
 	else \

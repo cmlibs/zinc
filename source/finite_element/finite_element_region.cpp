@@ -2403,44 +2403,47 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 	int return_code;
 
 	ENTER(FE_region_set_FE_field_name);
-	if (fe_region && field && FE_region_contains_FE_field(fe_region, field) &&
-		is_standard_object_name(new_name))
+	if (fe_region && field && is_standard_object_name(new_name))
 	{
-		int restore_changed_object_to_lists = 0;
-		return_code = 1;
-		if (FE_region_get_FE_field_from_name(fe_region, new_name))
+		struct FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		if (FE_region_contains_FE_field(master_fe_region, field))
 		{
-			display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name.  "
-				"Field named \"%s\" already exists in this FE_region.", new_name);
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			// this temporarily removes the object from all indexed lists
-			restore_changed_object_to_lists =
-				LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list, field);
-			if (!restore_changed_object_to_lists)
+			return_code = 1;
+			if (FE_region_get_FE_field_from_name(master_fe_region, new_name))
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_set_FE_field_name.  "
-					"Could not safely change identifier in indexed lists");
+				display_message(ERROR_MESSAGE, "FE_region_set_FE_field_name.  "
+					"Field named \"%s\" already exists in this FE_region.", new_name);
 				return_code = 0;
 			}
+			else
+			{
+				// this temporarily removes the object from all indexed lists
+				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(
+					fe_region->fe_field_list, field))
+				{
+					return_code = set_FE_field_name(field, new_name);
+					LIST_END_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list);
+					if (return_code)
+					{
+						FE_REGION_FE_FIELD_CHANGE(master_fe_region, field,
+							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_set_FE_field_name.  "
+						"Could not safely change identifier in indexed lists");
+					return_code = 0;
+				}
+			}
 		}
-		if (return_code)
+		else
 		{
-			return_code = set_FE_field_name(field, new_name);
-		}
-		if (restore_changed_object_to_lists)
-		{
-			LIST_END_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list);
-		}
-		if (return_code)
-		{
-			struct FE_region *master_fe_region = fe_region;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-			FE_REGION_FE_FIELD_CHANGE(master_fe_region, field,
-				CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
+			display_message(ERROR_MESSAGE,
+				"FE_region_set_FE_field_name.  Field is not from this region");
+			return_code = 0;
 		}
 	}
 	else
@@ -2863,17 +2866,15 @@ in use by an node in the same ultimate master FE_region.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_region *master_fe_region;
-	struct LIST_IDENTIFIER_CHANGE_DATA(FE_node,cm_node_identifier)
-		*identifier_change_data;
 
 	ENTER(FE_region_change_FE_node_identifier);
 	if (fe_region && node)
 	{
 		if (IS_OBJECT_IN_LIST(FE_node)(node, fe_region->fe_node_list))
 		{
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
 			return_code = 1;
+			struct FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region); 
 			if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
 				new_identifier, master_fe_region->fe_node_list))
 			{
@@ -2884,33 +2885,22 @@ in use by an node in the same ultimate master FE_region.
 			}
 			else
 			{
-				if (identifier_change_data =
-					LIST_BEGIN_IDENTIFIER_CHANGE(FE_node,cm_node_identifier)(node))
+				// this temporarily removes the object from all indexed lists
+				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_node,cm_node_identifier)(
+					master_fe_region->fe_node_list, node))
 				{
-					if (!set_FE_node_identifier(node, new_identifier))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_region_change_FE_node_identifier.  "
-							"Could not change identifier");
-						return_code = 0;
-					}
-					if (!LIST_END_IDENTIFIER_CHANGE(FE_node,cm_node_identifier)(
-						&identifier_change_data))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_region_change_FE_node_identifier.  "
-							"Could not restore object to all indexed lists");
-						return_code = 0;
-					}
+					return_code = set_FE_node_identifier(node, new_identifier);
+					LIST_END_IDENTIFIER_CHANGE(FE_node,cm_node_identifier)(
+						master_fe_region->fe_node_list);
 					if (return_code)
 					{
 						FE_REGION_FE_NODE_IDENTIFIER_CHANGE(master_fe_region, node);
 					}
 				}
-				else 
+				else
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_region_change_FE_node_identifier.  "
+						"FE_region_set_FE_field_name.  "
 						"Could not safely change identifier in indexed lists");
 					return_code = 0;
 				}
