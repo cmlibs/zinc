@@ -152,6 +152,12 @@ private:
 		double time, struct Cmiss_region *search_region);
 };
 
+inline Computed_field *Computed_field_cast(
+	Cmiss_field_constant *constant_field)
+{
+	return (reinterpret_cast<Computed_field*>(constant_field));
+}
+
 Computed_field_composite::~Computed_field_composite()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -1316,6 +1322,13 @@ int Computed_field_constant_set_value(struct Computed_field *field, int index,
 	}
 	LEAVE;
 	return(return_code);
+}
+
+int Cmiss_field_constant_set_value(Cmiss_field_constant* constant_field,
+		const int index, double value)
+{
+	Computed_field *field = Computed_field_cast(constant_field);
+	return Computed_field_constant_set_value(field,index,value);
 }
 
 FE_value Computed_field_constant_get_value(struct Computed_field *field, int index)

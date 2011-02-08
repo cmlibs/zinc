@@ -44,10 +44,6 @@ extern "C" {
 }
 #include "api++/CmissField.hpp"
 
-// following should be defined in api/cmiss_field_composite.h:
-struct Cmiss_field_constant;
-typedef struct Cmiss_field_constant *Cmiss_field_constant_id;
-
 namespace Cmiss
 {
 
@@ -58,6 +54,17 @@ public:
 	FieldConstant(Cmiss_field_constant_id field_constant_id) :
 		Field(reinterpret_cast<Cmiss_field_id>(field_constant_id))
 	{ }
+
+	FieldConstant(Field& field) :
+		Field(Cmiss_field_access(field.getId()))
+	{	}
+
+	int setValue(const int index,double value)
+	{
+		return Cmiss_field_constant_set_value(
+			reinterpret_cast<Cmiss_field_constant_id>(id), index, value);
+	}
+
 };
 
 } // namespace Cmiss
