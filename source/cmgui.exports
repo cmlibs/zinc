@@ -103,6 +103,8 @@ Cmiss_field_set_property_flag
 Cmiss_field_module_access
 Cmiss_field_module_destroy
 Cmiss_field_module_find_field_by_name
+Cmiss_field_module_define_field
+Cmiss_field_module_create_field
 
 /* api/cmiss_field_arithmetic_operators.h */
 Cmiss_field_module_create_power
@@ -121,6 +123,7 @@ Cmiss_field_module_create_constant
 Cmiss_field_module_create_identity
 Cmiss_field_module_create_component
 Cmiss_field_module_create_concatenate
+Cmiss_field_constant_set_value
 
 /* api/cmiss_field_conditional.h */
 Cmiss_field_module_create_if
