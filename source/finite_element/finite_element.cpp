@@ -6585,7 +6585,7 @@ obtained from the node_field_component for the field at the node.
 		*scale_factors = NULL,temp_value,xi;
 	int *coefficient_index,*global_value_index,i,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
-		number_of_element_values,number_of_global_values,number_of_map_values,
+		number_of_element_values,number_of_global_values,number_of_map_values = 0,
 		number_of_scale_factors,return_code,*scale_factor_index,scale_index,
 		time_index_one, time_index_two, value_index;
 	short *short_array;
@@ -14652,8 +14652,8 @@ and <component_number> at the <node> and <time>. \
 						FE_time_sequence_get_interpolation_for_time(time_sequence, \
 							time, &time_index_one, &time_index_two, &xi); \
 	               array = *((value_type **)values_storage); \
-						*value = array[time_index_one] * (1.0 - xi) + \
-								array[time_index_two] * xi; \
+		       *value = (value_type)(array[time_index_one] * (1.0 - xi) + \
+						  array[time_index_two] * xi); \
 					} \
 					else \
 					{ \
@@ -17053,7 +17053,7 @@ perform interpolation, etc.
 		/*This assumption and hence estimate is true for most signal files. */
 		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
 		fe_value_index+=0.5;/*round float to nearest int */
-		array_index=floor(fe_value_index);
+		array_index=(int)floor(fe_value_index);
 		time_low=0;
 		time_high=0;
 		done=0;
@@ -18564,10 +18564,10 @@ returned.
 ==============================================================================*/
 {
 	char valid_type;
-	FE_value *blending_matrix,*polygon_blending_matrix,*reorder_1,*reorder_2,
+	FE_value *blending_matrix = NULL,*polygon_blending_matrix,*reorder_1,*reorder_2,
 		*temp_matrix;
-	int *argument,*arguments,*basis_function_number,*basis_function_numbers,
-		*basis_type,fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
+	int *argument,*arguments,*basis_function_number,*basis_function_numbers = NULL,
+		*basis_type = NULL,fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
 		number_of_basis_functions,
 		number_of_polygon_verticies,number_of_standard_basis_functions,
 		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
@@ -20987,7 +20987,7 @@ Allocates memory and assigns fields for a linear combination of global values.
 Allocates storage for the global and coefficient indices and sets to -1.
 ==============================================================================*/
 {
-	int *coefficient_index,*global_index,i;
+	int *coefficient_index,*global_index = NULL ,i;
 	struct Linear_combination_of_global_values *linear_combination;
 
 	ENTER(CREATE(Linear_combination_of_global_values));
@@ -21114,7 +21114,7 @@ Allocates memory and assigns fields for a standard node to element map.
 Allocates storage for the nodal value and scale factor indices and sets to -1.
 ==============================================================================*/
 {
-	int i,*nodal_value_index,*scale_factor_index;
+	int i,*nodal_value_index = NULL,*scale_factor_index;
 	struct Standard_node_to_element_map *map;
 
 	ENTER(CREATE(Standard_node_to_element_map));
@@ -30485,14 +30485,14 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 	FE_value *blending_matrix,*combined_blending_matrix,
 		*coordinate_transformation,*row,*column,*transformation;
 	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
-		number_of_components,number_of_element_values,number_of_element_field_nodes,
+		number_of_components,number_of_element_values = 0,number_of_element_field_nodes,
 		number_of_inherited_values,number_of_standard_basis_functions,
 		previous_number_of_element_values,return_code;
 	struct FE_basis *basis,*previous_basis;
 	struct FE_element *field_element;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *component,**component_address;
-	struct FE_node **element_field_nodes_array,**element_value,**element_values,
+	struct FE_node **element_field_nodes_array,**element_value,**element_values = NULL,
 		**previous_element_values,**temp_element_field_nodes_array;
 	Standard_basis_function *standard_basis_function;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
