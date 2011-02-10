@@ -36,6 +36,7 @@ SET( GENERAL_HDRS
 	source/general/change_log.h
 	source/general/change_log_private.h
 	source/general/child_process.h
+	source/general/cmiss_set.hpp
 	source/general/compare.h
 	source/general/debug.h
 	source/general/enumerator.h
@@ -46,6 +47,7 @@ SET( GENERAL_HDRS
 	source/general/heapsort.h
 	source/general/image_utilities.h
 	source/general/indexed_list_private.h
+	source/general/indexed_list_stl_private.hpp
 	source/general/indexed_multi_range.h
 	source/general/integration.h
 	source/general/io_stream.h
