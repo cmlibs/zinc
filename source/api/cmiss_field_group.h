@@ -99,7 +99,7 @@ Cmiss_field_group_id Cmiss_field_cast_group(Cmiss_field_id field);
  * @param group  Handle to the group field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-static inline Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id group)
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id group)
 {
 	return (Cmiss_field_id)(group);
 }

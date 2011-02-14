@@ -86,7 +86,7 @@ Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
  * @param group  handle to the node group field to cast
  * @return  handle of the field, or NULL
  */
-static inline Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_group_id group)
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_group_id group)
 {
 	return (Cmiss_field_id)(group);
 }
@@ -171,7 +171,7 @@ Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field
  * @param group  handle to the element group field to cast
  * @return  handle of the field, or NULL
  */
-static inline Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_element_group_id group)
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_element_group_id group)
 {
 	return (Cmiss_field_id)(group);
 }
