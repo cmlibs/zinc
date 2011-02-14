@@ -54,6 +54,11 @@
 #include <STEPCAFControl_Reader.hxx>
 #include <TDocStd_Document.hxx>
 
+extern "C"
+{
+#include "general/debug.h"
+}
+
 OpenCascadeFormatReader::OpenCascadeFormatReader()
 	: m_sequenceOfShapes()
 	, m_doc()
@@ -228,16 +233,14 @@ bool OpenCascadeFormatReader::importSTEP( const std::string& file )
 	//m_doc = new TDocStd_Document( "MDTV-XCAF" );
 	XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", m_doc);
 
-#if defined (DEBUG_PRINT)
 	if (XCAFDoc_DocumentTool::IsXCAFDocument(m_doc))
 	{
-		std::cout << "Yep She's structured for use with XDE" << std::endl;
+		//DEBUG_PRINT("Yep She's structured for use with XDE\n");
 	}
 	else
 	{
-		std::cout << "No way She's not structured for use with XDE" << std::endl;
+		//DEBUG_PRINT("No way She's not structured for use with XDE\n");
 	}
-#endif /* defined (_DEBUG) */
 	STEPCAFControl_Reader reader;
 
 	// Should already be set but hey.

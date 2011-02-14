@@ -789,7 +789,7 @@ release.
 													if (sub_group)
 													{
 														Cmiss_fe_mesh_id temp_mesh =
-														   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
+															Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
 														element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 														if (!element_group)
 															element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);

@@ -130,6 +130,53 @@ void TopologicalShape::extractCurvesAndSurfaces( GeometricShape* geoShape )
 	}
 }
 
+std::string TopologicalShape::shapeType() const
+{
+	std::string type = "clue";
+	switch (m_shape.ShapeType())
+	{
+	case TopAbs_COMPOUND:
+		type = "compound";
+		break;
+	case TopAbs_COMPSOLID:
+		type = "compound solid";
+		break;
+	case TopAbs_SOLID:
+		type = "solid";
+		break;
+	case TopAbs_SHELL:
+		type = "shell";
+		break;
+	case TopAbs_FACE:
+		type = "face";
+		break;
+	case TopAbs_WIRE:
+		type = "wire";
+		break;
+	case TopAbs_EDGE:
+		type = "edge";
+		break;
+	case TopAbs_VERTEX:
+		type = "vertex";
+		break;
+	case TopAbs_SHAPE:
+		type = "shape";
+		break;
+	}
+
+	return type;
+}
+
+int TopologicalShape::location(double *loc) const
+{
+	TopLoc_Location shape_location = m_shape.Location();
+	gp_Pnt pt = gp_Pnt(0.,0.,0.).Transformed(shape_location);
+	loc[0] = pt.X();
+	loc[1] = pt.Y();
+	loc[2] = pt.Z();
+	return 1;
+}
+
 int TopologicalShape::surfaceColour(double *colour) const
 {
 	colour[0] = m_surfaceColour.Red();

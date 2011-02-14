@@ -194,25 +194,25 @@ public:
 		return Base_class::find(object);
 	}
 
-   iterator begin()
-   {
-   	return Base_class::begin();
-   }
+	iterator begin()
+	{
+		return Base_class::begin();
+	}
 
-   const_iterator begin() const
-   {
-   	return Base_class::begin();
-   }
+	const_iterator begin() const
+	{
+		return Base_class::begin();
+	}
 
-   iterator end()
-   {
-   	return Base_class::end();
-   }
+	iterator end()
+	{
+		return Base_class::end();
+	}
 
-   const_iterator end() const
-   {
-   	return Base_class::end();
-   }
+	const_iterator end() const
+	{
+		return Base_class::end();
+	}
 
 	bool begin_identifier_change(Key object)
 	{

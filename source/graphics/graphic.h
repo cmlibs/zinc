@@ -285,6 +285,14 @@ int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_reg
  */
 int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
 
+#if defined (USE_OPENCASCADE)
+/**
+ * Returns 1 if the graphics are output with names that identify
+ * the elements they are calculated from.  Otherwise it returns 0.
+ */
+int Cmiss_graphic_selects_cad_primitives(struct Cmiss_graphic *graphic);
+#endif /* defined (USE_OPENCASCADE) */
+
 /***************************************************************************//**
  *Returns the settings type of the <graphic>, eg. CMISS_GRAPHIC_LINES.
  */

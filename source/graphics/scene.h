@@ -472,6 +472,12 @@ DESCRIPTION :
 Returns the list of all element_points in the <scene_picked_object_list>.
 ==============================================================================*/
 
+#if defined (USE_OPENCASCADE)
+void *Scene_picked_object_list_get_picked_region_cad_primitives(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	int select_surfaces_enabled, int select_lines_enabled);
+#endif /* defined (USE_OPENCASCADE) */
+
 void *Scene_picked_object_list_get_picked_region_sorted_elements(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	int select_elements_enabled,int select_faces_enabled,

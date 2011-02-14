@@ -806,6 +806,15 @@ struct Scene_picked_object_get_nearest_element_data
 };
 
 #if defined (USE_OPENCASCADE)
+
+typedef std::multimap<Cmiss_region *, Cmiss_cad_identifier_id> Region_cad_primitive_map;
+
+struct Scene_picked_object_region_cad_primitive_map_data
+{
+	Region_cad_primitive_map *cad_primitive_map;
+	int select_surfaces_enabled, select_lines_enabled;
+};
+
 struct Scene_picked_object_get_cad_primitive_data
 {
 	int select_surfaces_enabled,select_lines_enabled;
@@ -820,6 +829,7 @@ struct Scene_picked_object_get_cad_primitive_data
 	struct Cmiss_rendition *rendition;
 	struct Cmiss_graphic *graphic;
 };
+
 #endif /* defined (USE_OPENCASCADE) */
 
 static int Scene_picked_object_get_nearest_element(
@@ -925,7 +935,7 @@ typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
 
 struct Scene_picked_object_region_element_map_data
 {
-  Region_element_map *element_list;
+	Region_element_map *element_list;
 	/* flag set when searching for nearest data point rather than node */
 	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
 };
@@ -2866,7 +2876,7 @@ stored in the nearest_element_data.
 	struct Scene_picked_object_get_cad_primitive_data *cad_primitive_data;
 
 	cad_primitive_data = static_cast<struct Scene_picked_object_get_cad_primitive_data *>(cad_primitive_data_void);
-	if (scene_picked_object&&cad_primitive_data)
+	if (scene_picked_object && cad_primitive_data)
 	{
 		return_code=1;
 		/* proceed only if there is no picked_element or object is nearer */
@@ -2883,7 +2893,7 @@ stored in the nearest_element_data.
 				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
 						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
-				(Cmiss_graphic_selects_elements(graphic)))
+				(Cmiss_graphic_selects_cad_primitives(graphic)))
 			{
 				cad.number = -1;
 				cad.type = Cad_primitive_INVALID;
@@ -2893,8 +2903,15 @@ stored in the nearest_element_data.
 					if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_SURFACES)
 					{
 						cad.type = Cad_primitive_SURFACE;
+					}
+					else if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_LINES)
+					{
+						cad.type = Cad_primitive_CURVE;
+						//DEBUG_PRINT("cad number: %d\n", cad.number);
+					}
+					if (cad.type != Cad_primitive_INVALID)
+					{
 						struct Computed_field *coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
-						//display_message(INFORMATION_MESSAGE, "CAD element is type %d element %d\n", cad.type, cad.number);
 						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
 						return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
 						if ( return_code )
@@ -2903,19 +2920,19 @@ stored in the nearest_element_data.
 								( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
 							if ( cad_topology_field )
 							{
-								Cmiss_cad_identifier_id cad_shape = new Cmiss_cad_identifier();
-								//cad_shape.cad_topology = cad_topology_field;
-								//cad_shape.number = cad.number;
-								//Cmiss_field_access(cad_topology_field);
-								cad_shape->cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
-								cad_shape->identifier = cad;
+								if (cad_primitive_data->nearest_cad_element)
+									delete cad_primitive_data->nearest_cad_element;
+
+								//DEBUG_PRINT("nearest cad element %d\n", Cmiss_field_get_access_count(cad_topology_field));
+								Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+								Cmiss_cad_identifier_id cad_shape = new Cmiss_cad_identifier(cad_topology, cad);
+								Cmiss_field_cad_topology_destroy(&cad_topology);
 
 								cad_primitive_data->nearest_cad_element = cad_shape;
 								cad_primitive_data->graphic = graphic;
-								cad_primitive_data->scene_picked_object=scene_picked_object;
+								cad_primitive_data->scene_picked_object = scene_picked_object;
 								cad_primitive_data->rendition = rendition;
 								cad_primitive_data->nearest = Scene_picked_object_get_nearest(scene_picked_object);
-								//Cad_topology_information( cad_topology_field, cad );
 							}
 						}
 						if ( domain_field_list )
@@ -3002,6 +3019,115 @@ pertaining to the nearest element.
 
 	return (cad_primitive_data.nearest_cad_element);
 } /* Scene_picked_object_list_get_nearest_cad_primitive */
+
+static int Scene_picked_object_get_picked_region_cad_primitives(
+	struct Scene_picked_object *scene_picked_object,void *picked_cad_primitive_data_void)
+{
+	int return_code = 0;
+	struct Cad_primitive_identifier cad;
+	struct Cmiss_region *cmiss_region;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic = NULL;
+	struct Scene_picked_object_region_cad_primitive_map_data *picked_cad_primitive_data;
+
+	if (scene_picked_object&&(picked_cad_primitive_data=
+		(struct Scene_picked_object_region_cad_primitive_map_data *)picked_cad_primitive_data_void))
+	{
+		return_code = 1;
+		/* is the last scene_object a Graphical_element wrapper, and does the
+			 settings for the graphic refer to cad primitives? */
+		if ((NULL != (rendition=Scene_picked_object_get_rendition(scene_picked_object,
+			Scene_picked_object_get_number_of_renditions(scene_picked_object)-1)))
+			&&((cmiss_region = Cmiss_rendition_get_region(rendition)))
+			&&(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(NULL != (graphic=Cmiss_rendition_get_graphic_at_position(rendition,
+			Scene_picked_object_get_subobject(scene_picked_object,0))))&&
+			(Cmiss_graphic_selects_cad_primitives(graphic)))
+		{
+			cad.number = -1;
+			cad.type = Cad_primitive_INVALID;
+			if (Cmiss_field_is_cad_geometry(Cmiss_graphic_get_coordinate_field(graphic), NULL))
+			{
+				cad.number = Scene_picked_object_get_subobject(scene_picked_object,1);
+				if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_SURFACES)
+				{
+					cad.type = Cad_primitive_SURFACE;
+				}
+				else if (Cmiss_graphic_get_graphic_type(graphic) == CMISS_GRAPHIC_LINES)
+				{
+					cad.type = Cad_primitive_CURVE;
+				}
+				if (cad.type != Cad_primitive_INVALID)
+				{
+					struct Computed_field *coordinate_field = Cmiss_graphic_get_coordinate_field(graphic);
+					struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+					return_code = Computed_field_get_domain( coordinate_field, domain_field_list );
+					if ( return_code )
+					{
+						struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+							( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+						if ( cad_topology_field )
+						{
+							Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+							Cmiss_cad_identifier_id cad_shape_identifier = new Cmiss_cad_identifier(cad_topology, cad);
+							Cmiss_field_cad_topology_destroy(&cad_topology);
+
+							picked_cad_primitive_data->cad_primitive_map->insert(std::make_pair(cmiss_region, cad_shape_identifier));
+						}
+					}
+					if ( domain_field_list )
+						DESTROY_LIST(Computed_field)(&domain_field_list);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_picked_object_get_nearest_cad_primitive.  "
+					"Invalid cad element %s %d",Cad_primitive_type_string(cad.type),cad.number);
+				return_code=0;
+			}
+		}
+		if (graphic)
+			Cmiss_graphic_destroy(&graphic);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_region_cad_primitives.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Scene_picked_object_get_picked_region_cad_primitives */
+
+void *Scene_picked_object_list_get_picked_region_cad_primitives(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	int select_surfaces_enabled, int select_lines_enabled)
+{
+	struct Scene_picked_object_region_cad_primitive_map_data picked_cad_primitive_data;
+
+	if (scene_picked_object_list)
+	{
+		picked_cad_primitive_data.select_surfaces_enabled=select_surfaces_enabled;
+		picked_cad_primitive_data.select_lines_enabled=select_lines_enabled;
+		picked_cad_primitive_data.cad_primitive_map = new Region_cad_primitive_map();
+		if (picked_cad_primitive_data.cad_primitive_map)
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_region_cad_primitives,(void *)&picked_cad_primitive_data,
+				scene_picked_object_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_elements.  Invalid argument(s)");
+		picked_cad_primitive_data.cad_primitive_map = NULL;
+	}
+
+	return ((void *)picked_cad_primitive_data.cad_primitive_map);
+} /* Scene_picked_object_list_get_picked_region_cad_primitives */
+
 #endif /* defined (USE_OPENCASCADE) */
 
 static int Scene_picked_object_get_picked_region_sorted_elements(
@@ -3081,7 +3207,7 @@ manager, ensures it is in the list.
 
 void *Scene_picked_object_list_get_picked_region_sorted_elements(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int select_elements_enabled,int select_faces_enabled,
+	int select_elements_enabled, int select_faces_enabled,
 	int select_lines_enabled)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000

@@ -1360,36 +1360,46 @@ Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_gro
 }
 
 #if defined (USE_OPENCASCADE)
-Cmiss_field_id Cmiss_field_group_create_cad_primitive_group(Cmiss_field_group_id group, Cmiss_field_cad_topology_id cad_topology_domain)
+Cmiss_field_cad_primitive_group_template_id Cmiss_field_group_create_cad_primitive_group(Cmiss_field_group_id group, Cmiss_field_cad_topology_id cad_topology_domain)
 {
-	Cmiss_field_id field = NULL;
+	Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 	if (group)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->create_cad_primitive_group(cad_topology_domain);
+			Cmiss_field_id field = group_core->create_cad_primitive_group(cad_topology_domain);
+			if (field != NULL)
+			{
+				cad_primitive_group = Cmiss_field_cast_cad_primitive_group_template(field);
+				Cmiss_field_destroy(&field);
+			}
 		}
 	}
 
-	return field;
+	return cad_primitive_group;
 }
 
-Cmiss_field_id Cmiss_field_group_get_cad_primitive_group(Cmiss_field_group_id group, Cmiss_field_cad_topology_id cad_topology_domain)
+Cmiss_field_cad_primitive_group_template_id Cmiss_field_group_get_cad_primitive_group(Cmiss_field_group_id group, Cmiss_field_cad_topology_id cad_topology_domain)
 {
-	Cmiss_field_id field = NULL;
+	Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 	if (group)
 	{
 		Computed_field_group *group_core =
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->get_subgroup_for_domain(reinterpret_cast< Computed_field * >(cad_topology_domain));//cad_primitive_group();
+			Cmiss_field_id field = group_core->get_subgroup_for_domain(reinterpret_cast< Computed_field * >(cad_topology_domain));//cad_primitive_group();
+			if (field != NULL)
+			{
+				cad_primitive_group = Cmiss_field_cast_cad_primitive_group_template(field);
+				Cmiss_field_destroy(&field);
+			}
 		}
 	}
 
-	return field;
+	return cad_primitive_group;
 }
 
 int Cmiss_field_group_clear_region_tree_cad_primitive(Cmiss_field_group_id group)

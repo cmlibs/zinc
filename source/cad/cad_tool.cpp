@@ -71,6 +71,7 @@ extern "C" {
 #include "api/cmiss_field_cad.h"
 #include "cad/cad_tool.h"
 #include "cad/element_identifier.h"
+#include "cad/computed_field_cad_topology.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "computed_field/computed_field_private.hpp"
 #if defined (WX_USER_INTERFACE)
@@ -83,7 +84,7 @@ extern "C" {
 #endif /* defined (WX_USER_INTERFACE)*/
 
 #include <map>
-typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
+typedef std::multimap<Cmiss_region *, Cmiss_cad_identifier_id> Region_cad_primitive_map;
 
 /*
 Module variables
@@ -182,7 +183,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 	if (device_id&&event&&(cad_tool=
 		(struct Cad_tool *)cad_tool_void))
 	{
-		Cmiss_region_begin_hierarchical_change(cad_tool->region);
+		//Cmiss_region_begin_hierarchical_change(cad_tool->region);
 		interaction_volume=Interactive_event_get_interaction_volume(event);
 		if (NULL != (scene=Interactive_event_get_scene(event)))
 		{
@@ -217,7 +218,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									Cmiss_rendition_destroy(&rendition);
 								}
 							}
-							cad_tool->picked_element_was_unselected=0;
+							cad_tool->picked_element_was_unselected=1;
 							picked_element = Scene_picked_object_list_get_cad_primitive(
 								scene_picked_object_list,(struct Cmiss_region *)NULL,
 								cad_tool->select_surfaces_enabled,
@@ -231,7 +232,6 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									rendition);
 								Cmiss_region *sub_region = NULL;
 								Cmiss_field_group_id sub_group = NULL;
-								Cmiss_field_id cad_primitive_group_field = NULL;
 								Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 								if (cad_tool->rendition)
 								{
@@ -239,27 +239,20 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 									sub_group = Cmiss_rendition_get_or_create_selection_group(cad_tool->rendition);
 									if (sub_group)
 									{
-										cad_primitive_group_field = Cmiss_field_group_get_subgroup_for_domain(sub_group,
-											reinterpret_cast<Cmiss_field_id>(picked_element->cad_topology));
-										if (!cad_primitive_group)
-										{
-											cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, picked_element->cad_topology);
-											if (cad_primitive_group_field == NULL)
-												cad_primitive_group_field = Cmiss_field_group_create_cad_primitive_group(sub_group, picked_element->cad_topology);
-										}
-										if (cad_primitive_group_field)
-										{
-											cad_primitive_group =
-												Cmiss_field_cast_cad_primitive_group_template(cad_primitive_group_field);
-											Cmiss_field_destroy(&cad_primitive_group_field);
-										}
+										//cad_primitive_group_field = Cmiss_field_group_get_subgroup_for_domain(sub_group,
+										//	reinterpret_cast<Cmiss_field_id>(picked_element->cad_topology));
+										cad_primitive_group = Cmiss_field_group_get_cad_primitive_group(sub_group, picked_element->cad_topology);
+										if (cad_primitive_group == NULL)
+											cad_primitive_group = Cmiss_field_group_create_cad_primitive_group(sub_group, picked_element->cad_topology);
 									}
 								}
 
 								if (sub_region && cad_primitive_group)
 								{
-									Cmiss_field_cad_primitive_group_template_add_cad_primitive(cad_primitive_group,
-										picked_element);
+									if (Cmiss_field_cad_primitive_group_template_is_cad_primitive_selected(cad_primitive_group, picked_element))
+										Cmiss_field_cad_primitive_group_template_remove_cad_primitive(cad_primitive_group, picked_element);
+									else
+										Cmiss_field_cad_primitive_group_template_add_cad_primitive(cad_primitive_group, picked_element);
 									Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 								}
 								if (sub_group)
@@ -268,10 +261,10 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 								}
 								if (cad_primitive_group)
 								{
-									Cmiss_field_id temporary_handle =
-										reinterpret_cast<Computed_field *>(cad_primitive_group);
-									Cmiss_field_destroy(&temporary_handle);
+									Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 								}
+								//DEBUG_PRINT("picked element %d\n", Cmiss_field_get_access_count(reinterpret_cast<Cmiss_field_id>(picked_element->cad_topology)));
+								delete picked_element;
 							}
 							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
@@ -291,7 +284,11 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 						{
 							cad_tool->motion_detected=1;
 						}
-						if (cad_tool->motion_detected)
+						if (cad_tool->last_picked_element)
+						{
+							//DEBUG_PRINT("last_picked_element\n");
+						}
+						else if (cad_tool->motion_detected)
 						{
 							/* rubber band select */
 							if (NULL != (temp_interaction_volume=
@@ -329,21 +326,23 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 										Scene_pick_objects(scene,temp_interaction_volume,
 										graphics_buffer)))
 									{
-										Region_element_map *element_map = NULL;
-											//(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
-											//	scene_picked_object_list,
-											//	cad_tool->select_surfaces_enabled,
-											//	cad_tool->select_lines_enabled);
-										printf("Hello region element map ------------------------\n");
-										if (element_map)
+										Region_cad_primitive_map *cad_primitive_map = 
+											(Region_cad_primitive_map *)Scene_picked_object_list_get_picked_region_cad_primitives(
+												scene_picked_object_list,
+												cad_tool->select_surfaces_enabled,
+												cad_tool->select_lines_enabled);
+										if (cad_primitive_map)
 										{
+											//DEBUG_PRINT("Hello region element map ------------------------\n");
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
 											Cmiss_rendition *region_rendition = NULL;
-											Cmiss_field_element_group_id element_group = NULL;
-											Region_element_map::iterator pos;
-											for (pos = element_map->begin(); pos != element_map->end(); ++pos)
+											Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
+											Region_cad_primitive_map::iterator pos;
+											int count = 0;
+											for (pos = cad_primitive_map->begin(); pos != cad_primitive_map->end(); ++pos)
 											{
+												//DEBUG_PRINT("\tprimitive %d\n", ++count);
 												if (pos->first != sub_region)
 												{
 													if (sub_region && sub_group)
@@ -351,9 +350,9 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 														Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 														Cmiss_field_group_destroy(&sub_group);
 													}
-													if (element_group)
+													if (cad_primitive_group)
 													{
-														Cmiss_field_element_group_destroy(&element_group);
+														Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 													}
 													if (region_rendition)
 													{
@@ -369,16 +368,16 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 													}
 													if (sub_group)
 													{
-														Cmiss_fe_mesh_id temp_mesh =
-														   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
-														element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-														Cmiss_fe_mesh_destroy(&temp_mesh);
+														cad_primitive_group = Cmiss_field_group_get_cad_primitive_group(sub_group, pos->second->cad_topology);
+														if (cad_primitive_group == NULL)
+															cad_primitive_group = Cmiss_field_group_create_cad_primitive_group(sub_group, pos->second->cad_topology);
 													}
 												}
-												if (sub_region && element_group)
+												if (sub_region && cad_primitive_group)
 												{
-													Cmiss_field_element_group_add_element(element_group,
+													Cmiss_field_cad_primitive_group_template_add_cad_primitive(cad_primitive_group,
 														pos->second);
+													delete pos->second;
 												}
 											}
 											if (sub_region && sub_group)
@@ -386,15 +385,15 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 												Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 												Cmiss_field_group_destroy(&sub_group);
 											}
-											if (element_group)
+											if (cad_primitive_group)
 											{
-												Cmiss_field_element_group_destroy(&element_group);
+												Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 											}
 											if (region_rendition)
 											{
 												Cmiss_rendition_destroy(&region_rendition);
 											}
-											delete element_map;
+											delete cad_primitive_map;
 										}
 										DESTROY(LIST(Scene_picked_object))(
 											&(scene_picked_object_list));
@@ -416,15 +415,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 				} break;
 			}
 		}
-		if (cad_tool->region)
-		{
-			Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
-				cad_tool->region);
-			Cmiss_rendition_flush_tree_selections(rendition);
-			Cmiss_rendition_destroy(&rendition);
-		}
-		Cmiss_region_end_hierarchical_change(cad_tool->region);
-
+		//Cmiss_region_end_hierarchical_change(cad_tool->region);
 	}
 	else
 	{

@@ -28,11 +28,13 @@ class TopologicalShape
 		void label( const char* name ) { m_label = std::string( name ); }
 
 		TopoDS_Shape shape() const { return m_shape; }
+		std::string shapeType() const;
 		Quantity_Color surfaceColour() const { return m_surfaceColour; }
 		int surfaceColour(double *colour) const;
 		int surfaceColour(Cmiss_cad_surface_identifier surface_identifier, double *colour) const;
 		Quantity_Color curveColour() const { return m_curveColour; }
-		const char*  label() const { return m_label.c_str(); }
+		const char* label() const { return m_label.c_str(); }
+		int location(double *loc) const;
 
 		void tessellate( GeometricShape* geoShape );
 

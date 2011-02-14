@@ -184,7 +184,18 @@ int Computed_field_cad_colour::list()
 	ENTER(List_Computed_field_cad_colour);
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE, "    Cad normal field : blabagagae ");
+		double colour[3];
+		Cmiss_cad_surface_identifier surface_identifier = 0;
+		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
+		if (Computed_field_cad_topology_get_surface_colour(cad_topology,
+				surface_identifier,
+				0.0,
+				0.0,
+				colour))
+		{
+			display_message(INFORMATION_MESSAGE, "    Cad colour field : [%.3f, %.3f. %.3f] ", colour[0], colour[1], colour[2]);
+		}
+		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		return_code = 1;
 	}
 	else
@@ -212,7 +223,7 @@ char *Computed_field_cad_colour::get_command_string()
 	{
 		error = 0;
 		append_string(&command_string, computed_field_cad_colour_type_string, &error);
-		append_string(&command_string, " field fdfdfdfd ", &error);
+		append_string(&command_string, " field has no command string ", &error);
 		if (GET_NAME(Computed_field)(field, &field_name))
 		{
 			make_valid_token(&field_name);
@@ -236,13 +247,10 @@ int Cmiss_field_is_cad_colour( struct Computed_field *field, void *not_in_use )
 {
 	int return_code = 0;
 	USE_PARAMETER(not_in_use);
-	//printf( "Checking domain ...\n" );
 	if ( field )
 	{
-		//printf( "Valid field ...\n" );
 		if ( NULL != dynamic_cast<Computed_field_cad_colour*>(field->core) )
 		{
-			//printf( "Yes, it is a cad normal field.\n" );
 			return_code = 1;
 		}
 	}
@@ -285,21 +293,6 @@ Cmiss_field_id Computed_field_module_create_cad_colour(Cmiss_field_module_id fie
 			/*number_of_source_fields*/1, source_fields,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_cad_colour());
-
-//		struct Computed_field **source_fields;
-//		/* 1. Make dynamic allocation */
-//		int number_of_source_fields=1;
-//		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-//		{
-//			/* 2. create new field */
-//			field = CREATE(Computed_field)(name);
-//			/* 3. establish the new type */
-//			field->number_of_components = 3;
-//			source_fields[0]=ACCESS(Computed_field)(source_field);
-//			field->source_fields=source_fields;
-//			field->number_of_source_fields=number_of_source_fields;
-//			field->core = new Computed_field_cad_colour();
-//		}
 	}
 	else
 	{

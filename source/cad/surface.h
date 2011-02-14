@@ -40,6 +40,9 @@ public:
 
 	void tessellate();
 
+	Entity::GeomType geomType() const;
+	void information() const;
+
 private:
 	Standard_Boolean triangleIsValid(const gp_Pnt& P1, const gp_Pnt& P2, const gp_Pnt& P3);
 

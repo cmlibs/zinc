@@ -99,7 +99,6 @@ Main program for the CMISS Graphical User Interface
 	ENTER(WinMain);
 
 	//_CrtSetBreakAlloc(28336);
-
 	for (p = command_line; p != NULL && *p != 0;)
 	{
 		p = strchr(p, ' ');
@@ -140,7 +139,7 @@ Main program for the CMISS Graphical User Interface
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv);
 #else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
-		UI_module = Cmiss_context_create_user_interface(context, argc,argv, current_instance,
+		UI_module = Cmiss_context_create_user_interface(context, argc, argv, current_instance,
 			previous_instance, command_line, initial_main_window_state);
 #endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		if (UI_module)

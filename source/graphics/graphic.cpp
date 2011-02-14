@@ -1804,6 +1804,30 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Cmiss_graphic);
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_graphic, \
 	position,int,compare_int);
 
+#if defined (USE_OPENCASCADE)
+
+int Cmiss_graphic_selects_cad_primitives(struct Cmiss_graphic *graphic)
+{
+	int return_code;
+	
+	if (graphic)
+	{
+		return_code=(GRAPHICS_NO_SELECT != graphic->select_mode)&&(
+			(CMISS_GRAPHIC_LINES==graphic->graphic_type)||
+			(CMISS_GRAPHIC_SURFACES==graphic->graphic_type));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_selects_elements.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Cmiss_graphic_selects_cad_primitives */
+
+#endif /*defined (USE_OPENCASCADE) */
+
 int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 {
 	int return_code;
@@ -3700,6 +3724,7 @@ int Cmiss_graphic_to_graphics_object(
 											Cmiss_field_cast_cad_topology(cad_topology_field);
 										GT_object_set_cad_primitive_highlight_functor(graphic->graphics_object,
 											(void *)graphic_to_object_data->group_field, cad_topology_domain);
+										Cmiss_field_destroy(&cad_topology_field);
 										DESTROY_LIST(Computed_field)(&domain_field_list);
 										break;
 									}

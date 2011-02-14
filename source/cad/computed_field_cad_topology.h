@@ -45,6 +45,8 @@
 extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_cad.h"
+#include "command/parser.h"
+#include "computed_field/computed_field.h"
 }
 #include "cad/topologicalshape.h"
 #include "cad/geometricshape.h"
@@ -60,6 +62,10 @@ extern "C" {
 Cmiss_field_id Cmiss_field_module_create_cad_topology(Cmiss_field_module *field_module, TopologicalShape *shape );
 
 Cmiss_field_cad_topology_id Cmiss_field_cast_cad_topology(Cmiss_field_id cad_topology_field );
+
+int Cmiss_field_cad_topology_destroy(Cmiss_field_cad_topology_id *cad_topology_field_address);
+
+Cmiss_field_cad_topology_id Cmiss_field_cad_topology_access(Cmiss_field_cad_topology_id cad_topology_field);
 
 int Cmiss_field_cad_topology_get_surface_count(Cmiss_field_cad_topology_id cad_topology_field);
 
@@ -83,7 +89,9 @@ void Cmiss_field_cad_topology_set_geometric_shape(Cmiss_field_cad_topology_id ca
 
 int Cmiss_field_is_type_cad_topology(Cmiss_field_id field, void *not_in_use);
 
-void Cad_topology_information( Cmiss_field_id cad_topology_field, Cad_primitive_identifier information );
+void Cad_topology_information( Cmiss_field_cad_topology_id cad_topology_field, Cad_primitive_identifier information );
+
+int gfx_list_cad_entity(struct Parse_state *state, void *cad_element_type_void, void *root_region_void);
 
 #endif /* !defined (COMPUTED_FIELD_CAD_SHAPE_H) */
 

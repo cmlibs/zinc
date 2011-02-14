@@ -246,7 +246,11 @@ int Computed_field_cad_geometry::list()
 	ENTER(List_Computed_field_cad_geometry);
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE, "    Cad geometry field : blabagagae ");
+		Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field->source_fields[0]);
+		int surface_count = Cmiss_field_cad_topology_get_surface_count(cad_topology);
+		int curve_count = Cmiss_field_cad_topology_get_curve_count(cad_topology);
+		display_message(INFORMATION_MESSAGE, "    Cad geometry field : # of surfaces: %d, # of curves: %d", surface_count, curve_count);
+		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(&cad_topology));
 		return_code = 1;
 	}
 	else
@@ -274,7 +278,7 @@ char *Computed_field_cad_geometry::get_command_string()
 	{
 		error = 0;
 		append_string(&command_string, computed_field_cad_geometry_type_string, &error);
-		append_string(&command_string, " field fdfdfdfd ", &error);
+		append_string(&command_string, " field has no command string ", &error);
 		if (GET_NAME(Computed_field)(field, &field_name))
 		{
 			make_valid_token(&field_name);

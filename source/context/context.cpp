@@ -317,16 +317,16 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv);
 #else
-		  context->UI_module = User_interface_module_create(
+			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv, current_instance,
 				previous_instance, command_line, initial_main_window_state);
 #endif
-		  if (context->UI_module && context->UI_module->default_time_keeper &&
-			  context->graphics_module)
-		  {
-			Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
-				context->UI_module->default_time_keeper );
-		  }
+			if (context->UI_module && context->UI_module->default_time_keeper &&
+				context->graphics_module)
+			{
+				Cmiss_graphics_module_set_time_keeper_internal(context->graphics_module,
+					context->UI_module->default_time_keeper );
+			}
 		}
 		if (context->UI_module)
 		{

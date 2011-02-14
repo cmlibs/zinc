@@ -19,6 +19,18 @@
 #include <Precision.hxx>
 #include <GeomLProp_SLProps.hxx>
 
+#include <Geom_ConicalSurface.hxx>
+#include <Geom_CylindricalSurface.hxx>
+#include <Geom_ElementarySurface.hxx>
+#include <Geom_OffsetSurface.hxx>
+#include <Geom_Plane.hxx>
+#include <Geom_RectangularTrimmedSurface.hxx>
+#include <Geom_SphericalSurface.hxx>
+#include <Geom_SurfaceOfLinearExtrusion.hxx>
+#include <Geom_SurfaceOfRevolution.hxx>
+#include <Geom_SweptSurface.hxx>
+#include <Geom_ToroidalSurface.hxx>
+
 Surface::Surface( Entity* parent )
     : Entity( parent )
 {
@@ -149,3 +161,94 @@ int Surface::uvPoints(int point_index, double &u, double &v) const
 
 	return return_code;
 }
+
+Entity::GeomType Surface::geomType() const
+{
+	if (m_surface->DynamicType() == STANDARD_TYPE(Geom_BezierSurface))
+	{
+		return BezierSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_BoundedSurface))
+	{
+		return BoundaryLayerSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface))
+	{
+		return BSplineSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_ConicalSurface))
+	{
+		return ConicalSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface))
+	{
+		return Cylinder;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_ElementarySurface))
+	{
+		return ElementarySurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface))
+	{
+		return OffsetSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_Plane))
+	{
+		return Plane;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_RectangularTrimmedSurface))
+	{
+		return RectangularTrimmedSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface))
+	{
+		return Sphere;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_Surface))
+	{
+		return GeomSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))
+	{
+		return LinearExtrusionSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfRevolution))
+	{
+		return SurfaceOfRevolution;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_SweptSurface))
+	{
+		return SweptSurface;
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_ToroidalSurface))
+	{
+		return Torus;
+	}
+
+	return Unknown;
+}
+
+void Surface::information() const
+{
+	display_message(INFORMATION_MESSAGE,
+		"  %s", geomTypeString().c_str());
+	if (m_surface->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface))
+	{
+		Handle_Geom_CylindricalSurface cylinder = Handle_Geom_CylindricalSurface::DownCast(m_surface);
+		display_message(INFORMATION_MESSAGE, " with radius = %.3g", cylinder->Radius());
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_Plane))
+	{
+		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(m_surface);
+		Standard_Real a, b, c, d;
+		plane->Coefficients(a, b, c, d);
+		display_message(INFORMATION_MESSAGE, " with equation: %.3g x + %.3g y + %.3g z + %.3g = 0", a, b, c, d);
+	}
+	else if (m_surface->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface))
+	{
+		Handle_Geom_SphericalSurface sphere = Handle_Geom_SphericalSurface::DownCast(m_surface);
+		display_message(INFORMATION_MESSAGE, " with area: %.3g", sphere->Area());
+	}
+	display_message(INFORMATION_MESSAGE, "\n");
+}
+

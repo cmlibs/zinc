@@ -57,6 +57,16 @@ extern "C" {
 #include <map>
 #include <iterator>
 
+#if defined (_MSC_VER)
+	#ifndef _CRTDBG_MAP_ALLOC
+		#define _CRTDBG_MAP_ALLOC
+	#endif
+	#include <stdlib.h>
+	#include <crtdbg.h>
+#endif /* defined (_MSC_VER) */
+#define NOMINMAX
+#include <windows.h>
+
 /***************************************************************************//**
  * Change details for simple object groups where a single change status is
  * sufficient.
@@ -192,6 +202,15 @@ namespace {
 			return 0;
 		};
 
+		inline T get_object(int identifier)
+		{
+			T return_object = NULL;
+			if (object_map.find(identifier) != object_map.end())
+				return_object = object_map.find(identifier)->second;
+
+			return return_object;
+		}
+
 		virtual int clear()
 		{
 			if (object_map.size())
@@ -206,9 +225,7 @@ namespace {
 		int get_object_selected(int identifier,T object)
 		{
 			int return_code = 0;
-
-			if (object_map.find(identifier) != object_map.end() &&
-				object_map.find(identifier)->second == object)
+			if (object_map.find(identifier) != object_map.end())
 			{
 				return_code = 1;
 			}

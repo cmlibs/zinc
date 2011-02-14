@@ -60,6 +60,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #if defined (USE_OPENCASCADE)
+#include "cad/computed_field_cad_topology.h"
 #include "cad/element_identifier.h"
 #endif /* defined (USE_OPENCASCADE) */
 
@@ -129,7 +130,7 @@ int Cmiss_field_node_group_remove_node(Cmiss_field_node_group_id node_group,
 
 	if (node_group && node)
 	{
-	  int identifier = get_FE_node_identifier(node);
+		int identifier = get_FE_node_identifier(node);
 		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
 			Cmiss_field_node_group_id>(node_group);
@@ -306,14 +307,14 @@ int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id elemen
 	struct CM_element_information cm_identifier;
 	if (element_group && element)
 	{
-	  if (get_FE_element_identifier(element, &cm_identifier))
-	  {
-	  	Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-	  		Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-	  		Cmiss_field_element_group_id>(element_group);
+		if (get_FE_element_identifier(element, &cm_identifier))
+		{
+			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
+				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
+				Cmiss_field_element_group_id>(element_group);
 			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
-	  	group_core->remove_object(identifier);
-	  }
+			group_core->remove_object(identifier);
+		}
 	}
 	else
 	{
@@ -493,28 +494,56 @@ int Cmiss_field_cad_primitive_group_template_add_cad_primitive(Cmiss_field_cad_p
 			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
 			Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
 		int identifier = cad_primitive->identifier.number;
-		printf("=== Adding cad primitive object %d\n", identifier);
-		group_core->add_object(identifier, cad_primitive);
+		Cmiss_cad_identifier_id cad_primitive_copy = new Cmiss_cad_identifier(cad_primitive->cad_topology, cad_primitive->identifier);
+		//DEBUG_PRINT("=== Adding cad primitive object %p %d %d\n", cad_primitive_copy, cad_primitive->identifier.type, cad_primitive->identifier.number);
+		group_core->add_object(identifier, cad_primitive_copy);
 		return_code = 1;
 	}
 
 	return return_code;
 }
 
+int Cmiss_field_cad_primitive_group_template_remove_cad_primitive(Cmiss_field_cad_primitive_group_template_id cad_primitive_group,
+	Cmiss_cad_identifier_id cad_primitive)
+{
+	int return_code = 0;
+	if (cad_primitive_group && cad_primitive)
+	{
+		Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
+				Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+		int identifier = cad_primitive->identifier.number;
+		//DEBUG_PRINT("=== Removing cad primitive object %p %d %d\n", cad_primitive, cad_primitive->identifier.type, cad_primitive->identifier.number);
+		Cmiss_cad_identifier_id cad_identifier = group_core->get_object(identifier);
+		if (cad_identifier)
+		{
+			//DEBUG_PRINT("Deleting %p\n", cad_identifier);
+			delete cad_identifier;
+			group_core->remove_object(identifier);
+			return_code = 1;
+		}
+	}
+
+	return return_code;
+
+}
+
 int Cmiss_field_cad_primitive_group_template_clear(Cmiss_field_cad_primitive_group_template_id cad_primitive_group)
 {
-	int return_code = 1;
+	int return_code = 0;
 
 	if (cad_primitive_group)
 	{
 		Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
 			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
-			Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
-		group_core->clear();
-	}
-	else
-	{
-		return_code = 0;
+				Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+		Cmiss_cad_identifier_id cad_identifier = group_core->getFirstObject();
+		while (cad_identifier != NULL)
+		{
+			delete cad_identifier;
+			cad_identifier = group_core->getNextObject();
+		}
+		return_code = group_core->clear();
 	}
 
 	return return_code;
@@ -535,6 +564,46 @@ int Cmiss_field_cad_primitive_group_template_is_cad_primitive_selected(
 	}
 
 	return return_code;
+}
+
+Cmiss_cad_identifier_id Cmiss_field_cad_primitive_group_template_get_first_cad_primitive(
+	Cmiss_field_cad_primitive_group_template_id cad_primitive_group)
+{
+	Cmiss_cad_identifier_id cad_identifier = NULL;
+	if (cad_primitive_group)
+	{
+		Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
+			Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+		Cmiss_cad_identifier_id cad_identifier_from_group = group_core->getFirstObject();
+		if (cad_identifier_from_group)
+		{
+			cad_identifier = new Cmiss_cad_identifier(*cad_identifier_from_group);
+			//Cmiss_field_cad_topology_access(cad_identifier->cad_topology);
+		}
+	}
+
+	return cad_identifier;
+}
+
+Cmiss_cad_identifier_id Cmiss_field_cad_primitive_group_template_get_next_cad_primitive(
+	Cmiss_field_cad_primitive_group_template_id cad_primitive_group)
+{
+	Cmiss_cad_identifier_id cad_identifier = NULL;
+	if (cad_primitive_group)
+	{
+		Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
+			Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
+			Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+		Cmiss_cad_identifier_id cad_identifier_from_group = group_core->getNextObject();
+		if (cad_identifier_from_group)
+		{
+			cad_identifier = new Cmiss_cad_identifier(*cad_identifier_from_group);
+			//Cmiss_field_cad_topology_access(cad_identifier->cad_topology);
+		}
+	}
+
+	return cad_identifier;
 }
 
 

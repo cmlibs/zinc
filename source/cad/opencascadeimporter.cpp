@@ -126,25 +126,19 @@ bool OpenCascadeImporter::import( struct Cmiss_region *region )
 		if ( reader.readModel( m_fileName ) )
 		{
 			end = clock();
-#if defined (DEBUG_PRINT)
-			printf( "File read took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
-#endif /* defined (DEBUG_PRINT) */
+			//DEBUG_PRINT( "File read took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
 			start = clock();
 			if ( reader.hasXDEInformation() )
 			{
 				//success = remapDocToRegionsAndFields( reader.xDEInformation(), region );
 				success = convertDocToRegionsAndFields( reader.xDEInformation(), region );
 				end = clock();
-#if defined (DEBUG_PRINT)
-				printf( "Shape re-mapping took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
-#endif /* defined (DEBUG_PRINT) */
+				//DEBUG_PRINT( "Shape re-mapping took %.2f seconds\n", ( end - start ) / double( CLOCKS_PER_SEC ) );
 			}
 			else
 			{
 				end = clock();
-#if defined (DEBUG_PRINT)
-				printf( "Don't have XDE information, also no fall back plan!!!!\n" );
-#endif /* defined (DEBUG_PRINT) */
+				//DEBUG_PRINT( "Don't have XDE information, also no fall back plan!!!!\n" );
 			}
 		}
 	}
@@ -267,10 +261,8 @@ bool OpenCascadeImporter::labelTraversal( Handle_TDocStd_Document xdeDoc, const 
 
 void performLabelAnalysis( Handle_TDocStd_Document xdeDoc, const TDF_Label& aLabel )
 {
-//#if defined (DEBUG_PRINT)
 	Handle_XCAFDoc_ShapeTool shapeTool = XCAFDoc_DocumentTool::ShapeTool( xdeDoc->Main() );
 	Handle_XCAFDoc_ColorTool colorTool = XCAFDoc_DocumentTool::ColorTool( xdeDoc->Main() );
-	//XCAFDoc_Location::Get();
 	TCollection_AsciiString entry;
 	TDF_Tool::Entry( aLabel, entry );
 	std::cout << entry.ToCString() << " ";
@@ -340,10 +332,6 @@ void performLabelAnalysis( Handle_TDocStd_Document xdeDoc, const TDF_Label& aLab
 		}
 	}
 	std::cout << std::endl;
-//#else /* defined (DEBUG_PRINT) */
-//	USE_PARAMETER(aLabel);
-//	USE_PARAMETER(xdeDoc);
-//#endif /* defined (DEBUG_PRINT) */
 }
 
 Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Document xdeDoc, const TopoDS_Shape& shape, TopAbs_ShapeEnum /*type*/ )
@@ -376,12 +364,6 @@ Cmiss_cad_colour::Cmiss_cad_colour_type examineShapeForColor( Handle_TDocStd_Doc
 		if ( colorTool->IsSet(shape, colorTypes[j]) )
 		{
 			colorTool->GetColor(shape, colorTypes[j], aColor);
-#if defined (DEBUG_PRINT)
-			std::cout << "Colour type " << j << " and it's value is ";
-			std::cout << "[ " << aColor.Red() << ", ";
-			std::cout << aColor.Green() << ", ";
-			std::cout << aColor.Blue() << " ]" << std::endl;
-#endif /* defined (DEBUG_PRINT) */
 			return (Cmiss_cad_colour::Cmiss_cad_colour_type)j;
 		}
 	}
@@ -413,9 +395,7 @@ void updateColourMapFromShape(Handle_TDocStd_Document xdeDoc, Cad_colour_map& co
 				int face_index = 0;
 				for (Ex3.Init(Ex2.Current(),TopAbs_FACE); Ex3.More(); Ex3.Next()) 
 				{
-#if defined (DEBUG_PRINT)
-					printf("Checking face %d, on surface %d\n", face_index, solid_index);
-#endif /* defined (DEBUG_PRINT) */
+					//DEBUG_PRINT("Checking face %d, on surface %d\n", face_index, solid_index);
 					examineShapeForColor(xdeDoc, Ex3.Current(), TopAbs_FACE);
 					colour_type = examineShapeForColor(xdeDoc, Ex3.Current(), color);
 					if (colour_type != Cmiss_cad_colour::CMISS_CAD_COLOUR_NOT_DEFINED)
@@ -470,9 +450,7 @@ Cad_colour_map createColourMap( Handle_TDocStd_Document xdeDoc, const TDF_Label&
 		updateColourMapFromShape(xdeDoc, colourMap, referredShape);
 	}
 	
-#if defined (DEBUG_PRINT)
-	printf("colour map size %d\n", colourMap.size());
-#endif /* defined (DEBUG_PRINT) */
+	//DEBUG_PRINT("colour map size %d\n", colourMap.size());
 
 	return colourMap;
 }
@@ -753,9 +731,7 @@ bool OpenCascadeImporter::addLabelsShapeToRegion( Handle_TDocStd_Document xdeDoc
 	char *string_name = 0;
 	if (shapeTool->IsReference(label))
 	{
-#if defined (DEBUG_PRINT)
-		printf("Getting a name from a referred label.\n");
-#endif /* defined (DEBUG_PRINT) */
+		//DEBUG_PRINT("Getting a name from a referred label.\n");
 		TDF_Label referenceLabel;
 		shapeTool->GetReferredShape(label, referenceLabel);
 		string_name = getLabelName(referenceLabel);
@@ -812,9 +788,7 @@ int iterateOverLabel( Handle_TDocStd_Document xdeDoc, const TDF_Label& label, in
 	//}
 
 	{
-#if defined (DEBUG_PRINT)
-		printf("Color hunt ");
-#endif /* defined (DEBUG_PRINT) */
+		//DEBUG_PRINT("Color hunt ");
 		performLabelAnalysis(xdeDoc, label);
 		TopExp_Explorer Ex1, Ex2, Ex3, Ex4, Ex5, Ex6;
 		TopoDS_Shape shape = shapeTool->GetShape(label);
@@ -867,11 +841,11 @@ bool OpenCascadeImporter::convertDocToRegionsAndFields( Handle_TDocStd_Document 
 	TDF_LabelSequence freeShapes;
 	shapeTool->GetFreeShapes( freeShapes );
 
-#if defined (DEBUG_PRINT)
+#if !defined (OPTIMISED)
 	Quantity_Color aColor;
 	TDF_LabelSequence colLabels;
 	colorTool->GetColors(colLabels);
-	printf( "Colours in xdeDoc\n");
+	//DEBUG_PRINT( "Colours in xdeDoc\n");
 	for ( int i = 1; i <= colLabels.Length(); i++)
 	{
 		const TDF_Label& aLabel = colLabels.Value(i);
@@ -880,23 +854,23 @@ bool OpenCascadeImporter::convertDocToRegionsAndFields( Handle_TDocStd_Document 
 			TCollection_AsciiString entry;
 			TDF_Tool::Entry( aLabel, entry );
 			Standard_CString cString = entry.ToCString();
-			printf("%d. %5.3f %5.3f %5.3f (%s)\n",i , aColor._CSFDB_GetQuantity_ColorMyRed(),
-				aColor._CSFDB_GetQuantity_ColorMyGreen(), aColor._CSFDB_GetQuantity_ColorMyBlue(), cString);
+			//DEBUG_PRINT("%d. %5.3f %5.3f %5.3f (%s)\n",i , aColor._CSFDB_GetQuantity_ColorMyRed(),
+			//	aColor._CSFDB_GetQuantity_ColorMyGreen(), aColor._CSFDB_GetQuantity_ColorMyBlue(), cString);
 			//std::cout << "(" << cString << ")" << std::endl;
 		}
 	}
-	printf("\n\n");
-#endif /* defined (DEBUG_PRINT) */
+	//DEBUG_PRINT("\n\n");
+#endif /* !defined (OPTIMISED) */
 	Cmiss_region_begin_change(region);
 	for ( Standard_Integer i = 1; i <= freeShapes.Length(); i++ )
 	{
 		TDF_Label label = freeShapes.Value( i );
 
-#if defined (DEBUG_PRINT)
+#if !defined (OPTIMISED)
 		TCollection_AsciiString entry;
 		TDF_Tool::Entry( label, entry );
-		printf( "root region '%s'\n", entry.ToCString() );
-#endif /* defined (DEBUG_PRINT) */
+		//DEBUG_PRINT( "root region '%s'\n", entry.ToCString() );
+#endif /* !defined (OPTIMISED) */
 		if ( label.IsNull() )
 			continue;
 

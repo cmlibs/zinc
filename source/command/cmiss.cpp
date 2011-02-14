@@ -298,6 +298,7 @@ extern "C" {
 #include "graphics/graphics_object.hpp"
 #include "cad/opencascadeimporter.h"
 #include "cad/cad_tool.h"
+#include "cad/computed_field_cad_topology.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 /*
@@ -8643,7 +8644,7 @@ static struct Spectrum_settings *create_spectrum_component( Spectrum_settings_co
 
 static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_void )
 {
-  int return_code = 0, number_in_list = 0;
+	int return_code = 0, number_in_list = 0;
 	struct LIST(Spectrum_settings) *spectrum_settings_list;
 	struct Spectrum_settings *red_settings;
 	struct Spectrum_settings *green_settings;
@@ -8660,22 +8661,22 @@ static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_v
 		}
 		red_settings = create_spectrum_component( SPECTRUM_RED );
 		Spectrum_settings_add( red_settings, /* end of list = 0 */0,
-		          spectrum_settings_list );
+			spectrum_settings_list );
 
 		green_settings = create_spectrum_component( SPECTRUM_GREEN );
 		Spectrum_settings_add( green_settings, /* end of list = 0 */0,
-		          spectrum_settings_list );
+			spectrum_settings_list );
 
 		blue_settings = create_spectrum_component( SPECTRUM_BLUE );
 		Spectrum_settings_add( blue_settings, /* end of list = 0 */0,
-		          spectrum_settings_list );
+			spectrum_settings_list );
 
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_set_minimum_and_maximum( (*spectrum), 0, 1);
 		Spectrum_set_opaque_colour_flag( (*spectrum), 0 );
 		if (!ADD_OBJECT_TO_MANAGER(Spectrum)( (*spectrum),
-				 command_data->spectrum_manager))
+				command_data->spectrum_manager))
 		{
 			DESTROY(Spectrum)(spectrum);
 			//DEACCESS(Spectrum)(&(command_data->default_spectrum));
@@ -8772,9 +8773,7 @@ static int execute_command_gfx_import(struct Parse_state *state,
 				if (Cmiss_region_import_cad_file(top_region, file_name))
 				{
 					occEnd = clock();
-#if defined (DEBUG_PRINT)
-					printf( "OCC load took %.2lf seconds\n", ( occEnd - occStart ) / double( CLOCKS_PER_SEC ) );
-#endif
+					//DEBUG_PRINT( "OCC load took %.2lf seconds\n", ( occEnd - occStart ) / double( CLOCKS_PER_SEC ) );
 				}
 			}
 			DEACCESS(Cmiss_region)(&top_region);
@@ -8796,89 +8795,6 @@ static int execute_command_gfx_import(struct Parse_state *state,
 	}
 	LEAVE;
 	return (return_code);
-}
-
-static int gfx_list_cad_entity(struct Parse_state *state,
-	void *cad_element_type_void, void *root_region_void)
-{
-	int return_code = 0, path_length;
-	struct Cmiss_region *root_region;
-	char commands_flag, *command_prefix_plus_region_path;
-	struct Cmiss_region_path_and_name region_path_and_name;
-	struct Computed_field *field;
-	struct List_Computed_field_commands_data list_commands_data;
-	struct LIST(Computed_field) *list_of_fields;
-	struct Option_table *option_table;
-
-	ENTER(execute_command_gfx_import);
-
-	if (state && (root_region = (struct Cmiss_region *)root_region_void))
-	{
-		commands_flag = 0;
-		region_path_and_name.region = (struct Cmiss_region *)NULL;
-		region_path_and_name.region_path = (char *)NULL;
-		region_path_and_name.name = (char *)NULL;
-		
-		option_table=CREATE(Option_table)();
-		/* commands */
-		Option_table_add_entry(option_table, "commands", &commands_flag, NULL,
-			set_char_flag);
-		/* default option: region_path and/or field_name */
-		Option_table_add_region_path_and_or_field_name_entry(
-			option_table, (char *)NULL, &region_path_and_name, root_region);
-		if (return_code = Option_table_multi_parse(option_table,state))
-		{
-			field = (struct Computed_field *)NULL;
-			if (region_path_and_name.name)
-			{
-				/* following accesses the field, if any */
-				field = Cmiss_region_find_field_by_name(region_path_and_name.region,
-					region_path_and_name.name);
-				if (!field)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx list field:  There is no field or child region called %s in region %s",
-						region_path_and_name.name, region_path_and_name.region_path);
-					return_code = 0;
-				}
-				if (field)
-				{
-					return_code=list_Computed_field(field,(void *)NULL);
-					display_message(INFORMATION_MESSAGE,
-						"gfx_list_cad_entity...have field\n");
-					DEACCESS(Computed_field)(&field);
-					if (!return_code)
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_list_cad_entity.  Failed to list fields");
-					}
-				}
-			}
-		}
-		DESTROY(Option_table)(&option_table);
-		if (region_path_and_name.region)
-		{
-			DEACCESS(Cmiss_region)(&region_path_and_name.region);
-		}
-		if (region_path_and_name.region_path)
-		{
-			DEALLOCATE(region_path_and_name.region_path);
-		}
-		if (region_path_and_name.name)
-		{
-			DEALLOCATE(region_path_and_name.name);
-		}
-		display_message(INFORMATION_MESSAGE,
-			"gfx_list_cad_entity...cool\n");
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_list_cad_entity.  Invalid argument(s)\n");
-	}
-	LEAVE;
-
-	return return_code;
 }
 
 #endif /* USE_OPENCASCADE */
@@ -9376,9 +9292,9 @@ DESCRIPTION :
 					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						data_region_path, &region))
 					{
-			  		Cmiss_field_group_id group_field = NULL;
-			  		if (selected_flag)
-			  		{
+						Cmiss_field_group_id group_field = NULL;
+						if (selected_flag)
+						{
 							Cmiss_rendition_id rendition =
 								Cmiss_graphics_module_get_rendition(command_data->graphics_module, region);
 							if (rendition)
@@ -9386,7 +9302,7 @@ DESCRIPTION :
 								group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
-			  		}
+						}
 						Computed_field_update_nodal_values_from_source(
 							destination_field, source_field, region, /*use_data*/1, Cmiss_field_group_base_cast(group_field), time);
 						if (group_field)
@@ -9785,7 +9701,7 @@ Executes a GFX LIST FIELD.
 				{
 					if (field)
 					{
-						return_code=list_Computed_field(field,(void *)NULL);
+						return_code = list_Computed_field(field,(void *)NULL);
 					}
 					else
 					{
@@ -11312,11 +11228,8 @@ Executes a GFX LIST command.
 			Option_table_add_entry(option_table, "all_commands", NULL,
 				command_data_void, gfx_list_all_commands);
 #if defined (USE_OPENCASCADE)
-			/* cad_surface */
-			Option_table_add_entry(option_table, "cad_surface", (void *)2,
-				(void *)command_data->root_region, gfx_list_cad_entity);
-			/* cad_line */
-			Option_table_add_entry(option_table, "cad_line", (void *)1,
+			/* cad */
+			Option_table_add_entry(option_table, "cad", NULL,
 				(void *)command_data->root_region, gfx_list_cad_entity);
 #endif /* defined (USE_OPENCASCADE) */
 			/* curve */
@@ -11549,37 +11462,37 @@ be specified at once.
 				{
 					Cmiss_region *parent_region = Cmiss_region_get_parent(region);
 					if ((from_region_path && Cmiss_region_get_region_from_path_deprecated(
-							parent_region, from_region_path, &region)) ||
-							(NULL != (region = parent_region)))
+						parent_region, from_region_path, &region)) ||
+						(NULL != (region = parent_region)))
 					{
-				  	if (region)
-				  	{
-				  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-				  		Cmiss_field_group_id group_field = NULL;
-				  		if (rendition)
-				  		{
-				  			group_field = Cmiss_rendition_get_selection_group(rendition);
-							Cmiss_rendition_destroy(&rendition);
-				  		}
-				  		if (selected_flag && group_field)
-				  		{
-				  			element_list = FE_element_list_from_region_and_selection_group(
-				  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
-				  				time);
-				  		}
-				  		else if (selected_flag && !group_field)
-				  		{
-				  			element_list = NULL;
-				  		}
-				  		else
-				  		{
-				  			element_list = FE_element_list_from_region_and_selection_group(
-				  				region, cm_element_type, element_ranges, NULL, conditional_field,
-				  				time);
-				  		}
-				  		if (group_field)
-				  			Cmiss_field_group_destroy(&group_field);
-				  	}
+						if (region)
+						{
+							Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+							Cmiss_field_group_id group_field = NULL;
+							if (rendition)
+							{
+								group_field = Cmiss_rendition_get_selection_group(rendition);
+								Cmiss_rendition_destroy(&rendition);
+							}
+							if (selected_flag && group_field)
+							{
+								element_list = FE_element_list_from_region_and_selection_group(
+									region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
+									time);
+							}
+							else if (selected_flag && !group_field)
+							{
+								element_list = NULL;
+							}
+							else
+							{
+								element_list = FE_element_list_from_region_and_selection_group(
+									region, cm_element_type, element_ranges, NULL, conditional_field,
+									time);
+							}
+							if (group_field)
+								Cmiss_field_group_destroy(&group_field);
+						}
 						if (element_list)
 						{
 							if (0 < NUMBER_IN_LIST(FE_element)(element_list))
@@ -12553,36 +12466,36 @@ use node_manager and node_selection.
 				(fe_region = Cmiss_region_get_FE_region(region)) &&
 				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
 			{
-		  	if (region)
-		  	{
-		  		if (selected_flag)
-		  		{
-			  		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-			  		Cmiss_field_group_id group_field = NULL;
-			  		if (rendition)
-			  		{
-			  			group_field = Cmiss_rendition_get_selection_group(rendition);
+				if (region)
+				{
+					if (selected_flag)
+					{
+						Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+						Cmiss_field_group_id group_field = NULL;
+						if (rendition)
+						{
+							group_field = Cmiss_rendition_get_selection_group(rendition);
 							Cmiss_rendition_destroy(&rendition);
-			  		}
-			  		if (group_field)
-			  		{
-			  			node_list = FE_node_list_from_region_and_selection_group(
-			  				region, node_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
-			  				time, (use_data != NULL));
-			  			Cmiss_field_group_destroy(&group_field);
-			  		}
-			  		else
-			  		{
-			  			node_list = NULL;
-			  		}
-		  		}
-		  		else
-		  		{
-		  			node_list = FE_node_list_from_region_and_selection_group(
-		  				region, node_ranges, NULL, conditional_field,
-		  				time,(use_data != NULL));
-		  		}
-		  	}
+						}
+						if (group_field)
+						{
+							node_list = FE_node_list_from_region_and_selection_group(
+								region, node_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
+								time, (use_data != NULL));
+							Cmiss_field_group_destroy(&group_field);
+						}
+						else
+						{
+							node_list = NULL;
+						}
+					}
+					else
+					{
+						node_list = FE_node_list_from_region_and_selection_group(
+							region, node_ranges, NULL, conditional_field,
+							time,(use_data != NULL));
+					}
+				}
 				if (node_list)
 				{
 					if (0 < NUMBER_IN_LIST(FE_node)(node_list))

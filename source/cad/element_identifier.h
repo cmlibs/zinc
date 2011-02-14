@@ -13,6 +13,14 @@ struct Cmiss_cad_identifier
 {
 	Cad_primitive_identifier identifier;
 	Cmiss_field_cad_topology_id cad_topology;
+
+	Cmiss_cad_identifier(Cmiss_field_cad_topology_id cad_topology, Cad_primitive_identifier identifier);
+	~Cmiss_cad_identifier();
+
+	Cmiss_cad_identifier(const Cmiss_cad_identifier& cad_identifier);
+	Cmiss_cad_identifier& operator=(const Cmiss_cad_identifier& source);
+	bool operator==(const Cmiss_cad_identifier& other) const;
+	bool operator!=(const Cmiss_cad_identifier& other) const;
 };
 
 struct Cad_topology_primitive_identifier

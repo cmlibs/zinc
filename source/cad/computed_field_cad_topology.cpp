@@ -41,43 +41,11 @@
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 
-#include <TopExp_Explorer.hxx>
-#include <TopoDS.hxx>
-#include <BRep_Tool.hxx>
-#include <Geom_BezierSurface.hxx>
-#include <Handle_Geom_BezierSurface.hxx>
-#include <Geom_BoundedSurface.hxx>
-#include <Handle_Geom_BoundedSurface.hxx>
-#include <Geom_BSplineSurface.hxx>
-#include <Handle_Geom_BSplineSurface.hxx>
-#include <Geom_ConicalSurface.hxx>
-#include <Handle_Geom_ConicalSurface.hxx>
-#include <Geom_CylindricalSurface.hxx>
-#include <Handle_Geom_CylindricalSurface.hxx>
-#include <Geom_ElementarySurface.hxx>
-#include <Handle_Geom_ElementarySurface.hxx>
-#include <Geom_OffsetSurface.hxx>
-#include <Handle_Geom_OffsetSurface.hxx>
-#include <Geom_Plane.hxx>
-#include <Handle_Geom_Plane.hxx>
-#include <Geom_RectangularTrimmedSurface.hxx>
-#include <Handle_Geom_RectangularTrimmedSurface.hxx>
-#include <Geom_SphericalSurface.hxx>
-#include <Handle_Geom_SphericalSurface.hxx>
-#include <Geom_Surface.hxx>
-#include <Handle_Geom_Surface.hxx>
-#include <Geom_SurfaceOfLinearExtrusion.hxx>
-#include <Handle_Geom_SurfaceOfLinearExtrusion.hxx>
-#include <Geom_SurfaceOfRevolution.hxx>
-#include <Handle_Geom_SurfaceOfRevolution.hxx>
-#include <Geom_SweptSurface.hxx>
-#include <Handle_Geom_SweptSurface.hxx>
-#include <Geom_ToroidalSurface.hxx>
-#include <Handle_Geom_ToroidalSurface.hxx>
-
 extern "C" {
+#include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "graphics/rendition.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field.h"
@@ -131,7 +99,7 @@ public:
 	int surface_point_count(int i) const;
 	int curve_point_count(int i) const;
 
-	void information(int number) const;
+	void information(Cad_primitive_identifier id) const;
 
 private:
 	Computed_field_core* copy();
@@ -148,6 +116,10 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	void surface_information(const TopoDS_Face& face) const;
+	void curve_information(const TopoDS_Edge& edge) const;
+	void shape_information() const;
 
 };
 
@@ -446,92 +418,89 @@ int Computed_field_cad_topology::surface_colour(Cmiss_cad_surface_identifier ide
 	return return_code;
 }
 
-void Computed_field_cad_topology::information(int surface_index) const
+void Computed_field_cad_topology::shape_information() const
+{
+	display_message(INFORMATION_MESSAGE, "  Shape type: %s\n", m_shape->shapeType().c_str());
+	display_message(INFORMATION_MESSAGE, "  Label: %s\n", m_shape->label());
+	double location[3];
+	m_shape->location(location);
+	display_message(INFORMATION_MESSAGE, "  Location: (%.3f, %.3f, %.3f)\n", location[0], location[1], location[2]);
+}
+
+void Computed_field_cad_topology::information(Cad_primitive_identifier id) const
 {
 	//String info;
-	display_message(INFORMATION_MESSAGE,
-		"Computed_field_cad_topology %s.  Information\n", Cmiss_field_get_name(field));
-	TopExp_Explorer faceExplorer(m_shape->shape() , TopAbs_FACE);
-	TopoDS_Face face;
 	int count = 0;
-	for (TopExp_Explorer faceExplorer(m_shape->shape() , TopAbs_FACE) ; faceExplorer.More() && count <= surface_index; faceExplorer.Next())
+	TopoDS_Edge edge;
+	TopoDS_Face face;
+	display_message(INFORMATION_MESSAGE,
+		"Computed_field_cad_topology %s.  Information:\n", Cmiss_field_get_name(field));
+	switch (id.type)
 	{
-		face = TopoDS::Face(faceExplorer.Current());
-		count++;
-	}
-	
-	//Check if <aFace> is the top face of the bottle's neck
-	Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
-
-	if (surface->DynamicType() == STANDARD_TYPE(Geom_BezierSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Bezier surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_BoundedSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Bounded surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  BSpline surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ConicalSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Conical surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface))
-	{
-		Handle_Geom_CylindricalSurface cylinder = Handle_Geom_CylindricalSurface::DownCast(surface);
-		display_message(INFORMATION_MESSAGE, "  Cylinder radius = %.3f\n", cylinder->Radius());
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ElementarySurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Elementary surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Offset surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_Plane))
-	{
-		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(surface);
-		Standard_Real a, b, c, d;
-		plane->Coefficients(a, b, c, d);
-		display_message(INFORMATION_MESSAGE, "  Plane equation: %.3f x + %.3f y + %.3f z + %.3f = 0\n", a, b, c, d);
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_RectangularTrimmedSurface))
-	{
-		//Handle_Geom_RectangularTrimmedSurface rect = Handle_Geom_RectangularTrimmedSurface::DownCast(surface);
-		display_message(INFORMATION_MESSAGE, "  Rectangular trimmed surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface))
-	{
-		Handle_Geom_SphericalSurface sphere = Handle_Geom_SphericalSurface::DownCast(surface);
-		display_message(INFORMATION_MESSAGE, "  Sphere area: %.3f\n", sphere->Area());
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_Surface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))
-	{
-		display_message(INFORMATION_MESSAGE, "  Linear extrusion surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SurfaceOfRevolution))
-	{
-		display_message(INFORMATION_MESSAGE, "  Surface of revolution\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_SweptSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Swept surface\n");
-	}
-	else if (surface->DynamicType() == STANDARD_TYPE(Geom_ToroidalSurface))
-	{
-		display_message(INFORMATION_MESSAGE, "  Toroidal surface\n");
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE, "  Unknown surface type\n");
+	case Cad_primitive_CURVE:
+		if (m_geometric_shape)
+		{
+			if (id.number == -1)
+			{
+				if (curve_count() == 1)
+					display_message(INFORMATION_MESSAGE, "  %d Curve\n", curve_count());
+				else
+					display_message(INFORMATION_MESSAGE, "  %d Curves\n", curve_count());
+				for (int i = 0; i < curve_count(); i++)
+				{
+					const Curve* curve = m_geometric_shape->curve(i);
+					curve->information();
+				}
+			}
+			else if (0 <= id.number && id.number < curve_count())
+			{
+				const Curve* curve = m_geometric_shape->curve(id.number);
+				curve->information();
+			}
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,
+				"  No curve information available\n");
+		}
+		break;
+	case Cad_primitive_SURFACE:
+		if (m_geometric_shape)
+		{
+			if (id.number == -1)
+			{
+				if (curve_count() == 1)
+					display_message(INFORMATION_MESSAGE, "  %d Surface\n", surface_count());
+				else
+					display_message(INFORMATION_MESSAGE, "  %d Surfaces\n", surface_count());
+				for (int i = 0; i < surface_count(); i++)
+				{
+					const Surface* surface = m_geometric_shape->surface(i);
+					surface->information();
+				}
+			}
+			else if (0 <= id.number && id.number < surface_count())
+			{
+				const Surface* surface = m_geometric_shape->surface(id.number);
+				surface->information();
+			}
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,
+				"  No surface information available\n");
+		}
+		break;
+	case Cad_primitive_SHAPE:
+		shape_information();
+		break;
+	case Cad_primitive_INVALID:
+	case Cad_primitive_POINT:
+		{
+			display_message(INFORMATION_MESSAGE,
+				"Computed_field_cad_topology::information funciton not complete for this case!\n");
+			break;
+		}
 	}
 }
 
@@ -697,15 +666,30 @@ int Cmiss_field_is_type_cad_topology(Cmiss_field_id field, void *not_in_use)
 
 Cmiss_field_cad_topology_id Cmiss_field_cast_cad_topology(Cmiss_field_id field)
 {
+	Cmiss_field_cad_topology_id cad_topology = NULL;
 	if (dynamic_cast<Computed_field_cad_topology*>(field->core))
 	{
 		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_cad_topology_id>(field));
+		cad_topology = (reinterpret_cast<Cmiss_field_cad_topology_id>(field));
 	}
-	else
+
+	return cad_topology;
+}
+
+int Cmiss_field_cad_topology_destroy(Cmiss_field_cad_topology_id *cad_topology_field_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(cad_topology_field_address));
+}
+
+Cmiss_field_cad_topology_id Cmiss_field_cad_topology_access(Cmiss_field_cad_topology_id cad_topology_field)
+{
+	if (cad_topology_field)
 	{
-		return (NULL);
+		Computed_field *computed_field = reinterpret_cast<Computed_field *>(cad_topology_field);
+		Cmiss_field_access(computed_field);
 	}
+
+	return cad_topology_field;
 }
 
 /**
@@ -907,12 +891,179 @@ int Computed_field_cad_topology_get_surface_colour(Cmiss_field_cad_topology_id f
 	return return_code;
 }
 
-void Cad_topology_information( Cmiss_field_id cad_topology_field, Cad_primitive_identifier information )
+void Cad_topology_information( Cmiss_field_cad_topology_id cad_topology_field, Cad_primitive_identifier id )
 {
 	if (cad_topology_field)
 	{
-		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(cad_topology_field->core);
-		cad_topology->information(information.number);
+		Computed_field *field = (reinterpret_cast<Computed_field *>(cad_topology_field));
+		Computed_field_cad_topology *cad_topology = reinterpret_cast<Computed_field_cad_topology*>(field->core);
+		cad_topology->information(id);
 	}
 }
+
+int gfx_list_cad_entity(struct Parse_state *state,
+	void *cad_element_type_void, void *root_region_void)
+{
+	int return_code = 0, cad_element_type = 0;
+	int identifier_number = -1;
+	struct Cmiss_region *root_region = NULL, *region = NULL;
+	char selected_flag, shape_flag = 0x00, surface_flag = 0x00,
+		curve_flag = 0x00, point_flag = 0x00;
+	struct Cmiss_region_path_and_name region_path_and_name;
+	struct Computed_field *field = NULL;
+	struct LIST(Computed_field) *list_of_fields = NULL;
+	struct Option_table *option_table, *identifier_type_option_table;
+
+	ENTER(execute_command_gfx_import);
+
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
+	{
+		selected_flag = 0;
+		cad_element_type = (int)cad_element_type_void;
+		region_path_and_name.region = (struct Cmiss_region *)NULL;
+		region_path_and_name.region_path = (char *)NULL;
+		region_path_and_name.name = (char *)NULL;
+		
+		option_table=CREATE(Option_table)();
+		/* identifier_type */
+		identifier_type_option_table=CREATE(Option_table)();
+		Option_table_add_entry(identifier_type_option_table, "shape",
+			&shape_flag, (void *)"DEFAULT", set_char_flag);
+		Option_table_add_entry(identifier_type_option_table, "surface",
+			&surface_flag, (void *)NULL, set_char_flag);
+		Option_table_add_entry(identifier_type_option_table, "curve",
+			&curve_flag, (void *)NULL, set_char_flag);
+		Option_table_add_entry(identifier_type_option_table,"point",
+			&point_flag, (void *)NULL, set_char_flag);
+		Option_table_add_suboption_table(option_table,
+			identifier_type_option_table);
+		/* identifier_number */
+		Option_table_add_entry(option_table,"identifier_number",
+			&identifier_number,NULL,set_int);
+		/* selected */
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
+		/* default option: region_path and/or field_name */
+		Option_table_add_region_path_and_or_field_name_entry(
+			option_table, (char *)NULL, &region_path_and_name, root_region);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			field = (struct Computed_field *)NULL;
+			if (region_path_and_name.name)
+			{
+				Cad_primitive_identifier cad_identifier;
+				cad_identifier.number = identifier_number;
+				if (shape_flag)
+					cad_identifier.type = Cad_primitive_SHAPE;
+				else if (surface_flag)
+					cad_identifier.type = Cad_primitive_SURFACE;
+				else if (curve_flag)
+					cad_identifier.type = Cad_primitive_CURVE;
+				else if (point_flag)
+					cad_identifier.type = Cad_primitive_POINT;
+				else
+					cad_identifier.type = Cad_primitive_SHAPE;
+				//DEBUG_PRINT("gfx_list_cad_entity:  Region path is '%s', id # %d\n", region_path_and_name.region_path, cad_identifier.number);
+				//DEBUG_PRINT("gfx_list_cad_entity:  Flags sh '%c', su '%c', cu '%c', pt '%c'\n", shape_flag, surface_flag, curve_flag, point_flag);
+				//DEBUG_PRINT("gfx_list_cad_entity:  id type '%d'\n", cad_identifier.type);
+				if (selected_flag)
+				{
+					Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region_path_and_name.region);
+					Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
+
+					struct MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(
+						region_path_and_name.region);
+					const Cmiss_set_Computed_field& field_set = Computed_field_manager_get_fields(manager);
+					Cmiss_set_Computed_field::const_iterator it = field_set.begin();
+					for (;it != field_set.end(); it++)
+					{
+						struct Computed_field *field = *it;
+						Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(field);
+						if (cad_topology)
+						{
+							char *name = Cmiss_field_get_name(field);
+							display_message(INFORMATION_MESSAGE, "cad topology field: %s\n", name);
+							free(name);
+							Cmiss_field_cad_primitive_group_template_id cad_primitive_group = 
+								Cmiss_field_group_get_cad_primitive_group(selection_group, cad_topology);
+							if (cad_primitive_group)
+							{
+								Cmiss_cad_identifier_id cad_identifier = Cmiss_field_cad_primitive_group_template_get_first_cad_primitive(cad_primitive_group);
+								while (cad_identifier != NULL)
+								{
+									display_message(INFORMATION_MESSAGE, "cad id %p %d %d\n", cad_identifier->cad_topology, cad_identifier->identifier.type, cad_identifier->identifier.number);
+									Cad_topology_information(cad_identifier->cad_topology, cad_identifier->identifier);
+									delete cad_identifier;
+									cad_identifier = Cmiss_field_cad_primitive_group_template_get_next_cad_primitive(cad_primitive_group);
+								}
+								Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
+							}
+							Cmiss_field_destroy(&field);
+						}
+					}
+					//DEBUG_PRINT("gfx_list_cad_entity:  Use selection\n");
+				}
+				else
+				{
+					/* following accesses the field, if any */
+					field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+						region_path_and_name.name);
+					if (!field)
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_list_cad_entity:  There is no field or child region called %s in region %s",
+							region_path_and_name.name, region_path_and_name.region_path);
+						return_code = 0;
+					}
+					if (field)
+					{
+						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+						return_code = Computed_field_get_domain(field, domain_field_list);
+						if ( return_code )
+						{
+							struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+								( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+							if ( cad_topology_field )
+							{
+								// if topology domain then draw item at location
+								Cmiss_field_cad_topology_id cad_topology = Cmiss_field_cast_cad_topology(cad_topology_field);
+								Cad_topology_information( cad_topology, cad_identifier );
+								Cmiss_field_cad_topology_destroy(&cad_topology);
+							}
+						}
+						DESTROY_LIST(Computed_field)(&domain_field_list);
+						DEACCESS(Computed_field)(&field);
+						if (!return_code)
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_list_cad_entity.  Failed to list cad entity information");
+						}
+					}
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (region_path_and_name.region)
+		{
+			DEACCESS(Cmiss_region)(&region_path_and_name.region);
+		}
+		if (region_path_and_name.region_path)
+		{
+			DEALLOCATE(region_path_and_name.region_path);
+		}
+		if (region_path_and_name.name)
+		{
+			DEALLOCATE(region_path_and_name.name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_list_cad_entity.  Invalid argument(s)\n");
+	}
+	LEAVE;
+
+	return return_code;
+}
+
 

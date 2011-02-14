@@ -45,6 +45,38 @@
 #include <ShapeAnalysis_Curve.hxx>
 #include <TopExp.hxx>
 
+//#include <TopExp_Explorer.hxx>
+//#include <TopoDS.hxx>
+//#include <BRep_Tool.hxx>
+//#include <Geom_BezierSurface.hxx>
+//#include <Geom_BezierCurve.hxx>
+//#include <Handle_Geom_BezierSurface.hxx>
+//#include <Geom_BoundedSurface.hxx>
+//#include <Handle_Geom_BoundedSurface.hxx>
+//#include <Geom_BSplineSurface.hxx>
+//#include <Geom_BSplineCurve.hxx>
+//#include <Handle_Geom_BSplineSurface.hxx>
+//#include <Handle_Geom_ConicalSurface.hxx>
+//#include <Handle_Geom_CylindricalSurface.hxx>
+//#include <Handle_Geom_ElementarySurface.hxx>
+//#include <Geom_OffsetCurve.hxx>
+//#include <Handle_Geom_OffsetSurface.hxx>
+//#include <Handle_Geom_Plane.hxx>
+//#include <Geom_TrimmedCurve.hxx>
+//#include <Handle_Geom_RectangularTrimmedSurface.hxx>
+//#include <Handle_Geom_SphericalSurface.hxx>
+//#include <Geom_Surface.hxx>
+//#include <Handle_Geom_Surface.hxx>
+//#include <Handle_Geom_SurfaceOfLinearExtrusion.hxx>
+//#include <Handle_Geom_SurfaceOfRevolution.hxx>
+//#include <Handle_Geom_SweptSurface.hxx>
+//#include <Handle_Geom_ToroidalSurface.hxx>
+//#include <Geom_Circle.hxx>
+//#include <Geom_Ellipse.hxx>
+//#include <Geom_Hyperbola.hxx>
+//#include <Geom_Line.hxx>
+//#include <Geom_Parabola.hxx>
+
 extern "C" {
 #include "general/debug.h"
 }
@@ -347,5 +379,14 @@ Entity::GeomType Curve::geomType() const
     }
 
     return Unknown;
+}
+
+void Curve::information() const
+{
+	display_message(INFORMATION_MESSAGE,
+		"  ");
+	if (m_curve.IsNull() && !m_curve2D.IsNull())
+		display_message(INFORMATION_MESSAGE, "2D ");
+	display_message(INFORMATION_MESSAGE, "%s\n", geomTypeString().c_str());
 }
 
