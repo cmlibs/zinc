@@ -214,8 +214,10 @@ namespace {
 
 		int get_object_selected(int identifier,T object)
 		{
+			USE_PARAMETER(object);
 			int return_code = 0;
-			if (object_map.find(identifier) != object_map.end())
+			if (object_map.find(identifier) != object_map.end() &&
+				object_map.find(identifier)->second == object)
 			{
 				return_code = 1;
 			}
