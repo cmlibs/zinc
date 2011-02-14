@@ -57,16 +57,6 @@ extern "C" {
 #include <map>
 #include <iterator>
 
-#if defined (_MSC_VER)
-	#ifndef _CRTDBG_MAP_ALLOC
-		#define _CRTDBG_MAP_ALLOC
-	#endif
-	#include <stdlib.h>
-	#include <crtdbg.h>
-#endif /* defined (_MSC_VER) */
-#define NOMINMAX
-#include <windows.h>
-
 /***************************************************************************//**
  * Change details for simple object groups where a single change status is
  * sufficient.
