@@ -56,13 +56,13 @@ Function definitions for the user interface.
 #include <Xm/Xm.h>
 #include <Mrm/MrmPublic.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (WIN32_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #include <windowsx.h>
 	/*???DB.  Contains lots of convenience macros */
-#endif /* defined (WIN32_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
@@ -193,15 +193,15 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
 	const char *application_name);
-#else /* !defined (WIN32_USER_INTERFACE) */
+#else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
-	struct Event_dispatcher *event_dispatcher);
-#endif /* !defined (WIN32_USER_INTERFACE) */
+	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher);
+#endif /* !defined (WIN32_USER_INTERFACE && !defined (_MSC_VER)) */
 /*******************************************************************************
 LAST MODIFIED : 20 June 2002
 

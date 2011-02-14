@@ -242,11 +242,11 @@ struct User_interface_module *User_interface_module_create(
 		if ((!command_line_options.command_list_flag) && (!command_line_options.write_help_flag))
 		{
 			if (NULL != (UI_module->event_dispatcher = Cmiss_context_get_default_event_dispatcher(
-										 context)))
+				context)))
 			{
 				if (!command_line_options.no_display_flag)
 				{
-#if !defined (WIN32_USER_INTERFACE)
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
 							(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
 								"cmgui")))
@@ -254,15 +254,15 @@ struct User_interface_module *User_interface_module_create(
 						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;
 					}
-#else /* !defined (WIN32_USER_INTERFACE) */
+#else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
 							(current_instance, previous_instance, command_line,
-								initial_main_window_state, UI_module->event_dispatcher)))
+								initial_main_window_state, &(UI_module->argc), UI_module->argv, UI_module->event_dispatcher)))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;
 					}
-#endif /* !defined (WIN32_USER_INTERFACE) */
+#endif /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 				}
 			}
 		}
