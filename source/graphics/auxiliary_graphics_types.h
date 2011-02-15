@@ -102,10 +102,11 @@ incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	GRAPHICS_SELECT_ON,
-	GRAPHICS_NO_SELECT,
-	GRAPHICS_DRAW_SELECTED,
-	GRAPHICS_DRAW_UNSELECTED
+	GRAPHICS_SELECT_MODE_INVALD = 0,
+	GRAPHICS_SELECT_ON = 1,
+	GRAPHICS_NO_SELECT = 2,
+	GRAPHICS_DRAW_SELECTED = 3,
+	GRAPHICS_DRAW_UNSELECTED = 4
 }; /* enum Graphics_select_mode */
 
 #ifndef RENDER_TYPE_DEFINED
