@@ -299,6 +299,9 @@ static void MANAGER_UPDATE(Computed_field)(struct MANAGER(Computed_field) *manag
 			/* add objects changed by dependency */
 			FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 				Computed_field_check_dependency_iterator, (void *)NULL, manager);
+			/* update count with dependency changes */
+			number_of_changed_objects =
+				NUMBER_IN_LIST(Computed_field)(manager->changed_object_list);
 			/* prepare message, transferring change details from objects to it */
 			if (ALLOCATE(message.object_changes,
 				struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field),

@@ -1194,32 +1194,35 @@ static int Cmiss_rendition_build_graphics_objects(
 	ENTER(Cmiss_rendition_build_graphics_objects);
 	if (rendition)
 	{
-		// use begin/end cache to avoid field manager messages being sent when
-		// field wrappers are created and destroyed
-		MANAGER_BEGIN_CACHE(Computed_field)(rendition->computed_field_manager);
-		graphic_to_object_data.name_prefix = name_prefix;
-		graphic_to_object_data.rc_coordinate_field =
-			(struct Computed_field *)NULL;
-		graphic_to_object_data.wrapper_orientation_scale_field =
-			(struct Computed_field *)NULL;
-		graphic_to_object_data.region = rendition->region;
-		graphic_to_object_data.fe_region = rendition->fe_region;
-		graphic_to_object_data.data_fe_region = rendition->data_fe_region;
-		graphic_to_object_data.scene = scene;
-		graphic_to_object_data.time = time;
-		graphic_to_object_data.selected_element_point_ranges_list =
-			Element_point_ranges_selection_get_element_point_ranges_list(
-				Cmiss_graphics_module_get_element_point_ranges_selection(rendition->graphics_module));
-		graphic_to_object_data.group_field = Cmiss_field_group_base_cast(
-			Cmiss_rendition_get_selection_group(rendition));
-		graphic_to_object_data.iso_surface_specification = NULL;
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_to_graphics_object,(void *)&graphic_to_object_data,
-			rendition->list_of_graphics);
-		MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
-		if (graphic_to_object_data.group_field)
+		if ((Cmiss_rendition_get_number_of_graphic(rendition) > 0))
 		{
-			Cmiss_field_destroy(&graphic_to_object_data.group_field);
+			// use begin/end cache to avoid field manager messages being sent when
+			// field wrappers are created and destroyed
+			MANAGER_BEGIN_CACHE(Computed_field)(rendition->computed_field_manager);
+			graphic_to_object_data.name_prefix = name_prefix;
+			graphic_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
+			graphic_to_object_data.wrapper_orientation_scale_field
+				= (struct Computed_field *) NULL;
+			graphic_to_object_data.region = rendition->region;
+			graphic_to_object_data.fe_region = rendition->fe_region;
+			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
+			graphic_to_object_data.scene = scene;
+			graphic_to_object_data.time = time;
+			graphic_to_object_data.selected_element_point_ranges_list
+				= Element_point_ranges_selection_get_element_point_ranges_list(
+					Cmiss_graphics_module_get_element_point_ranges_selection(
+						rendition->graphics_module));
+			graphic_to_object_data.group_field = Cmiss_field_group_base_cast(
+				Cmiss_rendition_get_selection_group(rendition));
+			graphic_to_object_data.iso_surface_specification = NULL;
+			return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+				Cmiss_graphic_to_graphics_object, (void *) &graphic_to_object_data,
+				rendition->list_of_graphics);
+			MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
+			if (graphic_to_object_data.group_field)
+			{
+				Cmiss_field_destroy(&graphic_to_object_data.group_field);
+			}
 		}
 	}
 	else
