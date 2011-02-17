@@ -1188,7 +1188,7 @@ static int Cmiss_rendition_build_graphics_objects(
 	struct Cmiss_rendition *rendition, struct Cmiss_scene *scene,
 	FE_value time, const char *name_prefix)
 {
-	int return_code;
+	int return_code = 1;
 	struct Cmiss_graphic_to_graphics_object_data graphic_to_object_data;
 
 	ENTER(Cmiss_rendition_build_graphics_objects);
