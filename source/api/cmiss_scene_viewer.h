@@ -69,6 +69,11 @@ Global types
 */
 struct Cmiss_scene_viewer_package;
 
+#ifndef CMISS_INTERACTIVE_TOOL_ID_DEFINED
+typedef struct Interactive_tool * Cmiss_interactive_tool_id;
+#define CMISS_INTERACTIVE_TOOL_ID_DEFINED
+#endif
+
 #ifndef CMISS_SCENE_VIEWER_PACKAGE_DEFINED
    typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
    #define CMISS_SCENE_VIEWER_PACKAGE_DEFINED
@@ -1176,4 +1181,13 @@ LAST MODIFIED : 24 April 2008
 DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Get a handle to the currently active interactive tool of scene viewer.
+ *
+ * @param scene_viewer  handle to Cmiss_scene_viewer object.
+ * @return  1 if successfully get and return an interactive_tool, otherwise NULL.
+ */
+Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
+	Cmiss_scene_viewer_id scene_viewer);
 #endif /* __CMISS_SCENE_VIEWER_H__ */

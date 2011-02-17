@@ -9336,3 +9336,19 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 
 	return return_code;
 }
+
+Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
+	Cmiss_scene_viewer_id scene_viewer)
+{
+	Cmiss_interactive_tool_id interactive_tool = NULL;
+	if (scene_viewer)
+	{
+		if (scene_viewer->interactive_tool)
+		{
+			interactive_tool = scene_viewer->interactive_tool;
+			ACCESS(Interactive_tool)(scene_viewer->interactive_tool);
+		}
+	}
+	return interactive_tool;
+}
+

@@ -60,6 +60,7 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
+#include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "api/cmiss_field_sub_group.h"
 #include "general/debug.h"
@@ -5513,3 +5514,233 @@ int Node_tool_set_execute_command(struct Node_tool *node_tool,
 	
 	return return_code;
 }
+
+int Node_tool_execute_command(struct Node_tool *node_tool, const char *command_string)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2008
+
+DESCRIPTION :
+Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
+then the <data_tool> is being modified, otherwise the <node_tool>.
+Which tool that is being modified is passed in <node_tool_void>.
+==============================================================================*/
+{
+	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	const char *dialog_string;
+	char *region_path;
+	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
+		return_code,select_enabled, streaming_create_enabled,
+		constrain_to_surface;
+#if defined (WX_USER_INTERFACE)
+	int element_dimension, element_create_enabled;
+#endif /*(WX_USER_INTERFACE)*/
+	struct Computed_field *coordinate_field, *command_field, *element_xi_field;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_command_field_data, set_element_xi_field_data;
+
+	ENTER(execute_command_gfx_node_tool);
+	if (command_string && node_tool)
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		/* initialize defaults */
+		coordinate_field=(struct Computed_field *)NULL;
+		create_enabled=0;
+		define_enabled=0;
+		edit_enabled=0;
+		motion_update_enabled=0;
+		select_enabled=1;
+		streaming_create_enabled = 0;
+		constrain_to_surface = 0;
+		command_field=(struct Computed_field *)NULL;
+		element_xi_field=(struct Computed_field *)NULL;
+		region_path = (char *)NULL;
+#if defined (WX_USER_INTERFACE)
+		if (!node_tool->use_data)
+		{
+		element_create_enabled = 0;
+		element_dimension = 2;
+		}
+#endif /*(WX_USER_INTERFACE)*/
+		if (node_tool)
+		{
+			coordinate_field=Node_tool_get_coordinate_field(node_tool);
+			create_enabled=Node_tool_get_create_enabled(node_tool);
+			define_enabled=Node_tool_get_define_enabled(node_tool);
+			edit_enabled=Node_tool_get_edit_enabled(node_tool);
+			motion_update_enabled=Node_tool_get_motion_update_enabled(node_tool);
+			select_enabled=Node_tool_get_select_enabled(node_tool);
+			streaming_create_enabled =
+				 Node_tool_get_streaming_create_enabled(node_tool);
+			constrain_to_surface =
+				 Node_tool_get_constrain_to_surface(node_tool);
+			command_field=Node_tool_get_command_field(node_tool);
+			element_xi_field=Node_tool_get_element_xi_field(node_tool);
+			Node_tool_get_region_path(node_tool, &region_path);
+#if defined (WX_USER_INTERFACE)
+		if (!node_tool->use_data)
+		{
+			 element_create_enabled = Node_tool_get_element_create_enabled(node_tool);
+			 element_dimension =
+					Node_tool_get_element_dimension(node_tool);
+		}
+#endif /*(WX_USER_INTERFACE)*/
+		}
+		if (coordinate_field)
+		{
+			ACCESS(Computed_field)(coordinate_field);
+		}
+		if (command_field)
+		{
+			ACCESS(Computed_field)(command_field);
+		}
+		if (element_xi_field)
+		{
+			 ACCESS(Computed_field)(element_xi_field);
+		}
+
+		option_table=CREATE(Option_table)();
+		/* coordinate_field */
+		set_coordinate_field_data.computed_field_manager=
+			node_tool->computed_field_manager;
+		set_coordinate_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field,
+			&set_coordinate_field_data,set_Computed_field_conditional);
+		/* constrain_to_surfaces/no_constrain_to_surfaces */
+		Option_table_add_switch(option_table,"constrain_to_surfaces","no_constrain_to_surfaces",
+			&constrain_to_surface);
+		/* create/no_create */
+		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
+		/* define/no_define */
+		Option_table_add_switch(option_table,"define","no_define",&define_enabled);
+#if defined (WX_USER_INTERFACE)
+		if (!node_tool->use_data)
+		{
+			 /* create/no_create */
+			 Option_table_add_switch(option_table,"element_create","no_element_create",&element_create_enabled);
+			 /* element_dimension*/
+			 Option_table_add_entry(option_table,"element_dimension",
+					&element_dimension,NULL,set_int_non_negative);
+		}
+#endif /*(WX_USER_INTERFACE)*/
+		/* edit/no_edit */
+		Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
+		/* element_xi_field */
+		set_element_xi_field_data.computed_field_manager=
+			node_tool->computed_field_manager;
+		set_element_xi_field_data.conditional_function =
+			 Computed_field_has_element_xi_fe_field;
+		set_element_xi_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"element_xi_field",&element_xi_field,
+			 &set_element_xi_field_data,set_Computed_field_conditional);
+		/* group */
+		Option_table_add_entry(option_table, "group", &region_path,
+			node_tool->root_region, set_Cmiss_region_path);
+		/* motion_update/no_motion_update */
+		Option_table_add_switch(option_table,"motion_update","no_motion_update",
+			&motion_update_enabled);
+		/* open_dialog/close_dialog */
+		dialog_string = (char *)NULL;
+		Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
+			dialog_strings, &dialog_string);
+		/* select/no_select */
+		Option_table_add_switch(option_table,"select","no_select",&select_enabled);
+		/* streaming_create/no_streaming_create */
+		Option_table_add_switch(option_table, "streaming_create",
+			"no_streaming_create", &streaming_create_enabled);
+		/* command_field */
+		set_command_field_data.computed_field_manager=
+			node_tool->computed_field_manager;
+		set_command_field_data.conditional_function =
+			Computed_field_has_string_value_type;
+		set_command_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"command_field",&command_field,
+			&set_command_field_data,set_Computed_field_conditional);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (node_tool)
+			{
+				if (dialog_string == dialog_strings[1])
+				{
+					Node_tool_pop_down_dialog(node_tool);
+				}
+				Node_tool_set_coordinate_field(node_tool,coordinate_field);
+				Node_tool_set_region_path(node_tool,region_path);
+				Node_tool_set_streaming_create_enabled(node_tool,
+					streaming_create_enabled);
+				Node_tool_set_command_field(node_tool,command_field);
+
+				/* Set the state after setting the parameters as some of them
+				   states rely on these parameters */
+				Node_tool_set_edit_enabled(node_tool,edit_enabled);
+				Node_tool_set_select_enabled(node_tool,select_enabled);
+				Node_tool_set_define_enabled(node_tool,define_enabled);
+				Node_tool_set_create_enabled(node_tool,create_enabled);
+				Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
+				Node_tool_set_element_xi_field(node_tool,element_xi_field);
+				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
+#if defined (WX_USER_INTERFACE)
+		if (!node_tool->use_data)
+		{
+			 Node_tool_set_element_dimension(node_tool,element_dimension);
+			 Node_tool_set_element_create_enabled(node_tool,element_create_enabled);
+		}
+#endif /*(WX_USER_INTERFACE)*/
+				if (dialog_string == dialog_strings[0])
+				{
+#if ! defined (WX_USER_INTERFACE)
+					 Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
+#else /* defined (WX_USER_INTERFACE) */
+					 display_message(WARNING_MESSAGE,
+							"This command changes the node tool settings for each window to the global settings. To change node tool settings for individual window, please see the command [gfx modify window <name> nodes ?]. \n");
+#endif /* defined (WX_USER_INTERFACE) */
+				}
+#if defined (WX_USER_INTERFACE)
+		/*		FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+					 Graphics_window_update_Interactive_tool,
+					 (void *)Node_tool_get_interactive_tool(node_tool),
+					 command_data->graphics_window_manager); */
+				display_message(WARNING_MESSAGE,
+					 "This command changes the node tool settings for each window to the global settings. To change node tool settings for individual window, please see the command [gfx modify window <name> nodes ?]. \n");
+#endif /*(WX_USER_INTERFACE)*/
+//				Cmiss_scene_viewer_package_update_Interactive_tool(
+//					command_data->scene_viewer_package,
+//					Node_tool_get_interactive_tool(node_tool));
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_gfx_node_tool.  Missing node/data tool");
+				return_code=0;
+			}
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
+		if (command_field)
+		{
+			DEACCESS(Computed_field)(&command_field);
+		}
+		if (coordinate_field)
+		{
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (element_xi_field)
+		{
+			 DEACCESS(Computed_field)(&element_xi_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_node_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_node_tool */

@@ -45,6 +45,7 @@ based on input from devices.
 #if !defined (NODE_TOOL_H)
 #define NODE_TOOL_H
 
+#include "command/command.h"
 #include "finite_element/finite_element.h"
 #include "graphics/material.h"
 #include "interaction/interactive_tool.h"
@@ -402,4 +403,6 @@ Set the wx_interface for new settings.
 
 int Node_tool_set_execute_command(struct Node_tool *node_tool, 
 	struct Execute_command *execute_command);
+
+int Node_tool_execute_command(struct Node_tool *node_tool, const char *command_string);
 #endif /* !defined (NODE_TOOL_H) */

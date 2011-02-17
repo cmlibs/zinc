@@ -46,12 +46,14 @@ content of the global selections and objects with text input.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include "api/cmiss_interactive_tool.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "interaction/interactive_tool.h"
 #include "interaction/interactive_tool_private.h"
+#include "node/node_tool.h"
 #include "user_interface/message.h"
 
 /*
@@ -759,3 +761,33 @@ Up to calling function to deallocate the returned array AND the strings in it.
 
 	return (tool_names);
 } /* interactive_tool_manager_get_tool_names */
+
+int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive_tool,
+	const char *command)
+{
+	int return_code = 0;
+	if (interactive_tool && command)
+	{
+		if (0 == strcmp(interactive_tool->name, "node_tool") ||
+			0 == strcmp(interactive_tool->name, "data_tool"))
+		{
+			struct Node_tool *node_tool =
+				(struct Node_tool *)(Interactive_tool_get_tool_data(interactive_tool));
+			return_code = Node_tool_execute_command(node_tool, command);
+		}
+	}
+
+	return return_code;
+}
+
+int Cmiss_interactive_tool_destroy(Cmiss_interactive_tool_id *interactive_tool)
+{
+	int return_code = 0;
+	if (interactive_tool)
+	{
+		DEACCESS(Interactive_tool)(interactive_tool);
+		return_code = 1;
+	}
+
+	return return_code;
+}
