@@ -131,17 +131,6 @@ struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Create a list of standard cmgui materials and store them as they are managed
- * by graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  1 if successfully create a list of standard materials into graphics
- *    module, otherwise 0.
- */
-int Cmiss_graphics_module_create_standard_materials(
-	struct Cmiss_graphics_module *graphics_module);
-
-/***************************************************************************//**
  * Return the default font package in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.

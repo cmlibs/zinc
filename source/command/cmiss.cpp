@@ -21911,7 +21911,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF_USER_INTERFACE) */
 				Graphical_material_set_alpha(material, 1.0);
 			}
-			Cmiss_graphics_module_create_standard_materials(command_data->graphics_module);
+			Cmiss_graphics_module_define_standard_materials(command_data->graphics_module);
 		}
 		command_data->graphics_font_package = Cmiss_graphics_module_get_font_package(
 			command_data->graphics_module);

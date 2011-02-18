@@ -196,4 +196,15 @@ Cmiss_tessellation_id Cmiss_graphics_module_find_tessellation_by_name(
 Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 	Cmiss_graphics_module_id graphics_module);
 
+/***************************************************************************//**
+ * Define a list of standard cmgui materials and store them as they are managed
+ * by graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  1 if successfully create a list of standard materials into graphics
+ *    module, otherwise 0.
+ */
+int Cmiss_graphics_module_define_standard_materials(
+	struct Cmiss_graphics_module *graphics_module);
+
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

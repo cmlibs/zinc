@@ -597,7 +597,7 @@ Cmiss_spectrum_id Cmiss_graphics_module_create_spectrum(
 	return spectrum;
 }
 
-int Cmiss_graphics_module_create_standard_materials(
+int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module)
 {
 	/* only the default material is not in this list because its colour changes
