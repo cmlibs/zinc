@@ -43,6 +43,7 @@ finite element fields defined on or interpolated over them.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cstdlib>
 #include <cstdio>
 extern "C" {
 #include "finite_element/finite_element.h"
@@ -145,6 +146,12 @@ FULL_DECLARE_INDEXED_LIST_TYPE(FE_region_embedding_usage_count);
 
 #endif /* defined (EMBEDDING_CODE) */
 
+// GRC temporary until CM_element_type removed from FE_element identifier
+#define DIMENSION_TO_CM_ELEMENT_TYPE(dimension) \
+	((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE))
+#define CM_ELEMENT_TYPE_TO_DIMENSION(cm_type) \
+	((cm_type == CM_ELEMENT) ? 3 : ((cm_type == CM_FACE) ? 2 : 1))
+
 FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *);
 
@@ -191,7 +198,7 @@ DESCRIPTION :
 	int region_owns_element_shape_list;
 	/* lists of nodes and elements in this region */
 	struct LIST(FE_node) *fe_node_list;
-	struct LIST(FE_element) *fe_element_list;
+	struct LIST(FE_element) *fe_element_list[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 	/* change_level: if zero, change messages are sent with every change,
 		 otherwise incremented/decremented for nested changes */
@@ -211,17 +218,13 @@ DESCRIPTION :
 	/* nodes added, removed or otherwise changed */
 	struct CHANGE_LOG(FE_node) *fe_node_changes;
 	/* elements added, removed or otherwise changed */
-	struct CHANGE_LOG(FE_element) *fe_element_changes;
+	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* keep pointer to last node or element field information so only need to
 		 note changed fields when this changes */
 	struct FE_node_field_info *last_fe_node_field_info;
 	struct FE_element_field_info *last_fe_element_field_info;
 
 	/* information for defining faces */
-	/* keep next free identifiers so don't have expensive search to get them
-		 each time we call FE_region_define_FE_element_faces */
-	struct CM_element_information next_free_face_identifier,
-		next_free_line_identifier;
 	/* existence of element_type_node_sequence_list can tell us whether faces
 		 are being defined */
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
@@ -242,9 +245,7 @@ DESCRIPTION :
 	/* Keep a record of where we got to searching for valid identifiers.
 		We reset the cache if we delete any items */
 	int next_fe_node_identifier_cache;
-	int next_fe_element_identifier_cache;
-	int next_fe_element_face_identifier_cache;
-	int next_fe_element_line_identifier_cache;
+	int next_fe_element_identifier_cache[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 	/* initially false, these flags are set to true once wrapping computed field
 	 * manager is informed that it should create cmiss_number and xi fields
@@ -370,9 +371,10 @@ if (0 < fe_region->number_of_clients) \
 
 #define FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_CHANGE_LOG_OBJECT_REMOVED(type)	\
 	/* Don't want to add the overhead of working out which type at this point */ \
-	fe_region->next_fe_element_identifier_cache = 0; \
-	fe_region->next_fe_element_face_identifier_cache = 0; \
-	fe_region->next_fe_element_line_identifier_cache = 0; \
+	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim) \
+	{ \
+		fe_region->next_fe_element_identifier_cache[dim] = 1; \
+	} \
 
 #define FE_REGION_FE_ELEMENT_CHANGE(fe_region, element, change, \
 	field_info_element) \
@@ -394,13 +396,17 @@ merging it into <element>. \
 FE_ELEMENT_IDENTIFIER_CACHE_UPDATE_ ## change \
 if (0 < fe_region->number_of_clients) \
 { \
-	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
-		change); \
-	FE_element_log_FE_field_changes(field_info_element, \
-		fe_region->fe_field_changes, &(fe_region->last_fe_element_field_info)); \
-	if (0 == fe_region->change_level) \
+	int dimension = get_FE_element_dimension(element); \
+	if (dimension) \
 	{ \
-		FE_region_update(fe_region); \
+		CHANGE_LOG_OBJECT_CHANGE(FE_element)( \
+			fe_region->fe_element_changes[dimension - 1], element, change); \
+		FE_element_log_FE_field_changes(field_info_element, \
+			fe_region->fe_field_changes, &(fe_region->last_fe_element_field_info)); \
+		if (0 == fe_region->change_level) \
+		{ \
+			FE_region_update(fe_region); \
+		} \
 	} \
 }
 
@@ -417,13 +423,17 @@ Made into a macro for consistency/efficency/inlining. \
 ============================================================================*/ \
 if (0 < fe_region->number_of_clients) \
 { \
-	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
-		change); \
-	FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_log_FE_field_change, \
-		(void *)fe_region->fe_field_changes, changed_fe_field_list); \
-	if (0 == fe_region->change_level) \
+	int dimension = get_FE_element_dimension(element); \
+	if (dimension) \
 	{ \
-		FE_region_update(fe_region); \
+		CHANGE_LOG_OBJECT_CHANGE(FE_element)( \
+			fe_region->fe_element_changes[dimension - 1], element, change); \
+		FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_log_FE_field_change, \
+			(void *)fe_region->fe_field_changes, changed_fe_field_list); \
+		if (0 == fe_region->change_level) \
+		{ \
+			FE_region_update(fe_region); \
+		} \
 	} \
 }
 
@@ -436,16 +446,22 @@ Use this macro instead of FE_REGION_FE_ELEMENT_CHANGE when only the identifier \
 has changed. \
 ============================================================================*/ \
 /* Don't want to add the overhead of working out which type at this point */ \
-fe_region->next_fe_element_identifier_cache = 0; \
-fe_region->next_fe_element_face_identifier_cache = 0;	\
-fe_region->next_fe_element_line_identifier_cache = 0;	\
+for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim) \
+{ \
+	fe_region->next_fe_element_identifier_cache[dim] = 1; \
+} \
 if (0 < fe_region->number_of_clients) \
 { \
-	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
-		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element)); \
-	if (0 == fe_region->change_level) \
+	int dimension = get_FE_element_dimension(element); \
+	if (dimension) \
 	{ \
-		FE_region_update(fe_region); \
+		CHANGE_LOG_OBJECT_CHANGE(FE_element)( \
+			fe_region->fe_element_changes[dimension - 1], element, \
+			CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element)); \
+		if (0 == fe_region->change_level) \
+		{ \
+			FE_region_update(fe_region); \
+		} \
 	} \
 }
 
@@ -459,13 +475,18 @@ Use this macro instead of FE_REGION_FE_ELEMENT_CHANGE when exactly one field,
 ============================================================================*/ \
 if (0 < fe_region->number_of_clients) \
 { \
-	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
-		CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)); \
-	CHANGE_LOG_OBJECT_CHANGE(FE_field)(fe_region->fe_field_changes, \
-		fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)); \
-	if (0 == fe_region->change_level) \
+	int dimension = get_FE_element_dimension(element); \
+	if (dimension) \
 	{ \
-		FE_region_update(fe_region); \
+		CHANGE_LOG_OBJECT_CHANGE(FE_element)( \
+			fe_region->fe_element_changes[dimension - 1], element, \
+			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)); \
+		CHANGE_LOG_OBJECT_CHANGE(FE_field)(fe_region->fe_field_changes, \
+			fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)); \
+		if (0 == fe_region->change_level) \
+		{ \
+			FE_region_update(fe_region); \
+		} \
 	} \
 }
 
@@ -678,6 +699,16 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_region_change, void)
 DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *)
 
+static struct LIST(FE_element) *FE_region_get_element_list(
+	struct FE_region *fe_region, int dimension)
+{
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		return fe_region->fe_element_list[dimension - 1];
+	}
+	return 0;
+}
+
 static int FE_region_create_change_logs(struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2003
@@ -696,8 +727,11 @@ Centralised so they are created and recreated consistently.
 			fe_region->fe_field_list, /*max_changes*/-1);
 		fe_region->fe_node_changes = CREATE(CHANGE_LOG(FE_node))(
 			fe_region->fe_node_list, /*max_changes*/50);
-		fe_region->fe_element_changes = CREATE(CHANGE_LOG(FE_element))(
-			fe_region->fe_element_list, /*max_changes*/50);
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			fe_region->fe_element_changes[dim] = CREATE(CHANGE_LOG(FE_element))(
+				fe_region->fe_element_list[dim], /*max_changes*/50);
+		}
 		fe_region->last_fe_node_field_info = (struct FE_node_field_info *)NULL;
 		fe_region->last_fe_element_field_info =
 			(struct FE_element_field_info *)NULL;
@@ -734,16 +768,31 @@ occurred.
 		return_code = 1;
 		if (!fe_region->change_level)
 		{
+			bool any_changes = false;
 			/* send callbacks only if changes have been made */
 			if ((CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_field)(
 				fe_region->fe_field_changes, &number_of_fe_field_changes) &&
 				(0 < number_of_fe_field_changes)) ||
 				(CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(
 					fe_region->fe_node_changes, &number_of_fe_node_changes) &&
-					(0 < number_of_fe_node_changes)) ||
-				(CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(
-					fe_region->fe_element_changes, &number_of_fe_element_changes) &&
-					(0 < number_of_fe_element_changes)))
+					(0 < number_of_fe_node_changes)))
+			{
+				any_changes = true;
+			}
+			else
+			{
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				{
+					if (CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(
+						fe_region->fe_element_changes[dim], &number_of_fe_element_changes) &&
+						(0 < number_of_fe_element_changes))
+					{
+						any_changes = true;
+						break;
+					}
+				}
+			}
+			if (any_changes)
 			{
 #if defined (DEBUG)
 				/*???debug start*/
@@ -772,7 +821,10 @@ occurred.
 				/* fill the changes structure */
 				changes.fe_field_changes = fe_region->fe_field_changes;
 				changes.fe_node_changes = fe_region->fe_node_changes;
-				changes.fe_element_changes = fe_region->fe_element_changes;
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				{
+					changes.fe_element_changes[dim] = fe_region->fe_element_changes[dim];
+				}
 				/* must create new, empty change logs in the FE_region, so FE_region
 					 is able to immediately receive new change messages, and so that
 					 begin/end_change does not cause the same changes to be re-sent */
@@ -783,7 +835,10 @@ occurred.
 				/* clean up the change logs in the changes */
 				DESTROY(CHANGE_LOG(FE_field))(&changes.fe_field_changes);
 				DESTROY(CHANGE_LOG(FE_node))(&changes.fe_node_changes);
-				DESTROY(CHANGE_LOG(FE_element))(&changes.fe_element_changes);
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				{
+					DESTROY(CHANGE_LOG(FE_element))(&changes.fe_element_changes[dim]);
+				}
 			}
 		}
 	}
@@ -796,6 +851,16 @@ occurred.
 
 	return (return_code);
 } /* FE_region_update */
+
+struct CHANGE_LOG(FE_element) *FE_region_changes_get_FE_element_changes(
+	struct FE_region_changes *changes, int dimension)
+{
+	if (changes && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		return changes->fe_element_changes[dimension-1];
+	}
+	return 0;
+}
 
 int FE_region_merge_FE_element_iterator(struct FE_element *element,
 	void *fe_region_void);
@@ -815,10 +880,7 @@ DESCRIPTION :
 Callback from <master_fe_region> with its <changes>.
 ==============================================================================*/
 {
-	int fe_element_change_summary;
-	int fe_node_change_summary;
 	struct FE_region *fe_region;
-	struct FE_element_add_faces_not_in_list_data data;
 
 	ENTER(FE_region_master_fe_region_change);
 	fe_region = (struct FE_region *)NULL;
@@ -833,8 +895,7 @@ Callback from <master_fe_region> with its <changes>.
 		{
 			CHANGE_LOG_MERGE(FE_node)(fe_region->fe_node_changes,
 				changes->fe_node_changes);
-			CHANGE_LOG_MERGE(FE_element)(fe_region->fe_element_changes,
-				changes->fe_element_changes);
+			int fe_node_change_summary;
 			if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(fe_region->fe_node_changes,
 				&fe_node_change_summary))
 			{
@@ -846,34 +907,46 @@ Callback from <master_fe_region> with its <changes>.
 						fe_region->fe_node_list);
 				}
 			}
-			if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(
-				fe_region->fe_element_changes, &fe_element_change_summary))
+			for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
 			{
-				/* remove elements removed from this fe_region */
-				if (fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
+				CHANGE_LOG_MERGE(FE_element)(fe_region->fe_element_changes[dim],
+					changes->fe_element_changes[dim]);
+				int fe_element_change_summary;
+				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(
+					fe_region->fe_element_changes[dim], &fe_element_change_summary))
 				{
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_list,
-						(void *)master_fe_region->fe_element_list,
-						fe_region->fe_element_list);
-				}
-				/* add faces new to this fe_region; note this is indicated by parent
-					 elements having changed and face/line elements being added to
-					 master_fe_region */
-				if ((fe_element_change_summary &
-					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)) &&
-					CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes,
-						&fe_element_change_summary) &&
-					(fe_element_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_element)))
-				{
-					data.current_element_list = fe_region->fe_element_list;
-					data.add_element_list = CREATE(LIST(FE_element))();
-					FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						FE_element_add_faces_not_in_list, (void *)&data,
-						fe_region->fe_element_list);
-					FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						FE_region_merge_FE_element_iterator, (void *)fe_region,
-						data.add_element_list);
-					DESTROY(LIST(FE_element))(&data.add_element_list);
+					/* remove elements removed from this fe_region */
+					if (fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
+					{
+						REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_list,
+							(void *)master_fe_region->fe_element_list[dim],
+							fe_region->fe_element_list[dim]);
+					}
+					if (dim < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1)
+					{
+						/* add faces new to this fe_region; this is indicated by elements changing
+						 * and lower dimension elements being added to master_fe_region */
+						int element_change_summary = 0;
+						CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim + 1],
+							&element_change_summary);
+						int face_change_summary = 0;
+						CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
+							&face_change_summary);
+						if ((element_change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)) &&
+							(face_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_element)))
+						{
+							struct FE_element_add_faces_not_in_list_data data;
+							data.current_element_list = fe_region->fe_element_list[dim];
+							data.add_element_list = CREATE(LIST(FE_element))();
+							FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								FE_element_add_faces_not_in_list, (void *)&data,
+								fe_region->fe_element_list[dim + 1]);
+							FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								FE_region_merge_FE_element_iterator, (void *)fe_region,
+								data.add_element_list);
+							DESTROY(LIST(FE_element))(&data.add_element_list);
+						}
+					}
 				}
 			}
 		}
@@ -1424,7 +1497,10 @@ them to be specified allows sharing across regions).
 			FE_region_add_callback(master_fe_region,
 				FE_region_master_fe_region_change, (void *)fe_region);
 			fe_region->fe_node_list = CREATE_RELATED_LIST(FE_node)(master_fe_region->fe_node_list);
-			fe_region->fe_element_list = CREATE_RELATED_LIST(FE_element)(master_fe_region->fe_element_list);
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			{
+				fe_region->fe_element_list[dim] = CREATE_RELATED_LIST(FE_element)(master_fe_region->fe_element_list[dim]);
+			}
 		}
 		else
 		{
@@ -1455,7 +1531,10 @@ them to be specified allows sharing across regions).
 			fe_region->fe_element_field_info_list =
 				CREATE(LIST(FE_element_field_info))();
 			fe_region->fe_node_list = CREATE_LIST(FE_node)();
-			fe_region->fe_element_list = CREATE_LIST(FE_element)();
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			{
+				fe_region->fe_element_list[dim] = CREATE_LIST(FE_element)();
+			}
 		}
 		fe_region->top_data_hack = 0;
 		fe_region->data_fe_region = (struct FE_region *)NULL;
@@ -1470,7 +1549,10 @@ them to be specified allows sharing across regions).
 			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))();
 		fe_region->fe_field_changes = (struct CHANGE_LOG(FE_field) *)NULL;
 		fe_region->fe_node_changes = (struct CHANGE_LOG(FE_node) *)NULL;
-		fe_region->fe_element_changes = (struct CHANGE_LOG(FE_element) *)NULL;
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			fe_region->fe_element_changes[dim] = (struct CHANGE_LOG(FE_element) *)NULL;
+		}
 		fe_region->last_fe_node_field_info = (struct FE_node_field_info *)NULL;
 		fe_region->last_fe_element_field_info =
 			(struct FE_element_field_info *)NULL;
@@ -1488,9 +1570,10 @@ them to be specified allows sharing across regions).
 #endif /* defined (EMBEDDING_CODE) */
 
 		fe_region->next_fe_node_identifier_cache = 0;
-		fe_region->next_fe_element_identifier_cache = 0;
-		fe_region->next_fe_element_face_identifier_cache = 0;
-		fe_region->next_fe_element_line_identifier_cache = 0;
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			fe_region->next_fe_element_identifier_cache[dim] = 1;
+		}
 
 		fe_region->informed_make_cmiss_number_field = 0;
 		fe_region->informed_make_xi_field = 0;
@@ -1641,7 +1724,10 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))(
 				&(fe_region->change_callback_list));
-			DESTROY(LIST(FE_element))(&(fe_region->fe_element_list));
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			{
+				DESTROY(LIST(FE_element))(&(fe_region->fe_element_list[dim]));
+			}
 			DESTROY(LIST(FE_node))(&(fe_region->fe_node_list));
 			if (fe_region->master_fe_region)
 			{
@@ -1696,7 +1782,10 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 			}
 			DESTROY(CHANGE_LOG(FE_field))(&(fe_region->fe_field_changes));
 			DESTROY(CHANGE_LOG(FE_node))(&(fe_region->fe_node_changes));
-			DESTROY(CHANGE_LOG(FE_element))(&(fe_region->fe_element_changes));
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			{
+				DESTROY(CHANGE_LOG(FE_element))(&(fe_region->fe_element_changes[dim]));
+			}
 			DEALLOCATE(*fe_region_address);
 			return_code = 1;
 		}
@@ -1884,6 +1973,88 @@ Removes the callback calling <function> with <user_data> from <region>.
 	return (return_code);
 } /* FE_region_remove_callback */
 
+static int FE_region_remove_FE_element_private(struct FE_region *fe_region,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 7 April 2003
+
+DESCRIPTION :
+Removes <element> and all its faces that are not shared with other elements
+from <fe_region>. Should enclose call between FE_region_begin_change and
+FE_region_end_change to minimise messages.
+This function is recursive.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *face, *parent_element;
+
+	ENTER(FE_region_remove_FE_element_private);
+	int dimension = get_FE_element_dimension(element);
+	if (fe_region && element && (1 <= dimension) &&
+		(dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		return_code = 1;
+		struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
+		if (IS_OBJECT_IN_LIST(FE_element)(element, element_list))
+		{
+			/* access element in case it is only accessed here */
+			ACCESS(FE_element)(element);
+			if (return_code =
+				REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list))
+			{
+				/* for master_FE_region, remove face elements from all their parents;
+					 mark parent elements as OBJECT_NOT_IDENTIFIER_CHANGED */
+				if ((struct FE_region *)NULL == fe_region->master_fe_region)
+				{
+					int face_number;
+					while (return_code && (return_code =
+						FE_element_get_first_parent(element, &parent_element, &face_number))
+						&& parent_element)
+					{
+						return_code = set_FE_element_face(parent_element, face_number,
+							(struct FE_element *)NULL);
+						FE_REGION_FE_ELEMENT_CHANGE(fe_region, parent_element,
+							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
+							parent_element);
+					}
+				}
+				/* remove faces used by no elements in this fe_region */
+				if (dimension > 1)
+				{
+					int number_of_faces = 0;
+					get_FE_element_number_of_faces(element, &number_of_faces);
+					for (int i = 0; (i < number_of_faces) && return_code; i++)
+					{
+						if (get_FE_element_face(element, i, &face) && face)
+						{
+							int number_of_parents = 0;
+							if ((return_code = get_FE_element_number_of_parents_in_list(face,
+								element_list, &number_of_parents)) &&
+								(0 == number_of_parents))
+							{
+								return_code =
+									FE_region_remove_FE_element_private(fe_region, face);
+							}
+						}
+					}
+				}
+				FE_REGION_FE_ELEMENT_CHANGE(fe_region, element,
+					CHANGE_LOG_OBJECT_REMOVED(FE_element), element);
+			}
+			DEACCESS(FE_element)(&element);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_remove_FE_element_private.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_remove_FE_element_private */
+
 int FE_region_clear(struct FE_region *fe_region, int destroy_in_master)
 /*******************************************************************************
 LAST MODIFIED : 13 May 2003
@@ -1901,7 +2072,6 @@ message if not already in the middle of changes.
 	int return_code;
 	struct FE_field *fe_field;
 	struct FE_region *remove_from_fe_region;
-	struct LIST(FE_element) *fe_element_list;
 	struct LIST(FE_node) *fe_node_list;
 
 	ENTER(FE_region_clear);
@@ -1914,17 +2084,20 @@ message if not already in the middle of changes.
 			FE_region_get_ultimate_master_FE_region(fe_region, &remove_from_fe_region);
 		}
 		FE_region_begin_change(remove_from_fe_region);
-		/* FE_region_remove_FE_element_list may not work on list in FE_region */
-		fe_element_list = CREATE(LIST(FE_element))();
-		if (COPY_LIST(FE_element)(fe_element_list, fe_region->fe_element_list))
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		{
-			if (!FE_region_remove_FE_element_list(remove_from_fe_region,
-				fe_element_list))
+			struct FE_element *element;
+			while ((element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
+				fe_region->fe_element_list[dim])))
 			{
-				return_code = 0;
+				if (!FE_region_remove_FE_element_private(fe_region, element))
+				{
+					return_code = 0;
+					break;
+				}
 			}
 		}
-		DESTROY(LIST(FE_element))(&fe_element_list);
 		/* FE_region_remove_FE_node_list may not work on list in FE_region */
 		fe_node_list = CREATE(LIST(FE_node))();
 		if (COPY_LIST(FE_node)(fe_node_list, fe_region->fe_node_list))
@@ -2264,11 +2437,8 @@ Returns true if <FE_field> is defined on any nodes and element in <fe_region>.
 			{
 				/* since elements may still exist in the change_log or slave FE_regions,
 					 must now check that no remaining elements use fe_field */
-				/*???RC For now, if there are elements then fe_field is in use */
-				if (0 < NUMBER_IN_LIST(FE_element)(master_fe_region->fe_element_list))
-				{
-					return_code = 1;
-				}
+				/* for now, if there are elements then fe_field is in use */
+				return_code = (0 < FE_region_get_number_of_FE_elements_all_dimensions(master_fe_region));
 			}
 		}
 		else
@@ -2826,9 +2996,12 @@ coordinate field or returns 0 and sets *<fe_field> to NULL if it has no
 			/* This is a slave region, do legacy behaviour */
 			*fe_field = (struct FE_field *)NULL;
 			/* Look for an element field */
-			FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-				FE_element_find_default_coordinate_field_iterator,
-				(void *)fe_field, fe_region->fe_element_list);
+			for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (NULL == *fe_field) && (0 <= dim); --dim)
+			{
+				FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+					FE_element_find_default_coordinate_field_iterator,
+					(void *)fe_field, fe_region->fe_element_list[dim]);
+			}
 			/* Look for an node field */
 			if (!(*fe_field))
 			{
@@ -3399,9 +3572,9 @@ used by element fields of <fe_field>.
 				/* remove nodes used in element fields for fe_field */
 				node_list_field_data.fe_field = fe_field;
 				node_list_field_data.fe_node_list = tmp_fe_node_list;
-				if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
+				if (FE_region_for_each_FE_element(master_fe_region,
 					FE_element_ensure_FE_field_nodes_are_not_in_list,
-					(void *)&node_list_field_data, master_fe_region->fe_element_list))
+					(void *)&node_list_field_data))
 				{
 					*number_in_elements_address -=
 						NUMBER_IN_LIST(FE_node)(tmp_fe_node_list);
@@ -3817,19 +3990,36 @@ one node.
 	{
 		if (IS_OBJECT_IN_LIST(FE_node)(node, fe_region->fe_node_list))
 		{
-			/* expensive; same code as for FE_region_remove FE_node_list */
-			add_nodes_data.element_list = fe_region->fe_element_list;
+			/* expensive; same code as for FE_region_remove FE_node_list.
+			 * Supply highest dimension element list in region
+			 * to avoid repeated checks for nodes inherited from them */
+			for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+			{
+				add_nodes_data.element_list = fe_region->fe_element_list[dim];
+				if (NUMBER_IN_LIST(FE_element)(add_nodes_data.element_list) > 0)
+					break;
+			}
 			add_nodes_data.node_list = CREATE(LIST(FE_node))();
 			add_nodes_data.intersect_node_list = CREATE(LIST(FE_node))();
 			if (add_nodes_data.node_list && add_nodes_data.intersect_node_list &&
 				ADD_OBJECT_TO_LIST(FE_node)(node,
-					add_nodes_data.intersect_node_list) &&
-				FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					FE_element_add_nodes_to_list, (void *)&add_nodes_data,
-					fe_region->fe_element_list) &&
-				(0 == NUMBER_IN_LIST(FE_node)(add_nodes_data.node_list)))
+					add_nodes_data.intersect_node_list))
 			{
 				return_code = 1;
+				for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+				{
+					if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+						FE_element_add_nodes_to_list, (void *)&add_nodes_data,
+						fe_region->fe_element_list[dim]))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				if (0 < NUMBER_IN_LIST(FE_node)(add_nodes_data.node_list))
+				{
+					return_code = 0;
+				}
 			}
 			DESTROY(LIST(FE_node))(&add_nodes_data.node_list);
 			DESTROY(LIST(FE_node))(&add_nodes_data.intersect_node_list);
@@ -3952,13 +4142,28 @@ A true return code is only obtained if all nodes from <node_list> are removed.
 		return_code = 1;
 		remove_nodes_data.exclusion_node_list = CREATE(LIST(FE_node))();
 		/* expensive to determine nodes in use by elements, even more so for
-			 faces and lines */
-		add_nodes_data.element_list = fe_region->fe_element_list;
+		 * faces and lines.
+		 * Supply highest dimension element list in region
+		 * to avoid repeated checks for nodes inherited from them */
+		for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+		{
+			add_nodes_data.element_list = fe_region->fe_element_list[dim];
+			if (NUMBER_IN_LIST(FE_element)(add_nodes_data.element_list) > 0)
+				break;
+		}
 		add_nodes_data.node_list = remove_nodes_data.exclusion_node_list;
 		add_nodes_data.intersect_node_list = node_list;
-		if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
-			FE_element_add_nodes_to_list, (void *)&add_nodes_data,
-			fe_region->fe_element_list))
+		for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+		{
+			if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+				FE_element_add_nodes_to_list, (void *)&add_nodes_data,
+				fe_region->fe_element_list[dim]))
+			{
+				return_code = 0;
+				break;
+			}
+		}
+		if (return_code)
 		{
 			/* begin/end change to prevent multiple messages */
 			FE_region_begin_change(fe_region);
@@ -4297,29 +4502,23 @@ Returns the FE_basis_manager used for bases in this <fe_region>.
 
 int FE_region_change_FE_element_identifier(
 	struct FE_region *fe_region, struct FE_element *element,
-	struct CM_element_information *new_identifier)
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Gets <fe_region>, or its master_fe_region if it has one, to change the
-identifier of <element> to <new_identifier>. Fails if the identifier is already
-in use by an element in the same ultimate master FE_region.
-???RC Needs recoding if FE_element changed from using indexed list.
-==============================================================================*/
+	int new_identifier)
 {
 	int return_code;
 
 	ENTER(FE_region_change_FE_element_identifier);
-	if (fe_region && element && new_identifier)
+	int dimension = get_FE_element_dimension(element);
+	if (fe_region && element && new_identifier && (1 <= dimension) &&
+		(dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
+		struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
+		if (IS_OBJECT_IN_LIST(FE_element)(element, element_list))
 		{
 			return_code = 1;
 			struct FE_region *master_fe_region = fe_region;
 			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-				new_identifier, master_fe_region->fe_element_list))
+			if (FE_region_get_FE_element_from_identifier(master_fe_region,
+				dimension, new_identifier))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_region_change_FE_element_identifier.  "
@@ -4328,12 +4527,17 @@ in use by an element in the same ultimate master FE_region.
 			}
 			else
 			{
+				struct LIST(FE_element) *master_element_list =
+					FE_region_get_element_list(master_fe_region, dimension);
 				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_element,identifier)(
-					master_fe_region->fe_element_list, element))
+					master_element_list, element))
 				{
-					return_code = set_FE_element_identifier(element, new_identifier);
+					CM_element_information cm;
+					get_FE_element_identifier(element, &cm);
+					cm.number = new_identifier;
+					return_code = set_FE_element_identifier(element, &cm);
 					LIST_END_IDENTIFIER_CHANGE(FE_element,identifier)(
-						master_fe_region->fe_element_list);
+						master_element_list);
 					if (return_code)
 					{
 						FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(master_fe_region, element);
@@ -4367,22 +4571,17 @@ in use by an element in the same ultimate master FE_region.
 } /* FE_region_change_FE_element_identifier */
 
 struct FE_element *FE_region_get_FE_element_from_identifier(
-	struct FE_region *fe_region, struct CM_element_information *identifier)
-/*******************************************************************************
-LAST MODIFIED : 22 October 2002
-
-DESCRIPTION :
-Returns the element identified by <cm> in <fe_region>, or NULL without error if
-no such element found.
-==============================================================================*/
+	struct FE_region *fe_region, int dimension, int identifier)
 {
 	struct FE_element *element;
 
 	ENTER(FE_region_get_FE_element_from_identifier);
-	if (fe_region && identifier)
+	if (fe_region && identifier &&
+		(1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(identifier,
-			fe_region->fe_element_list);
+		CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier };
+		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm,
+			FE_region_get_element_list(fe_region, dimension));
 	}
 	else
 	{
@@ -4393,7 +4592,81 @@ no such element found.
 	LEAVE;
 
 	return (element);
-} /* FE_region_get_FE_element_from_identifier */
+}
+
+int FE_region_CM_element_type_to_dimension(struct FE_region *fe_region,
+	enum CM_element_type cm_element_type)
+{
+	if (CM_ELEMENT == cm_element_type)
+	{
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
+		{
+			if (NUMBER_IN_LIST(FE_element)(FE_region_get_element_list(fe_region, dimension)))
+				return dimension;
+		}
+		return 3;
+	}
+	else if (CM_FACE == cm_element_type)
+		return 2;
+	return 1;
+}
+
+struct FE_element *FE_region_get_FE_element_from_identifier_deprecated(
+	struct FE_region *fe_region, struct CM_element_information *identifier)
+{
+	struct FE_element *element;
+
+	ENTER(FE_region_get_FE_element_from_identifier_deprecated);
+	if (fe_region && identifier)
+	{
+		int dimension = CM_ELEMENT_TYPE_TO_DIMENSION(identifier->type);
+		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(identifier,
+			FE_region_get_element_list(fe_region, dimension));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_FE_element_from_identifier_deprecated.  Invalid argument(s)");
+		element = (struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+}
+
+struct FE_element *FE_region_get_top_level_FE_element_from_identifier(
+	struct FE_region *fe_region, int identifier)
+{
+	struct FE_element *element;
+
+	ENTER(FE_region_get_top_level_FE_element_from_identifier);
+	if (fe_region && identifier)
+	{
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
+		{
+			CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier };
+			element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm,
+				FE_region_get_element_list(fe_region, dimension));
+			if (element && FE_element_is_top_level(element, (void *)NULL))
+			{
+				break;
+			}
+			else
+			{
+				element = NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_top_level_FE_element_from_identifier.  Invalid argument(s)");
+		element = (struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+}
 
 struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
 	struct FE_region *fe_region, struct CM_element_information *identifier,
@@ -4411,66 +4684,33 @@ If the returned element is not already in <fe_region> it is merged before
 return.
 It is expected that the calling function has wrapped calls to this function
 with FE_region_begin/end_change.
-???RC Could eventually allow the shape of newly created elements to be other
-than 'unspecified'.
 ==============================================================================*/
 {
-	int existing_dimension;
-	struct FE_element *element, *existing_element;
-	struct FE_element_shape *element_shape;
-	struct FE_region *master_fe_region;
+	struct FE_element *element;
 
 	ENTER(FE_region_get_or_create_FE_element_with_identifier);
 	element = (struct FE_element *)NULL;
-	if (fe_region && identifier)
+	if (fe_region && identifier &&
+		(1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		if (existing_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			identifier, fe_region->fe_element_list))
-		{
-			existing_dimension = get_FE_element_dimension(existing_element);
-			if (existing_dimension == dimension)
-			{
-				element = existing_element;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_get_or_create_FE_element_with_identifier.  "
-					"Existing element %s %d is dimension %d, not the requested %d",
-					CM_element_type_string(identifier->type), identifier->number,
-					existing_dimension, dimension);
-			}
-		}
-		else
+		struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
+		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(identifier, element_list);
+		if (!element)
 		{
 			/* get the ultimate master FE_region for complete list of elements */
-			master_fe_region = fe_region;
+			struct FE_region *master_fe_region = fe_region;
 			while (master_fe_region->master_fe_region)
 			{
 				master_fe_region = master_fe_region->master_fe_region;
 			}
 			if (master_fe_region != fe_region)
 			{
-				if (existing_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,
-					identifier)(identifier, master_fe_region->fe_element_list))
-				{
-					existing_dimension = get_FE_element_dimension(existing_element);
-					if (existing_dimension == dimension)
-					{
-						element = existing_element;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_region_get_or_create_FE_element_with_identifier.  Existing "
-							"element %s %d in master is dimension %d, not the requested %d",
-							CM_element_type_string(identifier->type), identifier->number,
-							existing_dimension, dimension);
-					}
-				}
+				element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+					identifier, FE_region_get_element_list(master_fe_region, dimension));
 			}
-			if (!existing_element)
+			if (!element)
 			{
+				struct FE_element_shape *element_shape;
 				/* create an element with an unspecified shape of <dimension> */
 				if (element_shape =
 					CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL,
@@ -4513,141 +4753,112 @@ than 'unspecified'.
 } /* FE_region_get_or_create_FE_element_with_identifier */
 
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,
-	enum CM_element_type element_type, int start_identifier)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Returns the next unused element number for elements of <element_type> in
-<fe_region> starting from <start_identifier>.
-Search is performed on the ultimate master FE_region for <fe_region> since they
-share the same FE_element namespace.
-==============================================================================*/
+	int dimension, int start_identifier)
 {
-	struct CM_element_information element_identifier;
+	int identifier = 0;
 	struct FE_region *master_fe_region;
 
 	ENTER(FE_region_get_next_FE_element_identifier);
-	if (fe_region)
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
+		int dim = dimension - 1;
 		/* get the ultimate master FE_region for complete list of elements */
 		master_fe_region = fe_region;
 		while (master_fe_region->master_fe_region)
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
-		element_identifier.type = element_type;
+		struct CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), 0 };
 		if (start_identifier <= 0)
 		{
-			element_identifier.number = 1;
+			cm.number = master_fe_region->next_fe_element_identifier_cache[dim];
 		}
 		else
 		{
-			element_identifier.number = start_identifier;
+			cm.number = start_identifier;
 		}
-		switch (element_type)
+		if (master_fe_region->next_fe_element_identifier_cache[dim])
 		{
-			case CM_ELEMENT:
+			if (master_fe_region->next_fe_element_identifier_cache[dim] > cm.number)
 			{
-				if (master_fe_region->next_fe_element_identifier_cache)
-				{
-					if (master_fe_region->next_fe_element_identifier_cache > 
-						element_identifier.number)
-					{
-						element_identifier.number = 
-							master_fe_region->next_fe_element_identifier_cache;
-					}
-				}
-			} break;
-			case CM_FACE:
-			{
-				if (master_fe_region->next_fe_element_face_identifier_cache)
-				{
-					if (master_fe_region->next_fe_element_face_identifier_cache > 
-						element_identifier.number)
-					{
-						element_identifier.number = 
-							master_fe_region->next_fe_element_face_identifier_cache;
-					}
-				}
-			} break;
-			case CM_LINE:
-			{
-				if (master_fe_region->next_fe_element_line_identifier_cache)
-				{
-					if (master_fe_region->next_fe_element_line_identifier_cache > 
-						element_identifier.number)
-					{
-						element_identifier.number = 
-							master_fe_region->next_fe_element_line_identifier_cache;
-					}
-				}
-			} break;
-		}
-		while (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&element_identifier, master_fe_region->fe_element_list))
-		{
-			element_identifier.number++;
-		}
-		if (start_identifier < 2)
-		{
-			/* Don't cache the value if we didn't start at the beginning */
-			switch (element_type)
-			{
-				case CM_ELEMENT:
-				{
-					master_fe_region->next_fe_element_identifier_cache =		
-						element_identifier.number;
-				} break;
-				case CM_FACE:
-				{
-					master_fe_region->next_fe_element_face_identifier_cache =
-						element_identifier.number;
-				} break;
-				case CM_LINE:
-				{
-					master_fe_region->next_fe_element_line_identifier_cache = 
-						element_identifier.number;
-				} break;
+				cm.number = master_fe_region->next_fe_element_identifier_cache[dim];
 			}
 		}
+		while (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			&cm, master_fe_region->fe_element_list[dim]))
+		{
+			cm.number++;
+		}
+		if (start_identifier <= 1)
+		{
+			/* Don't cache the value if we didn't start at the beginning */
+			master_fe_region->next_fe_element_identifier_cache[dim] = cm.number;
+		}
+		identifier = cm.number;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_region_get_next_FE_element_identifier.  Missing fe_region");
-		element_identifier.number = 0;
 	}
 	LEAVE;
 
-	return (element_identifier.number);
-} /* FE_region_get_next_FE_element_identifier */
+	return (identifier);
+}
 
-int FE_region_get_number_of_FE_elements(struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2003
-
-DESCRIPTION :
-Returns the number of elements in <fe_region>.
-==============================================================================*/
+int FE_region_get_number_of_FE_elements_all_dimensions(struct FE_region *fe_region)
 {
-	int number_of_elements;
+	int number_of_elements = 0;
 
-	ENTER(FE_region_get_number_of_FE_elements);
+	ENTER(FE_region_get_number_of_FE_elements_all_dimensions);
 	if (fe_region)
 	{
-		number_of_elements = NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list);
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			number_of_elements += NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list[dim]);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_number_of_FE_elements.  Invalid argument(s)");
-		number_of_elements = 0;
+			"FE_region_get_number_of_FE_elements_all_dimensions.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (number_of_elements);
-} /* FE_region_get_number_of_FE_elements */
+}
+
+int FE_region_get_number_of_FE_elements_of_dimension(
+	struct FE_region *fe_region, int dimension)
+{
+	int number_of_elements = 0;
+
+	ENTER(FE_region_get_number_of_FE_elements_of_dimension);
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		number_of_elements =
+			NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list[dimension - 1]);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_number_of_FE_elements_of_dimension.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (number_of_elements);
+}
+
+int FE_region_get_highest_dimension(struct FE_region *fe_region)
+{
+	int highest_dimension = 3;
+	while (highest_dimension &&
+		(0 == NUMBER_IN_LIST(FE_element)(FE_region_get_element_list(fe_region, highest_dimension))))
+	{
+		--highest_dimension;
+	}
+	return highest_dimension;
+}
 
 int FE_region_contains_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
@@ -4663,7 +4874,8 @@ Returns true if <element> is in <fe_region>.
 	ENTER(FE_region_contains_FE_element);
 	if (fe_region && element)
 	{
-		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
+		int dimension = get_FE_element_dimension(element);
+		if (IS_OBJECT_IN_LIST(FE_element)(element, FE_region_get_element_list(fe_region, dimension)))
 		{
 			return_code = 1;
 		}
@@ -4685,68 +4897,15 @@ Returns true if <element> is in <fe_region>.
 
 int FE_region_contains_FE_element_conditional(struct FE_element *element,
 	void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-FE_element conditional function version of FE_region_contains_FE_element.
-Returns true if <element> is in <fe_region>.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(FE_region_contains_FE_element_conditional);
-	if (element && (fe_region = (struct FE_region *)fe_region_void))
-	{
-		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_contains_FE_element_conditional.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_region_contains_FE_element_conditional */
+	return FE_region_contains_FE_element((struct FE_region *)fe_region_void, element);
+}
 
 int FE_element_is_not_in_FE_region(struct FE_element *element,
 	void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 3 April 2003
-
-DESCRIPTION :
-Returns true if <element> is not in <fe_region>.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(FE_element_is_not_in_FE_region);
-	if (element && (fe_region = (struct FE_region *)fe_region_void))
-	{
-		return_code =
-			(!IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_not_in_FE_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_not_in_FE_region */
+	return !FE_region_contains_FE_element((struct FE_region *)fe_region_void, element);
+}
 
 int FE_region_define_FE_field_at_element(struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field *fe_field,
@@ -4816,23 +4975,23 @@ Should place multiple calls to this function between begin_change/end_change.
 } /* FE_region_define_FE_field_at_element */
 
 struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
-	enum CM_element_type element_type, int identifier,
-	struct FE_element *source)
+	int identifier, struct FE_element *source)
 {
-	struct CM_element_information cm;
 	struct FE_element *new_element;
 
 	ENTER(FE_region_create_FE_element_copy);
 	new_element = (struct FE_element *)NULL;
 	if (fe_region && source)
 	{
+		int dimension = get_FE_element_dimension(source);
+		struct LIST(FE_element) *element_list =
+			FE_region_get_element_list(fe_region, dimension);
 		if (fe_region->master_fe_region)
 		{
 			FE_region_begin_change(fe_region);
 			new_element = FE_region_create_FE_element_copy(
-				fe_region->master_fe_region, element_type, identifier, source);
-			if ((new_element) && ADD_OBJECT_TO_LIST(FE_element)(new_element,
-				fe_region->fe_element_list))
+				fe_region->master_fe_region, identifier, source);
+			if ((new_element) && ADD_OBJECT_TO_LIST(FE_element)(new_element, element_list))
 			{
 				FE_REGION_FE_ELEMENT_CHANGE(fe_region, new_element,
 					CHANGE_LOG_OBJECT_ADDED(FE_element), new_element);
@@ -4841,16 +5000,16 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 		}
 		else if (FE_element_get_FE_region(source) == fe_region)
 		{
-			cm.type = element_type;
-			cm.number = identifier;
-			if (identifier <= 0)
+			struct CM_element_information cm =
+				{ DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier };
+			if (cm.number <= 0)
 			{
 				cm.number = FE_region_get_next_FE_element_identifier(
-					fe_region, element_type, 0);
+					fe_region, dimension, 0);
 			}
 			new_element = CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
 				(struct FE_region *)NULL, source);
-			if (ADD_OBJECT_TO_LIST(FE_element)(new_element, fe_region->fe_element_list))
+			if (ADD_OBJECT_TO_LIST(FE_element)(new_element, element_list))
 			{
 				FE_REGION_FE_ELEMENT_CHANGE(fe_region, new_element,
 					CHANGE_LOG_OBJECT_ADDED(FE_element), new_element);
@@ -4881,7 +5040,6 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
 {
-	struct CM_element_information identifier;
 	struct FE_element *merged_element;
 	struct LIST(FE_field) *changed_fe_field_list;
 
@@ -4889,6 +5047,9 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	merged_element = (struct FE_element *)NULL;
 	if (fe_region && element)
 	{
+		int dimension = get_FE_element_dimension(element);
+		struct LIST(FE_element) *element_list =
+			FE_region_get_element_list(fe_region, dimension);
 		if (fe_region->master_fe_region)
 		{
 			/* begin/end change to prevent multiple messages */
@@ -4900,11 +5061,9 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 					 eventual master, the true root_region */
 				if ((struct FE_region *)NULL==fe_region->base_fe_region)
 				{
-					if (!IS_OBJECT_IN_LIST(FE_element)(merged_element,
-						fe_region->fe_element_list))
+					if (!IS_OBJECT_IN_LIST(FE_element)(merged_element, element_list))
 					{
-						if (ADD_OBJECT_TO_LIST(FE_element)(merged_element,
-							fe_region->fe_element_list))
+						if (ADD_OBJECT_TO_LIST(FE_element)(merged_element, element_list))
 						{
 #if defined (DEBUG)
 					/*???debug*/printf("FE_region_merge_FE_element: %p (M %p) ADD element %p\n",fe_region,fe_region->master_fe_region,merged_element);
@@ -4914,10 +5073,11 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 						}
 						else
 						{
+							struct CM_element_information identifier;
 							get_FE_element_identifier(merged_element, &identifier);
 							display_message(ERROR_MESSAGE,
-								"FE_region_merge_FE_element.  Could not add %s %d",
-								CM_element_type_string(identifier.type), identifier.number);
+								"FE_region_merge_FE_element.  Could not add %d-D element %d",
+								dimension, identifier.number);
 							merged_element = (struct FE_element *)NULL;
 						}
 					}
@@ -4927,12 +5087,13 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 		}
 		else
 		{
+			struct CM_element_information identifier;
 			get_FE_element_identifier(element, &identifier);
 			/* check element was created for this fe_region */
 			if (fe_region == FE_element_get_FE_region(element))
 			{
 				if (merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-					&identifier, fe_region->fe_element_list))
+					&identifier, element_list))
 				{
 					/* since we use merge to add existing elements to list, often no
 						 merge will be necessary, hence the following */
@@ -4971,8 +5132,7 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 				}
 				else
 				{
-					if (ADD_OBJECT_TO_LIST(FE_element)(element,
-						fe_region->fe_element_list))
+					if (ADD_OBJECT_TO_LIST(FE_element)(element, element_list))
 					{
 						merged_element = element;
 #if defined (DEBUG)
@@ -5017,40 +5177,54 @@ int FE_region_merge_FE_element_existing(struct FE_region *fe_region,
 	return_code = 0;
 	if (fe_region && destination && source)
 	{
-		if (fe_region->master_fe_region)
+		int dimension = get_FE_element_dimension(destination);
+		int source_dimension = get_FE_element_dimension(source);
+		if (source_dimension == dimension)
 		{
-			FE_region_begin_change(fe_region);
-			if (FE_region_merge_FE_element_existing(fe_region->master_fe_region,
-				destination, source))
+			struct LIST(FE_element) *element_list =
+				FE_region_get_element_list(fe_region, dimension);
+			if (fe_region->master_fe_region)
 			{
-				if (!IS_OBJECT_IN_LIST(FE_element)(destination, fe_region->fe_element_list))
+				FE_region_begin_change(fe_region);
+				if (FE_region_merge_FE_element_existing(fe_region->master_fe_region,
+					destination, source))
 				{
-					if (ADD_OBJECT_TO_LIST(FE_element)(destination,fe_region->fe_element_list))
+					if (IS_OBJECT_IN_LIST(FE_element)(destination, element_list))
 					{
+						return_code = 1;
+					}
+					else if (ADD_OBJECT_TO_LIST(FE_element)(destination, element_list))
+					{
+						return_code = 1;
 						FE_REGION_FE_ELEMENT_CHANGE(fe_region, destination,
 							CHANGE_LOG_OBJECT_ADDED(FE_element), destination);
 					}
 				}
+				FE_region_end_change(fe_region);
 			}
-			FE_region_end_change(fe_region);
-		}
-		else if ((FE_element_get_FE_region(destination) == fe_region) &&
-			(FE_element_get_FE_region(source) == fe_region))
-		{
-			changed_fe_field_list = CREATE(LIST(FE_field))();
-			if (merge_FE_element(destination, source, changed_fe_field_list))
+			else if ((FE_element_get_FE_region(destination) == fe_region) &&
+				(FE_element_get_FE_region(source) == fe_region))
 			{
-				return_code = 1;
-				FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region, destination,
-					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
-					changed_fe_field_list);
+				changed_fe_field_list = CREATE(LIST(FE_field))();
+				if (merge_FE_element(destination, source, changed_fe_field_list))
+				{
+					return_code = 1;
+					FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region, destination,
+						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
+						changed_fe_field_list);
+				}
+				DESTROY(LIST(FE_field))(&changed_fe_field_list);
 			}
-			DESTROY(LIST(FE_field))(&changed_fe_field_list);
+			else
+			{
+				display_message(ERROR_MESSAGE, "FE_region_merge_FE_element_existing.  "
+					"Source and/or destination elements are incompatible with region");
+			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "FE_region_merge_FE_element_existing.  "
-				"Source and/or destination elements are incompatible with region");
+				"Cannot merge a source element of different dimension");
 		}
 	}
 	else
@@ -5118,23 +5292,32 @@ Should put face definition calls between calls to begin_change/end_change.
 			if (master_fe_region->element_type_node_sequence_list =
 				CREATE(LIST(FE_element_type_node_sequence))())
 			{
-				master_fe_region->next_free_face_identifier.type = CM_FACE;
-				master_fe_region->next_free_face_identifier.number = 1;
-				master_fe_region->next_free_line_identifier.type = CM_LINE;
-				master_fe_region->next_free_line_identifier.number = 1;
-				if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					FE_element_face_line_to_element_type_node_sequence_list,
-					(void *)(master_fe_region->element_type_node_sequence_list),
-					master_fe_region->fe_element_list))
+				bool have_elements = false;
+				for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
 				{
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_begin_define_faces.  "
-						"May not be able to share faces properly - perhaps "
-						"2 existing faces have same shape and node list?");
+					struct LIST(FE_element) *element_list =
+						FE_region_get_element_list(master_fe_region, dimension);
+					if (NUMBER_IN_LIST(FE_element)(element_list))
+					{
+						have_elements = true;
+					}
+					if (have_elements && (dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS))
+					{
+						if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_face_line_to_element_type_node_sequence_list,
+							(void *)(master_fe_region->element_type_node_sequence_list),
+							element_list))
+						{
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_begin_define_faces.  "
+								"May not be able to share faces properly - perhaps "
+								"2 existing faces have same shape and node list?");
+						}
+					}
 				}
 			}
 			else
@@ -5316,7 +5499,6 @@ against.
 ==============================================================================*/
 {
 	int face_dimension, face_number, new_faces, number_of_faces, return_code;
-	struct CM_element_information *face_identifier;
 	struct FE_element *face;
 	struct FE_element_shape *element_shape, *face_shape;
 	struct FE_element_type_node_sequence *element_type_node_sequence,
@@ -5344,21 +5526,11 @@ against.
 				{
 					ACCESS(FE_element_shape)(face_shape);
 					get_FE_element_shape_dimension(face_shape, &face_dimension);
-					/* get unique CM_element_identifier for face to be created */
-					if (2 == face_dimension)
-					{
-						face_identifier = &master_fe_region->next_free_face_identifier;
-					}
-					else
-					{
-						face_identifier = &master_fe_region->next_free_line_identifier;
-					}
-					while (FIND_BY_IDENTIFIER_IN_LIST(FE_element,
-						identifier)(face_identifier, master_fe_region->fe_element_list))
-					{
-						(face_identifier->number)++;
-					}
-					if (face = CREATE(FE_element)(face_identifier, face_shape,
+					int new_face_number = FE_region_get_next_FE_element_identifier(
+						fe_region, face_dimension, 0);
+					struct CM_element_information face_identifier =
+						{ DIMENSION_TO_CM_ELEMENT_TYPE(face_dimension), new_face_number };
+					if (face = CREATE(FE_element)(&face_identifier, face_shape,
 						master_fe_region, (struct FE_element *)NULL))
 					{
 						/* must put the face in the element to inherit fields */
@@ -5433,7 +5605,7 @@ against.
 		} /* loop over faces */
 		if (return_code)
 		{
-			if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
+			if (FE_region_contains_FE_element(fe_region, element))
 			{
 				if (new_faces)
 				{
@@ -5565,6 +5737,31 @@ the copy.
 	return (return_code);
 } /* FE_region_merge_FE_element_and_faces_and_nodes_iterator */
 
+int FE_region_define_faces(struct FE_region *fe_region)
+{
+	int return_code = 1;
+	if (fe_region)
+	{
+		FE_region_begin_change(fe_region);
+		FE_region_begin_define_faces(fe_region);
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (2 <= dimension) && return_code; --dimension)
+		{
+			return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+				FE_region_merge_FE_element_and_faces_and_nodes_iterator,
+				(void *)fe_region, FE_region_get_element_list(fe_region, dimension));
+		}
+		FE_region_end_define_faces(fe_region);
+		FE_region_end_change(fe_region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_define_faces.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
+
 int FE_region_get_FE_element_discretization(struct FE_region *fe_region,
 	struct FE_element *element, int face_number,
 	struct FE_field *native_discretization_field,
@@ -5580,101 +5777,27 @@ parent can be inherited from. This function will need to be tightened later.
 ==============================================================================*/
 {
 	int return_code;
-	struct LIST(FE_element) *element_list;
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional = NULL;
+	void *conditional_data = NULL;
 
 	ENTER(FE_region_get_FE_element_discretization);
 	if (fe_region && (fe_region->master_fe_region))
 	{
-		element_list = fe_region->fe_element_list;
+		conditional = FE_region_contains_FE_element_conditional;
+		conditional_data = (void *)fe_region;
 	}
 	else
 	{
 		/* if this is a master FE_region, don't need to check list */
-		element_list = (struct LIST(FE_element) *)NULL;
 	}
-	return_code = get_FE_element_discretization(element, element_list,
+	return_code = get_FE_element_discretization(element,
+		conditional, conditional_data,
 		face_number, native_discretization_field, top_level_number_in_xi,
 		top_level_element, number_in_xi);
 	LEAVE;
 
 	return (return_code);
-} /* FE_region_get_FE_element_discretization */
-
-static int FE_region_remove_FE_element_private(struct FE_region *fe_region,
-	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 7 April 2003
-
-DESCRIPTION :
-Removes <element> and all its faces that are not shared with other elements
-from <fe_region>. Should enclose call between FE_region_begin_change and
-FE_region_end_change to minimise messages.
-This function is recursive.
-==============================================================================*/
-{
-	int face_number, i, number_of_faces, number_of_parents, return_code;
-	struct FE_element *face, *parent_element;
-
-	ENTER(FE_region_remove_FE_element_private);
-	if (fe_region && element)
-	{
-		return_code = 1;
-		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
-		{
-			/* access element in case it is only accessed here */
-			ACCESS(FE_element)(element);
-			if (return_code = REMOVE_OBJECT_FROM_LIST(FE_element)(element,
-				fe_region->fe_element_list))
-			{
-				/* for master_FE_region, remove face elements from all their parents;
-					 mark parent elements as OBJECT_NOT_IDENTIFIER_CHANGED */
-				if ((struct FE_region *)NULL == fe_region->master_fe_region)
-				{
-					while (return_code && (return_code =
-						FE_element_get_first_parent(element, &parent_element, &face_number))
-						&& parent_element)
-					{
-						return_code = set_FE_element_face(parent_element, face_number,
-							(struct FE_element *)NULL);
-						FE_REGION_FE_ELEMENT_CHANGE(fe_region, parent_element,
-							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
-							parent_element);
-					}
-				}
-				/* remove faces used by no elements in this fe_region */
-				if (return_code =
-					get_FE_element_number_of_faces(element, &number_of_faces))
-				{
-					for (i = 0; (i < number_of_faces) && return_code; i++)
-					{
-						if (get_FE_element_face(element, i, &face) && face)
-						{
-							if ((return_code = get_FE_element_number_of_parents_in_list(face,
-								fe_region->fe_element_list, &number_of_parents)) &&
-								(0 == number_of_parents))
-							{
-								return_code =
-									FE_region_remove_FE_element_private(fe_region, face);
-							}
-						}
-					}
-				}
-				FE_REGION_FE_ELEMENT_CHANGE(fe_region, element,
-					CHANGE_LOG_OBJECT_REMOVED(FE_element), element);
-			}
-			DEACCESS(FE_element)(&element);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_remove_FE_element_private.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_region_remove_FE_element_private */
+}
 
 static int FE_region_remove_FE_element_iterator(struct FE_element *element,
 	void *fe_region_void)
@@ -5690,21 +5813,29 @@ in this fe_region.
 This function is recursive.
 ==============================================================================*/
 {
-	int number_of_parents, return_code;
+	int return_code;
 	struct FE_region *fe_region;
 
 	ENTER(FE_region_remove_FE_element_iterator);
 	if (element && (fe_region = (struct FE_region *)fe_region_void))
 	{
 		return_code = 1;
-		if (IS_OBJECT_IN_LIST(FE_element)(element, fe_region->fe_element_list))
+		int dimension = get_FE_element_dimension(element);
+		if (IS_OBJECT_IN_LIST(FE_element)(element, FE_region_get_element_list(fe_region, dimension)))
 		{
 			/* if fe_region has a master_fe_region, can only remove element if it has
 				 no parents in the list */
-			if ((!(fe_region->master_fe_region)) ||
-				(return_code = get_FE_element_number_of_parents_in_list(element,
-					fe_region->fe_element_list, &number_of_parents) &&
-					(0 == number_of_parents)))
+			if (fe_region->master_fe_region && (dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS))
+			{
+				int number_of_parents_in_region = 0;
+				get_FE_element_number_of_parents_in_list(element,
+					FE_region_get_element_list(fe_region, dimension + 1), &number_of_parents_in_region);
+				if (number_of_parents_in_region > 0)
+				{
+					return_code = 0;
+				}
+			}
+			if (return_code)
 			{
 				return_code = FE_region_remove_FE_element_private(fe_region, element);
 			}
@@ -5737,17 +5868,26 @@ in this fe_region.
 This function is recursive.
 ==============================================================================*/
 {
-	int number_of_parents, return_code;
+	int return_code;
 
 	ENTER(FE_region_remove_FE_element);
 	if (fe_region && element)
 	{
+		int return_code = 1;
+		int dimension = get_FE_element_dimension(element);
 		/* if fe_region has a master_fe_region, can only remove element if it has
 			 no parents in the list */
-		if ((!(fe_region->master_fe_region)) ||
-			(get_FE_element_number_of_parents_in_list(element,
-				fe_region->fe_element_list, &number_of_parents) &&
-				(0 == number_of_parents)))
+		if (fe_region->master_fe_region && (dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS))
+		{
+			int number_of_parents_in_region = 0;
+			get_FE_element_number_of_parents_in_list(element,
+				FE_region_get_element_list(fe_region, dimension + 1), &number_of_parents_in_region);
+			if (number_of_parents_in_region > 0)
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
 		{
 			FE_region_begin_change(fe_region);
 			return_code = FE_region_remove_FE_element_private(fe_region, element);
@@ -5798,8 +5938,8 @@ removed.
 		FE_region_begin_change(fe_region);
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
 			FE_region_remove_FE_element_iterator, (void *)fe_region, element_list);
-		REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_list,
-			(void *)(fe_region->fe_element_list), element_list);
+		REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_FE_region,
+			(void *)fe_region, element_list);
 		if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 		{
 			return_code = 0;
@@ -5833,7 +5973,7 @@ any parents also in <fe_region>.
 	if (fe_region && element && field)
 	{
 		return_code = FE_element_or_parent_has_field(element, field,
-			fe_region->fe_element_list);
+			FE_region_contains_FE_element_conditional, (void *)fe_region);
 	}
 	else
 	{
@@ -5850,23 +5990,19 @@ struct FE_element *FE_region_get_first_FE_element_that(
 	struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
 	void *user_data_void)
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Returns the first element in <fe_region> that satisfies <conditional_function>
-with <user_data_void>.
-A NULL <conditional_function> returns the first FE_element in <fe_region>,
-if any.
-==============================================================================*/
 {
 	struct FE_element *element;
 
 	ENTER(FE_region_get_first_FE_element_that);
 	if (fe_region)
 	{
-		element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(conditional_function,
-			user_data_void, fe_region->fe_element_list);
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (1 <= dimension); --dimension)
+		{
+			element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(conditional_function,
+				user_data_void, FE_region_get_element_list(fe_region, dimension));
+			if (element)
+				break;
+		}
 	}
 	else
 	{
@@ -5877,24 +6013,46 @@ if any.
 	LEAVE;
 
 	return (element);
-} /* FE_region_get_first_FE_element_that */
+}
+
+struct FE_element *FE_region_get_first_FE_element_of_dimension_that(
+	struct FE_region *fe_region, int dimension,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
+	void *user_data_void)
+{
+	struct FE_element *element;
+
+	ENTER(FE_region_get_first_FE_element_that);
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(conditional_function,
+			user_data_void, FE_region_get_element_list(fe_region, dimension));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_first_FE_element_that.  Invalid argument(s)");
+		element = (struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+}
 
 int FE_region_for_each_FE_element(struct FE_region *fe_region,
 	LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-Calls <iterator_function> with <user_data> for each FE_element in <region>.
-==============================================================================*/
 {
 	int return_code;
 
 	ENTER(FE_region_for_each_FE_element);
 	if (fe_region && iterator_function)
 	{
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(iterator_function,
-			user_data, fe_region->fe_element_list);
+		return_code = 1;
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (return_code) && (1 <= dimension); --dimension)
+		{
+			return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(iterator_function,
+				user_data, FE_region_get_element_list(fe_region, dimension));
+		}
 	}
 	else
 	{
@@ -5907,19 +6065,35 @@ Calls <iterator_function> with <user_data> for each FE_element in <region>.
 	return (return_code);
 } /* FE_region_for_each_FE_element */
 
+int FE_region_for_each_FE_element_of_dimension(struct FE_region *fe_region,
+	int dimension, LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
+	void *user_data)
+{
+	int return_code;
+
+	ENTER(FE_region_for_each_FE_element_of_dimension);
+	if (fe_region && iterator_function &&
+		(1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(iterator_function,
+			user_data, FE_region_get_element_list(fe_region, dimension));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_for_each_FE_element.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int FE_region_for_each_FE_element_conditional(struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_element) conditional_function,
 	void *conditional_user_data,
 	LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
 	void *iterator_user_data)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-For each FE_element in <fe_region> satisfying <conditional_function> with
-<conditional_user_data>, calls <iterator_function> with it and
-<iterator_user_data> as arguments.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_element_conditional_iterator_data data;
@@ -5931,8 +6105,8 @@ For each FE_element in <fe_region> satisfying <conditional_function> with
 		data.conditional_user_data = conditional_user_data;
 		data.iterator_function = iterator_function;
 		data.iterator_user_data = iterator_user_data;
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-			FE_element_conditional_iterator, (void *)&data, fe_region->fe_element_list);
+		return_code = FE_region_for_each_FE_element(fe_region,
+			FE_element_conditional_iterator, (void *)&data);
 	}
 	else
 	{
@@ -5943,18 +6117,41 @@ For each FE_element in <fe_region> satisfying <conditional_function> with
 	LEAVE;
 
 	return (return_code);
-} /* FE_region_for_each_FE_element_conditional */
+}
+
+int FE_region_for_each_FE_element_of_dimension_conditional(
+	struct FE_region *fe_region, int dimension,
+	LIST_CONDITIONAL_FUNCTION(FE_element) conditional_function,
+	void *conditional_user_data,
+	LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
+	void *iterator_user_data)
+{
+	int return_code;
+	struct FE_element_conditional_iterator_data data;
+
+	ENTER(FE_region_for_each_FE_element_of_dimension_conditional);
+	if (fe_region && conditional_function && iterator_function)
+	{
+		data.conditional_function = conditional_function;
+		data.conditional_user_data = conditional_user_data;
+		data.iterator_function = iterator_function;
+		data.iterator_user_data = iterator_user_data;
+		return_code = FE_region_for_each_FE_element_of_dimension(fe_region,
+			dimension, FE_element_conditional_iterator, (void *)&data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_for_each_FE_element_of_dimension_conditional.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int FE_region_FE_element_meets_topological_criteria(struct FE_region *fe_region,
-	struct FE_element *element, int dimension,
-	enum CM_element_type cm_element_type, int exterior, int face_number)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Calls FE_element_meets_topological_criteria with the <element_list> private to
-<fe_region>.
-==============================================================================*/
+	struct FE_element *element, int dimension, int exterior, int face_number)
 {
 	int return_code;
 
@@ -5962,7 +6159,8 @@ Calls FE_element_meets_topological_criteria with the <element_list> private to
 	if (fe_region && element)
 	{
 		return_code = FE_element_meets_topological_criteria(element, dimension,
-			cm_element_type, exterior, face_number, fe_region->fe_element_list);
+			exterior, face_number,
+			FE_region_contains_FE_element_conditional, (void *)fe_region);
 	}
 	else
 	{
@@ -5973,7 +6171,7 @@ Calls FE_element_meets_topological_criteria with the <element_list> private to
 	LEAVE;
 
 	return (return_code);
-} /* FE_region_FE_element_meets_topological_criteria */
+}
 
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name)
@@ -5991,7 +6189,12 @@ Calls element_string_to_FE_element with the <element_list> private to
 	element = (struct FE_element *)NULL;
 	if (fe_region && name)
 	{
-		element = element_string_to_FE_element(name, fe_region->fe_element_list);
+		int highest_dimension = FE_region_get_highest_dimension(fe_region);
+		if (highest_dimension)
+		{
+			element = element_string_to_FE_element(name,
+				FE_region_get_element_list(fe_region, highest_dimension));
+		}
 	}
 	else
 	{
@@ -6005,13 +6208,6 @@ Calls element_string_to_FE_element with the <element_list> private to
 
 struct FE_element *FE_region_any_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Calls any_element_string_to_FE_element with the <element_list> private to
-<fe_region>.
-==============================================================================*/
 {
 	struct FE_element *element;
 
@@ -6019,8 +6215,33 @@ Calls any_element_string_to_FE_element with the <element_list> private to
 	element = (struct FE_element *)NULL;
 	if (fe_region && name)
 	{
-		element =
-			any_element_string_to_FE_element(name, fe_region->fe_element_list);
+		const char *number_string, *type_string;
+		struct CM_element_information cm;
+		if (type_string = strpbrk(name,"eEfFlL"))
+		{
+			if (('l' == *type_string)||('L' == *type_string))
+			{
+				cm.type = CM_LINE;
+			}
+			else if (('f' == *type_string)||('F' == *type_string))
+			{
+				cm.type = CM_FACE;
+			}
+			else
+			{
+				cm.type = CM_ELEMENT;
+			}
+		}
+		else
+		{
+			cm.type = CM_ELEMENT;
+		}
+		if (number_string = strpbrk(name,"+-0123456789"))
+		{
+			cm.number = atoi(number_string);
+			int dimension = CM_ELEMENT_TYPE_TO_DIMENSION(cm.type);
+			element = FE_region_get_FE_element_from_identifier(fe_region, dimension, cm.number);
+		}
 	}
 	else
 	{
@@ -6030,86 +6251,7 @@ Calls any_element_string_to_FE_element with the <element_list> private to
 	LEAVE;
 
 	return (element);
-} /* FE_region_any_element_string_to_FE_element */
-
-int set_FE_element_dimension_3_FE_region(struct Parse_state *state,
-	void *element_address_void, void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-A modifier function for specifying a 3-D element (as opposed to a 2-D face or
-1-D line number), used (eg.) to set the seed element for a volume texture.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct CM_element_information cm;
-	struct FE_element *element, **element_address;
-	struct FE_region *fe_region;
-
-	ENTER(set_FE_element_dimension_3_FE_region);
-	if (state && (element_address = (struct FE_element **)element_address_void) &&
-		(fe_region = (struct FE_region *)fe_region_void))
-	{
-		if (current_token = state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				cm.type = CM_ELEMENT;
-				if ((1 == sscanf(current_token, "%d", &(cm.number))) &&
-					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
-				{
-					if (3 == get_FE_element_dimension(element))
-					{
-						REACCESS(FE_element)(element_address, element);
-						return_code = shift_Parse_state(state, 1);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Top level element %s is not dimension 3", current_token);
-						display_parse_state_location(state);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,
-						"Unknown seed element: %s", current_token);
-					display_parse_state_location(state);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " ELEMENT_NUMBER");
-				if (element = *element_address)
-				{
-					get_FE_element_identifier(element, &cm);
-					display_message(INFORMATION_MESSAGE, "[%d]", cm.number);
-				}
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Missing seed element number");
-			display_parse_state_location(state);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_dimension_3_FE_region.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_dimension_3_FE_region */
+}
 
 int set_FE_element_top_level_FE_region(struct Parse_state *state,
 	void *element_address_void, void *fe_region_void)
@@ -6122,8 +6264,7 @@ set the seed element for a xi_texture_coordinate computed_field.
 ==============================================================================*/
 {
 	const char *current_token;
-	int return_code;
-	struct CM_element_information cm;
+	int return_code = 0;
 	struct FE_element *element, **element_address;
 	struct FE_region *fe_region;
 
@@ -6136,19 +6277,22 @@ set the seed element for a xi_texture_coordinate computed_field.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				cm.type = CM_ELEMENT;
-				if ((1 == sscanf(current_token, "%d", &(cm.number))) &&
-					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+				int element_number = 0;
+				if (1 == sscanf(current_token, "%d", &element_number))
 				{
-					REACCESS(FE_element)(element_address, element);
-					return_code = shift_Parse_state(state,1);
+					shift_Parse_state(state,1);
+					element = FE_region_get_top_level_FE_element_from_identifier(fe_region, element_number);
+					if (element)
+					{
+						REACCESS(FE_element)(element_address, element);
+						return_code = 1;
+					}
 				}
-				else
+				if (!return_code)
 				{
 					display_message(WARNING_MESSAGE,
 						"Unknown seed element: %s", current_token);
 					display_parse_state_location(state);
-					return_code = 0;
 				}
 			}
 			else
@@ -6156,6 +6300,7 @@ set the seed element for a xi_texture_coordinate computed_field.
 				display_message(INFORMATION_MESSAGE, " ELEMENT_NUMBER");
 				if (element = *element_address)
 				{
+					struct CM_element_information cm;
 					get_FE_element_identifier(element, &cm);
 					display_message(INFORMATION_MESSAGE, "[%d]", cm.number);
 				}
@@ -6166,14 +6311,12 @@ set the seed element for a xi_texture_coordinate computed_field.
 		{
 			display_message(ERROR_MESSAGE, "Missing seed element number");
 			display_parse_state_location(state);
-			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"set_FE_element_top_level_FE_region.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -6348,46 +6491,58 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 		if (IS_OBJECT_IN_LIST(FE_field)(fe_field, master_fe_region->fe_field_list))
 		{
 			return_code = 1;
-			FE_region_begin_change(master_fe_region);
-
-			smooth_element_data.time = time;
-			smooth_element_data.fe_field = fe_field;
-			/* create a field to store an integer value per component of fe_field */
-			smooth_element_data.element_count_fe_field =
-				CREATE(FE_field)("count", fe_region);
-			set_FE_field_number_of_components(
-				smooth_element_data.element_count_fe_field,
-				get_FE_field_number_of_components(fe_field));
-			set_FE_field_value_type(smooth_element_data.element_count_fe_field,
-				INT_VALUE);
-			ACCESS(FE_field)(smooth_element_data.element_count_fe_field);
-			smooth_element_data.fe_region = master_fe_region;
-			smooth_element_data.copy_node_list = CREATE(LIST(FE_node))();
-			if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(FE_region_smooth_FE_element,
-				(void *)&smooth_element_data, fe_region->fe_element_list))
+			// use highest dimension non-empty element list
+			int dimension;
+			struct LIST(FE_element) *element_list = NULL;
+			for (dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_smooth_FE_field.  Error smoothing elements");
-				return_code = 0;
+				struct LIST(FE_element) *element_list =
+					FE_region_get_element_list(fe_region, dimension);
+				if (NUMBER_IN_LIST(FE_element)(element_list))
+					break;
 			}
-
-			smooth_node_data.time = time;
-			smooth_node_data.fe_field = fe_field;
-			smooth_node_data.element_count_fe_field =
-				smooth_element_data.element_count_fe_field;
-			smooth_node_data.fe_region = master_fe_region;
-			if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_region_smooth_FE_node,
-				(void *)&smooth_node_data, smooth_element_data.copy_node_list))
+			if (dimension)
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_smooth_FE_field.  Error smoothing nodes");
-				return_code = 0;
+				FE_region_begin_change(master_fe_region);
+				smooth_element_data.time = time;
+				smooth_element_data.fe_field = fe_field;
+				/* create a field to store an integer value per component of fe_field */
+				smooth_element_data.element_count_fe_field =
+					CREATE(FE_field)("count", fe_region);
+				set_FE_field_number_of_components(
+					smooth_element_data.element_count_fe_field,
+					get_FE_field_number_of_components(fe_field));
+				set_FE_field_value_type(smooth_element_data.element_count_fe_field,
+					INT_VALUE);
+				ACCESS(FE_field)(smooth_element_data.element_count_fe_field);
+				smooth_element_data.fe_region = master_fe_region;
+				smooth_element_data.copy_node_list = CREATE(LIST(FE_node))();
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(FE_region_smooth_FE_element,
+					(void *)&smooth_element_data, element_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_smooth_FE_field.  Error smoothing elements");
+					return_code = 0;
+				}
+
+				smooth_node_data.time = time;
+				smooth_node_data.fe_field = fe_field;
+				smooth_node_data.element_count_fe_field =
+					smooth_element_data.element_count_fe_field;
+				smooth_node_data.fe_region = master_fe_region;
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_region_smooth_FE_node,
+					(void *)&smooth_node_data, smooth_element_data.copy_node_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_smooth_FE_field.  Error smoothing nodes");
+					return_code = 0;
+				}
+
+				DESTROY(LIST(FE_node))(&smooth_element_data.copy_node_list);
+				DEACCESS(FE_field)(&smooth_element_data.element_count_fe_field);
+
+				FE_region_end_change(master_fe_region);
 			}
-
-			DESTROY(LIST(FE_node))(&smooth_element_data.copy_node_list);
-			DEACCESS(FE_field)(&smooth_element_data.element_count_fe_field);
-
-			FE_region_end_change(master_fe_region);
 		}
 		else
 		{
@@ -6755,8 +6910,7 @@ Note order: <fe_region> is to be merged into <global_fe_region>.
 					/* store in pairs in the single array to reduce allocations */
 					check_elements_data.compatible_element_field_info =
 						(struct FE_element_field_info **)NULL;
-					check_elements_data.global_element_list =
-						global_master_fe_region->fe_element_list;
+					check_elements_data.global_fe_region = global_master_fe_region;
 					if (global_fe_region->top_data_hack)
 					{
 						check_elements_data.global_node_list = (struct LIST(FE_node) *)NULL;
@@ -6766,8 +6920,8 @@ Note order: <fe_region> is to be merged into <global_fe_region>.
 						check_elements_data.global_node_list =
 							global_fe_region->fe_node_list;
 					}
-					if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(FE_element_can_be_merged,
-						(void *)&check_elements_data, fe_region->fe_element_list))
+					if (!FE_region_for_each_FE_element(fe_region,
+						FE_element_can_be_merged, (void *)&check_elements_data))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_regions_can_be_merged.  Elements are not compatible");
@@ -6948,6 +7102,7 @@ The matching element must exist in either case.
 	struct FE_regions_merge_with_master_data *merge_data;
 
 	ENTER(FE_element_merge_into_FE_region_with_master);
+	int dimension = get_FE_element_dimension(element);
 	if (element && (merge_data =
 		(struct FE_regions_merge_with_master_data *)merge_data_void) &&
 		merge_data->fe_region && merge_data->master_fe_region &&
@@ -6957,11 +7112,12 @@ The matching element must exist in either case.
 		/* If we are defining faces and lines on the parent then we need to merge
 			to ensure faces and lines are in the child region too */
 		if (merge_data->master_fe_region->element_type_node_sequence_list
-			|| (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&identifier, merge_data->fe_region->fe_element_list)))
+			|| (!FE_region_get_FE_element_from_identifier(merge_data->fe_region,
+				dimension, identifier.number)))
 		{
-			if (add_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-				&identifier, merge_data->master_fe_region->fe_element_list))
+			add_element = FE_region_get_FE_element_from_identifier(
+				merge_data->master_fe_region, dimension, identifier.number);
+			if (add_element)
 			{
 				if (merge_data->master_fe_region->element_type_node_sequence_list)
 				{
@@ -6972,7 +7128,7 @@ The matching element must exist in either case.
 				else
 				{
 					if (!ADD_OBJECT_TO_LIST(FE_element)(add_element,
-							merge_data->fe_region->fe_element_list))
+						FE_region_get_element_list(merge_data->fe_region, dimension)))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_element_merge_into_FE_region_with_master.  "
@@ -7037,9 +7193,8 @@ Does not modify <fe_region>.
 				"FE_regions_merge_with_master.  Could not merge nodes");
 			return_code = 0;
 		}
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
-			FE_element_merge_into_FE_region_with_master, (void *)&merge_data,
-			fe_region->fe_element_list))
+		if (!FE_region_for_each_FE_element(fe_region,
+			FE_element_merge_into_FE_region_with_master, (void *)&merge_data))
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_regions_merge_with_master.  Could not merge elements");
@@ -7186,8 +7341,9 @@ the <embedding_data>.
 	if (embedding_data && embedding_data->root_fe_region && element &&
 		get_FE_element_identifier(element, &identifier))
 	{
-		global_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&identifier, embedding_data->root_fe_region->fe_element_list);
+		int dimension = get_FE_element_dimension(element);
+		global_element = FE_region_get_FE_element_from_identifier(
+			embedding_data->root_fe_region, dimension, identifier.number);
 	}
 	else
 	{
@@ -7453,8 +7609,7 @@ Data for passing to FE_element_merge_into_FE_region.
 		 field info what they become in the global_fe_region.
 		 Note these are ACCESSed */
 	struct FE_element_field_info **matching_element_field_info;
-	int element_dimension, maximum_element_dimension,
-		number_of_matching_element_field_info;
+	int number_of_matching_element_field_info;
 };
 
 static int FE_element_merge_into_FE_region(struct FE_element *element,
@@ -7487,16 +7642,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 		(fe_region = data->fe_region))
 	{
 		element_dimension = get_FE_element_dimension(element);
-		/* remember the maximum element dimension to limit the list iteration */
-		if (element_dimension > data->maximum_element_dimension)
-		{
-			data->maximum_element_dimension = element_dimension;
-		}
-		if (element_dimension != data->element_dimension)
-		{
-			return_code = 1;
-		}
-		else if (FE_element_shape_is_unspecified(element_shape))
+		if (FE_element_shape_is_unspecified(element_shape))
 		{
 			/* must find an existing element of the same dimension */
 			get_FE_element_identifier(element, &element_identifier);
@@ -7509,10 +7655,9 @@ plus nodes from <fe_region> of the same number as those currently used.
 			{
 				master_fe_region = fe_region;
 			}
-			other_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-				&element_identifier, master_fe_region->fe_element_list);
-			if (other_element && (get_FE_element_dimension(other_element) ==
-				get_FE_element_dimension(element)))
+			other_element = FE_region_get_FE_element_from_identifier(master_fe_region,
+				element_dimension, element_identifier.number);
+			if (other_element)
 			{
 				return_code = 1;
 			}
@@ -7608,6 +7753,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 				/* substitute global faces */
 				if (get_FE_element_number_of_faces(element, &number_of_faces))
 				{
+					int face_dimension = element_dimension - 1;
 					for (i = 0; (i < number_of_faces) && return_code; i++)
 					{
 						if (get_FE_element_face(element, i, &old_face))
@@ -7616,7 +7762,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 							{
 								if (get_FE_element_identifier(old_face, &element_identifier) &&
 									(new_face = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-										&element_identifier, fe_region->fe_element_list)))
+										&element_identifier, FE_region_get_element_list(fe_region, face_dimension))))
 								{
 									if (!set_FE_element_face(element, i, new_face))
 									{
@@ -7778,19 +7924,16 @@ transferred.
 			merge_elements_data.number_of_matching_element_field_info = 0;
 			/* merge elements from lowest to highest dimension so that faces are
 				 merged before their parent elements */
-			/* maximum_element_dimension is increased during iteration */
-			merge_elements_data.maximum_element_dimension = 1;
-			for (i = 0; (i < merge_elements_data.maximum_element_dimension) &&
-				return_code; i++)
+			for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
 			{
-				merge_elements_data.element_dimension = i + 1;
 				if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
 					FE_element_merge_into_FE_region, (void *)&merge_elements_data,
-					fe_region->fe_element_list))
+					FE_region_get_element_list(fe_region, dimension)))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_regions_merge.  Could not merge elements");
 					return_code = 0;
+					break;
 				}
 			}
 			if (merge_elements_data.matching_element_field_info)
@@ -8164,7 +8307,7 @@ int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region)
 		if (!fe_region->informed_make_cmiss_number_field)
 		{
 			if (NUMBER_IN_LIST(FE_node)(fe_region->fe_node_list) ||
-				NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list) ||
+				FE_region_get_number_of_FE_elements_all_dimensions(fe_region) ||
 				(fe_region->data_fe_region && 
 					NUMBER_IN_LIST(FE_node)(fe_region->data_fe_region->fe_node_list)))
 			{
@@ -8193,7 +8336,7 @@ int FE_region_need_add_xi_field(struct FE_region *fe_region)
 	{
 		if (!fe_region->informed_make_xi_field)
 		{
-			if (NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list))
+			if (FE_region_get_number_of_FE_elements_all_dimensions(fe_region))
 			{
 				fe_region->informed_make_xi_field = 1;
 				return_code = 1;

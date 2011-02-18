@@ -721,7 +721,7 @@ varying integration and the behaviour is significantly different.
 				{
 					/* If we have 1D elements then we use the nodes to get to the 
 						adjacent elements, normally use the faces */
-					*node_element_list = create_node_element_list(fe_region);
+					*node_element_list = create_node_element_list(fe_region, element_dimension);
 				}
 				if (!(adjacent_FE_element_from_nodes(mapping_item->element, i,
 					&number_of_neighbour_elements, &neighbour_elements, *node_element_list,
@@ -1266,7 +1266,7 @@ the mapping is defined for this element.
 				}
 				/* 1. Get top_level_element for types that must be calculated on them */
 				get_FE_element_identifier(element, &cm);
-				if (CM_ELEMENT == cm.type)
+				if (FE_element_is_top_level(element, (void *)NULL))
 				{
 					top_level_element=element;
 				}
@@ -1275,7 +1275,8 @@ the mapping is defined for this element.
 					/* check or get top_level element, 
 						we don't have a top_level element to test with */
 					if (!(top_level_element=FE_element_get_top_level_element_conversion(
-						element,(struct FE_element *)NULL,(struct LIST(FE_element) *)NULL,
+						element,(struct FE_element *)NULL,
+						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 						-1,element_to_top_level)))
 					{
 						return_code=0;
@@ -1458,7 +1459,7 @@ Evaluate the fields cache at the location
 			/* 1. Get top_level_element for types that must be calculated on them */
 			element_dimension=get_FE_element_dimension(element);
 			get_FE_element_identifier(element, &cm);
-			if (CM_ELEMENT == cm.type)
+			if (FE_element_is_top_level(element, (void *)NULL))
 			{
 				top_level_element=element;
 				for (i=0;i<element_dimension;i++)
@@ -1472,7 +1473,8 @@ Evaluate the fields cache at the location
 			{
 				/* check or get top_level element and xi coordinates for it */
 				if (top_level_element=FE_element_get_top_level_element_conversion(
-						 element,top_level_element,(struct LIST(FE_element) *)NULL,
+						 element,top_level_element,
+						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 						 -1,element_to_top_level))
 				{
 					/* convert xi to top_level_xi */
@@ -2090,12 +2092,7 @@ struct Computed_field *Computed_field_create_integration(
 		(1 == Computed_field_get_number_of_components(integrand)))
 	{
 		int return_code = 1;
-		/* check seed element is from region */
-		CM_element_information cm;
-		FE_element *element;
-		get_FE_element_identifier(seed_element, &cm);
-		if (!((element = FE_region_get_FE_element_from_identifier(
-			fe_region, &cm)) && (element==seed_element)))
+		if (!FE_region_contains_FE_element(fe_region, seed_element))
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_type_integration.  Unable to find seed element");

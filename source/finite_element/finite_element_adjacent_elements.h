@@ -75,12 +75,11 @@ For a 1D top level element this routine will return the list of
 correct size and should be DEALLOCATED when calls to this function are finished.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Creates a list indexed by node identifying elements which refer to each node.
+ * @param dimension  Element dimension to restrict list to.
+ */
 struct LIST(Index_multi_range) *create_node_element_list(
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
+	struct FE_region *fe_region, int dimension);
 
-DESCRIPTION :
-Creates a list indexed by node identifying elements which refer to each node.
-==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_ADJACENT_ELEMENTS_H) */

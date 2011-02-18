@@ -288,7 +288,7 @@ to the <render_mode>
 			{
 				if (node1 && node1->fe_node && node2 && node2->fe_node && node3 && node3->fe_node)
 				{
-					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, CM_ELEMENT,
+					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, /*dimension*/2,
 						data->element_offset);
 					data->element_offset = element_number + 1;
 
@@ -432,7 +432,7 @@ to the <render_mode>
 			{
 				if (node1 && node1->fe_node && node2 && node2->fe_node)
 				{
-					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, CM_ELEMENT,
+					element_number = FE_region_get_next_FE_element_identifier(data->fe_region, /*dimension*/1,
 						data->element_offset);
 					data->element_offset = element_number + 1;
 

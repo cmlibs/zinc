@@ -69,7 +69,6 @@ struct FE_element_fe_region_selection_ranges_condition_data
  DESCRIPTION :
  ==============================================================================*/
 {
-	enum CM_element_type cm_element_type;
 	struct FE_region *fe_region;
 	int selected_flag;
 	struct LIST(FE_element) *element_selection_list;
@@ -140,7 +139,6 @@ static int compare_FE_element_values_number_values(
 
 struct FE_element_and_values_to_array_data
 {
-	enum CM_element_type cm_type;
 	FE_value time;
 	struct FE_element_values_number *element_values;
 	struct Computed_field *sort_by_field;
@@ -168,48 +166,45 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 			&& array_data->element_values)
 	{
 		return_code = 1;
-		if (cm_element_identifier.type == array_data->cm_type)
+		array_data->element_values->element = element;
+		if (array_data->sort_by_field)
 		{
-			array_data->element_values->element = element;
-			if (array_data->sort_by_field)
+			/* get the centre point of the element */
+			dimension = get_FE_element_dimension(element);
+			for (i = 0; i < dimension; i++)
 			{
-				/* get the centre point of the element */
-				dimension = get_FE_element_dimension(element);
-				for (i = 0; i < dimension; i++)
-				{
-					number_in_xi[i] = 1;
-				}
-				if (get_FE_element_shape(element, &element_shape)
-						&& FE_element_shape_get_xi_points_cell_centres(
-							element_shape, number_in_xi,
-							&number_of_xi_points, &xi_points))
-				{
-					if (!(array_data->element_values->values
-							&& Computed_field_evaluate_in_element(
-								array_data->sort_by_field,
-								element,
-								*xi_points,
-								array_data->time,
-								/*top_level_element*/(struct FE_element *) NULL,
-								array_data->element_values->values,
-								/*derivatives*/(FE_value *) NULL)))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_and_values_to_array.  "
-							"sort_by field could not be evaluated in element");
-						return_code = 0;
-					}
-					DEALLOCATE(xi_points);
-				}
-				else
+				number_in_xi[i] = 1;
+			}
+			if (get_FE_element_shape(element, &element_shape)
+					&& FE_element_shape_get_xi_points_cell_centres(
+						element_shape, number_in_xi,
+						&number_of_xi_points, &xi_points))
+			{
+				if (!(array_data->element_values->values
+						&& Computed_field_evaluate_in_element(
+							array_data->sort_by_field,
+							element,
+							*xi_points,
+							array_data->time,
+							/*top_level_element*/(struct FE_element *) NULL,
+							array_data->element_values->values,
+							/*derivatives*/(FE_value *) NULL)))
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_element_and_values_to_array.  Error getting centre of element");
+						"FE_element_and_values_to_array.  "
+						"sort_by field could not be evaluated in element");
 					return_code = 0;
 				}
+				DEALLOCATE(xi_points);
 			}
-			(array_data->element_values)++;
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_and_values_to_array.  Error getting centre of element");
+				return_code = 0;
+			}
 		}
+		(array_data->element_values)++;
 	}
 	else
 	{
@@ -222,13 +217,13 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 } /* FE_element_and_values_to_array */
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
-	enum CM_element_type cm_type, int element_offset,
+	int dimension, int element_offset,
 	struct Computed_field *sort_by_field, FE_value time)
 /*******************************************************************************
  LAST MODIFIED : 18 February 2003
 
  DESCRIPTION :
- Changes the identifiers of all elements of <cm_type> in <fe_region>.
+ Changes the identifiers of all elements of <dimension> in <fe_region>.
  If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
  If <sort_by_field> is specified, it is evaluated at the centre of all elements
  in <fe_region> and they are sorted by it - changing fastest with the first
@@ -241,10 +236,8 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
  ==============================================================================*/
 {
 	int i, number_of_elements, number_of_values, return_code;
-	struct CM_element_information cm, tmp_cm, next_spare_element_identifier;
 	struct FE_element *element_with_identifier;
 	struct FE_element_and_values_to_array_data array_data;
-	struct FE_element_count_if_type_data count_data;
 	struct FE_element_values_number *element_values;
 	struct FE_region *master_fe_region;
 
@@ -253,21 +246,10 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	{
 		return_code = 1;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		/* count the number of elements of cm_type in FE_region */
-		count_data.cm_type = cm_type;
-		count_data.number_of_elements = 0;
-		if (!FE_region_for_each_FE_element(fe_region, FE_element_count_if_type,
-			(void *) &count_data))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_change_element_identifiers.  "
-				"Could not count elements of given type");
-			return_code = 0;
-		}
-		number_of_elements = count_data.number_of_elements;
+		number_of_elements = FE_region_get_number_of_FE_elements_of_dimension(
+			fe_region, dimension);
 		if ((0 < number_of_elements) && return_code)
 		{
-			cm.type = cm_type;
 			if (sort_by_field)
 			{
 				number_of_values = Computed_field_get_number_of_components(
@@ -303,9 +285,8 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					array_data.element_values = element_values;
 					array_data.sort_by_field = sort_by_field;
 					array_data.time = time;
-					array_data.cm_type = cm_type;
-					if (!FE_region_for_each_FE_element(fe_region,
-						FE_element_and_values_to_array,
+					if (!FE_region_for_each_FE_element_of_dimension(fe_region,
+						dimension, FE_element_and_values_to_array,
 						(void *) &array_data))
 					{
 						display_message(ERROR_MESSAGE,
@@ -333,6 +314,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 						/* offset element numbers by element_offset */
 						for (i = 0; (i < number_of_elements) && return_code; i++)
 						{
+							struct CM_element_information tmp_cm;
 							if (get_FE_element_identifier(
 								element_values[i].element, &tmp_cm))
 							{
@@ -367,12 +349,11 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					 in the master_fe_region */
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
-						cm.number = element_values[i].new_number;
-						if ((element_with_identifier
-								= FE_region_get_FE_element_from_identifier(
-									master_fe_region, &cm))
-								&& (!FE_region_contains_FE_element(fe_region,
-									element_with_identifier)))
+						element_with_identifier = FE_region_get_FE_element_from_identifier(
+							master_fe_region, dimension, element_values[i].new_number);
+						if ((element_with_identifier) &&
+							(!FE_region_contains_FE_element(fe_region,
+								element_with_identifier)))
 						{
 							display_message(ERROR_MESSAGE,
 								"FE_region_change_element_identifiers.  "
@@ -386,39 +367,35 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					/* change identifiers */
 					/* maintain next_spare_element_number to renumber elements in same
 					 group which already have the same number as the new_number */
-					next_spare_element_identifier.type = cm_type;
-					next_spare_element_identifier.number
-						= element_values[number_of_elements - 1].new_number + 1;
+					int next_spare_element_number =
+						element_values[number_of_elements - 1].new_number + 1;
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
-						cm.number = element_values[i].new_number;
-						element_with_identifier
-							= FE_region_get_FE_element_from_identifier(
-								fe_region, &cm);
+						element_with_identifier = FE_region_get_FE_element_from_identifier(
+							fe_region, dimension, element_values[i].new_number);
 						/* only modify if element doesn't already have correct identifier */
 						if (element_with_identifier
 							!= element_values[i].element)
 						{
 							if (element_with_identifier)
 							{
-								while ((struct FE_element *) NULL
-									!= FE_region_get_FE_element_from_identifier(
-										fe_region,
-										&next_spare_element_identifier))
+								while ((struct FE_element *)NULL !=
+									FE_region_get_FE_element_from_identifier(
+										fe_region, dimension, next_spare_element_number))
 								{
-									next_spare_element_identifier.number++;
+									++next_spare_element_number;
 								}
 								if (!FE_region_change_FE_element_identifier(
 									master_fe_region,
 									element_with_identifier,
-									&next_spare_element_identifier))
+									next_spare_element_number))
 								{
 									return_code = 0;
 								}
 							}
 							if (!FE_region_change_FE_element_identifier(
 								master_fe_region,
-								element_values[i].element, &cm))
+								element_values[i].element, element_values[i].new_number))
 							{
 								display_message(ERROR_MESSAGE,
 									"FE_region_change_element_identifiers.  "
@@ -473,39 +450,36 @@ static int FE_element_add_if_selection_ranges_condition_with_group(
 			= (struct FE_element_fe_region_selection_ranges_condition_data *) data_void))
 	{
 		return_code = get_FE_element_identifier(element, &identifier);
-		if (identifier.type == data->cm_element_type)
+		selected = 1;
+		if (selected && data->selected_flag)
 		{
-			selected = 1;
-			if (selected && data->selected_flag)
-			{
-				selected = IS_OBJECT_IN_LIST(FE_element)(element,
-					data->element_selection_list);
-			}
-			if (selected && data->element_ranges)
-			{
-				selected = Multi_range_is_value_in_range(data->element_ranges,
-					identifier.number);
-			}
-			if (selected && data->group_field)
-			{
-				Cmiss_field_id element_group_field = data->group_field;
-				Cmiss_field_element_group_id element_group =
-					Cmiss_field_cast_element_group(element_group_field);
-				selected = Cmiss_field_element_group_contains_element(
-					element_group, element);
-				Cmiss_field_destroy(&element_group_field);
-			}
-			if (selected && data->conditional_field)
-			{
-				selected = Computed_field_is_true_in_element(
-					data->conditional_field, element,
-					data->conditional_field_time);
-			}
-			if (selected)
-			{
-				return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
-					data->element_list);
-			}
+			selected = IS_OBJECT_IN_LIST(FE_element)(element,
+				data->element_selection_list);
+		}
+		if (selected && data->element_ranges)
+		{
+			selected = Multi_range_is_value_in_range(data->element_ranges,
+				identifier.number);
+		}
+		if (selected && data->group_field)
+		{
+			Cmiss_field_id element_group_field = data->group_field;
+			Cmiss_field_element_group_id element_group =
+				Cmiss_field_cast_element_group(element_group_field);
+			selected = Cmiss_field_element_group_contains_element(
+				element_group, element);
+			Cmiss_field_destroy(&element_group_field);
+		}
+		if (selected && data->conditional_field)
+		{
+			selected = Computed_field_is_true_in_element(
+				data->conditional_field, element,
+				data->conditional_field_time);
+		}
+		if (selected)
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
+				data->element_list);
 		}
 	}
 	else
@@ -520,25 +494,12 @@ static int FE_element_add_if_selection_ranges_condition_with_group(
 
 struct LIST(FE_element) *
 FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
-		enum CM_element_type cm_element_type,
+		int dimension,
 		struct Multi_range *element_ranges, struct Computed_field *group_field,
 		struct Computed_field *conditional_field, FE_value time)
-/*******************************************************************************
- LAST MODIFIED : 3 March 2003
-
- DESCRIPTION :
- Creates and returns an element list that is the intersection of:
- - all the elements in <fe_region>;
- - all elements in the <element_selection> if <selected_flag> is set;
- - all elements in the given <element_ranges>, if any.
- - all elements for which the <conditional_field> evaluates as "true"
- in its centre at the specified <time>
- Up to the calling function to destroy the returned element list.
- ==============================================================================*/
 {
 	int i, element_number, elements_in_region, elements_in_ranges = 0,
-		number_of_ranges = 0, return_code, selected, start, stop;
-	struct CM_element_information element_id;
+		number_of_ranges = 0, start, stop;
 	struct FE_element *element;
 	struct FE_element_fe_region_selection_ranges_condition_data data;
 	struct FE_region *fe_region = NULL;
@@ -554,7 +515,8 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 		data.element_list = CREATE(LIST(FE_element))();
 		if (data.element_list)
 		{
-			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
+			int return_code = 1;
+			elements_in_region = FE_region_get_number_of_FE_elements_of_dimension(fe_region, dimension);
 			if (element_ranges)
 			{
 				elements_in_ranges = Multi_range_get_total_number_in_ranges(
@@ -562,7 +524,6 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 			}
 
 			data.fe_region = fe_region;
-			data.cm_element_type = cm_element_type;
 			data.selected_flag = 0;
 			data.element_selection_list = NULL;
 			/* Seems odd to specify an empty element_ranges but I have
@@ -580,60 +541,49 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 			data.conditional_field = conditional_field;
 			data.conditional_field_time = time;
 
-			Cmiss_field_group_id sub_group = NULL;
+			Cmiss_field_element_group_id element_group = NULL;
 			if (group_field)
 			{
-				sub_group = Cmiss_field_cast_group(group_field);
-			}
-			Cmiss_field_element_group_id element_group = NULL;
-			if (sub_group)
-			{
-				Cmiss_fe_mesh_id temp_mesh =
-					Cmiss_region_get_fe_mesh_by_name(region, "cmiss_elements");
-				element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-				if (!element_group)
-					element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
-				Cmiss_fe_mesh_destroy(&temp_mesh);
-				Cmiss_field_group_destroy(&sub_group);
-			}
-			if (data.element_ranges
-					&& (elements_in_ranges < elements_in_region))
-			{
-				return_code = 1;
-				for (i = 0; i < number_of_ranges; i++)
+				Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+				if (sub_group)
 				{
-					Multi_range_get_range(element_ranges, i, &start, &stop);
-					for (element_number = start; element_number <= stop; element_number++)
+					Cmiss_fe_mesh_id temp_mesh = Cmiss_region_get_fe_mesh_by_name(region,
+						((1 == dimension) ? "cmiss_mesh_1d" :
+							((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
+					element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+					Cmiss_fe_mesh_destroy(&temp_mesh);
+					Cmiss_field_group_destroy(&sub_group);
+				}
+			}
+			if ((!group_field) || (element_group))
+			{
+				if (data.element_ranges
+						&& (elements_in_ranges < elements_in_region))
+				{
+					for (i = 0; (i < number_of_ranges) && return_code; i++)
 					{
-						element_id.type = cm_element_type;
-						element_id.number = element_number;
-						element = FE_region_get_FE_element_from_identifier(
-							fe_region, &element_id);
-						if (element)
+						Multi_range_get_range(element_ranges, i, &start, &stop);
+						for (element_number = start; (element_number <= stop) && return_code; element_number++)
 						{
-							selected = 1;
-							if (selected && element_group)
+							element = FE_region_get_FE_element_from_identifier(
+								fe_region, dimension, element_number);
+							if (element && ((!element_group) ||
+								Cmiss_field_element_group_contains_element(element_group, element)))
 							{
-								selected = Cmiss_field_element_group_contains_element(
-									element_group, element);
-							}
-							if (selected)
-							{
-								ADD_OBJECT_TO_LIST(FE_element)(element,
-									data.element_list);
+								return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data.element_list);
 							}
 						}
 					}
 				}
-			}
-			else
-			{
-				data.group_field = (struct Computed_field *) element_group;
-				data.conditional_field = conditional_field;
-				return_code
-					= FE_region_for_each_FE_element(fe_region,
+				else
+				{
+					data.group_field = (struct Computed_field *) element_group;
+					data.conditional_field = conditional_field;
+					return_code	= FE_region_for_each_FE_element_of_dimension(
+						fe_region, dimension,
 						FE_element_add_if_selection_ranges_condition_with_group,
 						(void *) &data);
+				}
 			}
 			if (element_group)
 			{

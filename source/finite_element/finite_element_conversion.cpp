@@ -268,7 +268,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 			}
 			identifier.type = CM_ELEMENT;
 			identifier.number =  FE_region_get_next_FE_element_identifier(
-				destination_fe_region, identifier.type, element_number);
+				destination_fe_region, mode_dimension, element_number);
 			element_number = identifier.number;
 			if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
 					(struct FE_region *)NULL, template_element)))
@@ -406,7 +406,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 			}
 			identifier.type = CM_ELEMENT;
 			identifier.number =  FE_region_get_next_FE_element_identifier(
-				destination_fe_region, identifier.type, element_number);
+				destination_fe_region, mode_dimension, element_number);
 			element_number = identifier.number;
 			if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
 					(struct FE_region *)NULL, template_element)))
@@ -742,8 +742,8 @@ int finite_element_conversion(struct Cmiss_region *source_region,
 
 		if (return_code)
 		{
-			return_code = FE_region_for_each_FE_element(source_fe_region,
-				FE_element_convert_element, (void *)&data);
+			return_code = FE_region_for_each_FE_element_of_dimension(source_fe_region,
+				data.mode_dimension, FE_element_convert_element, (void *)&data);
 		}
 
 		FE_region_end_change(destination_fe_region);

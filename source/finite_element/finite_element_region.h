@@ -74,7 +74,7 @@ the changes are limited to the fields listed in the <fe_field_changes>.
 {
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
 	struct CHANGE_LOG(FE_node) *fe_node_changes;
-	struct CHANGE_LOG(FE_element) *fe_element_changes;
+	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 }; /* struct FE_region_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
@@ -88,7 +88,13 @@ Global macros
 /* Need these macros to help the text_choose_from_fe_region macros. */
 #define FE_region_changes_get_FE_field_changes(changes) changes->fe_field_changes
 #define FE_region_changes_get_FE_node_changes(changes) changes->fe_node_changes
-#define FE_region_changes_get_FE_element_changes(changes) changes->fe_element_changes
+
+/***************************************************************************//**
+ * Obtain changes to elements of a particular dimension.
+ * @param dimension  The element dimension, 1..MAXIMUM_ELEMENT_XI_DIMENSIONS(3)
+ */
+struct CHANGE_LOG(FE_element) *FE_region_changes_get_FE_element_changes(
+	struct FE_region_changes *changes, int dimension);
 
 #define FE_region_FE_object_method_class( object_type ) FE_region_FE_object_method_class_FE_ ## object_type \
 
@@ -759,27 +765,48 @@ DESCRIPTION :
 Returns the LIST of FE_element_shapes used for elements in this <fe_region>.
 ==============================================================================*/
 
-int FE_region_change_FE_element_identifier(
-	struct FE_region *fe_region, struct FE_element *element,
-	struct CM_element_information *new_identifier);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
+/***************************************************************************//**
+ * Gets <fe_region>, or its master_fe_region if it has one, to change the
+ * identifier of <element> to <new_identifier>. Fails if the identifier is
+ * already in use by an element of the same dimension in the master FE_region.
+ */
+int FE_region_change_FE_element_identifier(struct FE_region *fe_region,
+	struct FE_element *element, int new_identifier);
 
-DESCRIPTION :
-Gets <fe_region>, or its master_fe_region if it has one, to change the
-identifier of <element> to <new_identifier>. Fails if the identifier is already
-in use by an element in the same ultimate master FE_region.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Returns the element of the supplied dimension with the supplied identifier
+ * in fe_region, or NULL without error if none.
+ */
 struct FE_element *FE_region_get_FE_element_from_identifier(
-	struct FE_region *fe_region, struct CM_element_information *identifier);
-/*******************************************************************************
-LAST MODIFIED : 22 October 2002
+	struct FE_region *fe_region, int dimension, int identifier);
 
-DESCRIPTION :
-Returns the element identified by <cm> in <fe_region>, or NULL without error if
-no such element found.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the conventionally understood dimension corresponding to the
+ * cm_element_type:
+ * CM_LINE = 1
+ * CM_FACE = 2
+ * CM_ELEMENT = highest dimension with elements, or 3 if empty.
+ * Use with care only after elements are fully defined.
+ */
+int FE_region_CM_element_type_to_dimension(struct FE_region *fe_region,
+	enum CM_element_type cm_element_type);
+
+/***************************************************************************//**
+ * Returns the element identified by <cm> in <fe_region>, or NULL without error
+ * if no such element found.
+ * Assumes CM_ELEMENT = 3-D, CM_FACE = 2-D, CM_LINE = 1-D.
+ * Deprecated.
+ * @see FE_region_get_FE_element_from_identifier
+ */
+struct FE_element *FE_region_get_FE_element_from_identifier_deprecated(
+	struct FE_region *fe_region, struct CM_element_information *identifier);
+
+/***************************************************************************//**
+ * Returns the top-level element of the highest dimension with the supplied
+ * identifier in fe_region, or NULL without error if none.
+ */
+struct FE_element *FE_region_get_top_level_FE_element_from_identifier(
+	struct FE_region *fe_region, int identifier);
 
 struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
 	struct FE_region *fe_region, struct CM_element_information *identifier,
@@ -801,25 +828,34 @@ with FE_region_begin/end_change.
 than 'unspecified'.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns the next unused element number for elements of <dimension> in
+ * <fe_region> starting from <start_identifier>.
+ * Search is performed on the ultimate master FE_region for <fe_region> since
+ * it owns the FE_element namespace.
+ * @param start_identifier  Minimum number for new identifier. Pass 0 to give
+ * the first available number >= 1.
+ */
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,
-	enum CM_element_type element_type, int start_identifier);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
+	int dimension, int start_identifier);
 
-DESCRIPTION :
-Returns the next unused element number for elements of <element_type> in
-<fe_region> starting from <start_identifier>.
-Search is performed on the ultimate master FE_region for <fe_region> since they
-share the same FE_element namespace.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the number of elements of all dimensions in <fe_region>.
+ * Prefer FE_region_get_number_of_FE_elements_of_dimension.
+ */
+int FE_region_get_number_of_FE_elements_all_dimensions(
+	struct FE_region *fe_region);
 
-int FE_region_get_number_of_FE_elements(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2003
+/***************************************************************************//**
+ * Returns the number of elements of given dimensions in <fe_region>.
+ */
+int FE_region_get_number_of_FE_elements_of_dimension(
+	struct FE_region *fe_region, int dimension);
 
-DESCRIPTION :
-Returns the number of elements in <fe_region>.
-==============================================================================*/
+/***************************************************************************//**
+ * @return  The highest dimension of element in the region, or zero if none.
+ */
+int FE_region_get_highest_dimension(struct FE_region *fe_region);
 
 int FE_region_contains_FE_element(struct FE_region *fe_region,
 	struct FE_element *element);
@@ -868,13 +904,13 @@ Should place multiple calls to this function between begin_change/end_change.
  * existing element of supplied identifier, then creates element of that
  * identifier as a copy of source and adds it to the fe_region.
  *
+ * @param fe_region  The region to create the element copy in.
  * @param identifier  Positive integer identifier of new element, or <= 0 to
  * automatically generate. Fails if already used by an existing element.
  * @return  New element (non-accessed), or NULL if failed.
  */
 struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
-	enum CM_element_type element_type, int identifier,
-	struct FE_element *source);
+	int identifier, struct FE_element *source);
 
 /***************************************************************************//**
  * Checks <element> is compatible with <fe_region> and any existing FE_element
@@ -968,6 +1004,12 @@ as the list will be modified in the process; copy the list and iterate over
 the copy.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Ensures for elements of every dimension > 1 that there are face and line
+ * elements of lower dimension in the region.
+ */
+int FE_region_define_faces(struct FE_region *fe_region);
+
 int FE_region_get_FE_element_discretization(struct FE_region *fe_region,
 	struct FE_element *element, int face_number,
 	struct FE_field *native_discretization_field,
@@ -1027,53 +1069,75 @@ Returns true if <element> is in <fe_region> and has <field> defined on it or
 any parents also in <fe_region>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns the first element in <fe_region> that satisfies
+ * <conditional_function> with <user_data_void>.
+ * A NULL <conditional_function> returns the first FE_element in <fe_region>,
+ * if any.
+ * This version iterates over elements of all dimensions from highest to lowest.
+ * @see FE_region_get_first_FE_element_of_dimension_that
+ */
 struct FE_element *FE_region_get_first_FE_element_that(
 	struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
 	void *user_data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
 
-DESCRIPTION :
-Returns the first element in <fe_region> that satisfies <conditional_function>
-with <user_data_void>.
-A NULL <conditional_function> returns the first FE_element in <fe_region>,
-if any.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the first element of <dimension> in <fe_region> that satisfies
+ * <conditional_function> with <user_data_void>.
+ * A NULL <conditional_function> returns the first FE_element of given dimension
+ * in <fe_region>, if any.
+ */
+struct FE_element *FE_region_get_first_FE_element_of_dimension_that(
+	struct FE_region *fe_region, int dimension,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
+	void *user_data_void);
 
+/***************************************************************************//**
+ * Calls <iterator_function> with <user_data> for each FE_element in <region>
+ * of all dimensions from highest to lowest.
+ */
 int FE_region_for_each_FE_element(struct FE_region *fe_region,
 	LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
 
-DESCRIPTION :
-Calls <iterator_function> with <user_data> for each FE_element in <region>.
-==============================================================================*/
+/***************************************************************************//**
+ * Calls <iterator_function> with <user_data> for each FE_element in <region>
+ * of the given dimension.
+ * @param dimension  The dimension of the element, at least 1, current max 3.
+ */
+int FE_region_for_each_FE_element_of_dimension(struct FE_region *fe_region,
+	int dimension, LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
+	void *user_data);
 
+/***************************************************************************//**
+ * Calls <iterator_function> with <iterator_user_data> for each element of
+ * all dimensions from highest to lowest in fe_region which passes the
+ * <conditional_function> with <conditional_user_data> argument.
+ */
 int FE_region_for_each_FE_element_conditional(struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_element) conditional_function,
 	void *conditional_user_data,
 	LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
 	void *iterator_user_data);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
 
-DESCRIPTION :
-For each FE_element in <fe_region> satisfying <conditional_function> with
-<conditional_user_data>, calls <iterator_function> with it and
-<iterator_user_data> as arguments.
-==============================================================================*/
+/***************************************************************************//**
+ * Calls <iterator_function> with <iterator_user_data> for each element of
+ * all given dimensions in fe_region which passes the <conditional_function>
+ * with <conditional_user_data> argument.
+ */
+int FE_region_for_each_FE_element_of_dimension_conditional(
+	struct FE_region *fe_region, int dimension,
+	LIST_CONDITIONAL_FUNCTION(FE_element) conditional_function,
+	void *conditional_user_data,
+	LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
+	void *iterator_user_data);
 
+/***************************************************************************//**
+ * Calls generic FE_element_meets_topological_criteria function with condition
+ * that ancestor elements are in fe_region.
+ */
 int FE_region_FE_element_meets_topological_criteria(struct FE_region *fe_region,
-	struct FE_element *element, int dimension,
-	enum CM_element_type cm_element_type, int exterior, int face_number);
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Calls FE_element_meets_topological_criteria with the <element_list> private to
-<fe_region>.
-==============================================================================*/
+	struct FE_element *element, int dimension, int exterior, int face_number);
 
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name);
@@ -1085,25 +1149,12 @@ Calls element_string_to_FE_element with the <element_list> private to
 <fe_region>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Converts name string of format "CM_ELEMENT_TYPE NUMBER" to an element
+ * identifier and returns the element in <fe_region> with that identifier.
+ */
 struct FE_element *FE_region_any_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Calls any_element_string_to_FE_element with the <element_list> private to
-<fe_region>.
-==============================================================================*/
-
-int set_FE_element_dimension_3_FE_region(struct Parse_state *state,
-	void *element_address_void, void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-A modifier function for specifying a 3-D element (as opposed to a 2-D face or
-1-D line number), used (eg.) to set the seed element for a volume texture.
-==============================================================================*/
 
 int set_FE_element_top_level_FE_region(struct Parse_state *state,
 	void *element_address_void, void *fe_region_void);

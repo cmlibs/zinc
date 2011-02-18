@@ -222,6 +222,14 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier);
 
 /***************************************************************************//**
+ * Return the number of nodes in the nodeset.
+ *
+ * @param nodeset  Handle to the nodeset to query.
+ * @return  Number of nodes in nodeset.
+ */
+int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
  * Destroys this handle to the node_template and sets it to NULL.
  * Internally this just decrements the reference count.
  *

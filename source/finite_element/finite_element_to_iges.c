@@ -890,7 +890,7 @@ basis type, however every element type will be converted to a cubic.
 				{
 					cm.type = CM_LINE;
 					cm.number = FE_region_get_next_FE_element_identifier(get_data->fe_region,
-						CM_LINE, get_data->extra_line_number + 1);
+						/*dimension*/1, get_data->extra_line_number + 1);
 					get_data->extra_line_number = cm.number;
 				}
 				set_FE_element_identifier(face, &cm);

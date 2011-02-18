@@ -90,7 +90,7 @@ the <element> has.
 		(list = (struct LIST(Index_multi_range) *)node_element_list_void))
 	{
 		return_code = 1;
-		if (get_FE_element_identifier(element, &cm) && (cm.type == CM_ELEMENT) &&
+		if (get_FE_element_identifier(element, &cm) &&
 			get_FE_element_number_of_nodes(element, &number_of_nodes))
 		{
 			element_number = cm.number;
@@ -152,8 +152,8 @@ For a 1D top level element this routine will return the list of
 correct size and should be DEALLOCATED when calls to this function are finished.
 ==============================================================================*/
 {
-	int element_number, i, j, node_number, number_of_elements, number_of_ranges,
-		range_no, return_code, start, stop;
+	int dimension, element_number, i, j, node_number, number_of_elements,
+		number_of_ranges, range_no, return_code, start, stop;
 	struct CM_element_information element_id;
 	struct FE_element *adjacent_element;
 	struct FE_node *node;
@@ -163,6 +163,7 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	if (element && node_element_list && fe_region)
 	{
 		return_code = 1;
+		dimension = get_FE_element_dimension(element);
 		get_FE_element_identifier(element, &element_id);
 		element_number = element_id.number;
 		if (get_FE_element_node(element, node_index, &node) && node)
@@ -178,7 +179,6 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 				if (ALLOCATE(*adjacent_elements, struct FE_element *,
 					number_of_elements))
 				{
-					element_id.type = CM_ELEMENT;
 					i = 0;
 					if (0<(number_of_ranges=Index_multi_range_get_number_of_ranges(
 						node_elements)))
@@ -192,10 +192,9 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 								{
 									if (j != element_number)
 									{
-										element_id.number = j;
-										if (adjacent_element =
+										if ((adjacent_element =
 											FE_region_get_FE_element_from_identifier(fe_region,
-												&element_id))
+												dimension, j)))
 										{
 											(*adjacent_elements)[i] = adjacent_element;
 											i++;
@@ -250,13 +249,7 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 } /* adjacent_FE_element_from_nodes */
 
 struct LIST(Index_multi_range) *create_node_element_list(
-	struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Creates a list indexed by node identifying elements which refer to each node.
-==============================================================================*/
+	struct FE_region *fe_region, int dimension)
 {
 	struct LIST(Index_multi_range) *list;
 
@@ -264,7 +257,7 @@ Creates a list indexed by node identifying elements which refer to each node.
 	if (fe_region)
 	{
 		list = CREATE(LIST(Index_multi_range))();
-		if (!(FE_region_for_each_FE_element(fe_region,
+		if (!(FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
 			FE_element_add_nodes_to_node_element_list, (void *)list)))
 		{
 			DESTROY(LIST(Index_multi_range))(&list);

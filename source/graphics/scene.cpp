@@ -880,7 +880,7 @@ stored in the nearest_element_data.
 				if (CM_element_information_from_graphics_name(&cm,
 					Scene_picked_object_get_subobject(scene_picked_object,1)) &&
 					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+					(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
 				{
 					dimension = get_FE_element_dimension(element);
 					if (((nearest_element_data->select_elements_enabled &&
@@ -1011,7 +1011,7 @@ and destroy it once returned.
 				if (CM_element_information_from_graphics_name(&cm,
 					Scene_picked_object_get_subobject(scene_picked_object,1))&&
 					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+					(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
 				{
 					if ((!nearest_element_point_data->cmiss_region) ||
 						FE_region_contains_FE_element(Cmiss_region_get_FE_region(
@@ -3167,7 +3167,7 @@ manager, ensures it is in the list.
 			if (CM_element_information_from_graphics_name(&cm,
 				Scene_picked_object_get_subobject(scene_picked_object,1))&&
 				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
+				(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
 			{
 				dimension = get_FE_element_dimension(element);
 				if ((picked_elements_data->select_elements_enabled &&

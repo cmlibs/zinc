@@ -987,7 +987,7 @@ derivatives; helps make smooth snakes from few data points.
 						{
 							/* get next unused element identifier from fe_region */
 							cm.number = FE_region_get_next_FE_element_identifier(
-								fe_region, cm.type, cm.number);
+								fe_region, /*dimension*/1, cm.number);
 							if (element = CREATE(FE_element)(&cm,
 								(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
 								template_element))

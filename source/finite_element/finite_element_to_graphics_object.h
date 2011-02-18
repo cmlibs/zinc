@@ -66,9 +66,10 @@ USE_FACES    = CM_FACE or dimension 2
 USE_LINES    = CM_LINE or dimension 1
 ==============================================================================*/
 {
-  USE_ELEMENTS,
-  USE_FACES,
-  USE_LINES
+	USE_ELEMENT_TYPE_INVALID = 0,
+	USE_ELEMENTS = 1,
+	USE_FACES = 2,
+	USE_LINES = 3
 }; /* enum Use_element_type */
 
 struct Element_to_cylinder_data
@@ -297,38 +298,12 @@ these are simply returned, since no valid direction can be produced.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Use_element_type);
 
-enum CM_element_type Use_element_type_CM_element_type(
-	enum Use_element_type use_element_type);
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns the CM_element_type expected for the <use_element_type>. Note that a
-match is found if either the dimension or the CM_element_type matches the
-element.
-==============================================================================*/
-
-int Use_element_type_dimension(enum Use_element_type use_element_type);
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns the dimension expected for the <use_element_type>. Note that a match is
-found if either the dimension or the CM_element_type matches the element.
-==============================================================================*/
-
-struct FE_element *FE_region_get_element_with_Use_element_type(
-	struct FE_region *fe_region, enum Use_element_type use_element_type,
-	int element_number);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
-USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
-the logic for getting the most appropriate element from <fe_region> with
-the given the <use_element_type> and <element_number>.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the dimension expected for the <use_element_type>. If <fe_region> is
+ * supplied, USE_ELEMENT returns the highest dimension present in fe_region.
+ */
+int Use_element_type_dimension(enum Use_element_type use_element_type,
+	struct FE_region *fe_region);
 
 int CM_element_information_to_graphics_name(struct CM_element_information *cm);
 /*******************************************************************************

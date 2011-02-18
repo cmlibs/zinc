@@ -864,11 +864,11 @@ struct Cmiss_graphic_FE_region_change_data
 	int number_of_fe_node_changes;
 	struct CHANGE_LOG(FE_node) *fe_node_changes;
 	/* changes to elements with summary and number_of_changes */
-	int fe_element_change_summary;
-	int number_of_fe_element_changes;
-	struct CHANGE_LOG(FE_element) *fe_element_changes;
+	int fe_element_change_summary[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int number_of_fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value time;
-	/* following set if changes affect any of the graphics */
+	/* following set if changes affect any of the graphicsS */
 	int graphics_changed;
 	/* the FE_region the settings apply to */
 	struct FE_region *fe_region;

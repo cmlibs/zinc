@@ -664,26 +664,27 @@ DESCRIPTION :
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
 				FE_region_begin_change(fe_region);
+				int highest_dimension = FE_region_get_highest_dimension(fe_region);
 				if (element_flag)
 				{
 					if (!FE_region_change_element_identifiers(fe_region,
-						CM_ELEMENT,	element_offset, sort_by_field, time))
+						highest_dimension, element_offset, sort_by_field, time))
 					{
 						return_code = 0;
 					}
 				}
-				if (face_flag)
+				if (face_flag && (highest_dimension > 2))
 				{
 					if (!FE_region_change_element_identifiers(fe_region,
-						CM_FACE,	face_offset, sort_by_field, time))
+						/*dimension*/2,	face_offset, sort_by_field, time))
 					{
 						return_code = 0;
 					}
 				}
-				if (line_flag)
+				if (line_flag && (highest_dimension > 1))
 				{
 					if (!FE_region_change_element_identifiers(fe_region,
-						CM_LINE,	line_offset, sort_by_field, time))
+						/*dimension*/1, line_offset, sort_by_field, time))
 					{
 						return_code = 0;
 					}
@@ -1014,7 +1015,6 @@ Executes a GFX CREATE GROUP command.
 {
 	char *from_region_path, *name, *region_path;
 	int return_code = 0, object_type;
-	struct CM_element_type_Multi_range_data element_data;
 	struct Cmiss_region *base_region, *from_region, *region, *root_region;
 	struct FE_region *fe_region, *from_fe_region;
 	struct Multi_range *add_ranges;
@@ -1083,14 +1083,16 @@ Executes a GFX CREATE GROUP command.
 							else
 							{
 								/* add elements */
-								element_data.cm_element_type = CM_ELEMENT;
-								element_data.multi_range = add_ranges;
-								return_code =
-									FE_region_for_each_FE_element_conditional(from_fe_region,
-										FE_element_of_CM_element_type_is_in_Multi_range,
-										(void *)&element_data,
-										FE_region_merge_FE_element_and_faces_and_nodes_iterator,
-										(void *)fe_region);
+								int highest_dimension = FE_region_get_highest_dimension(from_fe_region);
+								if (highest_dimension)
+								{
+									return_code =
+										FE_region_for_each_FE_element_of_dimension_conditional(
+											from_fe_region, highest_dimension,
+											FE_element_number_is_in_Multi_range, (void *)add_ranges,
+											FE_region_merge_FE_element_and_faces_and_nodes_iterator,
+											(void *)fe_region);
+								}
 							}
 						}
 						else
@@ -1386,7 +1388,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			}
 			if (return_code)
 			{
-				number_of_particles = FE_region_get_number_of_FE_elements(fe_region);
+				number_of_particles = FE_region_get_number_of_FE_elements_all_dimensions(fe_region);
 				if (create_more)
 				{
 					number_of_particles += current_number_of_particles;
@@ -3086,7 +3088,8 @@ value searches just elements of that dimension.
 			Set_cmiss_field_value_to_texture(field, texture_coordinate_field,
 				texture, spectrum,	fail_material, image_height, image_width, image_depth,
 				bytes_per_pixel, number_of_bytes_per_component, use_pixel_location,
-				storage,propagate_field,	graphics_buffer_package, element_dimension);
+				storage,propagate_field,	graphics_buffer_package, element_dimension,
+				/*search_region*/region);
 		}
 		else
 		{
@@ -5759,9 +5762,7 @@ Executes a GFX DEFINE FACES command.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
-	struct FE_element_list_CM_element_type_data element_list_type_data;
 	struct FE_region *fe_region;
-	struct LIST(FE_element) *element_list;
 	struct Option_table *option_table;
 
 	ENTER(gfx_define_faces);
@@ -5781,32 +5782,7 @@ Executes a GFX DEFINE FACES command.
 				region_path, &region) && region &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
-				if (element_list = CREATE(LIST(FE_element))())
-				{
-					element_list_type_data.cm_element_type = CM_ELEMENT;
-					element_list_type_data.element_list = element_list;
-					if (FE_region_for_each_FE_element(fe_region,
-						add_FE_element_of_CM_element_type_to_list,
-						(void *)&element_list_type_data))
-					{
-						FE_region_begin_change(fe_region);
-						FE_region_begin_define_faces(fe_region);
-						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-							FE_region_merge_FE_element_and_faces_and_nodes_iterator,
-							(void *)fe_region, element_list);
-						FE_region_end_define_faces(fe_region);
-						FE_region_end_change(fe_region);
-					}
-					else
-					{
-						return_code = 0;
-					}
-					DESTROY(LIST(FE_element))(&element_list);
-				}
-				else
-				{
-					return_code = 0;
-				}
+				return_code = FE_region_define_faces(fe_region);
 			}
 			else
 			{
@@ -6187,10 +6163,12 @@ Executes a GFX DESTROY ELEMENTS command.
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
 					Cmiss_rendition_destroy(&rendition);
 		  		}
+		  		int dimension = FE_region_CM_element_type_to_dimension(
+		  			Cmiss_region_get_FE_region(region), cm_element_type);
 		  		if (selected_flag && group_field)
 		  		{
 		  			destroy_element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
+		  				region, dimension, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 		  				time);
 		  		}
 		  		else if (selected_flag && !group_field)
@@ -6200,7 +6178,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		  		else
 		  		{
 		  			destroy_element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, NULL, conditional_field,
+		  				region, dimension, element_ranges, NULL, conditional_field,
 		  				time);
 		  		}
 		  		if (destroy_element_list)
@@ -8906,7 +8884,7 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 		
 		// make an element based on the template & fill node list
 		element_identifier.type = CM_ELEMENT;
-		element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, 1);
+		element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, /*dimension*/2, 1);
 		element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
 			(struct FE_region *)NULL, template_element);
 		ACCESS(FE_element)(element);
@@ -9758,10 +9736,8 @@ Executes a GFX LIST ELEMENT.
 	char all_flag, *region_path, selected_flag, verbose_flag;
 	enum CM_element_type cm_element_type;
 	int return_code, start, stop;
-	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region = NULL;
-	struct LIST(FE_element) *element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
 
@@ -9797,120 +9773,119 @@ Executes a GFX LIST ELEMENT.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
+			struct LIST(FE_element) *element_list = NULL;
+			int dimension = 0;
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-				region_path, &region))
+				region_path, &region) && region)
 			{
-			if (region)
-		  	{
 				struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-		  		Cmiss_field_group_id group_field = NULL;
-		  		if (rendition)
-		  		{
-		  			group_field = Cmiss_rendition_get_selection_group(rendition);
-		  			Cmiss_rendition_destroy(&rendition);
-		  		}
-		  		if (selected_flag && group_field)
-		  		{
-		  			element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), NULL,0);
-		  		}
-		  		else if (selected_flag && !group_field)
-		  		{
-		  			element_list = NULL;
-		  		}
-		  		else
-		  		{
-		  			element_list = FE_element_list_from_region_and_selection_group(
-		  				region, cm_element_type, element_ranges, NULL, NULL, 0);
-		  		}
-		  		if (group_field)
-		  			Cmiss_field_group_destroy(&group_field);
-		  	}
-				if (element_list)
+				Cmiss_field_group_id group_field = NULL;
+				if (rendition)
 				{
-					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
-					{
-						/* always write verbose details if single element asked for and
-							 neither all_flag nor selected_flag nor element_group set */
-						if (verbose_flag || ((!all_flag) && (!selected_flag) &&
-							(1 == Multi_range_get_number_of_ranges(element_ranges)) &&
-							(Multi_range_get_range(element_ranges, /*range_number*/0, 
-								&start, &stop)) && (start == stop)))
-						{
-							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
-								(void *)NULL, element_list);
-						}
-						else
-						{
-							/* write comma separated list of ranges - clear and use existing
-								 element_ranges structure */
-							switch (cm_element_type)
-							{
-								case CM_ELEMENT:
-								{
-									display_message(INFORMATION_MESSAGE,"Elements:\n");
-								} break;
-								case CM_FACE:
-								{
-									display_message(INFORMATION_MESSAGE,"Faces:\n");
-								} break;
-								case CM_LINE:
-								{
-									display_message(INFORMATION_MESSAGE,"Lines:\n");
-								} break;
-							}
-							Multi_range_clear(element_ranges);
-							element_type_ranges_data.cm_element_type = cm_element_type;
-							element_type_ranges_data.multi_range = element_ranges;
-							if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								FE_element_of_CM_element_type_add_number_to_Multi_range,
-								(void *)&element_type_ranges_data, element_list))
-							{
-								return_code = Multi_range_display_ranges(element_ranges);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_list_FE_element.  Could not get element ranges");
-								return_code = 0;
-							}
-							display_message(INFORMATION_MESSAGE,"Total number = %d\n",
-								NUMBER_IN_LIST(FE_element)(element_list));
-						}
-					}
-					else
-					{
-						switch (cm_element_type)
-						{
-							case CM_ELEMENT:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx list elements:  No elements specified\n");
-							} break;
-							case CM_FACE:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx list faces:  No faces specified\n");
-							} break;
-							case CM_LINE:
-							{
-								display_message(INFORMATION_MESSAGE,
-									"gfx list lines:  No lines specified\n");
-							} break;
-						}
-					}
-					DESTROY(LIST(FE_element))(&element_list);
+					group_field = Cmiss_rendition_get_selection_group(rendition);
+					Cmiss_rendition_destroy(&rendition);
+				}
+				dimension = FE_region_CM_element_type_to_dimension(
+					Cmiss_region_get_FE_region(region), cm_element_type);
+				if (selected_flag && group_field)
+				{
+					element_list = FE_element_list_from_region_and_selection_group(
+						region, dimension, element_ranges, Cmiss_field_group_base_cast(group_field), NULL,0);
+				}
+				else if (selected_flag && !group_field)
+				{
+					element_list = NULL;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_list_FE_element.  Could not make element_list");
+					element_list = FE_element_list_from_region_and_selection_group(
+						region, dimension, element_ranges, NULL, NULL, 0);
 				}
+				if (group_field)
+					Cmiss_field_group_destroy(&group_field);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE, "gfx_list_FE_element.  Invalid region");
 				return_code = 0;
+			}
+			if (return_code && (element_list))
+			{
+				if (0 < NUMBER_IN_LIST(FE_element)(element_list))
+				{
+					/* always write verbose details if single element asked for and
+							 neither all_flag nor selected_flag nor element_group set */
+					if (verbose_flag || ((!all_flag) && (!selected_flag) &&
+						(1 == Multi_range_get_number_of_ranges(element_ranges)) &&
+						(Multi_range_get_range(element_ranges, /*range_number*/0,
+							&start, &stop)) && (start == stop)))
+					{
+						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
+							(void *)NULL, element_list);
+					}
+					else
+					{
+						/* write comma separated list of ranges - clear and use existing
+								 element_ranges structure */
+						switch (cm_element_type)
+						{
+							case CM_ELEMENT:
+							{
+								display_message(INFORMATION_MESSAGE,"Elements (dimension %d):\n", dimension);
+							} break;
+							case CM_FACE:
+							{
+								display_message(INFORMATION_MESSAGE,"Faces:\n");
+							} break;
+							case CM_LINE:
+							{
+								display_message(INFORMATION_MESSAGE,"Lines:\n");
+							} break;
+						}
+						Multi_range_clear(element_ranges);
+						if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_add_number_to_Multi_range,
+							(void *)element_ranges, element_list))
+						{
+							return_code = Multi_range_display_ranges(element_ranges);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_list_FE_element.  Could not get element ranges");
+							return_code = 0;
+						}
+						display_message(INFORMATION_MESSAGE,"Total number = %d\n",
+							NUMBER_IN_LIST(FE_element)(element_list));
+					}
+				}
+				else
+				{
+					switch (cm_element_type)
+					{
+						case CM_ELEMENT:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx list elements:  No elements specified\n");
+						} break;
+						case CM_FACE:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx list faces:  No faces specified\n");
+						} break;
+						case CM_LINE:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx list lines:  No lines specified\n");
+						} break;
+					}
+				}
+				DESTROY(LIST(FE_element))(&element_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_list_FE_element.  Could not make element_list");
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -11474,10 +11449,12 @@ be specified at once.
 								group_field = Cmiss_rendition_get_selection_group(rendition);
 								Cmiss_rendition_destroy(&rendition);
 							}
+					  		int dimension = FE_region_CM_element_type_to_dimension(
+					  			Cmiss_region_get_FE_region(region), cm_element_type);
 							if (selected_flag && group_field)
 							{
 								element_list = FE_element_list_from_region_and_selection_group(
-									region, cm_element_type, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
+									region, dimension, element_ranges, Cmiss_field_group_base_cast(group_field), conditional_field,
 									time);
 							}
 							else if (selected_flag && !group_field)
@@ -11487,7 +11464,7 @@ be specified at once.
 							else
 							{
 								element_list = FE_element_list_from_region_and_selection_group(
-									region, cm_element_type, element_ranges, NULL, conditional_field,
+									region, dimension, element_ranges, NULL, conditional_field,
 									time);
 							}
 							if (group_field)
@@ -13820,29 +13797,30 @@ user, otherwise the elements file is read.
 							if (fe_region = Cmiss_region_get_FE_region(region))
 							{
 								FE_region_begin_change(fe_region);
+								int highest_dimension = FE_region_get_highest_dimension(fe_region);
 								if (element_flag)
 								{
 									if (!FE_region_change_element_identifiers(fe_region,
-											CM_ELEMENT,	element_offset, 
-											(struct Computed_field *)NULL, /*time*/0))
+										highest_dimension, element_offset,
+										(struct Computed_field *)NULL, /*time*/0))
 									{
 										return_code = 0;
 									}
 								}
-								if (face_flag)
+								if (face_flag && (highest_dimension > 2))
 								{
 									if (!FE_region_change_element_identifiers(fe_region,
-											CM_FACE,	face_offset,
-											(struct Computed_field *)NULL, /*time*/0))
+										/*dimension*/2, face_offset,
+										(struct Computed_field *)NULL, /*time*/0))
 									{
 										return_code = 0;
 									}
 								}
-								if (line_flag)
+								if (line_flag && (highest_dimension > 1))
 								{
 									if (!FE_region_change_element_identifiers(fe_region,
-											CM_LINE,	line_offset,
-											(struct Computed_field *)NULL, /*time*/0))
+										/*dimension*/1, line_offset,
+										(struct Computed_field *)NULL, /*time*/0))
 									{
 										return_code = 0;
 									}
@@ -14870,9 +14848,11 @@ Executes a GFX SELECT command.
 				{
 					if (region)
 					{
+				  		int dimension = FE_region_CM_element_type_to_dimension(
+				  			Cmiss_region_get_FE_region(region), CM_ELEMENT);
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_ELEMENT, multi_range, NULL, conditional_field, time))
+									region, dimension, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -14900,7 +14880,7 @@ Executes a GFX SELECT command.
 					{
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_FACE, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/2, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -14972,7 +14952,7 @@ Executes a GFX SELECT command.
 					{
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_LINE, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/1, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15225,9 +15205,11 @@ Executes a GFX UNSELECT command.
 				{
 					if (region)
 					{
+				  		int dimension = FE_region_CM_element_type_to_dimension(
+				  			Cmiss_region_get_FE_region(region), CM_ELEMENT);
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_ELEMENT, multi_range, NULL, conditional_field, time))
+									region, dimension, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15255,7 +15237,7 @@ Executes a GFX UNSELECT command.
 					{
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_FACE, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/2, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15327,7 +15309,7 @@ Executes a GFX UNSELECT command.
 					{
 						if (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, CM_LINE, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/1, multi_range, NULL, conditional_field, time))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);

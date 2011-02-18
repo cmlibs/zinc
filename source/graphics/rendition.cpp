@@ -573,11 +573,14 @@ static void Cmiss_rendition_FE_region_change(struct FE_region *fe_region,
 		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(changes->fe_node_changes,
 			&data.number_of_fe_node_changes);
 		data.fe_node_changes = changes->fe_node_changes;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes,
-			&data.fe_element_change_summary);
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes,
-			&data.number_of_fe_element_changes);
-		data.fe_element_changes = changes->fe_element_changes;
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
+				&(data.fe_element_change_summary[dim]));
+			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes[dim],
+				&(data.number_of_fe_element_changes[dim]));
+			data.fe_element_changes[dim] = changes->fe_element_changes[dim];
+		}
 		/*???RC Is there a better way of getting time to here? */
 		data.time = 0;
 		data.graphics_changed = 0;
@@ -616,11 +619,14 @@ static void Cmiss_rendition_data_FE_region_change(struct FE_region *fe_region,
 		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(changes->fe_node_changes,
 			&data.number_of_fe_node_changes);
 		data.fe_node_changes = changes->fe_node_changes;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes,
-			&data.fe_element_change_summary);
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes,
-			&data.number_of_fe_element_changes);
-		data.fe_element_changes = changes->fe_element_changes;
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		{
+			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
+				&(data.fe_element_change_summary[dim]));
+			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes[dim],
+				&(data.number_of_fe_element_changes[dim]));
+			data.fe_element_changes[dim] = changes->fe_element_changes[dim];
+		}
 		/*???RC Is there a better way of getting time to here? */
 		if (rendition->time_object)
 		{
@@ -3882,7 +3888,7 @@ int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendit
 		if (sub_group)
 		{
 			Cmiss_fe_mesh_id temp_mesh =
-				Cmiss_region_get_fe_mesh_by_name(rendition->region, "cmiss_elements");
+				Cmiss_region_get_fe_mesh_by_name(rendition->region, "cmiss_mesh_3d");
 			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 			if (!element_group)
 				element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);

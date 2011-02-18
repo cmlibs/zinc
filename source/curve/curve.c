@@ -135,14 +135,11 @@ Returns the element at position element_no in the curve.
 ==============================================================================*/
 {
 	struct FE_element *element;
-	struct CM_element_information cm;
 
 	ENTER(cc_get_element);
 	if (curve)
 	{
-		cm.number=element_no;
-		cm.type = CM_ELEMENT;
-		element=FE_region_get_FE_element_from_identifier(curve->fe_region,&cm);
+		element=FE_region_get_FE_element_from_identifier(curve->fe_region, 1, element_no);
 	}
 	else
 	{
@@ -2160,7 +2157,8 @@ Returns the number of elements in the curve.
 	ENTER(Curve_get_number_of_elements);
 	if (curve)
 	{
-		number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region);
+		number_of_elements=FE_region_get_number_of_FE_elements_of_dimension(
+			curve->fe_region, 1);
 	}
 	else
 	{
@@ -2201,7 +2199,7 @@ expected to make the element have a finite size.
 
 	ENTER(Curve_add_element);
 	if (curve&&(0<=(number_of_elements=
-		FE_region_get_number_of_FE_elements(curve->fe_region)))&&
+		FE_region_get_number_of_FE_elements_of_dimension(curve->fe_region, 1)))&&
 		(0<element_no)&&((element_no <= number_of_elements+1)))
 	{
 		cm.type = CM_ELEMENT;
@@ -2235,9 +2233,8 @@ expected to make the element have a finite size.
 			{
 				/* last element: share last node of last element, make new nodes as
 					 copy of it */
-				cm.number=number_of_elements;
 				if ((last_element=FE_region_get_FE_element_from_identifier(
-					curve->fe_region, &cm))&&
+					curve->fe_region, 1, number_of_elements))&&
 					get_FE_element_node(last_element,curve->value_nodes_per_element-1,
 						&node_to_copy))
 				{
@@ -2274,7 +2271,7 @@ expected to make the element have a finite size.
 					 element_at_pos to last new node for continuity. Renumber subsequent
 					 nodes and elements to keep sequential */
 				if ((existing_element=FE_region_get_FE_element_from_identifier
-					(curve->fe_region, &cm))&&
+					(curve->fe_region, 1, element_no))&&
 					get_FE_element_node(existing_element,0,&node_to_copy)&&
 					(node_no=get_FE_node_identifier(node_to_copy))&&
 					(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region)))
@@ -2282,13 +2279,11 @@ expected to make the element have a finite size.
 					/* increment numbers of elements to follow */
 					for (i=number_of_elements;(i>=element_no)&&return_code;i--)
 					{
-						cm.number=i;
 						if (existing_element=FE_region_get_FE_element_from_identifier
-							(curve->fe_region, &cm))
+							(curve->fe_region, 1, i))
 						{
-							cm.number++;
 							if (!FE_region_change_FE_element_identifier(
-								curve->fe_region, existing_element, &cm))
+								curve->fe_region, existing_element, i + 1))
 							{
 								return_code=0;
 							}
@@ -2407,32 +2402,27 @@ at the other end of the element being deleted.
 {
 	int first_node_to_delete,i,last_node_to_delete,node_no_decrement,
 		number_of_elements,number_of_nodes,return_code;
-	struct CM_element_information cm;
 	struct FE_element *element_to_delete,*existing_element,*left_element,
 		*right_element;
 	struct FE_node *left_node,*right_node;
 
 	ENTER(Curve_delete_element);
 	if (curve&&
-		(number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region))&&
+		(number_of_elements=FE_region_get_number_of_FE_elements_of_dimension(curve->fe_region, 1))&&
 		(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region))&&
 		(0<element_no)&&(element_no <= number_of_elements))
 	{
 		return_code=1;
-		cm.type = CM_ELEMENT;
-		cm.number=element_no;
 		if ((element_to_delete=FE_region_get_FE_element_from_identifier(
-			curve->fe_region, &cm))&&
+			curve->fe_region, 1, element_no))&&
 			get_FE_element_node(element_to_delete,0,&left_node)&&
 			get_FE_element_node(element_to_delete,curve->value_nodes_per_element-1,
 				&right_node))
 		{
-			cm.number=element_no-1;
 			left_element=FE_region_get_FE_element_from_identifier(
-				curve->fe_region, &cm);
-			cm.number=element_no+1;
+				curve->fe_region, 1, element_no - 1);
 			right_element=FE_region_get_FE_element_from_identifier(
-				curve->fe_region, &cm);
+				curve->fe_region, 1, element_no + 1);
 			first_node_to_delete=get_FE_node_identifier(left_node);
 			last_node_to_delete=get_FE_node_identifier(right_node);
 			if (1==element_no)
@@ -2535,13 +2525,11 @@ at the other end of the element being deleted.
 			/* decrement numbers of elements to follow */
 			for (i=element_no+1;(i<=number_of_elements)&&return_code;i++)
 			{
-				cm.number=i;
 				if (existing_element=FE_region_get_FE_element_from_identifier(
-					curve->fe_region, &cm))
+					curve->fe_region, 1, i))
 				{
-					cm.number--;
 					if (!FE_region_change_FE_element_identifier(curve->fe_region,
-						existing_element,&cm))
+						existing_element, i - 1))
 					{
 						return_code=0;
 					}

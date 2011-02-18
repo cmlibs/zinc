@@ -1100,54 +1100,8 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Use_element_type)
 
-enum CM_element_type Use_element_type_CM_element_type(
-	enum Use_element_type use_element_type)
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns the CM_element_type expected for the <use_element_type>. Note that a
-match is found if either the dimension or the CM_element_type matches the
-element.
-==============================================================================*/
-{
-	enum CM_element_type cm_element_type;
-
-	ENTER(Use_element_type_CM_element_type);
-	switch (use_element_type)
-	{
-		case USE_ELEMENTS:
-		{
-			cm_element_type=CM_ELEMENT;
-		} break;
-		case USE_FACES:
-		{
-			cm_element_type=CM_FACE;
-		} break;
-		case USE_LINES:
-		{
-			cm_element_type=CM_LINE;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Use_element_type_CM_element_type.  Unknown use_element_type");
-			cm_element_type=CM_ELEMENT;
-		} break;
-	}
-	LEAVE;
-
-	return (cm_element_type);
-} /* Use_element_type_CM_element_type */
-
-int Use_element_type_dimension(enum Use_element_type use_element_type)
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns the dimension expected for the <use_element_type>. Note that a match is
-found if either the dimension or the CM_element_type matches the element.
-==============================================================================*/
+int Use_element_type_dimension(enum Use_element_type use_element_type,
+	struct FE_region *fe_region)
 {
 	int dimension;
 
@@ -1156,7 +1110,16 @@ found if either the dimension or the CM_element_type matches the element.
 	{
 		case USE_ELEMENTS:
 		{
-			dimension=3;
+			if (fe_region)
+			{
+				dimension = FE_region_get_highest_dimension(fe_region);
+				if (0 == dimension)
+					dimension = 3;
+			}
+			else
+			{
+				dimension=3;
+			}
 		} break;
 		case USE_FACES:
 		{
@@ -1169,7 +1132,7 @@ found if either the dimension or the CM_element_type matches the element.
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Use_element_type_dimension.  Unknown use_element_type");
+				"Use_element_type_dimension.  Unknown use_element_type %d", use_element_type);
 			dimension=0;
 		} break;
 	}
@@ -1177,58 +1140,6 @@ found if either the dimension or the CM_element_type matches the element.
 
 	return (dimension);
 } /* Use_element_type_dimension */
-
-struct FE_element *FE_region_get_element_with_Use_element_type(
-	struct FE_region *fe_region, enum Use_element_type use_element_type,
-	int element_number)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
-USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
-the logic for getting the most appropriate element from <fe_region> with
-the given the <use_element_type> and <element_number>.
-==============================================================================*/
-{
-	struct CM_element_information element_identifier;
-	struct FE_element *element;
-
-	ENTER(FE_region_get_element_with_Use_element_type);
-	if (fe_region)
-	{
-		element_identifier.type =
-			Use_element_type_CM_element_type(use_element_type);
-		element_identifier.number = element_number;
-		if (!(element = FE_region_get_FE_element_from_identifier(fe_region,
-			&element_identifier)))
-		{
-			if (USE_ELEMENTS != use_element_type)
-			{
-				element_identifier.type = CM_ELEMENT;
-				if (element = FE_region_get_FE_element_from_identifier(fe_region,
-					&element_identifier))
-				{
-					if (get_FE_element_dimension(element) !=
-						Use_element_type_dimension(use_element_type))
-					{
-						element = (struct FE_element *)NULL;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_get_element_with_Use_element_type.  "
-			"Invalid argument(s)");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /* FE_region_get_element_with_Use_element_type */
 
 int CM_element_information_to_graphics_name(struct CM_element_information *cm)
 /*******************************************************************************
@@ -4999,7 +4910,7 @@ Converts a finite element into a cylinder.
 		(struct Element_to_cylinder_data *)void_element_to_cylinder_data))
 	{
 		if (FE_region_FE_element_meets_topological_criteria(
-			element_to_cylinder_data->fe_region, element, 1, CM_LINE,
+			element_to_cylinder_data->fe_region, element, 1,
 			element_to_cylinder_data->exterior,
 			element_to_cylinder_data->face_number))
 		{
@@ -5061,7 +4972,7 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 		(struct Element_to_polyline_data *)element_to_polyline_data_void))
 	{
 		if (FE_region_FE_element_meets_topological_criteria(
-			element_to_polyline_data->fe_region, element, 1, CM_LINE,
+			element_to_polyline_data->fe_region, element, 1,
 			element_to_polyline_data->exterior,
 			element_to_polyline_data->face_number))
 		{
@@ -5118,7 +5029,7 @@ Converts a finite element into a surface.
 		(struct Element_to_surface_data *)void_element_to_surface_data))
 	{
 		if (FE_region_FE_element_meets_topological_criteria(
-			element_to_surface_data->fe_region, element, 2, CM_FACE,
+			element_to_surface_data->fe_region, element, 2,
 			element_to_surface_data->exterior, element_to_surface_data->face_number))
 		{
 			switch(element_to_surface_data->object_type)
@@ -5216,9 +5127,8 @@ fields defined over it.
 		/* determine if the element is required */
 		if (FE_region_FE_element_meets_topological_criteria(
 			element_to_glyph_set_data->fe_region, element,
-			Use_element_type_dimension(element_to_glyph_set_data->use_element_type),
-			Use_element_type_CM_element_type(
-				element_to_glyph_set_data->use_element_type),
+			Use_element_type_dimension(element_to_glyph_set_data->use_element_type,
+				element_to_glyph_set_data->fe_region),
 			element_to_glyph_set_data->exterior,
 			element_to_glyph_set_data->face_number))
 		{
@@ -5393,9 +5303,8 @@ Computes iso-surfaces/lines/points graphics from <element>.
 		/* determine if the element is required */
 		if (FE_region_FE_element_meets_topological_criteria(
 			element_to_iso_scalar_data->fe_region, element,
-			Use_element_type_dimension(element_to_iso_scalar_data->use_element_type),
-			Use_element_type_CM_element_type(
-				element_to_iso_scalar_data->use_element_type),
+			Use_element_type_dimension(element_to_iso_scalar_data->use_element_type,
+				element_to_iso_scalar_data->fe_region),
 			element_to_iso_scalar_data->exterior,
 			element_to_iso_scalar_data->face_number))
 		{

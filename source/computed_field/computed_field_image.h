@@ -133,6 +133,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
 		int image_height, int image_width, int image_depth, int bytes_per_pixel,
 		int number_of_bytes_per_component, int use_pixel_location,
 		enum Texture_storage_type specify_format, int propagate_field,
-		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension);
+		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension,
+		struct Cmiss_region *search_region);
 
 #endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */

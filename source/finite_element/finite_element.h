@@ -2427,16 +2427,6 @@ Writes the element as an allocated string containing TYPE NUMBER. Now does not
 write element for CM_ELEMENT types.
 ==============================================================================*/
 
-struct FE_element *any_element_string_to_FE_element(const char *name,
-	struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Converts name string of format "TYPE NUMBER" to a CM_element_information and
-returns the element in the <element_list> with that CM_element_information.
-==============================================================================*/
-
 struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
 	struct FE_element_shape *element_shape,
 	struct FE_region *fe_region, struct FE_element *template_element);
@@ -2487,22 +2477,24 @@ face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
 correct size and should be DEALLOCATED when finished with.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns true if <element> meets all the supplied criteria:
+ * - it has the given <dimension>;
+ * - it is an exterior face or line of its contiguous mesh if <exterior> set;
+ * - it is on the <face_number> of a parent element if <face_number>
+ *   non-negative
+ * - parent satisfies conditional function, if supplied.
+ * Note that <exterior> and <face_number> requirements are ignored if they
+ * make no sense for the element, eg. for n-D elements in an n-D mesh.
+ * Only complete up to 3-D.
+ *
+ * @conditional  Optional conditional function. If supplied, limits search to
+ * parent elements for which this function passes.
+ * @conditional_data  User data to pass to optional conditional function.
+ */
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, enum CM_element_type cm_element_type, int exterior,
-	int face_number, struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Returns true if <element> meets all the supplied criteria:
-- it has the given <dimension> OR <cm_element_type>;
-- it is an exterior face or line of its contiguous mesh if <exterior> set;
-- it is on the <face_number> of a parent element if <face_number> non-negative,
-  and if <element_list> is supplied the parent element must be in it as well.
-Note that <exterior> and <face_number> requirements are ignored if they make no
-sense for the element, eg. for n-D elements in an n-D mesh.
-???RC Only complete up to 3-D.
-==============================================================================*/
+	int dimension, int exterior, int face_number,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
 int equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2);
@@ -2567,7 +2559,7 @@ be called to handle the above complications.
 ==============================================================================*/
 
 int FE_element_or_parent_changed(struct FE_element *element,
-	struct CHANGE_LOG(FE_element) *fe_element_change_log,
+	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 	struct CHANGE_LOG(FE_node) *fe_node_change_log);
 /*******************************************************************************
 LAST MODIFIED : 11 February 2003
@@ -2902,19 +2894,6 @@ An FE_element iterator that returns 1 when an appropriate default_coordinate
 fe_field is found.  The fe_field found is returned as fe_field_void.
 ==============================================================================*/
 
-struct CM_element_type_Multi_range_data
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator data for functions working with elements of a given CM_element_type
-and a Multi_range, eg. FE_element_of_CM_element_type_is_in_Multi_range.
-==============================================================================*/
-{
-	enum CM_element_type cm_element_type;
-	struct Multi_range *multi_range;
-};
-
 struct FE_element_conditional_iterator_data
 /*******************************************************************************
 LAST MODIFIED : 15 January 2003
@@ -2940,38 +2919,20 @@ calls <iterator_function> with it and the <iterator_user_data>.
 <data_void> points at a struct FE_element_conditional_iterator_data.
 ==============================================================================*/
 
-int FE_element_of_CM_element_type_is_in_Multi_range(struct FE_element *element,
-	void *element_type_ranges_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
+/***************************************************************************//**
+ * Conditional function returning true if <element> number is in the
+ * multi range.
+ * @param multi_range_void  A struct Multi_range *.
+ */
+int FE_element_number_is_in_Multi_range(struct FE_element *element,
+	void *multi_range_void);
 
-DESCRIPTION :
-Conditional function returning true if <element> is of the given
-<cm_element_type> and whose number is in the <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
-
-int FE_element_of_CM_element_type_is_not_in_Multi_range(
-	struct FE_element *element, void *element_type_ranges_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Conditional function returning true if <element> is of the given
-<cm_element_type> and whose number is not in the <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
-
-int FE_element_of_CM_element_type_add_number_to_Multi_range(
-	struct FE_element *element, void *element_type_ranges_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator function which, if <element> is of the given <cm_element_type>, adds
-its CMISS number to <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
+/***************************************************************************//**
+ * Iterator function which adds the element number into the multi range.
+ * @param multi_range_void  A struct Multi_range *.
+ */
+int FE_element_add_number_to_Multi_range(
+	struct FE_element *element, void *multi_range_void);
 
 int FE_element_is_in_list(struct FE_element *element, void *element_list_void);
 /*******************************************************************************
@@ -3002,22 +2963,6 @@ will be destroyed, since faces and lines are destroyed with their parents if
 they are not also faces or lines of other elements not being destroyed.
 ==============================================================================*/
 
-struct FE_element_count_if_type_data
-{
-	enum CM_element_type cm_type;
-	int number_of_elements;
-};
-
-int FE_element_count_if_type(struct FE_element *element,
-	void *count_data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <element> is of the given CM_type, increment number_of_elements.
-<count_data_void> points at a struct FE_element_count_if_type_data.
-==============================================================================*/
-
 int add_FE_element_and_faces_to_list(struct FE_element *element,
 	void *element_list_void);
 /*******************************************************************************
@@ -3040,18 +2985,14 @@ Data for FE_element_add_faces_not_in_list function.
 	struct LIST(FE_element) *current_element_list;
 };
 
+/***************************************************************************//**
+ * If any face of <element> is not in <current_element_list>, and not in
+ * <add_element_list>, adds it to <add_element_list>.
+ * Does not recurse over faces of faces.
+ * @param data_void  A struct FE_element_add_faces_not_in_list_data.
+ */
 int FE_element_add_faces_not_in_list(struct FE_element *element,
 	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 17 February 2003
-
-DESCRIPTION :
-If any face of <element> is not in <current_element_list>, and not in
-<add_element_list>, adds it to <add_element_list> and asks the same of all its
-faces and their lines, etc.
-<data_void> points at a struct FE_element_add_faces_not_in_list_data.
-Note: this function is recursive.
-==============================================================================*/
 
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list);
@@ -3798,17 +3739,14 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	struct LIST(FE_element) *element_list,int face_number,
-	FE_value *element_to_top_level);
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
+	int face_number, FE_value *element_to_top_level);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
 Returns the/a top level [ultimate parent] element for <element>. If supplied,
 the function attempts to verify that the <check_top_level_element> is in
-fact a valid top_level_element for <element>, otherwise it tries to find one in
-the <element_list> and with <element> on its <face_number> (if positive), if
-either are specified.
+fact a valid top_level_element for <element>, otherwise it tries to find one
+passing the <condition> function with <conditional_data>, and with <element>
+on its <face_number> (if positive), if either are specified.
 
 If the returned element is different to <element> (ie. is of higher dimension),
 then this function also fills the matrix <element_to_top_level> with values for
@@ -3853,25 +3791,23 @@ FE_element_get_top_level_element_conversion.
 as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns the discretization in <number_in_xi> for displaying graphics over
+ * <element>, subject to its ancestors satisfying the <conditional> function
+ * with <conditional_data>, and with the <face_number> and suggested
+ * <*top_level_element>. If <native_discretization_field> is defined over the
+ * element and is grid-based, it's native discretization is used in preference
+ * to the <top_level_number_in_xi>.
+ * <*top_level_element> can be NULL; final element used will be returned.
+ * <top_level_number_in_xi> should be set by the caller as it will be used if
+ * there is no native_discretization field or it is not defined over the element;
+ * in either case the top_level_number_in_xi used is returned.
+ */
 int get_FE_element_discretization(struct FE_element *element,
-	struct LIST(FE_element) *element_list,int face_number,
-	struct FE_field *native_discretization_field,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
+	int face_number, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the discretization as <number_in_xi> for displaying graphics over
-<element>, given its <element_list>, <face_number> and suggested
-<*top_level_element>. If <native_discretization_field> is defined over the
-element and is grid-based, it's native discretization is used in preference
-to the <top_level_number_in_xi>.
-<*top_level_element> can be NULL; final element used will be returned.
-<top_level_number_in_xi> should be set by the caller as it will be used if there
-is no native_discretization field or it is not defined over the element; in
-either case the top_level_number_in_xi used is returned.
-==============================================================================*/
 
 /***************************************************************************//**
  * Checks if the element is 2-D and exterior i.e. a face of exactly one parent
@@ -3974,7 +3910,7 @@ accept definition of the same-named field in same-numbered node from
 	int number_of_compatible_element_field_info;
 	/* store in pairs in the single array to reduce allocations */
 	struct FE_element_field_info **compatible_element_field_info;
-	struct LIST(FE_element) *global_element_list;
+	struct FE_region *global_fe_region;
 	struct LIST(FE_node) *global_node_list;
 }; /* struct FE_element_can_be_merged_data */
 
@@ -4101,15 +4037,15 @@ ensures none of its nodes are in <node_list>.
 ==============================================================================*/
 
 int FE_element_or_parent_has_field(struct FE_element *element,
-	struct FE_field *field, struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Returns true if the <element> or any of its parents has the <field> defined
-over it. By supplying an <element_list> this limits the test to elements that
-are also in the list.
-==============================================================================*/
+	struct FE_field *field,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
+/***************************************************************************//**
+ * Returns true if the <element> or any of its parents has the <field> defined
+ * over it.
+ * @param conditional  Optional conditional function. If supplied, limits
+ * search to ancestor elements for which it returns true.
+ * @param conditional_data  User data to pass to conditional function.
+ */
 
 /***************************************************************************//**
  * Evaluates the supplied coordinate_field. Sets non-present components to zero

@@ -175,7 +175,7 @@ static int Element_tool_remove_region_selected_elements(Cmiss_field_id field)
 		if (group && fe_region)
 		{
 			Cmiss_fe_mesh_id temp_mesh =
-			   Cmiss_region_get_fe_mesh_by_name(region, "cmiss_elements");
+			   Cmiss_region_get_fe_mesh_by_name(region, "cmiss_mesh_3d");
 			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 			Cmiss_fe_mesh_destroy(&temp_mesh);
 			if (element_group)
@@ -611,7 +611,7 @@ release.
 								{
 									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
 									Cmiss_fe_mesh_id temp_mesh =
-										Cmiss_region_get_fe_mesh_by_name(temp_region, "cmiss_elements");
+										Cmiss_region_get_fe_mesh_by_name(temp_region, "cmiss_mesh_3d");
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -658,7 +658,7 @@ release.
 									if (sub_group)
 									{
 										Cmiss_fe_mesh_id temp_mesh =
-										   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
+										   Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_mesh_3d");
 										element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 										if (!element_group)
 											element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
@@ -789,7 +789,7 @@ release.
 													if (sub_group)
 													{
 														Cmiss_fe_mesh_id temp_mesh =
-															Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_elements");
+															Cmiss_region_get_fe_mesh_by_name(sub_region, "cmiss_mesh_3d");
 														element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 														if (!element_group)
 															element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);

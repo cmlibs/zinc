@@ -434,6 +434,16 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	return node;
 }
 
+int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		return FE_region_get_number_of_FE_nodes(fe_region);
+	}
+	return 0;
+}
+
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)
 {
 	if (node_template_address)

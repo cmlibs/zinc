@@ -429,8 +429,8 @@ top_level. Assumes <identifier> has been validated.
 		{
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
-				(struct LIST(FE_element) *)NULL,/*face_number*/-1,
-				element_to_top_level))&&
+				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
+				/*face_number*/-1, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,
@@ -1104,7 +1104,7 @@ returned in this location, for the calling function to use or destroy.
 						{
 							element_identifier.number=atoi(current_token);
 							if (element_point_ranges_identifier.element =
-								FE_region_get_FE_element_from_identifier(fe_region,
+								FE_region_get_FE_element_from_identifier_deprecated(fe_region,
 									&element_identifier))
 							{
 								shift_Parse_state(state,1);
@@ -1147,8 +1147,8 @@ returned in this location, for the calling function to use or destroy.
 								element_identifier.number=atoi(current_token);
 								shift_Parse_state(state,1);
 								if (element_point_ranges_identifier.top_level_element =
-									FE_region_get_FE_element_from_identifier(fe_region,
-										&element_identifier))
+									FE_region_get_top_level_FE_element_from_identifier(fe_region,
+										element_identifier.number))
 								{
 									if (!FE_element_is_top_level_parent_of_element(
 										element_point_ranges_identifier.top_level_element,

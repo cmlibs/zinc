@@ -565,16 +565,14 @@ int FieldMLReader::readConnectivityData()
 		int numberOfLocalNodes = (int)Cmiss_field_ensemble_get_size(indexEnsembles[1]);
 		int *indexBuffer = new int[sparseIndexCount];
 		int *valueBuffer = new int[numberOfLocalNodes];
-		CM_element_information cm;
-		cm.type = CM_ELEMENT;
 		struct FE_node *fe_node;
 		struct FE_element *fe_element;
 		int localNode;
 		while (return_code)
 		{
 			Cmiss_ensemble_identifier elementIdentifier = Cmiss_ensemble_iterator_get_identifier(elementsIterator);
-			cm.number = static_cast<int>(elementIdentifier);
-			fe_element = FE_region_get_FE_element_from_identifier(fe_region, &cm);
+			int element_number = static_cast<int>(elementIdentifier);
+			fe_element = FE_region_get_FE_element_from_identifier(fe_region, meshDimension, element_number);
 			ACCESS(FE_element)(fe_element);
 			int result = Fieldml_ReadIntSlice(fmlHandle, fmlReader, indexBuffer, valueBuffer);
 			if (result == FML_ERR_NO_ERROR)
@@ -1031,8 +1029,6 @@ int FieldMLReader::readAggregates()
 		FmlObjectHandle fmlParametersSource = FML_INVALID_OBJECT_HANDLE;
 		FE_element_field_component **fe_element_field_components = new FE_element_field_component*[componentCount];
 		Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsEnsemble);
-		CM_element_information cm;
-		cm.type = CM_ELEMENT;
 		struct FE_element *fe_element;
 		Cmiss_ensemble_iterator *elementsIterator = Cmiss_field_ensemble_get_first_entry(elementsEnsemble);
 		if (!elementsIterator)
@@ -1077,8 +1073,8 @@ int FieldMLReader::readAggregates()
 			}
 			if (!return_code)
 				break;
-			cm.number = static_cast<int>(elementIdentifier);
-			fe_element = FE_region_get_FE_element_from_identifier(fe_region, &cm);
+			int element_number = static_cast<int>(elementIdentifier);
+			fe_element = FE_region_get_FE_element_from_identifier(fe_region, meshDimension, element_number);
 			return_code = define_FE_field_at_element(fe_element, fe_field, fe_element_field_components);
 			if (!Cmiss_ensemble_iterator_increment(elementsIterator))
 				break;

@@ -316,7 +316,7 @@ Callback for change in the global node selection.
 					/* get next unused element identifier from fe_region */
 					element_identifier.type = CM_ELEMENT;
 					element_identifier.number = FE_region_get_next_FE_element_identifier(
-						element_creator->fe_region, CM_ELEMENT, 1);
+						element_creator->fe_region, element_creator->element_dimension, 1);
 					if (element_creator->template_node ||
 						Element_creator_make_template_node(element_creator))
 					{

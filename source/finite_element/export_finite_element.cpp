@@ -636,28 +636,23 @@ output contains no characters before or after the printed numbers.
 	ENTER(write_FE_element_identifier);
 	if (output_file && element && get_FE_element_identifier(element, &cm))
 	{
-		/* file output */
 		return_code = 1;
-		switch (cm.type)
+		int dimension = get_FE_element_dimension(element);
+		if ((3 == dimension) || FE_element_is_top_level(element, (void *)NULL))
 		{
-			case CM_ELEMENT:
-			{
-				fprintf(output_file, "%d 0 0", cm.number);
-			} break;
-			case CM_FACE:
-			{
-				fprintf(output_file, "0 %d 0", cm.number);
-			} break;
-			case CM_LINE:
-			{
-				fprintf(output_file, "0 0 %d", cm.number);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"write_FE_element_identifier.  Unknown CM_element_type");
-				return_code = 0;
-			} break;
+			fprintf(output_file, "%d 0 0", cm.number);
+		}
+		else if (2 == dimension)
+		{
+			fprintf(output_file, "0 %d 0", cm.number);
+		}
+		else if (1 == dimension)
+		{
+			fprintf(output_file, "0 0 %d", cm.number);
+		}
+		else
+		{
+			fprintf(output_file, "%d 0 0", cm.number);
 		}
 	}
 	else

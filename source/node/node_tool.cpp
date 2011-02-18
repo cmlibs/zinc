@@ -3541,7 +3541,7 @@ static void Node_tool_Computed_field_change(
 							/* get next unused element identifier from fe_region */
 							element_identifier.type = CM_ELEMENT;
 							element_identifier.number= FE_region_get_next_FE_element_identifier(
-								node_tool->fe_region, CM_ELEMENT, 1);
+								node_tool->fe_region, node_tool->element_dimension, 1);
 							if (node_tool->coordinate_field && (fe_field_list
 									= Computed_field_get_defining_FE_field_list(
 											node_tool->coordinate_field)))

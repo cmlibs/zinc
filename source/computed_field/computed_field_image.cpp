@@ -444,7 +444,8 @@ int Computed_field_image::evaluate_texture_from_source_field()
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 			Set_cmiss_field_value_to_texture(source_field, texture_coordinate_field,
 				texture, NULL,	NULL, image_height, image_width, image_depth, bytes_per_pixel,
-				number_of_bytes_per_component, use_pixel_location, specify_format, 0,	NULL, 0);
+				number_of_bytes_per_component, use_pixel_location, specify_format, 0, NULL,
+				/*element_dimension*/0, /*search_region*/(struct Cmiss_region *)NULL);
 			need_evaluate_texture = false;
 		}
 		else
@@ -1716,7 +1717,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 		struct Texture *texture, struct Spectrum *spectrum,	struct Graphical_material *fail_material,
 		int image_height, int image_width, int image_depth, int bytes_per_pixel, int number_of_bytes_per_component,
 		int use_pixel_location,	enum Texture_storage_type specify_format, int propagate_field,
-		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension)
+		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension,
+		struct Cmiss_region *search_region)
 {
 	unsigned char *image_plane, *ptr = 0;
 	unsigned short *two_bytes_image_plane, *two_bytes_ptr = 0;
@@ -1779,6 +1781,10 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	}
 	if ((image_plane || two_bytes_image_plane) && data_values)
 	{
+		if (!search_region)
+		{
+			search_region = Computed_field_get_region(field);
+		}
 		hint_resolution[0] = image_width;
 		hint_resolution[1] = image_height;
 		hint_resolution[2] = image_depth;
@@ -1864,13 +1870,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 						if ((graphics_buffer_package && Computed_field_find_element_xi_special(
 								 texture_coordinate_field, &cache, values,
 								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
-								 Computed_field_get_region(field), element_dimension,
+								 search_region, element_dimension,
 								 graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
 							Computed_field_find_element_xi(texture_coordinate_field,
 								values, Computed_field_get_number_of_components(texture_coordinate_field),
 								/*time*/0, &element, xi,
-								element_dimension, Computed_field_get_region(field), propagate_field,
+								element_dimension, search_region, propagate_field,
 								/*find_nearest_location*/0))
 						{
 							if (element)

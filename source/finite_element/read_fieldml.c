@@ -3788,7 +3788,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int j, number_of_local_nodes, maximum_number_of_scale_factor_lists;
-	struct CM_element_information cm, face_identifier;
+	struct CM_element_information cm;
 	struct FE_element *element_template, *face_element;
 
 	ENTER(fieldml_end_element);
@@ -3816,14 +3816,15 @@ DESCRIPTION :
 		}
 		if (fieldml_data->face_numbers)
 		{
-			face_identifier.type = CM_ELEMENT;
+			int face_dimension;
+			face_dimension = get_FE_element_dimension(fieldml_data->current_element) - 1;
 			for (j = 0 ; j < fieldml_data->number_of_faces ; j++)
 			{
 				if (fieldml_data->face_numbers[j])
 				{
-					face_identifier.number = fieldml_data->face_numbers[j];
 					if (face_element = FE_region_get_FE_element_from_identifier(
-						fieldml_data->current_fe_region, &face_identifier))
+						fieldml_data->current_fe_region, face_dimension,
+						fieldml_data->face_numbers[j]))
 					{
 						if (!set_FE_element_face(fieldml_data->current_element,j,
 							face_element))

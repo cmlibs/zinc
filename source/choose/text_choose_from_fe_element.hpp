@@ -258,9 +258,10 @@ Updates the chosen object and text field in response to messages.
 	if (chooser)
 	{
 		if (chooser->current_object) 
-		{ 
+		{
+			int dimension = get_FE_element_dimension(chooser->current_object);
 			if (CHANGE_LOG_QUERY(FE_element)( 
-				FE_region_changes_get_FE_element_changes(changes), 
+				FE_region_changes_get_FE_element_changes(changes, dimension),
 				chooser->current_object, &fe_element_change))
 				{ 
 						if (fe_element_change &

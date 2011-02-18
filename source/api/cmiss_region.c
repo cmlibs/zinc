@@ -123,43 +123,14 @@ DESCRIPTION :
 Returns element with <name> in <region> if it exists.
 ==============================================================================*/
 {
-	int name_length;
-	struct CM_element_information identifier;
 	struct Cmiss_element *return_element;
-	struct FE_region *fe_region;
 
 	ENTER(Cmiss_region_get_element);
 	return_element = (struct Cmiss_element *)NULL;
-	if (region&&name)
+	if (region && name)
 	{
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			if (((1==sscanf(name," %d %n",&(identifier.number),&name_length))
-				||(1==sscanf(name," E%d %n",&(identifier.number),&name_length))
-				||(1==sscanf(name," Element%d %n",&(identifier.number),&name_length)))
-				&&((unsigned int)name_length==strlen(name)))
-			{
-				identifier.type = CM_ELEMENT;
-				return_element = FE_region_get_FE_element_from_identifier(fe_region,
-					&identifier);
-			}
-			else if (((1==sscanf(name," F%d %n",&(identifier.number),&name_length))
-				||(1==sscanf(name," Face%d %n",&(identifier.number),&name_length)))
-				&&((unsigned int)name_length==strlen(name)))
-			{
-				identifier.type = CM_FACE;
-				return_element = FE_region_get_FE_element_from_identifier(fe_region,
-					&identifier);
-			}
-			else if (((1==sscanf(name," L%d %n",&(identifier.number),&name_length))
-				||(1==sscanf(name," Line%d %n",&(identifier.number),&name_length)))
-				&&((unsigned int)name_length==strlen(name)))
-			{
-				identifier.type = CM_LINE;
-				return_element = FE_region_get_FE_element_from_identifier(fe_region,
-					&identifier);
-			}
-		}
+		return_element =
+			FE_region_any_element_string_to_FE_element(Cmiss_region_get_FE_region(region), name);
 	}
 	LEAVE;
 
@@ -239,7 +210,7 @@ Returns the number of elements in the <region>.
 	{
 		if (fe_region = Cmiss_region_get_FE_region(region))
 		{
-			number_of_elements = FE_region_get_number_of_FE_elements(fe_region);
+			number_of_elements = FE_region_get_number_of_FE_elements_all_dimensions(fe_region);
 		}
 	}
 	LEAVE;

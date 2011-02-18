@@ -2251,7 +2251,8 @@ a return value here indicates that the xi_points have been converted.
 				(ELEMENT_CATEGORY_3D_CUBE == top_level_element_shape_category)))
 		{
 			if ((temp_element = FE_element_get_top_level_element_conversion(
-				element, top_level_element, (struct LIST(FE_element) *)NULL,
+				element, top_level_element,
+				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 				/*face*/-1, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,

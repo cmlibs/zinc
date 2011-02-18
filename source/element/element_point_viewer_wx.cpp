@@ -954,9 +954,11 @@ object cause updates.
 	{
 		if (element_point_viewer->element_point_identifier.element)
 		{
+			int dimension = get_FE_element_dimension(element_point_viewer->element_point_identifier.element);
 			refresh = 0;
 			/* check if contents of this element changed */
-			if (CHANGE_LOG_QUERY(FE_element)(changes->fe_element_changes,
+			if (CHANGE_LOG_QUERY(FE_element)(
+				FE_region_changes_get_FE_element_changes(changes, dimension),
 				element_point_viewer->element_point_identifier.element,
 				&fe_element_change) && (fe_element_change &
 					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)))
@@ -1198,8 +1200,8 @@ Callback from wxTextChooser when text is entered.
 							 FE_element_get_top_level_element_conversion(
 									element_point_viewer->element_point_identifier.element,
 									element_point_viewer->element_point_identifier.top_level_element,
-									(struct LIST(FE_element) *)NULL,/*face_number*/-1,
-									element_to_top_level);
+									(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
+									/*face_number*/-1, element_to_top_level);
 						top_level_element_text_chooser->set_object(
 							 element_point_viewer->element_point_identifier.top_level_element);
 						//				top_element_text_callback(

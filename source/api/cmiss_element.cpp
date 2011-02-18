@@ -436,7 +436,7 @@ struct Cmiss_element_template
 	friend class Cmiss_fe_mesh; // to obtain template_element
 private:
 	FE_region *fe_region;
-	CM_element_type element_type;
+	int element_dimension;
 	Cmiss_element_shape_type shape_type;
 	int element_number_of_nodes;
 	FE_element *template_element;
@@ -444,9 +444,9 @@ private:
 	int access_count;
 
 public:
-	Cmiss_element_template(FE_region *fe_region, CM_element_type element_type) :
+	Cmiss_element_template(FE_region *fe_region, int element_dimension) :
 		fe_region(ACCESS(FE_region)(fe_region)),
-		element_type(element_type),
+		element_dimension(element_dimension),
 		shape_type(CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN),
 		element_number_of_nodes(0),
 		template_element(NULL),
@@ -473,11 +473,11 @@ public:
 			return 0;
 		if (in_shape_type == shape_type)
 			return 1;
-		if (hasFields() && (Cmiss_element_shape_type_get_dimension(shape_type) !=
-			Cmiss_element_shape_type_get_dimension(in_shape_type)))
+		int shape_dimension = Cmiss_element_shape_type_get_dimension(in_shape_type);
+		if (shape_dimension != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template::setShapeType.  Cannot change dimension after fields defined");
+				"Cmiss_element_template::setShapeType.  Shape dimension is different from mesh");
 			return 0;
 		}
 		shape_type = in_shape_type;
@@ -619,7 +619,7 @@ public:
 				FE_element_shape_create_simple_type(fe_region, shape_type);
 			if (fe_element_shape)
 			{
-				CM_element_information cm = { element_type, 0 };
+				CM_element_information cm = { CM_ELEMENT, 0 };
 				template_element = ACCESS(FE_element)(CREATE(FE_element)(&cm,
 					fe_element_shape, fe_region, /*template_element*/NULL));
 				set_FE_element_number_of_nodes(template_element, element_number_of_nodes);
@@ -722,13 +722,13 @@ struct Cmiss_fe_mesh
 {
 private:
 	FE_region *fe_region;
-	CM_element_type element_type;
+	int mesh_dimension;
 	int access_count;
 
 public:
-	Cmiss_fe_mesh(Cmiss_region_id region, CM_element_type element_type) :
+	Cmiss_fe_mesh(Cmiss_region_id region, int mesh_dimension) :
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
-		element_type(element_type),
+		mesh_dimension(mesh_dimension),
 		access_count(1)
 	{
 	}
@@ -754,7 +754,8 @@ public:
 	{
 		CM_element_information cm;
 		get_FE_element_identifier(element, &cm);
-		if (cm.type == element_type)
+		int element_dimension = get_FE_element_dimension(element);
+		if (element_dimension == mesh_dimension)
 		{
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			if ((element_fe_region == fe_region) ||
@@ -775,7 +776,7 @@ public:
 		{
 			FE_element *template_element = element_template->getTemplateElement();
 			element = ACCESS(FE_element)(FE_region_create_FE_element_copy(
-				fe_region, element_type, identifier, template_element));
+				fe_region, identifier, template_element));
 		}
 		else
 		{
@@ -785,8 +786,11 @@ public:
 		return element;
 	}
 
-	CM_element_type getElementType() const { return element_type; }
+	int getDimension() const { return mesh_dimension; }
+
 	FE_region *getFeRegion() const { return fe_region; }
+
+	int getSize() const { return FE_region_get_number_of_FE_elements_of_dimension(fe_region, mesh_dimension); }
 
 private:
 	~Cmiss_fe_mesh()
@@ -806,20 +810,20 @@ Cmiss_fe_mesh_id Cmiss_region_get_fe_mesh_by_name(Cmiss_region_id region,
 	Cmiss_fe_mesh_id mesh = NULL;
 	if (region && mesh_name)
 	{
-		CM_element_type element_type = CM_ELEMENT_TYPE_INVALID;
-		if      (0 == strcmp(mesh_name, "cmiss_elements"))
-			element_type = CM_ELEMENT;
-		else if (0 == strcmp(mesh_name, "cmiss_faces"))
-			element_type = CM_FACE;
-		else if (0 == strcmp(mesh_name, "cmiss_lines"))
-			element_type = CM_LINE;
-		if (CM_ELEMENT_TYPE_INVALID == element_type)
+		int mesh_dimension = 0;
+		if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
+			mesh_dimension = 3;
+		else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
+			mesh_dimension = 2;
+		else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
+			mesh_dimension = 1;
+		if (0 == mesh_dimension)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_region_get_fe_mesh_by_name.  Unknown mesh name '%s'", mesh_name);
 			return NULL;
 		}
-		mesh = new Cmiss_fe_mesh(region, element_type);
+		mesh = new Cmiss_fe_mesh(region, mesh_dimension);
 	}
 	return (mesh);
 }
@@ -863,7 +867,7 @@ Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
 	{
 		FE_region *fe_region = mesh->getFeRegion();
 		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-		return new Cmiss_element_template(fe_region, mesh->getElementType());
+		return new Cmiss_element_template(fe_region, mesh->getDimension());
 	}
 	return NULL;
 }
@@ -897,12 +901,21 @@ Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
 	Cmiss_element_id element = NULL;
 	if (mesh)
 	{
-		CM_element_information cm = { mesh->getElementType(), identifier };
-		element = FE_region_get_FE_element_from_identifier(mesh->getFeRegion(), &cm);
+		element = FE_region_get_FE_element_from_identifier(mesh->getFeRegion(),
+			mesh->getDimension(), identifier);
 		if (element)
 			ACCESS(FE_element)(element);
 	}
 	return element;
+}
+
+int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh)
+{
+	if (mesh)
+	{
+		return mesh->getSize();
+	}
+	return 0;
 }
 
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)

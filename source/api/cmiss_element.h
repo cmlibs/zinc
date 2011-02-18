@@ -137,15 +137,13 @@ Global functions
  * Get a handle to a finite element mesh from its name. An fe_mesh is the
  * container of elements, intended to be of fixed dimension.
  * Valid names are currently limited to:
- * "cmiss_elements" = the region's principle mesh, whether 1-D, 2-D or 3-D.
- * The elements in this mesh have interpolated finite element fields defined
- * over them; the following meshes' elements inherit these fields.
- * "cmiss_faces" = Mesh of the 2-D faces of any 3-D elements, if defined.
- * "cmiss_lines" = Mesh of 1-D lines of any 2-D elements or faces, if defined.
+ * "cmiss_mesh_3d" = 3-D elements.
+ * "cmiss_mesh_2d" = 2-D elements including faces of 3-D elements.
+ * "cmiss_mesh_1d" = 1-D elements including faces (lines) of 2-D elements.
  *
  * @param region  The region the mesh belongs to.
- * @param name  The name of the finite element mesh, currently "cmiss_elements",
- * "cmiss_faces" or "cmiss_lines".
+ * @param name  The name of the finite element mesh, currently "cmiss_mesh_3d",
+ * "cmiss_mesh_2d" or "cmiss_mesh_1d".
  * @return  Handle to the finite element mesh, or NULL if error.
  */
 Cmiss_fe_mesh_id Cmiss_region_get_fe_mesh_by_name(Cmiss_region_id region,
@@ -237,6 +235,14 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
  */
 Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
 	int identifier);
+
+/***************************************************************************//**
+ * Return the number of elements in the mesh.
+ *
+ * @param mesh  Handle to the mesh to query.
+ * @return  Number of elements in mesh.
+ */
+int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.

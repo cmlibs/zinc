@@ -381,7 +381,7 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
    {
 		 Ng_GetVolumeElement (mesh, i+1, nodal_idx);
 		 element_identifier.type = CM_ELEMENT;
-		 element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, i);
+		 element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, /*dimension*/3, i + 1);
 		 element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
 			 (struct FE_region *)NULL, template_element);
 		 ACCESS(FE_element)(element);

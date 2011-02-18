@@ -53,12 +53,12 @@ Functions for manipulating finite element structures.
 /*???DB.  Testing */
 #define DOUBLE_FOR_DOT_PRODUCT
 
+#include <cstddef>
+#include <cstdlib>
+#include <cstdio>
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 extern "C" {
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include "command/parser.h"
 #include "finite_element/finite_element.h"
@@ -965,18 +965,15 @@ typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_FE_eleme
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_element);
 
+/***************************************************************************//**
+ * @see struct FE_element_type_node_sequence.
+ */
 struct FE_element_type_node_sequence_identifier
-/*******************************************************************************
-LAST MODIFIED : 29 April 1999
-
-DESCRIPTION :
-See struct FE_element_type_node_sequence.
-==============================================================================*/
 {
-	enum CM_element_type cm_type;
+	int dimension;
 	/* node_numbers must be ordered from lowest to highest to work! */
 	int *node_numbers,number_of_nodes;
-}; /* struct FE_element_type_node_sequence_identifier */
+};
 
 struct FE_element_type_node_sequence
 /*******************************************************************************
@@ -4981,12 +4978,12 @@ Returns values like strcmp:
 	ENTER(compare_FE_element_type_node_sequence_identifier);
 	if (identifier1&&identifier2)
 	{
-		/* 1. compare cm_type */
-		if (identifier1->cm_type < identifier2->cm_type)
+		/* 1. compare dimension */
+		if (identifier1->dimension < identifier2->dimension)
 		{
 			return_code=-1;
 		}
-		else if (identifier1->cm_type > identifier2->cm_type)
+		else if (identifier1->dimension > identifier2->dimension)
 		{
 			return_code=1;
 		}
@@ -5065,7 +5062,7 @@ uses them to find faces and lines for elements without them, if they exist.
 				struct FE_element_type_node_sequence_identifier,1)&&
 				ALLOCATE(node_numbers,int,number_of_nodes))
 			{
-				element_type_node_sequence->identifier->cm_type=element->identifier.type;
+				element_type_node_sequence->identifier->dimension = get_FE_element_dimension(element);
 				element_type_node_sequence->identifier->number_of_nodes=number_of_nodes;
 				element_type_node_sequence->identifier->node_numbers=node_numbers;
 				element_type_node_sequence->element=ACCESS(FE_element)(element);
@@ -5231,9 +5228,9 @@ this function would have to be modified extensively.
 	ENTER(FE_element_type_node_sequence_is_collapsed);
 	if (element_type_node_sequence&&element_type_node_sequence->identifier)
 	{
-		return_code=((CM_FACE == element_type_node_sequence->identifier->cm_type)&&
+		return_code=((2 == element_type_node_sequence->identifier->dimension)&&
 			(2 >= element_type_node_sequence->identifier->number_of_nodes))||
-			((CM_LINE == element_type_node_sequence->identifier->cm_type)&&
+			((1 == element_type_node_sequence->identifier->dimension)&&
 				(1 == element_type_node_sequence->identifier->number_of_nodes));
 	}
 	else
@@ -28257,15 +28254,17 @@ static int FE_element_get_child_face_number(struct FE_element *parent,
 
 /***************************************************************************//**
  * Get first parent of element that is on <face_number> of a top-level
- * element, or which has any parent in this state, with optional check that
- * top-level element is in list.
+ * element, or which has any parent in this state, with optional conditional
+ * check on which top-level element qualify.
  * @face_number  from 0 to top_level_element->shape->number_of_faces-1
- * @element_list  top-level element must also be in this list if supplied.
+ * @conditional  Optional conditional function. If supplied, limits search to
+ * top-level elements for which this function passes.
+ * @conditional_data  User data to pass to optional conditional function.
  * @return  Parent element matching criteria, or NULL if none found.
  */
 static struct FE_element *FE_element_get_parent_on_face_number(
 	struct FE_element *element, int face_number,
-	struct LIST(FE_element) *element_list)
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	ENTER(FE_element_get_parent_on_face_number);
 	if (element && (0 <= face_number))
@@ -28285,8 +28284,8 @@ static struct FE_element *FE_element_get_parent_on_face_number(
 				{
 					face_element = NULL;
 				}
-				if ((face_element == element) && ((NULL == element_list) ||
-					IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list)))
+				if ((face_element == element) && ((NULL == conditional) ||
+					(conditional)(element->parents[i], conditional_data)))
 				{
 					return element->parents[i];
 				}
@@ -28303,8 +28302,8 @@ static struct FE_element *FE_element_get_parent_on_face_number(
 					{
 						face_element = NULL;
 					}
-					if ((face_element == element->parents[i]) && ((NULL == element_list) ||
-						IS_OBJECT_IN_LIST(FE_element)(element->parents[i]->parents[j], element_list)))
+					if ((face_element == element->parents[i]) && ((NULL == conditional) ||
+						(conditional)(element->parents[i]->parents[j], conditional_data)))
 					{
 						return element->parents[i];
 					}
@@ -28462,60 +28461,6 @@ write element for CM_ELEMENT types.
 	return (return_code);
 } /* FE_element_to_any_element_string */
 
-struct FE_element *any_element_string_to_FE_element(const char *name,
-	struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Converts name string of format "TYPE NUMBER" to a CM_element_information and
-returns the element in the <element_list> with that CM_element_information.
-==============================================================================*/
-{
-	const char *number_string, *type_string;
-	struct FE_element *element;
-	struct CM_element_information cm;
-
-	ENTER(any_element_string_to_FE_element);
-	element = (struct FE_element *)NULL;
-	if (name && element_list)
-	{
-		if (type_string = strpbrk(name,"eEfFlL"))
-		{
-			if (('l' == *type_string)||('L' == *type_string))
-			{
-				cm.type = CM_LINE;
-			}
-			else if (('f' == *type_string)||('F' == *type_string))
-			{
-				cm.type = CM_FACE;
-			}
-			else
-			{
-				cm.type = CM_ELEMENT;
-			}
-		}
-		else
-		{
-			cm.type = CM_ELEMENT;
-		}
-		if (number_string = strpbrk(name,"+-0123456789"))
-		{
-			cm.number = atoi(number_string);
-			element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-				&cm, element_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"any_element_string_to_FE_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (element);
-} /* any_element_string_to_FE_element */
-
 int set_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape *shape)
 {
@@ -28570,6 +28515,10 @@ int set_FE_element_shape(struct FE_element *element,
 	return (return_code);
 } /* set_FE_element_shape */
 
+// GRC temporary until CM_element_type removed from FE_element identifier
+#define DIMENSION_TO_CM_ELEMENT_TYPE(dimension) \
+	((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE))
+
 struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
 	struct FE_element_shape *element_shape,
 	struct FE_region *fe_region, struct FE_element *template_element)
@@ -28596,11 +28545,21 @@ Note that the element number in <cm> must be non-negative.
 	if (cm && (0 <= cm->number) && ((template_element && (!fe_region)) ||
 		((!template_element) && fe_region && element_shape)))
 	{
+		int dimension = 0;
+		if (template_element)
+		{
+			dimension = get_FE_element_dimension(template_element);
+		}
+		else
+		{
+			get_FE_element_shape_dimension(element_shape, &dimension);
+		}
 		if (ALLOCATE(element, struct FE_element, 1))
 		{
 			return_code = 1;
 			/* clear the new element so we can destroy it if anything fails */
-			element->identifier.type = cm->type;
+			// GRC overriding the supplied element type until removed from FE_element
+			element->identifier.type = DIMENSION_TO_CM_ELEMENT_TYPE(dimension);
 			element->identifier.number = cm->number;
 			element->shape = (struct FE_element_shape *)NULL;
 			element->faces = (struct FE_element **)NULL;
@@ -29209,21 +29168,8 @@ output FE_element_field_info is expected to be at this address too.
 } /* FE_element_log_FE_field_changes */
 
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, enum CM_element_type cm_element_type, int exterior,
-	int face_number, struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Returns true if <element> meets all the supplied criteria:
-- it has the given <dimension> OR <cm_element_type>;
-- it is an exterior face or line of its contiguous mesh if <exterior> set;
-- it is on the <face_number> of a parent element if <face_number> non-negative,
-  and if <element_list> is supplied the parent element must be in it as well.
-Note that <exterior> and <face_number> requirements are ignored if they make no
-sense for the element, eg. for n-D elements in an n-D mesh.
-???RC Only complete up to 3-D.
-==============================================================================*/
+	int dimension, int exterior, int face_number,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	int i, return_code;
 
@@ -29231,8 +29177,7 @@ sense for the element, eg. for n-D elements in an n-D mesh.
 	return_code = 0;
 	if (element)
 	{
-		if ((dimension == get_FE_element_dimension(element)) ||
-			(cm_element_type == element->identifier.type))
+		if (dimension == get_FE_element_dimension(element))
 		{
 			return_code = 1;
 			if (0 < element->number_of_parents)
@@ -29263,7 +29208,7 @@ sense for the element, eg. for n-D elements in an n-D mesh.
 					if (return_code && (0 <= face_number))
 					{
 						if (NULL == FE_element_get_parent_on_face_number(
-							element, face_number, element_list))
+							element, face_number, conditional, conditional_data))
 						{
 							return_code = 0;
 						}
@@ -32175,7 +32120,8 @@ afterwards. FE_region should be the only object that needs to call this.
 	ENTER(set_FE_element_identifier);
 	if (element && identifier && (0 < identifier->number))
 	{
-		element->identifier.type = identifier->type;
+		// GRC never change CM_element_type: it is fixed by dimension
+		// see DIMENSION_TO_CM_ELEMENT_TYPE
 		element->identifier.number = identifier->number;
 		return_code = 1;
 	}
@@ -32191,7 +32137,7 @@ afterwards. FE_region should be the only object that needs to call this.
 } /* set_FE_element_identifier */
 
 int FE_element_or_parent_changed(struct FE_element *element,
-	struct CHANGE_LOG(FE_element) *fe_element_change_log,
+	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 	struct CHANGE_LOG(FE_node) *fe_node_change_log)
 /*******************************************************************************
 LAST MODIFIED : 26 February 2003
@@ -32213,10 +32159,11 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 
 	ENTER(FE_element_or_parent_changed);
 	return_code = 0;
+	int dimension = get_FE_element_dimension(element);
 	if (element && fe_element_change_log && fe_node_change_log)
 	{
-		if (CHANGE_LOG_QUERY(FE_element)(fe_element_change_log, element,
-			&element_change) && (element_change & (
+		if (CHANGE_LOG_QUERY(FE_element)(fe_element_change_log[dimension - 1],
+			element, &element_change) && (element_change & (
 				CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element) |
 				CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element) |
 				CHANGE_LOG_OBJECT_REMOVED(FE_element))))
@@ -33826,114 +33773,43 @@ calls <iterator_function> with it and the <iterator_user_data>.
 	return (return_code);
 } /* FE_element_conditional_iterator */
 
-int FE_element_of_CM_element_type_is_in_Multi_range(struct FE_element *element,
-	void *element_type_ranges_data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Conditional function returning true if <element> is of the given
-<cm_element_type> and whose number is in the <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
+int FE_element_number_is_in_Multi_range(struct FE_element *element,
+	void *multi_range_void)
 {
 	int return_code;
-	struct CM_element_type_Multi_range_data *element_type_ranges_data;
-
-	ENTER(FE_element_of_CM_element_type_is_in_Multi_range);
-	if (element && (element_type_ranges_data =
-		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
+	struct Multi_range *multi_range = (struct Multi_range *)multi_range_void;
+	if (element && multi_range)
 	{
-		return_code =
-			(element_type_ranges_data->cm_element_type == element->identifier.type) &&
-			Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
-				element->identifier.number);
+		return_code = Multi_range_is_value_in_range(multi_range,
+			element->identifier.number);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_of_CM_element_type_is_in_Multi_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	
-	return (return_code);
-} /* FE_element_of_CM_element_type_is_in_Multi_range */
-
-int FE_element_of_CM_element_type_is_not_in_Multi_range(
-	struct FE_element *element, void *element_type_ranges_data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Conditional function returning true if <element> is of the given
-<cm_element_type> and whose number is not in the <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
-{
-	int return_code;
-	struct CM_element_type_Multi_range_data *element_type_ranges_data;
-
-	ENTER(FE_element_of_CM_element_type_is_not_in_Multi_range);
-	if (element && (element_type_ranges_data =
-		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
-	{
-		return_code =
-			(element_type_ranges_data->cm_element_type == element->identifier.type) &&
-			(!Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
-				element->identifier.number));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_of_CM_element_type_is_not_in_Multi_range.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	
-	return (return_code);
-} /* FE_element_of_CM_element_type_is_not_in_Multi_range */
-
-int FE_element_of_CM_element_type_add_number_to_Multi_range(
-	struct FE_element *element, void *element_type_ranges_data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator function which, if <element> is of the given <cm_element_type>, adds
-its CMISS number to <multi_range>.
-Second argument is a struct CM_element_type_Multi_range_data.
-==============================================================================*/
-{
-	int return_code;
-	struct CM_element_type_Multi_range_data *element_type_ranges_data;
-
-	ENTER(FE_element_of_CM_element_type_add_number_to_Multi_range);
-	if (element && (element_type_ranges_data =
-		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
-	{
-		if (element->identifier.type == element_type_ranges_data->cm_element_type)
-		{
-			return_code = Multi_range_add_range(element_type_ranges_data->multi_range,
-				element->identifier.number, element->identifier.number);
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_of_CM_element_type_add_number_to_Multi_range.  "
-			"Invalid argument(s)");
+			"FE_element_number_is_in_Multi_range.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_of_CM_element_type_add_number_to_Multi_range */
+}
+
+int FE_element_add_number_to_Multi_range(
+	struct FE_element *element, void *multi_range_void)
+{
+	int return_code;
+	struct Multi_range *multi_range = (struct Multi_range *)multi_range_void;
+	if (element && multi_range)
+	{
+		return_code = Multi_range_add_range(multi_range,
+			element->identifier.number, element->identifier.number);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_add_number_to_Multi_range.   Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
 
 int FE_element_is_in_list(struct FE_element *element, void *element_list_void)
 /*******************************************************************************
@@ -34033,40 +33909,6 @@ they are not also faces or lines of other elements not being destroyed.
 	return (return_code);
 } /* FE_element_is_wholly_within_element_list_tree */
 
-int FE_element_count_if_type(struct FE_element *element,
-	void *count_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <element> is of the given CM_type, increment number_of_elements.
-<count_data_void> points at a struct FE_element_count_if_type_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_count_if_type_data *count_data;
-
-	ENTER(FE_element_count_if_type);
-	if (element && (count_data =
-		(struct FE_element_count_if_type_data *)count_data_void))
-	{
-		return_code = 1;
-		if (element->identifier.type == count_data->cm_type)
-		{
-			(count_data->number_of_elements)++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_count_if_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_count_if_type */
-
 int add_FE_element_and_faces_to_list(struct FE_element *element,
 	void *element_list_void)
 /*******************************************************************************
@@ -34128,29 +33970,19 @@ Note: this function is recursive.
 
 int FE_element_add_faces_not_in_list(struct FE_element *element,
 	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 17 February 2003
-
-DESCRIPTION :
-If any face of <element> is not in <current_element_list>, and not in
-<add_element_list>, adds it to <add_element_list> and asks the same of all its
-faces and their lines, etc.
-<data_void> points at a struct FE_element_add_faces_not_in_list_data.
-Note: this function is recursive.
-==============================================================================*/
 {
-	int i, return_code;
-	struct FE_element **face;
-	struct FE_element_add_faces_not_in_list_data *data;
+	int return_code;
+	struct FE_element_add_faces_not_in_list_data *data =
+		(struct FE_element_add_faces_not_in_list_data *)data_void;
 
 	ENTER(FE_element_add_faces_not_in_list);
-	if (element && element->shape &&
-		(data = (struct FE_element_add_faces_not_in_list_data *)data_void))
+	if (element && element->shape && data)
 	{
 		return_code = 1;
-		if (face = element->faces)
+		struct FE_element **face = element->faces;
+		if (face)
 		{
-			for (i = element->shape->number_of_faces; (0 < i) && return_code; i--)
+			for (int i = element->shape->number_of_faces; (0 < i) && return_code; i--)
 			{
 				if (*face)
 				{
@@ -34158,18 +33990,7 @@ Note: this function is recursive.
 					{
 						if (!IS_OBJECT_IN_LIST(FE_element)(*face, data->add_element_list))
 						{
-							if (ADD_OBJECT_TO_LIST(FE_element)(*face, data->add_element_list))
-							{
-								if ((*face)->faces)
-								{
-									return_code =
-										FE_element_add_faces_not_in_list(*face, data_void);
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
+							return_code = ADD_OBJECT_TO_LIST(FE_element)(*face, data->add_element_list);
 						}
 					}
 				}
@@ -34189,7 +34010,7 @@ Note: this function is recursive.
 } /* FE_element_add_faces_not_in_list */
 
 static int FE_element_shape_and_faces_match(struct FE_element *element1,
-	struct LIST(FE_element) *global_element_list1,
+	struct FE_region *global_fe_region1,
 	struct FE_element *element2)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2003
@@ -34219,16 +34040,18 @@ same as the element from <global_element_list1>.
 					for (i = number_of_faces; (0 < i) && return_code; i--)
 					{
 						if ((!(*face1)) || (!(*face2)) ||
-							((!global_element_list1) && (*face1 == *face2)) ||
-							(global_element_list1 &&
-								(FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-									&((*face1)->identifier), global_element_list1) == *face2)))
+							((!global_fe_region1) && (*face1 == *face2)) ||
+							(global_fe_region1 &&
+								(FE_region_get_FE_element_from_identifier(global_fe_region1,
+									element1->shape->dimension - 1, (*face1)->identifier.number)
+									== *face2)))
 						{
 							face1++;
 							face2++;
 						}
 						else
 						{
+							display_message(ERROR_MESSAGE, "FE_element_shape_and_faces_match.  Different faces");
 							return_code = 0;
 						}
 					}
@@ -34243,6 +34066,7 @@ same as the element from <global_element_list1>.
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE, "FE_element_shape_and_faces_match.  Different shape");
 			return_code = 0;
 		}
 	}
@@ -34422,7 +34246,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 			source_fields->element_field_list);
 
 		if (!FE_element_shape_and_faces_match(source,
-			/*global_element_list1*/(struct LIST(FE_element) *)NULL, destination))
+			/*global_fe_region*/(struct FE_region *)NULL, destination))
 		{
 			display_message(ERROR_MESSAGE,
 				"merge_FE_element.  Inconsistent or missing element shape(s)");
@@ -35794,7 +35618,7 @@ Returns true if <top_level_element> is indeed a top_level parent of <element>.
 
 	ENTER(FE_element_has_top_level_element);
 	if (element&&(top_level_element=(struct FE_element *)top_level_element_void)&&
-		(CM_ELEMENT==top_level_element->identifier.type))
+		(0 == top_level_element->number_of_parents))
 	{
 		if ((element==top_level_element)||
 			FE_element_ancestor_matches_recursive(element, top_level_element))
@@ -35832,7 +35656,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 	ENTER(FE_element_is_top_level_parent_of_element);
 	if (top_level_element&&(element=(struct FE_element *)element_void))
 	{
-		if ((CM_ELEMENT==top_level_element->identifier.type)&&
+		if ((0 == top_level_element->number_of_parents) &&
 			((element==top_level_element)||
 				FE_element_ancestor_matches_recursive(element, top_level_element)))
 		{
@@ -35856,33 +35680,8 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	struct LIST(FE_element) *element_list, int specified_face_number,
-	FE_value *element_to_top_level)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the/a top level [ultimate parent] element for <element>. If supplied,
-the function attempts to verify that the <check_top_level_element> is in
-fact a valid top_level_element for <element>, otherwise it tries to find one in
-the <element_list> and with <element> on its <face_number> (if positive), if
-either are specified.
-
-If the returned element is different to <element> (ie. is of higher dimension),
-then this function also fills the matrix <element_to_top_level> with values for
-converting the xi coordinates in <element> to those in the returned element.
-<element_to_top_level> should be preallocated to store at least nine FE_values.
-
-The use of the <element_to_top_level> matrix is similar to <face_to_element> in
-FE_element_shape - in fact it is either a copy of it, or calculated from it.
-It gives the transformation xi(top_level) = b + A xi(element), where b is in the
-first column of the matrix, and the rest of the matrix is A. Its size depends
-on the dimension of element:top_level, ie.,
-1:2 First 4 values, in form of 2 row X 2 column matrix, used only.
-1:3 First 6 values, in form of 3 row X 2 column matrix, used only.
-2:3 First 9 values, in form of 3 row X 3 column matrix, used only.
-NOTE: recursive to handle 1-D to 3-D case.
-==============================================================================*/
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
+	int specified_face_number, FE_value *element_to_top_level)
 {
 	int face_number, i,  size;
 	FE_value *face_to_element;
@@ -35903,13 +35702,13 @@ NOTE: recursive to handle 1-D to 3-D case.
 				if (0 <= specified_face_number)
 				{
 					parent = FE_element_get_parent_on_face_number(
-						element, specified_face_number, element_list);
+						element, specified_face_number, conditional, conditional_data);
 				}
-				else if (element_list)
+				else if (conditional)
 				{
 					for (i = 0; i < element->number_of_parents; i++)
 					{
-						if (IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list))
+						if ((conditional)(element->parents[i], conditional_data))
 						{
 							parent = element->parents[i];
 							break;
@@ -35925,8 +35724,8 @@ NOTE: recursive to handle 1-D to 3-D case.
 			if ((parent) && (parent->shape) && (parent->shape->face_to_element) &&
 				(0 <= (face_number = FE_element_get_child_face_number(parent, element))) &&
 				(top_level_element = FE_element_get_top_level_element_conversion(
-					parent, check_top_level_element, element_list, specified_face_number,
-					element_to_top_level)))
+					parent, check_top_level_element, conditional, conditional_data,
+					specified_face_number, element_to_top_level)))
 			{
 				face_to_element=parent->shape->face_to_element +
 					(face_number * parent->shape->dimension*parent->shape->dimension);
@@ -36046,7 +35845,8 @@ is checked and the <top_level_xi> calculated.
 		{
 			/* check or get top_level element and xi coordinates for it */
 			if (*top_level_element = FE_element_get_top_level_element_conversion(
-				element,*top_level_element,(struct LIST(FE_element) *)NULL,
+				element,*top_level_element,
+				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 				-1,element_to_top_level))
 			{
 				/* convert xi to top_level_xi */
@@ -36162,24 +35962,10 @@ as remaining values up to this size are cleared to zero.
 } /* get_FE_element_discretization_from_top_level */
 
 int get_FE_element_discretization(struct FE_element *element,
-	struct LIST(FE_element) *element_list,int face_number,
-	struct FE_field *native_discretization_field,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
+	int face_number, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the discretization as <number_in_xi> for displaying graphics over
-<element>, given its <element_list>, <face_number> and suggested
-<*top_level_element>. If <native_discretization_field> is defined over the
-element and is grid-based, it's native discretization is used in preference
-to the <top_level_number_in_xi>.
-<*top_level_element> can be NULL; final element used will be returned.
-<top_level_number_in_xi> should be set by the caller as it will be used if there
-is no native_discretization field or it is not defined over the element; in
-either case the top_level_number_in_xi used is returned.
-==============================================================================*/
 {
 	FE_value element_to_top_level[9];
 	int return_code;
@@ -36188,7 +35974,7 @@ either case the top_level_number_in_xi used is returned.
 	if (element&&top_level_number_in_xi&&top_level_element&&number_in_xi)
 	{
 		if (*top_level_element=FE_element_get_top_level_element_conversion(
-			element,*top_level_element,element_list,face_number,
+			element,*top_level_element,conditional,conditional_data,face_number,
 			element_to_top_level))
 		{
 			/* get the discretization requested for top-level element, from native
@@ -36675,7 +36461,7 @@ Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
 	USE_PARAMETER(dummy_void);
 	if (element)
 	{
-		return_code=(CM_ELEMENT==element->identifier.type);
+		return_code = (0 == element->number_of_parents);
 	}
 	else
 	{
@@ -36839,7 +36625,7 @@ After using the function, deallocate data->compatible_element_field_info!
 ???RC Check on definition of node field has not been written.
 ==============================================================================*/
 {
-	int i, dimension, return_code, unspecified_element_shape;
+	int i, return_code, unspecified_element_shape;
 	struct FE_element *global_element;
 	struct FE_element_field_info **element_field_info;
 	struct FE_element_can_be_merged_data *data;
@@ -36849,12 +36635,12 @@ After using the function, deallocate data->compatible_element_field_info!
 	return_code = 0;
 	if (element && element->fields &&
 		(data = (struct FE_element_can_be_merged_data *)data_void) &&
-		data->global_element_list)
+		data->global_fe_region)
 	{
-		global_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&(element->identifier), data->global_element_list);
+		int dimension = get_FE_element_dimension(element);
+		global_element = FE_region_get_FE_element_from_identifier(
+			data->global_fe_region, dimension, element->identifier.number);
 		unspecified_element_shape = FE_element_shape_is_unspecified(element->shape);
-		dimension = get_FE_element_dimension(element);
 		if (unspecified_element_shape)
 		{
 			/* unspecified shape used to indicate a dummy element, mainly to indicate
@@ -36878,7 +36664,7 @@ After using the function, deallocate data->compatible_element_field_info!
 		{
 			if (global_element)
 			{
-				if (FE_element_shape_and_faces_match(element, data->global_element_list,
+				if (FE_element_shape_and_faces_match(element, data->global_fe_region,
 					global_element))
 				{
 					/* check consistency of definitions of fields of the same name in
@@ -36937,6 +36723,12 @@ After using the function, deallocate data->compatible_element_field_info!
 							 fe_region or nodes in global_fe_region */
 						/*???RC Yet to be written! */
 					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "FE_element_can_be_merged.  "
+						"%d-D element %d shape and faces are not compatible.",
+						dimension, element->identifier.number);
 				}
 			}
 			else
@@ -37284,15 +37076,8 @@ Used by FE_element_parent_has_field.
 }; /* struct FE_element_parent_has_field_data */
 
 int FE_element_or_parent_has_field(struct FE_element *element,
-	struct FE_field *field, struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Returns true if the <element> or any of its parents has the <field> defined
-over it. By supplying an <element_list> this limits the test to elements that
-are also in the list.
-==============================================================================*/
+	struct FE_field *field,
+	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	int i, return_code;
 
@@ -37300,7 +37085,7 @@ are also in the list.
 	return_code = 0;
 	if (element && field && element->fields)
 	{
-		if ((!element_list) || IS_OBJECT_IN_LIST(FE_element)(element, element_list))
+		if ((!conditional) || (conditional)(element, conditional_data))
 		{
 			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
 				element->fields->element_field_list))
@@ -37312,7 +37097,7 @@ are also in the list.
 				for (i = 0; i < element->number_of_parents; i++)
 				{
 					if (FE_element_or_parent_has_field(element->parents[i], field,
-						element_list))
+						conditional, conditional_data))
 					{
 						return_code = 1;
 						break;

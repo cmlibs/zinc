@@ -57,7 +57,7 @@ Global functions
 */
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
-	enum CM_element_type cm_type,	int element_offset,
+	int dimension,	int element_offset,
 	struct Computed_field *sort_by_field, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2003
@@ -79,6 +79,7 @@ allowed during identifier changes.
  * Create an element list with the supplied region, group field at a specific time
  *
  * @param region  The pointer to a region
+ * @param dimension  The dimension of elements to query about
  * @param element_ranges  Multi_range of elements.
  * @param group_field  Group field of the region
  * @param time  Time of the group field to be evaluated
@@ -88,7 +89,7 @@ allowed during identifier changes.
  */
 struct LIST(FE_element) *
 	FE_element_list_from_region_and_selection_group(
-		struct Cmiss_region *region, enum CM_element_type cm_element_type,
+		struct Cmiss_region *region, int dimension,
 		struct Multi_range *element_ranges,
 		struct Computed_field *group_field,
 		struct Computed_field *conditional_field, FE_value time);

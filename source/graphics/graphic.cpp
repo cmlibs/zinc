@@ -634,9 +634,11 @@ int DESTROY(Cmiss_graphic)(
 /***************************************************************************//** 
  * Returns the dimension of the <graphic>, which varies for some graphic types.
  * @param graphic Cmiss graphic
+ * @param fe_region  Used for iso_surfaces and element_points with USE_ELEMENT
+ * type. Gives the highest dimension for which elements exist. If omitted uses 3.
  * @return the dimension of the graphic
  */
-int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic)
+int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region *fe_region)
 {
 	int dimension;
 
@@ -667,7 +669,7 @@ int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic)
 			case CMISS_GRAPHIC_ELEMENT_POINTS:
 			case CMISS_GRAPHIC_ISO_SURFACES:
 			{
-				dimension=Use_element_type_dimension(graphic->use_element_type);
+				dimension=Use_element_type_dimension(graphic->use_element_type, fe_region);
 			} break;
 			default:
 			{
@@ -702,29 +704,14 @@ static int Cmiss_graphic_uses_FE_element(
 	struct Cmiss_graphic *graphic,struct FE_element *element,
 	struct FE_region *fe_region)
 {
-	enum CM_element_type cm_element_type;
-	int dimension,return_code;
+	int return_code;
 
 	ENTER(GT_element_graphic_uses_FE_element);
 	if (graphic && element && fe_region)
 	{
-		dimension=Cmiss_graphic_get_dimension(graphic);
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
-		{
-			cm_element_type=Use_element_type_CM_element_type(
-				graphic->use_element_type);
-		}
-		else if (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)
-		{
-			cm_element_type=CM_ELEMENT;
-		}
-		else
-		{
-			cm_element_type=CM_ELEMENT_TYPE_INVALID;
-		}
+		int dimension = Cmiss_graphic_get_dimension(graphic, fe_region);
 		return_code = FE_region_FE_element_meets_topological_criteria(fe_region,
-			element, dimension, cm_element_type, graphic->exterior, graphic->face);
+			element, dimension, graphic->exterior, graphic->face);
 	}
 	else
 	{
@@ -848,7 +835,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					if (group_id)
 					{
 						Cmiss_fe_mesh_id temp_mesh =
-						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
 						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group_id, temp_mesh);
 						Cmiss_fe_mesh_destroy(&temp_mesh);
 						if (element_group)
@@ -1282,7 +1269,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
 									Cmiss_fe_mesh_id temp_mesh =
-									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -2400,7 +2387,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			}
 		}
 		/* for 1-D and 2-D elements only */
-		dimension=Cmiss_graphic_get_dimension(graphic);
+		dimension=Cmiss_graphic_get_dimension(graphic, (struct FE_region *)NULL);
 		if ((1==dimension)||(2==dimension))
 		{
 			if (graphic->exterior)
@@ -3138,7 +3125,6 @@ int Cmiss_graphic_to_graphics_object(
 	enum GT_object_type graphics_object_type;
 	int return_code;
 	struct Coordinate_system *coordinate_system;
-	struct FE_element *first_element;
 	struct FE_region *fe_region;
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data;
 	struct GT_glyph_set *glyph_set = NULL;
@@ -3152,6 +3138,7 @@ int Cmiss_graphic_to_graphics_object(
 			(fe_region = graphic_to_object_data->data_fe_region)) ||
 			(fe_region = graphic_to_object_data->fe_region)))
 	{
+		int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
 		/* all primitives added at time 0.0 */
 		time = 0.0;
 		return_code = 1;
@@ -3238,37 +3225,29 @@ int Cmiss_graphic_to_graphics_object(
 									} break;
 									case CMISS_GRAPHIC_ISO_SURFACES:
 									{
-										switch (graphic->use_element_type)
+										switch (dimension)
 										{
-											case USE_ELEMENTS:
+											case 3:
 											{
 												//graphics_object_type = g_VOLTEX; // for old isosurfaces
 												graphics_object_type = g_SURFACE; // for new isosurfaces
-												if (NULL != (first_element = FE_region_get_first_FE_element_that(
-															 fe_region, FE_element_is_top_level, (void *)NULL)))
-												{
-													if (2 == get_FE_element_dimension(first_element))
-													{
-														graphics_object_type = g_POLYLINE;
-													}
-												}
 											} break;
-											case USE_FACES:
+											case 2:
 											{
 												graphics_object_type = g_POLYLINE;
 											} break;
-											case USE_LINES:
+											case 1:
 											{
 												display_message(ERROR_MESSAGE,
 													"Cmiss_graphic_to_graphics_object.  "
-													"USE_LINES not supported for iso_scalar");
+													"iso_scalars of 1-D elements is not supported");
 												return_code = 0;
 											} break;
 											default:
 											{
 												display_message(ERROR_MESSAGE,
 													"Cmiss_graphic_to_graphics_object.  "
-													"Unknown use_element_type");
+													"Invalid dimension for iso_scalars");
 												return_code = 0;
 											} break;
 										}
@@ -3420,7 +3399,7 @@ int Cmiss_graphic_to_graphics_object(
 									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 										graphic->graphics_object, lines))
 									{
-										return_code = FE_region_for_each_FE_element(fe_region,
+										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, /*dimension*/1,
 											FE_element_to_graphics_object, graphic_to_object_data_void);
 									}
 									else
@@ -3456,10 +3435,11 @@ int Cmiss_graphic_to_graphics_object(
 										DESTROY_LIST(Computed_field)(&domain_field_list);
 								}
 #endif /* defined(USE_OPENCASCADE) */
+								// Note: fall through to next case
 								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_ELEMENT_POINTS:
 								{
-									return_code = FE_region_for_each_FE_element(fe_region,
+									return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
 										FE_element_to_graphics_object, graphic_to_object_data_void);
 								} break;
 								case CMISS_GRAPHIC_ISO_SURFACES:
@@ -3477,7 +3457,7 @@ int Cmiss_graphic_to_graphics_object(
 													graphic->iso_scalar_field,
 													graphic->texture_coordinate_field);
 										}
-										return_code = FE_region_for_each_FE_element(fe_region,
+										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
 											FE_element_to_graphics_object,
 											graphic_to_object_data_void);
 										if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
@@ -3529,7 +3509,7 @@ int Cmiss_graphic_to_graphics_object(
 									}
 									else
 									{
-										return_code = FE_region_for_each_FE_element(fe_region,
+										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
 											FE_element_to_graphics_object,
 											graphic_to_object_data_void);
 									}
@@ -3736,7 +3716,7 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
 								Cmiss_fe_mesh_id temp_mesh =
-									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -3750,7 +3730,7 @@ int Cmiss_graphic_to_graphics_object(
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
 									Cmiss_fe_mesh_id temp_mesh =
-									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -3774,7 +3754,7 @@ int Cmiss_graphic_to_graphics_object(
 									(void *)&select_data,
 									graphic_to_object_data->selected_element_point_ranges_list);
 								Cmiss_fe_mesh_id temp_mesh =
-								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_elements");
+								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -5110,7 +5090,7 @@ static int FE_element_as_graphics_name_is_removed_or_modified(
 	{
 		if (CM_element_information_from_graphics_name(&cm, graphics_name))
 		{
-			if (NULL != (element = FE_region_get_FE_element_from_identifier(data->fe_region,
+			if (NULL != (element = FE_region_get_FE_element_from_identifier_deprecated(data->fe_region,
 						&cm)))
 			{
 				return_code = FE_element_or_parent_changed(element,
@@ -5181,8 +5161,19 @@ int Cmiss_graphic_FE_region_change(
 					fe_field_related_object_change =
 						CHANGE_LOG_OBJECT_UNCHANGED(FE_field);
 					/* must always rebuild if identifiers changed */
-					if ((data->fe_element_change_summary &
-						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element)) ||
+					bool element_identifier_change = false;
+					int number_of_element_changes_all_dimensions = 0;
+					for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+					{
+						if (data->fe_element_change_summary[dim] &
+							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
+						{
+							element_identifier_change = true;
+						}
+						number_of_element_changes_all_dimensions +=
+							data->number_of_fe_element_changes[dim];
+					}
+					if (element_identifier_change ||
 						(Cmiss_graphic_uses_changed_FE_field(graphic,
 							data->fe_field_changes) && (
 								(data->fe_field_change_summary & (
@@ -5192,13 +5183,13 @@ int Cmiss_graphic_FE_region_change(
 									(data->fe_field_change_summary &
 										CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) && (
 									(0 < data->number_of_fe_node_changes) ||
-									(0 < data->number_of_fe_element_changes)))))))
+									(0 < number_of_element_changes_all_dimensions)))))))
 					{
 						if (fe_field_related_object_change && (
 							((data->number_of_fe_node_changes*2) <
 								FE_region_get_number_of_FE_nodes(data->fe_region)) &&
-							((data->number_of_fe_element_changes*4) <
-								FE_region_get_number_of_FE_elements(data->fe_region))))
+							((number_of_element_changes_all_dimensions*4) <
+								FE_region_get_number_of_FE_elements_all_dimensions(data->fe_region))))
 						{
 							/* partial rebuild for few node/element field changes */
 							GT_object_remove_primitives_at_time(graphic->graphics_object,
@@ -5537,7 +5528,7 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 		/* for 1-D and 2-D elements only */
 		if (return_code)
 		{
-			dimension=Cmiss_graphic_get_dimension(graphic);
+			dimension=Cmiss_graphic_get_dimension(graphic, (struct FE_region *)NULL);
 			if ((1==dimension)||(2==dimension))
 			{
 				return_code=(graphic->exterior == second_graphic->exterior)&&
