@@ -5421,6 +5421,7 @@ If the element has no parent, merges nodes directly referenced by <element>.
 						DEACCESS(FE_node)(&(element_field_nodes_array[i]));
 					}
 				}
+				DEALLOCATE(element_field_nodes_array);
 			}
 			else
 			{
