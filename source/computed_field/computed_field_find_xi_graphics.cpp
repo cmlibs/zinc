@@ -326,7 +326,7 @@ sequential element_xi lookup should now be performed.
 		(fe_region = Cmiss_region_get_FE_region(search_region))
 		/* This special case actually only works for 2D elements */
 		&& (element_dimension == 2)
-		&& (5 < FE_region_get_number_of_FE_elements(fe_region))
+		&& (5 < FE_region_get_number_of_FE_elements_all_dimensions(fe_region))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field = field;
@@ -492,7 +492,7 @@ sequential element_xi lookup should now be performed.
 				if (scaled_number)
 				{
 					if ((*element = FE_region_get_FE_element_from_identifier(
-								 fe_region, &cm)))
+								 fe_region, 3, cm.number)))
 					{
 						first_element = *element;
 #if defined (DEBUG)
@@ -589,7 +589,7 @@ sequential element_xi lookup should now be performed.
 								if (scaled_number)
 								{
 									if ((*element = FE_region_get_FE_element_from_identifier(
-												 fe_region, &cm)))
+												 fe_region, 3, cm.number)))
 									{
 										if (Computed_field_iterative_element_conditional(
 											*element, (void *)&find_element_xi_data))
