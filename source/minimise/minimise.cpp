@@ -1,11 +1,8 @@
-/*******************************************************************************
- FILE : cmiss.c
-
- LAST MODIFIED : 12 April 2006
-
- DESCRIPTION :
- Functions for executing cmiss commands.
- ==============================================================================*/
+/***************************************************************************//**
+ * FILE : minimise.cpp
+ *
+ * Optimisation/minimisation routines.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -301,6 +298,7 @@ Minimisation::~Minimisation()
 	for (i=0;i<number_of_independent_fields;i++) {
 		Cmiss_field_destroy(independent_fields+i);
 	}
+	DEALLOCATE(independent_fields);
 	LEAVE;
 } /* Minimisation::~Minimisation */
 
@@ -334,7 +332,7 @@ int Minimisation::calculate_projection(struct FE_node *node,
 {
 	Minimisation *minimisation;
 	minimisation = static_cast<Minimisation *> (minimisation_object_void);
-	FE_value* values = static_cast<FE_value*>(NULL);
+	FE_value* values = 0;
 	ALLOCATE(values,FE_value,minimisation->number_of_data_components);
 	Projection projection = minimisation->projections[node];
 	Computed_field_evaluate_at_node(minimisation->data_field, node,
@@ -345,6 +343,7 @@ int Minimisation::calculate_projection(struct FE_node *node,
 		/*element_dimension*/minimisation->dimension, \
 		/*search_region*/minimisation->region, /*propagate_field*/0,
 		/*find_nearest_location*/1);
+	DEALLOCATE(values);
 	minimisation->projections[node] = projection;
 	//std::cout << "Element: " << FE_element_get_cm_number(projection.element) << ";";
 	//std::cout << " xi: " << projection.xi[0] << "," << projection.xi[1] << ",";
@@ -825,6 +824,8 @@ int calculate_LS_term(struct FE_node *node,void *user_data_void)
 		minimisation->currentDataPointIndex ++;
 	}
 	//diff = sqrt(diff);
+	DEALLOCATE(actualValues);
+	DEALLOCATE(currentValues);
 	return 1;
 }
 
@@ -953,9 +954,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
  over a <region>
  ==============================================================================*/
 {
-	char *data_group_name,*region_path;
 	int dimension, number_of_valid_strings, maxIters, return_code, i;
-	struct Cmiss_region *region,*data_group;
 	struct Computed_field *objective_field, *data_field, *mesh_field;
 	struct Multiple_strings field_names;
 	struct Minimisation_package *package;
@@ -967,8 +966,8 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 	ENTER(gfx_minimise);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (package = (struct Minimisation_package *) package_void)) {
-		region_path = (char *) NULL;
-		data_group_name = (char *) NULL;
+		struct Cmiss_region *region = NULL;
+		struct Cmiss_region *data_group = NULL;
 		objective_field = (struct Computed_field *) NULL;
 		data_field = (struct Computed_field *) NULL;
 		mesh_field = (struct Computed_field *) NULL;
@@ -1023,10 +1022,10 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 				&mesh_field, &set_mesh_field_data,
 				set_Computed_field_conditional);
 		/* region/groups */
-		Option_table_add_entry(option_table, "group", &region_path,
-				package->root_region, set_Cmiss_region_path);
-		Option_table_add_entry(option_table, "data_group", &data_group_name,
-				package->root_region, set_Cmiss_region_path);
+		Option_table_add_set_Cmiss_region(option_table, "group",
+			package->root_region, &region);
+		Option_table_add_set_Cmiss_region(option_table, "data_group",
+			package->root_region, &data_group);
 		/* method to use */
 		minimisation_method_string = ENUMERATOR_STRING(MinimisationMethod)(
 				package->method);
@@ -1036,6 +1035,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 				(void *) NULL);
 		Option_table_add_enumerator(option_table, number_of_valid_strings,
 				valid_strings, &minimisation_method_string);
+		DEALLOCATE(valid_strings);
 		/* limit the number of iterations (really the number of objective
 		   function evaluations) */
 		Option_table_add_entry(option_table, "maximum_iterations", &maxIters,
@@ -1047,70 +1047,59 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 
 		if (return_code = Option_table_multi_parse(option_table, state)) {
 			if ((field_names.number_of_strings > 0) && (objective_field || (data_field && mesh_field))) {
-				if (region_path && data_group_name) {
-					if ((region = Cmiss_region_find_subregion_at_path(package->root_region,
-							region_path)) && (data_group =
-									Cmiss_region_find_subregion_at_path(package->root_region,
-											data_group_name))) {
-
-						if (minimisation_method_string) {
-							STRING_TO_ENUMERATOR(MinimisationMethod)(
-									minimisation_method_string,
-									&(package->method));
-						}
-
-						FE_region *fe_region = Cmiss_region_get_FE_region(
-								region);
-
-						FE_region_begin_change(fe_region);
-
-						// Create minimisation object
-						Minimisation minimisation(objective_field,
-								data_field, mesh_field, fe_region, region,
-								data_group, maxIters, dimension);
-
-						// Need the field module
-						// FIXME: is this the best way to get it?
-						Cmiss_field_module_id field_module = Cmiss_field_get_field_module(objective_field ? objective_field : mesh_field);
-						for (i=0;i<field_names.number_of_strings;i++) {
-							minimisation.add_independent_field(field_module,field_names.strings[i]);
-						}
-						Cmiss_field_module_destroy(&field_module);
-
-						// Populate the dof pointers and initial values for each node
-						if (Computed_field_is_type_finite_element(minimisation.independent_fields[0])) {
-							FE_region_for_each_FE_node(fe_region,
-									Minimisation::construct_dof_arrays,
-									&minimisation);
-						} else if (minimisation.independent_fields_are_constant) {
-							Minimisation::construct_dof_arrays(NULL,&minimisation);
-						}
-
-						// Minimise the objective function
-						switch (package->method) {
-						case NSDGSL:
-							minimisation.minimise_NSDGSL();
-							break;
-						case OPTPP_QuasiNewton:
-							minimisation.minimise_QN();
-							break;
-						case OPTPP_LSQ_Newton:
-							minimisation.minimise_LSQN();
-							break;
-						default:
-							display_message(ERROR_MESSAGE, "gfx minimise. "
-								"Unknown minimisation method.");
-							return_code = 0;
-							break;
-						}
-
-						FE_region_end_change(fe_region);
-
-					} else {
-						display_message(ERROR_MESSAGE, "gfx_minimise"
-							"Invalid argument(s)");
-						return_code = 0;
+				if (region && data_group) {
+					if (minimisation_method_string) {
+						STRING_TO_ENUMERATOR(MinimisationMethod)(
+								minimisation_method_string,
+								&(package->method));
 					}
+
+					FE_region *fe_region = Cmiss_region_get_FE_region(
+							region);
+
+					FE_region_begin_change(fe_region);
+
+					// Create minimisation object
+					Minimisation minimisation(objective_field,
+							data_field, mesh_field, fe_region, region,
+							data_group, maxIters, dimension);
+
+					// Need the field module
+					// FIXME: is this the best way to get it?
+					Cmiss_field_module_id field_module = Cmiss_field_get_field_module(objective_field ? objective_field : mesh_field);
+					for (i=0;i<field_names.number_of_strings;i++) {
+						minimisation.add_independent_field(field_module,field_names.strings[i]);
+					}
+					Cmiss_field_module_destroy(&field_module);
+
+					// Populate the dof pointers and initial values for each node
+					if (Computed_field_is_type_finite_element(minimisation.independent_fields[0])) {
+						FE_region_for_each_FE_node(fe_region,
+								Minimisation::construct_dof_arrays,
+								&minimisation);
+					} else if (minimisation.independent_fields_are_constant) {
+						Minimisation::construct_dof_arrays(NULL,&minimisation);
+					}
+
+					// Minimise the objective function
+					switch (package->method) {
+					case NSDGSL:
+						minimisation.minimise_NSDGSL();
+						break;
+					case OPTPP_QuasiNewton:
+						minimisation.minimise_QN();
+						break;
+					case OPTPP_LSQ_Newton:
+						minimisation.minimise_LSQN();
+						break;
+					default:
+						display_message(ERROR_MESSAGE, "gfx minimise. "
+							"Unknown minimisation method.");
+						return_code = 0;
+						break;
+					}
+
+					FE_region_end_change(fe_region);
 				} else {
 					display_message(ERROR_MESSAGE,
 							"gfx_minimise.  Must specify a region and data group");
@@ -1123,11 +1112,11 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 			}
 		}
 		DESTROY(Option_table)(&option_table);
-		if (region_path) {
-			DEALLOCATE(region_path);
+		if (region) {
+			Cmiss_region_destroy(&region);
 		}
-		if (data_group_name) {
-			DEALLOCATE(data_group_name);
+		if (data_group) {
+			Cmiss_region_destroy(&data_group);
 		}
 		if (objective_field) {
 			DEACCESS(Computed_field)(&objective_field);
@@ -1137,6 +1126,14 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 		}
 		if (mesh_field) {
 			DEACCESS(Computed_field)(&mesh_field);
+		}
+		if (field_names.strings)
+		{
+			for (int i = 0; i < field_names.number_of_strings; i++)
+			{
+				DEALLOCATE(field_names.strings[i]);
+			}
+			DEALLOCATE(field_names.strings);
 		}
 	} else {
 		display_message(ERROR_MESSAGE, "gfx_minimise.  Invalid argument(s)");
