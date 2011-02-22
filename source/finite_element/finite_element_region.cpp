@@ -5869,7 +5869,7 @@ in this fe_region.
 This function is recursive.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(FE_region_remove_FE_element);
 	if (fe_region && element)
