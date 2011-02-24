@@ -3967,6 +3967,14 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
 	return (return_code);
 } /* FE_region_for_each_FE_node_conditional */
 
+Cmiss_node_iterator_id FE_region_create_node_iterator(
+	struct FE_region *fe_region)
+{
+	if (fe_region)
+		return CREATE_LIST_ITERATOR(FE_node)(fe_region->fe_node_list);
+	return 0;
+}
+
 int FE_region_remove_FE_node(struct FE_region *fe_region,
 	struct FE_node *node)
 /*******************************************************************************
@@ -6149,6 +6157,14 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
 	LEAVE;
 
 	return (return_code);
+}
+
+Cmiss_element_iterator_id FE_region_create_element_iterator(
+	struct FE_region *fe_region, int dimension)
+{
+	if (fe_region)
+		return CREATE_LIST_ITERATOR(FE_element)(FE_region_get_element_list(fe_region, dimension));
+	return 0;
 }
 
 int FE_region_FE_element_meets_topological_criteria(struct FE_region *fe_region,

@@ -318,24 +318,6 @@ DESCRIPTION :
 Returns the number of elements in <region> if it exists.
 ==============================================================================*/
 
-int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
-	Cmiss_node_iterator_function iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2004
-
-DESCRIPTION :
-Iterates over each node in <region>.
-==============================================================================*/
-
-int Cmiss_region_for_each_element_in_region(struct Cmiss_region *region,
-	Cmiss_element_iterator_function iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 02 March 2005
-
-DESCRIPTION :
-Iterates over each element in <region>.
-==============================================================================*/
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 /*******************************************************************************

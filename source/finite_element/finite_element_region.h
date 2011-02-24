@@ -667,6 +667,17 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
 <iterator_user_data> as arguments.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Create a node iterator object for iterating through the nodes in the
+ * fe_region which are ordered from lowest to highest identifier. The iterator
+ * initially points at the position before the first node.
+ *
+ * @param fe_region  The region whose nodes are to be iterated over.
+ * @return  Handle to node_iterator at position before first, or NULL if error.
+ */
+Cmiss_node_iterator_id FE_region_create_node_iterator(
+	struct FE_region *fe_region);
+
 int FE_region_remove_FE_node(struct FE_region *fe_region,
 	struct FE_node *node);
 /*******************************************************************************
@@ -1131,6 +1142,19 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
 	void *conditional_user_data,
 	LIST_ITERATOR_FUNCTION(FE_element) iterator_function,
 	void *iterator_user_data);
+
+/***************************************************************************//**
+ * Create an element iterator object for iterating through the elements of the
+ * given dimension in the fe_region, which are ordered from lowest to highest
+ * identifier. The iterator initially points at the position before the first
+ * element.
+ *
+ * @param fe_region  The region whose elements are to be iterated over.
+ * @param dimension  The dimension of elements to iterate over.
+ * @return  Handle to element_iterator at position before first, or NULL if error.
+ */
+Cmiss_element_iterator_id FE_region_create_element_iterator(
+	struct FE_region *fe_region, int dimension);
 
 /***************************************************************************//**
  * Calls generic FE_element_meets_topological_criteria function with condition

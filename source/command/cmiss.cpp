@@ -9820,8 +9820,13 @@ Executes a GFX LIST ELEMENT.
 						(Multi_range_get_range(element_ranges, /*range_number*/0,
 							&start, &stop)) && (start == stop)))
 					{
-						return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
-							(void *)NULL, element_list);
+		  				Cmiss_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
+		  				Cmiss_element_id element = 0;
+		  				while (element = Cmiss_element_iterator_next_non_access(iter))
+		  				{
+		  					list_FE_element(element);
+		  				}
+		  				Cmiss_element_iterator_destroy(&iter);
 					}
 					else
 					{
@@ -9988,8 +9993,13 @@ use node_manager and node_selection.
 		  					(Multi_range_get_range(node_ranges, /*range_number*/0,
 		  							&start, &stop)) && (start == stop)))
 		  			{
-		  				return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
-		  						(void *)1, node_list);
+		  				Cmiss_node_iterator_id iter = CREATE_LIST_ITERATOR(FE_node)(node_list);
+		  				Cmiss_node_id node = 0;
+		  				while (node = Cmiss_node_iterator_next_non_access(iter))
+		  				{
+		  					list_FE_node(node);
+		  				}
+		  				Cmiss_node_iterator_destroy(&iter);
 		  			}
 		  			else
 		  			{

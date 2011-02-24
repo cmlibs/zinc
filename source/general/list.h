@@ -334,6 +334,19 @@ DESCRIPTION : \
 Calls <iterator> for each object in the <list>. \
 ==============================================================================*/
 
+#define CREATE_LIST_ITERATOR_( object_type ) \
+	create_list_iterator_ ## object_type
+#define CREATE_LIST_ITERATOR( object_type ) \
+	CREATE_LIST_ITERATOR_(object_type)
+
+#define PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION( object_type , iterator_type ) \
+struct iterator_type *CREATE_LIST_ITERATOR(object_type)( \
+	struct LIST(object_type) *list) \
+/*************************************************************************//** \
+ * Returns an iterator object set to the start of the list. \
+ * Optional prototype for list implementations supporting iterator objects. \
+ */
+
 #define LIST_CLASS(object_type) list_class_ ## object_type
 /***************************************************************************** \
 LAST MODIFIED : 9 February 2007 \

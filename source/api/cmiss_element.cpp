@@ -786,6 +786,11 @@ public:
 		return element;
 	}
 
+	Cmiss_element_iterator_id createIterator()
+	{
+		return FE_region_create_element_iterator(fe_region, mesh_dimension);
+	}
+
 	int getDimension() const { return mesh_dimension; }
 
 	FE_region *getFeRegion() const { return fe_region; }
@@ -877,6 +882,14 @@ Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
 {
 	if (mesh && element_template)
 		return mesh->createElement(identifier, element_template);
+	return NULL;
+}
+
+Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
+	Cmiss_fe_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->createIterator();
 	return NULL;
 }
 

@@ -218,60 +218,6 @@ Returns the number of elements in the <region>.
 	return (number_of_elements);
 } /* Cmiss_region_get_number_of_elements */
 
-int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
-	Cmiss_node_iterator_function iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 4 November 2004
-
-DESCRIPTION :
-Iterates over each node in <region>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_for_each_node_in_region);
-	return_code = 0;
-	if (region&&iterator_function)
-	{
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			return_code=FE_region_for_each_FE_node(fe_region,iterator_function,
-				user_data);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_for_each_node_in_region */
-
-int Cmiss_region_for_each_element_in_region(struct Cmiss_region *region,
-	Cmiss_element_iterator_function iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 02 March 2005
-
-DESCRIPTION :
-Iterates over each element in <region>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_for_each_element_in_region);
-	return_code = 0;
-	if (region&&iterator_function)
-	{
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			return_code=FE_region_for_each_FE_element(fe_region,iterator_function,
-				user_data);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_for_each_element_in_region */
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name)
 /*******************************************************************************

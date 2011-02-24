@@ -84,15 +84,11 @@ struct Cmiss_time_sequence;
 	#define CMISS_NODE_ID_DEFINED
 #endif /* CMISS_NODE_ID_DEFINED */
 
-typedef int (*Cmiss_node_iterator_function)(Cmiss_node_id node,
-  void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 03 March 2005
-
-DESCRIPTION :
-Declare a pointer to a function of type
-int function(struct Cmiss_node *node, void *user_data);
-==============================================================================*/
+#ifndef CMISS_NODE_ITERATOR_ID_DEFINED
+	struct Cmiss_node_iterator;
+	typedef struct Cmiss_node_iterator * Cmiss_node_iterator_id;
+	#define CMISS_NODE_ITERATOR_ID_DEFINED
+#endif /* CMISS_NODE_ITERATOR_ID_DEFINED */
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_nodal_value_type FE_nodal_value_type
@@ -212,6 +208,18 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 	int identifier, Cmiss_node_template_id node_template);
 
 /***************************************************************************//**
+ * Create a node iterator object for iterating through the nodes in the nodeset
+ * which are ordered from lowest to highest identifier. The iterator initially
+ * points at the position before the first node, so the first call to
+ * Cmiss_node_iterator_next() returns the first node and advances the iterator.
+ *
+ * @param nodeset  Handle to the nodeset to iterate over.
+ * @return  Handle to node_iterator at position before first, or NULL if error.
+ */
+Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
+	Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
  * Return a handle to the node in the nodeset with this identifier.
  *
  * @param nodeset  Handle to the nodeset to find the node in.
@@ -228,6 +236,23 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
  * @return  Number of nodes in nodeset.
  */
 int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Destroys this handle to the node_iterator and sets it to NULL.
+ *
+ * @param node_iterator_address  Address of handle to node_iterator to destroy.
+ */
+int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
+
+/***************************************************************************//**
+ * Returns a handle to the next node in the container being iterated over then
+ * advances the iterator position. The caller is required to destroy the
+ * returned node handle.
+ *
+ * @param node_iterator  Node iterator to query and advance.
+ * @return  Handle to the next node, or NULL if none remaining.
+ */
+Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
 
 /***************************************************************************//**
  * Destroys this handle to the node_template and sets it to NULL.

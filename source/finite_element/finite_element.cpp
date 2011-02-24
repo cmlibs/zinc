@@ -370,6 +370,14 @@ struct FE_node_compare_number
 
 typedef Cmiss_set<FE_node *,FE_node_compare_number> Cmiss_set_FE_node;
 
+struct Cmiss_node_iterator : public Cmiss_set_FE_node::ext_iterator
+{
+	Cmiss_node_iterator(Cmiss_set_FE_node *container) :
+		Cmiss_set_FE_node::ext_iterator(container)
+	{
+	}
+};
+
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
 
 struct FE_basis
@@ -962,6 +970,14 @@ struct FE_element_compare_identifier
 };
 
 typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_FE_element;
+
+struct Cmiss_element_iterator : public Cmiss_set_FE_element::ext_iterator
+{
+	Cmiss_element_iterator(Cmiss_set_FE_element *container) :
+		Cmiss_set_FE_element::ext_iterator(container)
+	{
+	}
+};
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_element);
 
@@ -18503,13 +18519,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 } /* merge_FE_node */
 
 #if !defined (WINDOWS_DEV_FLAG)
-int list_FE_node(struct FE_node *node,void *list_node_information)
-/*******************************************************************************
-LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-Outputs the information contained at the node.
-==============================================================================*/
+int list_FE_node(struct FE_node *node)
 {
 	int return_code;
 
@@ -18519,20 +18529,17 @@ Outputs the information contained at the node.
 		return_code=1;
 		/* write the number */
 		display_message(INFORMATION_MESSAGE,"node : %d\n",node->cm_node_identifier);
-		if (list_node_information)
+		/* write the field information */
+		if (node->fields)
 		{
-			/* write the field information */
-			if (node->fields)
-			{
-				for_each_FE_field_at_node_alphabetical_indexer_priority(
-					list_FE_node_field, (void *)NULL, node);
-			}
-#if defined (DEBUG)
-			/*???debug*/
-			display_message(INFORMATION_MESSAGE,"  access count = %d\n",
-				node->access_count);
-#endif /* defined (DEBUG) */
+			for_each_FE_field_at_node_alphabetical_indexer_priority(
+				list_FE_node_field, (void *)NULL, node);
 		}
+#if defined (DEBUG)
+		/*???debug*/
+		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
+			node->access_count);
+#endif /* defined (DEBUG) */
 	}
 	else
 	{
@@ -18542,12 +18549,36 @@ Outputs the information contained at the node.
 	LEAVE;
 
 	return (return_code);
-} /* list_FE_node */
+}
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_node)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_node,cm_node_identifier,int)
 DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator)
+
+int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address)
+{
+	if (!node_iterator_address)
+		return 0;
+	delete *node_iterator_address;
+	*node_iterator_address = 0;
+	return 1;
+}
+
+Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator)
+{
+	if (node_iterator)
+		return node_iterator->next();
+	return 0;
+}
+
+Cmiss_node_id Cmiss_node_iterator_next_non_access(Cmiss_node_iterator_id node_iterator)
+{
+	if (node_iterator)
+		return node_iterator->next_non_access();
+	return 0;
+}
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
 
@@ -28734,6 +28765,30 @@ DECLARE_OBJECT_FUNCTIONS(FE_element)
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_element)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_element,identifier,struct CM_element_information *)
 DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator)
+
+int Cmiss_element_iterator_destroy(Cmiss_element_iterator_id *element_iterator_address)
+{
+	if (!element_iterator_address)
+		return 0;
+	delete *element_iterator_address;
+	*element_iterator_address = 0;
+	return 1;
+}
+
+Cmiss_element_id Cmiss_element_iterator_next(Cmiss_element_iterator_id element_iterator)
+{
+	if (element_iterator)
+		return element_iterator->next();
+	return 0;
+}
+
+Cmiss_element_id Cmiss_element_iterator_next_non_access(Cmiss_element_iterator_id element_iterator)
+{
+	if (element_iterator)
+		return element_iterator->next_non_access();
+	return 0;
+}
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)
 
@@ -34424,42 +34479,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 	return (return_code);
 } /* merge_FE_element */
 
-int list_FE_element_name(struct FE_element *element,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Outputs the name of the element as element/face/line #.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(list_FE_element_name);
-	USE_PARAMETER(dummy);
-	if (element)
-	{
-		return_code=1;
-		/* write the identifier */
-		display_message(INFORMATION_MESSAGE,"%s %d\n",
-			CM_element_type_string(element->identifier.type),element->identifier.number);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"list_FE_element_name.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_FE_element_name */
-
-int list_FE_element(struct FE_element *element,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 01 April 2008
-
-DESCRIPTION :
-Outputs the information contained at the element.
-==============================================================================*/
+int list_FE_element(struct FE_element *element)
 {
 	char line[93];
 	FE_value *scale_factor;
@@ -34467,7 +34487,6 @@ Outputs the information contained at the element.
 	struct FE_element **face;
 
 	ENTER(list_FE_element);
-	USE_PARAMETER(dummy);
 	if (element)
 	{
 		return_code=1;

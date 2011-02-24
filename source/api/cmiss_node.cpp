@@ -424,6 +424,17 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 	return NULL;
 }
 
+Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
+	Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		return FE_region_create_node_iterator(fe_region);
+	}
+	return NULL;
+}
+
 Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier)
 {

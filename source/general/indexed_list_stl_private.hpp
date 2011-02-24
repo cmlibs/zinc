@@ -72,10 +72,9 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 { \
 	if (list_address) \
 	{ \
-		CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(*list_address); \
-		delete cmiss_set; \
-		*list_address = 0; \
-		return 1; \
+		CMISS_SET(object_type) **cmiss_set_address = \
+			reinterpret_cast<CMISS_SET(object_type) **>(list_address); \
+		return CMISS_SET(object_type)::deaccess(cmiss_set_address); \
 	} \
 	return 0; \
 }
@@ -282,6 +281,15 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 		return_code = 0; \
 	} \
 	return (return_code); \
+}
+
+#define DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION( object_type , iterator_type ) \
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(object_type,iterator_type) \
+{ \
+	CMISS_SET(object_type) *cmiss_set = reinterpret_cast<CMISS_SET(object_type) *>(list); \
+	if (cmiss_set) \
+		return new iterator_type(cmiss_set); \
+	return 0; \
 }
 
 #define DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION( object_type , \

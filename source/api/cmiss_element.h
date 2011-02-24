@@ -81,22 +81,18 @@ typedef struct Cmiss_element_template *Cmiss_element_template_id;
 	#define CMISS_ELEMENT_ID_DEFINED
 #endif /* CMISS_ELEMENT_ID_DEFINED */
 
+#ifndef CMISS_ELEMENT_ITERATOR_ID_DEFINED
+	struct Cmiss_element_iterator;
+	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
+	#define CMISS_ELEMENT_ITERATOR_ID_DEFINED
+#endif /* CMISS_ELEMENT_ITERATOR_ID_DEFINED */
+
 #ifndef CMISS_BASIS_FUNCTION_ID_DEFINED
 	struct Cmiss_element_basis;
 	/** Handle to an element basis function definition */
 	typedef struct Cmiss_element_basis *Cmiss_element_basis_id;
 	#define CMISS_BASIS_FUNCTION_ID_DEFINED
 #endif /* CMISS_BASIS_FUNCTION_ID_DEFINED */
-
-typedef int (*Cmiss_element_iterator_function)(Cmiss_element_id element,
-  void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 03 March 2005
-
-DESCRIPTION :
-Declare a pointer to a function of type
-int function(struct Cmiss_element *element, void *user_data);
-==============================================================================*/
 
 /***************************************************************************//**
  * Common element shapes.
@@ -213,6 +209,20 @@ Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
 	int identifier, Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
+ * Create an element iterator object for iterating through the elements in the
+ * mesh which are ordered from lowest to highest identifier. The iterator
+ * initially points at the position before the first element, so the first call
+ * to Cmiss_element_iterator_next() returns the first element and advances the
+ * iterator.
+ *
+ * @param mesh  Handle to the mesh whose elements are to be iterated over.
+ * @return  Handle to element_iterator at position before first, or NULL if
+ * error.
+ */
+Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
+	Cmiss_fe_mesh_id mesh);
+
+/***************************************************************************//**
  * Create a new element in this mesh with shape and fields described by the
  * element_template. Returns identifier of new element.
  * @see Cmiss_fe_mesh_create_element
@@ -291,6 +301,26 @@ int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
  */
 int Cmiss_element_basis_get_number_of_nodes(
 	Cmiss_element_basis_id element_basis);
+
+/***************************************************************************//**
+ * Destroys this handle to the element_iterator and sets it to NULL.
+ *
+ * @param element_iterator_address  Address of handle to element_iterator to
+ * destroy.
+ */
+int Cmiss_element_iterator_destroy(
+	Cmiss_element_iterator_id *element_iterator_address);
+
+/***************************************************************************//**
+ * Returns a handle to the next element in the container being iterated over
+ * then advances the iterator position. The caller is required to destroy the
+ * returned element handle.
+ *
+ * @param element_iterator  Element iterator to query and advance.
+ * @return  Handle to the next element, or NULL if none remaining.
+ */
+Cmiss_element_id Cmiss_element_iterator_next(
+	Cmiss_element_iterator_id element_iterator);
 
 /***************************************************************************//**
  * Destroys this handle to the element_template and sets it to NULL.

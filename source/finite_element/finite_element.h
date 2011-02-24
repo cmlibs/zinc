@@ -1557,17 +1557,27 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 ???RC Move to finite_element_private.h?
 ==============================================================================*/
 
-int list_FE_node(struct FE_node *node,void *list_node_information);
-/*******************************************************************************
-LAST MODIFIED : 9 February 1998
-
-DESCRIPTION :
-Outputs the information contained at the node.
-==============================================================================*/
+/***************************************************************************//**
+ * Writes to the console the node identifier and details of the fields and
+ * parameters defined there.
+ */
+int list_FE_node(struct FE_node *node);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_node);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node,cm_node_identifier,int);
+
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator);
+
+/***************************************************************************//**
+ * Internal variant of public Cmiss_node_iterator_next() which does not access
+ * the returned node, for more efficient if less safe usage.
+ *
+ * @param node_iterator  Node iterator to query and advance.
+ * @return  Non-accessed pointer to the next node, or NULL if none remaining.
+ */
+Cmiss_node_id Cmiss_node_iterator_next_non_access(
+	Cmiss_node_iterator_id node_iterator);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_node);
 
@@ -3014,26 +3024,28 @@ common scale factors affect different fields in <destination>; the
 ???RC Move to finite_element_private.h?
 ==============================================================================*/
 
-int list_FE_element(struct FE_element *element,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
-
-DESCRIPTION :
-Outputs the information contained at the element.
-==============================================================================*/
-
-int list_FE_element_name(struct FE_element *element,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Outputs the name of the element as element/face/line #.
-==============================================================================*/
+/***************************************************************************//**
+ * Writes to the console the element identifier and details of the fields
+ * defined over it.
+ */
+int list_FE_element(struct FE_element *element);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
 	struct CM_element_information *);
+
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator);
+
+/***************************************************************************//**
+ * Internal variant of public Cmiss_element_iterator_next() which does not
+ * access the returned element, for more efficient if less safe usage.
+ *
+ * @param element_iterator  Element iterator to query and advance.
+ * @return  Non-accessed pointer to the next element, or NULL if none remaining.
+ */
+Cmiss_element_id Cmiss_element_iterator_next_non_access(
+	Cmiss_element_iterator_id element_iterator);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_element);
 

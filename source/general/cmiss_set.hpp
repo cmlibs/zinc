@@ -58,10 +58,13 @@ private:
 
 	mutable Cmiss_set *next, *prev; // linked list of related sets
 	Key temp_removed_object; // removed while changing identifier
+	int access_count;
 
 	Cmiss_set() :
 		next(this),
-		prev(this)
+		prev(this),
+		temp_removed_object(0),
+		access_count(1)
 	{
 	}
 
@@ -69,7 +72,9 @@ private:
 	Cmiss_set(const Cmiss_set& source) :
 		Base_class(source),
 		next(source.next),
-		prev(&source)
+		prev(&source),
+		temp_removed_object(0),
+		access_count(1)
 	{
 		for (iterator iter = begin(); iter != end(); ++iter)
 		{
@@ -83,7 +88,9 @@ private:
 	Cmiss_set(const Cmiss_set *source) :
 		Base_class(),
 		next(source->next),
-		prev(const_cast<Cmiss_set *>(source))
+		prev(const_cast<Cmiss_set *>(source)),
+		temp_removed_object(0),
+		access_count(1)
 	{
 		source->next = this;
 		next->prev = this;
@@ -142,6 +149,26 @@ public:
 			source.next = this;
 		}
 		return *this;
+	}
+
+	inline Cmiss_set *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(Cmiss_set **set_address)
+	{
+		if (set_address && *set_address)
+		{
+			if (0 >= (--(*set_address)->access_count))
+			{
+				delete *set_address;
+			}
+			*set_address = 0;
+			return 1;
+		}
+		return 0;
 	}
 
 	size_type erase(Key object)
@@ -249,6 +276,53 @@ public:
 		}
 		while (related_set != this);
 	}
+
+	/**
+	 * A specialised iterator class which wraps a reference to a container and an
+	 * iterator in it, suitable for use from external API because the container
+	 * cannot be destroyed before the iterator.
+	 */
+	struct ext_iterator
+	{
+		Cmiss_set *container;
+		iterator iter;
+
+		ext_iterator(Cmiss_set *container) :
+			container(container->access()),
+			iter(container->begin())
+		{
+		}
+
+		~ext_iterator()
+		{
+			// the container may be destroyed immediately before the iterator;
+			// hopefully not a problem
+			container->deaccess(&container);
+		}
+
+		Key next()
+		{
+			if (iter != container->end())
+			{
+				Key object = *iter;
+				++iter;
+				return object->access();
+			}
+			return 0;
+		}
+
+		Key next_non_access()
+		{
+			if (iter != container->end())
+			{
+				Key object = *iter;
+				++iter;
+				return object;
+			}
+			return 0;
+		}
+
+	};
 };
 
 #endif /* !defined (CMISS_SET_HPP) */
