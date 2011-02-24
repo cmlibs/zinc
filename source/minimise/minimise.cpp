@@ -897,8 +897,10 @@ void Minimisation::minimise_LSQN()
 	// need a handle on this object...
 	UserData = static_cast<void*> (this);
 	// FIXME: using objective field as the data field...
-	this->number_of_data_points =
-			Cmiss_region_get_number_of_nodes_in_region(this->data_group);
+	// GRC: should allow alternative nodeset "cmiss_data" to be used:
+	Cmiss_nodeset_id datapointset = Cmiss_region_get_nodeset_by_name(this->data_group, "cmiss_nodes");
+	this->number_of_data_points = Cmiss_nodeset_get_size(datapointset);
+	Cmiss_nodeset_destroy(&datapointset);
 	this->number_of_data_components = Computed_field_get_number_of_components(
 			this->data_field);
 	LSQNLF nlp(total_dof, this->number_of_data_points * this->number_of_data_components,

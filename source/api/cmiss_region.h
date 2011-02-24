@@ -284,40 +284,6 @@ Cmiss_region_id Cmiss_region_find_subregion_at_path(Cmiss_region_id region,
  */
 Cmiss_field_module_id Cmiss_region_get_field_module(Cmiss_region_id region);
 
-struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2004
-
-DESCRIPTION :
-Returns element with <name> in <region> if it exists.
-==============================================================================*/
-
-struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2004
-
-DESCRIPTION :
-Returns node with <name> in <region> if it exists.
-==============================================================================*/
-
-int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2004
-
-DESCRIPTION :
-Returns the number of nodes in <region> if it exists.
-==============================================================================*/
-
-int Cmiss_region_get_number_of_elements_in_region(struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 02 March 2005
-
-DESCRIPTION :
-Returns the number of elements in <region> if it exists.
-==============================================================================*/
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 /*******************************************************************************
