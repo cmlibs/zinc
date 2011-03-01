@@ -140,7 +140,7 @@ public:
 	int isValid() const
 	{
 		int return_code = 1;
-		if (0 < getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_TYPE_UNKNOWN))
+		if (0 < getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_TYPE_INVALID))
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_basis::isValid.  Function type not set");
@@ -220,7 +220,7 @@ public:
 	enum Cmiss_basis_function_type getFunctionType(int dimension) const
 	{
 		if ((dimension < 1) || (dimension > dimensions))
-			return CMISS_BASIS_FUNCTION_TYPE_UNKNOWN;
+			return CMISS_BASIS_FUNCTION_TYPE_INVALID;
 		return function_types[dimension-1];
 	}
 
@@ -447,7 +447,7 @@ public:
 	Cmiss_element_template(FE_region *fe_region, int element_dimension) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		element_dimension(element_dimension),
-		shape_type(CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN),
+		shape_type(CMISS_ELEMENT_SHAPE_TYPE_INVALID),
 		element_number_of_nodes(0),
 		template_element(NULL),
 		access_count(1)
@@ -469,7 +469,7 @@ public:
 
 	int setShapeType(Cmiss_element_shape_type in_shape_type)
 	{
-		if (in_shape_type == CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN)
+		if (in_shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 			return 0;
 		if (in_shape_type == shape_type)
 			return 1;
@@ -504,7 +504,7 @@ public:
 		const int *local_node_indexes)
 	{
 		int return_code = 1;
-		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN)
+		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_template_define_field_simple_nodal.  Element shape is not set");
@@ -595,7 +595,7 @@ public:
 		if (template_element)
 			return 1;
 		int return_code = 1;
-		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN)
+		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_template_finalise.  Element shape is not set");
@@ -951,7 +951,7 @@ enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
 {
 	if (element_basis)
 		return element_basis->getFunctionType(dimension);
-	return CMISS_BASIS_FUNCTION_TYPE_UNKNOWN;
+	return CMISS_BASIS_FUNCTION_TYPE_INVALID;
 }
 
 int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
@@ -983,7 +983,7 @@ enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
 {
 	if (element_template)
 		return element_template->getShapeType();
-	return CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN;
+	return CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 }
 
 int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_template,
@@ -1091,7 +1091,7 @@ Cmiss_region_id Cmiss_element_get_region(Cmiss_element_id element)
 enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
 	Cmiss_element_id element)
 {
-	Cmiss_element_shape_type shape_type = CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN;
+	Cmiss_element_shape_type shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
 		struct FE_element_shape *fe_element_shape = NULL;

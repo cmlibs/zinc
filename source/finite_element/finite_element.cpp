@@ -27630,7 +27630,7 @@ enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
 	int dimension, i, j, length;
 	enum Cmiss_element_shape_type shape_type;
 
-	shape_type = CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN;
+	shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element_shape)
 	{
 		dimension = element_shape->dimension;

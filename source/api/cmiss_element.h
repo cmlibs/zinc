@@ -99,7 +99,7 @@ typedef struct Cmiss_element_template *Cmiss_element_template_id;
  */
 enum Cmiss_element_shape_type
 {
-	CMISS_ELEMENT_SHAPE_TYPE_UNKNOWN = 0,
+	CMISS_ELEMENT_SHAPE_TYPE_INVALID = 0,
 	CMISS_ELEMENT_SHAPE_LINE = 1,        /**< 1-D: 0 <= xi1 <= 1 */
 	CMISS_ELEMENT_SHAPE_SQUARE = 2,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
 	CMISS_ELEMENT_SHAPE_TRIANGLE = 3,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
@@ -115,7 +115,7 @@ enum Cmiss_element_shape_type
  */
 enum Cmiss_basis_function_type
 {
-	CMISS_BASIS_FUNCTION_TYPE_UNKNOWN = 0,
+	CMISS_BASIS_FUNCTION_TYPE_INVALID = 0,
 	CMISS_BASIS_FUNCTION_CONSTANT = 1,
 	CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE = 2,
 	CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
