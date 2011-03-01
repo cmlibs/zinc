@@ -999,7 +999,8 @@ struct Cmiss_tessellation *Cmiss_graphics_module_get_default_tessellation(
 			{
 				graphics_module->default_tessellation = Cmiss_tessellation_create_private();
 				Cmiss_tessellation_set_name(graphics_module->default_tessellation, default_tessellation_name);
-				Cmiss_tessellation_set_persistent(tessellation, 1);
+				Cmiss_tessellation_set_attribute_integer(
+					graphics_module->default_tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
 
 				const int default_minimum_divisions = 1;
 				Cmiss_tessellation_set_minimum_divisions(graphics_module->default_tessellation,

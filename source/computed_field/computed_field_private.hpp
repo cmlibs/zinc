@@ -100,7 +100,7 @@ public:
 	{
 		if (new_field)
 		{
-			Cmiss_field_set_attribute_integer(new_field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+			Cmiss_field_set_attribute_integer(new_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 			DEACCESS(Computed_field)(&new_field);
 			return 1;
 		}
@@ -352,9 +352,9 @@ public:
 /** Flag attributes for generic fields */
 enum Computed_field_attribute_flags
 {
-	COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT = 1
+	COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT = 1
 	/*!< If NOT set, destroy field when only access is from region.
-	 * @see CMISS_FIELD_ATTRIBUTE_MANAGED */
+	 * @see CMISS_FIELD_ATTRIBUTE_IS_MANAGED */
 };
 
 struct Computed_field

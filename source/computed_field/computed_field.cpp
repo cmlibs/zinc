@@ -721,7 +721,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 		{
 			return_code = DESTROY(Computed_field)(object_address);
 		}
-		else if ((0 == (object->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT)) &&
+		else if ((0 == (object->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT)) &&
 			(object->manager) && ((1 == object->access_count) ||
 				((2 == object->access_count) &&
 					(MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status))) &&
@@ -3165,7 +3165,7 @@ int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_i
 	int response = 0;
 	if (field)
 	{
-		response = field->core->get_attribute_integer(CMISS_FIELD_ATTRIBUTE_COORDINATE);
+		response = field->core->get_attribute_integer(CMISS_FIELD_ATTRIBUTE_IS_COORDINATE);
 	}
 	return response;
 }
@@ -5150,11 +5150,15 @@ int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
 	{
 		switch (attribute_id)
 		{
-		case CMISS_FIELD_ATTRIBUTE_MANAGED:
-			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT));
+		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT));
+			break;
+		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+			value = field->core->get_attribute_integer(attribute_id);
 			break;
 		default:
-			value = field->core->get_attribute_integer(attribute_id);
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_get_attribute_integer.  Invalid attribute");
 			break;
 		}
 	}
@@ -5171,18 +5175,28 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 		int old_value = Cmiss_field_get_attribute_integer(field, attribute_id);
 		switch (attribute_id)
 		{
-		case CMISS_FIELD_ATTRIBUTE_MANAGED:
+		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
 			if (value)
 			{
-				field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT;
+				field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
 			}
 			else
 			{
-				field->attribute_flags &= ~COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT;
+				field->attribute_flags &= ~COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
+			}
+			break;
+		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+			return_code = field->core->set_attribute_integer(attribute_id, value);
+			if (!return_code)
+			{
+				display_message(WARNING_MESSAGE,
+					"Cmiss_field_set_attribute_integer.  Cannot set attribute");
 			}
 			break;
 		default:
-			return_code = field->core->set_attribute_integer(attribute_id, value);
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_set_attribute_integer.  Invalid attribute");
+			return_code = 0;
 			break;
 		}
 		if (Cmiss_field_get_attribute_integer(field, attribute_id) != old_value)

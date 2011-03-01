@@ -209,7 +209,7 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsemble, 
 	{
 		ensemble_field = Cmiss_field_module_create_ensemble(field_module);
 		Cmiss_field_set_name(ensemble_field, name);
-		Cmiss_field_set_attribute_integer(ensemble_field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+		Cmiss_field_set_attribute_integer(ensemble_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 	}
 	Cmiss_field_ensemble_id ensemble = Cmiss_field_cast_ensemble(ensemble_field);
 	if (!ensemble)
@@ -432,7 +432,7 @@ int FieldMLReader::readParameters()
 		{
 			realParametersField = Cmiss_field_module_create_real_parameters(field_module, indexEnsembleCount, indexEnsembles);
 			Cmiss_field_set_name(realParametersField, name);
-			Cmiss_field_set_attribute_integer(realParametersField, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+			Cmiss_field_set_attribute_integer(realParametersField, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 		}
 		Cmiss_field_real_parameters_id realParameters = Cmiss_field_cast_real_parameters(realParametersField);
 		if (realParameters)

@@ -49,6 +49,33 @@ typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
 #define CMISS_TESSELLATION_ID_DEFINED
 #endif
 
+/***************************************************************************//**
+ * Labels of tessellation attributes which may be set or obtained using generic
+ * get/set_attribute functions.
+ * Note: not all attributes can be set.
+ */
+enum Cmiss_tessellation_attribute_id
+{
+	CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED = 1,
+	/*!< Boolean as integer, when 0 (default) tessellation is destroyed when no
+	 * longer in use, i.e. when number of external references to it drops to
+	 * zero. Set to 1 to manage tessellation object indefinitely, or until this
+	 * attribute is reset to zero, effectively marking it as pending destruction.
+	 */
+
+	CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE = 2,
+	/*!< positive integer size of minimum divisions array, defaults to 1 or size
+	 * set in last call to Cmiss_tessellation_set_minimum_divisions.
+	 * @see Cmiss_tessellation_set_minimum_divisions.
+	 */
+
+	CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE = 3
+	/*!< positive integer size of refinement factors array, defaults to 1 or size
+	 * set in last call to Cmiss_tessellation_set_refinement_factors.
+	 * @see Cmiss_tessellation_set_refinement_factors.
+	 */
+};
+
 /*******************************************************************************
  * Returns a new reference to the tessellation with reference count incremented.
  * Caller is responsible for destroying the new reference.
@@ -63,6 +90,29 @@ Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellati
  * Internally this just decrements the reference count.
  */
 int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
+
+/***************************************************************************//**
+ * Get an integer or Boolean attribute of the tessellation object.
+ *
+ * @param tessellation  Handle to the cmiss tessellation.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
+	enum Cmiss_tessellation_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the tessellation object.
+ *
+ * @param tessellation  Handle to the cmiss tessellation.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true in case more options are added in future.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or able to be set for this tessellation object.
+ */
+int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
+	enum Cmiss_tessellation_attribute_id attribute_id, int value);
 
 /***************************************************************************//**
  * Return an allocated string containing tessellation name.
@@ -82,108 +132,66 @@ char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
 int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *name);
 
 /***************************************************************************//**
-* Returns the persistent property flag of the tessellation.
-*
-* @see Cmiss_tessellation_set_persistent
-* @param tessellation  The tessellation to query.
-* @return  1 if tessellation is persistent, 0 if non-persistent.
-*/
-int Cmiss_tessellation_get_persistent(Cmiss_tessellation_id tessellation);
-
-/***************************************************************************//**
-* Sets the persistent property flag of the tessellation;.
-* Default setting persistent=0 means the tessellation is destroyed when the
-* number of external references to it drops to zero.
-* Setting persistent=1 means the tessellation exists in graphics module even if
-* no external references to it are held, it can still be found by name or other
-* search criteria.
-*
-* @param tessellation  The tessellation to set the persistent flag for.
-* @param persistent  Non-zero for persistent, 0 for non-persistent.
-* @return  1 on success, 0 on failure.
-*/
-int Cmiss_tessellation_set_persistent(Cmiss_tessellation_id tessellation,
-	int persistent_flag);
-
-/***************************************************************************//**
- * Gets the number of dimensions for which minimum_divisions has been set.
- *
- * @param tessellation  The tessellation to query.
- * @return  The number of minimum_divisions dimensions, at least 1.
- */
-int Cmiss_tessellation_get_minimum_divisions_dimensions(
-	Cmiss_tessellation_id tessellation);
-
-/***************************************************************************//**
  * Gets the minimum number of line segments used to approximate curves in each
  * dimension for coarse tessellation.
  *
- * @param tessellation  The tessellation to query.
- * @param dimensions  The number of dimension to get values for, the minimum
- * size of the minimum_divisions array.
+ * @see Cmiss_tessellation_set_minimum_divisions
+ * @param tessellation  The tessellation object to query.
+ * @param size  The size of the minimum_divisions array to fill. Values for
+ * dimensions beyond the size set use the last divisions value.
  * @param minimum_divisions  Array to receive numbers of divisions.
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, int *minimum_divisions);
+	int size, int *minimum_divisions);
 
 /***************************************************************************//**
  * Sets the minimum number of line segments used to approximate curves in each
  * dimension of tessellation. Intended to be used where coarse tessellation is
  * acceptable, e.g. where fields vary linearly over elements.
- * The default minimum_divisions value for new tessellations is 1.
+ * The default minimum_divisions value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
- * @param tessellation  The tessellation to modify.
- * @param dimensions  The number of dimension to set values for, the minimum
- * size of the minimum_divisions array. Must be >= 1.
- * @param minimum_divisions  Array of number of divisions (>=1) per dimension,
- * with the last number in array applying to all higher dimensions.
+ * @param tessellation  The tessellation object to modify.
+ * @param size  The size of the minimum_divisions array, >= 1.
+ * @param minimum_divisions  Array of number of divisions (>=1) for each
+ * dimension, with the last number in array applying to all higher dimensions.
  * @return  1 if successfully set, 0 on error.
  */
 int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
-	int dimensions, const int *minimum_divisions);
-
-/***************************************************************************//**
- * Gets the number of dimensions for which refinement_factors has been set.
- *
- * @param tessellation  The tessellation to query.
- * @return  The number of refinement_factors dimensions, at least 1.
- */
-int Cmiss_tessellation_get_refinement_factors_dimensions(
-	Cmiss_tessellation_id tessellation);
+	int size, const int *minimum_divisions);
 
 /***************************************************************************//**
  * Gets the refinements to be used in product with the minimum divisions
  * to approximate curves in each dimension for fine tessellation.
  *
- * @see Cmiss_tessellation_get_minimum_divisions
- * @param tessellation  The tessellation to query.
- * @param dimensions  The number of dimension to get values for, the minimum
- * size of the refinement_factors array.
+ * @see Cmiss_tessellation_set_refinement_factors
+ * @param tessellation  The tessellation object to query.
+ * @param size  The size of the refinement_factors array to fill. Values for
+ * dimensions beyond the size set use the last refinement value.
  * @param refinement_factors  Array to receive refinement factors.
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
-	int dimensions, int *refinement_factors);
+	int size, int *refinement_factors);
 
 /***************************************************************************//**
  * Sets the refinements to be used in product with the minimum divisions
  * to approximate curves in each dimension for fine tessellation. To be used
  * e.g. where fields vary non-linearly over elements, or greater data sampling
  * is needed for rendering with a spectrum.
- * The default refinement_factors value for new tessellations is 1.
+ * The default refinement_factors value for new tessellations is 1, size 1.
  * Note: The value set for the last dimension applies to all higher dimensions.
  *
  * @see Cmiss_tessellation_set_minimum_divisions
- * @param tessellation  The tessellation to modify.
- * @param dimensions  The number of dimension to set values for, the minimum
- * size of the refinement_factors array. Must be >= 1.
+ * @param tessellation  The tessellation object to modify.
+ * @param size  The size of the refinement_factors array, >= 1.
  * @param refinement_factors  Array of number of fine subdivisions (>=1) per
- * dimension, with the last number in array applying to all higher dimensions.
+ * minimum_division for each dimension, with the last number in array
+ * applying to all higher dimensions.
  * @return  1 if successfully set, 0 on error.
  */
 int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
-	int dimensions, const int *refinement_factors);
+	int size, const int *refinement_factors);
 
 #endif

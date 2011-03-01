@@ -4189,7 +4189,7 @@ Executes a GFX CREATE TEXTURE command.
 										Cmiss_field_id image_field =	Cmiss_field_module_create_image(
 											field_module, NULL, NULL);
 										Cmiss_field_set_name(image_field, field_name);
-										Cmiss_field_set_attribute_integer(image_field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+										Cmiss_field_set_attribute_integer(image_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 										Cmiss_field_image_id image = Cmiss_field_cast_image(image_field);
 										Cmiss_field_image_set_texture(image, texture);
 										Cmiss_field_destroy(&image_field);
@@ -6304,7 +6304,7 @@ Executes a GFX DESTROY FIELD command.
 							display_message(INFORMATION_MESSAGE, "Field %s marked for destruction when no longer in use.\n",
 								current_token);
 						}
-						return_code = Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
+						return_code = Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
 						if (!return_code)
 						{
 							display_message(ERROR_MESSAGE, "gfx destroy field.  Failed");

@@ -120,7 +120,7 @@ private:
 
 	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
 	{
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return 1;
 		return 0;
 	}

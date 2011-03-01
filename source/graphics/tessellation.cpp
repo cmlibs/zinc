@@ -88,7 +88,7 @@ struct Cmiss_tessellation
 	int *minimum_divisions;
 	int refinement_factors_size;
 	int *refinement_factors;
-	bool persistent_flag;
+	bool is_managed_flag;
 	int access_count;
 
 	Cmiss_tessellation() :
@@ -99,7 +99,7 @@ struct Cmiss_tessellation
 		minimum_divisions(NULL),
 		refinement_factors_size(0),
 		refinement_factors(NULL),
-		persistent_flag(false),
+		is_managed_flag(false),
 		access_count(1)
 	{
 	}
@@ -285,7 +285,7 @@ Global functions
 DECLARE_ACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 
 /***************************************************************************//**
- * Custom version handling persistent_flag.
+ * Custom version handling is_managed_flag.
  */
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 {
@@ -300,7 +300,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 		{
 			return_code = DESTROY(Cmiss_tessellation)(object_address);
 		}
-		else if ((!object->persistent_flag) && (object->manager) &&
+		else if ((!object->is_managed_flag) && (object->manager) &&
 			((1 == object->access_count) || ((2 == object->access_count) &&
 				(MANAGER_CHANGE_NONE(Cmiss_tessellation) != object->manager_change_status))))
 		{
@@ -386,6 +386,72 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
 	return DEACCESS(Cmiss_tessellation)(tessellation_address);
 }
 
+int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
+	enum Cmiss_tessellation_attribute_id attribute_id)
+{
+	int value = 0;
+	if (tessellation)
+	{
+		switch (attribute_id)
+		{
+		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
+			value = (int)tessellation->is_managed_flag;
+			break;
+		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
+			value = tessellation->minimum_divisions_size;
+			if (value == 0)
+				value = 1;
+			break;
+		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
+			value = tessellation->refinement_factors_size;
+			if (value == 0)
+				value = 1;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_tessellation_get_attribute_integer.  Invalid attribute");
+			break;
+		}
+	}
+	return value;
+}
+
+int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
+	enum Cmiss_tessellation_attribute_id attribute_id, int value)
+{
+	int return_code = 0;
+	if (tessellation)
+	{
+		return_code = 1;
+		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id);
+		switch (attribute_id)
+		{
+		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
+			tessellation->is_managed_flag = (value != 0);
+			break;
+		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
+		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
+			display_message(WARNING_MESSAGE,
+				"Cmiss_tessellation_set_attribute_integer.  Cannot set attribute");
+			return_code = 0;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_tessellation_set_attribute_integer.  Invalid attribute");
+			return_code = 0;
+			break;
+		}
+		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id) != old_value)
+		{
+			// responses to this message can be very expensive: rebuilding all graphics
+			// GRC: add manager change type for 'non result'?
+			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+		}
+	}
+	return return_code;
+}
+
 char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
 {
 	char *name = NULL;
@@ -466,43 +532,6 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation,
 	return (return_code);
 }
 
-int Cmiss_tessellation_get_persistent(Cmiss_tessellation_id tessellation)
-{
-	if (tessellation)
-	{
-		return (int)tessellation->persistent_flag;
-	}
-	return 0;
-}
-
-int Cmiss_tessellation_set_persistent(
-	Cmiss_tessellation_id tessellation, int persistent_flag)
-{
-	if (!tessellation)
-		return 0;
-	if (tessellation->persistent_flag != (bool)persistent_flag)
-	{
-		tessellation->persistent_flag = (bool)persistent_flag;
-		// A fairly brutal message to send, but usually only called when not in use
-		MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
-	}
-	return 1;
-}
-
-int Cmiss_tessellation_get_minimum_divisions_dimensions(
-	Cmiss_tessellation_id tessellation)
-{
-	int dimensions = 0;
-	if (tessellation)
-	{
-		dimensions = tessellation->minimum_divisions_size;
-		if (!dimensions)
-			dimensions = 1;
-	}
-	return dimensions;
-}
-
 int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
 	int dimensions, int *minimum_divisions)
 {
@@ -552,19 +581,6 @@ int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
 		return_code = 0;
 	}
 	return return_code;
-}
-
-int Cmiss_tessellation_get_refinement_factors_dimensions(
-	Cmiss_tessellation_id tessellation)
-{
-	int dimensions = 0;
-	if (tessellation)
-	{
-		dimensions = tessellation->refinement_factors_size;
-		if (!dimensions)
-			dimensions = 1;
-	}
-	return dimensions;
 }
 
 int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
@@ -800,8 +816,10 @@ int gfx_define_tessellation_contents(struct Parse_state *state, void *tessellati
 		int refinement_factors_size = 1;
 		if (tessellation)
 		{
-			minimum_divisions_size = Cmiss_tessellation_get_minimum_divisions_dimensions(tessellation);
-			refinement_factors_size = Cmiss_tessellation_get_refinement_factors_dimensions(tessellation);
+			minimum_divisions_size = Cmiss_tessellation_get_attribute_integer(tessellation,
+				CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE);
+			refinement_factors_size = Cmiss_tessellation_get_attribute_integer(tessellation,
+				CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE);
 		}
 		int *minimum_divisions;
 		int *refinement_factors;
@@ -991,8 +1009,9 @@ int gfx_define_tessellation(struct Parse_state *state, void *dummy_to_be_modifie
 				shift_Parse_state(state,1);
 				if (tessellation)
 				{
-					// set persistent here so persistent whenever created or edited
-					Cmiss_tessellation_set_persistent(tessellation, 1);
+					// set managed state for all tessellations created or edited otherwise
+					// cleaned up at end of command.
+					Cmiss_tessellation_set_attribute_integer(tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
 					return_code = gfx_define_tessellation_contents(state, (void *)tessellation, graphics_module_void);
 				}
 				Cmiss_tessellation_destroy(&tessellation);
@@ -1040,7 +1059,7 @@ int gfx_destroy_tessellation(struct Parse_state *state,
 		{
 			if (tessellation)
 			{
-				Cmiss_tessellation_set_persistent(tessellation, 0);
+				Cmiss_tessellation_set_attribute_integer(tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 0);
 				if (tessellation->access_count > 2)
 				{
 					display_message(INFORMATION_MESSAGE, "Tessellation marked for destruction when no longer in use.\n");

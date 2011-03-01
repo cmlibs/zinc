@@ -93,19 +93,21 @@ struct Cmiss_node_field_creator;
  */
 enum Cmiss_field_attribute_id
 {
-	CMISS_FIELD_ATTRIBUTE_COORDINATE = 0,
-	/*!< Boolean/Integer, set to 1 (true) if field can be interpreted as a
+	CMISS_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
+	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
 	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
 	 * and other operations. Can only be set for some fields e.g. finite_element
 	 * where its default is 0 (false). Some fields e.g. cad geometry have this
-	 * attribute fixed at 1; the majority of other fields have it fixed at 0. */
+	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
+	 */
 
-	CMISS_FIELD_ATTRIBUTE_MANAGED = 1
-	/*!< Boolean/Integer, when 0 (default) field is destroyed when no longer in
-	 * use, i.e. when number of external references to it, including use as a
+	CMISS_FIELD_ATTRIBUTE_IS_MANAGED = 1
+	/*!< Boolean as integer, when 0 (default) field is destroyed when no longer
+	 * in use, i.e. when number of external references to it, including use as a
 	 * source for other fields, drops to zero. Set to 1 to manage field
 	 * indefinitely, or until this attribute is reset to zero (which effectively
-	 * marks a formerly managed field as pending destruction). */
+	 * marks a formerly managed field as pending destruction).
+	 */
 };
 
 /* Global Functions */
@@ -282,17 +284,17 @@ char *Cmiss_field_get_name(Cmiss_field_id field);
 int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 
 /***************************************************************************//**
- * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_MANAGED.
+ * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
  * @see Cmiss_field_get_attribute_integer
  *
  * @param field  The field to query.
- * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_MANAGED.
+ * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
  */
 #define Cmiss_field_get_persistent(field) \
-	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED)
+	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED)
 
 /***************************************************************************//**
- * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_MANAGED.
+ * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
  * @see Cmiss_field_set_attribute_integer
  * 
  * @param field  The field to modify.
@@ -300,6 +302,6 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
  * @return  1 on success, 0 on failure.
  */
 #define Cmiss_field_set_persistent(field, value) \
-	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, value)
+	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, value)
 
 #endif /* __CMISS_FIELD_H__ */

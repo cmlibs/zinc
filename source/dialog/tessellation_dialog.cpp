@@ -124,8 +124,8 @@ void TessellationItem::set_callback()
 void TessellationItem::update_divisions_string_for_dialog()
 {
 	int i = 0;
-	int number_of_divisions =
-			Cmiss_tessellation_get_minimum_divisions_dimensions(tessellation);
+	int number_of_divisions = Cmiss_tessellation_get_attribute_integer(
+		tessellation, CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE);
 	wxString temp;
 	if (number_of_divisions > 0)
 	{
@@ -151,8 +151,8 @@ void TessellationItem::update_divisions_string_for_dialog()
 void TessellationItem::update_refinement_string_for_dialog()
 {
 	int i = 0;
-	int number_of_refinements =
-			Cmiss_tessellation_get_refinement_factors_dimensions(tessellation);
+	int number_of_refinements = Cmiss_tessellation_get_attribute_integer(
+		tessellation, CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE);
 	wxString temp;
 	if (number_of_refinements > 0)
 	{
@@ -398,7 +398,7 @@ void TessellationDialog::OnTessellationDialogAddNewPressed(wxCommandEvent &event
 	MANAGER_BEGIN_CACHE(Cmiss_tessellation)(tessellation_manager);
 	Cmiss_tessellation *new_tessellation =
 		Cmiss_graphics_module_create_tessellation(graphics_module);
-	Cmiss_tessellation_set_persistent(new_tessellation, 1);
+	Cmiss_tessellation_set_attribute_integer(new_tessellation, CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED, 1);
 	Cmiss_tessellation_destroy(&new_tessellation);
 	MANAGER_END_CACHE(Cmiss_tessellation)(tessellation_manager);
 }

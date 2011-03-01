@@ -161,7 +161,7 @@ private:
 
 	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
 	{
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
 		return 0;
 	}
@@ -170,7 +170,7 @@ private:
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 		{
 			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
 			if (value)
@@ -4897,7 +4897,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 				}
 				Computed_field *field =
 					Computed_field_create_finite_element_internal(field_module, fe_field);
-				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 				DEACCESS(Computed_field)(&field);
 				Cmiss_field_module_destroy(&field_module);
 			}
@@ -4966,7 +4966,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
 					field = Computed_field_create_cmiss_number(field_module);
-					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}
@@ -4981,7 +4981,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "xi");
 					field = Computed_field_create_xi_coordinates(field_module);
-					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
+					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}
