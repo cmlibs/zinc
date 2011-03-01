@@ -43,11 +43,12 @@ extern "C" {
 #include <cstdlib>
 #include "command/parser.h"
 #include "general/debug.h"
-#include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "graphics/graphics_module.h"
 }
+#include "general/cmiss_set.hpp"
+#include "general/indexed_list_stl_private.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
 #include "user_interface/message.h"
@@ -233,9 +234,53 @@ struct Cmiss_tessellation
 		display_message(INFORMATION_MESSAGE, "\";\n");
 	}
 
+	inline Cmiss_tessellation *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static inline int deaccess(Cmiss_tessellation **tessellation_address)
+	{
+		return DEACCESS(Cmiss_tessellation)(tessellation_address);
+	}
+
 }; /* struct Cmiss_tessellation */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_tessellation);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with Cmiss_set.
+ */
+class Cmiss_tessellation_identifier : private Cmiss_tessellation
+{
+public:
+	Cmiss_tessellation_identifier(const char *name)
+	{
+		// const_cast OK as must never be modified & cleared in destructor
+		Cmiss_tessellation::name = const_cast<char *>(name);
+	}
+
+	~Cmiss_tessellation_identifier()
+	{
+		Cmiss_tessellation::name = NULL;
+	}
+
+	Cmiss_tessellation *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering Cmiss_set<Cmiss_tessellation> by name */
+struct Cmiss_tessellation_compare_name
+{
+	bool operator() (const Cmiss_tessellation* tessellation1, const Cmiss_tessellation* tessellation2) const
+	{
+		return strcmp(tessellation1->name, tessellation2->name) < 0;
+	}
+};
+
+typedef Cmiss_set<Cmiss_tessellation *,Cmiss_tessellation_compare_name> Cmiss_set_Cmiss_tessellation;
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_tessellation, Cmiss_graphics_module, void *);
 
@@ -270,8 +315,6 @@ int DESTROY(Cmiss_tessellation)(struct Cmiss_tessellation **tessellation_address
 
 	return (return_code);
 }
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cmiss_tessellation,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Cmiss_tessellation)
 
@@ -356,9 +399,8 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Cmiss_tessellation)
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_tessellation)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Cmiss_tessellation)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_tessellation,name,const char *,strcmp)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Cmiss_tessellation,name)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(Cmiss_tessellation)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Cmiss_tessellation,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Cmiss_tessellation,manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_tessellation,manager)
@@ -462,73 +504,73 @@ char *Cmiss_tessellation_get_name(struct Cmiss_tessellation *tessellation)
 	return name;
 }
 
-int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation,
-	const char *name)
+int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const char *name)
 {
-	int return_code = 1;
+	int return_code;
 
-	if (tessellation && name)
+	ENTER(Cmiss_tessellation_set_name);
+	if (tessellation && is_standard_object_name(name))
 	{
-		if ((NULL == tessellation->name) || (strcmp(name, tessellation->name) != 0))
+		return_code = 1;
+		Cmiss_set_Cmiss_tessellation *manager_tessellation_list = 0;
+		bool restore_changed_object_to_lists = false;
+		if (tessellation->manager)
 		{
-			if ((NULL == tessellation->manager) ||
-				(NULL == FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation,name)(name,tessellation->manager)))
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation, name)(
+				name, tessellation->manager))
 			{
-				char *new_name = duplicate_string(name);
-				if (new_name)
+				display_message(ERROR_MESSAGE, "Cmiss_tessellation_set_name.  "
+					"tessellation named '%s' already exists.", name);
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				manager_tessellation_list = reinterpret_cast<Cmiss_set_Cmiss_tessellation *>(
+					tessellation->manager->object_list);
+				// this temporarily removes the object from all related lists
+				restore_changed_object_to_lists =
+					manager_tessellation_list->begin_identifier_change(tessellation);
+				if (!restore_changed_object_to_lists)
 				{
-					LIST_IDENTIFIER_CHANGE_DATA(Cmiss_tessellation, name) *identifier_change_data = NULL;
-					if (tessellation->manager)
-					{
-						identifier_change_data =
-							LIST_BEGIN_IDENTIFIER_CHANGE(Cmiss_tessellation, name)(tessellation);
-						if (NULL == identifier_change_data)
-						{
-							display_message(ERROR_MESSAGE,
-								"Cmiss_tessellation_set_name.  "
-								"Could not safely change identifier in indexed lists");
-							return_code = 0;
-						}
-					}
-
-					if (return_code)
-					{
-						DEALLOCATE(tessellation->name);
-						tessellation->name = new_name;
-					}
-
-					if (tessellation->manager)
-					{
-						if (!LIST_END_IDENTIFIER_CHANGE(Cmiss_tessellation, name)(
-							&identifier_change_data))
-						{
-							display_message(ERROR_MESSAGE,
-								"Cmiss_tessellation_set_name  "
-								"Could not restore object to all indexed lists");
-						}
-						MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-							MANAGER_CHANGE_IDENTIFIER(Cmiss_tessellation));
-					}
-				}
-				else
-				{
+					display_message(ERROR_MESSAGE, "Cmiss_tessellation_set_name.  "
+						"Could not safely change identifier in manager");
 					return_code = 0;
 				}
 			}
+		}
+		if (return_code)
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				DEALLOCATE(tessellation->name);
+				tessellation->name = new_name;
+			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_tessellation_set_name.  Name '%s' is already in use");
 				return_code = 0;
 			}
+		}
+		if (restore_changed_object_to_lists)
+		{
+			manager_tessellation_list->end_identifier_change();
+		}
+		if (tessellation->manager && return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
+				MANAGER_CHANGE_IDENTIFIER(Cmiss_tessellation));
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_tessellation_set_name.  Invalid arguments");
-		return_code = 0;
+		if (tessellation)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_tessellation_set_name.  Invalid tessellation name '%s'", name);
+		}
+		return_code=0;
 	}
+
 	return (return_code);
 }
 

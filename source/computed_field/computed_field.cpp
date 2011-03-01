@@ -5227,9 +5227,6 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 		if (field->manager)
 		{
 			manager_field_list = reinterpret_cast<Cmiss_set_Computed_field *>(field->manager->object_list);
-			// cache manager changes to prevent finite_element field wrapper change
-			// messages while objects are temporarily removed from indexed lists
-			MANAGER_BEGIN_CACHE(Computed_field)(field->manager);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
 					 const_cast<char *>(name), field->manager))
 			{
@@ -5240,7 +5237,7 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 			}
 			if (return_code)
 			{
-				// this temporarily removes the object from all indexed lists
+				// this temporarily removes the object from all related lists
 				restore_changed_object_to_lists =
 					manager_field_list->begin_identifier_change(field);
 				if (!restore_changed_object_to_lists)
@@ -5253,7 +5250,6 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 		}
 		if (return_code)
 		{
-			/* change the name attribute */
 			char *new_name = duplicate_string(name);
 			if (new_name)
 			{
@@ -5264,7 +5260,6 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 				}
 				DEALLOCATE(field->name);
 				field->name = new_name;
-				strcpy((char *)field->name, name);
 				/* Now make them point to the same memory */
 				field->command_string = (char *)field->name;
 			}
@@ -5289,7 +5284,6 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 				MANAGED_OBJECT_CHANGE(Computed_field)(field,
 					MANAGER_CHANGE_IDENTIFIER(Computed_field));
 			}
-			MANAGER_END_CACHE(Computed_field)(field->manager);
 		}
 	}
 	else
