@@ -105,15 +105,6 @@ LAST MODIFIED : 24 December 1998
 DESCRIPTION :
 ==============================================================================*/
 
-/** Mode/flags controlling how a field is managed by a region. */
-enum Computed_field_managed_status
-{
-	COMPUTED_FIELD_MANAGED_STATUS_DEFAULT = 0,
-
-	/** If NOT set, remove from region when unused / access_count reduced to 1 */
-	COMPUTED_FIELD_MANAGED_PERSISTENT_BIT = 1
-};
-
 DECLARE_LIST_TYPES(Computed_field);
 
 DECLARE_MANAGER_TYPES(Computed_field);
@@ -940,14 +931,6 @@ Returns true if the <field> is only accessed once - assumed by its manager. If
 it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Set mode controlling visibility and lifetime of field in its region.
- * Deprecated: use Cmiss_field_set_persistent.
- * @see Cmiss_field_set_persistent
- */
-int Computed_field_set_managed_status(struct Computed_field *field,
-	enum Computed_field_managed_status managed_status); 
 
 /***************************************************************************//**
  * Returns the region which this field belongs to, if any.

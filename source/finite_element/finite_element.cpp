@@ -167,6 +167,8 @@ the point and the Xi coordinates of the point within the element.
   enum Value_type time_value_type;
   int number_of_times;
   Value_storage *times;
+	/* the number of computed fields wrapping this FE_field */
+	int number_of_wrappers;
 	/* the number of structures that point to this field.  The field cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
@@ -9392,6 +9394,7 @@ FE_region.
 			field->number_of_times = 0;
 			field->time_value_type = UNKNOWN_VALUE;
 			field->times = (Value_storage *)NULL;
+			field->number_of_wrappers = 0;
 			field->access_count = 0;
 			if (!return_code)
 			{
@@ -10537,6 +10540,20 @@ Returns the FE_region that <fe_field> belongs to.
 
 	return (fe_region);
 } /* FE_field_get_FE_region */
+
+int FE_field_add_wrapper(struct FE_field *field)
+{
+	if (field)
+		return (++(field->number_of_wrappers));
+	return 0;
+}
+
+int FE_field_remove_wrapper(struct FE_field *field)
+{
+	if (field)
+		return (--(field->number_of_wrappers));
+	return 0;
+}
 
 int FE_field_set_FE_field_info(struct FE_field *fe_field,
 	struct FE_field_info *fe_field_info)

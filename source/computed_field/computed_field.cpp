@@ -239,7 +239,6 @@ struct Cmiss_field_module
 	char *field_name;
 	struct Coordinate_system coordinate_system;
 	int coordinate_system_override; // true if coordinate system has been set
-	Computed_field_managed_status managed_status;
 	Computed_field *replace_field;
 	int access_count;
 };
@@ -582,7 +581,7 @@ Global functions
 ----------------
 */
 
-struct Computed_field *CREATE(Computed_field)(const char *name)
+static struct Computed_field *CREATE(Computed_field)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -635,7 +634,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->manager = (struct MANAGER(Computed_field) *)NULL;
 			field->manager_change_status = MANAGER_CHANGE_NONE(Computed_field);
 
-			field->managed_status = COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
+			field->attribute_flags = 0;
 		}
 		else
 		{
@@ -722,10 +721,11 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 		{
 			return_code = DESTROY(Computed_field)(object_address);
 		}
-		else if ((0 == (object->managed_status & COMPUTED_FIELD_MANAGED_PERSISTENT_BIT)) &&
+		else if ((0 == (object->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT)) &&
 			(object->manager) && ((1 == object->access_count) ||
 				((2 == object->access_count) &&
-					(MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status))))
+					(MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status))) &&
+			object->core->not_in_use())
 		{
 			return_code =
 				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(object, object->manager);
@@ -967,64 +967,6 @@ int Computed_field_copy_type_specific(
 	return (return_code);	
 } /* Computed_field_copy_type_specific */
 
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
-{
-	char *name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Computed_field,name));
-	if (source&&destination)
-	{
-		if (source->name)
-		{
-			if (ALLOCATE(name,char,strlen(source->name)+1))
-			{
-				strcpy(name,source->name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITH_IDENTIFIER(Computed_field,name).  "
-					"Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			if (0 != (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
-				destination, source)))
-			{
-				/* copy values */
-				DEALLOCATE(destination->name);
-				destination->name=name;
-			}
-			else
-			{
-				DEALLOCATE(name);
-				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITH_IDENTIFIER(Computed_field,name).  "
-					"Could not copy without identifier");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITH_IDENTIFIER(Computed_field,name).  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Computed_field,name) */
-
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2009
@@ -1051,9 +993,8 @@ Do not allow copy if:
 				"Cannot make field depend on itself");
 			return_code=0;		
 		}
-		struct MANAGER(Computed_field) *manager_in_use = destination->manager;
-		/* check source fields are in the same manager */
-		if (!Computed_field_check_manager(source, &manager_in_use))
+		if ((destination->manager) && (source->manager) &&
+			(destination->manager != source->manager))
 		{
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
@@ -1083,51 +1024,6 @@ Do not allow copy if:
 
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name) */
-
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,const char *)
-{
-	char *destination_name = NULL;
-	int return_code;
-
-	ENTER(MANAGER_COPY_IDENTIFIER(Computed_field,name));
-	if (name&&destination)
-	{
-		if (name)
-		{
-			if (ALLOCATE(destination_name,char,strlen(name)+1))
-			{
-				strcpy(destination_name,name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_IDENTIFIER(Computed_field,name).  Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			/* copy name */
-			DEALLOCATE(destination->name);
-			destination->name=destination_name;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Computed_field,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Computed_field,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Computed_field, manager)
 
@@ -1176,140 +1072,6 @@ Note: assumes caller is accessing field once!
 
 DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name,manager)
 
-PROTOTYPE_MANAGER_MODIFY_FUNCTION(Computed_field, name)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Computed_field type needs a special versions of MANAGER_MODIFY
-since changes to number_of_components are not permitted unless it is NOT_IN_USE.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *tmp_object;
-
-	ENTER(MANAGER_MODIFY(Computed_field,name));
-	if (manager && object && new_data)
-	{
-		if (!(manager->locked))
-		{
-			if (IS_OBJECT_IN_LIST(Computed_field)(object, manager->object_list))
-			{
-				/* can only change number_of_components if field NOT_IN_USE */
-				if ((new_data->number_of_components == object->number_of_components) ||
-					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
-				{
-					if (NULL != (tmp_object =
-						FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)(
-							new_data->name, manager->object_list)))
-					{
-						if (tmp_object == object)
-						{
-							/* don't need to copy object over itself */
-							return_code = 1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_MODIFY(Computed_field,name).  "
-								"Source object is also in manager");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 1;
-						struct MANAGER(Computed_field) *manager_in_use = manager;
-						/* ensure source fields are in the same manager */
-						if (!Computed_field_check_manager(new_data, &manager_in_use))
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_MODIFY(Computed_field,name).  "
-								"Cannot modify definition to depend on field from another region");
-							return_code = 0;
-						}
-						if (return_code)
-						{
-							/* cache changes because there could be new source fields added to manager and
-							 * old, volatile source fields removed by this modification */
-							MANAGER_BEGIN_CACHE(Computed_field)(manager);
-							/* copy type specific data from destination field to clean up at the end otherwise
-							 * automatic destruction of volatile source fields may notify the rest of the program
-							 * with destination in a half constructed state. See tracker item 1323 */  
-							struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-							if (!Computed_field_copy_type_specific(old_object_copy, object))
-							{
-								return_code = 0;
-							}
-							if (!new_data->core->manage_source_fields(manager))
-							{
-								return_code = 0;
-							}
-							Cmiss_set_Computed_field *manager_field_list =
-								reinterpret_cast<Cmiss_set_Computed_field *>(manager->object_list);
-							if (manager_field_list->begin_identifier_change(object))
-							{
-								if (!(MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
-									name)(object, new_data)))
-								{
-									display_message(ERROR_MESSAGE,
-										"MANAGER_MODIFY(Computed_field,name).  "
-										"Could not copy object");
-									return_code = 0;
-								}
-								manager_field_list->end_identifier_change();
-								if (return_code)
-								{
-									MANAGED_OBJECT_CHANGE(Computed_field)(object,
-										MANAGER_CHANGE_OBJECT(Computed_field));
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"MANAGER_MODIFY(Computed_field,name).  "
-									"Could not safely change identifier in indexed lists");
-								return_code = 0;
-							}
-							/* following may cause volatile source fields to be removed from manager */
-							DEACCESS(Computed_field)(&old_object_copy);
-							MANAGER_END_CACHE(Computed_field)(manager);
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"MANAGER_MODIFY(Computed_field,name).  "
-						"Cannot change number of components while field is in use");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_MODIFY(Computed_field,name).  Object is not managed");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,
-				"MANAGER_MODIFY(Computed_field,name).  Manager locked");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_MODIFY(Computed_field,name).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_MODIFY(Computed_field,name) */
-
 PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(Computed_field, name)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -1333,9 +1095,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
 				{
 					return_code = 1;
-					struct MANAGER(Computed_field) *manager_in_use = manager;
-					/* ensure source fields are in the same manager */
-					if (!Computed_field_check_manager(new_data, &manager_in_use))
+					if ((new_data->manager) && (new_data->manager != manager))
 					{
 						display_message(ERROR_MESSAGE,
 							"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
@@ -1347,18 +1107,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 						/* cache changes because there could be new source fields added to manager and
 						 * old, volatile source fields removed by this modification */
 						MANAGER_BEGIN_CACHE(Computed_field)(manager);
-						/* copy type specific data from destination field to clean up at the end otherwise
-						 * automatic destruction of volatile source fields may notify the rest of the program
-						 * with destination in a half constructed state. See tracker item 1323 */  
-						struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-						if (!Computed_field_copy_type_specific(old_object_copy, object))
-						{
-							return_code = 0;
-						}
-						if (!new_data->core->manage_source_fields(manager))
-						{
-							return_code = 0;
-						}
 						if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
 							name)(object, new_data))
 						{
@@ -1369,8 +1117,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 						}
 						MANAGED_OBJECT_CHANGE(Computed_field)(object,
 							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
-						/* following may cause volatile source fields to be removed from manager */
-						DEACCESS(Computed_field)(&old_object_copy);
 						MANAGER_END_CACHE(Computed_field)(manager);
 					}
 				}
@@ -1410,14 +1156,93 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 	return (return_code);
 } /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
 
-//DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 
 DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
 
-/* prototype */
-int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager, Computed_field_managed_status managed_status);
+/***************************************************************************//**
+ * Make a 'unique' field name by appending a number onto the stem_name until no
+ * field of that name is found in the manager.
+ *
+ * @param first_number  First number to try. If negative (the default argument),
+ * start with number of fields in manager + 1.
+ * @return  Allocated string containing valid field name not used by any field
+ * in manager. Caller must DEALLOCATE. NULL on failure.
+ */
+static char *Computed_field_manager_get_unique_field_name(
+	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
+	const char *separator="", int first_number=-1)
+{
+	char *field_name = NULL;
+	ALLOCATE(field_name, char, strlen(stem_name) + strlen(separator) + 20);
+	int number = first_number;
+	if (number < 0)
+	{
+		number = NUMBER_IN_MANAGER(Computed_field)(manager) + 1;
+	}
+	do
+	{
+		sprintf(field_name, "%s%s%d", stem_name, separator, number);
+		number++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+	return field_name;
+}
+
+/***************************************************************************//**
+ * Private function to add field to a manager, automatically making field names
+ * unique if name already used by another field.
+ *
+ * @param field  Field not already in a manager.
+ * @param manager  Computed field manager from region.
+ * @return  1 if field successfully added to manager, 0 if not added.
+ */
+static int Computed_field_add_to_manager_private(struct Computed_field *field,
+	struct MANAGER(Computed_field) *manager)
+{
+	int return_code;
+
+	ENTER(Computed_field_add_to_manager_private);
+	if (field && manager && (!field->manager))
+	{
+		if (field->name[0] != 0)
+		{
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						field->name, manager))
+			{
+				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
+#if defined (OLD_CODE)
+				display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
+					"Renaming field from %s to %s as name already in use.",
+					field->name, unique_name);
+#endif /* defined (OLD_CODE) */
+				Cmiss_field_set_name(field, unique_name);
+				DEALLOCATE(unique_name);
+			}
+		}
+		else
+		{
+			char *unique_name = Computed_field_manager_get_unique_field_name(manager);
+			Cmiss_field_set_name(field, unique_name);
+			DEALLOCATE(unique_name);
+		}
+		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
+		if (return_code)
+		{
+			/* notify field types which need to know when they are managed */
+			field->core->field_is_managed();
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_to_manager_private.  Invalid argument(s).");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}
 
 Computed_field *Computed_field_create_generic(
 	Cmiss_field_module *field_module, bool check_source_field_regions,
@@ -1498,8 +1323,6 @@ Computed_field *Computed_field_create_generic(
 						return_code = 0;
 					}
 				}
-				Computed_field_set_managed_status(field,
-					Cmiss_field_module_get_managed_status(field_module));
 				if (return_code)
 				{
 					// 2nd stage of construction - can fail
@@ -1545,10 +1368,8 @@ Computed_field *Computed_field_create_generic(
 					}
 					else
 					{
-						// GRC some consolidation needed here; no need to pass managed_status
 						if (!Computed_field_add_to_manager_private(field,
-							Cmiss_region_get_Computed_field_manager(region),
-							field->managed_status))
+							Cmiss_region_get_Computed_field_manager(region)))
 						{
 							display_message(ERROR_MESSAGE,
 								"Computed_field_create_generic.  Unable to add field to region");
@@ -2899,8 +2720,6 @@ number_of_components.
 	return (return_code);
 } /* Computed_field_evaluate_without_node */
 
-
-
 int Computed_field_evaluate_at_location(struct Computed_field *field,
 	Field_location& loc, FE_value *values, FE_value *derivatives)
 {
@@ -3344,11 +3163,10 @@ int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_i
 {
 	USE_PARAMETER(not_in_use);
 	int response = 0;
-	if (field && field->core->get_property_flag(CMISS_FIELD_PROPERTY_FLAG_COORDINATE))
+	if (field)
 	{
-		response = 1;
+		response = field->core->get_attribute_integer(CMISS_FIELD_ATTRIBUTE_COORDINATE);
 	}
-
 	return response;
 }
 
@@ -4341,8 +4159,6 @@ options for the various types.
 					{
 						Cmiss_field_module *field_module =
 							Cmiss_field_module_create(region);
-						Cmiss_field_module_set_managed_status(field_module,
-							COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
@@ -5326,85 +5142,56 @@ for matrix operations.
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
 
-int Cmiss_field_get_persistent(Cmiss_field_id field)
+int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id)
 {
-	int persistent = 0;
-	if (field && (field->managed_status | COMPUTED_FIELD_MANAGED_PERSISTENT_BIT))
-	{
-		persistent = 1;
-	}
-	return (persistent);
-}
-
-int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent)
-{
-	int return_code;
+	int value = 0;
 	if (field)
 	{
-		int new_status = field->managed_status;
-		if (persistent)
+		switch (attribute_id)
 		{
-			new_status |= COMPUTED_FIELD_MANAGED_PERSISTENT_BIT;
+		case CMISS_FIELD_ATTRIBUTE_MANAGED:
+			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT));
+			break;
+		default:
+			value = field->core->get_attribute_integer(attribute_id);
+			break;
 		}
-		else
-		{
-			new_status &= ~COMPUTED_FIELD_MANAGED_PERSISTENT_BIT;
-		}
-		return_code = Computed_field_set_managed_status(field,
-			static_cast<Computed_field_managed_status>(new_status));
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
+	return value;
 }
 
-int Cmiss_field_get_property_flag(Cmiss_field_id field,
-	enum Cmiss_field_property_flag property_flag)
+int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id, int value)
 {
-	if (field && field->core->get_property_flag(property_flag))
-		return 1;
-	return 0;
-}
-
-int Cmiss_field_set_property_flag(Cmiss_field_id field,
-	enum Cmiss_field_property_flag property_flag, int flag_value)
-{
+	int return_code = 0;
 	if (field)
-		return field->core->set_property_flag(property_flag, flag_value);
-	return 0;
-}
-
-int Computed_field_set_managed_status(
-	struct Computed_field *field, enum Computed_field_managed_status managed_status) 
-{
-	int return_code;
-
-	ENTER(Computed_field_set_managed_status);
-	if (field &&
-		((managed_status == COMPUTED_FIELD_MANAGED_STATUS_DEFAULT) ||
-		(managed_status == COMPUTED_FIELD_MANAGED_PERSISTENT_BIT)))
 	{
-		if (managed_status != field->managed_status)
-		{
-			field->managed_status = managed_status;
-			if (field->manager)
-			{
-				Computed_field_changed(field);
-			}
-		}
 		return_code = 1;
+		int old_value = Cmiss_field_get_attribute_integer(field, attribute_id);
+		switch (attribute_id)
+		{
+		case CMISS_FIELD_ATTRIBUTE_MANAGED:
+			if (value)
+			{
+				field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT;
+			}
+			else
+			{
+				field->attribute_flags &= ~COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT;
+			}
+			break;
+		default:
+			return_code = field->core->set_attribute_integer(attribute_id, value);
+			break;
+		}
+		if (Cmiss_field_get_attribute_integer(field, attribute_id) != old_value)
+		{
+			Computed_field_changed(field);
+		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_managed_status.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_set_managed_status */
+	return return_code;
+}
 
 char *Cmiss_field_get_name(Cmiss_field_id field)
 {
@@ -5565,268 +5352,6 @@ struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 	return (region);
 }
 
-/***************************************************************************//**
- * Calls Computed_field_check_manager for all source fields.
- * Override if not all source fields in array need belong in the same manager.
- * 
- * @param manager_address  Address of manager which must be initialised to the
- *   required manager if known, or NULL if unknown. On return points at the
- *   first manager used by field or any of its source fields, or NULL if none.
- * @return  1 if valid i.e. field depends on fields from at most one manager;
- *   0 if invalid combination of fields from more than one mnanager.
- */
-int Computed_field_core::check_source_fields_manager(struct MANAGER(Computed_field) **manager_address)
-{
-	int return_code = 0;
-
-	ENTER(Computed_field_core::check_source_fields_manager);
-  if (field && manager_address)
-  {
-    return_code = 1;
-    for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
-    {
-      return_code = Computed_field_check_manager(field->source_fields[i], manager_address);
-    }
-  }
-  else
-  {
-    return_code = 0;
-		display_message(ERROR_MESSAGE,"Computed_field_core::check_source_fields_manager.  "
-			"Missing field and/or manager_address.");
-  }
-	LEAVE;
-
-  return (return_code);
-}
-
-int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Computed_field) **manager_address)
-{
-	int return_code;
-
-	ENTER(Computed_field_check_manager);
-	if (field && manager_address)
-	{
-    if (field->manager)
-    {
-      // managed fields should already maintain source field consistency
-      if (field->manager == *manager_address)
-      {
-        return_code = 1;
-      }
-      else if ((MANAGER(Computed_field) *)NULL == *manager_address)
-      {
-        *manager_address = field->manager;
-        return_code = 1;
-      }
-      else
-      {
-        // incompatible managers
-        return_code = 0;
-      }
-    }
-    else
-    {
-    	return_code = field->core->check_source_fields_manager(manager_address);
-    }
-	}
-	else
-	{
-		return_code = 0;
-		display_message(ERROR_MESSAGE,
-			"Computed_field_check_manager. Invalid argument(s).");
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-/***************************************************************************//**
- * Make a 'unique' field name by appending a number onto the stem_name until no
- * field of that name is found in the manager.
- *
- * @param first_number  First number to try. If negative (the default argument),
- * start with number of fields in manager + 1.
- * @return  Allocated string containing valid field name not used by any field
- * in manager. Caller must DEALLOCATE. NULL on failure.
- */
-static char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
-	const char *separator="", int first_number=-1)
-{
-	char *field_name = NULL;
-	ALLOCATE(field_name, char, strlen(stem_name) + strlen(separator) + 20);
-	int number = first_number;
-	if (number < 0)
-	{
-		number = NUMBER_IN_MANAGER(Computed_field)(manager) + 1;
-	}
-	do
-	{
-		sprintf(field_name, "%s%s%d", stem_name, separator, number);
-		number++;
-	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
-	return field_name;
-}
-
-/***************************************************************************//**
- * Private function to add field to a manager, automatically making field names
- * unique if name already used by another field.
- *
- * @param field  Field not already in a manager.
- * @param manager  Computed field manager from region.
- * @param managed_status  The mode this field is to be managed under.
- * @return  1 if field successfully added to manager, 0 if not added.
- */
-int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager, Computed_field_managed_status managed_status)
-{
-	int return_code;
-
-	ENTER(Computed_field_add_to_manager_private);
-	if (field && manager && (!field->manager))
-	{
-		if (field->name[0] != 0)
-		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-						field->name, manager))
-			{
-				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
-#if defined (OLD_CODE)
-				display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
-					"Renaming field from %s to %s as name already in use.",
-					field->name, unique_name);
-#endif /* defined (OLD_CODE) */
-				Cmiss_field_set_name(field, unique_name);
-				DEALLOCATE(unique_name);
-			}
-		}
-		else
-		{
-			char *unique_name = Computed_field_manager_get_unique_field_name(manager);
-			Cmiss_field_set_name(field, unique_name);
-			DEALLOCATE(unique_name);
-		}
-		Computed_field_set_managed_status(field, managed_status);
-		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
-		if (return_code)
-		{
-			/* notify field types which need to know when they are managed */
-			field->core->field_is_managed();
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_add_to_manager_private.  Invalid argument(s).");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Computed_field_manage_recursive(struct Computed_field *field, 
-	struct MANAGER(Computed_field) *manager, enum Computed_field_managed_status managed_status)	
-{
-	int return_code;
-
-	ENTER(Computed_field_manage_recursive)
-	if (field && manager)
-	{
-		if (field->manager)
-		{
-			// source fields must already be in manager
-			return_code = 1;
-			// sanity check:
-			if (field->manager != manager)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_core::add_to_manager_recursive.  Field is already managed by a different manager");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = field->core->manage_source_fields(manager) &&
-				Computed_field_add_to_manager_private(field, manager, managed_status);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Computed_field_manage_recursive.  Invalid argument(s).");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-/***************************************************************************//**
- * Calls Computed_field_manager_recursive for all source fields.
- * Assumes check_manager has been used to ensure fields are not already in
- * another manager.
- * Override if not all source fields in array need belong in the same manager.
- * 
- * @param manager  Computed field manager.
- * @return  1 if successfully added field and its source fields to manager.
- *   0 if field or any of the source fields not added. 
- */
-int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
-{
-	int return_code = 0;
-
-	ENTER(Computed_field_core::add_to_manager_recursive);
-	if (field && manager)
-	{
-		return_code = 1;
-		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
-		{
-			return_code = Computed_field_manage_recursive(field->source_fields[i],
-				manager, COMPUTED_FIELD_MANAGED_STATUS_DEFAULT); 
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_core::manage_source_fields.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Computed_field_manage(struct Computed_field *field, 
-	struct MANAGER(Computed_field) *manager,
-	enum Computed_field_managed_status managed_status)	
-{
-	int return_code;
-
-	ENTER(Computed_field_manage)
-	if (field && manager)
-	{
-		if (field->manager)
-		{
-			return_code = Computed_field_set_managed_status(field, managed_status);
-		}
-		else
-		{
-			MANAGER_BEGIN_CACHE(Computed_field)(manager);
-			return_code = Computed_field_manage_recursive(field, manager, managed_status);
-			MANAGER_END_CACHE(Computed_field)(manager);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Computed_field_manage.  Invalid argument(s).");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
 struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region)
 {
 	ENTER(Cmiss_field_module_create);
@@ -5838,7 +5363,6 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
 		{
 			field_module->region = ACCESS(Cmiss_region)(region);
 			field_module->field_name = (char *)NULL;
-			field_module->managed_status = COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
 			field_module->replace_field = (Computed_field *)NULL;
 			field_module->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field_module->coordinate_system_override = 0;
@@ -6011,29 +5535,6 @@ int Cmiss_field_module_coordinate_system_is_set(
 	return 0;
 }
 
-int Cmiss_field_module_set_managed_status(
-	struct Cmiss_field_module *field_module,
-	enum Computed_field_managed_status new_managed_status)
-{
-	int return_code = 0;
-	if (field_module)
-	{
-		field_module->managed_status = new_managed_status;
-		return_code = 1;
-	}
-	return (return_code);
-}
-
-enum Computed_field_managed_status Cmiss_field_module_get_managed_status(
-	struct Cmiss_field_module *field_module)
-{
-	if (field_module)
-	{
-		return field_module->managed_status;
-	}
-	return COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
-}
-
 int Cmiss_field_module_set_replace_field(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *replace_field)
@@ -6058,7 +5559,6 @@ int Cmiss_field_module_set_replace_field(
 			}
 			field_module->coordinate_system = replace_field->coordinate_system;
 			field_module->coordinate_system_override = 1;
-			field_module->managed_status = replace_field->managed_status;
 		}
 		return_code = 1;
 	}

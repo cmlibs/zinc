@@ -4189,8 +4189,7 @@ Executes a GFX CREATE TEXTURE command.
 										Cmiss_field_id image_field =	Cmiss_field_module_create_image(
 											field_module, NULL, NULL);
 										Cmiss_field_set_name(image_field, field_name);
-										Computed_field_set_managed_status(image_field,
-											COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
+										Cmiss_field_set_attribute_integer(image_field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
 										Cmiss_field_image_id image = Cmiss_field_cast_image(image_field);
 										Cmiss_field_image_set_texture(image, texture);
 										Cmiss_field_destroy(&image_field);
@@ -6281,7 +6280,6 @@ Executes a GFX DESTROY FIELD command.
 	struct Computed_field *field;
 	int return_code = 0;
 	struct Cmiss_region *region, *root_region;
-	struct FE_field *fe_field;
 
 	ENTER(gfx_destroy_Computed_field);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -6300,29 +6298,16 @@ Executes a GFX DESTROY FIELD command.
 							field_name, Cmiss_region_get_Computed_field_manager(region))))
 					{
 						ACCESS(Computed_field)(field);
-						if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field,
+						if (!MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field,
 							Cmiss_region_get_Computed_field_manager(region)))
 						{
-							return_code = Cmiss_field_set_persistent(field, 0);
-							if (Computed_field_is_type_finite_element(field))
-							{
-								// also clean up FE_field
-								fe_field = (struct FE_field *)NULL;
-								Computed_field_get_type_finite_element(field, &fe_field);
-								return_code = FE_region_remove_FE_field(
-									FE_field_get_FE_region(fe_field), fe_field);
-							}
-							if (!return_code)
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_destroy_Computed_field.  Could not destroy field");
-							}
+							display_message(INFORMATION_MESSAGE, "Field %s marked for destruction when no longer in use.\n",
+								current_token);
 						}
-						else
+						return_code = Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
+						if (!return_code)
 						{
-							display_message(ERROR_MESSAGE,
-								"Cannot destroy field in use : %s",current_token);
-							return_code=0;
+							display_message(ERROR_MESSAGE, "gfx destroy field.  Failed");
 						}
 						DEACCESS(Computed_field)(&field);
 					}

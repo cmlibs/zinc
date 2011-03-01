@@ -3294,6 +3294,19 @@ DESCRIPTION :
 Returns the FE_region that <fe_field> belongs to.
 ==============================================================================*/
 
+/*******************************************************************************
+ * Records that a Computed_field_finite_element is wrapping this FE_field.
+ * @return  The number of wrappers existing.
+ */
+int FE_field_add_wrapper(struct FE_field *field);
+
+/*******************************************************************************
+ * Records that a Computed_field_finite_element is no longer wrapping this
+ * FE_field.
+ * @return  The number of wrappers remaining.
+ */
+int FE_field_remove_wrapper(struct FE_field *field);
+
 /***************************************************************************//**
  * @return  number of objects using fe_field.
  */

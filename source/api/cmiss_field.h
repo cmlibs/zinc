@@ -88,14 +88,24 @@ struct Cmiss_time_sequence;
 struct Cmiss_node_field_creator;
 
 /***************************************************************************//**
- * Labels of property flags which fields may store or satisfy.
- *
- * @see Cmiss_field_get_property_flag
- * @see Cmiss_field_set_property_flag
+ * Labels of field attributes which may be set or obtained using generic
+ * get/set_attribute functions.
  */
-enum Cmiss_field_property_flag
+enum Cmiss_field_attribute_id
 {
-	CMISS_FIELD_PROPERTY_FLAG_COORDINATE = 0
+	CMISS_FIELD_ATTRIBUTE_COORDINATE = 0,
+	/*!< Boolean/Integer, set to 1 (true) if field can be interpreted as a
+	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
+	 * and other operations. Can only be set for some fields e.g. finite_element
+	 * where its default is 0 (false). Some fields e.g. cad geometry have this
+	 * attribute fixed at 1; the majority of other fields have it fixed at 0. */
+
+	CMISS_FIELD_ATTRIBUTE_MANAGED = 1
+	/*!< Boolean/Integer, when 0 (default) field is destroyed when no longer in
+	 * use, i.e. when number of external references to it, including use as a
+	 * source for other fields, drops to zero. Set to 1 to manage field
+	 * indefinitely, or until this attribute is reset to zero (which effectively
+	 * marks a formerly managed field as pending destruction). */
 };
 
 /* Global Functions */
@@ -231,6 +241,29 @@ number_of_components.
 ==============================================================================*/
 
 /***************************************************************************//**
+ * Get an integer or Boolean attribute of the field.
+ *
+ * @param field  The field to query.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the field.
+ *
+ * @param field  The field to set the attribute for.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true in case more options are added in future.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * for this field.
+ */
+int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id, int value);
+
+/***************************************************************************//**
  * Return the name of the field. 
  * 
  * @param field  The field whose name is requested.
@@ -249,50 +282,24 @@ char *Cmiss_field_get_name(Cmiss_field_id field);
 int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 
 /***************************************************************************//**
- * Returns the persistent property flag of the field.
+ * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_MANAGED.
+ * @see Cmiss_field_get_attribute_integer
  *
- * @see Cmiss_field_set_persistent
  * @param field  The field to query.
- * @return  1 if field is persistent, 0 if non-persistent.
+ * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_MANAGED.
  */
-int Cmiss_field_get_persistent(Cmiss_field_id field);
+#define Cmiss_field_get_persistent(field) \
+	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED)
 
 /***************************************************************************//**
- * Sets the persistent property flag of the field.
- * Default setting persistent=0 means the field is destroyed when the number of
- * external references to it, including use as a source for other fields, drops
- * to zero.
- * Setting persistent=1 means the field exists in field module even if no
- * external references to it are held, whence it can be found by name or other
- * search criteria.
+ * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_MANAGED.
+ * @see Cmiss_field_set_attribute_integer
  * 
- * @param field  The field to set the persistent flag for.
- * @param persistent  Non-zero for persistent, 0 for non-persistent.
+ * @param field  The field to modify.
+ * @param value  Non-zero for managed, 0 for not managed.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent);
-
-/***************************************************************************//**
- * Query whether a property flag is set for the field.
- *
- * @param field  The field to query.
- * @param property_flag  The property flag to query.
- * @return  1 if flag is set, 0 if not.
- */
-int Cmiss_field_get_property_flag(Cmiss_field_id field,
-	enum Cmiss_field_property_flag property_flag);
-
-/***************************************************************************//**
- * Set a property flag for the field. Not all properties are relevant for all
- * field types: many cannot be set or changed.
- *
- * @param field  The field to set the property for.
- * @param property_flag  The property flag to modify.
- * @param flag_value  1 to set, 0 to clear.
- * @return  1 if property changed, 0 if ignored.
- */
-int Cmiss_field_set_property_flag(Cmiss_field_id field,
-	enum Cmiss_field_property_flag property_flag, int flag_value);
-
+#define Cmiss_field_set_persistent(field, value) \
+	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, value)
 
 #endif /* __CMISS_FIELD_H__ */

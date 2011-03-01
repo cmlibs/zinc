@@ -873,7 +873,7 @@ Cmiss_field_group_id Computed_field_group::createSubgroup(Cmiss_region_id subreg
 				if (generic_field)
 				{
 					sub_group = Cmiss_field_cast_group(generic_field);
-					// Not calling Cmiss_field_set_persistent(sub_group, 0);
+					// Not calling Cmiss_field_set_attribute_integer(sub_group, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
 					Cmiss_field_destroy(&generic_field);
 				}
 				if (!sub_group)
@@ -924,7 +924,7 @@ Cmiss_field_node_group_id Computed_field_group::create_node_group(Cmiss_nodeset_
 					Cmiss_field_module_set_field_name(field_module, temp_string);
 					local_node_group = Cmiss_field_module_create_node_group(field_module, nodeset);
 				}
-				Cmiss_field_set_persistent(local_node_group, 0);
+				Cmiss_field_set_attribute_integer(local_node_group, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
 				node_field = Cmiss_field_cast_node_group(local_node_group);
 				DEALLOCATE(temp_string);
 			}
@@ -939,7 +939,7 @@ Cmiss_field_node_group_id Computed_field_group::create_node_group(Cmiss_nodeset_
 					Cmiss_field_module_set_field_name(field_module, temp_string);
 					local_data_group = Cmiss_field_module_create_node_group(field_module, nodeset);
 				}
-				Cmiss_field_set_persistent(local_data_group, 0);
+				Cmiss_field_set_attribute_integer(local_data_group, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
 				node_field = Cmiss_field_cast_node_group(local_data_group);
 				DEALLOCATE(temp_string);
 			}
@@ -1021,7 +1021,7 @@ Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe
 					Cmiss_field_module_set_field_name(field_module, temp_string);
 					local_element_group = Cmiss_field_module_create_element_group(field_module, mesh);
 				}
-				Cmiss_field_set_persistent(local_element_group, 0);
+				Cmiss_field_set_attribute_integer(local_element_group, CMISS_FIELD_ATTRIBUTE_MANAGED, 0);
 				element_field = Cmiss_field_cast_element_group(local_element_group);
 				DEALLOCATE(temp_string);
 			}

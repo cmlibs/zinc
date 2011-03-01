@@ -118,11 +118,11 @@ private:
 
 	char* get_command_string();
 
-	bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
+	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
 	{
-		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
-			return true;
-		return false;
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
+			return 1;
+		return 0;
 	}
 
 };

@@ -102,6 +102,7 @@ public:
 	Computed_field_finite_element(FE_field *fe_field) : Computed_field_core(),
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
+		FE_field_add_wrapper(fe_field);
 		fe_element_field_values = (FE_element_field_values*)NULL;
 		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
@@ -158,21 +159,21 @@ private:
 		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
-	virtual bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
+	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
 	{
-		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
-		return false;
+		return 0;
 	}
 
-	virtual int set_property_flag(enum Cmiss_field_property_flag property_flag, int flag_value)
+	virtual int set_attribute_integer(enum Cmiss_field_attribute_id attribute_id, int value)
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		if (property_flag == CMISS_FIELD_PROPERTY_FLAG_COORDINATE)
+		if (attribute_id == CMISS_FIELD_ATTRIBUTE_COORDINATE)
 		{
 			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
-			if (flag_value)
+			if (value)
 			{
 				if (cm_field_type != CM_COORDINATE_FIELD)
 					set_FE_field_CM_field_type(fe_field, CM_COORDINATE_FIELD);
@@ -202,6 +203,31 @@ Clear the type specific data used by this type.
 	{
 		if (fe_field)
 		{
+			/* The following logic only removes the FE_field when it is not in
+			 * use, which should be ensured in normal use by
+			 * MANAGED_OBJECT_NOT_IN_USE(Computed_field).
+			 * There are complications due to the merge process used when reading
+			 * fields from file which appears to leave some FE_fields temporarily
+			 * not in their owning FE_region when this is called.
+			 * Also gfx define field commands create and destroy temporary
+			 * finite_element field wrappers & we don't want to clean up the
+			 * FE_field until the last wrapper is destroyed.
+			 */
+			int number_of_remaining_wrappers = FE_field_remove_wrapper(fe_field);
+			if (0 == number_of_remaining_wrappers)
+			{
+				struct FE_region *fe_region = FE_field_get_FE_region(fe_field);
+				if (fe_region && FE_region_contains_FE_field(fe_region, fe_field) &&
+					(!FE_region_is_FE_field_in_use(fe_region, fe_field)))
+				{
+					if (!FE_region_remove_FE_field(fe_region, fe_field))
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_finite_element::~Computed_field_finite_element.  "
+							"Destroying computed field before FE_field.");
+					}
+				}
+			}
 			DEACCESS(FE_field)(&(fe_field));
 		}
 	}
@@ -4869,9 +4895,9 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 						Cmiss_field_module_set_coordinate_system(field_module, *coordinate_system);
 					}
 				}
-				Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 				Computed_field *field =
 					Computed_field_create_finite_element_internal(field_module, fe_field);
+				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
 				DEACCESS(Computed_field)(&field);
 				Cmiss_field_module_destroy(&field_module);
 			}
@@ -4939,8 +4965,8 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module *field_module =
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
-					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_cmiss_number(field_module);
+					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}
@@ -4954,8 +4980,8 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module *field_module =
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "xi");
-					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_xi_coordinates(field_module);
+					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
 					DEACCESS(Computed_field)(&field);
 					Cmiss_field_module_destroy(&field_module);
 				}
@@ -5452,64 +5478,6 @@ fields which are or an embedded type.
 
 	return (return_code);
 } /* Computed_field_depends_on_embedded_field */
-
-int Computed_field_manager_destroy_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Cleans up <fe_field> if not defined on nodes or elements, and makes its
-Computed_field wrapper volatile/private so it is clean up when no longer
-externally accessed.
-Currently only used by unemap_3d; be careful about ever using again. 
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *computed_field;
-	struct FE_region *fe_region;
-
-	ENTER(Computed_field_manager_destroy_FE_field);
-	if (computed_field_manager && fe_field &&
-		(fe_region = FE_field_get_FE_region(fe_field)))
-	{
-		return_code = 1;
-		if (FE_region_is_FE_field_in_use(fe_region, fe_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_manager_destroy_FE_field.  "
-				"FE_field %s (%p) is in use (accessed %d times)",
-				get_FE_field_name(fe_field), fe_field, FE_field_get_access_count(fe_field));
-			return_code = 0;
-		}
-		else
-		{
-			computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_wraps_fe_field, (void *)(fe_field),
-				computed_field_manager);
-			if (computed_field)
-			{
-				ACCESS(Computed_field)(computed_field);
-				Cmiss_field_set_persistent(computed_field, 0);
-			}
-			return_code = FE_region_remove_FE_field(fe_region, fe_field);
-			if (computed_field)
-			{
-				DEACCESS(Computed_field)(&computed_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_manager_destroy_FE_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return(return_code);
-} /* Computed_field_manager_destroy_FE_field */
 
 Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(

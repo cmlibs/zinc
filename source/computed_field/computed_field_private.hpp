@@ -91,6 +91,7 @@ public:
 	/**
 	 * Take ownership of field reference so caller does not need
 	 * to deaccess the supplied field.
+	 * Sets MANAGED attribute so it is not destroyed.
 	 * 
 	 * @param new_field  Field to take ownership of. 
 	 * @return  1 if field supplied, 0 if not.
@@ -99,6 +100,7 @@ public:
 	{
 		if (new_field)
 		{
+			Cmiss_field_set_attribute_integer(new_field, CMISS_FIELD_ATTRIBUTE_MANAGED, 1);
 			DEACCESS(Computed_field)(&new_field);
 			return 1;
 		}
@@ -283,10 +285,6 @@ public:
 	virtual int get_native_resolution(int *dimension, int **sizes,
 		struct Computed_field **texture_coordinate_field);
 
-	virtual int check_source_fields_manager(MANAGER(Computed_field) **manager_address);
-
-	virtual int manage_source_fields(MANAGER(Computed_field) *manager);
-
 	/* override if field type needs to be informed when it has been added to region */
 	virtual void field_is_managed(void)
 	{
@@ -312,18 +310,20 @@ public:
 		return 1;
 	}
 
-	// override if property supported by field type
-	virtual bool get_property_flag(enum Cmiss_field_property_flag property_flag) const
+	// override if attribute supported by field type
+	// used only for attributes not stored in the generic field object
+	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
 	{
-		USE_PARAMETER(property_flag);
-		return false;
+		USE_PARAMETER(attribute_id);
+		return 0;
 	}
 
-	// override if property can be set for field type
-	virtual int set_property_flag(enum Cmiss_field_property_flag property_flag, int flag_value)
+	// override if attribute can be set for field type
+	// used only for attributes not stored in the generic field object
+	virtual int set_attribute_integer(enum Cmiss_field_attribute_id attribute_id, int value)
 	{
-		USE_PARAMETER(property_flag);
-		USE_PARAMETER(flag_value);
+		USE_PARAMETER(attribute_id);
+		USE_PARAMETER(value);
 		return 0;
 	}
 
@@ -348,6 +348,14 @@ public:
 	}
 
 }; /* class Computed_field_core */
+
+/** Flag attributes for generic fields */
+enum Computed_field_attribute_flags
+{
+	COMPUTED_FIELD_ATTRIBUTE_MANAGED_BIT = 1
+	/*!< If NOT set, destroy field when only access is from region.
+	 * @see CMISS_FIELD_ATTRIBUTE_MANAGED */
+};
 
 struct Computed_field
 /*******************************************************************************
@@ -438,8 +446,8 @@ DESCRIPTION :
 	struct MANAGER(Computed_field) *manager;
 	int manager_change_status;
 	
-	/** Mode/flags controlling how this field is managed by a region. */
-	enum Computed_field_managed_status managed_status;
+	/** bit flag attributes. @see Computed_field_attribute_flags. */
+	int attribute_flags;
 
 	inline Computed_field *access()
 	{
@@ -846,35 +854,6 @@ cache.
 } /* Computed_field_evaluate_source_fields_cache_at_location */
 
 /***************************************************************************//**
- * Checks field is dependent on source fields in at most one manager.
- *
- * @param field  Field to be checked.
- * @param manager_address  Address of manager which must be initialised to the
- *   required manager if known, or NULL if unknown. On return points at the
- *   first manager used by field or any of its source fields, or NULL if none.
- * @return  1 if valid i.e. field depends on fields from at most one manager;
- *   0 if invalid combination of fields from more than one mnanager.
- */
-int Computed_field_check_manager(struct Computed_field *field, 
-	struct MANAGER(Computed_field) **manager_address);
-
-/***************************************************************************//**
- * Ensures field is in the manager with the desired status.
- * If not currently managed, first recursively adds any unmanaged source fields
- * to manager with status Computed_field::MANAGED_PRIVATE_VOLATILE.
- * Assumes check_manager has been used to ensure fields are not already in
- * another manager.
- * Note: Should only be called by Cmiss_region_add_field.
- *
- * @param field  Field to be added to the manager.
- * @param manager  Computed field manager.
- * @return  1 if field successfully added to manager, 0 if not added.
- */
-int Computed_field_manage(struct Computed_field *field, 
-	struct MANAGER(Computed_field) *manager,
-	enum Computed_field_managed_status managed_status);
-
-/***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.
  * Internally: Also used to set new field default arguments prior to create.
  *
@@ -941,28 +920,6 @@ struct Coordinate_system Cmiss_field_module_get_coordinate_system(
  * @return  1 if coordinate system set, 0 if never set.
  */
 int Cmiss_field_module_coordinate_system_is_set(
-	struct Cmiss_field_module *field_module);
-
-/***************************************************************************//**
- * Sets the public/private persistent/volatile default managed status flags for
- * the next field to be created.
- *
- * @param field_module  The field module to create fields in.
- * @param new_managed_status  Managed status flags to use for next field create.
- * @return  Non-zero on success, 0 on failure.
- */
-int Cmiss_field_module_set_managed_status(
-	struct Cmiss_field_module *field_module,
-	enum Computed_field_managed_status new_managed_status);
-
-/***************************************************************************//**
- * Gets the public/private persistent/volatile default managed status flags for
- * the next field to be created.
- *
- * @param field_module  The field module to create fields in.
- * @return  Field managed status flags.
- */
-enum Computed_field_managed_status Cmiss_field_module_get_managed_status(
 	struct Cmiss_field_module *field_module);
 
 /***************************************************************************//**

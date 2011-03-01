@@ -231,16 +231,6 @@ Returns true if the field is of an embedded type or depends on any computed
 fields which are or an embedded type.
 ==============================================================================*/
 
-int Computed_field_manager_destroy_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
-==============================================================================*/
-
 /*****************************************************************************//**
  * Creates a field returning the values for the given <nodal_value_type> and
  * <version_number> of <fe_field> at a node.
