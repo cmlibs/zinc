@@ -57,7 +57,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
-#include "api/cmiss_field_sub_group.h"
+#include "api/cmiss_field_sub_object_group.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
 #if defined (MOTIF_USER_INTERFACE)
@@ -84,7 +84,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_sub_group.hpp"
+#include "computed_field/computed_field_sub_object_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>

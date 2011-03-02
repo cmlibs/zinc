@@ -62,7 +62,7 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_sub_group.h"
+#include "api/cmiss_field_sub_object_group.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -90,7 +90,7 @@ static char node_tool_uidh[] =
 #include "user_interface/message.h"
 }
 #include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_sub_group.hpp"
+#include "computed_field/computed_field_sub_object_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>

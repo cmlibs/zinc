@@ -61,7 +61,7 @@
 extern "C" {
 #include "api/cmiss_context.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_field_sub_group.h"
+#include "api/cmiss_field_sub_object_group.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
 #include "api/cmiss_rendition.h"

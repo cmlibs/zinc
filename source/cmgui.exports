@@ -138,7 +138,7 @@ Cmiss_field_module_create_group
 Cmiss_field_cast_group
 /* inline Cmiss_field_group_base_cast */
 Cmiss_field_group_destroy
-Cmiss_field_group_remove_empty_subgroups
+Cmiss_field_group_remove_empty_subregion_groups
 Cmiss_field_group_is_empty
 Cmiss_field_group_is_empty_local
 Cmiss_field_group_clear
@@ -148,12 +148,13 @@ Cmiss_field_group_contains_local_region
 Cmiss_field_group_add_region
 Cmiss_field_group_remove_region
 Cmiss_field_group_contains_region
-Cmiss_field_group_create_subgroup
-Cmiss_field_group_get_subgroup
+Cmiss_field_group_create_subregion_group
+Cmiss_field_group_get_subregion_group
 Cmiss_field_group_create_node_group
 Cmiss_field_group_get_node_group
 Cmiss_field_group_create_element_group
 Cmiss_field_group_get_element_group
+Cmiss_field_group_get_sub_object_group_for_domain
 
 /* api/cmiss_field_image.h */
 Cmiss_field_module_create_image
@@ -220,7 +221,7 @@ Cmiss_field_cast_threshold_image_filter
 Cmiss_field_module_create_less_than
 Cmiss_field_module_create_greater_than
 
-/* api/cmiss_field_sub_group.h */
+/* api/cmiss_field_sub_object_group.h */
 Cmiss_field_module_create_node_group
 Cmiss_field_cast_node_group
 /* inline Cmiss_field_node_group_base_cast */

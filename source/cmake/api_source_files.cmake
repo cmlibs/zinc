@@ -34,7 +34,7 @@ SET( API_HDRS
 	source/api/cmiss_field_logical_operators.h
 	source/api/cmiss_field_module.h
 	source/api/cmiss_field_parameters.h
-	source/api/cmiss_field_sub_group.h
+	source/api/cmiss_field_sub_object_group.h
 	source/api/cmiss_field_trigonometry.h
 	source/api/cmiss_field_window_projection.h
 	source/api/cmiss_graphic.h

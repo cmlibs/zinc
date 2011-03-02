@@ -48,7 +48,7 @@ extern "C"
 #include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
-#include "api/cmiss_field_sub_group.h"
+#include "api/cmiss_field_sub_object_group.h"
 #include "computed_field/computed_field_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"

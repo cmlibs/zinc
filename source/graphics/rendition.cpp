@@ -51,7 +51,7 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_sub_group.h"
+#include "api/cmiss_field_sub_object_group.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphic.h"
@@ -3503,7 +3503,7 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition, Cmiss_fiel
 		return_code = 1;
 		if (selection_field)
 		{
-			Cmiss_field_group_id child_group = Cmiss_field_group_get_subgroup(selection_field, rendition->region);
+			Cmiss_field_group_id child_group = Cmiss_field_group_get_subregion_group(selection_field, rendition->region);
 			if (rendition->selection_group != child_group)
 			{
 				selection_changed = 1;
@@ -3586,7 +3586,7 @@ Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rend
 				if (root_rendition)
 				{
 					Cmiss_field_group_id root_group = Cmiss_rendition_get_selection_group(root_rendition);
-					selection_group = Cmiss_field_group_get_subgroup(root_group, rendition->region);
+					selection_group = Cmiss_field_group_get_subregion_group(root_group, rendition->region);
 					Cmiss_field_group_destroy(&root_group);
 					Cmiss_rendition_destroy(&root_rendition);
 				}
@@ -3673,9 +3673,9 @@ Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_renditi
 			}
 			if (root_selection_group && (root_region != rendition->region))
 			{
-				selection_group = Cmiss_field_group_get_subgroup(root_selection_group, rendition->region);
+				selection_group = Cmiss_field_group_get_subregion_group(root_selection_group, rendition->region);
 				if (!selection_group)
-					selection_group = Cmiss_field_group_create_subgroup(root_selection_group, rendition->region);
+					selection_group = Cmiss_field_group_create_subregion_group(root_selection_group, rendition->region);
 				if (default_selection)
 					Cmiss_rendition_set_selection_group_internal(root_rendition, root_selection_group);
 				else
@@ -3826,7 +3826,7 @@ void Cmiss_rendition_flush_tree_selections(Cmiss_rendition_id rendition)
 	}
 	if (root_selection_group && default_root_selection)
 	{
-		Cmiss_field_group_remove_empty_subgroups(root_selection_group);
+		Cmiss_field_group_remove_empty_subregion_groups(root_selection_group);
 		if (Cmiss_field_group_is_empty(root_selection_group))
 		{
 			Cmiss_field_group_id root_selection_group_copy = root_selection_group;

@@ -7,7 +7,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_composite.cpp
 	source/computed_field/computed_field_conditional.cpp
 	source/computed_field/computed_field_group.cpp
-	source/computed_field/computed_field_sub_group.cpp
+	source/computed_field/computed_field_sub_object_group.cpp
 	source/computed_field/computed_field_trigonometry.cpp
 	source/computed_field/field_ensemble.cpp
 	source/computed_field/field_parameters.cpp
@@ -22,7 +22,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_conditional.h
 	source/computed_field/computed_field_group.h
 	source/computed_field/computed_field_group_base.hpp
-	source/computed_field/computed_field_sub_group.hpp
+	source/computed_field/computed_field_sub_object_group.hpp
 	source/computed_field/computed_field_trigonometry.h
 	source/computed_field/field_ensemble.hpp
 	source/computed_field/computed_field_find_xi.h
@@ -55,7 +55,6 @@ SET( COMPUTED_FIELD_SRCS
 	source/computed_field/computed_field_matrix_operations.cpp
 	source/computed_field/computed_field_region_operations.cpp
 	source/computed_field/computed_field_string_constant.cpp
-	source/computed_field/computed_field_sub_group.cpp
 	source/computed_field/computed_field_time.cpp
 	source/computed_field/computed_field_update.cpp
 	source/computed_field/computed_field_value_index_ranges.cpp

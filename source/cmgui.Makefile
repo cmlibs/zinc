@@ -1002,7 +1002,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_string_constant.cpp \
-	computed_field/computed_field_sub_group.cpp \
+	computed_field/computed_field_sub_object_group.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
 	computed_field/computed_field_value_index_ranges.cpp \

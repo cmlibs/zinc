@@ -114,16 +114,16 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id g
 int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
 
 /***************************************************************************//**
- * Remove and destroy all empty subregion or subobject subgroups of this group.
+ * Remove and destroy all empty subregion groups of this group.
  * Empty subgroups in use by other clients may remain in group after call.
  *
  * @param group  Handle to group field to modify.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
+int Cmiss_field_group_remove_empty_subregion_groups(Cmiss_field_group_id group);
 
 /***************************************************************************//**
- * Query if this group and all its subgroups are empty.
+ * Query if this group and all its subregion and sub-object groups are empty.
  *
  * @param group  Handle to group field to query.
  * @return  1 if group and all its subgroups are empty, otherwise 0.
@@ -220,7 +220,7 @@ int Cmiss_field_group_contains_region(Cmiss_field_group_id group, Cmiss_region_i
  * @param subregion  Handle to region to create a subgroup for.
  * @return  Handle to new, empty sub-group field on success, NULL on failure.
  */
-Cmiss_field_group_id Cmiss_field_group_create_subgroup(
+Cmiss_field_group_id Cmiss_field_group_create_subregion_group(
 	Cmiss_field_group_id group, Cmiss_region_id subregion);
 
 /***************************************************************************//**
@@ -232,7 +232,7 @@ Cmiss_field_group_id Cmiss_field_group_create_subgroup(
  * @param subregion  Handle to region to get the subgroup for.
  * @return  Handle to sub-group field or NULL if none.
  */
-Cmiss_field_group_id Cmiss_field_group_get_subgroup(Cmiss_field_group_id group,
+Cmiss_field_group_id Cmiss_field_group_get_subregion_group(Cmiss_field_group_id group,
 	Cmiss_region_id subregion);
 
 /***************************************************************************//**
@@ -288,6 +288,6 @@ Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_gro
  * @param domain the domain field
  * @returns the subgroup field for the specified domain, NULL otherwise
  */
-Cmiss_field_id Cmiss_field_group_get_subgroup_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
+Cmiss_field_id Cmiss_field_group_get_sub_object_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
 
 #endif /* !defined (CMISS_FIELD_GROUP_H) */
