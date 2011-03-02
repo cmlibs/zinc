@@ -821,7 +821,7 @@ release.
 														Cmiss_field_element_group_add_element(mesh_group_1d,
 															pos->second);
 													}
-													else if (dimension == 2 && !mesh_group_2d)
+													else if (dimension == 2)
 													{
 														if (!mesh_group_2d)
 														{
@@ -835,7 +835,7 @@ release.
 														Cmiss_field_element_group_add_element(mesh_group_2d,
 															pos->second);
 													}
-													else if (dimension == 3 && !mesh_group_3d)
+													else if (dimension == 3)
 													{
 														if (!mesh_group_3d)
 														{
