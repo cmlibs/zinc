@@ -843,7 +843,7 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 				 {
 						material_copy_bump_mapping_and_per_pixel_lighting_flag(material_editor->edit_material,
 							 material);
-						Cmiss_material_set_persistent(material, 1);
+						Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 						ADD_OBJECT_TO_MANAGER(Graphical_material)(
 							 material, material_editor->graphical_material_manager);
 						make_current_material(material_editor, material);

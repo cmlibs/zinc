@@ -81,14 +81,24 @@ public:
 		}
 	}
 
-	int setName(const char *name)
+	int getAttributeInteger(Cmiss_material_attribute_id attribute_id)
 	{
-		return Cmiss_material_set_name(id, name);
+		return Cmiss_material_get_attribute_integer(id, attribute_id);
+	}
+
+	int setAttributeInteger(Cmiss_material_attribute_id attribute_id, int value)
+	{
+		return Cmiss_material_set_attribute_integer(id, attribute_id, value);
 	}
 
 	char *getName()
 	{
 		return Cmiss_material_get_name(id);
+	}
+
+	int setName(const char *name)
+	{
+		return Cmiss_material_set_name(id, name);
 	}
 
 	int setAlpha(float alpha)
@@ -120,17 +130,6 @@ public:
 	{
 		return Cmiss_material_set_specular(id, red, green, blue);
 	}
-
-	int setPersistent(int persistent_flag)
-	{
-		return Cmiss_material_set_persistent(id,persistent_flag);
-	}
-
-	int getPersistent()
-	{
-		return Cmiss_material_get_persistent(id);
-	}
-
 
 };
 

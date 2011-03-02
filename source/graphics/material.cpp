@@ -314,7 +314,7 @@ The properties of a material.
 	/* this flag is for external API uses. If a material is set to be persistent
 		 then this material will not be removed from the manager after destroy.
 	 */
-	int persistent_flag;
+	bool is_managed_flag;
 
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Graphical_material) *manager;
@@ -3666,7 +3666,7 @@ DESCRIPTION :
 		if (return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(
 			material, material_package->material_manager))
 		{
-			Cmiss_material_set_persistent(material, 1);
+			Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 			/* Cannot ACCESS the package as the package is
 				accessing each material through the MANAGER */
 			material->package = material_package;
@@ -3828,7 +3828,7 @@ Allocates memory and assigns fields for a material.
 			material->lit_volume_normal_scaling[3] = 1.0;
 			material->program = (struct Material_program *)NULL;
 			material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
-			material->persistent_flag = 0;
+			material->is_managed_flag = false;
 			material->manager = (struct MANAGER(Graphical_material) *)NULL;
 			material->manager_change_status = MANAGER_CHANGE_NONE(Graphical_material);
 #if defined (OPENGL_API)
@@ -5290,7 +5290,7 @@ If the material already exists, then behaves like gfx modify material.
 						}
 						if (material_is_new)
 						{
-							Cmiss_material_set_persistent(material, 1);
+							Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 							ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 								material_package->material_manager);
 						}
@@ -6902,7 +6902,7 @@ specified name and the default properties.
 			{
 				if (material=CREATE(Graphical_material)(material_name))
 				{
-						Cmiss_material_set_persistent(material, 1);
+					Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 						graphical_material_manager))
 					{
@@ -7608,6 +7608,17 @@ int Cmiss_material_set_texture(
 	return return_code;
 }
 
+struct Graphical_material *Cmiss_material_access(struct Graphical_material *material)
+{
+	ENTER(Cmiss_material_access);
+	if (material)
+	{
+		material->access_count++;
+	}
+
+	return material;
+}
+
 int Cmiss_material_destroy(Graphical_material **material_address)
 {
 	int return_code = 0;
@@ -7621,7 +7632,7 @@ int Cmiss_material_destroy(Graphical_material **material_address)
 		{
 			return_code = DESTROY(Graphical_material)(material_address);
 		}
-		else if ((!material->persistent_flag) && (material->manager) &&
+		else if ((!material->is_managed_flag) && (material->manager) &&
 			((1 == material->access_count) || ((2 == material->access_count) &&
 				(MANAGER_CHANGE_NONE(Graphical_material) != material->manager_change_status))))
 		{
@@ -7635,6 +7646,56 @@ int Cmiss_material_destroy(Graphical_material **material_address)
 	}
 	LEAVE;
 
+	return return_code;
+}
+
+int Cmiss_material_get_attribute_integer(Cmiss_material_id material,
+	enum Cmiss_material_attribute_id attribute_id)
+{
+	int value = 0;
+	if (material)
+	{
+		switch (attribute_id)
+		{
+		case CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED:
+			value = (int)material->is_managed_flag;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_material_get_attribute_integer.  Invalid attribute");
+			break;
+		}
+	}
+	return value;
+}
+
+int Cmiss_material_set_attribute_integer(Cmiss_material_id material,
+	enum Cmiss_material_attribute_id attribute_id, int value)
+{
+	int return_code = 0;
+	if (material)
+	{
+		return_code = 1;
+		int old_value = Cmiss_material_get_attribute_integer(material, attribute_id);
+		enum MANAGER_CHANGE(Graphical_material) change =
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material);
+		switch (attribute_id)
+		{
+		case CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED:
+			material->is_managed_flag = (value != 0);
+			change = MANAGER_CHANGE_NOT_RESULT(Graphical_material);
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_material_set_attribute_integer.  Invalid attribute");
+			return_code = 0;
+			break;
+		}
+		if (Cmiss_material_get_attribute_integer(material, attribute_id) != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Graphical_material)(material, change);
+		}
+	}
 	return return_code;
 }
 
@@ -7652,55 +7713,6 @@ int Cmiss_material_set_name(
 	LEAVE;
 
 	return return_code;
-}
-
-int Cmiss_material_get_persistent(Graphical_material *material)
-{
-	int return_code;
-	
-	ENTER(Cmiss_material_get_persistent);
-	if (material)
-	{
-		return_code= material->persistent_flag;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_material_set_persistent(
-	Graphical_material *material, int persistent_flag)
-{
-	int return_code;
-	
-	ENTER(Cmiss_material_set_persistent);
-	if (material)
-	{
-		material->persistent_flag = persistent_flag;
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-struct Graphical_material *Cmiss_material_access(struct Graphical_material *material)
-{
-	ENTER(Cmiss_material_access);
-	if (material)
-	{
-		material->access_count++;
-	}
-
-	return material;
 }
 
 int Cmiss_material_execute_command(struct Graphical_material *material, const char *command_string)

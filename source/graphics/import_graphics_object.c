@@ -993,7 +993,7 @@ DESCRIPTION :
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
 											(scanned_material, graphical_material_manager)))
 									{
-										Cmiss_material_set_persistent(scanned_material , 1);
+										Cmiss_material_set_attribute_integer(scanned_material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 									}
 									else
 									{

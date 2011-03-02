@@ -45,27 +45,18 @@
 #endif /* CMISS_SPECTRUM_ID_DEFINED */
 
 /***************************************************************************//**
-* Sets the persistent property flag of the spectrum;.
-* Default setting persistent=0 means the spectrum is destroyed when the number of
-* external references to it drops to zero.
-* Setting persistent=1 means the spectrum exists in graphics module even if no
-* external references to it are held, whence it can be found by name or other
-* search criteria.
-*
-* @param spectrum  The spectrum to set the persistent flag for.
-* @param persistent  Non-zero for persistent, 0 for non-persistent.
-* @return  1 on success, 0 on failure.
-*/
-int Cmiss_spectrum_set_persistent(Cmiss_spectrum_id spectrum, int persistent_flag);
-
-/***************************************************************************//**
-* Returns the persistent property flag of the spectrum.
-*
-* @see Cmiss_spectrum_set_persistent
-* @param spectrum  The spectrum to query.
-* @return  1 if spectrum is persistent, 0 if non-persistent.
-*/
-int Cmiss_spectrum_get_persistent(Cmiss_spectrum_id spectrum);
+ * Labels of spectrum attributes which may be set or obtained using generic
+ * get/set_attribute functions.
+ */
+enum Cmiss_spectrum_attribute_id
+{
+	CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED = 1,
+	/*!< Boolean as integer, when 0 (default) spectrum is destroyed when no
+	 * longer in use, i.e. when number of external references to it drops to
+	 * zero. Set to 1 to manage spectrum object indefinitely, or until this
+	 * attribute is reset to zero, effectively marking it as pending destruction.
+	 */
+};
 
 /***************************************************************************//**
  * Destroy the spectrum.
@@ -75,6 +66,37 @@ int Cmiss_spectrum_get_persistent(Cmiss_spectrum_id spectrum);
  * @return  1 if successfully destroy spectrum, otherwise 0.
  */
 int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
+
+/***************************************************************************//**
+ * Get an integer or Boolean attribute of the graphics spectrum.
+ *
+ * @param spectrum  Handle to the cmiss spectrum.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
+	enum Cmiss_spectrum_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the graphics spectrum.
+ *
+ * @param spectrum  Handle to the cmiss spectrum.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true in case more options are added in future.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or able to be set for this spectrum object.
+ */
+int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
+	enum Cmiss_spectrum_attribute_id attribute_id, int value);
+
+/***************************************************************************//**
+ * Return an allocated string containing spectrum name.
+ *
+ * @param spectrum  handle to the cmiss spectrum.
+ * @return  allocated string containing spectrum name, otherwise NULL.
+ */
+char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 
 /***************************************************************************//**
  * Set/change name for <spectrum>.
@@ -100,11 +122,4 @@ int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
 int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
 	const char *command_string);
 
-/***************************************************************************//**
- * Return an allocated string containing spectrum name.
- *
- * @param spectrum  handle to the cmiss spectrum.
- * @return  allocated string containing spectrum name, otherwise NULL.
- */
-char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 #endif /* __CMISS_SPECTRUM_H__ */

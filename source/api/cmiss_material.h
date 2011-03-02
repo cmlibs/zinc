@@ -86,9 +86,72 @@ enum Cmiss_material_image_field_identifier
 };
 
 /***************************************************************************//**
+ * Labels of material attributes which may be set or obtained using generic
+ * get/set_attribute functions.
+ */
+enum Cmiss_material_attribute_id
+{
+	CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
+	/*!< Boolean as integer, when 0 (default) material is destroyed when no
+	 * longer in use, i.e. when number of external references to it drops to
+	 * zero. Set to 1 to manage material object indefinitely, or until this
+	 * attribute is reset to zero, effectively marking it as pending destruction.
+	 */
+};
+
+/***************************************************************************//**
+ * Access the material, increase the access count of the material by one.
+ *
+ * @param material  handle to the "to be access" cmiss material.
+ * @return  handle to material if successfully access material.
+ */
+Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
+
+/***************************************************************************//**
+ * Destroys this reference to the material (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param material  address to the handle to the "to be destroyed"
+ *   cmiss material.
+ * @return  1 if successfully destroy material, otherwise 0.
+ */
+int Cmiss_material_destroy(Cmiss_material_id *material);
+
+/***************************************************************************//**
+ * Get an integer or Boolean attribute of the graphics material.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_material_get_attribute_integer(Cmiss_material_id material,
+	enum Cmiss_material_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the graphics material.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true in case more options are added in future.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or able to be set for this material object.
+ */
+int Cmiss_material_set_attribute_integer(Cmiss_material_id material,
+	enum Cmiss_material_attribute_id attribute_id, int value);
+
+/***************************************************************************//**
+ * Return an allocated string containing material name.
+ *
+ * @param material  handle to the cmiss material.
+ * @return  allocated string containing material name, otherwise NULL.
+ */
+char *Cmiss_material_get_name(Cmiss_material_id material);
+
+/***************************************************************************//**
  * Set/change name for <material>.
  *
- * @param material  The handle to cmiss grpahical material.
+ * @param material  The handle to the cmiss material.
  * @param name  name to be set to the material
  * @return  1 if successfully set/change name for material, otherwise 0.
  */
@@ -187,29 +250,6 @@ int Cmiss_material_set_specular(
 	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
-* Sets the persistent property flag of the material;.
-* Default setting persistent=0 means the material is destroyed when the number of
-* external references to it drops to zero.
-* Setting persistent=1 means the material exists in graphics module even if no
-* external references to it are held, whence it can be found by name or other
-* search criteria.
-*
-* @param material  The material to set the persistent flag for.
-* @param persistent  Non-zero for persistent, 0 for non-persistent.
-* @return  1 on success, 0 on failure.
-*/ 
-int Cmiss_material_set_persistent(Cmiss_material_id material, int persistent_flag);
-
-/***************************************************************************//**
-* Returns the persistent property flag of the material.
-*
-* @see Cmiss_material_set_persistent
-* @param material  The material to query.
-* @return  1 if material is persistent, 0 if non-persistent.
-*/ 
-int Cmiss_material_get_persistent(Cmiss_material_id material);
-
-/***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
  * command function will apply to the material being passed into this function
  * only. It takes a string of command as gfx modify material <material> does.
@@ -223,31 +263,6 @@ int Cmiss_material_get_persistent(Cmiss_material_id material);
  */
 int Cmiss_material_execute_command(Cmiss_material_id material,
 	const char *command_string);
-
-/***************************************************************************//**
- * Access the material, increase the access count of the material by one.
- *
- * @param material  handle to the "to be access" cmiss material.
- * @return  handle to material if successfully access material.
- */
-Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
-
-/***************************************************************************//**
- * Destroy the material.
- *
- * @param material  address to the handle to the "to be destroyed" 
- *   cmiss material.
- * @return  1 if successfully destroy material, otherwise 0.
- */
-int Cmiss_material_destroy(Cmiss_material_id *material);
-
-/***************************************************************************//**
- * Return an allocated string containing material name.
- *
- * @param material  handle to the cmiss material.
- * @return  allocated string containing material name, otherwise NULL.
- */
-char *Cmiss_material_get_name(Cmiss_material_id material);
 
 /***************************************************************************//**
  * Set a cmiss_field containing an image for a Cmiss_material.
@@ -277,5 +292,26 @@ int Cmiss_material_set_image_field(Cmiss_material_id material,
  */
 Cmiss_field_id  Cmiss_material_get_image_field(Cmiss_material_id material,
 	enum Cmiss_material_image_field_identifier identifier);
+
+/***************************************************************************//**
+ * Deprecated function for getting generic CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_material_get_attribute_integer
+ *
+ * @param material  The material to query.
+ * @return  Value of attribute CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ */
+#define Cmiss_material_get_persistent(material) \
+	Cmiss_material_get_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED)
+
+/***************************************************************************//**
+ * Deprecated function for setting attribute CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_material_set_attribute_integer
+ *
+ * @param material  The material to modify.
+ * @param value  Non-zero for managed, 0 for not managed.
+ * @return  1 on success, 0 on failure.
+ */
+#define Cmiss_material_set_persistent(material, value) \
+	Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, value)
 
 #endif

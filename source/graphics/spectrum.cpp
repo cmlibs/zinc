@@ -88,7 +88,7 @@ Spectrum type is private.
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Spectrum) *manager;
 	int manager_change_status;
-	int persistent_flag;
+	bool is_managed_flag;
 	/* the number of structures that point to this spectrum.  The spectrum
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -2378,7 +2378,7 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
 			spectrum->access_count=1;
 			spectrum->colour_lookup_texture = (struct Texture *)NULL;
-			spectrum->persistent_flag = 0;
+			spectrum->is_managed_flag = false;
 			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())
 			{
 				if (name)
@@ -2989,7 +2989,7 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 		{
 			return_code = DESTROY(Spectrum)(spectrum_address);
 		}
-		else if ((!spectrum->persistent_flag) && (spectrum->manager) &&
+		else if ((!spectrum->is_managed_flag) && (spectrum->manager) &&
 			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
 				(MANAGER_CHANGE_NONE(Spectrum) != spectrum->manager_change_status))))
 		{
@@ -3006,40 +3006,52 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 	return return_code;
 }
 
-int Cmiss_spectrum_get_persistent(Cmiss_spectrum_id spectrum)
+int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
+	enum Cmiss_spectrum_attribute_id attribute_id)
 {
-	int return_code;
-
-	ENTER(Cmiss_spectrum_get_persistent);
+	int value = 0;
 	if (spectrum)
 	{
-		return_code= spectrum->persistent_flag;
+		switch (attribute_id)
+		{
+		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
+			value = (int)spectrum->is_managed_flag;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_spectrum_get_attribute_integer.  Invalid attribute");
+			break;
+		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
+	return value;
 }
 
-int Cmiss_spectrum_set_persistent(
-	Cmiss_spectrum_id spectrum, int persistent_flag)
+int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
+	enum Cmiss_spectrum_attribute_id attribute_id, int value)
 {
-	int return_code;
-
-	ENTER(Cmiss_spectrum_set_persistent);
+	int return_code = 0;
 	if (spectrum)
 	{
-		spectrum->persistent_flag = persistent_flag;
 		return_code = 1;
+		int old_value = Cmiss_spectrum_get_attribute_integer(spectrum, attribute_id);
+		enum MANAGER_CHANGE(Spectrum) change =
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum);
+		switch (attribute_id)
+		{
+		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
+			spectrum->is_managed_flag = (value != 0);
+			change = MANAGER_CHANGE_NOT_RESULT(Spectrum);
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_spectrum_set_attribute_integer.  Invalid attribute");
+			return_code = 0;
+			break;
+		}
+		if (Cmiss_spectrum_get_attribute_integer(spectrum, attribute_id) != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, change);
+		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
 	return return_code;
 }
