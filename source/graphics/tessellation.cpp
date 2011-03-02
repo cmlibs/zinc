@@ -466,12 +466,13 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 	{
 		return_code = 1;
 		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id);
-		bool change_affects_result = true;
+		enum MANAGER_CHANGE(Cmiss_tessellation) change =
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation);
 		switch (attribute_id)
 		{
 		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
 			tessellation->is_managed_flag = (value != 0);
-			change_affects_result = false;
+			change = MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation);
 			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
 		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
@@ -487,10 +488,7 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 		}
 		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id) != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-				change_affects_result ?
-					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation) :
-					MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation));
+			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation, change);
 		}
 	}
 	return return_code;
