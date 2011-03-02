@@ -285,6 +285,15 @@ int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_reg
  */
 int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic);
 
+/***************************************************************************//**
+ * Returns the dimension of the <graphic>, which varies for some graphic types.
+ * @param graphic Cmiss graphic
+ * @param fe_region  Used for iso_surfaces and element_points with USE_ELEMENT
+ * type. Gives the highest dimension for which elements exist. If omitted uses 3.
+ * @return the dimension of the graphic
+ */
+int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region *fe_region);
+
 #if defined (USE_OPENCASCADE)
 /**
  * Returns 1 if the graphics are output with names that identify
@@ -872,6 +881,7 @@ struct Cmiss_graphic_FE_region_change_data
 	int graphics_changed;
 	/* the FE_region the settings apply to */
 	struct FE_region *fe_region;
+	int element_type;
 }; /* struct Cmiss_graphic_FE_region_change_data */
 
 /***************************************************************************//**

@@ -6160,7 +6160,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		  		if (rendition)
 		  		{
 		  			group_field = Cmiss_rendition_get_selection_group(rendition);
-					Cmiss_rendition_destroy(&rendition);
+		  			Cmiss_rendition_destroy(&rendition);
 		  		}
 		  		int dimension = FE_region_CM_element_type_to_dimension(
 		  			Cmiss_region_get_FE_region(region), cm_element_type);
@@ -14851,7 +14851,7 @@ Executes a GFX SELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_add_selection_from_element_list_of_dimension(local_rendition,element_list, dimension);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
@@ -14879,7 +14879,7 @@ Executes a GFX SELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_add_selection_from_element_list_of_dimension(local_rendition,element_list, 2);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
@@ -14951,7 +14951,7 @@ Executes a GFX SELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_add_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_add_selection_from_element_list_of_dimension(local_rendition,element_list, 1);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
@@ -15208,7 +15208,7 @@ Executes a GFX UNSELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_remove_selection_from_element_list_of_dimension(local_rendition,element_list, dimension);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
@@ -15236,7 +15236,7 @@ Executes a GFX UNSELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_remove_selection_from_element_list_of_dimension(local_rendition,element_list, 2);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{
@@ -15308,7 +15308,7 @@ Executes a GFX UNSELECT command.
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
-							Cmiss_rendition_remove_selection_from_element_list(local_rendition,element_list);
+							Cmiss_rendition_remove_selection_from_element_list_of_dimension(local_rendition, element_list, 1);
 							Cmiss_rendition_destroy(&local_rendition);
 							if (verbose_flag)
 							{

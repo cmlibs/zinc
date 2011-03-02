@@ -53,7 +53,6 @@ extern "C" {
 #include "computed_field/computed_field_sub_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
-#include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
@@ -288,7 +287,7 @@ int Cmiss_field_element_group_add_element(Cmiss_field_element_group_id element_g
 			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
 			Cmiss_field_element_group_id>(element_group);
-			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
+			int identifier = cm_identifier.number;
 			group_core->add_object(identifier, element);
 		}
 	}
@@ -312,7 +311,7 @@ int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id elemen
 			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
 				Cmiss_field_element_group_id>(element_group);
-			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
+			int identifier = cm_identifier.number;
 			group_core->remove_object(identifier);
 		}
 	}
@@ -355,7 +354,7 @@ int Cmiss_field_element_group_contains_element(
 			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
 				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
 				Cmiss_field_element_group_id>(element_group);
-			int identifier = CM_element_information_to_graphics_name(&cm_identifier);
+			int identifier = cm_identifier.number;
 			return_code = group_core->get_object_selected(identifier, element);
 		}
 	}

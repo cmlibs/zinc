@@ -387,11 +387,11 @@ int Cmiss_rendition_add_selection_from_node_list(Cmiss_rendition_id rendition,
 int Cmiss_rendition_remove_selection_from_node_list(Cmiss_rendition_id rendition,
 	struct LIST(FE_node) *node_list, int use_data);
 
-int Cmiss_rendition_add_selection_from_element_list(Cmiss_rendition_id rendition,
-	struct LIST(FE_element) *element_list);
+int Cmiss_rendition_add_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
+	struct LIST(FE_element) *element_list, int dimension);
 
-int Cmiss_rendition_remove_selection_from_element_list(Cmiss_rendition_id rendition,
-	struct LIST(FE_element) *element_list);
+int Cmiss_rendition_remove_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
+	struct LIST(FE_element) *element_list, int dimension);
 
 /***************************************************************************//**
  * Returns the status of the inherited visibility flag of the rendition.

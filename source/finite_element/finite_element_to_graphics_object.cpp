@@ -1141,134 +1141,6 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 	return (dimension);
 } /* Use_element_type_dimension */
 
-int CM_element_information_to_graphics_name(struct CM_element_information *cm)
-/*******************************************************************************
-LAST MODIFIED : 27 June 2000
-
-DESCRIPTION :
-Encodes <cm> as a single integer that can be converted back to the element with
-CM_element_information_from_graphics_name. cm->number must be non-negative,
-and for CM_ELEMENT and CM_FACE must be less than INT_MAX/2, since they share the
-positive integers. Note: keeps element numbers contiguous for a CM_type.
-Used for selection and highlighting of elements.
-==============================================================================*/
-{
-	int graphics_name;
-
-	ENTER(CM_element_information_to_graphics_name);
-	if (cm)
-	{
-		switch (cm->type)
-		{
-			case CM_ELEMENT:
-			{
-				if ((0 <= cm->number)&&(cm->number <= HALF_INT_MAX))
-				{
-					graphics_name = cm->number;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CM_element_information_to_graphics_name.  "
-						"CM_ELEMENT number must be from 0 to %d",HALF_INT_MAX);
-					graphics_name = 0;
-				}
-			} break;
-			case CM_FACE:
-			{
-				if ((0 <= cm->number)&&(cm->number <= HALF_INT_MAX))
-				{
-					graphics_name = HALF_INT_MAX + 1 + cm->number;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CM_element_information_to_graphics_name.  "
-						"CM_FACE number must be from 0 to %d",HALF_INT_MAX);
-					graphics_name = HALF_INT_MAX + 1;
-				}
-			} break;
-			case CM_LINE:
-			{
-				/* allow twice as many line numbers as tend to have more of them */
-				if ((0 <= cm->number)&&(cm->number <= INT_MAX))
-				{
-					graphics_name = INT_MIN + cm->number;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CM_element_information_to_graphics_name.  "
-						"CM_LINE number must be from 0 to %d",INT_MAX);
-					graphics_name = INT_MIN;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"CM_element_information_to_graphics_name.  Invalid CM_type");
-				graphics_name = 0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CM_element_information_to_graphics_name.  Invalid argument(s)");
-		graphics_name = 0;
-	}
-	LEAVE;
-
-	return (graphics_name);
-} /* CM_element_information_to_graphics_name */
-
-int CM_element_information_from_graphics_name(struct CM_element_information *cm,
-	int graphics_name)
-/*******************************************************************************
-LAST MODIFIED : 27 June 2000
-
-DESCRIPTION :
-Fills <cm> with the CM_type and number determined from the the integer
-<graphics_name>, encoded with CM_element_information_to_graphics_name.
-Used for selection and highlighting of elements.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(CM_element_information_from_graphics_name);
-	if (cm)
-	{
-		return_code=1;
-		if (0 > graphics_name)
-		{
-			/* line number */
-			cm->type = CM_LINE;
-			cm->number = graphics_name - INT_MIN;
-		}
-		else if (HALF_INT_MAX < graphics_name)
-		{
-			/* face number */
-			cm->type = CM_FACE;
-			cm->number = graphics_name - HALF_INT_MAX - 1;
-		}
-		else
-		{
-			/* element number */
-			cm->type = CM_ELEMENT;
-			cm->number = graphics_name;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CM_element_information_from_graphics_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* CM_element_information_from_graphics_name */
-
 struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	struct FE_region *fe_region,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
@@ -1650,7 +1522,7 @@ Notes:
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			GT_polyline_set_integer_identifier(polyline, CM_element_information_to_graphics_name(&cm));
+			GT_polyline_set_integer_identifier(polyline, cm.number);
 			point=points;
 			distance=(FE_value)number_of_segments;
 			i=0;
@@ -1746,7 +1618,7 @@ int FE_element_add_line_to_vertex_array(
 
 		/* for selective editing of GT_object primitives, record element ID */
 		get_FE_element_identifier(element, &cm);
-		graphics_name = CM_element_information_to_graphics_name(&cm);
+		graphics_name = cm.number;
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
 			1, 1, &graphics_name);
 
@@ -1900,7 +1772,7 @@ Notes:
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
+			GT_surface_set_integer_identifier(surface, cm.number);
 			point=points;
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
@@ -2377,7 +2249,7 @@ to say which parent element they should be evaluated on as necessary.
 			{
 				/* for selective editing of GT_object primitives, record element ID */
 				get_FE_element_identifier(element, &cm);
-				GT_nurbs_set_integer_identifier(nurbs, CM_element_information_to_graphics_name(&cm));
+				GT_nurbs_set_integer_identifier(nurbs, cm.number);
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
 					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
@@ -2848,7 +2720,7 @@ normals are used.
 			FE_value *feData = new FE_value[n_data_components];
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
+			GT_surface_set_integer_identifier(surface, cm.number);
 			/* calculate the xi coordinates and store in xi_points array */
 			const FE_value xi_distance1 = (FE_value)(number_of_points_in_xi1 - 1);
 			const FE_value xi_distance2 = (FE_value)(number_of_points_in_xi2 - 1);
@@ -3658,7 +3530,7 @@ faces.
 									 record element ID */
 								get_FE_element_identifier(element, &cm);
 								GT_voltex_set_integer_identifier(voltex,
-									CM_element_information_to_graphics_name(&cm));
+									cm.number);
 
 								/* Create vertices */
 								for (i=0;i<n_vertices;i++)
@@ -4300,7 +4172,7 @@ Note:
 					labels, n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					/*label_density_list*/(Triple *)NULL,
-					CM_element_information_to_graphics_name(&cm), names)))
+					cm.number, names)))
 			{
 				point = point_list;
 				axis1 = axis1_list;

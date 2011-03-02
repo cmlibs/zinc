@@ -201,7 +201,7 @@ private:
 public:
 	Cmiss_region *region;
 	int contains_all;
-	Computed_field *local_node_group, *local_data_group, *local_element_group;
+	Computed_field *local_node_group, *local_data_group, *local_element_group[3];
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
 	Region_field_map sub_group_map;
 	Region_field_map_iterator child_group_pos;
@@ -212,10 +212,12 @@ public:
 		, contains_all(0)
 		, local_node_group(NULL)
 		, local_data_group(NULL)
-		, local_element_group(NULL)
 		, sub_group_map()
 	{		//ACCESS(Cmiss_region)(region);
 		child_group_pos = sub_group_map.begin();
+		local_element_group[0] = NULL;
+		local_element_group[1] = NULL;
+		local_element_group[2] = NULL;
 	}
 
 	~Computed_field_group()
@@ -451,6 +453,7 @@ int Computed_field_group::evaluate_cache_at_location(
  			Field_element_xi_location *element_xi_location =
  				reinterpret_cast<Field_element_xi_location *>(location);
  			Cmiss_element_id element = element_xi_location->get_element();
+ 			int dimension = Cmiss_element_get_dimension(element);
  			Cmiss_region_id element_region = Cmiss_element_get_region(element);
  			Cmiss_field_id temporary_handle = NULL;
  			if (element_region != region)
@@ -467,14 +470,14 @@ int Computed_field_group::evaluate_cache_at_location(
  						reinterpret_cast<Computed_field*>(temporary_group_field_handle)->core);
  					if (group_core)
  					{
- 						temporary_handle = group_core->local_element_group;
+ 						temporary_handle = group_core->local_element_group[dimension - 1];
  					}
  					Cmiss_field_group_destroy(&temporary_group_field_handle);
  				}
  			}
  			else
  			{
- 				temporary_handle = local_element_group;
+ 				temporary_handle = local_element_group[dimension - 1];
  			}
  			if (temporary_handle)
  			{
@@ -536,7 +539,11 @@ int Computed_field_group::isEmptyLocal() const
 		return 0;
 	if (local_data_group && !isSubGroupEmpty(local_data_group->core))
 		return 0;
-	if (local_element_group && !isSubGroupEmpty(local_element_group->core))
+	if (local_element_group[0] && !isSubGroupEmpty(local_element_group[0]->core))
+		return 0;
+	if (local_element_group[1] && !isSubGroupEmpty(local_element_group[1]->core))
+		return 0;
+	if (local_element_group[2] && !isSubGroupEmpty(local_element_group[2]->core))
 		return 0;
 	std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 	while (it != domain_selection_group.end())
@@ -581,11 +588,14 @@ int Computed_field_group::clearLocal()
 		return_code = group_base->clear();
 		Cmiss_field_destroy(&local_data_group);
 	}
-	if (local_element_group)
+	for (int i = 0; i < 3; i++)
 	{
-		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_element_group->core);
-		return_code = group_base->clear();
-		Cmiss_field_destroy(&local_element_group);
+		if (local_element_group[i])
+		{
+			Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_element_group[i]->core);
+			return_code = group_base->clear();
+			Cmiss_field_destroy(&local_element_group[i]);
+		}
 	}
 	Computed_field_changed(this->field);
 	Cmiss_region_end_change(region);
@@ -639,8 +649,13 @@ int Computed_field_group::check_dependency()
 			check_sub_group_dependency(local_node_group->core);
 		if (local_data_group)
 			check_sub_group_dependency(local_data_group->core);
-		if (local_element_group)
-			check_sub_group_dependency(local_element_group->core);
+		for (int i = 0; i < 3; i++)
+		{
+			if (local_element_group[i])
+			{
+				check_sub_group_dependency(local_element_group[i]->core);
+			}
+		}
 		std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 		while (it != domain_selection_group.end())
 		{
@@ -999,9 +1014,10 @@ Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id 
 Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe_mesh_id mesh)
 {
 	Cmiss_field_element_group_id element_field = NULL;
-	if (!contains_all)
+	if (!contains_all && mesh)
 	{
-		if (!local_element_group && mesh)
+		int dimension = Cmiss_fe_mesh_get_dimension(mesh);
+		if (!local_element_group[dimension - 1])
 		{
 			Cmiss_field_module_id field_module =
 				Cmiss_region_get_field_module(region);
@@ -1010,19 +1026,26 @@ Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe
 			{
 				Cmiss_field_element_group_destroy(&element_field);
 			}
-			if (!local_element_group)
+			if (!local_element_group[dimension - 1])
 			{
 				char *temp_string = Cmiss_field_get_name(this->getField());
 				int error = 0;
-				append_string(&temp_string, ".elements", &error);
-				local_element_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
-				if (!local_element_group)
+				char suffix[9];
+				if (dimension == 1)
+					sprintf(suffix, ".mesh_3d");
+				else if (dimension == 2)
+					sprintf(suffix, ".mesh_2d");
+				else if (dimension == 3)
+					sprintf(suffix, ".mesh_1d");
+				append_string(&temp_string, suffix, &error);
+				local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(field_module, temp_string);
+				if (!local_element_group[dimension - 1])
 				{
 					Cmiss_field_module_set_field_name(field_module, temp_string);
-					local_element_group = Cmiss_field_module_create_element_group(field_module, mesh);
+					local_element_group[dimension - 1] = Cmiss_field_module_create_element_group(field_module, mesh);
 				}
-				Cmiss_field_set_attribute_integer(local_element_group, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
-				element_field = Cmiss_field_cast_element_group(local_element_group);
+				Cmiss_field_set_attribute_integer(local_element_group[dimension - 1], CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
+				element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
 				DEALLOCATE(temp_string);
 			}
 			Cmiss_field_module_destroy(&field_module);
@@ -1037,21 +1060,29 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_fe_me
 	Cmiss_field_element_group_id element_field = NULL;
 	if (!contains_all && mesh)
 	{
-		if (local_element_group)
+		int dimension = Cmiss_fe_mesh_get_dimension(mesh);
+		if (local_element_group[dimension - 1])
 		{
-			element_field = Cmiss_field_cast_element_group(local_element_group);
+			element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
 		}
 		else
 		{
 			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 			char *temp_string = Cmiss_field_get_name(this->getField());
 			int error = 0;
-			append_string(&temp_string, ".elements", &error);
-			local_element_group = Cmiss_field_module_find_field_by_name(
+			char suffix[9];
+			if (dimension == 1)
+				sprintf(suffix, ".mesh_3d");
+			else if (dimension == 2)
+				sprintf(suffix, ".mesh_2d");
+			else if (dimension == 3)
+				sprintf(suffix, ".mesh_1d");
+			append_string(&temp_string, suffix, &error);
+			local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(
 				field_module, temp_string);
 			DEALLOCATE(temp_string);
-			if (local_element_group)
-				element_field = Cmiss_field_cast_element_group(local_element_group);
+			if (local_element_group[dimension - 1])
+				element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
 			Cmiss_field_module_destroy(&field_module);
 		}
 	}
@@ -1260,13 +1291,16 @@ int Computed_field_group::clear_region_tree_element()
 {
 	Region_field_map_iterator pos;
 	int return_code = 1;
-	if (local_element_group)
+	for (int i = 0; i < 3; i++)
 	{
-		Cmiss_field_element_group_id element_group =
-			Cmiss_field_cast_element_group(local_element_group);
-		return_code = Cmiss_field_element_group_clear(element_group);
-		Computed_field_changed(this->field);
-		Cmiss_field_element_group_destroy(&element_group);
+		if (local_element_group[i])
+		{
+			Cmiss_field_element_group_id element_group =
+				Cmiss_field_cast_element_group(local_element_group[i]);
+			return_code = Cmiss_field_element_group_clear(element_group);
+			Computed_field_changed(this->field);
+			Cmiss_field_element_group_destroy(&element_group);
+		}
 	}
 	if (!sub_group_map.empty())
 	{

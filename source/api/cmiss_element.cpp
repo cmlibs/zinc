@@ -931,6 +931,15 @@ int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh)
 	return 0;
 }
 
+int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
+{
+	if (mesh)
+	{
+		return mesh->getDimension();
+	}
+	return 0;
+}
+
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)
 {
 	if (element_basis_address)

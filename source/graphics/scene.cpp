@@ -846,7 +846,7 @@ element is nearer, it becomes the nearest element and its "nearest" value is
 stored in the nearest_element_data.
 ==============================================================================*/
 {
-	int dimension,return_code;
+	int dimension,return_code, element_type = 0;
 	struct CM_element_information cm;
 	struct FE_element *element;
 	struct FE_region *fe_region;
@@ -877,37 +877,54 @@ stored in the nearest_element_data.
 						Scene_picked_object_get_subobject(scene_picked_object,0))))&&
 				(Cmiss_graphic_selects_elements(graphic)))
 			{
-				if (CM_element_information_from_graphics_name(&cm,
-					Scene_picked_object_get_subobject(scene_picked_object,1)) &&
-					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-					(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
+				fe_region = Cmiss_region_get_FE_region(cmiss_region);
+				if (fe_region)
 				{
-					dimension = get_FE_element_dimension(element);
-					if (((nearest_element_data->select_elements_enabled &&
-						((CM_ELEMENT == cm.type) || (3 == dimension))) ||
-						(nearest_element_data->select_faces_enabled &&
-							((CM_FACE == cm.type) || (2 == dimension))) ||
-						(nearest_element_data->select_lines_enabled &&
-							((CM_LINE == cm.type) || (1 == dimension))))&&
-						((!nearest_element_data->cmiss_region) ||
-							((fe_region = Cmiss_region_get_FE_region(
-								nearest_element_data->cmiss_region)) &&
-								FE_region_contains_FE_element(fe_region, element))))
+					element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+					cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
+					if (element_type == 1)
 					{
-						nearest_element_data->nearest_element=element;
-						nearest_element_data->scene_picked_object=scene_picked_object;
-						nearest_element_data->rendition = rendition;
-						nearest_element_data->graphic=graphic;
-						nearest_element_data->nearest=
-							Scene_picked_object_get_nearest(scene_picked_object);
+						cm.type = CM_LINE;
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_picked_object_get_nearest_element.  "
-						"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
-					return_code=0;
+					else if (element_type == 2)
+					{
+						cm.type = CM_FACE;
+					}
+					else
+					{
+						cm.type = CM_ELEMENT;
+					}
+					element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm);
+					if (element)
+					{
+						dimension = get_FE_element_dimension(element);
+						if (((nearest_element_data->select_elements_enabled && ((CM_ELEMENT
+							== cm.type) || (3 == dimension)))
+							|| (nearest_element_data->select_faces_enabled && ((CM_FACE
+								== cm.type) || (2 == dimension)))
+							|| (nearest_element_data->select_lines_enabled && ((CM_LINE
+								== cm.type) || (1 == dimension))))
+							&& ((!nearest_element_data->cmiss_region)
+								|| ((fe_region = Cmiss_region_get_FE_region(
+									nearest_element_data->cmiss_region))
+									&& FE_region_contains_FE_element(fe_region, element))))
+						{
+							nearest_element_data->nearest_element = element;
+							nearest_element_data->scene_picked_object = scene_picked_object;
+							nearest_element_data->rendition = rendition;
+							nearest_element_data->graphic = graphic;
+							nearest_element_data->nearest = Scene_picked_object_get_nearest(
+								scene_picked_object);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Scene_picked_object_get_nearest_element.  "
+								"Invalid element %s %d", CM_element_type_string(cm.type),
+							cm.number);
+						return_code = 0;
+					}
 				}
 			}
 			if (graphic)
@@ -970,7 +987,7 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
-	int element_point_number, i, return_code;
+	int element_point_number, i, return_code, element_type = 0;
 	struct CM_element_information cm;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
@@ -1008,101 +1025,119 @@ and destroy it once returned.
 				(CMISS_GRAPHIC_ELEMENT_POINTS==
 					Cmiss_graphic_get_graphic_type(graphic)))
 			{
-				if (CM_element_information_from_graphics_name(&cm,
-					Scene_picked_object_get_subobject(scene_picked_object,1))&&
-					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-					(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
+				fe_region = Cmiss_region_get_FE_region(cmiss_region);
+				if (fe_region)
 				{
-					if ((!nearest_element_point_data->cmiss_region) ||
-						FE_region_contains_FE_element(Cmiss_region_get_FE_region(
-							nearest_element_point_data->cmiss_region), element))
+					element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+					cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
+					if (element_type == 1)
 					{
-						int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-						Cmiss_graphic_get_top_level_number_in_xi(graphic,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
-						int face_number = -1;
-						Cmiss_graphic_get_face(graphic,&face_number);
-						native_discretization_field=
-							Cmiss_graphic_get_native_discretization_field(graphic);
-						top_level_element=(struct FE_element *)NULL;
-						if (FE_region_get_FE_element_discretization(fe_region, element,
-							face_number, native_discretization_field, top_level_number_in_xi,
-							&top_level_element, element_point_ranges_identifier.number_in_xi))
+						cm.type = CM_LINE;
+					}
+					else if (element_type == 2)
+					{
+						cm.type = CM_FACE;
+					}
+					else
+					{
+						cm.type = CM_ELEMENT;
+					}
+					element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm);
+					if (element)
+					{
+						if ((!nearest_element_point_data->cmiss_region)
+							|| FE_region_contains_FE_element(Cmiss_region_get_FE_region(
+								nearest_element_point_data->cmiss_region), element))
 						{
-							element_point_ranges_identifier.element=element;
-							element_point_ranges_identifier.top_level_element=
-								top_level_element;
-							Cmiss_graphic_get_xi_discretization(graphic,
-								&(element_point_ranges_identifier.xi_discretization_mode),
-								/*xi_point_density_field*/(struct Computed_field **)NULL);
-							if (XI_DISCRETIZATION_EXACT_XI==
-								element_point_ranges_identifier.xi_discretization_mode)
+							int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+							Cmiss_graphic_get_top_level_number_in_xi(graphic,
+								MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
+							int face_number = -1;
+							Cmiss_graphic_get_face(graphic, &face_number);
+							native_discretization_field
+								= Cmiss_graphic_get_native_discretization_field(graphic);
+							top_level_element = (struct FE_element *) NULL;
+							if (FE_region_get_FE_element_discretization(fe_region, element,
+								face_number, native_discretization_field,
+								top_level_number_in_xi, &top_level_element,
+								element_point_ranges_identifier.number_in_xi))
 							{
-								for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+								element_point_ranges_identifier.element = element;
+								element_point_ranges_identifier.top_level_element
+									= top_level_element;
+								Cmiss_graphic_get_xi_discretization(graphic,
+									&(element_point_ranges_identifier.xi_discretization_mode),
+									/*xi_point_density_field*/(struct Computed_field **) NULL);
+								if (XI_DISCRETIZATION_EXACT_XI
+									== element_point_ranges_identifier.xi_discretization_mode)
 								{
-									element_point_ranges_identifier.number_in_xi[i]=1;
-								}
-							}
-							Cmiss_graphic_get_seed_xi(graphic,xi);
-							/*???RC temporary, hopefully */
-							for (i=0;i<3;i++)
-							{
-								element_point_ranges_identifier.exact_xi[i]=xi[i];
-							}
-							if (element_point_ranges=CREATE(Element_point_ranges)(
-								&element_point_ranges_identifier))
-							{
-								element_point_number=
-									Scene_picked_object_get_subobject(scene_picked_object,2);
-								if (Element_point_ranges_add_range(element_point_ranges,
-									element_point_number,element_point_number))
-								{
-									if (nearest_element_point_data->nearest_element_point)
+									for (i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 									{
-										DESTROY(Element_point_ranges)(
-											&(nearest_element_point_data->nearest_element_point));
+										element_point_ranges_identifier.number_in_xi[i] = 1;
 									}
-									nearest_element_point_data->nearest_element_point=
-										element_point_ranges;
-									nearest_element_point_data->scene_picked_object=
-										scene_picked_object;
-									nearest_element_point_data->rendition = rendition;
-									nearest_element_point_data->graphic=graphic;
-									nearest_element_point_data->nearest=
-										Scene_picked_object_get_nearest(scene_picked_object);
+								}
+								Cmiss_graphic_get_seed_xi(graphic, xi);
+								/*???RC temporary, hopefully */
+								for (i = 0; i < 3; i++)
+								{
+									element_point_ranges_identifier.exact_xi[i] = xi[i];
+								}
+								if (element_point_ranges = CREATE(Element_point_ranges)(
+									&element_point_ranges_identifier))
+								{
+									element_point_number = Scene_picked_object_get_subobject(
+										scene_picked_object, 2);
+									if (Element_point_ranges_add_range(element_point_ranges,
+										element_point_number, element_point_number))
+									{
+										if (nearest_element_point_data->nearest_element_point)
+										{
+											DESTROY(Element_point_ranges)(
+												&(nearest_element_point_data->nearest_element_point));
+										}
+										nearest_element_point_data->nearest_element_point
+											= element_point_ranges;
+										nearest_element_point_data->scene_picked_object
+											= scene_picked_object;
+										nearest_element_point_data->rendition = rendition;
+										nearest_element_point_data->graphic = graphic;
+										nearest_element_point_data->nearest
+											= Scene_picked_object_get_nearest(scene_picked_object);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Scene_picked_object_get_nearest_element_point.  "
+												"Could not add element point range");
+										DESTROY(Element_point_ranges)(&element_point_ranges);
+										return_code = 0;
+									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
 										"Scene_picked_object_get_nearest_element_point.  "
-										"Could not add element point range");
-									DESTROY(Element_point_ranges)(&element_point_ranges);
-									return_code=0;
+											"Could not create Element_point_ranges");
+									return_code = 0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
 									"Scene_picked_object_get_nearest_element_point.  "
-									"Could not create Element_point_ranges");
-								return_code=0;
+										"Could not get discretization");
+								return_code = 0;
 							}
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Scene_picked_object_get_nearest_element_point.  "
-								"Could not get discretization");
-							return_code=0;
-						}
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_picked_object_get_nearest_element_point.  "
-						"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
-					return_code=0;
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Scene_picked_object_get_nearest_element_point.  "
+								"Invalid element %s %d", CM_element_type_string(cm.type),
+							cm.number);
+						return_code = 0;
+					}
 				}
 			}
 		}
@@ -3140,7 +3175,7 @@ If the <scene_picked_object> refers to a element and the element is in the given
 manager, ensures it is in the list.
 ==============================================================================*/
 {
-	int dimension, return_code;
+	int dimension, return_code, element_type = 0;
 	struct Cmiss_region *cmiss_region;
 	struct FE_element *element;
 	struct FE_region *fe_region;
@@ -3164,21 +3199,38 @@ manager, ensures it is in the list.
 			Scene_picked_object_get_subobject(scene_picked_object,0))))&&
 			(Cmiss_graphic_selects_elements(graphic)))
 		{
-			if (CM_element_information_from_graphics_name(&cm,
-				Scene_picked_object_get_subobject(scene_picked_object,1))&&
-				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-				(element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm)))
+			fe_region = Cmiss_region_get_FE_region(cmiss_region);
+			if (fe_region)
 			{
-				dimension = get_FE_element_dimension(element);
-				if ((picked_elements_data->select_elements_enabled &&
-					((CM_ELEMENT == cm.type) || (3 == dimension))) ||
-					(picked_elements_data->select_faces_enabled &&
-						((CM_FACE == cm.type) || (2 == dimension))) ||
-					(picked_elements_data->select_lines_enabled &&
-						((CM_LINE == cm.type) || (1 == dimension))))
+				element_type = Cmiss_graphic_get_dimension(graphic, fe_region);
+				cm.number = Scene_picked_object_get_subobject(scene_picked_object, 1);
+				if (element_type == 1)
 				{
-					picked_elements_data->element_list->insert(std::make_pair(cmiss_region, element));
+					cm.type = CM_LINE;
+				}
+				else if (element_type == 2)
+				{
+					cm.type = CM_FACE;
+				}
+				else
+				{
+					cm.type = CM_ELEMENT;
+				}
+				element = FE_region_get_FE_element_from_identifier_deprecated(fe_region, &cm);
+				if (element)
+				{
+					dimension = get_FE_element_dimension(element);
+					if ((picked_elements_data->select_elements_enabled && ((CM_ELEMENT
+						== cm.type) || (3 == dimension)))
+						|| (picked_elements_data->select_faces_enabled && ((CM_FACE
+							== cm.type) || (2 == dimension)))
+						|| (picked_elements_data->select_lines_enabled && ((CM_LINE
+							== cm.type) || (1 == dimension))))
+					{
+						picked_elements_data->element_list->insert(std::make_pair(
+							cmiss_region, element));
 
+					}
 				}
 			}
 			else

@@ -1956,7 +1956,7 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					/* for selective editing of GT_object primitives, record element ID */
 					struct CM_element_information cm;
 					get_FE_element_identifier(element, &cm);
-					GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
+					GT_surface_set_integer_identifier(surface, cm.number);
 					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, /*time*/0.0, surface))
 					{
 						DESTROY(GT_surface)(&surface);

@@ -1069,7 +1069,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
 						graphics_object, graphics_object_time, line_width,
-					CM_element_information_to_graphics_name(&cm_identifier)))
+						cm_identifier.number))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

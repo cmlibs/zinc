@@ -759,8 +759,7 @@ static int FE_element_select_graphics_element_points(struct FE_element *element,
 		{
 			return_code=
 				GT_object_select_graphic(select_data->graphic->graphics_object,
-					CM_element_information_to_graphics_name(&cm),
-					(struct Multi_range *)NULL);
+					cm.number, (struct Multi_range *)NULL);
 		}
 		else
 		{
@@ -790,7 +789,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 {
 	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
 	float time;
-	int draw_element, draw_selected, element_dimension, element_graphics_name,
+	int draw_element, draw_selected, element_dimension = 1, element_graphics_name,
 		element_selected, i, name_selected,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
@@ -817,9 +816,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		(graphic = graphic_to_object_data->graphic) &&
 		graphic->graphics_object)
 	{
+		element_dimension = get_FE_element_dimension(element);
 		return_code = 1;
 		get_FE_element_identifier(element, &cm);
-		element_graphics_name = CM_element_information_to_graphics_name(&cm);
+		element_graphics_name = cm.number;
 		/* proceed only if graphic uses this element */
 		if (Cmiss_graphic_uses_FE_element(graphic, element,
 			graphic_to_object_data->fe_region))
@@ -835,7 +835,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					if (group_id)
 					{
 						Cmiss_fe_mesh_id temp_mesh =
-						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
+						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region,
+						   	((1 == element_dimension) ? "cmiss_mesh_1d" :
+						   		((2 == element_dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group_id, temp_mesh);
 						Cmiss_fe_mesh_destroy(&temp_mesh);
 						if (element_group)
@@ -869,7 +871,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				native_discretization_field, top_level_number_in_xi,
 				&top_level_element, number_in_xi))
 			{
-				element_dimension = get_FE_element_dimension(element);
 				/* g_element renditions use only one time = 0.0. Must take care. */
 				time = 0.0;
 				switch (graphic->graphic_type)
@@ -1224,8 +1225,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								graphic_to_object_data->time))
 							{
 								get_FE_element_identifier(element, &cm);
-								element_graphics_name =
-									CM_element_information_to_graphics_name(&cm);
+								element_graphics_name = cm.number;
 								top_level_xi_point_numbers = (int *)NULL;
 								if (XI_DISCRETIZATION_CELL_CORNERS ==
 									graphic->xi_discretization_mode)
@@ -1269,7 +1269,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
 									Cmiss_fe_mesh_id temp_mesh =
-									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
+									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region,
+									   	((1 == element_dimension) ? "cmiss_mesh_1d" :
+									   		((2 == element_dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -1560,8 +1562,7 @@ static int Element_point_ranges_select_in_graphics_object(
 			get_FE_element_identifier(element, &cm))
 		{
 			/* do not select if graphics already selected for element */
-			if (!GT_object_is_graphic_selected(graphic->graphics_object,
-				CM_element_information_to_graphics_name(&cm), &ranges))
+			if (!GT_object_is_graphic_selected(graphic->graphics_object, cm.number, &ranges))
 			{
 				/* special handling for cell_corners which are always calculated on
 					 top_level_elements */
@@ -1598,8 +1599,7 @@ static int Element_point_ranges_select_in_graphics_object(
 							{
 								if (!(Multi_range_copy(ranges,Element_point_ranges_get_ranges(
 									element_point_ranges))&&
-									GT_object_select_graphic(graphic->graphics_object,
-										CM_element_information_to_graphics_name(&cm),ranges)))
+									GT_object_select_graphic(graphic->graphics_object, cm.number, ranges)))
 								{
 									display_message(ERROR_MESSAGE,
 										"Element_point_ranges_select_in_graphics_object.  "
@@ -3686,6 +3686,13 @@ int Cmiss_graphic_to_graphics_object(
 							} break;
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
+							{
+								Cmiss_fe_mesh_id temp_mesh =
+									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_1d");
+								GT_object_set_element_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, temp_mesh);
+								Cmiss_fe_mesh_destroy(&temp_mesh);
+							} break;
 							case CMISS_GRAPHIC_SURFACES:
 #if defined(USE_OPENCASCADE)
 							{
@@ -3712,6 +3719,14 @@ int Cmiss_graphic_to_graphics_object(
 								if ( domain_field_list )
 									DESTROY_LIST(Computed_field)(&domain_field_list);
 							}
+#else
+							{
+								Cmiss_fe_mesh_id temp_mesh =
+									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_2d");
+								GT_object_set_element_highlight_functor(graphic->graphics_object,
+									(void *)graphic_to_object_data->group_field, temp_mesh);
+								Cmiss_fe_mesh_destroy(&temp_mesh);
+							} break;
 #endif /* defined(USE_OPENCASCADE) */
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
@@ -5088,19 +5103,29 @@ static int FE_element_as_graphics_name_is_removed_or_modified(
 	return_code = 0;
 	if (NULL != (data = (struct Cmiss_graphic_FE_region_change_data *)data_void))
 	{
-		if (CM_element_information_from_graphics_name(&cm, graphics_name))
+		cm.number = graphics_name;
+		if (data->element_type == 1)
 		{
-			if (NULL != (element = FE_region_get_FE_element_from_identifier_deprecated(data->fe_region,
-						&cm)))
-			{
-				return_code = FE_element_or_parent_changed(element,
-					data->fe_element_changes, data->fe_node_changes);
-			}
-			else
-			{
-				/* must have been removed or never in FE_region */
-				return_code = 1;
-			}
+			cm.type = CM_LINE;
+		}
+		else if (data->element_type == 2)
+		{
+			cm.type = CM_FACE;
+		}
+		else
+		{
+			cm.type = CM_ELEMENT;
+		}
+		if (NULL != (element = FE_region_get_FE_element_from_identifier_deprecated(data->fe_region,
+					&cm)))
+		{
+			return_code = FE_element_or_parent_changed(element,
+				data->fe_element_changes, data->fe_node_changes);
+		}
+		else
+		{
+			/* must have been removed or never in FE_region */
+			return_code = 1;
 		}
 	}
 	else
@@ -5191,6 +5216,7 @@ int Cmiss_graphic_FE_region_change(
 							((number_of_element_changes_all_dimensions*4) <
 								FE_region_get_number_of_FE_elements_all_dimensions(data->fe_region))))
 						{
+							data->element_type = Cmiss_graphic_get_dimension(graphic, data->fe_region);
 							/* partial rebuild for few node/element field changes */
 							GT_object_remove_primitives_at_time(graphic->graphics_object,
 								data->time, FE_element_as_graphics_name_is_removed_or_modified,

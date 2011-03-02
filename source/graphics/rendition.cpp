@@ -3874,12 +3874,12 @@ int Cmiss_field_element_group_remove_element_iterator(Cmiss_element_id element,
 	return 1;
 }
 
-int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendition,
-	struct LIST(FE_element) *element_list, int add_flag)
+int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
+	struct LIST(FE_element) *element_list, int add_flag, int dimension)
 {
 	int return_code = 1;
 
-	ENTER(Cmiss_rendition_add_selection_from_element_list);
+	ENTER(Cmiss_rendition_change_selection_from_element_list_of_dimension);
 	if (rendition && element_list && (NUMBER_IN_LIST(FE_element)(element_list) > 0))
 	{
 		Cmiss_region_begin_change(rendition->region);
@@ -3888,7 +3888,9 @@ int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendit
 		if (sub_group)
 		{
 			Cmiss_fe_mesh_id temp_mesh =
-				Cmiss_region_get_fe_mesh_by_name(rendition->region, "cmiss_mesh_3d");
+				Cmiss_region_get_fe_mesh_by_name(rendition->region,
+					((1 == dimension) ? "cmiss_mesh_1d" :
+					((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 			if (!element_group)
 				element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
@@ -3917,8 +3919,8 @@ int Cmiss_rendition_change_selection_from_element_list(Cmiss_rendition_id rendit
 
 	return (return_code);
 }
-int Cmiss_rendition_add_selection_from_element_list(Cmiss_rendition_id rendition,
-	struct LIST(FE_element) *element_list)
+int Cmiss_rendition_add_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
+	struct LIST(FE_element) *element_list, int dimension)
 /*******************************************************************************
 LAST MODIFIED : 28 April 2000
 
@@ -3926,22 +3928,22 @@ DESCRIPTION :
 Create a element list selection
 ==============================================================================*/
 {
-	return Cmiss_rendition_change_selection_from_element_list(rendition,
-		element_list, 1);
+	return Cmiss_rendition_change_selection_from_element_list_of_dimension(rendition,
+		element_list, 1, dimension);
 } /* Cmiss_rendition_add_selection_from_element_list */
 
-int Cmiss_rendition_remove_selection_from_element_list(Cmiss_rendition_id rendition,
-	struct LIST(FE_element) *element_list)
+int Cmiss_rendition_remove_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
+	struct LIST(FE_element) *element_list, int dimension)
 {
 	int return_code = 0;
-	if (Cmiss_rendition_change_selection_from_element_list(rendition,
-			element_list, /*add_flag*/0))
+	if (Cmiss_rendition_change_selection_from_element_list_of_dimension(rendition,
+			element_list, /*add_flag*/0, dimension))
 	{
 		Cmiss_rendition_flush_tree_selections(rendition);
 		return_code = 1;
 	}
 	return return_code;
-} /* Cmiss_rendition_remove_selection_from_element_list */
+} /* Cmiss_rendition_remove_selection_from_element_list_of_dimension */
 
 int Cmiss_rendition_remove_field_manager_and_callback(struct Cmiss_rendition *rendition)
 {

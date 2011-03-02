@@ -255,6 +255,14 @@ Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
 int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh);
 
 /***************************************************************************//**
+ * Returns the dimension of the mesh.
+ *
+ * @param mesh  Handle to the mesh to query.
+ * @return  dimension of mesh.
+ */
+int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh);
+
+/***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.
  * Internally this just decrements the reference count.
  *
