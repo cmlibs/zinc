@@ -40,7 +40,7 @@ FILE : graphics_object_highlight.hpp
 #ifndef GRAPHICS_OBJECT_HIGHLIGHT_HPP
 #define GRAPHICS_OBJECT_HIGHLIGHT_HPP
 
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 
 class GraphicsObjectHighlightBaseFunctor
 {

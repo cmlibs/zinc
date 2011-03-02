@@ -50,7 +50,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"

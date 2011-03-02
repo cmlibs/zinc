@@ -46,10 +46,10 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 }
 #include "computed_field/computed_field_group_base.hpp"
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_rendition.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/rendition.h"
@@ -240,7 +240,7 @@ public:
 
 	Cmiss_field_element_group_id get_element_group(Cmiss_fe_mesh_id mesh);
 
-	Cmiss_field_id get_sub_object_group_for_domain(Cmiss_field_id domain);
+	Cmiss_field_id get_subobject_group_for_domain(Cmiss_field_id domain);
 
 #if defined (USE_OPENCASCADE)
 	Cmiss_field_id create_cad_primitive_group(Cmiss_field_cad_topology_id cad_topology_domain);
@@ -355,7 +355,7 @@ private:
 
 	int isEmptyNonLocal() const;
 
-	int check_sub_object_group_dependency(Computed_field_core *source_core);
+	int check_subobject_group_dependency(Computed_field_core *source_core);
 
 };
 
@@ -548,8 +548,8 @@ int Computed_field_group::isEmptyLocal() const
 	std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 	while (it != domain_selection_group.end())
 	{
-		Computed_field *sub_object_group_field = it->second;
-		if (!isSubGroupEmpty(sub_object_group_field->core))
+		Computed_field *subobject_group_field = it->second;
+		if (!isSubGroupEmpty(subobject_group_field->core))
 			return 0;
 		++it;
 	}
@@ -618,23 +618,23 @@ int Computed_field_group::clear()
 	return return_code;
 };
 
-int Computed_field_group::check_sub_object_group_dependency(Computed_field_core *source_core)
+int Computed_field_group::check_subobject_group_dependency(Computed_field_core *source_core)
 {
 	if (source_core->check_dependency())
 	{
 		Computed_field_dependency_change_private(field);
-		const Cmiss_field_sub_object_group_change_detail *sub_object_group_change_detail =
-			dynamic_cast<const Cmiss_field_sub_object_group_change_detail *>(source_core->get_change_detail());
-		if (sub_object_group_change_detail)
+		const Cmiss_field_subobject_group_change_detail *subobject_group_change_detail =
+			dynamic_cast<const Cmiss_field_subobject_group_change_detail *>(source_core->get_change_detail());
+		if (subobject_group_change_detail)
 		{
-			if ((sub_object_group_change_detail->getChange() == CMISS_FIELD_GROUP_CLEAR) &&
+			if ((subobject_group_change_detail->getChange() == CMISS_FIELD_GROUP_CLEAR) &&
 				isEmptyLocal())
 			{
 				change_detail.changeClearLocal();
 			}
 			else
 			{
-				change_detail.changeMergeLocal(sub_object_group_change_detail);
+				change_detail.changeMergeLocal(subobject_group_change_detail);
 			}
 		}
 	}
@@ -646,21 +646,21 @@ int Computed_field_group::check_dependency()
 	if (field)
 	{
 		if (local_node_group)
-			check_sub_object_group_dependency(local_node_group->core);
+			check_subobject_group_dependency(local_node_group->core);
 		if (local_data_group)
-			check_sub_object_group_dependency(local_data_group->core);
+			check_subobject_group_dependency(local_data_group->core);
 		for (int i = 0; i < 3; i++)
 		{
 			if (local_element_group[i])
 			{
-				check_sub_object_group_dependency(local_element_group[i]->core);
+				check_subobject_group_dependency(local_element_group[i]->core);
 			}
 		}
 		std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 		while (it != domain_selection_group.end())
 		{
-			Computed_field *sub_object_group_field = it->second;
-			check_sub_object_group_dependency(sub_object_group_field->core);
+			Computed_field *subobject_group_field = it->second;
+			check_subobject_group_dependency(subobject_group_field->core);
 			++it;
 		}
 		return (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field));
@@ -1090,7 +1090,7 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_fe_me
 	return (element_field);
 }
 
-Cmiss_field_id Computed_field_group::get_sub_object_group_for_domain(Cmiss_field_id domain)
+Cmiss_field_id Computed_field_group::get_subobject_group_for_domain(Cmiss_field_id domain)
 {
 	Computed_field *field = NULL;
 	std::map<Computed_field *, Computed_field *>::const_iterator it;
@@ -1425,7 +1425,7 @@ Cmiss_field_cad_primitive_group_template_id Cmiss_field_group_get_cad_primitive_
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			Cmiss_field_id field = group_core->get_sub_object_group_for_domain(reinterpret_cast< Computed_field * >(cad_topology_domain));//cad_primitive_group();
+			Cmiss_field_id field = group_core->get_subobject_group_for_domain(reinterpret_cast< Computed_field * >(cad_topology_domain));//cad_primitive_group();
 			if (field != NULL)
 			{
 				cad_primitive_group = Cmiss_field_cast_cad_primitive_group_template(field);
@@ -1546,7 +1546,7 @@ int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group)
 	return return_code;
 }
 
-Cmiss_field_id Cmiss_field_group_get_sub_object_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain)
+Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain)
 {
 	Computed_field *field = NULL;
 
@@ -1556,7 +1556,7 @@ Cmiss_field_id Cmiss_field_group_get_sub_object_group_for_domain(Cmiss_field_gro
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			field = group_core->get_sub_object_group_for_domain(domain);
+			field = group_core->get_subobject_group_for_domain(domain);
 		}
 	}
 

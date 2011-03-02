@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_sub_object_group.h
+ * FILE : cmiss_field_subobject_group.h
  * 
  * Implements region sub object groups, e.g. node group, element group.
  * These group fields evaluate to 1 (true) at domain locations in the group, and
@@ -41,8 +41,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (CMISS_FIELD_SUB_OBJECT_GROUP_H)
-#define CMISS_FIELD_SUB_OBJECT_GROUP_H
+#if !defined (CMISS_FIELD_SUBOBJECT_GROUP_H)
+#define CMISS_FIELD_SUBOBJECT_GROUP_H
 
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
@@ -229,4 +229,4 @@ int Cmiss_field_element_group_contains_element(
  */
 int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group);
 
-#endif /* !defined (CMISS_FIELD_SUB_OBJECT_GROUP_H) */
+#endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */

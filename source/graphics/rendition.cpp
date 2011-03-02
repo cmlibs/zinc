@@ -51,7 +51,7 @@ extern "C" {
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphic.h"

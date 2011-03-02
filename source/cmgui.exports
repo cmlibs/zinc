@@ -154,7 +154,7 @@ Cmiss_field_group_create_node_group
 Cmiss_field_group_get_node_group
 Cmiss_field_group_create_element_group
 Cmiss_field_group_get_element_group
-Cmiss_field_group_get_sub_object_group_for_domain
+Cmiss_field_group_get_subobject_group_for_domain
 
 /* api/cmiss_field_image.h */
 Cmiss_field_module_create_image
@@ -221,7 +221,7 @@ Cmiss_field_cast_threshold_image_filter
 Cmiss_field_module_create_less_than
 Cmiss_field_module_create_greater_than
 
-/* api/cmiss_field_sub_object_group.h */
+/* api/cmiss_field_subobject_group.h */
 Cmiss_field_module_create_node_group
 Cmiss_field_cast_node_group
 /* inline Cmiss_field_node_group_base_cast */

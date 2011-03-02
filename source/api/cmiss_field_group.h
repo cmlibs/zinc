@@ -288,6 +288,6 @@ Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_gro
  * @param domain the domain field
  * @returns the subgroup field for the specified domain, NULL otherwise
  */
-Cmiss_field_id Cmiss_field_group_get_sub_object_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
+Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
 
 #endif /* !defined (CMISS_FIELD_GROUP_H) */

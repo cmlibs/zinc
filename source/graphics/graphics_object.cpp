@@ -57,7 +57,7 @@ gtObject/gtWindow management routines.
 
 extern "C" {
 #include "api/cmiss_field.h"
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
@@ -84,7 +84,7 @@ extern "C" {
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 /*
 Global variables
 ----------------
@@ -6894,7 +6894,7 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 		
 		//Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
-		Cmiss_field_id cad_primitive_subgroup_field = Cmiss_field_group_get_sub_object_group_for_domain(sub_group, 
+		Cmiss_field_id cad_primitive_subgroup_field = Cmiss_field_group_get_subobject_group_for_domain(sub_group,
 			reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
 		Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 		if (cad_primitive_subgroup_field)

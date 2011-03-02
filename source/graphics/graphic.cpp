@@ -49,7 +49,7 @@ extern "C" {
 #include <stdio.h>
 #include <math.h>
 #include "api/cmiss_graphic.h"
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "general/debug.h"
 #include "general/enumerator_private_cpp.hpp"
 #include "general/indexed_list_private.h"
@@ -79,7 +79,7 @@ extern "C" {
 }
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"
 #	include "cad/computed_field_cad_topology.h"

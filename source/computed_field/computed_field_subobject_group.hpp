@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : computed_field_sub_object_group.hpp
+ * FILE : computed_field_subobject_group.hpp
  * 
  * Implements region sub object groups, e.g. node group, element group.
  */
@@ -39,11 +39,11 @@
 *
 * ***** END LICENSE BLOCK ***** */
 
-#if !defined (COMPUTED_FIELD_SUB_OBJECT_GROUP_HPP)
-#define COMPUTED_FIELD_SUB_OBJECT_GROUP_HPP
+#if !defined (COMPUTED_FIELD_SUBOBJECT_GROUP_HPP)
+#define COMPUTED_FIELD_SUBOBJECT_GROUP_HPP
 extern "C" {
 #include <stdlib.h>
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_group_base.hpp"
@@ -61,13 +61,13 @@ extern "C" {
  * Change details for simple object groups where a single change status is
  * sufficient.
  */
-struct Cmiss_field_sub_object_group_change_detail : public Cmiss_field_group_base_change_detail
+struct Cmiss_field_subobject_group_change_detail : public Cmiss_field_group_base_change_detail
 {
 private:
 	Cmiss_field_group_change_type change;
 
 public:
-	Cmiss_field_sub_object_group_change_detail() :
+	Cmiss_field_subobject_group_change_detail() :
 		change(CMISS_FIELD_GROUP_NO_CHANGE)
 	{
 	}
@@ -129,11 +129,11 @@ public:
 	}
 };
 
-class Computed_field_sub_object_group : public Computed_field_group_base
+class Computed_field_subobject_group : public Computed_field_group_base
 {
 public:
 
-	Computed_field_sub_object_group() :
+	Computed_field_subobject_group() :
 		Computed_field_group_base()
 	{
 	}
@@ -147,12 +147,12 @@ public:
 namespace {
 
 	template <typename T>
-	class Computed_field_sub_group_object : public Computed_field_sub_object_group
+	class Computed_field_sub_group_object : public Computed_field_subobject_group
 	{
 	public:
 
 		Computed_field_sub_group_object() :
-			Computed_field_sub_object_group(),
+			Computed_field_subobject_group(),
 			object_map()
 		{
 			object_pos = object_map.begin();
@@ -268,8 +268,8 @@ namespace {
 		{
 			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 				return NULL;
-			Cmiss_field_sub_object_group_change_detail *prior_change_detail =
-				new Cmiss_field_sub_object_group_change_detail();
+			Cmiss_field_subobject_group_change_detail *prior_change_detail =
+				new Cmiss_field_subobject_group_change_detail();
 			*prior_change_detail = change_detail;
 			change_detail.clear();
 			return prior_change_detail;
@@ -283,7 +283,7 @@ namespace {
 	private:
 
 		std::map<int, T> object_map;
-		Cmiss_field_sub_object_group_change_detail change_detail;
+		Cmiss_field_subobject_group_change_detail change_detail;
 		typename std::map<int, T>::iterator object_pos;
 
 		Computed_field_core* copy()
@@ -356,5 +356,5 @@ Cmiss_element_id Cmiss_field_element_group_get_first_element(
 Cmiss_element_id Cmiss_field_element_group_get_next_element(
 	Cmiss_field_element_group_id element_group);
 
-#endif /* COMPUTED_FIELD_SUB_OBJECT_GROUP_HPP */
+#endif /* COMPUTED_FIELD_SUBOBJECT_GROUP_HPP */
 

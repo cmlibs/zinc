@@ -48,7 +48,7 @@ this dialog.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
@@ -61,7 +61,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "time/time.h"
 }
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include <wx/collpane.h>
 #include "wx/wx.h"

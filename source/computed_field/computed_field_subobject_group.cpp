@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : computed_field_sub_object_group.cpp
+ * FILE : computed_field_subobject_group.cpp
  *
  * Implements region sub object groups, e.g. node group, element group.
  */
@@ -43,14 +43,14 @@ extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_node.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_field_sub_object_group.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
 #include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 }
 
-#include "computed_field/computed_field_sub_object_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "general/debug.h"
