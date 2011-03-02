@@ -5173,6 +5173,7 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 	{
 		return_code = 1;
 		int old_value = Cmiss_field_get_attribute_integer(field, attribute_id);
+		bool change_affects_result = true;
 		switch (attribute_id)
 		{
 		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
@@ -5201,7 +5202,9 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 		}
 		if (Cmiss_field_get_attribute_integer(field, attribute_id) != old_value)
 		{
-			Computed_field_changed(field);
+			MANAGED_OBJECT_CHANGE(Computed_field)(field, change_affects_result ?
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field) :
+				MANAGER_CHANGE_NOT_RESULT(Computed_field));
 		}
 	}
 	return return_code;

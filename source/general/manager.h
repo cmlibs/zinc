@@ -107,6 +107,11 @@ struct MANAGER(object_type)
 #define MANAGER_CHANGE_RESULT( object_type ) \
 	MANAGER_CHANGE_RESULT_(object_type)
 
+#define MANAGER_CHANGE_NOT_RESULT_( object_type ) \
+	manager_change_not_result_ ## object_type
+#define MANAGER_CHANGE_NOT_RESULT( object_type ) \
+	MANAGER_CHANGE_NOT_RESULT_(object_type)
+
 #define DECLARE_MANAGER_CHANGE_TYPE( object_type ) \
 enum MANAGER_CHANGE(object_type) \
 /*************************************************************************//** \
@@ -115,25 +120,35 @@ enum MANAGER_CHANGE(object_type) \
  * Message change summary is a bitwise OR of all individual object changes. \
  */ \
 { \
-	/* object not changed */ \
 	MANAGER_CHANGE_NONE(object_type) = 0, \
-	/* object added to the manager */ \
+	/*!< object not changed */ \
+	\
 	MANAGER_CHANGE_ADD(object_type) = 1, \
-	/* object removed from the manager */ \
+	/*!< object added to the manager */ \
+	\
 	MANAGER_CHANGE_REMOVE(object_type) = 2, \
-	/* object identifier changed in the manager */ \
+	/*!< object removed from the manager */ \
+	\
 	MANAGER_CHANGE_IDENTIFIER(object_type) = 4, \
-	/* object contents but not identifier changed in the manager */ \
+	/*!< object identifier changed in the manager */ \
+	\
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) = 8, \
-	/* object contents and identifier changed in the manager */ \
+	/*!< object contents but not identifier changed in the manager */ \
+	\
 	MANAGER_CHANGE_OBJECT(object_type) = 12, \
-	/* object is a dependency of another object that has changed */ \
+	/*!< object contents and identifier changed in the manager */ \
+	\
 	MANAGER_CHANGE_DEPENDENCY(object_type) = 16, \
-	/* convenient bitwise OR of all existing-object change flags */ \
+	/*!< object is a dependency of another object that has changed */ \
+	\
 	MANAGER_CHANGE_RESULT(object_type) = ( \
 		MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) | \
-		MANAGER_CHANGE_DEPENDENCY(object_type)) \
-} /* enum MANAGER_CHANGE(object_type) */
+		MANAGER_CHANGE_DEPENDENCY(object_type)), \
+	/*!< bitwise OR of object change flags affecting result */ \
+	\
+	MANAGER_CHANGE_NOT_RESULT(object_type) = 32, \
+	/*!< object contents not affecting result changed; excludes identifier */ \
+}
 
 #define MANAGER_MESSAGE_( object_type )  manager_message_ ## object_type
 #define MANAGER_MESSAGE( object_type )  MANAGER_MESSAGE_(object_type)

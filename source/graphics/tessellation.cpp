@@ -96,13 +96,17 @@ struct Cmiss_tessellation
 		name(NULL),
 		manager(NULL),
 		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_tessellation)),
-		minimum_divisions_size(0),
+		minimum_divisions_size(1),
 		minimum_divisions(NULL),
-		refinement_factors_size(0),
+		refinement_factors_size(1),
 		refinement_factors(NULL),
 		is_managed_flag(false),
 		access_count(1)
 	{
+		ALLOCATE(minimum_divisions, int, minimum_divisions_size);
+		minimum_divisions[0] = 1;
+		ALLOCATE(refinement_factors, int, refinement_factors_size);
+		refinement_factors[0] = 1;
 	}
 
 	~Cmiss_tessellation()
@@ -441,13 +445,9 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
 			value = tessellation->minimum_divisions_size;
-			if (value == 0)
-				value = 1;
 			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
 			value = tessellation->refinement_factors_size;
-			if (value == 0)
-				value = 1;
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
@@ -466,10 +466,12 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 	{
 		return_code = 1;
 		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id);
+		bool change_affects_result = true;
 		switch (attribute_id)
 		{
 		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
 			tessellation->is_managed_flag = (value != 0);
+			change_affects_result = false;
 			break;
 		case CMISS_TESSELLATION_ATTRIBUTE_MINIMUM_DIVISIONS_SIZE:
 		case CMISS_TESSELLATION_ATTRIBUTE_REFINEMENT_FACTORS_SIZE:
@@ -485,10 +487,10 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 		}
 		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id) != old_value)
 		{
-			// responses to this message can be very expensive: rebuilding all graphics
-			// GRC: add manager change type for 'non result'?
 			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation));
+				change_affects_result ?
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation) :
+					MANAGER_CHANGE_NOT_RESULT(Cmiss_tessellation));
 		}
 	}
 	return return_code;
