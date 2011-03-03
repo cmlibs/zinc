@@ -183,16 +183,20 @@ static int Element_tool_remove_region_selected_elements(Cmiss_field_id field)
 				Cmiss_fe_mesh_destroy(&temp_mesh);
 				if (element_group)
 				{
-					FE_region_begin_change(fe_region);
-					Cmiss_element_id element =
-						Cmiss_field_element_group_get_first_element(element_group);
-					while (element)
+					Cmiss_element_iterator_id iterator = Cmiss_field_element_group_create_element_iterator(element_group);
+					if (iterator)
 					{
-						FE_region_remove_FE_element(fe_region, element);
-						DEACCESS(FE_element)(&element);
-						element = Cmiss_field_element_group_get_next_element(element_group);
+						FE_region_begin_change(fe_region);
+						Cmiss_element_id element = Cmiss_element_iterator_next(iterator);
+						while (element)
+						{
+							FE_region_remove_FE_element(fe_region, element);
+							Cmiss_element_destroy(&element);
+							element = Cmiss_element_iterator_next(iterator);
+						}
+						FE_region_end_change(fe_region);
+						Cmiss_element_iterator_destroy(&iterator);
 					}
-					FE_region_end_change(fe_region);
 					Cmiss_field_element_group_destroy(&element_group);
 				}
 			}

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_node.cpp
+ * FILE : cmiss_node_private.cpp
  *
  * Implementation of public interface to Cmiss_node.
  *

@@ -719,8 +719,15 @@ static void Node_viewer_Computed_field_change(
 				}
 				if (node_group)
 				{
-					struct FE_node *node = Cmiss_field_node_group_get_first_node(node_group);
-					struct FE_node *next_node = Cmiss_field_node_group_get_next_node(node_group);
+					Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
+					struct FE_node *node = NULL, *next_node = NULL;
+					if (iterator)
+					{
+						node = Cmiss_node_iterator_next(iterator);
+						if (node)
+							next_node = Cmiss_node_iterator_next(iterator);
+						Cmiss_node_iterator_destroy(&iterator);
+					}
 					/* make sure there is only one node selected in group */
 					if (node && !next_node && node != node_viewer->current_node)
 					{

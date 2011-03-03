@@ -1305,4 +1305,9 @@ required at this time for import functions. If this is required in future,
 FE_regions_merge would have to be changed.
 ==============================================================================*/
 
+struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
+	struct FE_region *fe_region, int dimension);
+
+struct LIST(FE_node) *FE_region_create_related_node_list(struct FE_region *fe_region);
+
 #endif /* !defined (FINITE_ELEMENT_REGION_H) */

@@ -8377,3 +8377,28 @@ struct LIST(FE_element_field_info) *FE_region_get_FE_element_field_info_list_pri
 		return fe_region->fe_element_field_info_list;
 	return NULL;
 }
+
+struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
+	struct FE_region *fe_region, int dimension)
+{
+	struct LIST(FE_element) *fe_element_list = NULL;
+	if (fe_region)
+	{
+		FE_region *master_FE_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
+		fe_element_list = CREATE_RELATED_LIST(FE_element)(master_FE_region->fe_element_list[dimension]);
+	}
+	return fe_element_list;
+}
+
+struct LIST(FE_node) *FE_region_create_related_node_list(struct FE_region *fe_region)
+{
+	struct LIST(FE_node) *fe_node_list = NULL;
+	if (fe_region)
+	{
+		FE_region *master_FE_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
+		fe_node_list = CREATE_RELATED_LIST(FE_node)(master_FE_region->fe_node_list);
+	}
+	return fe_node_list;
+}

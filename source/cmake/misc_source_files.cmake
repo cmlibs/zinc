@@ -76,6 +76,12 @@ SET( FIELD_IO_HDRS
 
 SET( MAIN_SRCS source/cmgui.c )
 
+SET( MESH_SRCS 
+	source/mesh/cmiss_element_private.cpp
+	source/mesh/cmiss_node_private.cpp )
+SET( MESH_HDRS 
+	source/mesh/cmiss_element_private.h )
+
 SET( NODE_SRCS source/node/node_operations.c
 	source/node/node_tool.cpp )
 SET( NODE_HDRS source/node/node_operations.h

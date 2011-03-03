@@ -3750,12 +3750,17 @@ int Cmiss_graphic_to_graphics_object(
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
 									{
-										Cmiss_element_id element = Cmiss_field_element_group_get_first_element(element_group);
-										while (element)
+										Cmiss_element_iterator_id iterator = Cmiss_field_element_group_create_element_iterator(element_group);
+										if (iterator)
 										{
-											FE_element_select_graphics_element_points(element, (void *)&select_data);
-											Cmiss_element_destroy(&element);
-											Cmiss_field_element_group_get_next_element(element_group);
+											Cmiss_element_id element = Cmiss_element_iterator_next(iterator);
+											while (element)
+											{
+												FE_element_select_graphics_element_points(element, (void *)&select_data);
+												Cmiss_element_destroy(&element);
+												element = Cmiss_element_iterator_next(iterator);
+											}
+											Cmiss_element_iterator_destroy(&iterator);
 										}
 										Cmiss_field_element_group_destroy(&element_group);
 									}

@@ -1,7 +1,9 @@
-/*******************************************************************************
-FILE : graphics_object_highlight.hpp
-
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_element_private.h
+ *
+ * Private header file of Cmiss_element, finite element meshes.
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -19,7 +21,7 @@ FILE : graphics_object_highlight.hpp
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2011
+ * Portions created by the Initial Developer are Copyright (C) 2005-2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -37,48 +39,7 @@ FILE : graphics_object_highlight.hpp
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef GRAPHICS_OBJECT_HIGHLIGHT_HPP
-#define GRAPHICS_OBJECT_HIGHLIGHT_HPP
 
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "api/cmiss_element.h"
 
-class SubObjectGroupHighlightFunctor
-	{
-	private:
-		int(Computed_field_subobject_group::*function_pointer)(int);
-		Computed_field_subobject_group *group;
-		int contains_all;
-
-	public:
-
-		SubObjectGroupHighlightFunctor(Computed_field_subobject_group* group_in,
-			int(Computed_field_subobject_group::*function_pointer_in)(int))
-		{
-			group = group_in;
-			function_pointer=function_pointer_in;
-			contains_all = 0;
-		};
-
-		int call(int identifier)
-		{
-			if (contains_all)
-			{
-				return 1;
-			}
-			else
-			{
-				return (*group.*function_pointer)(identifier);
-			}
-		};
-
-		int setContainsAll(int flag)
-		{
-			return contains_all = flag;
-		}
-
-		~SubObjectGroupHighlightFunctor()
-		{
-		};
-	};
-
-#endif /* GRAPHICS_OBJECT_HIGHLIGHT_HPP */
+FE_region *Cmiss_fe_mesh_get_fe_region(Cmiss_fe_mesh_id mesh);

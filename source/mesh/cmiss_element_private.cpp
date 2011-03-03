@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_element.cpp
+ * FILE : cmiss_element_private.cpp
  *
  * Implementation of public interface to Cmiss_element, finite element meshes.
  *
@@ -21,7 +21,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005-1010
+ * Portions created by the Initial Developer are Copyright (C) 2005-2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -46,6 +46,7 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "mesh/cmiss_element_private.h"
 #include "user_interface/message.h"
 }
 #include <vector>
@@ -936,6 +937,15 @@ int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
 	if (mesh)
 	{
 		return mesh->getDimension();
+	}
+	return 0;
+}
+
+FE_region *Cmiss_fe_mesh_get_fe_region(Cmiss_fe_mesh_id mesh)
+{
+	if (mesh)
+	{
+		return mesh->getFeRegion();
 	}
 	return 0;
 }

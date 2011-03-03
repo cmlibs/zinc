@@ -231,6 +231,7 @@ Cmiss_field_node_group_remove_node
 Cmiss_field_node_group_clear
 Cmiss_field_node_group_contains_node
 Cmiss_field_node_group_is_empty
+Cmiss_field_node_group_create_node_iterator
 Cmiss_field_module_create_element_group
 Cmiss_field_cast_element_group
 /* inline Cmiss_field_element_group_base_cast */
@@ -240,6 +241,7 @@ Cmiss_field_element_group_remove_element
 Cmiss_field_element_group_clear
 Cmiss_field_element_group_contains_element
 Cmiss_field_element_group_is_empty
+Cmiss_field_element_group_create_element_iterator
 
 /* api/cmiss_field_trigonometry.h */
 Cmiss_field_module_create_sin

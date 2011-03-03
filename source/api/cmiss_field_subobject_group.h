@@ -59,6 +59,12 @@
 	#define CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
 #endif /* CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED */
 
+#ifndef CMISS_ELEMENT_ITERATOR_ID_DEFINED
+	struct Cmiss_element_iterator;
+	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
+	#define CMISS_ELEMENT_ITERATOR_ID_DEFINED
+#endif /* CMISS_ELEMENT_ITERATOR_ID_DEFINED */
+
 /*****************************************************************************//**
  * Creates a field where nodes from the same nodeset can be put into group.
  *
@@ -144,6 +150,19 @@ int Cmiss_field_node_group_contains_node(
  */
 int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group);
 
+
+/*****************************************************************************//**
+ * Create a node iterator object for iterating through the nodes in the group
+ * which are ordered from lowest to highest identifier. The iterator initially
+ * points at the position before the first node, so the first call to
+ * Cmiss_node_iterator_next() returns the first node and advances the iterator.
+ *
+ * @param node_group  handle to target node group field.
+ * @return  1 if node group does not contain any node, otherwise 0.
+ */
+Cmiss_node_iterator_id Cmiss_field_node_group_create_node_iterator(
+	Cmiss_field_node_group_id node_group);
+
 /*****************************************************************************//**
  * Creates a field where elements from the same mesh can be put into group.
  *
@@ -228,5 +247,19 @@ int Cmiss_field_element_group_contains_element(
  * @return  1 if element group does not contain any element, otherwise 0.
  */
 int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group);
+
+/***************************************************************************//**
+ * Create an element iterator object for iterating through the elements in the
+ * group which are ordered from lowest to highest identifier. The iterator
+ * initially points at the position before the first element, so the first call
+ * to Cmiss_element_iterator_next() returns the first element and advances the
+ * iterator.
+ *
+ * @param element_group  handle to target element group field.
+ * @return  Handle to element_iterator at position before first, or NULL if
+ * error.
+ */
+Cmiss_element_iterator_id Cmiss_field_element_group_create_element_iterator(
+	Cmiss_field_element_group_id element_group);
 
 #endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */

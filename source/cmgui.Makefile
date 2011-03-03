@@ -903,10 +903,8 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 API_SRCS = \
 	api/cmiss_context.c \
 	api/cmiss_core.c \
-	api/cmiss_element.cpp \
 	api/cmiss_idle.c \
 	api/cmiss_material.c \
-	api/cmiss_node.cpp \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c \
@@ -1242,6 +1240,9 @@ endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 endif
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
+MESH_SRCS = \
+	mesh/cmiss_element_private.cpp \
+	mesh/cmiss_node_private.cpp 
 NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.cpp
@@ -1337,6 +1338,7 @@ SRCS_1 = \
 	$(IMAGE_PROCESSING_SRCS) \
 	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
+	$(MESH_SRCS) \
 	$(NODE_SRCS) \
 	$(REGION_SRCS) \
 	$(SELECTION_SRCS) \
@@ -1720,11 +1722,11 @@ ifeq ($(OPERATING_SYSTEM), win32)
 endif
 
 LIB_CORE_FIELDS_SRCS = \
-	api/cmiss_element.cpp \
-	api/cmiss_node.cpp \
 	api/cmiss_time_sequence.c \
 	general/io_stream.c \
 	general/statistics.c \
+	mesh/cmiss_element_private.cpp \
+	mesh/cmiss_node_private.cpp \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(FIELD_IO_SRCS) \

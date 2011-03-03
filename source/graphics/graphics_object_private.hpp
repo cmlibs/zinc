@@ -452,7 +452,7 @@ Graphical object data structure.
 
 	/*???temporary*/
 	int glyph_mirror_mode;
-	GraphicsObjectHighlightBaseFunctor *highlight_functor;
+	SubObjectGroupHighlightFunctor *highlight_functor;
 	int access_count;
 };
 

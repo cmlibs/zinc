@@ -327,16 +327,20 @@ static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use
 			}
 			if (node_group)
 			{
-				FE_region_begin_change(fe_region);
-				Cmiss_node_id node =
-					Cmiss_field_node_group_get_first_node(node_group);
-				while (node)
+				Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
+				if (iterator)
 				{
-					FE_region_remove_FE_node(fe_region, node);
-					DEACCESS(FE_node)(&node);
-					node = Cmiss_field_node_group_get_next_node(node_group);
+					FE_region_begin_change(fe_region);
+					Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
+					while (node)
+					{
+						FE_region_remove_FE_node(fe_region, node);
+						Cmiss_node_destroy(&node);
+						node = Cmiss_node_iterator_next(iterator);
+					}
+					FE_region_end_change(fe_region);
+					Cmiss_node_iterator_destroy(&iterator);
 				}
-				FE_region_end_change(fe_region);
 				Cmiss_field_node_group_destroy(&node_group);
 			}
 			Cmiss_field_destroy(&field);
@@ -2378,14 +2382,17 @@ release.
 												if (FE_node_calculate_delta_vector(
 														node_tool->last_picked_node, (void *) &edit_info))
 												{
-													Cmiss_node_id edit_node =
-														Cmiss_field_node_group_get_first_node(node_group);
-													while (edit_node)
+													Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
+													if (iterator)
 													{
-														FE_node_edit_vector(edit_node, (void *)&edit_info);
-														DEACCESS(FE_node)(&edit_node);
-														edit_node =
-															Cmiss_field_node_group_get_next_node(node_group);
+														Cmiss_node_id edit_node = Cmiss_node_iterator_next(iterator);
+														while (edit_node)
+														{
+															FE_node_edit_vector(edit_node, (void *)&edit_info);
+															Cmiss_node_destroy(&edit_node);
+															edit_node = Cmiss_node_iterator_next(iterator);
+														}
+														Cmiss_node_iterator_destroy(&iterator);
 													}
 												}
 											}
@@ -2397,14 +2404,17 @@ release.
 													if (FE_node_calculate_delta_position(
 															node_tool->last_picked_node, (void *) &edit_info))
 													{
-														Cmiss_node_id edit_node =
-															Cmiss_field_node_group_get_first_node(node_group);
-														while (edit_node)
+														Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
+														if (iterator)
 														{
-															FE_node_edit_position(edit_node, (void *)&edit_info);
-															DEACCESS(FE_node)(&edit_node);
-															edit_node =
-																Cmiss_field_node_group_get_next_node(node_group);
+															Cmiss_node_id edit_node = Cmiss_node_iterator_next(iterator);
+															while (edit_node)
+															{
+																FE_node_edit_position(edit_node, (void *)&edit_info);
+																Cmiss_node_destroy(&edit_node);
+																edit_node = Cmiss_node_iterator_next(iterator);
+															}
+															Cmiss_node_iterator_destroy(&iterator);
 														}
 													}
 												}
@@ -3527,8 +3537,15 @@ static void Node_tool_Computed_field_change(
 					node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);
 					Cmiss_nodeset_destroy(&nodeset);
 				}
-				struct FE_node *node = Cmiss_field_node_group_get_first_node(node_group);
-				struct FE_node *next_node = Cmiss_field_node_group_get_next_node(node_group);
+				Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
+				struct FE_node *node = NULL, *next_node = NULL;
+				if (iterator)
+				{
+					node = Cmiss_node_iterator_next(iterator);
+					if (node)
+						next_node = Cmiss_node_iterator_next(iterator);
+					Cmiss_node_iterator_destroy(&iterator);
+				}
 				Cmiss_field_node_group_destroy(&node_group);
 				/* make sure there is only one node selected in group */
 				if (node && !next_node)

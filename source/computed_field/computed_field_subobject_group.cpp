@@ -53,8 +53,10 @@ extern "C" {
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "mesh/cmiss_element_private.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
@@ -84,7 +86,7 @@ public:
 
 Cmiss_field_node_group *Cmiss_field_cast_node_group(Cmiss_field_id field)
 {
-	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_node_id>*>(field->core))
+	if (field && dynamic_cast<Computed_field_node_group *>(field->core))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_node_group_id>(field));
@@ -108,11 +110,9 @@ int Cmiss_field_node_group_add_node(Cmiss_field_node_group_id node_group,
 
 	if (node_group && node)
 	{
-	  int identifier = get_FE_node_identifier(node);
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
-		group_core->add_object(identifier, node);
+	  Computed_field_node_group *group_core =
+	  	Computed_field_node_group_core_cast(node_group);
+		group_core->addObject(node);
 	}
 	else
 	{
@@ -129,11 +129,9 @@ int Cmiss_field_node_group_remove_node(Cmiss_field_node_group_id node_group,
 
 	if (node_group && node)
 	{
-		int identifier = get_FE_node_identifier(node);
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
-		group_core->remove_object(identifier);
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
+		group_core->removeObject(node);
 	}
 	else
 	{
@@ -149,9 +147,8 @@ int Cmiss_field_node_group_clear(Cmiss_field_node_group_id node_group)
 
 	if (node_group)
 	{
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
 		group_core->clear();
 	}
 	else
@@ -169,48 +166,12 @@ int Cmiss_field_node_group_contains_node(
 
 	if (node_group && node)
 	{
-		int identifier = get_FE_node_identifier(node);
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id, 
-			Cmiss_field_node_group_id>(node_group);
-		return_code = group_core->get_object_selected(identifier, node);
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
+		return_code = group_core->containsObject(node);
 	}
 
 	return return_code;
-}
-
-Cmiss_node_id Cmiss_field_node_group_get_first_node(
-	Cmiss_field_node_group_id node_group)
-{
-	Cmiss_node_id node = NULL;
-	if (node_group)
-	{
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
-		node = group_core->getFirstObject();
-		if (node)
-			ACCESS(FE_node)(node);
-	}
-
-	return node;
-}
-
-Cmiss_node_id Cmiss_field_node_group_get_next_node(
-	Cmiss_field_node_group_id node_group)
-{
-	Cmiss_node_id node = NULL;
-	if (node_group)
-	{
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
-		node = group_core->getNextObject();
-		if (node)
-			ACCESS(FE_node)(node);
-	}
-
-	return node;
 }
 
 int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group)
@@ -218,13 +179,25 @@ int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group)
 	int return_code = 0;
 	if (node_group)
 	{
-		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-			Cmiss_field_node_group_id>(node_group);
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
 		return_code = group_core->isEmpty();
 	}
 
 	return return_code;
+}
+
+Cmiss_node_iterator_id Cmiss_field_node_group_create_node_iterator(Cmiss_field_node_group_id node_group)
+{
+	Cmiss_node_iterator_id iterator = NULL;
+	if (node_group)
+	{
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
+		iterator = group_core->createIterator();
+	}
+
+	return iterator;
 }
 
 int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address)
@@ -240,11 +213,14 @@ Computed_field *Cmiss_field_module_create_node_group(Cmiss_field_module_id field
 	field = (Computed_field *)NULL;
 	if (field_module && nodeset)
 	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		struct LIST(FE_node) *fe_node_list = FE_region_create_related_node_list(fe_region);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_sub_group_object<Cmiss_node_id>());
+			new Computed_field_node_group(fe_node_list));
+
 	}
 	else
 	{
@@ -258,7 +234,7 @@ Computed_field *Cmiss_field_module_create_node_group(Cmiss_field_module_id field
 
 Cmiss_field_element_group *Cmiss_field_cast_element_group(Cmiss_field_id field)
 {
-	if (field && dynamic_cast<Computed_field_sub_group_object<Cmiss_element_id>*>(field->core))
+	if (field && dynamic_cast<Computed_field_element_group*>(field->core))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_element_group_id>(field));
@@ -279,17 +255,11 @@ int Cmiss_field_element_group_add_element(Cmiss_field_element_group_id element_g
 	Cmiss_element_id element)
 {
 	int return_code = 1;
-	struct CM_element_information cm_identifier;
 	if (element_group && element)
 	{
-		if (get_FE_element_identifier(element, &cm_identifier))
-		{
-			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_id>(element_group);
-			int identifier = cm_identifier.number;
-			group_core->add_object(identifier, element);
-		}
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
+		group_core->addObject(element);
 	}
 	else
 	{
@@ -303,17 +273,11 @@ int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id elemen
 		Cmiss_element_id element)
 {
 	int return_code = 1;
-	struct CM_element_information cm_identifier;
 	if (element_group && element)
 	{
-		if (get_FE_element_identifier(element, &cm_identifier))
-		{
-			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-				Cmiss_field_element_group_id>(element_group);
-			int identifier = cm_identifier.number;
-			group_core->remove_object(identifier);
-		}
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
+		group_core->removeObject(element);
 	}
 	else
 	{
@@ -329,9 +293,8 @@ int Cmiss_field_element_group_clear(Cmiss_field_element_group_id element_group)
 
 	if (element_group)
 	{
-		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_id>(element_group);
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
 		group_core->clear();
 	}
 	else
@@ -346,17 +309,11 @@ int Cmiss_field_element_group_contains_element(
 	Cmiss_field_element_group_id element_group, Cmiss_element_id element)
 {
 	int return_code = 0;
-	struct CM_element_information cm_identifier;
 	if (element_group && element)
 	{
-		if (get_FE_element_identifier(element, &cm_identifier))
-		{
-			Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-				Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-				Cmiss_field_element_group_id>(element_group);
-			int identifier = cm_identifier.number;
-			return_code = group_core->get_object_selected(identifier, element);
-		}
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
+		return_code = group_core->containsObject(element);
 	}
 
 	return return_code;
@@ -367,30 +324,44 @@ int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_grou
 	int return_code = 0;
 	if (element_group)
 	{
-		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_id>(element_group);
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
 		return_code = group_core->isEmpty();
 	}
 
 	return return_code;
 }
 
+Cmiss_element_iterator_id Cmiss_field_element_group_create_element_iterator(Cmiss_field_element_group_id element_group)
+{
+	Cmiss_element_iterator_id iterator = NULL;
+	if (element_group)
+	{
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
+		iterator = group_core->createIterator();
+	}
+
+	return iterator;
+}
 
 Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
 		Cmiss_fe_mesh_id mesh)
 {
 	Computed_field *field;
 
-	ENTER(Computed_field_create_group);
+	ENTER(Cmiss_field_module_create_element_group);
 	field = (Computed_field *)NULL;
 	if (field_module && mesh)
 	{
+		FE_region *fe_region = Cmiss_fe_mesh_get_fe_region(mesh);
+		struct LIST(FE_element) *fe_element_list = FE_region_create_related_element_list_for_dimension(fe_region,
+			Cmiss_fe_mesh_get_dimension(mesh));
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_sub_group_object<Cmiss_element_id>());
+			new Computed_field_element_group(fe_element_list, Cmiss_fe_mesh_get_dimension(mesh)));
 	}
 	else
 	{
@@ -401,40 +372,6 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 
 	return (field);
 } /* Cmiss_field_module_create_group */
-
-Cmiss_element_id Cmiss_field_element_group_get_first_element(
-	Cmiss_field_element_group_id element_group)
-{
-	Cmiss_element_id element = NULL;
-	if (element_group)
-	{
-		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_id>(element_group);
-		element = group_core->getFirstObject();
-		if (element)
-			ACCESS(FE_element)(element);
-	}
-
-	return element;
-}
-
-Cmiss_element_id Cmiss_field_element_group_get_next_element(
-	Cmiss_field_element_group_id element_group)
-{
-	Cmiss_element_id element = NULL;
-	if (element_group)
-	{
-		Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-			Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-			Cmiss_field_element_group_id>(element_group);
-		element = group_core->getNextObject();
-		if (element)
-			ACCESS(FE_element)(element);
-	}
-
-	return element;
-}
 
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address)
 {
@@ -604,7 +541,6 @@ Cmiss_cad_identifier_id Cmiss_field_cad_primitive_group_template_get_next_cad_pr
 
 	return cad_identifier;
 }
-
 
 #endif /* defined (USE_OPENCASCADE) */
 

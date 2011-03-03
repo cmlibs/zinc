@@ -646,7 +646,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	struct Graphical_material *material, struct Graphical_material *secondary_material, 
 	struct Spectrum *spectrum, struct Graphics_font *font,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-	int draw_selected, GraphicsObjectHighlightBaseFunctor *highlight_functor,
+	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005

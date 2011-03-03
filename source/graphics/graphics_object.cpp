@@ -6908,8 +6908,8 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 					Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
 					Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
 				graphics_object->highlight_functor =
-					new SubGroupHighlightFunctor<Cmiss_cad_identifier_id>(group_core,
-					&Computed_field_sub_group_object<Cmiss_cad_identifier_id>::isIdentifierInList);
+					new SubObjectGroupHighlightFunctor(group_core,
+					&Computed_field_subobject_group::isIdentifierInList);
 				Cmiss_field_id temporary_handle =
 					reinterpret_cast<Computed_field *>(cad_primitive_group);
 				Cmiss_field_destroy(&temporary_handle);
@@ -6943,7 +6943,7 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
 	  if (Cmiss_field_group_contains_local_region(sub_group))
 	  {
 	  	graphics_object->highlight_functor =
-	  		new SubGroupHighlightFunctor<Cmiss_element_id>(NULL, NULL);
+	  		new SubObjectGroupHighlightFunctor(NULL, NULL);
 	  	graphics_object->highlight_functor->setContainsAll(1);
 	  }
 	  else
@@ -6951,12 +6951,11 @@ int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
 	  	Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
 			if (element_group)
 			{
-				Computed_field_sub_group_object<Cmiss_element_id> *group_core =
-					Computed_field_sub_group_object_core_cast<Cmiss_element_id,
-					Cmiss_field_element_group_id>(element_group);
+				Computed_field_element_group *group_core =
+					Computed_field_element_group_core_cast(element_group);
 				graphics_object->highlight_functor =
-					new SubGroupHighlightFunctor<Cmiss_element_id>(group_core,
-					&Computed_field_sub_group_object<Cmiss_element_id>::isIdentifierInList);
+					new SubObjectGroupHighlightFunctor(group_core,
+					&Computed_field_subobject_group::isIdentifierInList);
 				Cmiss_field_element_group_destroy(&element_group);
 		}
 		}
@@ -6987,7 +6986,7 @@ int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
 	  if (Cmiss_field_group_contains_local_region(sub_group))
 	  {
 	  	graphics_object->highlight_functor =
-	  		new SubGroupHighlightFunctor<Cmiss_node_id>(NULL, NULL);
+	  		new SubObjectGroupHighlightFunctor(NULL, NULL);
 	  	graphics_object->highlight_functor->setContainsAll(1);
 	  }
 	  else
@@ -6995,12 +6994,11 @@ int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
 	  	Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
 	  	if (node_group)
 	  	{
-	  		Computed_field_sub_group_object<Cmiss_node_id> *group_core =
-	  			Computed_field_sub_group_object_core_cast<Cmiss_node_id,
-	  			Cmiss_field_node_group_id>(node_group);
+	  		Computed_field_node_group *group_core =
+	  			Computed_field_node_group_core_cast(node_group);
 	  		graphics_object->highlight_functor =
-	  			new SubGroupHighlightFunctor<Cmiss_node_id>(group_core,
-	  			&Computed_field_sub_group_object<Cmiss_node_id>::isIdentifierInList);
+	  			new SubObjectGroupHighlightFunctor(group_core,
+	  			&Computed_field_subobject_group::isIdentifierInList);
 	  		Cmiss_field_node_group_destroy(&node_group);
 	  	}
 	  }

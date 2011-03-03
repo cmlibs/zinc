@@ -4,11 +4,9 @@
 SET( API_SRCS 
 	source/api/cmiss_context.c
 	source/api/cmiss_core.c
-	source/api/cmiss_element.cpp
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c
 	source/api/cmiss_material.c
-	source/api/cmiss_node.cpp
 	source/api/cmiss_region.c
 	source/api/cmiss_scene_viewer.cpp
 	source/api/cmiss_texture.c
