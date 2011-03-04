@@ -89,6 +89,20 @@ struct LIST(FE_node) *
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data);
 
+/***************************************************************************//**
+ * Create a node list with the supplied region, conditional field at a
+ * specific time.
+ *
+ * @param region  The pointer to a region
+ * @param conditional_field  Conditional field
+ * @param time  Time of the group field to be evaluated
+ * @return  Returns node list if successfully create a node list with the given
+ *    arguments, otherwise NULL.
+ */
+struct LIST(FE_node) *
+	FE_node_list_from_conditional_field(
+		struct FE_region *fe_region, struct Computed_field *conditional_field, FE_value time);
+
 struct LIST(FE_node) *
 	FE_node_list_from_ranges(
 		struct FE_region *fe_region, struct Multi_range *node_ranges,

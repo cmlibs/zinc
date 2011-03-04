@@ -1592,7 +1592,7 @@ This is currently that the field is defined and any of the components are non ze
 ==============================================================================*/
 {
 	FE_value zero_tolerance = (FE_value)1e-6;
-	int i, number_of_xi_points, number_in_xi, return_code;
+	int i, number_of_xi_points, *number_in_xi, return_code;
 	struct FE_element_shape *shape;
 	FE_value_triple *xi_points;
 
@@ -1603,9 +1603,15 @@ This is currently that the field is defined and any of the components are non ze
 		Field_element_xi_location location(element);
 		if (field->core->is_defined_at_location(&location))
 		{
-			number_in_xi = 1;
+			int element_dimension = 0;
 			get_FE_element_shape(element, &shape);
-			if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
+			get_FE_element_shape_dimension(shape, &element_dimension);
+			number_in_xi = new int[element_dimension];
+			for (i = 0; (i < element_dimension) ; i++)
+			{
+				number_in_xi[i] = 1;
+			}
+			if (FE_element_shape_get_xi_points_cell_centres(shape, number_in_xi,
 					&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
 			{
 				Field_element_xi_location centre_location(element, *xi_points, 
@@ -1633,6 +1639,7 @@ This is currently that the field is defined and any of the components are non ze
 			{
 				return_code = 0;
 			}
+			delete[] number_in_xi;
 		}
 		else
 		{

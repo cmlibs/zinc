@@ -62,6 +62,14 @@ Global types
    #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */
 
+#ifndef CMISS_FIELD_ID_DEFINED
+	/* Handle to a generic Cmiss_field */
+	#define Cmiss_field Computed_field
+	struct Cmiss_field;
+	typedef struct Cmiss_field *Cmiss_field_id;
+	#define CMISS_FIELD_ID_DEFINED
+#endif /* CMISS_FIELD_ID_DEFINED */
+
 /** Handle to a finite element mesh. */
 struct Cmiss_fe_mesh;
 typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
@@ -253,6 +261,30 @@ Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
  * @return  Number of elements in mesh.
  */
 int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh);
+
+/***************************************************************************//**
+ * Remove an element from a mesh and any related groups it is in.
+ * This destroys the element; any handles to it become invalid.
+ *
+ * @param mesh  Handle to the mesh to remove the element from.
+ * @param element  The element to be removed.
+ * @return  1 if element is successfully removed, 0 if error.
+ */
+int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element);
+
+/***************************************************************************//**
+ * Remove from the mesh and any related element groups all elements for which
+ * the conditional field is true i.e. non-zero valued at the element centroid.
+ * Note that group and element_group fields are valid conditional fields.
+ * Any handles to removed elements become invalid.
+ *
+ * @param mesh  Handle to the mesh to remove elements from.
+ * @param conditional_field  Field which if non-zero at the element centroid
+ * indicates it is to be removed.
+ * @return  The number of elements removed from the mesh.
+ */
+int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
+   Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Returns the dimension of the mesh.

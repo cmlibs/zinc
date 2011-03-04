@@ -61,8 +61,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct FE_region *fe_region;
-	int selected_flag;
-	struct LIST(FE_node) *node_selection_list;
 	struct Multi_range *node_ranges;
 	struct Computed_field *group_field;
 	struct Computed_field *conditional_field;
@@ -87,10 +85,6 @@ DESCRIPTION :
 	{
 		return_code = 1;
 		selected = 1;
-		if (selected && data->selected_flag)
-		{
-			selected = IS_OBJECT_IN_LIST(FE_node)(node, data->node_selection_list);
-		}
 		if (selected && data->node_ranges)
 		{
 			selected = FE_node_is_in_Multi_range(node, data->node_ranges);
@@ -461,8 +455,6 @@ struct LIST(FE_node) *
 				nodes_in_ranges = Multi_range_get_total_number_in_ranges(node_ranges);
 			}
 			data.fe_region = fe_region;
-			data.selected_flag = 0;
-			data.node_selection_list = NULL;
 			/* Seems odd to specify an empty node_ranges but I have
 				maintained the previous behaviour */
 			if (node_ranges &&
@@ -513,6 +505,14 @@ struct LIST(FE_node) *
 				return_code =  FE_region_for_each_FE_node(fe_region,
 					FE_node_add_if_selection_ranges_condition, (void *)&data);
 			}
+			if (data.conditional_field)
+			{
+				Computed_field_clear_cache(data.conditional_field);
+			}
+			if (data.group_field)
+			{
+				Computed_field_clear_cache(data.group_field);
+			}
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
@@ -533,6 +533,57 @@ struct LIST(FE_node) *
 		display_message(ERROR_MESSAGE,
 			"FE_node_list_from_region_and_selection_group.  "
 			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data.node_list);
+} /* FE_node_list_from_region_and_selection_group */
+
+
+struct LIST(FE_node) *
+	FE_node_list_from_conditional_field(
+		struct FE_region *fe_region, struct Computed_field *conditional_field, FE_value time)
+{
+	int return_code;
+	struct FE_node_fe_region_selection_ranges_condition_data data;
+	ENTER(FE_node_list_from_region_selection_ranges_condition);
+
+	data.node_list = (struct LIST(FE_node) *)NULL;
+
+	if (fe_region)
+	{
+		if (data.node_list = CREATE(LIST(FE_node))())
+		{
+			data.fe_region = fe_region;
+			/* Seems odd to specify an empty node_ranges but I have
+				maintained the previous behaviour */
+			data.node_ranges = (struct Multi_range *)NULL;
+			data.conditional_field = conditional_field;
+			data.group_field = NULL;
+			data.conditional_field_time = time;
+			return_code =  FE_region_for_each_FE_node(fe_region,
+				FE_node_add_if_selection_ranges_condition, (void *)&data);
+			if (data.conditional_field)
+			{
+				Computed_field_clear_cache(data.conditional_field);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_list_from_conditional_field.  Error building list");
+				DESTROY(LIST(FE_node))(&data.node_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_list_from_conditional_field.  Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_list_from_conditional_field.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -573,8 +624,6 @@ Up to the calling function to destroy the returned node list.
 			}
 
 			data.fe_region = fe_region;
-			data.selected_flag = 0;
-			data.node_selection_list = NULL;
 			/* Seems odd to specify an empty node_ranges but I have
 				maintained the previous behaviour */
 			if (node_ranges &&
@@ -603,14 +652,6 @@ Up to the calling function to destroy the returned node list.
 								 fe_region, node_number))
 						{
 							selected = 1;
-							if (data.selected_flag)
-							{
-								if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)
-									(node_number, data.node_selection_list))
-								{
-									selected = 0;
-								}
-							}
 							if (selected && conditional_field)
 							{
 								selected = Computed_field_is_true_at_node(conditional_field,

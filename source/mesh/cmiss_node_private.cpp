@@ -47,6 +47,7 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "node/node_operations.h"
 #include "user_interface/message.h"
 }
 #include <vector>
@@ -453,6 +454,38 @@ int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
 		return FE_region_get_number_of_FE_nodes(fe_region);
 	}
 	return 0;
+}
+
+int Cmiss_nodeset_remove_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
+{
+	int return_code = 0;
+	if (nodeset && node)
+	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return_code = FE_region_remove_FE_node(master_fe_region, node);
+	}
+
+	return return_code;
+}
+
+int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
+	Cmiss_field_id conditional_field)
+{
+	int return_code = 0;
+	if (nodeset && conditional_field)
+	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		struct LIST(FE_node) *node_list =	FE_node_list_from_conditional_field(
+			fe_region, conditional_field, 0);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return_code = FE_region_remove_FE_node_list(master_fe_region, node_list);
+		DESTROY(LIST(FE_node))(&node_list);
+	}
+
+	return return_code;
 }
 
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)

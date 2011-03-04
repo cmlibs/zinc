@@ -70,8 +70,6 @@ struct FE_element_fe_region_selection_ranges_condition_data
  ==============================================================================*/
 {
 	struct FE_region *fe_region;
-	int selected_flag;
-	struct LIST(FE_element) *element_selection_list;
 	struct Multi_range *element_ranges;
 	struct Computed_field *conditional_field, *group_field;
 	FE_value conditional_field_time;
@@ -451,11 +449,6 @@ static int FE_element_add_if_selection_ranges_condition_with_group(
 	{
 		return_code = get_FE_element_identifier(element, &identifier);
 		selected = 1;
-		if (selected && data->selected_flag)
-		{
-			selected = IS_OBJECT_IN_LIST(FE_element)(element,
-				data->element_selection_list);
-		}
 		if (selected && data->element_ranges)
 		{
 			selected = Multi_range_is_value_in_range(data->element_ranges,
@@ -524,8 +517,6 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 			}
 
 			data.fe_region = fe_region;
-			data.selected_flag = 0;
-			data.element_selection_list = NULL;
 			/* Seems odd to specify an empty element_ranges but I have
 			 maintained the previous behaviour */
 			if (element_ranges && (0 < (number_of_ranges
@@ -585,6 +576,14 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 						(void *) &data);
 				}
 			}
+			if (data.conditional_field)
+			{
+				Computed_field_clear_cache(data.conditional_field);
+			}
+			if (data.group_field)
+			{
+				Computed_field_clear_cache(data.group_field);
+			}
 			if (element_group)
 			{
 				Cmiss_field_element_group_destroy(&element_group);
@@ -614,3 +613,56 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 
 	return (data.element_list);
 } /* FE_element_list_from_fe_region_selection_ranges_condition */
+
+struct LIST(FE_element) *FE_element_list_from_conditional_field_of_dimension(struct FE_region *fe_region,
+	int dimension, struct Computed_field *conditional_field, FE_value time)
+{
+	struct FE_element_fe_region_selection_ranges_condition_data data;
+
+	ENTER(FE_element_list_from_fe_region_selection_ranges_condition);
+	data.element_list = (struct LIST(FE_element) *)NULL;
+	if (fe_region)
+	{
+		data.element_list = CREATE(LIST(FE_element))();
+		if (data.element_list)
+		{
+			int return_code = 1;
+			data.fe_region = fe_region;
+			/* Seems odd to specify an empty element_ranges but I have
+			 maintained the previous behaviour */
+			data.element_ranges = (struct Multi_range *) NULL;
+			data.group_field = NULL;
+			data.conditional_field = conditional_field;
+			data.conditional_field_time = time;
+			return_code	= FE_region_for_each_FE_element_of_dimension(
+				fe_region, dimension,	FE_element_add_if_selection_ranges_condition_with_group,
+					(void *) &data);
+			if (data.conditional_field)
+			{
+				Computed_field_clear_cache(data.conditional_field);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_list_from_conditional_field_of_dimension.  "
+					"Error building list");
+				DESTROY(LIST(FE_element))(&data.element_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_list_from_conditional_field_of_dimension.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_list_from_conditional_field_of_dimension.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data.element_list);
+}

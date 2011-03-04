@@ -42,6 +42,7 @@
 
 extern "C" {
 #include "api/cmiss_element.h"
+#include "element/element_operations.h"
 #include "general/debug.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -939,6 +940,44 @@ int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
 		return mesh->getDimension();
 	}
 	return 0;
+}
+
+int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element)
+{
+	int return_code = 0;
+	if (mesh && element)
+	{
+		FE_region *fe_region = mesh->getFeRegion();
+		CM_element_information cm;
+		get_FE_element_identifier(element, &cm);
+		int element_dimension = get_FE_element_dimension(element);
+		if (element_dimension == mesh->getDimension())
+		{
+			FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+			return_code = FE_region_remove_FE_element(master_fe_region, element);
+		}
+	}
+
+	return return_code;
+}
+
+int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
+	Cmiss_field_id conditional_field)
+{
+	int return_code = 0;
+	if (mesh && conditional_field)
+	{
+		FE_region *fe_region = mesh->getFeRegion();
+		struct LIST(FE_element) *element_list =	FE_element_list_from_conditional_field_of_dimension(
+			fe_region, mesh->getDimension(), conditional_field, /*time*/0);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return_code = FE_region_remove_FE_element_list(master_fe_region, element_list);
+		DESTROY(LIST(FE_element))(&element_list);
+	}
+
+	return return_code;
 }
 
 FE_region *Cmiss_fe_mesh_get_fe_region(Cmiss_fe_mesh_id mesh)

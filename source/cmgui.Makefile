@@ -969,15 +969,20 @@ COMMAND_INTERFACE_SRCS = \
 COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field.cpp \
 	computed_field/computed_field_arithmetic_operators.cpp \
+	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
 	computed_field/computed_field_conditional.cpp \
 	computed_field/computed_field_find_xi.cpp \
 	computed_field/computed_field_finite_element.cpp \
+	computed_field/computed_field_group.cpp \
+	computed_field/computed_field_subobject_group.cpp \
+	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_set.cpp \
 	computed_field/computed_field_trigonometry.cpp \
 	computed_field/field_ensemble.cpp \
 	computed_field/field_location.cpp \
-	computed_field/field_parameters.cpp
+	computed_field/field_parameters.cpp \
+	graphics/quaternion.cpp
 COMPUTED_FIELD_GRAPHICS_SRCS = \
 	computed_field/computed_field_find_xi_graphics.cpp
 COMPUTED_FIELD_SRCS = \
@@ -985,22 +990,18 @@ COMPUTED_FIELD_SRCS = \
 	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
 	minimise/minimise.cpp \
 	computed_field/computed_field_alias.cpp \
-	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_format_output.cpp \
 	computed_field/computed_field_function.cpp \
-	computed_field/computed_field_group.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_lookup.cpp \
-	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_string_constant.cpp \
-	computed_field/computed_field_subobject_group.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
 	computed_field/computed_field_value_index_ranges.cpp \
@@ -1141,7 +1142,6 @@ GRAPHICS_SRCS = \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/render_triangularisation.cpp \
-	graphics/quaternion.cpp\
 	graphics/selected_graphic.c \
 	graphics/selection.cpp \
 	graphics/spectrum.cpp \
@@ -1725,8 +1725,9 @@ LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_time_sequence.c \
 	general/io_stream.c \
 	general/statistics.c \
-	mesh/cmiss_element_private.cpp \
-	mesh/cmiss_node_private.cpp \
+	node/node_operations.c \
+	element/element_operations.cpp \
+	$(MESH_SRCS) \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(FIELD_IO_SRCS) \

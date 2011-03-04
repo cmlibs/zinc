@@ -47,6 +47,14 @@ Global types
 ------------
 */
 
+#ifndef CMISS_FIELD_ID_DEFINED
+	/* Handle to a generic Cmiss_field */
+	#define Cmiss_field Computed_field
+	struct Cmiss_field;
+	typedef struct Cmiss_field *Cmiss_field_id;
+	#define CMISS_FIELD_ID_DEFINED
+#endif /* CMISS_FIELD_ID_DEFINED */
+
 #ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
 	/** Handle to a finite_element type Cmiss_field */
 	struct Cmiss_field_finite_element;
@@ -236,6 +244,32 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
  * @return  Number of nodes in nodeset.
  */
 int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Remove a node from the nodeset and any related node groups it is in.
+ * Nodes can only be removed if not in use by elements in region.
+ * This destroys the node: any handles to it become invalid.
+ *
+ * @param nodeset  Handle to the nodeset to remove the node from.
+ * @param node  The node to be removed.
+ * @return  1 if node is successfully removed, 0 if error.
+ */
+int Cmiss_nodeset_remove_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
+
+/***************************************************************************//**
+ * Remove from the nodeset and any related node groups all nodes for which the
+ * conditional field is true i.e. non-zero valued. Note that group and
+ * node_group fields are valid conditional fields.
+ * Nodes are only removed if not in use by elements in region.
+ * Any handles to removed nodes become invalid.
+ *
+ * @param nodeset  Handle to the nodeset to remove nodes from.
+ * @param conditional_field  Field which if non-zero at any node indicates it
+ * is to be removed.
+ * @return  The number of nodes removed from the nodeset.
+ */
+int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
+    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Destroys this handle to the node_iterator and sets it to NULL.
