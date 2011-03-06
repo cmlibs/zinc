@@ -697,14 +697,14 @@ Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_cor
  		reinterpret_cast<Computed_field*>(object_group_field)->core));
  }
 
-Computed_field_element_group *Computed_field_element_group_core_cast(
+inline Computed_field_element_group *Computed_field_element_group_core_cast(
 	Cmiss_field_element_group_id object_group_field)
 {
 	return (static_cast<Computed_field_element_group *>(
 		reinterpret_cast<Computed_field*>(object_group_field)->core));
 }
 
-Computed_field_node_group *Computed_field_node_group_core_cast(
+inline Computed_field_node_group *Computed_field_node_group_core_cast(
 	Cmiss_field_node_group_id object_group_field)
 {
 	return (static_cast<Computed_field_node_group *>(
