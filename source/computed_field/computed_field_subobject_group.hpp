@@ -495,7 +495,31 @@ namespace {
 
 		int evaluate_cache_at_location(Field_location* location)
 		{
-			USE_PARAMETER(location);
+			if (field && location)
+			{
+				if (dynamic_cast<Field_element_xi_location*>(location))
+				{
+		 			Field_element_xi_location *element_xi_location =
+		 				reinterpret_cast<Field_element_xi_location *>(location);
+		 			Cmiss_element_id element = element_xi_location->get_element();
+		 			if (dimension == Cmiss_element_get_dimension(element))
+		 			{
+		 				field->values[0] = containsObject(element);
+		 			}
+		 			else
+		 			{
+		 				field->values[0] = 0;
+		 			}
+				}
+				else
+				{
+					field->values[0] = 0;
+				}
+			}
+			else
+			{
+				return 0;
+			}
 			return 1;
 		};
 
@@ -667,9 +691,26 @@ namespace {
 
 		int evaluate_cache_at_location(Field_location* location)
 		{
-			USE_PARAMETER(location);
+			if (field && location)
+			{
+				if (dynamic_cast<Field_node_location*> (location))
+				{
+					Field_node_location *node_location =
+						reinterpret_cast<Field_node_location *> (location);
+					Cmiss_node_id node = node_location->get_node();
+	 				field->values[0] = containsObject(node);
+				}
+				else
+				{
+					field->values[0] = 0;
+				}
+			}
+			else
+			{
+				return 0;
+			}
 			return 1;
-		};
+		}
 
 		int list()
 		{
