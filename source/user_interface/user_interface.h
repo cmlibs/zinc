@@ -58,7 +58,9 @@ Function definitions for the user interface.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 //#define WINDOWS_LEAN_AND_MEAN
+#if !defined (NOMINMAX)
 #define NOMINMAX
+#endif
 #include <windows.h>
 #include <windowsx.h>
 	/*???DB.  Contains lots of convenience macros */

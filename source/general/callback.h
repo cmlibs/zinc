@@ -48,7 +48,9 @@ Macro definition for lists of callbacks between objects.
 
 #if defined (WIN32_USER_INTERFACE)
 //#define WINDOWS_LEAN_AND_MEAN
+#if !defined (NOMINMAX)
 #define NOMINMAX
+#endif
 #include <windows.h>
 #define UWM_IDLE	(WM_APP + 1)
 #define UWM_NETWORK     (WM_APP + 2)

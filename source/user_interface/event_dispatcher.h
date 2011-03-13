@@ -56,7 +56,9 @@ registered file descriptors to the correct callbacks.
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 //#define WINDOWS_LEAN_AND_MEAN
+#if !defined (NOMINMAX)
 #define NOMINMAX
+#endif
 #include <windows.h>
 #elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
