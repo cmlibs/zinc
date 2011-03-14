@@ -72,8 +72,9 @@ typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
  */
 enum Render_type
 {
-	RENDER_TYPE_SHADED, /*!< Draw colour filled vertexes. */
-	RENDER_TYPE_WIREFRAME /*!< Draw boundary of each vertex. */
+	RENDER_TYPE_INVALD = 0,
+	RENDER_TYPE_SHADED = 1, /*!< Draw colour filled vertexes. */
+	RENDER_TYPE_WIREFRAME = 2/*!< Draw boundary of each vertex. */
 };
 #define RENDER_TYPE_DEFINED
 #endif /* RENDER_TYPE_DEFINED */

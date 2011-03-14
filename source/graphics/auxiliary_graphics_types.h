@@ -120,8 +120,9 @@ incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	RENDER_TYPE_SHADED,
-	RENDER_TYPE_WIREFRAME
+	RENDER_TYPE_INVALD = 0,
+	RENDER_TYPE_SHADED = 1,
+	RENDER_TYPE_WIREFRAME = 2
 };
 #define RENDER_TYPE_DEFINED
 #endif /* RENDER_TYPE_DEFINED */
