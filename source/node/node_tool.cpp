@@ -2362,6 +2362,8 @@ release.
 											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_nodes");
 										else
 											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_data");
+										Cmiss_region_id temp_region = Cmiss_rendition_get_region(node_tool->rendition);
+										edit_info.fe_region=Cmiss_region_get_FE_region(temp_region);
 										if (nodeset)
 										{
 											node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);
@@ -2369,7 +2371,7 @@ release.
 										}
 										if (node_group)
 										{
-											FE_region_begin_change(node_tool->fe_region);
+											FE_region_begin_change(edit_info.fe_region);
 											/* edit vectors if non-constant orientation_scale field */
 											if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode)
 													|| (NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))
@@ -2425,7 +2427,7 @@ release.
 													return_code = 0;
 												}
 											}
-											FE_region_end_change(node_tool->fe_region);
+											FE_region_end_change(edit_info.fe_region);
 											Cmiss_field_node_group_destroy(&node_group);
 										}
 										Cmiss_field_group_destroy(&selection_group);
