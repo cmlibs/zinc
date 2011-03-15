@@ -620,7 +620,9 @@ int Computed_field_group::clear()
 
 int Computed_field_group::check_subobject_group_dependency(Computed_field_core *source_core)
 {
-	if (source_core->check_dependency())
+	Computed_field_subobject_group *subobject_group = dynamic_cast<Computed_field_subobject_group *>(source_core);
+	/* check_dependency method is not sufficient to determine a subobject group has changed or not for a group */
+	if (subobject_group->check_dependency_for_group_special())
 	{
 		Computed_field_dependency_change_private(field);
 		const Cmiss_field_subobject_group_change_detail *subobject_group_change_detail =

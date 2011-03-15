@@ -146,6 +146,27 @@ public:
 	}
 
 	virtual int isIdentifierInList(int identifier) = 0;
+
+	int check_dependency_for_group_special()
+	{
+		int dependency_changed = 0;
+		if (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		{
+			dependency_changed = 1;
+		}
+		else if (field->manager_change_status & MANAGER_CHANGE_ADD(Computed_field))
+		{
+			const Cmiss_field_subobject_group_change_detail *change_detail =
+				dynamic_cast<const Cmiss_field_subobject_group_change_detail *>(get_change_detail());
+			const Cmiss_field_group_change_type change = change_detail->getChange();
+			if ((change == CMISS_FIELD_GROUP_ADD) || (change == CMISS_FIELD_GROUP_REPLACE))
+			{
+				dependency_changed = 1;
+			}
+		}
+		return dependency_changed;
+	}
+
 };
 
 namespace {
