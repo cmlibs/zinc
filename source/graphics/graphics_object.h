@@ -74,7 +74,7 @@ Used to be gtypes.h
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-
+#include "api/cmiss_graphic.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -297,18 +297,6 @@ DESCRIPTION :
 	g_PLUS_MARKER,
 	g_DERIVATIVE_MARKER
 } gtMarkerType;
-
-enum GT_coordinate_system
-/*******************************************************************************
-LAST MODIFIED : 9 June 2005
-
-DESCRIPTION :
-Set the reference graphical coordinate system for the underlying objects.
-==============================================================================*/
-{
-	g_MODEL_COORDINATES,
-	g_NDC_COORDINATES
-}; /* enum GT_coordinate_system */
 
 struct GT_glyph_set;
 struct GT_nurbs;
@@ -1432,7 +1420,7 @@ DESCRIPTION :
 Gets the spectrum of a GT_object.
 ==============================================================================*/
 
-enum GT_coordinate_system GT_object_get_coordinate_system(
+enum Cmiss_graphic_coordinate_system GT_object_get_coordinate_system(
 	struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
@@ -1442,7 +1430,7 @@ Gets the graphical coordinate system of a GT_object.
 ==============================================================================*/
 
 int GT_object_set_coordinate_system(struct GT_object *graphics_object,
-	enum GT_coordinate_system coordinate_system);
+	enum Cmiss_graphic_coordinate_system coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
 
@@ -1516,4 +1504,5 @@ Frees the memory for <**context> and sets <*context> to NULL.
 int GT_object_get_overlay(struct GT_object *graphics_object);
 
 int set_GT_object_overlay(struct GT_object *graphics_object, int overlay);
+
 #endif /* !defined (GRAPHICS_OBJECT_H) */

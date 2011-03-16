@@ -60,6 +60,8 @@ typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_coordinate_system);
+
 /***************************************************************************//**
  * Unique identifier for each graphic attribute, used to query whether it can be
  * used with each Cmiss_graphic_type.
@@ -348,6 +350,9 @@ int Cmiss_graphic_set_visibility_field(
 
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
+
+int Cmiss_graphic_execute_non_distorted_ndc_objects(
+	struct Cmiss_graphic *graphic, void *renderer_void);
 
 /***************************************************************************//** 
  * If the settings visibility flag is set and it has a graphics_object, the
@@ -943,6 +948,7 @@ int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object);
 
+/* Overlay disabled
 int Cmiss_graphic_enable_overlay(struct Cmiss_graphic *graphic, int flag);
 
 int Cmiss_graphic_is_overlay(struct Cmiss_graphic *graphic);
@@ -950,6 +956,7 @@ int Cmiss_graphic_is_overlay(struct Cmiss_graphic *graphic);
 int Cmiss_graphic_set_overlay_order(struct Cmiss_graphic *graphic, int order);
 
 int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic);
+*/
 
 /***************************************************************************//**
  * This function will deaccess any computed fields being used by graphic, this

@@ -71,6 +71,8 @@ public:
 													 be used when compiling graphics that use that material. */
 	GT_object_map overlay_graphics;
 	
+	double width_to_height_ratio;
+
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
 		graphics_buffer(graphics_buffer)
@@ -79,6 +81,7 @@ public:
 		picking = 0;
 		allow_texture_tiling = 0;
 		texture_tiling = NULL;
+		width_to_height_ratio = 1.0;
 	}
 
 	/***************************************************************************//**
@@ -95,11 +98,13 @@ public:
 
 	virtual int Register_overlay_graphics_object(GT_object *graphics_object);
 
+	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object) = 0;
+
 	/**************************************************************************//**
 	 * Temporarily override the viewing coordinates so that the current opengl
 	 * display is in normalised device coordinates (aligned with the viewport).
 	 */
-	virtual int Start_ndc_coordinates() = 0;
+	virtual int Start_ndc_coordinates(int distorted, enum Cmiss_graphic_coordinate_system coordinate_system) = 0;
 
 	/**************************************************************************//**
 	 * Reverse the changes made by Start_ndc_coordinates and resume normal 

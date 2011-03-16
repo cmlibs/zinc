@@ -3788,7 +3788,7 @@ Allocates memory and assigns fields for a graphics object.
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->update_callback_list =
 				(struct Graphics_object_callback_data *)NULL;
-			object->coordinate_system = g_MODEL_COORDINATES;
+			object->coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
@@ -7409,7 +7409,7 @@ Gets the spectrum of a GT_object.
 	return (spectrum);
 } /* get_GT_object_spectrum */
 
-enum GT_coordinate_system GT_object_get_coordinate_system(
+enum Cmiss_graphic_coordinate_system GT_object_get_coordinate_system(
 	struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
@@ -7418,7 +7418,7 @@ DESCRIPTION :
 Gets the graphical coordinate system of a GT_object.
 ==============================================================================*/
 {
-	enum GT_coordinate_system coordinate_system;
+	enum Cmiss_graphic_coordinate_system coordinate_system;
 
 	ENTER(GT_object_get_coordinate_system);
 	if (graphics_object)
@@ -7429,7 +7429,7 @@ Gets the graphical coordinate system of a GT_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_get_coordinate_system.  Invalid graphics object");
-		coordinate_system = g_MODEL_COORDINATES;
+		coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
 	}
 	LEAVE;
 
@@ -7437,7 +7437,7 @@ Gets the graphical coordinate system of a GT_object.
 } /* GT_object_get_coordinate_system */
 
 int GT_object_set_coordinate_system(struct GT_object *graphics_object,
-	enum GT_coordinate_system coordinate_system)
+	enum Cmiss_graphic_coordinate_system coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
 
@@ -7451,6 +7451,19 @@ Sets the graphical coordinate system of a GT_object.
 	if (graphics_object)
 	{
 		graphics_object->coordinate_system = coordinate_system;
+		if (coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL ||
+				coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
+				coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
+				coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
+				coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
+				coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM)
+		{
+			set_GT_object_overlay(graphics_object, 1);
+		}
+		else
+		{
+			set_GT_object_overlay(graphics_object, 0);
+		}
 		return_code=1;
 	}
 	else

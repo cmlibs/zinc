@@ -384,6 +384,20 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
 				scene->list_of_lights);
 		}
+		else
+		{
+			if (scene->list_of_rendition &&
+				!scene->list_of_rendition->empty())
+			{
+				Rendition_set::iterator pos =
+					scene->list_of_rendition->begin();
+				while (pos != scene->list_of_rendition->end())
+				{
+					renderer->Update_non_distorted_ndc_objects(*pos);
+					++pos;
+				}
+			}
+		}
 	}
 	else
 	{

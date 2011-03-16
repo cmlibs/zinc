@@ -1584,6 +1584,30 @@ int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition,
 		return renderer->Cmiss_rendition_execute(rendition);
 }
 
+int Cmiss_rendition_update_non_distorted_ndc_objects(Cmiss_rendition *rendition,
+	Render_graphics_compile_members *renderer)
+{
+	int return_code;
+
+	ENTER(Cmiss_rendition_update_non_distorted_ndc_objects);
+	if (rendition)
+	{
+    /* Call the renderer to update each of the non distorted ndc objects*/
+		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_execute_non_distorted_ndc_objects, (void *)renderer,
+			rendition->list_of_graphics);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_execute_non_distorted_ndc_objects.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_rendition_compile_members  */
+
 int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	Render_graphics_compile_members *renderer)
 {

@@ -517,7 +517,7 @@ class wxRegionTreeViewer : public wxFrame
 		*circlediscretizationtextctrl,*xitextctrl,*lengthtextctrl,*widthtextctrl,
 		*linewidthtextctrl,*isovaluesequencenumbertextctrl, *isovaluesequencefirsttextctrl,
 		*isovaluesequencelasttextctrl;
-	wxPanel	*coordinate_field_chooser_panel, *data_chooser_panel,
+	wxPanel	*coordinate_field_chooser_panel, *coordinate_system_chooser_panel, *data_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
 		*label_chooser_panel, *font_chooser_panel, *select_mode_chooser_panel,
@@ -587,6 +587,9 @@ class wxRegionTreeViewer : public wxFrame
 	DEFINE_ENUMERATOR_TYPE_CLASS(Streamline_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_type)>
 	*streamline_type_chooser;
+	DEFINE_ENUMERATOR_TYPE_CLASS(Cmiss_graphic_coordinate_system);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphic_coordinate_system)>
+	*coordinate_system_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*stream_vector_chooser;
 	DEFINE_ENUMERATOR_TYPE_CLASS(Streamline_data_type);
@@ -701,6 +704,23 @@ public:
 				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Cmiss_tessellation *) >
 		 (this, &wxRegionTreeViewer::tessellation_callback);
 	tessellation_chooser->set_callback(tessellation_callback);
+
+	wxPanel *coordinate_system_chooser_panel =
+		XRCCTRL(*this, "CoordinateSystemChooserPanel", wxPanel);
+	coordinate_system_chooser =
+		new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphic_coordinate_system)>
+		(coordinate_system_chooser_panel,
+			CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+				(void *)NULL, region_tree_viewer->user_interface);
+	coordinate_system_chooser_panel->Fit();
+	Callback_base< enum Cmiss_graphic_coordinate_system > *coordinate_system_callback =
+		new Callback_member_callback< enum Cmiss_graphic_coordinate_system,
+				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Cmiss_graphic_coordinate_system) >
+		(this, &wxRegionTreeViewer::Region_tree_viewer_coordinate_system_callback);
+	coordinate_system_chooser->set_callback(coordinate_system_callback);
+	coordinate_system_chooser->set_value(CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL);
+	coordinate_system_chooser_panel->Fit();
 
 	select_mode_chooser = NULL;
 	radius_scalar_chooser = NULL;	
@@ -837,6 +857,8 @@ public:
 				delete render_type_chooser;
 			if (seed_element_chooser)
 				delete seed_element_chooser;
+			if (coordinate_system_chooser)
+				delete coordinate_system_chooser;
 	}
 
 /***************************************************************************//**
@@ -882,6 +904,23 @@ Callback from wxChooser<Coordinate Field> when choice is made.
 	{
 		Cmiss_graphic_set_coordinate_field(
 			region_tree_viewer->current_graphic, coordinate_field);
+		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+			region_tree_viewer->edit_rendition);
+		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		return(1);
+	}
+
+int Region_tree_viewer_coordinate_system_callback(
+	enum Cmiss_graphic_coordinate_system coordinate_system)
+/*******************************************************************************
+LAST MODIFIED : 19 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Coordinate Field> when choice is made.
+==============================================================================*/
+	{
+		Cmiss_graphic_set_coordinate_system(
+			region_tree_viewer->current_graphic, coordinate_system);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
 		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
@@ -2800,6 +2839,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 			}
 		}	}
 
+	/*Overlay disabled
    void OverlayChecked(wxCommandEvent &event)
 	{
 		wxTextCtrl *overlay_textctrl = XRCCTRL(*this, "OverlayTextCtrl", wxTextCtrl);
@@ -2832,7 +2872,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
 	}
-
+*/
 
    void VariableScaleChecked(wxCommandEvent &event)
 {
@@ -3411,6 +3451,11 @@ void SetGraphic(Cmiss_graphic *graphic)
 		coordinate_field_chooser_panel->Hide();
 		coordinatefieldstatictext->Hide();
 	}
+	enum Cmiss_graphic_coordinate_system coordinate_system;
+	coordinate_system = Cmiss_graphic_get_coordinate_system(
+		region_tree_viewer->current_graphic);
+	coordinate_system_chooser->set_value(coordinate_system);
+
 
 	constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
 	radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
@@ -3571,6 +3616,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		glyphbox=XRCCTRL(*this,"GlyphBox",wxWindow);
 		glyphline=XRCCTRL(*this,"GlyphLine",wxWindow);
 
+		/* overlay disabled
 		wxCheckBox *overlay_checkbox = XRCCTRL(*this, "OverlayCheckBox", wxCheckBox);
 		wxTextCtrl *overlay_textctrl = XRCCTRL(*this, "OverlayTextCtrl", wxTextCtrl);
 		if (CMISS_GRAPHIC_STATIC == region_tree_viewer->current_graphic_type)
@@ -3595,7 +3641,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 			overlay_textctrl->Disable();
 			overlay_checkbox->Hide();	
 		}
-		
+		*/
 		if (((CMISS_GRAPHIC_NODE_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_DATA_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_ELEMENT_POINTS == region_tree_viewer->current_graphic_type) ||
@@ -4795,8 +4841,10 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_TEXT_ENTER(XRCID("BaseGlyphSizeTextCtrl"),wxRegionTreeViewer::EnterGlyphSize)
 	EVT_TEXT_ENTER(XRCID("GlyphScaleFactorsTextCtrl"),wxRegionTreeViewer::EnterGlyphScale)
 	EVT_CHECKBOX(XRCID("OrientationScaleCheckBox"),wxRegionTreeViewer::EnterGlyphScale)
+	/*overlay disabled
 	EVT_CHECKBOX(XRCID("OverlayCheckBox"),wxRegionTreeViewer::OverlayChecked)
 	EVT_TEXT_ENTER(XRCID("OverlayTextCtrl"),wxRegionTreeViewer::OverlayEntered)
+	*/
 	EVT_CHECKBOX(XRCID("VariableScaleCheckBox"),wxRegionTreeViewer::VariableScaleChecked)
 	EVT_CHECKBOX(XRCID("LabelCheckBox"),wxRegionTreeViewer::LabelChecked)
 	EVT_CHECKBOX(XRCID("VisibilityFieldCheckBox"),wxRegionTreeViewer::VisibilityFieldChecked)

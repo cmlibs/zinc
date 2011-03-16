@@ -75,3 +75,7 @@ int Render_graphics_compile_members::Cmiss_rendition_compile_members(Cmiss_rendi
 	return Cmiss_rendition_compile_members_rendition(cmiss_rendition, this);
 }
 
+int Render_graphics_compile_members::Update_non_distorted_ndc_objects(Cmiss_rendition *cmiss_rendition)
+{
+	return Cmiss_rendition_update_non_distorted_ndc_objects(cmiss_rendition, this);
+}

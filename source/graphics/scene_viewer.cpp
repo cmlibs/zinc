@@ -2349,7 +2349,8 @@ access this function.
 					 scene_viewer->graphics_buffer);
 				}
 			}
-
+			rendering_data.renderer->width_to_height_ratio =
+				((double)rendering_data.viewport_width / (double)rendering_data.viewport_height);
 			rendering_data.renderer->Scene_compile(scene_viewer->scene);
 
 			if (scene_viewer->overlay_scene)

@@ -155,6 +155,9 @@ public:
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition) = 0;
 	
+	virtual int Update_non_distorted_ndc_objects(
+	  Cmiss_rendition *cmiss_rendition) = 0;
+
 	/***************************************************************************//**
 	 * Compile the Material.
 	 */
@@ -247,6 +250,8 @@ public:
 
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition);
+
+	int Update_non_distorted_ndc_objects(Cmiss_rendition *cmiss_rendition);
 		
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
