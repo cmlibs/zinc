@@ -1587,13 +1587,13 @@ int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_update_non_distorted_ndc_objects(Cmiss_rendition *rendition,
 	Render_graphics_compile_members *renderer)
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Cmiss_rendition_update_non_distorted_ndc_objects);
 	if (rendition)
 	{
     /* Call the renderer to update each of the non distorted ndc objects*/
-		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_execute_non_distorted_ndc_objects, (void *)renderer,
 			rendition->list_of_graphics);
 	}

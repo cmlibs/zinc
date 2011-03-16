@@ -1912,7 +1912,7 @@ enum Cmiss_graphic_coordinate_system Cmiss_graphic_get_coordinate_system(
 int Cmiss_graphic_set_coordinate_system(
 	struct Cmiss_graphic *graphic, enum Cmiss_graphic_coordinate_system coordinate_system)
 {
-	int return_code;
+	int return_code = 1;
 	ENTER(Cmiss_graphic_set_coordinate_system);
 	if (graphic)
 	{
