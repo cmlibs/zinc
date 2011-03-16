@@ -2566,7 +2566,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
 			ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(graphic->coordinate_system),&error);
-
 		if (CMISS_GRAPHIC_LINES==graphic->graphic_type)
 		{
 			if (0 != graphic->line_width)
@@ -6632,6 +6631,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
 					/* coordinate system */
 					coordinate_system_string =
 						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
