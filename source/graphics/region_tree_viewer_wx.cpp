@@ -2223,7 +2223,7 @@ void AddGraphicItemFromMenu(wxCommandEvent &event)
 	}
 	else if (AddMenuItemStaticGraphic == event.GetId())
 	{
-		current_graphic_type = CMISS_GRAPHIC_STATIC;
+		current_graphic_type = CMISS_GRAPHIC_POINT;
 	}
 	graphic = first_graphic_in_Cmiss_rendition_that(
 		region_tree_viewer->edit_rendition, Cmiss_graphic_type_matches,
@@ -3415,7 +3415,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 	wxStaticText *coordinatefieldstatictext=
 		XRCCTRL(*this, "CoordinateFieldStaticText",wxStaticText);
-	if (CMISS_GRAPHIC_STATIC != region_tree_viewer->current_graphic_type)
+	if (CMISS_GRAPHIC_POINT != region_tree_viewer->current_graphic_type)
 	{
 		struct Computed_field *temp_coordinate_field = NULL;
 		if (region_tree_viewer->current_graphic != NULL)
@@ -3645,7 +3645,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		if (((CMISS_GRAPHIC_NODE_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_DATA_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_ELEMENT_POINTS == region_tree_viewer->current_graphic_type) ||
-				(CMISS_GRAPHIC_STATIC == region_tree_viewer->current_graphic_type)) &&
+				(CMISS_GRAPHIC_POINT == region_tree_viewer->current_graphic_type)) &&
 			Cmiss_graphic_get_glyph_parameters(graphic,
 				 &glyph, &glyph_scaling_mode,glyph_centre, glyph_size,
 				 &orientation_scale_field, glyph_scale_factors,&variable_scale_field))
@@ -3665,7 +3665,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				variablescalecheckbox->Show();
 				glyphbox->Show();
 				glyphline->Show();
-				if (CMISS_GRAPHIC_STATIC == region_tree_viewer->current_graphic_type)
+				if (CMISS_GRAPHIC_POINT == region_tree_viewer->current_graphic_type)
 				{
 					orientation_scale_field_chooser_panel->Hide();
 					orientationscalecheckbox->Hide();
@@ -3788,7 +3788,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		if (((CMISS_GRAPHIC_NODE_POINTS==region_tree_viewer->current_graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==region_tree_viewer->current_graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)||
-				(CMISS_GRAPHIC_STATIC==region_tree_viewer->current_graphic_type)) &&
+				(CMISS_GRAPHIC_POINT==region_tree_viewer->current_graphic_type)) &&
 				Cmiss_graphic_get_label_field(graphic,&label_field, &font))
 			{
 				if (label_field_chooser == NULL)
@@ -3899,7 +3899,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		select_mode_chooser_panel = 
 			XRCCTRL(*this, "SelectModeChooserPanel", wxPanel);
 		selectmodetext=XRCCTRL(*this,"SelectModeText",wxStaticText);
-		if (CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type)
+		if (CMISS_GRAPHIC_POINT!=region_tree_viewer->current_graphic_type)
 		{
 			if (select_mode_chooser == NULL)
 			{
@@ -4329,7 +4329,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		datacheckbox=XRCCTRL(*this, "DataCheckBox", wxCheckBox);
 		data_chooser_panel=XRCCTRL(*this,"DataChooserPanel",wxPanel);
 
-		if (CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type)
+		if (CMISS_GRAPHIC_POINT!=region_tree_viewer->current_graphic_type)
 		{
 			if (data_field_chooser == NULL)
 			{
@@ -4401,7 +4401,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 			/* set scalar data field & spectrum */
 			streamlinedatatypetext->Hide();
 			streamline_data_type_chooser_panel->Hide();
-			if (CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type)
+			if (CMISS_GRAPHIC_POINT!=region_tree_viewer->current_graphic_type)
 			{
 				Cmiss_graphic_get_data_spectrum_parameters(graphic,
 					&data_field,&spectrum);
@@ -4506,7 +4506,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		if ((CMISS_GRAPHIC_DATA_POINTS!=region_tree_viewer->current_graphic_type) &&
 			(CMISS_GRAPHIC_NODE_POINTS!=region_tree_viewer->current_graphic_type) &&
 			(CMISS_GRAPHIC_STREAMLINES!=region_tree_viewer->current_graphic_type) &&
-			(CMISS_GRAPHIC_STATIC!=region_tree_viewer->current_graphic_type))
+			(CMISS_GRAPHIC_POINT!=region_tree_viewer->current_graphic_type))
 		{
 			exteriorcheckbox->Show();
 			facecheckbox->Show();
@@ -4692,7 +4692,7 @@ void ShowMenu(wxTreeItemId id, const wxPoint& pt)
 	add_menu->Append(AddMenuItemIsoSurfaces, wxT("iso_surfaces"));
 	add_menu->Append(AddMenuItemElement, wxT("element_points"));
 	add_menu->Append(AddMenuItemStreamlines, wxT("streamlines"));
-	add_menu->Append(AddMenuItemStaticGraphic, wxT("static_graphic"));
+	add_menu->Append(AddMenuItemStaticGraphic, wxT("point"));
 	menu.Append(CmguiTree_MenuItem1, wxT("Turn on tree visibililty"));
 	menu.Append(CmguiTree_MenuItem2, wxT("Turn off tree visibililty"));
 	menu.AppendSubMenu(add_menu, wxT("Add"), wxT("Graphic Type"));

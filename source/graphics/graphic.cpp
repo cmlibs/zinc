@@ -296,9 +296,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 		{
 			enumerator_string = "streamlines";
 		} break;
-		case CMISS_GRAPHIC_STATIC:
+		case CMISS_GRAPHIC_POINT:
 		{
-			enumerator_string = "static_graphic";
+			enumerator_string = "point";
 		} break;
 		default:
 		{
@@ -369,14 +369,14 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 				(graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
 				(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
 				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_STATIC);
+				(graphic_type == CMISS_GRAPHIC_POINT);
 		} break;
 		case CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD:
 		case CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION:
 		{
 			return_code = (graphic_type != CMISS_GRAPHIC_DATA_POINTS) &&
 				(graphic_type != CMISS_GRAPHIC_NODE_POINTS) &&
-				(graphic_type != CMISS_GRAPHIC_STATIC) &&
+				(graphic_type != CMISS_GRAPHIC_POINT) &&
 				(graphic_type != CMISS_GRAPHIC_STREAMLINES);
 		} break;
 		default:
@@ -408,7 +408,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 		(CMISS_GRAPHIC_ISO_SURFACES==graphic_type)||
 		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic_type)||
 		(CMISS_GRAPHIC_STREAMLINES==graphic_type)||
-		(CMISS_GRAPHIC_STATIC==graphic_type))
+		(CMISS_GRAPHIC_POINT==graphic_type))
 	{
 		if (ALLOCATE(graphic,struct Cmiss_graphic,1))
 		{
@@ -697,7 +697,7 @@ int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region 
 		{
 			case CMISS_GRAPHIC_NODE_POINTS:
 			case CMISS_GRAPHIC_DATA_POINTS:
-			case CMISS_GRAPHIC_STATIC:
+			case CMISS_GRAPHIC_POINT:
 			{
 				dimension=0;
 			} break;
@@ -2102,7 +2102,7 @@ int Cmiss_graphic_get_glyph_parameters(
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STATIC==graphic->graphic_type)) &&
+			(CMISS_GRAPHIC_POINT==graphic->graphic_type)) &&
 		orientation_scale_field && glyph_scale_factors && variable_scale_field)
 	{
 		*glyph = graphic->glyph;
@@ -2309,7 +2309,7 @@ int Cmiss_graphic_set_label_field(
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STATIC==graphic->graphic_type))) &&
+			(CMISS_GRAPHIC_POINT==graphic->graphic_type))) &&
 		(!label_field || font))
 	{
 		REACCESS(Computed_field)(&(graphic->label_field), label_field);
@@ -2673,7 +2673,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		if ((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STATIC==graphic->graphic_type))
+			(CMISS_GRAPHIC_POINT==graphic->graphic_type))
 		{
 			if (graphic->glyph)
 			{
@@ -3027,14 +3027,14 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	return graphic_string;
 } /* Cmiss_graphic_string */
 
-int Cmiss_graphic_to_static_graphics_object_at_time(
+int Cmiss_graphic_to_point_object_at_time(
 	struct Cmiss_graphic *graphic, float time)
 {
 	FE_value base_size[3], centre[3], scale_factors[3];
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
 	char **labels = NULL;
-	ENTER(Cmiss_graphic_to_static_graphics_object_at_time);
+	ENTER(Cmiss_graphic_to_point_object_at_time);
 	if (graphic)
 	{
 		if (!graphic->customised_graphics_object)
@@ -3120,7 +3120,7 @@ int Cmiss_graphic_to_static_graphics_object_at_time(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_to_static_graphics_object_at_time.  Invalid argument(s)");
+			"Cmiss_graphic_to_point_object_at_time.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3364,7 +3364,7 @@ int Cmiss_graphic_to_graphics_object(
 									case CMISS_GRAPHIC_NODE_POINTS:
 									case CMISS_GRAPHIC_DATA_POINTS:
 									case CMISS_GRAPHIC_ELEMENT_POINTS:
-									case CMISS_GRAPHIC_STATIC:
+									case CMISS_GRAPHIC_POINT:
 									{
 										graphics_object_type = g_GLYPH_SET;
 									} break;
@@ -3481,9 +3481,9 @@ int Cmiss_graphic_to_graphics_object(
 										}
 									}
 								} break;
-								case CMISS_GRAPHIC_STATIC:
+								case CMISS_GRAPHIC_POINT:
 								{
-									Cmiss_graphic_to_static_graphics_object_at_time(
+									Cmiss_graphic_to_point_object_at_time(
 										graphic, time);
 								} break;
 								case CMISS_GRAPHIC_LINES:
@@ -3707,7 +3707,7 @@ int Cmiss_graphic_to_graphics_object(
 						return_code = 0;
 					}
 				}
-				else if (graphic->graphic_type == CMISS_GRAPHIC_STATIC)
+				else if (graphic->graphic_type == CMISS_GRAPHIC_POINT)
 				{
 					graphic_to_object_data->existing_graphics =
 						(struct GT_object *)NULL;
@@ -3759,7 +3759,7 @@ int Cmiss_graphic_to_graphics_object(
 							}
 							ACCESS(GT_object)(graphic->graphics_object);
 						}
-						if (Cmiss_graphic_to_static_graphics_object_at_time(
+						if (Cmiss_graphic_to_point_object_at_time(
 									graphic, time))
 						{
 							graphic->graphics_changed = 0;
@@ -3895,7 +3895,7 @@ int Cmiss_graphic_to_graphics_object(
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
 							} break;
-							case CMISS_GRAPHIC_STATIC:
+							case CMISS_GRAPHIC_POINT:
 							case CMISS_GRAPHIC_STREAMLINES:
 							{
 								/* no element to select by since go through several */
@@ -4186,7 +4186,7 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		{
 			return_code = 1;
 		}
-		else if (CMISS_GRAPHIC_STATIC == graphic->graphic_type)
+		else if (CMISS_GRAPHIC_POINT == graphic->graphic_type)
 		{
 			return_code = 0;
 		}
@@ -4218,7 +4218,7 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	int return_code;
 
 	ENTER(Cmiss_graphic_uses_changed_FE_field);
-	if (graphic && ((CMISS_GRAPHIC_STATIC==graphic->graphic_type) || 
+	if (graphic && ((CMISS_GRAPHIC_POINT==graphic->graphic_type) || 
 			graphic->coordinate_field) && fe_field_change_log)
 	{
 		if ((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) &&
@@ -4229,7 +4229,7 @@ static int Cmiss_graphic_uses_changed_FE_field(
 		{
 			return_code = 1;
 		}
-		else if (CMISS_GRAPHIC_STATIC!=graphic->graphic_type)
+		else if (CMISS_GRAPHIC_POINT!=graphic->graphic_type)
 		{
 			return_code =
 				Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
@@ -4386,7 +4386,7 @@ int Cmiss_graphic_type_uses_dimension(
 	{
 		case CMISS_GRAPHIC_NODE_POINTS:
 		case CMISS_GRAPHIC_DATA_POINTS:
-		case CMISS_GRAPHIC_STATIC:
+		case CMISS_GRAPHIC_POINT:
 		{
 			return_code = ((-1 == dimension) || (0 == dimension));
 		} break;
@@ -4624,7 +4624,7 @@ int Cmiss_graphic_set_glyph_parameters(
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
-			(CMISS_GRAPHIC_STATIC==graphic->graphic_type))&&
+			(CMISS_GRAPHIC_POINT==graphic->graphic_type))&&
 		((!orientation_scale_field) || Computed_field_is_orientation_scale_capable(
 			orientation_scale_field,(void *)NULL)) && glyph_scale_factors &&
 		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
@@ -5083,7 +5083,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		if (source->glyph && ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_STATIC==source->graphic_type)))
+			(CMISS_GRAPHIC_POINT==source->graphic_type)))
 		{
 			Cmiss_graphic_set_glyph_parameters(destination,
 				source->glyph, source->glyph_scaling_mode,
@@ -5109,7 +5109,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 			}
 		}
 		
-		if (CMISS_GRAPHIC_STATIC==source->graphic_type)
+		if (CMISS_GRAPHIC_POINT==source->graphic_type)
 		{
 			destination->overlay_flag = source->overlay_flag;
 			destination->overlay_order = source->overlay_order;
@@ -5792,7 +5792,7 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 				(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 				(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-				(CMISS_GRAPHIC_STATIC==graphic->graphic_type) ))
+				(CMISS_GRAPHIC_POINT==graphic->graphic_type) ))
 		{
 			return_code=
 				(graphic->glyph==second_graphic->glyph)&&
@@ -6507,7 +6507,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 	return (return_code);
 } /* gfx_modify_rendition_data_points */
 
-int gfx_modify_rendition_static_graphic(struct Parse_state *state,
+int gfx_modify_rendition_point(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
 	char *font_name;
@@ -6528,7 +6528,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
-	ENTER(gfx_modify_rendition_static_graphic);
+	ENTER(gfx_modify_rendition_point);
 	if (state)
 	{
 		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
@@ -6538,7 +6538,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
 				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_STATIC,
+					rendition_command_data->rendition, CMISS_GRAPHIC_POINT,
 					modify_rendition_data->graphic);
 				if (graphic)
 				{
@@ -6776,7 +6776,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_modify_rendition_static_graphic.  Could not create graphic");
+						"gfx_modify_rendition_point.  Could not create graphic");
 					return_code=0;
 				}
 				DEACCESS(Cmiss_graphic)(&graphic);
@@ -6784,13 +6784,13 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_modify_rendition_static_graphic.  No modify data");
+					"gfx_modify_rendition_point.  No modify data");
 				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"gfx_modify_rendition_static_graphic.  "
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_point.  "
 				"Missing rendition_command_data");
 			return_code=0;
 		}
@@ -6798,7 +6798,7 @@ int gfx_modify_rendition_static_graphic(struct Parse_state *state,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_modify_rendition_static_graphic.  Missing state");
+			"gfx_modify_rendition_point.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
@@ -8474,7 +8474,7 @@ int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)||
-			(CMISS_GRAPHIC_STATIC==graphic->graphic_type)))
+			(CMISS_GRAPHIC_POINT==graphic->graphic_type)))
 	{
 		*label_field = graphic->label_field;
 		*font = graphic->font;
@@ -9333,7 +9333,7 @@ int Cmiss_graphic_set_customised_graphics_object(
 	{
 		switch (graphic->graphic_type)
 		{
-			case CMISS_GRAPHIC_STATIC:
+			case CMISS_GRAPHIC_POINT:
 			{
 				if (graphic->customised_graphics_object != graphics_object)
 				{

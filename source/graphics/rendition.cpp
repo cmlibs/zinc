@@ -1080,7 +1080,7 @@ int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 		if ((graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
 			(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
 			(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_STATIC))
+			(graphic_type == CMISS_GRAPHIC_POINT))
 		{
 			GT_object *glyph;
 			Graphic_glyph_scaling_mode glyph_scaling_mode;
@@ -3470,7 +3470,7 @@ int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition,
 				(void *)cmiss_graphic_name, rendition->list_of_graphics))
 		{
 			Cmiss_rendition_begin_change(rendition);
-			Cmiss_graphic *graphic = Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_STATIC);
+			Cmiss_graphic *graphic = Cmiss_rendition_create_graphic(rendition, CMISS_GRAPHIC_POINT);
 			struct Graphical_material *material = get_GT_object_default_material(glyph);
 			if (!material)
 			{
@@ -4126,10 +4126,10 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			Option_table_add_entry(option_table, "node_points",
 				(void *)&modify_rendition_data, (void *)&rendition_command_data,
 				gfx_modify_rendition_node_points);
-			/* static_graphic */
-			Option_table_add_entry(option_table, "static_graphic",
+			/* point */
+			Option_table_add_entry(option_table, "point",
 				(void *)&modify_rendition_data, (void *)&rendition_command_data,
-				gfx_modify_rendition_static_graphic);
+				gfx_modify_rendition_point);
 			/* streamlines */
 			Option_table_add_entry(option_table, "streamlines",
 				(void *)&modify_rendition_data, (void *)&rendition_command_data,

@@ -95,7 +95,7 @@ enum Cmiss_graphic_type
 	CMISS_GRAPHIC_ISO_SURFACES = 6,
 	CMISS_GRAPHIC_ELEMENT_POINTS = 7,
 	CMISS_GRAPHIC_STREAMLINES = 8,
-	CMISS_GRAPHIC_STATIC = 9 /*!< CMISS_GRAPHIC_STATIC is different from others,
+	CMISS_GRAPHIC_POINT = 9 /*!< CMISS_GRAPHIC_POINT is different from others,
 	 * as the graphics object of this is created by user instead of generated from
 	 * finite element models, it does not require a coordinate field in the
 	 * rendition. To get an idea of what graphics objects are, take a look at
