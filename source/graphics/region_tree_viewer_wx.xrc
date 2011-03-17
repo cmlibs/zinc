@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <resource>
 
-  <object class="wxFrame" subclass="wxRegionTreeViewer" name="CmguiRegionTreeViewer" title="Region Tree Viewer">
-	  <title>Region Tree Viewer</title>
+  <object class="wxFrame" subclass="wxRegionTreeViewer" name="CmguiRegionTreeViewer" title="Scene Editor">
+	  <title>Scene Editor</title>
 	  <flag>wxCLIP_CHILDREN</flag>
      <object class ="wxSplitterWindow" name="VerticalSplitter">
 		  <style>wxSP_3D</style>
