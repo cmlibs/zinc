@@ -2308,6 +2308,14 @@ struct FE_element_shape *FE_element_shape_create_simple_type(
 enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
 	struct FE_element_shape *element_shape);
 
+/***************************************************************************//**
+ * Creates an unspecified element shape of the supplied dimension.
+ *
+ * @return  Accessed shape object or NULL on error.
+ */
+struct FE_element_shape *FE_element_shape_create_unspecified(
+	struct FE_region *fe_region, int dimension);
+
 int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002

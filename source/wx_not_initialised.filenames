@@ -9,7 +9,7 @@ finite_element/finite_element_time.c
 finite_element/finite_element_to_streamlines.cpp
 finite_element/import_finite_element.cpp
 finite_element/snake.c
-finite_element/write_fieldml.c
+finite_element/write_fieldml_01.c
 general/geometry.cpp
 general/image_utilities.c
 general/io_stream.c

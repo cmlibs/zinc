@@ -56,9 +56,9 @@ typedef struct Cmiss_field_real_parameters *Cmiss_field_real_parameters_id;
 
 /***************************************************************************//**
  * Create a double-precision real-valued parameter set indexed by N ensembles.
- * Parameters effectively cycle through first ensemble slowest to last ensemble
- * fastest. If one ensemble is expected to grow during processing, best
- * performance is achieved by making it the first ensemble.
+ * Parameters effectively cycle through first ensemble fast to last ensemble
+ * index slowest. If one ensemble is expected to grow during processing, best
+ * performance is achieved by making it the last ensemble.
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
@@ -74,9 +74,54 @@ int Cmiss_field_real_parameters_get_values(
 	Cmiss_field_real_parameters_id real_parameters_field,
 	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values);
 
+/***************************************************************************//**
+ * @param number_of_values  The size of the values and value_exists arrays. This
+ * must match the number identified by the index.
+ * @param values  Array to receive parameter values.
+ * @param value_exists  Array to receive flag indicating if each value exists; 1
+ * if it exists, 0 if not.
+ * @param number_of_values_read  The number of values read.
+ * @return  1 on success, 0 on error. Success includes when the index and
+ * number of values expected are matching, but no values are stored.
+ */
+int Cmiss_field_real_parameters_get_values_sparse(
+	Cmiss_field_real_parameters_id real_parameters_field,
+	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values,
+	int *value_exists, int *number_of_values_read);
+
 int Cmiss_field_real_parameters_set_values(
 	Cmiss_field_real_parameters_id real_parameters_field,
 	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values);
 
+
+/***************************************************************************//**
+ * The ensemble type specific handle to an integer parameters Cmiss_field.
+ */
+struct Cmiss_field_integer_parameters;
+typedef struct Cmiss_field_integer_parameters *Cmiss_field_integer_parameters_id;
+
+/***************************************************************************//**
+ * Create an integer-valued parameter set indexed by N ensembles.
+ * Parameters effectively cycle through first ensemble fast to last ensemble
+ * index slowest. If one ensemble is expected to grow during processing, best
+ * performance is achieved by making it the last ensemble.
+ * Note: Currently defaults to 1 component; Eventually need to specify component
+ * ensemble, e.g. via FieldML valueDomain.
+ */
+Cmiss_field *Cmiss_field_module_create_integer_parameters(Cmiss_field_module_id field_module,
+	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
+
+Cmiss_field_integer_parameters_id Cmiss_field_cast_integer_parameters(Cmiss_field_id field);
+
+Cmiss_ensemble_index_id Cmiss_field_integer_parameters_create_index(
+	Cmiss_field_integer_parameters_id integer_parameters_field);
+
+int Cmiss_field_integer_parameters_get_values(
+	Cmiss_field_integer_parameters_id integer_parameters_field,
+	Cmiss_ensemble_index_id index, unsigned int number_of_values, int *values);
+
+int Cmiss_field_integer_parameters_set_values(
+	Cmiss_field_integer_parameters_id integer_parameters_field,
+	Cmiss_ensemble_index_id index, unsigned int number_of_values, int *values);
 
 #endif /* !defined (CMISS_FIELD_PARAMETERS_H) */

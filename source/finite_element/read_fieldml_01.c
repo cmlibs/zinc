@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : read_fieldml.c
-
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-The function for importing finite element data into CMISS.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : read_fieldml_01.c
+ *
+ * Functions for reading finite element fields from legacy FieldML 0.1 files.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -56,7 +53,7 @@ The function for importing finite element data into CMISS.
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/finite_element_region.h"
-#include "finite_element/read_fieldml.h"
+#include "finite_element/read_fieldml_01.h"
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -5311,7 +5308,7 @@ DESCRIPTION :
 } /* specialXmlSAXParseFile */
 #endif /* defined (OLD_CODE) */
 
-int parse_fieldml_file(struct Cmiss_region *region, const char *filename)
+int parse_fieldml_01_file(struct Cmiss_region *region, const char *filename)
 /*******************************************************************************
 LAST MODIFIED : 29 May 2008
 

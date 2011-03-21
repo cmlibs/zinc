@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : read_fieldml_02.h
+ * FILE : read_fieldml.h
  * 
- * Functions for importing regions and fields from FieldML 0.2+ documents.
+ * Functions for importing regions and fields from FieldML 0.3+ documents.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -37,14 +37,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#if !defined (READ_FIELDML_02_H)
-#define READ_FIELDML_02_H
+#if !defined (READ_FIELDML_H)
+#define READ_FIELDML_H
 
 struct Cmiss_region;
 
 /***************************************************************************//**
- * Reads subregions and fields from FieldML 0.2 format file into the region.
+ * Reads subregions and fields from FieldML 0.3 format file into the region.
  */
-int parse_fieldml_02_file(struct Cmiss_region *region, const char *filename);
+int parse_fieldml_file(struct Cmiss_region *region, const char *filename);
 
-#endif /* !defined (READ_FIELDML_02_H) */
+#endif /* !defined (READ_FIELDML_H) */

@@ -27655,6 +27655,23 @@ enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
 	return shape_type;
 }
 
+struct FE_element_shape *FE_element_shape_create_unspecified(
+	struct FE_region *fe_region, int dimension)
+{
+	struct FE_element_shape *fe_element_shape = NULL;
+	if (fe_region && (1 <= dimension) && (dimension <= 3))
+	{
+		fe_element_shape = ACCESS(FE_element_shape)(
+			CREATE(FE_element_shape)(dimension, (int *)NULL, fe_region));
+	}
+	if (!fe_element_shape)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_create_simple_type.  Invalid arguments");
+	}
+	return fe_element_shape;
+}
+
 int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002

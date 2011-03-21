@@ -70,9 +70,9 @@ SET( IO_DEVICES_HDRS
 	source/io_devices/matrix.h )
 
 SET( FIELD_IO_SRCS
-	source/field_io/read_fieldml_02.cpp )
+	source/field_io/read_fieldml.cpp )
 SET( FIELD_IO_HDRS
-	source/field_io/read_fieldml_02.h )
+	source/field_io/read_fieldml.h )
 
 SET( MAIN_SRCS source/cmgui.c )
 

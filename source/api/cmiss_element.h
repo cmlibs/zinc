@@ -107,7 +107,7 @@ typedef struct Cmiss_element_template *Cmiss_element_template_id;
  */
 enum Cmiss_element_shape_type
 {
-	CMISS_ELEMENT_SHAPE_TYPE_INVALID = 0,
+	CMISS_ELEMENT_SHAPE_TYPE_INVALID = 0,/**< unspecified shape of known dimension */
 	CMISS_ELEMENT_SHAPE_LINE = 1,        /**< 1-D: 0 <= xi1 <= 1 */
 	CMISS_ELEMENT_SHAPE_SQUARE = 2,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
 	CMISS_ELEMENT_SHAPE_TRIANGLE = 3,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
@@ -182,15 +182,15 @@ int Cmiss_fe_mesh_contains_element(Cmiss_fe_mesh_id mesh,
 
 /***************************************************************************//**
  * Creates an element_basis object for describing element basis functions.
+ * The basis has the same number of dimensions as the mesh.
  *
  * @param mesh  Handle to a mesh from which to obtain basis.
- * @param dimensions  The number of dimensions of the basis.
  * @param function_type  The basis function type to use in each dimension
  * i.e. basis function is initially homogeneous.
  * @return  Handle to element_basis, or NULL if error.
  */
 Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
-	int dimensions, enum Cmiss_basis_function_type function_type);
+	enum Cmiss_basis_function_type function_type);
 
 /***************************************************************************//**
  * Create a blank template from which new elements can be created in this mesh.
@@ -382,10 +382,13 @@ enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
- * Sets the element shape to a standard element shape type. Must be set before
- * any fields can be defined. If the element_template already has fields
- * defined, the new shape must have the same dimension. Beware that face
- * mappings are lost if shape changes are merged into global elements.
+ * Sets the element shape to a standard element shape type. The shape must have
+ * the same dimension as the mesh from which the element template was created.
+ * Special value CMISS_ELEMENT_SHAPE_TYPE_INVALID indicates an unspecified shape
+ * of known; when this is set in the template it does not override the shape
+ * of any elements it is merged into. Beware that face mappings are lost if
+ * shape changes are merged into global elements.
+ * Shape must be set before template can be finalised.
  * Finalised state is removed on changing shape.
  *
  * @param element_template  Element template to modify.
@@ -406,7 +409,7 @@ int Cmiss_element_template_get_number_of_nodes(
 
 /***************************************************************************//**
  * Sets the number of local nodes this element_template can address. This must
- * be done before definining fields that index them.
+ * be done before defining fields that index them.
  * This number cannot be reduced.
  *
  * @param element_template  Element template to modify.

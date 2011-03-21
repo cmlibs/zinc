@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : write_fieldml.h
-
-LAST MODIFIED : 28 January 2003
-
-DESCRIPTION :
-Functions for exporting finite element data to a fieldml file.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : write_fieldml_01.c
+ *
+ * Functions for writing finite element field data to legacy FieldML 0.1 files.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,8 +38,8 @@ Functions for exporting finite element data to a fieldml file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (WRITE_FIELDML_H)
-#define WRITE_FIELDML_H
+#if !defined (WRITE_FIELDML_01_H)
+#define WRITE_FIELDML_01_H
 
 #include <stdio.h>
 #include "finite_element/finite_element.h"
@@ -54,7 +51,7 @@ Global/Public functions
 -----------------------
 */
 
-int write_fieldml_file(FILE *output_file,
+int write_fieldml_01_file(FILE *output_file,
 	struct Cmiss_region *root_region, char *write_path,
 	int write_elements, int write_nodes,
 	struct FE_field_order_info *field_order_info);
@@ -78,4 +75,4 @@ If <field_order_info> is empty, only object identifiers are output.
 If <field_order_info> contains fields, they are written in that order.
 ==============================================================================*/
 
-#endif /* !defined (WRITE_FIELDML_H) */
+#endif /* !defined (WRITE_FIELDML_01_H) */

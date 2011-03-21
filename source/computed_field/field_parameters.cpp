@@ -85,7 +85,9 @@ public:
 		{
 			for (int i = 0; i < number_of_ensembles; i++)
 			{
-				ensembles[i] = in_ensembles[i];
+				// GRC reverse order of ensembles as supplied so external API matches
+				// FieldML Parameter Evaluator. Should update code to match internally.
+				ensembles[in_number_of_ensembles - i - 1] = in_ensembles[i];
 				refSize[i] = 0;
 				// default offset = 1 sets up single index ensemble. Multiple index ensembles will call resize
 				offsets[i] = 1;
@@ -150,6 +152,9 @@ public:
 	}
 
 	int getValues(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const;
+
+	int getValuesSparse(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues,
+		int *valueExists, int *valuesRead) const;
 
 	int setValues(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *inValues);
 
@@ -434,6 +439,78 @@ int Field_parameters<ValueType>::getValues(
 }
 
 template <typename ValueType>
+int Field_parameters<ValueType>::getValuesSparse(Cmiss_ensemble_index *index,
+	unsigned int number_of_values, ValueType *outValues, int *valueExists, int *valuesRead) const
+{
+	if (!validIndexCount(index, number_of_values, "Field_parameters::getValuesSparse"))
+		return 0;
+
+	// iterate to get values in identifier order for each ensemble
+	if (!index->iterationBegin())
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::getValuesSparse  Failed to begin iteration over index for field %s\n",
+			field->name);
+		return 0;
+	}
+	int i;
+	*valuesRead = 0;
+	int return_code = 1;
+	ParameterIndexType valueIndex = 0;
+	unsigned int value_number;
+	EnsembleEntryRef ref;
+	bool iterResult = true;
+	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
+	{
+		valueIndex = 0;
+		for (i = 0; i < number_of_ensembles; i++)
+		{
+			ref = index->iterationRef(i);
+			if (ref > refSize[i])
+			{
+				return_code = 0;
+				break;
+			}
+			valueIndex += (index->iterationRef(i) - 1)*offsets[i];
+		}
+		if (!return_code)
+			break;
+		if (!dense && !value_exists.getBool(valueIndex))
+		{
+			valueExists[value_number] = 0;
+		}
+		else if (values.getValue(valueIndex, outValues[value_number]))
+		{
+			valueExists[value_number] = 1;
+			++(*valuesRead);
+		}
+		else
+		{
+			return_code = 0;
+			break;
+		}
+		iterResult = index->iterationNext();
+	}
+	index->iterationEnd();
+
+	if (return_code && (value_number < number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::getValuesSparse  Only %u out of %u values iterated for field %s\n",
+			value_number, number_of_values, field->name);
+		return_code = 0;
+	}
+	else if (iterResult && (value_number >= number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::getValuesSparse  Iteration past end of values for field %s\n",
+			field->name);
+		return_code = 0;
+	}
+	return return_code;
+}
+
+template <typename ValueType>
 int Field_parameters<ValueType>::setValues(
 	Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *inValues)
 {
@@ -596,12 +673,27 @@ public:
 
 	const char *get_type_string()
 	{
-		// GRC define in specialisation class Field_parameters_real
 		return (field_real_parameters_type_string);
 	}
 
 };
 
+char field_integer_parameters_type_string[] = "integer_parameters";
+
+class Field_integer_parameters : public Field_parameters<int>
+{
+public:
+	Field_integer_parameters(int in_number_of_ensembles, Field_ensemble **in_ensembles) :
+		Field_parameters<int>(in_number_of_ensembles, in_ensembles)
+	{
+	}
+
+	const char *get_type_string()
+	{
+		return (field_integer_parameters_type_string);
+	}
+
+};
 
 } // namespace Cmiss
 
@@ -689,6 +781,19 @@ int Cmiss_field_real_parameters_get_values(
 		getValues(index, number_of_values, values);
 }
 
+int Cmiss_field_real_parameters_get_values_sparse(
+	Cmiss_field_real_parameters_id real_parameters_field,
+	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values,
+	int *value_exists, int *number_of_values_read)
+{
+	if ((NULL == real_parameters_field) || (NULL == index) ||
+			(number_of_values == 0) || (NULL == values) || (NULL == value_exists) ||
+			(NULL == number_of_values_read))
+		return 0;
+	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
+		getValuesSparse(index, number_of_values, values, value_exists, number_of_values_read);
+}
+
 /* unsigned int may eventually be too small for number_of_values.
  * Workaround: Clients with big data can always set in blocks
  * Note: npruntime only handles 32-bit integers so an issue for API
@@ -701,5 +806,105 @@ int Cmiss_field_real_parameters_set_values(
 			(number_of_values == 0) || (NULL == values))
 		return 0;
 	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
+		setValues(index, number_of_values, values);
+}
+
+
+/* GRC note defaults to 1 component */
+Cmiss_field *Cmiss_field_module_create_integer_parameters(
+	Cmiss_field_module *field_module,
+	int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+{
+	Cmiss_field *field = NULL;
+	if ((0 == number_of_index_ensembles) || (index_ensemble_fields))
+	{
+		// check all ensembles are present and none are repeated
+		for (int i = 0; i < number_of_index_ensembles; i++)
+		{
+			if (NULL == index_ensemble_fields[i])
+			{
+				display_message(ERROR_MESSAGE, "Cmiss_field_module_create_integer_parameters.  Missing ensemble");
+				return NULL;
+			}
+			for (int j = i + 1; j < number_of_index_ensembles; j++)
+			{
+				if (index_ensemble_fields[j] == index_ensemble_fields[i])
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmiss_field_module_create_integer_parameters.  Repeated ensemble '%s'",
+						reinterpret_cast<Cmiss_field*>(index_ensemble_fields[i])->name);
+					return NULL;
+				}
+			}
+		}
+		Cmiss::Field_ensemble **index_ensembles =
+			new Cmiss::Field_ensemble *[number_of_index_ensembles];
+		for (int i = 0; i < number_of_index_ensembles; i++)
+		{
+			index_ensembles[i] = Cmiss_field_ensemble_core_cast(index_ensemble_fields[i]);
+		}
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/number_of_index_ensembles,
+				reinterpret_cast<Cmiss_field **>(index_ensemble_fields),
+			/*number_of_source_values*/0, NULL,
+			new Cmiss::Field_integer_parameters(number_of_index_ensembles, index_ensembles));
+		delete[] index_ensembles;
+	}
+	return (field);
+}
+
+inline Cmiss::Field_integer_parameters *Cmiss_field_integer_parameters_core_cast(
+	Cmiss_field_integer_parameters *integer_parameters_field)
+{
+	return (static_cast<Cmiss::Field_integer_parameters*>(
+		reinterpret_cast<Cmiss_field*>(integer_parameters_field)->core));
+}
+
+Cmiss_field_integer_parameters *Cmiss_field_cast_integer_parameters(Cmiss_field* field)
+{
+	if (field && (dynamic_cast<Cmiss::Field_integer_parameters*>(field->core)))
+	{
+		Cmiss_field_access(field);
+		return (reinterpret_cast<Cmiss_field_integer_parameters *>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+Cmiss_ensemble_index *Cmiss_field_integer_parameters_create_index(
+	Cmiss_field_integer_parameters *integer_parameters_field)
+{
+	if (NULL == integer_parameters_field)
+		return NULL;
+	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->createIndex();
+}
+
+int Cmiss_field_integer_parameters_get_values(
+	Cmiss_field_integer_parameters *integer_parameters_field,
+	Cmiss_ensemble_index *index, unsigned int number_of_values, int *values)
+{
+	if ((NULL == integer_parameters_field) || (NULL == index) ||
+			(number_of_values == 0) || (NULL == values))
+		return 0;
+	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->
+		getValues(index, number_of_values, values);
+}
+
+/* unsigned int may eventually be too small for number_of_values.
+ * Workaround: Clients with big data can always set in blocks
+ * Note: npruntime only handles 32-bit integers so an issue for API
+ * Could pass in two integers */
+int Cmiss_field_integer_parameters_set_values(
+	Cmiss_field_integer_parameters *integer_parameters_field,
+	Cmiss_ensemble_index *index, unsigned int number_of_values, int *values)
+{
+	if ((NULL == integer_parameters_field) || (NULL == index) ||
+			(number_of_values == 0) || (NULL == values))
+		return 0;
+	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->
 		setValues(index, number_of_values, values);
 }

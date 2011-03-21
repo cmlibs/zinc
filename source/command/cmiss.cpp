@@ -128,7 +128,7 @@ extern "C" {
 #endif /* defined (WX_USER_INTERFACE) */
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
-#include "field_io/read_fieldml_02.h"
+#include "field_io/read_fieldml.h"
 #include "finite_element/export_cm_files.h"
 #if defined (USE_NETGEN)
 #include "finite_element/generate_mesh_netgen.h"
@@ -145,9 +145,9 @@ extern "C" {
 #include "finite_element/grid_field_calculator.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/import_finite_element.h"
-#include "finite_element/read_fieldml.h"
+#include "finite_element/read_fieldml_01.h"
 #include "finite_element/snake.h"
-#include "finite_element/write_fieldml.h"
+#include "finite_element/write_fieldml_01.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
 #include "general/image_utilities.h"
@@ -14335,11 +14335,11 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				temp_region = Cmiss_region_create_region(region);
 				if (is_fieldml_01_file(file_name))
 				{
-					return_code = parse_fieldml_file(temp_region, file_name);
+					return_code = parse_fieldml_01_file(temp_region, file_name);
 				}
 				else
 				{
-					return_code = parse_fieldml_02_file(temp_region, file_name);
+					return_code = parse_fieldml_file(temp_region, file_name);
 				}
 				if (return_code)
 				{
@@ -17589,7 +17589,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				{
 					file = fopen(file_name, "w");
 					return_code =
-						write_fieldml_file(file, command_data->root_region, region_path, 1, 1, field_order_info);
+						write_fieldml_01_file(file, command_data->root_region, region_path, 1, 1, field_order_info);
 					fclose(file);
 				}
 			}

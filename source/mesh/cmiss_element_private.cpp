@@ -440,6 +440,7 @@ private:
 	FE_region *fe_region;
 	int element_dimension;
 	Cmiss_element_shape_type shape_type;
+	bool shape_is_set;
 	int element_number_of_nodes;
 	FE_element *template_element;
 	std::vector<Cmiss_element_field*> fields;
@@ -450,6 +451,7 @@ public:
 		fe_region(ACCESS(FE_region)(fe_region)),
 		element_dimension(element_dimension),
 		shape_type(CMISS_ELEMENT_SHAPE_TYPE_INVALID),
+		shape_is_set(false),
 		element_number_of_nodes(0),
 		template_element(NULL),
 		access_count(1)
@@ -471,17 +473,19 @@ public:
 
 	int setShapeType(Cmiss_element_shape_type in_shape_type)
 	{
-		if (in_shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
-			return 0;
+		if (in_shape_type != CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+		{
+			int shape_dimension = Cmiss_element_shape_type_get_dimension(in_shape_type);
+			if (shape_dimension != element_dimension)
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_element_template::setShapeType.  Shape dimension is different from mesh");
+				return 0;
+			}
+		}
+		shape_is_set = true;
 		if (in_shape_type == shape_type)
 			return 1;
-		int shape_dimension = Cmiss_element_shape_type_get_dimension(in_shape_type);
-		if (shape_dimension != element_dimension)
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template::setShapeType.  Shape dimension is different from mesh");
-			return 0;
-		}
 		shape_type = in_shape_type;
 		clearTemplateElement();
 		return 1;
@@ -506,17 +510,11 @@ public:
 		const int *local_node_indexes)
 	{
 		int return_code = 1;
-		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  Element shape is not set");
-			return_code = 0;
-		}
-		if (basis->getDimensions() != Cmiss_element_shape_type_get_dimension(shape_type))
+		if (basis->getDimensions() != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_template_define_field_simple_nodal.  "
-				"Basis has different number of dimensions to element shape");
+				"Basis has different number of dimensions to mesh");
 			return_code = 0;
 		}
 		FE_basis *fe_basis = basis->getFeBasis();
@@ -597,10 +595,10 @@ public:
 		if (template_element)
 			return 1;
 		int return_code = 1;
-		if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+		if (!shape_is_set)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_finalise.  Element shape is not set");
+				"Cmiss_element_template_finalise.  Element shape has not been set");
 			return_code = 0;
 		}
 		for (unsigned int i = 0; i < fields.size(); i++)
@@ -617,8 +615,15 @@ public:
 		}
 		if (return_code)
 		{
-			FE_element_shape *fe_element_shape =
-				FE_element_shape_create_simple_type(fe_region, shape_type);
+			FE_element_shape *fe_element_shape = NULL;
+			if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+			{
+				fe_element_shape = FE_element_shape_create_unspecified(fe_region, element_dimension);
+			}
+			else
+			{
+				fe_element_shape = FE_element_shape_create_simple_type(fe_region, shape_type);
+			}
 			if (fe_element_shape)
 			{
 				CM_element_information cm = { CM_ELEMENT, 0 };
@@ -672,6 +677,13 @@ public:
 		int return_code = 0;
 		if (isFinalised())
 		{
+			if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
+			{
+				// leave the element shape intact
+				struct FE_element_shape *element_shape = 0;
+				get_FE_element_shape(element, &element_shape);
+				set_FE_element_shape(template_element, element_shape);
+			}
 			return_code = FE_region_merge_FE_element_existing(
 				FE_element_get_FE_region(element), element, template_element);
 		}
@@ -855,14 +867,14 @@ int Cmiss_fe_mesh_contains_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id eleme
 }
 
 Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
-	int dimensions, enum Cmiss_basis_function_type function_type)
+	enum Cmiss_basis_function_type function_type)
 {
 	Cmiss_element_basis_id basis = NULL;
-	if (mesh && (0 < dimensions) && (dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (mesh)
 	{
 		FE_region *fe_region = mesh->getFeRegion();
 		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-		basis = new Cmiss_element_basis(fe_region, dimensions, function_type);
+		basis = new Cmiss_element_basis(fe_region, mesh->getDimension(), function_type);
 	}
 	return basis;
 }

@@ -1,10 +1,8 @@
-/*******************************************************************************
-FILE : read_fieldml.h
-
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : read_fieldml_01.h
+ *
+ * Functions for reading finite element fields from legacy FieldML 0.1 files.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -40,10 +38,10 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (READ_FIELDML_H)
-#define READ_FIELDML_H
+#if !defined (READ_FIELDML_01_H)
+#define READ_FIELDML_01_H
 
-int parse_fieldml_file(struct Cmiss_region *region, const char *filename);
+int parse_fieldml_01_file(struct Cmiss_region *region, const char *filename);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -62,5 +60,5 @@ merge incompatible data will leave the global region in a compromised state.
  */
 int is_fieldml_01_file(const char *filename);
 
-#endif /* !defined (READ_FIELDML_H) */
+#endif /* !defined (READ_FIELDML_01_H) */
 

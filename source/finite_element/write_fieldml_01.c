@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : write_fieldml.c
-
-LAST MODIFIED : 16 May 2003
-
-DESCRIPTION :
-Functions for exporting finite element data to a file.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : write_fieldml_01.c
+ *
+ * Functions for writing finite element field data to legacy FieldML 0.1 files.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -43,7 +40,7 @@ Functions for exporting finite element data to a file.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include "finite_element/finite_element.h"
-#include "finite_element/write_fieldml.h"
+#include "finite_element/write_fieldml_01.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
@@ -3438,7 +3435,7 @@ Global functions
 ----------------
 */
 
-int write_fieldml_file(FILE *output_file,
+int write_fieldml_01_file(FILE *output_file,
 	struct Cmiss_region *root_region, char *write_path,
 	int write_elements, int write_nodes,
 	struct FE_field_order_info *field_order_info)
@@ -3465,7 +3462,7 @@ If <field_order_info> contains fields, they are written in that order.
 	int return_code;
 	struct LIST(Cmiss_region_write_info) *write_info_list;
 
-	ENTER(write_exregion_file);
+	ENTER(write_fieldml_01_file);
 	if (output_file && root_region)
 	{
 		return_code = 1;
@@ -3482,10 +3479,10 @@ If <field_order_info> contains fields, they are written in that order.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_exregion_file.  Invalid argument(s)");
+			"write_fieldml_01_file.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_exregion_file */
+}

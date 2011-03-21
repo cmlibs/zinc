@@ -183,6 +183,7 @@ private:
 				if (cm_field_type == CM_COORDINATE_FIELD)
 					set_FE_field_CM_field_type(fe_field, CM_GENERAL_FIELD);
 			}
+			return 1;
 		}
 		return 0;
 	}

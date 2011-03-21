@@ -221,8 +221,8 @@ wrapper for field and add it to the manager.
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE, "Unknown field : %s",
-										current_token_copy);
+									display_message(ERROR_MESSAGE, "Unknown field or component: %s",
+										current_token);
 								}
 								DEALLOCATE(current_token_copy);
 							}
