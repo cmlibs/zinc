@@ -559,8 +559,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 	for (int indexEnsembleIndex = 1; indexEnsembleIndex <= indexEnsembleCount; indexEnsembleIndex++)
 	{
 		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlParameters, indexEnsembleIndex);
-		if (((FHT_ABSTRACT_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator)) &&
-				(FHT_EXTERNAL_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator))) || // GRC workaround; FHT_EXTERNAL_EVALUATOR is wrong
+		if ((FHT_ABSTRACT_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator)) ||
 			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlIndexEvaluator))))
 		{
 			display_message(WARNING_MESSAGE, "Read FieldML:  Index %d (%s) of parameters %s is not an ensemble-valued abstract evaluator",
@@ -790,8 +789,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 	FmlObjectHandle fmlMeshType = Fieldml_GetObject(fmlHandle, FHT_MESH_TYPE, /*meshIndex*/1);
 	FmlObjectHandle fmlMeshXiType = Fieldml_GetMeshXiType(fmlHandle, fmlMeshType);
 	if ((fmlLocalXiEvaluator == FML_INVALID_OBJECT_HANDLE) ||
-		((Fieldml_GetObjectType(fmlHandle, fmlLocalXiEvaluator) != FHT_ABSTRACT_EVALUATOR) &&
-			(Fieldml_GetObjectType(fmlHandle, fmlLocalXiEvaluator) != FHT_EXTERNAL_EVALUATOR)) || // GRC workaround; FHT_EXTERNAL_EVALUATOR is wrong
+		(Fieldml_GetObjectType(fmlHandle, fmlLocalXiEvaluator) != FHT_ABSTRACT_EVALUATOR) ||
 		(Fieldml_GetValueType(fmlHandle, fmlLocalXiEvaluator) != fmlMeshXiType))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s does not bind local mesh xi variable to generic xi variable %s.",
@@ -816,9 +814,10 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 		return 0;
 
 	std::string elementParametersName = getObjectName(fmlElementParametersEvaluator);
-	FmlObjectHandle fmlLocalPointVariable = Fieldml_GetIndexEvaluator(fmlHandle, fmlElementParametersEvaluator, 1);
+	FmlObjectHandle fmlLocalPointVariable = FML_INVALID_OBJECT_HANDLE;
 	if ((Fieldml_GetObjectType(fmlHandle, fmlElementParametersEvaluator) != FHT_AGGREGATE_EVALUATOR) ||
-		/*(1 != Fieldml_GetIndexCount(fmlHandle, fmlElementParametersEvaluator)) || */ // GRC workaround. Erroneously returns -1 so can't check
+		(1 != Fieldml_GetIndexCount(fmlHandle, fmlElementParametersEvaluator)) ||
+		((fmlLocalPointVariable = Fieldml_GetIndexEvaluator(fmlHandle, fmlElementParametersEvaluator, 1)) == FML_INVALID_OBJECT_HANDLE) ||
 		(Fieldml_GetValueType(fmlHandle, fmlLocalPointVariable) != fmlLocalPointsType))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s is not an aggregate over ensemble type %s.",
@@ -1223,7 +1222,11 @@ int FieldMLReader::readAggregateFields()
 				return_code = 0;
 				break;
 			}
-			FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluators[ic], /*evaluatorIndex*/1);
+			FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
+			if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluators[ic]))
+			{
+				fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluators[ic], /*evaluatorIndex*/1);
+			}
 			if (fmlElementVariable == FML_INVALID_OBJECT_HANDLE)
 			{
 				fmlElementVariable = fmlIndexEvaluator;
@@ -1240,8 +1243,7 @@ int FieldMLReader::readAggregateFields()
 				piecewiseOverElements = false;
 				break;
 			}
-			else if (((Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR) &&
-				(Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_EXTERNAL_EVALUATOR)) || // GRC workaround; FHT_EXTERNAL_EVALUATOR is wrong
+			else if ((Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR) ||
 				(fmlIndexEvaluator != fmlElementVariable))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s components must use same abstract evaluator for element index",
@@ -1360,7 +1362,11 @@ int FieldMLReader::readReferenceFields()
 			break;
 		}
 
-		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluator, /*evaluatorIndex*/1);
+		FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
+		if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluator))
+		{
+			fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluator, /*evaluatorIndex*/1);
+		}
 		if (fmlElementVariable == FML_INVALID_OBJECT_HANDLE)
 		{
 			fmlElementVariable = fmlIndexEvaluator;
@@ -1376,8 +1382,7 @@ int FieldMLReader::readReferenceFields()
 			}
 			piecewiseOverElements = false;
 		}
-		else if (((Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR) &&
-			(Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_EXTERNAL_EVALUATOR))) // GRC workaround; FHT_EXTERNAL_EVALUATOR is wrong
+		else if (Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s does not use an abstract evaluator for element index",
 				fieldName.c_str());
