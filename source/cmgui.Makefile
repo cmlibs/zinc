@@ -1060,7 +1060,7 @@ EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c
 FIELD_IO_SRCS = \
-	field_io/read_fieldml_02.cpp
+	field_io/read_fieldml.cpp
 FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.cpp \
 	finite_element/finite_element.cpp \
@@ -1069,8 +1069,8 @@ FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/finite_element_region.cpp \
 	finite_element/finite_element_time.c \
 	finite_element/import_finite_element.cpp \
-	finite_element/read_fieldml.c \
-	finite_element/write_fieldml.c
+	finite_element/read_fieldml_01.c \
+	finite_element/write_fieldml_01.c
 FINITE_ELEMENT_GRAPHICS_SRCS = \
 	finite_element/finite_element_to_graphics_object.cpp \
 	finite_element/finite_element_to_iso_lines.cpp \
