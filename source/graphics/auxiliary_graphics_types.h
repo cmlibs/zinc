@@ -138,11 +138,12 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 for automatic creation of choose_enumerator widgets.
 ==============================================================================*/
 {
-	STREAM_EXTRUDED_ELLIPSE,
-	STREAM_LINE,
-	STREAM_EXTRUDED_RECTANGLE,
-	STREAM_RIBBON,
-	STREAM_EXTRUDED_CIRCLE
+	STREAM_INVALID = 0,
+	STREAM_EXTRUDED_ELLIPSE = 1,
+	STREAM_LINE = 2,
+	STREAM_EXTRUDED_RECTANGLE = 3,
+	STREAM_RIBBON = 4,
+	STREAM_EXTRUDED_CIRCLE = 5
 };
 
 enum Streamline_data_type
@@ -156,12 +157,13 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 for automatic creation of choose_enumerator widgets.
 ==============================================================================*/
 {
-	STREAM_NO_DATA,          /* The code relies on NODATA being zero as the
+	STREAM_DATA_INVALID = 0,
+	STREAM_NO_DATA = 1,          /* The code relies on NODATA being zero as the
 										          field creation types test if(data_type) */
-	STREAM_FIELD_SCALAR,     /* Generalised scalar as in other graphics objects */
-	STREAM_MAGNITUDE_SCALAR, /* The vector is necessarily calculated already
+	STREAM_FIELD_SCALAR = 2,     /* Generalised scalar as in other graphics objects */
+	STREAM_MAGNITUDE_SCALAR = 3, /* The vector is necessarily calculated already
 										          so can save computation by no using the scalar */
-	STREAM_TRAVEL_SCALAR     /* Integrate time along the curve so that you can
+	STREAM_TRAVEL_SCALAR = 4     /* Integrate time along the curve so that you can
 										          see how long each bit is */
 };
 

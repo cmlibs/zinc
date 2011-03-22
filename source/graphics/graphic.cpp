@@ -360,9 +360,9 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 	{
 		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
 		{
-			return_code = (graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS);
+			return_code = (graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+				(graphic_type == CMISS_GRAPHIC_STREAMLINES);
 		} break;
-
 		case CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD:
 		{
 			return_code =
@@ -376,8 +376,7 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 		{
 			return_code = (graphic_type != CMISS_GRAPHIC_DATA_POINTS) &&
 				(graphic_type != CMISS_GRAPHIC_NODE_POINTS) &&
-				(graphic_type != CMISS_GRAPHIC_POINT) &&
-				(graphic_type != CMISS_GRAPHIC_STREAMLINES);
+				(graphic_type != CMISS_GRAPHIC_POINT);
 		} break;
 		default:
 		{
@@ -855,7 +854,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	struct GT_surface *surface;
 	struct GT_voltex *voltex;
 	struct Multi_range *ranges;
-	FE_value_triple *xi_points;
+	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
 	if (element && (graphic_to_object_data =
@@ -1383,58 +1382,83 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						initial_xi[0] = graphic->seed_xi[0];
 						initial_xi[1] = graphic->seed_xi[1];
 						initial_xi[2] = graphic->seed_xi[2];
-						if (STREAM_LINE==graphic->streamline_type)
+						for (i = 0; i < 3; i++)
 						{
-							if (NULL != (polyline = create_GT_polyline_streamline_FE_element(element,
-								initial_xi, graphic_to_object_data->rc_coordinate_field,
-								graphic_to_object_data->wrapper_stream_vector_field,
-								graphic->reverse_track, graphic->streamline_length,
-								graphic->streamline_data_type, graphic->data_field,
-										graphic_to_object_data->time,graphic_to_object_data->fe_region)))
-							{
-								if (!GT_OBJECT_ADD(GT_polyline)(graphic->graphics_object,
-									time, polyline))
-								{
-									DESTROY(GT_polyline)(&polyline);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
+							element_point_ranges_identifier.exact_xi[i] =
+								graphic->seed_xi[i];
 						}
-						else if ((graphic->streamline_type == STREAM_RIBBON)||
-							(graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
-							(graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
-							(graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
+						FE_element_get_xi_points(element,
+							graphic->xi_discretization_mode, number_in_xi,
+							element_point_ranges_identifier.exact_xi,
+							graphic_to_object_data->rc_coordinate_field,
+							graphic->xi_point_density_field,
+							&number_of_xi_points, &xi_points,
+							graphic_to_object_data->time);
+						if (0 < number_of_xi_points)
 						{
-							if (NULL != (surface = create_GT_surface_streamribbon_FE_element(element,
-										initial_xi, graphic_to_object_data->rc_coordinate_field,
-										graphic_to_object_data->wrapper_stream_vector_field,
-										graphic->reverse_track, graphic->streamline_length,
-										graphic->streamline_width, graphic->streamline_type,
-										graphic->streamline_data_type, graphic->data_field,
-										graphic_to_object_data->time,graphic_to_object_data->fe_region)))
+							if (STREAM_LINE == graphic->streamline_type)
 							{
-								if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
-									time,surface))
+								for (i = 0; i < number_of_xi_points; i++)
 								{
-									DESTROY(GT_surface)(&surface);
-									return_code = 0;
+									initial_xi[0] = xi_points[i][0];
+									initial_xi[1] = xi_points[i][1];
+									initial_xi[2] = xi_points[i][2];
+									if (NULL != (polyline	= create_GT_polyline_streamline_FE_element(
+											element, initial_xi, graphic_to_object_data->rc_coordinate_field,
+											graphic_to_object_data->wrapper_stream_vector_field,
+											graphic->reverse_track, graphic->streamline_length,
+											graphic->streamline_data_type, graphic->data_field,
+											graphic_to_object_data->time,
+											graphic_to_object_data->fe_region)))
+									{
+										if (!GT_OBJECT_ADD(GT_polyline)(graphic->graphics_object,
+											time, polyline))
+										{
+											DESTROY(GT_polyline)(&polyline);
+										}
+									}
+								}
+							}
+							else if ((graphic->streamline_type == STREAM_RIBBON)
+								|| (graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)
+								|| (graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)
+								|| (graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
+							{
+								for (i = 0; i < number_of_xi_points; i++)
+								{
+									initial_xi[0] = xi_points[i][0];
+									initial_xi[1] = xi_points[i][1];
+									initial_xi[2] = xi_points[i][2];
+									if (NULL != (surface = create_GT_surface_streamribbon_FE_element(
+											element, initial_xi, graphic_to_object_data->rc_coordinate_field,
+											graphic_to_object_data->wrapper_stream_vector_field,
+											graphic->reverse_track, graphic->streamline_length,
+											graphic->streamline_width, graphic->streamline_type,
+											graphic->streamline_data_type, graphic->data_field,
+											graphic_to_object_data->time,
+											graphic_to_object_data->fe_region)))
+									{
+										if (!GT_OBJECT_ADD(GT_surface)(graphic->graphics_object,
+											time, surface))
+										{
+											DESTROY(GT_surface)(&surface);
+										}
+									}
 								}
 							}
 							else
 							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_to_graphics_object.  Unknown streamline type");
 								return_code = 0;
 							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_to_graphics_object.  Unknown streamline type");
 							return_code = 0;
 						}
+						if (xi_points)
+							DEALLOCATE(xi_points);
 					} break;
 					default:
 					{
@@ -2790,7 +2814,8 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			append_string(&graphic_string,temp_string,&error);
 		}
 		/* for element_points only */
-		if (CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)
+		if ((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 		{
 			append_string(&graphic_string," ",&error);
 			append_string(&graphic_string, ENUMERATOR_STRING(Xi_discretization_mode)(
@@ -2861,9 +2886,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		}
 
 		/* for graphic requiring an exact xi location */
-		if (((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)&&
-			(XI_DISCRETIZATION_EXACT_XI == graphic->xi_discretization_mode))||
-			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
+		if (((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))&&
+			(XI_DISCRETIZATION_EXACT_XI == graphic->xi_discretization_mode))
 		{
 			sprintf(temp_string," xi %g,%g,%g",
 				graphic->seed_xi[0],graphic->seed_xi[1],graphic->seed_xi[2]);
@@ -3209,7 +3234,8 @@ static int Cmiss_graphic_has_all_compulsory_attributes(struct Cmiss_graphic *gra
 	int return_code = 1;
 	if (graphic)
 	{
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) &&
+		if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)) &&
 			((XI_DISCRETIZATION_CELL_DENSITY == graphic->xi_discretization_mode) ||
 				(XI_DISCRETIZATION_CELL_POISSON == graphic->xi_discretization_mode)) &&
 			(!graphic->xi_point_density_field))
@@ -4168,7 +4194,8 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* for element_points with a density field only */
-		else if ((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type)
+		else if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))
 			&& ((XI_DISCRETIZATION_CELL_DENSITY ==
 				graphic->xi_discretization_mode) ||
 				(XI_DISCRETIZATION_CELL_POISSON ==
@@ -4221,7 +4248,8 @@ static int Cmiss_graphic_uses_changed_FE_field(
 	if (graphic && ((CMISS_GRAPHIC_POINT==graphic->graphic_type) || 
 			graphic->coordinate_field) && fe_field_change_log)
 	{
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) &&
+		if (((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type))&&
 			graphic->native_discretization_field &&
 			CHANGE_LOG_QUERY(FE_field)(fe_field_change_log,
 				graphic->native_discretization_field, &fe_field_change) &&
@@ -4924,7 +4952,8 @@ int Cmiss_graphic_get_xi_discretization(
 
 	ENTER(Cmiss_graphic_get_xi_discretization);
 	if (graphic &&
-		(CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type))
+		((CMISS_GRAPHIC_ELEMENT_POINTS == graphic->graphic_type) ||
+			(CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type)))
 	{
 		if (xi_discretization_mode)
 		{
@@ -5855,7 +5884,8 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 
 		/* for element_points only */
 		if (return_code&&
-			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))
+			((CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
+				(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)))
 		{
 			return_code=
 				(graphic->xi_discretization_mode==
@@ -7823,16 +7853,17 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
 	char reverse_track;
-	const char *select_mode_string,
+	const char *select_mode_string, *xi_discretization_mode_string,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings, *coordinate_system_string;
 	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
+	enum Xi_discretization_mode xi_discretization_mode;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	float length, width;
 	int number_of_components,number_of_valid_strings,return_code,
 		reverse_track_int, visibility;
-	struct Computed_field *stream_vector_field;
+	struct Computed_field *stream_vector_field, *xi_point_density_field;
 	struct Cmiss_region *seed_node_region;
 	struct FE_region *fe_region;
 	struct Rendition_command_data *rendition_command_data;
@@ -7840,7 +7871,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_seed_node_coordinate_field_data,
-		set_stream_vector_field_data;
+		set_stream_vector_field_data, set_xi_point_density_field_data;
 
 	ENTER(gfx_modify_rendition_streamlines);
 	if (state && (rendition_command_data =
@@ -7854,6 +7885,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			modify_rendition_data->graphic);
 		if (graphic)
 		{
+			xi_point_density_field = (struct Computed_field *)NULL;
 			coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
 			REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
 			/* The value stored in the graphic is an integer rather than a char */
@@ -7864,6 +7896,12 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			else
 			{
 				reverse_track = 0;
+			}
+			Cmiss_graphic_get_xi_discretization(graphic,
+				&xi_discretization_mode, &xi_point_density_field);
+			if (xi_point_density_field)
+			{
+				ACCESS(Computed_field)(xi_point_density_field);
 			}
 			visibility = graphic->visibility_flag;
 			option_table=CREATE(Option_table)();
@@ -7889,6 +7927,16 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			Option_table_add_enumerator(option_table, number_of_valid_strings,
 				valid_strings, &coordinate_system_string);
 			DEALLOCATE(valid_strings);
+			/* cell_centres/cell_corners/cell_density/exact_xi */
+			xi_discretization_mode_string =
+				ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&xi_discretization_mode_string);
+			DEALLOCATE(valid_strings);
 			/* data */
 			set_data_field_data.computed_field_manager=
 				rendition_command_data->computed_field_manager;
@@ -7900,11 +7948,24 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			/* delete */
 			Option_table_add_entry(option_table,"delete",
 				&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+			/* density */
+			set_xi_point_density_field_data.computed_field_manager =
+				rendition_command_data->computed_field_manager;
+			set_xi_point_density_field_data.conditional_function =
+				Computed_field_is_scalar;
+			set_xi_point_density_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table, "density",
+				&xi_point_density_field, &set_xi_point_density_field_data,
+				set_Computed_field_conditional);
 #ifdef FUTURE_CODE
 			/* discretization */
 			Option_table_add_entry(option_table,"discretization",
 				&(graphic->discretization),NULL, set_Element_discretization);
 #endif /* FUTURE_CODE */
+			/* discretization */
+			Option_table_add_entry(option_table,"discretization",
+				&(graphic->discretization),NULL, set_Element_discretization);
 			/* ellipse/line/rectangle/ribbon */
 			streamline_type = STREAM_LINE;
 			streamline_type_string =
@@ -8010,6 +8071,21 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
 				Cmiss_graphic_set_visibility_flag(graphic, visibility);
+				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+					xi_discretization_mode_string, &xi_discretization_mode);
+				if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
+					(XI_DISCRETIZATION_CELL_POISSON != xi_discretization_mode)) ||
+					xi_point_density_field)
+				{
+					Cmiss_graphic_set_xi_discretization(graphic,
+						xi_discretization_mode, xi_point_density_field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"No density field specified for cell_density|cell_poisson");
+					return_code = 0;
+				}
 				if (!(graphic->stream_vector_field))
 				{
 					display_message(ERROR_MESSAGE,"Must specify a vector");
@@ -8089,6 +8165,10 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			{
 				/* parse error, help */
 				DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+			}
+			if (xi_point_density_field)
+			{
+				DEACCESS(Computed_field)(&xi_point_density_field);
 			}
 		}
 		else

@@ -727,7 +727,7 @@ in that region.
 		i,keep_tracking,number_of_coordinate_components,
 		number_of_stream_vector_components,return_code;
 	struct FE_element *previous_element_A, *previous_element_B;
-	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
+	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples = NULL;
 
 	ENTER(track_streamline_from_FE_element);
 	if (element&&(*element)&&FE_element_is_top_level(*element, NULL)&&
@@ -1245,54 +1245,61 @@ in that region.
 						/* free unused space in arrays */
 						allocated_number_of_points = i;
 					}
-					if (REALLOCATE(tmp_triples,*stream_points,Triple,
-						allocated_number_of_points))
+					if (allocated_number_of_points != 0)
 					{
-						*stream_points=tmp_triples;
-						stream_point = (*stream_points) + i;
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (REALLOCATE(tmp_triples,*stream_vectors,Triple,
-						allocated_number_of_points))
-					{
-						*stream_vectors=tmp_triples;
-						stream_vector = (*stream_vectors) + i;
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (REALLOCATE(tmp_triples,*stream_normals,Triple,
-						allocated_number_of_points))
-					{
-						*stream_normals=tmp_triples;
-						stream_normal = (*stream_normals) + i;
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (STREAM_NO_DATA != data_type)
-					{
-						if (REALLOCATE(tmp_stream_data,*stream_data,GTDATA,
+						if (REALLOCATE(tmp_triples,*stream_points,Triple,
 							allocated_number_of_points))
 						{
-							*stream_data=tmp_stream_data;
-							stream_datum = (*stream_data) + i;
+							*stream_points = tmp_triples;
+							stream_point = (*stream_points) + i;
 						}
 						else
 						{
+							return_code = 0;
+						}
+						if (REALLOCATE(tmp_triples,*stream_vectors,Triple,
+							allocated_number_of_points))
+						{
+							*stream_vectors = tmp_triples;
+							stream_vector = (*stream_vectors) + i;
+						}
+						else
+						{
+							return_code = 0;
+						}
+						if (REALLOCATE(tmp_triples,*stream_normals,Triple,
+							allocated_number_of_points))
+						{
+							*stream_normals = tmp_triples;
+							stream_normal = (*stream_normals) + i;
+						}
+						else
+						{
+							return_code = 0;
+						}
+						if (STREAM_NO_DATA != data_type)
+						{
+							if (REALLOCATE(tmp_stream_data,*stream_data,GTDATA,
+								allocated_number_of_points))
+							{
+								*stream_data=tmp_stream_data;
+								stream_datum = (*stream_data) + i;
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						if (!return_code)
+						{
+							display_message(ERROR_MESSAGE,
+								"track_streamline_from_FE_element.  Could not reallocate");
 							return_code=0;
 						}
 					}
-					if (!return_code)
+					else
 					{
-						display_message(ERROR_MESSAGE,
-							"track_streamline_from_FE_element.  Could not reallocate");
-						return_code=0;
+						return_code = 0;
 					}
 				}
 			}

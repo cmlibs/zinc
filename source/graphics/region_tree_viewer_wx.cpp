@@ -4066,9 +4066,11 @@ void SetGraphic(Cmiss_graphic *graphic)
 			native_discretization_field_chooser_panel->Hide();
 		}
 
-		if ((CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)&&
-			Cmiss_graphic_get_xi_discretization(graphic,&xi_discretization_mode, &xi_point_density_field))
+		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
+			CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
 		{
+			Cmiss_graphic_get_xi_discretization(graphic,
+				&xi_discretization_mode, &xi_point_density_field);
 			if (xi_discretization_mode_chooser ==NULL)
 			{
 				xi_discretization_mode_chooser = 
@@ -4121,7 +4123,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				{
 					native_discretization_field_chooser_panel->Disable();
 				}
-			}			
+			}
 			else
 			{	
 				discretizationtextctrl->Disable();	
@@ -4200,30 +4202,22 @@ void SetGraphic(Cmiss_graphic *graphic)
 			Cmiss_graphic_get_seed_xi(region_tree_viewer->current_graphic,seed_xi);
 			sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
 			xitextctrl->SetValue(temp_string);
-			if (CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)
-			{
-				if (XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode)
-				{
-					xitext->Enable();
-					xitextctrl->Enable();
-				}
-				else
-				{
-					xitext->Disable();
-					xitextctrl->Disable();
-				}
-			}
-			else
+			if (XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode)
 			{
 				xitext->Enable();
 				xitextctrl->Enable();
 			}
+			else
+			{
+				xitext->Disable();
+				xitextctrl->Disable();
+			}
 		}
 		else
-			{
-				xitext->Hide();
-				xitextctrl->Hide();
-			}
+		{
+			xitext->Hide();
+			xitextctrl->Hide();
+		}
 
 		/*StreamLine */
 		streamtypetext=XRCCTRL(*this, "StreamTypeText",wxStaticText);
@@ -5607,7 +5601,7 @@ static int Region_tree_viewer_add_graphic(
 	ENTER(Region_tree_viewer_add_graphic);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		graphic_string = Cmiss_graphic_string(graphic,	GRAPHIC_STRING_COMPLETE_PLUS);
+		graphic_string = Cmiss_graphic_string(graphic, GRAPHIC_STRING_COMPLETE_PLUS);
 		wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		graphicchecklist->Append(graphic_string);
 		if (Cmiss_graphic_get_visibility_flag(graphic))
