@@ -52,7 +52,7 @@
 
 extern "C" {
 #include "api/cmiss_scene.h"
-#include "api/cmiss_scene_filter.h"
+#include "api/cmiss_graphic_filter.h"
 #include "api/cmiss_rendition.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -87,7 +87,7 @@ extern "C" {
 #include "user_interface/user_interface.h"
 }
 #include "graphics/scene.hpp"
-#include "graphics/scene_filters.hpp"
+#include "graphics/graphic_filter.hpp"
 #include "graphics/rendergl.hpp"
 
 #if defined(USE_OPENCASCADE)
@@ -227,7 +227,6 @@ public:
 };
 
 typedef std::set<Cmiss_rendition*,Rendition_list_compare> Rendition_set;
-typedef std::vector<Cmiss_scene_filter*> Scene_filter_vector;
 
 struct Scene
 /*******************************************************************************
@@ -260,7 +259,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	int cache;
 	/* flag indicating that graphics objects in scene objects need building */
 	int build;
-	Scene_filter_vector *filters;
+	Cmiss_graphic_filter_id filter;
 #if defined (OPENGL_API)
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
@@ -1612,7 +1611,7 @@ from the default versions of these functions.
 		scene->default_time_keeper=(struct Time_keeper *)NULL;
 		scene->user_interface=(struct User_interface *)NULL;
 #endif /* defined (OLD_CODE) */
-		scene->filters = new Scene_filter_vector();
+		scene->filter = NULL;;
 		scene->cache = 0;
 		scene->build = 1;
 		/* display list index and current flag: */
@@ -1708,8 +1707,10 @@ Closes the scene and disposes of the scene data structure.
 				delete scene->list_of_rendition;
 				scene->list_of_rendition = NULL;
 			}
-			Cmiss_scene_clear_filters(scene);
-			delete scene->filters;
+			if (scene->filter)
+			{
+				DEACCESS(Cmiss_graphic_filter)(&scene->filter);
+			}
 			if (scene->region)
 			{
 			  DEACCESS(Cmiss_region)(&scene->region);		  
@@ -4362,90 +4363,6 @@ Modifier function to set the scene from a command.
 	return (return_code);
 } /* set_Scene */
 
-struct Define_scene_filter_data
-{
-public:
-	char match_all;
-	char *match_graphic_name;
-	char match_visibility_flags;
-	char *match_region_path;
-	int inverse;
-	int show;
-
-	Define_scene_filter_data() :
-		match_all(0),
-		match_graphic_name(NULL),
-		match_visibility_flags(0),
-		match_region_path(NULL),
-		inverse(0),
-		show(1)
-	{	
-	}
-
-	~Define_scene_filter_data()
-	{
-		DEALLOCATE(match_graphic_name);
-		DEALLOCATE(match_region_path);
-	}
-};
-
-int define_Scene_filter(struct Parse_state *state, void *define_scene_filter_data_void,
-	void *define_scene_data_void)
-{
-	int return_code;
-
-	ENTER(define_Scene_filter);
-	USE_PARAMETER(define_scene_data_void);
-	Define_scene_filter_data *filter_data =
-		(struct Define_scene_filter_data *)define_scene_filter_data_void;
-	if (state && filter_data)
-	{
-		struct Option_table *option_table = CREATE(Option_table)();
-		Option_table_add_help(option_table," Filter to set up what will be and "
-				"what will not be included in a scene. The optional inverse_match "
-				"flag will invert the filter's match criterion. The default "
-				"behaviour is to show matching graphic unless the optional hide flag "
-				"is specified.");
-		Option_table_add_char_flag_entry(option_table, "match_all",
-			&(filter_data->match_all));
-		Option_table_add_string_entry(option_table, "match_graphic_name",
-			&(filter_data->match_graphic_name), " MATCH_NAME");
-		Option_table_add_char_flag_entry(option_table, "match_visibility_flags",
-			&(filter_data->match_visibility_flags));
-		Option_table_add_string_entry(option_table, "match_region_path",
-			&(filter_data->match_region_path), " REGION_PATH");
-		Option_table_add_switch(option_table, "inverse_match", "normal_match",
-			&(filter_data->inverse));
-		Option_table_add_switch(option_table,
-			"show", "hide", &(filter_data->show));
-		if (return_code = Option_table_multi_parse(option_table, state))
-		{
-			int number_of_match_criteria = 
-				filter_data->match_all +
-				filter_data->match_visibility_flags +
-				(NULL != filter_data->match_region_path) +
-				(NULL != filter_data->match_graphic_name);
-			if (1 < number_of_match_criteria)
-			{
-				display_message(ERROR_MESSAGE,
-					"Only one match criterion can be specified per filter.");
-				display_parse_state_location(state);
-				return_code = 0;
-			}
-		}
-		DESTROY(Option_table)(&option_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Scene_filter.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 int define_Scene_contents(struct Parse_state *state, void *scene_void,
 	void *define_scene_data_void)
 {
@@ -4460,6 +4377,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		struct Light *light_to_add = NULL;
 		struct Light *light_to_remove = NULL;
 		Cmiss_region *region = NULL;
+		Cmiss_graphic_filter_id filter = NULL;
 		if (scene && scene->region)
 		{
 			region = Cmiss_region_access(scene->region);
@@ -4468,20 +4386,19 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		{
 			region = Cmiss_region_access(define_scene_data->root_region);
 		}
-		char clear_filters_flag = 0;
-		Define_scene_filter_data filter_data;
+		char clear_filter_flag = 0;
 
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table, "add_light", &light_to_add,
 			define_scene_data->light_manager, set_Light);
-		Option_table_add_char_flag_entry(option_table, "clear_filters",
-			&clear_filters_flag);
+		Option_table_add_char_flag_entry(option_table, "clear_filter",
+			&clear_filter_flag);
 		Option_table_add_set_Cmiss_region(option_table, "region",
 			define_scene_data->root_region, &region);
 		Option_table_add_entry(option_table, "remove_light", &light_to_remove,
 			define_scene_data->light_manager, set_Light);
-		Option_table_add_entry(option_table, "filter",
-		  (void *)&filter_data, define_scene_data_void, define_Scene_filter);
+		Option_table_add_entry(option_table, "filter", &filter,
+			define_scene_data->graphics_module, set_Cmiss_graphic_filter);
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
@@ -4497,47 +4414,12 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 					Scene_remove_light(scene,light_to_remove);
 				}
 				Cmiss_scene_set_region(scene, region);
-				if (clear_filters_flag)
+				if (clear_filter_flag)
 				{
-					Cmiss_scene_clear_filters(scene);
-				}
-				Cmiss_scene_filter *filter = NULL; 
-				if (filter_data.match_all)
-				{
-					filter = Cmiss_scene_create_filter_all(scene);
-				}
-				else if (filter_data.match_visibility_flags)
-				{
-					filter = Cmiss_scene_create_filter_visibility_flags(scene);
-				}
-				else if (filter_data.match_graphic_name)
-				{
-					filter = Cmiss_scene_create_filter_graphic_name(scene,
-						filter_data.match_graphic_name);
-				}
-				else if (filter_data.match_region_path)
-				{
-					Cmiss_region *match_region = Cmiss_region_find_subregion_at_path(
-						define_scene_data->root_region,	filter_data.match_region_path);
-					if (match_region)
-					{
-						filter = Cmiss_scene_create_filter_region(scene, match_region);
-						Cmiss_region_destroy(&match_region);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Cannot filter region in scene.  %s is not in current viewing region tree",
-							filter_data.match_region_path);
-					}
+					Cmiss_scene_set_filter(scene, NULL);
 				}
 				if (filter)
-				{
-					Cmiss_scene_filter_set_action(filter,
-						filter_data.show ? CMISS_SCENE_FILTER_SHOW : CMISS_SCENE_FILTER_HIDE);
-					Cmiss_scene_filter_set_inverse_match(filter, filter_data.inverse);
-					Cmiss_scene_filter_destroy(&filter);
-				}
+					Cmiss_scene_set_filter(scene, filter);
 				Scene_end_cache(scene);
 			}
 		}
@@ -4550,6 +4432,8 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		{
 			DEACCESS(Light)(&light_to_remove);
 		}
+		if (filter)
+			DEACCESS(Cmiss_graphic_filter)(&filter);
 		Cmiss_region_destroy(&region);
 	}
 	else
@@ -4670,20 +4554,15 @@ Writes the properties of the <scene> to the command window.
 		}
 		display_message(INFORMATION_MESSAGE,"  top region: %s\n", region_path);
 		DEALLOCATE(region_path);
-		int number_of_filters = scene->filters->size();
-		if (0 == number_of_filters)
+		if (!scene->filter)
 		{
-			display_message(INFORMATION_MESSAGE,"  no filters\n");
+			display_message(INFORMATION_MESSAGE,"  no filter\n");
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE,"  filters:\n");
-			for (int i = 0; i < number_of_filters; i++)
-			{
-				Cmiss_scene_filter *filter = scene->filters->at(i);
-				display_message(INFORMATION_MESSAGE,"    %d. ", i + 1);
-				filter->list();
-			}
+			char *filter_name = scene->filter->getName();
+			display_message(INFORMATION_MESSAGE,"  filter: %s\n", filter_name);
+			DEALLOCATE(filter_name);
 		}
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			scene->access_count);
@@ -5325,44 +5204,12 @@ int Scene_add_graphics_object(struct Scene *scene,
 	return (return_code);
 } /* Scene_add_graphics_object */
 
-int Cmiss_scene_clear_filters(Cmiss_scene *scene)
+int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphic_filter_id filter)
 {
 	int return_code = 1;
 	if (scene)
 	{
-		int number_of_filters = scene->filters->size();
-		for (int i = 0; i < number_of_filters; i++)
-		{
-			Cmiss_scene_filter *filter = scene->filters->at(i);
-			Cmiss_scene_filter_destroy(&filter);
-		}
-		scene->filters->clear();
-		if (scene->list_of_rendition)
-		{
-			scene->build = 1;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
-			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
-			{
-				Scene_refresh( scene );
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_clear_filters.  Invalid argument");
-		return_code = 0;
-	}
-	return return_code;
-}
-
-int Scene_add_filter_private(Cmiss_scene *scene, Cmiss_scene_filter *filter)
-{
-	int return_code = 1;
-	if (scene && filter)
-	{
-		scene->filters->push_back(Cmiss_scene_filter_access(filter));
+		return_code = REACCESS(Cmiss_graphic_filter)(&scene->filter, filter);
 		if (return_code && scene->list_of_rendition)
 		{
 			scene->build = 1;
@@ -5379,127 +5226,7 @@ int Scene_add_filter_private(Cmiss_scene *scene, Cmiss_scene_filter *filter)
 		return_code = 0;
 	}
 	return return_code;
-}
 
-int Cmiss_scene_remove_filter(Cmiss_scene *scene, Cmiss_scene_filter *filter)
-{
-	int return_code = 0;
-	if (scene && filter && (filter->getScene() == scene))
-	{
-		int number_of_filters = scene->filters->size();
-		for (int i = 0; i < number_of_filters; i++)
-		{
-			Cmiss_scene_filter *temp_filter = scene->filters->at(i);
-			if (temp_filter == filter)
-			{
-				Cmiss_scene_filter_destroy(&temp_filter);
-				scene->filters->erase(scene->filters->begin() + i);
-				return_code = 1;
-				break;
-			}
-		}
-		if (return_code && scene->list_of_rendition)
-		{
-			scene->build = 1;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
-			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
-			{
-				Scene_refresh(scene);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_remove_filter.  Invalid argument(s)");
-	}
-	return return_code;
-}
-
-int Cmiss_scene_get_number_of_filters(Cmiss_scene *scene)
-{
-	if (scene)
-		return scene->filters->size();
-	return 0;
-}
-
-int Cmiss_scene_get_filter_priority(Cmiss_scene *scene,
-	Cmiss_scene_filter *filter)
-{
-	int priority = 0;
-	if (scene && filter && (filter->getScene() == scene))
-	{
-		int number_of_filters = scene->filters->size();
-		for (int i = 0; i < number_of_filters; i++)
-		{
-			if (scene->filters->at(i) == filter)
-			{
-				priority = i + 1;
-				break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_get_filter_priority.  Invalid argument(s)");
-	}
-	return priority;
-}
-
-int Cmiss_scene_set_filter_priority(Cmiss_scene *scene,
-	Cmiss_scene_filter_id filter, int priority)
-{
-	int return_code = 0;
-	if (scene && filter && (filter->getScene() == scene) &&
-		(0 <= priority) && (priority <= (int)scene->filters->size()))
-	{
-		int number_of_filters = scene->filters->size();
-		int new_index = (priority ? priority : number_of_filters) - 1;
-		for (int i = 0; i < number_of_filters; i++)
-		{
-			if (scene->filters->at(i) == filter)
-			{
-				scene->filters->erase(scene->filters->begin() + i);
-				scene->filters->insert(scene->filters->begin() + new_index, filter);
-				return_code = 1;
-				break;
-			}
-		}
-		if (return_code && scene->list_of_rendition)
-		{
-			scene->build = 1;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
-			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
-			{
-				Scene_refresh(scene);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_set_filter_priority.  Invalid argument(s)");
-	}
-	return return_code;
-}
-
-struct Cmiss_scene_filter *Cmiss_scene_get_filter_at_priority(
-	Cmiss_scene *scene, int priority)
-{
-	Cmiss_scene_filter *filter = NULL;
-	if (scene && (priority > 0) && (priority <= (int)scene->filters->size()))
-	{
-		filter = Cmiss_scene_filter_access(scene->filters->at(priority));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_get_filter_at_priority.  Invalid argument(s)");
-	}
-	return filter;
 }
 
 int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *graphic)
@@ -5509,14 +5236,12 @@ int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *g
 	{
 		/* default for no filters = show nothing */
 		return_code = 0;
-		int number_of_filters = scene->filters->size();
-		for (int i = 0; i < number_of_filters; i++)
+		if (scene->filter)
 		{
-			Cmiss_scene_filter *filter = scene->filters->at(i);
-			if (filter->match(graphic))
+			if (scene->filter->match(graphic))
 			{
-				return_code = (filter->getAction() == CMISS_SCENE_FILTER_SHOW);
-				break;
+				return_code = (Cmiss_graphic_filter_get_attribute_integer(scene->filter,
+					CMISS_GRAPHIC_FILTER_ATTRIBUTE_SHOW_MATCHING) == true);
 			}
 		}
 	}
@@ -5524,6 +5249,35 @@ int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *g
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_scene_shows_graphic.  Invalid argument(s)");
+	}
+	return return_code;
+}
+
+int Cmiss_scene_graphic_filter_change(struct Scene *scene,	void *message_void)
+{
+	int return_code = 1;
+	struct MANAGER_MESSAGE(Cmiss_graphic_filter) *message =
+		(struct MANAGER_MESSAGE(Cmiss_graphic_filter) *)message_void;
+	if (scene && message)
+	{
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphic_filter)(
+			message, scene->filter);
+		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphic_filter))
+		{
+			scene->build = 1;
+			scene->change_status = SCENE_CHANGE;
+			scene->compile_status = GRAPHICS_NOT_COMPILED;
+			if (scene->scene_manager)
+			{
+				Scene_refresh(scene);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_graphic_filter_change.  Invalid argument(s)");
+		return_code = 0;
 	}
 	return return_code;
 }

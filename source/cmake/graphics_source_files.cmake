@@ -49,6 +49,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
 	source/graphics/glyph.h
+	source/graphics/graphic_filter.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -74,7 +75,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_triangularisation.hpp
 	source/graphics/robo_window.h
 	source/graphics/scene_editor.h
-	source/graphics/scene_filters.hpp
 	source/graphics/selected_graphic.h
 	source/graphics/selection.hpp
 	source/graphics/spectrum.h
@@ -97,6 +97,7 @@ SET( GRAPHICS_HDRS
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
 		source/graphics/font.cpp
+		source/graphics/graphic_filter.cpp
 		source/graphics/graphics_library.c
 		source/graphics/graphics_object.cpp
 		source/graphics/light.c
@@ -104,7 +105,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/render.cpp
 		source/graphics/rendergl.cpp
 		source/graphics/scene.cpp
-		source/graphics/scene_filters.cpp
 		source/graphics/scene_viewer.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}

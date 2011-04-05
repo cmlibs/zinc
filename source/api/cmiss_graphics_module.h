@@ -77,6 +77,13 @@ typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
 #define CMISS_TESSELLATION_ID_DEFINED
 #endif
 
+#ifndef CMISS_GRAPHIC_FILTER_ID_DEFINED
+struct Cmiss_graphic_filter;
+typedef struct Cmiss_graphic_filter *Cmiss_graphic_filter_id;
+#define CMISS_GRAPHIC_FILTER_ID_DEFINED
+#endif /* CMISS_GRAPHIC_FILTER_ID_DEFINED */
+
+
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.
  *
@@ -207,4 +214,6 @@ Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);
 
+Cmiss_graphic_filter_id Cmiss_graphics_module_get_default_graphic_filter(
+	struct Cmiss_graphics_module *graphics_module);
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

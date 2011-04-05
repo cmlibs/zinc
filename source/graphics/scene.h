@@ -141,6 +141,7 @@ struct Define_scene_data
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Cmiss_region *root_region;
+	struct Cmiss_graphics_module *graphics_module;
 }; /* struct Define_scene_data */
 
 enum Scene_input_type
@@ -869,5 +870,7 @@ in the list of scene_objects in the path of our display heirarchy to the
  */
 int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene,
 	struct Cmiss_graphic *graphic);
+
+int Cmiss_scene_graphic_filter_change(struct Scene *scene,	void *message_void);
 
 #endif /* !defined (SCENE_H) */

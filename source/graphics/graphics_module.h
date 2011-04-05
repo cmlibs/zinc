@@ -43,6 +43,7 @@ DESCRIPTION :
 #if !defined (GRAPHICS_MODULE_H)
 #define GRAPHICS_MODULE_H
 
+#include "api/cmiss_graphic_filter.h"
 #include "general/object.h"
 #include "context/context.h"
 #include "graphics/font.h"
@@ -249,4 +250,17 @@ int Cmiss_graphics_module_add_member_region(
  */
 int Cmiss_graphics_module_remove_member_region(
 		struct Cmiss_graphics_module *graphics_module, struct Cmiss_region *region);
+
+/***************************************************************************//**
+ * Return the manager of graphic_filter objects in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the manager of graphic_filter in graphics module if successfully called,
+ *    otherwise NULL.
+ */
+struct MANAGER(Cmiss_graphic_filter) *Cmiss_graphics_module_get_graphic_filter_manager(
+		struct Cmiss_graphics_module *graphics_module);
+
+Cmiss_graphic_filter_id Cmiss_graphics_module_find_graphic_filter_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
 #endif /* !defined (GRAPHICS_MODULE_H) */

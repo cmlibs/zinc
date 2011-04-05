@@ -1163,7 +1163,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/render.cpp \
 		graphics/rendergl.c \
 		graphics/scene.cpp \
-		graphics/scene_filters.cpp \
+		graphics/graphic_filter.cpp \
 		graphics/scene_viewer.c \
 		graphics/tile_graphics_objects.c
 endif

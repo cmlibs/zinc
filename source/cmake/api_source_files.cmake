@@ -36,6 +36,7 @@ SET( API_HDRS
 	source/api/cmiss_field_trigonometry.h
 	source/api/cmiss_field_window_projection.h
 	source/api/cmiss_graphic.h
+	source/api/cmiss_graphic_filter.h
 	source/api/cmiss_graphics_window.h
 	source/api/cmiss_idle.h
 	source/api/cmiss_interactive_tool.h
@@ -44,7 +45,6 @@ SET( API_HDRS
 	source/api/cmiss_region.h
 	source/api/cmiss_rendition.h
 	source/api/cmiss_scene.h
-	source/api/cmiss_scene_filter.h
 	source/api/cmiss_scene_viewer.h
 	source/api/cmiss_selection.h
 	source/api/cmiss_spectrum.h

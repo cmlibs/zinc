@@ -185,6 +185,7 @@ extern "C" {
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
+#include "graphics/graphic_filter.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
@@ -5920,8 +5921,12 @@ Executes a GFX DEFINE command.
 				define_scene_data.light_manager=command_data->light_manager;
 				define_scene_data.scene_manager=command_data->scene_manager;
 				define_scene_data.root_region = command_data->root_region;
+				define_scene_data.graphics_module = command_data->graphics_module;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);
+				/* graphic_filter */
+				Option_table_add_entry(option_table, "graphic_filter", command_data->root_region,
+					command_data->graphics_module, gfx_define_graphic_filter);
 				/* tessellation */
 				Option_table_add_entry(option_table, "tessellation", NULL,
 					command_data->graphics_module, gfx_define_tessellation);
@@ -12740,6 +12745,7 @@ Executes a GFX MODIFY command.
 				define_scene_data.light_manager=command_data->light_manager;
 				define_scene_data.scene_manager=command_data->scene_manager;
 				define_scene_data.root_region = command_data->root_region;
+				define_scene_data.graphics_module = command_data->graphics_module;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);
 				/* spectrum */
@@ -22524,7 +22530,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		DEACCESS(Light_model)(&(command_data->default_light_model));
 		DEACCESS(Light)(&(command_data->default_light));
 		command_data->light_manager = NULL;
-
 		if (command_data->example_directory)
 		{
 			DEALLOCATE(command_data->example_directory);
