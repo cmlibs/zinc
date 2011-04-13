@@ -214,6 +214,16 @@ Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
 int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);
 
-Cmiss_graphics_filter_id Cmiss_graphics_module_get_default_filter(
-	struct Cmiss_graphics_module *graphics_module);
+/***************************************************************************//**
+ * Find the graphics_filter with the supplied name in graphics module, if any.
+ *
+ * @param graphics_module  The handle to the graphics module to find the
+ * graphics_filter in.
+ * @param name  The name of the graphics_filter.
+ * @return  Handle to the graphics_filter with the provided name,
+ * 		or NULL if not found.
+ */
+Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
+
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/

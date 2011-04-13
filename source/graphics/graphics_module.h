@@ -261,6 +261,6 @@ int Cmiss_graphics_module_remove_member_region(
 struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 		struct Cmiss_graphics_module *graphics_module);
 
-Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
-	Cmiss_graphics_module_id graphics_module, const char *name);
+Cmiss_graphics_filter_id Cmiss_graphics_module_get_default_filter(
+	struct Cmiss_graphics_module *graphics_module);
 #endif /* !defined (GRAPHICS_MODULE_H) */
