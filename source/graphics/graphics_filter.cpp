@@ -39,6 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <algorithm>
 #include <vector>
 #include <iterator>
 extern "C" {
@@ -1021,7 +1022,14 @@ int gfx_define_graphics_filter_contents(struct Parse_state *state, void *graphic
 				"what will not be included in a scene. The optional inverse_match "
 				"flag will invert the filter's match criterion. The default "
 				"behaviour is to show matching graphic unless the optional hide flag "
-				"is specified.");
+				"is specified. <match_graphic_name> filters graphic with the matching name. "
+				"<match_visibility_flags> filters graphic with the setting on the visibility flag. "
+				"<match_region_path> filters graphic in the specified region. "
+				"<match_all> filters all graphic in the region tree. "
+				"<match_or> filters the scene using the logical operation 'or' on a collective of filters. "
+				"<match_and> filters the scene using the logical operation 'and' on a collective of filters. "
+				"Filters created earlier can be added or removed from the <match_or> and <match_and> filter.");
+
 		Option_table_add_char_flag_entry(option_table, "match_all",
 			&(match_all));
 		Option_table_add_entry(option_table, "match_or", graphics_filter_handle_void, filter_data_void,

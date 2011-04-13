@@ -4386,13 +4386,10 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		{
 			region = Cmiss_region_access(define_scene_data->root_region);
 		}
-		char clear_filter_flag = 0;
 
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table, "add_light", &light_to_add,
 			define_scene_data->light_manager, set_Light);
-		Option_table_add_char_flag_entry(option_table, "clear_filter",
-			&clear_filter_flag);
 		Option_table_add_set_Cmiss_region(option_table, "region",
 			define_scene_data->root_region, &region);
 		Option_table_add_entry(option_table, "remove_light", &light_to_remove,
@@ -4414,10 +4411,6 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 					Scene_remove_light(scene,light_to_remove);
 				}
 				Cmiss_scene_set_region(scene, region);
-				if (clear_filter_flag)
-				{
-					Cmiss_scene_set_filter(scene, NULL);
-				}
 				if (filter)
 					Cmiss_scene_set_filter(scene, filter);
 				Scene_end_cache(scene);
