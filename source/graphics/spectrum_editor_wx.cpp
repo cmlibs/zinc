@@ -2372,7 +2372,7 @@ Creates a spectrum_editor widget.
 								graphics_module, spectrum_graphics_filter_name);
 							if (!filter)
 							{
-								Cmiss_graphics_module_create_filter_all(graphics_module);
+								filter = Cmiss_graphics_module_create_filter_all(graphics_module);
 								Cmiss_graphics_filter_set_name(filter, spectrum_graphics_filter_name);
 							}
 							Cmiss_scene_set_filter(spectrum_editor->spectrum_editor_scene, filter);
