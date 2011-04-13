@@ -48,7 +48,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 }
-#include "graphics/graphic_filter.hpp"
+#include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
 #include "region/cmiss_region_private.h"
@@ -89,9 +89,9 @@ struct Cmiss_graphics_module
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Time_keeper *default_time_keeper;
 	struct MANAGER(Cmiss_tessellation) *tessellation_manager;
-	struct MANAGER(Cmiss_graphic_filter) *graphic_filter_manager;
-	void *graphic_filter_manager_callback_id;
-	Cmiss_graphic_filter *default_graphic_filter;
+	struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager;
+	void *graphics_filter_manager_callback_id;
+	Cmiss_graphics_filter *default_graphics_filter;
 	void *tessellation_manager_callback_id;
 	struct Cmiss_tessellation *default_tessellation;
 	int access_count;
@@ -191,19 +191,19 @@ void Cmiss_graphics_module_tessellation_manager_callback(
  * Callback for changes in the graphic filter manager.
  * Informs all renditions about the changes.
  */
-void Cmiss_graphics_module_graphic_filter_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_graphic_filter) *message, void *graphics_module_void)
+void Cmiss_graphics_module_graphics_filter_manager_callback(
+	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *graphics_module_void)
 {
 	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_graphic_filter)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_graphic_filter))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_graphics_filter)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
 		{
 			// minimise scene messages while updating
 			MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_MANAGER(Cmiss_scene)(
-				Cmiss_scene_graphic_filter_change,(void *)message, graphics_module->scene_manager);
+				Cmiss_scene_graphics_filter_change,(void *)message, graphics_module->scene_manager);
 			MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
 		}
 	}
@@ -232,7 +232,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->graphics_font_package = NULL;
 			module->default_scene = NULL;
 			module->default_light_model = NULL;
-			module->default_graphic_filter = NULL;
+			module->default_graphics_filter = NULL;
 			module->light_manager=CREATE(MANAGER(Light))();
 			module->spectrum_manager=CREATE(MANAGER(Spectrum))();
 			Spectrum_manager_set_owner(module->spectrum_manager, module);
@@ -252,11 +252,11 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_time_keeper = NULL;
 			module->tessellation_manager = CREATE(MANAGER(Cmiss_tessellation))();
 			Cmiss_tessellation_manager_set_owner_private(module->tessellation_manager, module);
-			module->graphic_filter_manager = CREATE(MANAGER(Cmiss_graphic_filter))();
-			module->graphic_filter_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_graphic_filter)(Cmiss_graphics_module_graphic_filter_manager_callback,
-					(void *)module, module->graphic_filter_manager);
-			Cmiss_graphic_filter_manager_set_owner_private(module->graphic_filter_manager, module);
+			module->graphics_filter_manager = CREATE(MANAGER(Cmiss_graphics_filter))();
+			module->graphics_filter_manager_callback_id =
+				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_graphics_module_graphics_filter_manager_callback,
+					(void *)module, module->graphics_filter_manager);
+			Cmiss_graphics_filter_manager_set_owner_private(module->graphics_filter_manager, module);
 			module->default_tessellation = NULL;
 			module->member_regions_list = new std::list<Cmiss_region*>;
 			module->tessellation_manager_callback_id =
@@ -349,8 +349,8 @@ int Cmiss_graphics_module_destroy(
 				graphics_module->material_manager_callback_id, Material_package_get_material_manager(graphics_module->material_package));
 			MANAGER_DEREGISTER(Spectrum)(
 				graphics_module->spectrum_manager_callback_id, graphics_module->spectrum_manager);
-			MANAGER_DEREGISTER(Cmiss_graphic_filter)(
-				graphics_module->graphic_filter_manager_callback_id,	graphics_module->graphic_filter_manager);
+			MANAGER_DEREGISTER(Cmiss_graphics_filter)(
+				graphics_module->graphics_filter_manager_callback_id,	graphics_module->graphics_filter_manager);
 			MANAGER_DEREGISTER(Cmiss_tessellation)(
 				graphics_module->tessellation_manager_callback_id,	graphics_module->tessellation_manager);
 			if (graphics_module->member_regions_list)
@@ -387,9 +387,9 @@ int Cmiss_graphics_module_destroy(
 			if (graphics_module->default_tessellation)
 				DEACCESS(Cmiss_tessellation)(&graphics_module->default_tessellation);
 			DESTROY(MANAGER(Cmiss_tessellation))(&graphics_module->tessellation_manager);
-			if (graphics_module->default_graphic_filter)
-				DEACCESS(Cmiss_graphic_filter)(&graphics_module->default_graphic_filter);
-			DESTROY(MANAGER(Cmiss_graphic_filter))(&graphics_module->graphic_filter_manager);
+			if (graphics_module->default_graphics_filter)
+				DEACCESS(Cmiss_graphics_filter)(&graphics_module->default_graphics_filter);
+			DESTROY(MANAGER(Cmiss_graphics_filter))(&graphics_module->graphics_filter_manager);
 			DEALLOCATE(*graphics_module_address);
 		}
 		*graphics_module_address = NULL;
@@ -926,10 +926,10 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 		{
 			if (NULL != (graphics_module->default_scene=(CREATE(Scene)())))
 			{
-				Cmiss_graphic_filter *filter =
-					Cmiss_graphics_module_get_default_graphic_filter(graphics_module);
+				Cmiss_graphics_filter *filter =
+					Cmiss_graphics_module_get_default_filter(graphics_module);
 				Cmiss_scene_set_filter(graphics_module->default_scene, filter);
-				Cmiss_graphic_filter_destroy(&filter);
+				Cmiss_graphics_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
 				struct MANAGER(Scene) *scene_manager =
 					Cmiss_graphics_module_get_scene_manager(graphics_module);
@@ -1363,65 +1363,65 @@ int Cmiss_graphics_module_remove_member_region(
 	return (return_code);
 }
 
-struct MANAGER(Cmiss_graphic_filter) *Cmiss_graphics_module_get_graphic_filter_manager(
+struct MANAGER(Cmiss_graphics_filter) *Cmiss_graphics_module_get_filter_manager(
 		struct Cmiss_graphics_module *graphics_module)
 {
-	struct MANAGER(Cmiss_graphic_filter) *graphic_filter_manager = NULL;
+	struct MANAGER(Cmiss_graphics_filter) *graphics_filter_manager = NULL;
 
 	if (graphics_module)
 	{
-		graphic_filter_manager = graphics_module->graphic_filter_manager;
+		graphics_filter_manager = graphics_module->graphics_filter_manager;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_graphic_filter_manager.  Invalid argument(s)");
+			"Cmiss_graphics_module_get_graphics_filter_manager.  Invalid argument(s)");
 	}
 
-	return graphic_filter_manager;
+	return graphics_filter_manager;
 }
 
-Cmiss_graphic_filter *Cmiss_graphics_module_get_default_graphic_filter(
+Cmiss_graphics_filter *Cmiss_graphics_module_get_default_filter(
 		struct Cmiss_graphics_module *graphics_module)
 {
-	const char *default_graphic_filter_name = "default";
-	struct Cmiss_graphic_filter *graphic_filter = NULL;
-	if (graphics_module && graphics_module->graphic_filter_manager)
+	const char *default_graphics_filter_name = "default";
+	struct Cmiss_graphics_filter *graphics_filter = NULL;
+	if (graphics_module && graphics_module->graphics_filter_manager)
 	{
-		if (!graphics_module->default_graphic_filter)
+		if (!graphics_module->default_graphics_filter)
 		{
-			graphics_module->default_graphic_filter =
-				Cmiss_graphics_module_find_graphic_filter_by_name(graphics_module, default_graphic_filter_name);
-			if (NULL == graphics_module->default_graphic_filter)
+			graphics_module->default_graphics_filter =
+				Cmiss_graphics_module_find_filter_by_name(graphics_module, default_graphics_filter_name);
+			if (NULL == graphics_module->default_graphics_filter)
 			{
-				graphics_module->default_graphic_filter = Cmiss_graphics_module_create_graphic_filter_visibility_flags(graphics_module);
-				Cmiss_graphic_filter_set_name(graphics_module->default_graphic_filter, default_graphic_filter_name);
-				Cmiss_graphic_filter_set_attribute_integer(
-					graphics_module->default_graphic_filter, CMISS_GRAPHIC_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+				graphics_module->default_graphics_filter = Cmiss_graphics_module_create_filter_visibility_flags(graphics_module);
+				Cmiss_graphics_filter_set_name(graphics_module->default_graphics_filter, default_graphics_filter_name);
+				Cmiss_graphics_filter_set_attribute_integer(
+					graphics_module->default_graphics_filter, CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
 			}
 		}
-		graphic_filter = ACCESS(Cmiss_graphic_filter)(graphics_module->default_graphic_filter);
+		graphics_filter = ACCESS(Cmiss_graphics_filter)(graphics_module->default_graphics_filter);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_module_get_default_graphic_filter.  Invalid argument(s)");
+			"Cmiss_graphics_module_get_default_graphics_filter.  Invalid argument(s)");
 	}
-	return graphic_filter;
+	return graphics_filter;
 }
 
-Cmiss_graphic_filter_id Cmiss_graphics_module_find_graphic_filter_by_name(
+Cmiss_graphics_filter_id Cmiss_graphics_module_find_filter_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name)
 {
-	Cmiss_graphic_filter_id graphic_filter = NULL;
+	Cmiss_graphics_filter_id graphics_filter = NULL;
 	if (graphics_module && name)
 	{
-		graphic_filter = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphic_filter, name)(
-			name, Cmiss_graphics_module_get_graphic_filter_manager(graphics_module));
-		if (graphic_filter)
+		graphics_filter = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_graphics_filter, name)(
+			name, Cmiss_graphics_module_get_filter_manager(graphics_module));
+		if (graphics_filter)
 		{
-			ACCESS(Cmiss_graphic_filter)(graphic_filter);
+			ACCESS(Cmiss_graphics_filter)(graphics_filter);
 		}
 	}
-	return graphic_filter;
+	return graphics_filter;
 }

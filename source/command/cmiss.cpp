@@ -185,7 +185,7 @@ extern "C" {
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
-#include "graphics/graphic_filter.hpp"
+#include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
@@ -5924,9 +5924,9 @@ Executes a GFX DEFINE command.
 				define_scene_data.graphics_module = command_data->graphics_module;
 				Option_table_add_entry(option_table, "scene", NULL, 
 					(void *)(&define_scene_data), define_Scene);
-				/* graphic_filter */
-				Option_table_add_entry(option_table, "graphic_filter", command_data->root_region,
-					command_data->graphics_module, gfx_define_graphic_filter);
+				/* graphics_filter */
+				Option_table_add_entry(option_table, "graphics_filter", command_data->root_region,
+					command_data->graphics_module, gfx_define_graphics_filter);
 				/* tessellation */
 				Option_table_add_entry(option_table, "tessellation", NULL,
 					command_data->graphics_module, gfx_define_tessellation);

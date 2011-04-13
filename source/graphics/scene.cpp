@@ -52,7 +52,7 @@
 
 extern "C" {
 #include "api/cmiss_scene.h"
-#include "api/cmiss_graphic_filter.h"
+#include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_rendition.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -87,7 +87,7 @@ extern "C" {
 #include "user_interface/user_interface.h"
 }
 #include "graphics/scene.hpp"
-#include "graphics/graphic_filter.hpp"
+#include "graphics/graphics_filter.hpp"
 #include "graphics/rendergl.hpp"
 
 #if defined(USE_OPENCASCADE)
@@ -259,7 +259,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	int cache;
 	/* flag indicating that graphics objects in scene objects need building */
 	int build;
-	Cmiss_graphic_filter_id filter;
+	Cmiss_graphics_filter_id filter;
 #if defined (OPENGL_API)
 	/* display list identifier for the scene */
 	GLuint display_list,fast_changing_display_list;
@@ -1709,7 +1709,7 @@ Closes the scene and disposes of the scene data structure.
 			}
 			if (scene->filter)
 			{
-				DEACCESS(Cmiss_graphic_filter)(&scene->filter);
+				DEACCESS(Cmiss_graphics_filter)(&scene->filter);
 			}
 			if (scene->region)
 			{
@@ -4377,7 +4377,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		struct Light *light_to_add = NULL;
 		struct Light *light_to_remove = NULL;
 		Cmiss_region *region = NULL;
-		Cmiss_graphic_filter_id filter = NULL;
+		Cmiss_graphics_filter_id filter = NULL;
 		if (scene && scene->region)
 		{
 			region = Cmiss_region_access(scene->region);
@@ -4398,7 +4398,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		Option_table_add_entry(option_table, "remove_light", &light_to_remove,
 			define_scene_data->light_manager, set_Light);
 		Option_table_add_entry(option_table, "filter", &filter,
-			define_scene_data->graphics_module, set_Cmiss_graphic_filter);
+			define_scene_data->graphics_module, set_Cmiss_graphics_filter);
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
@@ -4433,7 +4433,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 			DEACCESS(Light)(&light_to_remove);
 		}
 		if (filter)
-			DEACCESS(Cmiss_graphic_filter)(&filter);
+			DEACCESS(Cmiss_graphics_filter)(&filter);
 		Cmiss_region_destroy(&region);
 	}
 	else
@@ -5204,12 +5204,12 @@ int Scene_add_graphics_object(struct Scene *scene,
 	return (return_code);
 } /* Scene_add_graphics_object */
 
-int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphic_filter_id filter)
+int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
 {
 	int return_code = 1;
 	if (scene)
 	{
-		return_code = REACCESS(Cmiss_graphic_filter)(&scene->filter, filter);
+		return_code = REACCESS(Cmiss_graphics_filter)(&scene->filter, filter);
 		if (return_code && scene->list_of_rendition)
 		{
 			scene->build = 1;
@@ -5240,8 +5240,8 @@ int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *g
 		{
 			if (scene->filter->match(graphic))
 			{
-				return_code = (Cmiss_graphic_filter_get_attribute_integer(scene->filter,
-					CMISS_GRAPHIC_FILTER_ATTRIBUTE_SHOW_MATCHING) == true);
+				return_code = (Cmiss_graphics_filter_get_attribute_integer(scene->filter,
+					CMISS_GRAPHICS_FILTER_ATTRIBUTE_SHOW_MATCHING) == true);
 			}
 		}
 	}
@@ -5253,16 +5253,16 @@ int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *g
 	return return_code;
 }
 
-int Cmiss_scene_graphic_filter_change(struct Scene *scene,	void *message_void)
+int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)
 {
 	int return_code = 1;
-	struct MANAGER_MESSAGE(Cmiss_graphic_filter) *message =
-		(struct MANAGER_MESSAGE(Cmiss_graphic_filter) *)message_void;
+	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message =
+		(struct MANAGER_MESSAGE(Cmiss_graphics_filter) *)message_void;
 	if (scene && message)
 	{
-		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphic_filter)(
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_filter)(
 			message, scene->filter);
-		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphic_filter))
+		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
 		{
 			scene->build = 1;
 			scene->change_status = SCENE_CHANGE;
@@ -5276,7 +5276,7 @@ int Cmiss_scene_graphic_filter_change(struct Scene *scene,	void *message_void)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_graphic_filter_change.  Invalid argument(s)");
+			"Cmiss_scene_graphics_filter_change.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;

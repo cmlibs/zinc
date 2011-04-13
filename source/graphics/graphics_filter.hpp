@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * graphic_filter.hpp
+ * graphics_filter.hpp
  *
  * Declaration of scene graphic filter classes and functions.
  */
@@ -39,8 +39,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GRAPHIC_FILTER_HPP
-#define GRAPHIC_FILTER_HPP
+#ifndef GRAPHICS_FILTER_HPP
+#define GRAPHICS_FILTER_HPP
 
 extern "C" {
 #include "api/cmiss_scene.h"
@@ -52,34 +52,34 @@ extern "C" {
 struct Cmiss_rendition;
 struct Cmiss_graphic;
 
-enum Cmiss_graphic_filter_type
+enum Cmiss_graphics_filter_type
 {
-	CMISS_GRAPHIC_FILTER_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_FILTER_TYPE_BASE = 1,
-	CMISS_GRAPHIC_FILTER_TYPE_IDENTIFIER = 2,
-	CMISS_GRAPHIC_FILTER_TYPE_ALL = 3,
-	CMISS_GRAPHIC_FILTER_TYPE_GRAPHIC_NAME = 4,
-	CMISS_GRAPHIC_FILTER_TYPE_VISIBILITY_FLAGS = 5,
-	CMISS_GRAPHIC_FILTER_TYPE_REGION = 6,
-	CMISS_GRAPHIC_FILTER_TYPE_AND = 7,
-	CMISS_GRAPHIC_FILTER_TYPE_OR = 8
+	CMISS_GRAPHICS_FILTER_TYPE_INVALID = 0,
+	CMISS_GRAPHICS_FILTER_TYPE_BASE = 1,
+	CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER = 2,
+	CMISS_GRAPHICS_FILTER_TYPE_ALL = 3,
+	CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME = 4,
+	CMISS_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS = 5,
+	CMISS_GRAPHICS_FILTER_TYPE_REGION = 6,
+	CMISS_GRAPHICS_FILTER_TYPE_AND = 7,
+	CMISS_GRAPHICS_FILTER_TYPE_OR = 8
 };
 
-DECLARE_LIST_TYPES(Cmiss_graphic_filter);
+DECLARE_LIST_TYPES(Cmiss_graphics_filter);
 
-DECLARE_MANAGER_TYPES(Cmiss_graphic_filter);
+DECLARE_MANAGER_TYPES(Cmiss_graphics_filter);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphic_filter);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_graphic_filter);
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_graphics_filter);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Cmiss_graphics_filter);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphic_filter);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphic_filter,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphics_filter);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphics_filter,name,const char *);
 
-PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphic_filter);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphic_filter,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(Cmiss_graphics_filter);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_filter,name,const char *);
 
 
-class Cmiss_graphic_filter
+class Cmiss_graphics_filter
 {
 private:
 	bool active;
@@ -87,28 +87,28 @@ private:
 	bool show_matching;
 
 public:
-	enum Cmiss_graphic_filter_type filter_type;
+	enum Cmiss_graphics_filter_type filter_type;
 	char *name;
 	int access_count;
-	struct MANAGER(Cmiss_graphic_filter) *manager;
+	struct MANAGER(Cmiss_graphics_filter) *manager;
 	int manager_change_status;
 	bool is_managed_flag;
 
 
-	Cmiss_graphic_filter() :
+	Cmiss_graphics_filter() :
 		active(true),
 		inverse(false),
 		show_matching(true),
-		filter_type(CMISS_GRAPHIC_FILTER_TYPE_BASE),
+		filter_type(CMISS_GRAPHICS_FILTER_TYPE_BASE),
 		name(NULL),
 		access_count(1),
 		manager(NULL),
-		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_graphic_filter)),
+		manager_change_status(MANAGER_CHANGE_NONE(Cmiss_graphics_filter)),
 		is_managed_flag(false)
 	{
 	}
 
-	virtual ~Cmiss_graphic_filter()
+	virtual ~Cmiss_graphics_filter()
 	{
 		DEALLOCATE(name);
 	}
@@ -168,13 +168,13 @@ public:
 		return true;
 	}
 
-	inline Cmiss_graphic_filter *access()
+	inline Cmiss_graphics_filter *access()
 	{
 		++access_count;
 		return this;
 	}
 	
-	enum Cmiss_graphic_filter_type getType()
+	enum Cmiss_graphics_filter_type getType()
 	{
 		return filter_type;
 	};
@@ -190,30 +190,30 @@ public:
 
 	virtual void list_type_specific() const = 0;
 
-	virtual int add(Cmiss_graphic_filter *graphic_filter)
+	virtual int add(Cmiss_graphics_filter *graphics_filter)
 	{
-		USE_PARAMETER(graphic_filter);
+		USE_PARAMETER(graphics_filter);
 		return 0;
 	}
 
-	virtual int remove(Cmiss_graphic_filter *graphic_filter)
+	virtual int remove(Cmiss_graphics_filter *graphics_filter)
 	{
-		USE_PARAMETER(graphic_filter);
+		USE_PARAMETER(graphics_filter);
 		return 0;
 	}
 
-	static inline int deaccess(Cmiss_graphic_filter **graphic_filter_address)
+	static inline int deaccess(Cmiss_graphics_filter **graphics_filter_address)
 	{
-		return DEACCESS(Cmiss_graphic_filter)(graphic_filter_address);
+		return DEACCESS(Cmiss_graphics_filter)(graphics_filter_address);
 	}
 };
 
-int Cmiss_graphic_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphic_filter) *manager,
+int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphics_filter) *manager,
 	struct Cmiss_graphics_module *graphics_module);
 
-int gfx_define_graphic_filter(struct Parse_state *state, void *root_region_void,
+int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void,
 	void *graphics_module_void);
 
-int set_Cmiss_graphic_filter(struct Parse_state *state,
-	void *graphic_filter_address_void, void *graphics_module_void);
-#endif /* GRAPHIC_FILTER_HPP_ */
+int set_Cmiss_graphics_filter(struct Parse_state *state,
+	void *graphics_filter_address_void, void *graphics_module_void);
+#endif /* GRAPHICS_FILTER_HPP_ */

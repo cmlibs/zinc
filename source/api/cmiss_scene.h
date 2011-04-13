@@ -45,7 +45,7 @@
 #ifndef __CMISS_SCENE_H__
 #define __CMISS_SCENE_H__
 
-#include "api/cmiss_graphic_filter.h"
+#include "api/cmiss_graphics_filter.h"
 
 struct Cmiss_scene;
 
@@ -70,11 +70,11 @@ struct Cmiss_region;
    #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */
 
-#ifndef CMISS_GRAPHIC_FILTER_ID_DEFINED
-struct Cmiss_graphic_filter;
-typedef struct Cmiss_graphic_filter *Cmiss_graphic_filter_id;
-#define CMISS_GRAPHIC_FILTER_ID_DEFINED
-#endif /* CMISS_GRAPHIC_FILTER_ID_DEFINED */
+#ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
+struct Cmiss_graphics_filter;
+typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
+#define CMISS_GRAPHICS_FILTER_ID_DEFINED
+#endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
 
 /*******************************************************************************
  * Destroys this reference to the scene (and sets it to NULL).
@@ -116,6 +116,6 @@ int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
  * @param scene  Scene to clear filters from.
  * @return  1 if filters successfully cleared, otherwise 0.
  */
-int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphic_filter_id filter);
+int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
 
 #endif /*__CMISS_SCENE_H__*/

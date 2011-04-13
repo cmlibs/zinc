@@ -871,6 +871,6 @@ in the list of scene_objects in the path of our display heirarchy to the
 int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene,
 	struct Cmiss_graphic *graphic);
 
-int Cmiss_scene_graphic_filter_change(struct Scene *scene,	void *message_void);
+int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void);
 
 #endif /* !defined (SCENE_H) */

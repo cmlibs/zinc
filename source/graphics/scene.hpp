@@ -47,7 +47,7 @@
 struct Scene_object;
 #endif
 
-struct Cmiss_graphic_filter;
+struct Cmiss_graphics_filter;
 struct Cmiss_scene;
 #define Scene Cmiss_scene // GRC temp
 struct Graphics_buffer;
@@ -119,8 +119,8 @@ int Scene_execute_opengl_display_list(struct Scene *scene,
 	Render_graphics_opengl *renderer);
 
 /***************************************************************************//**
- * Private function only to be called by Cmiss_graphic_filter constructors.
+ * Private function only to be called by Cmiss_graphics_filter constructors.
  */
-int Scene_add_filter_private(Scene *scene, Cmiss_graphic_filter *filter);
+int Scene_add_filter_private(Scene *scene, Cmiss_graphics_filter *filter);
 
 #endif /* !defined (SCENE_HPP) */

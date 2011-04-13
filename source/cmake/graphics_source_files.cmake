@@ -49,7 +49,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
 	source/graphics/glyph.h
-	source/graphics/graphic_filter.hpp
+	source/graphics/graphics_filter.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -97,7 +97,7 @@ SET( GRAPHICS_HDRS
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
 		source/graphics/font.cpp
-		source/graphics/graphic_filter.cpp
+		source/graphics/graphics_filter.cpp
 		source/graphics/graphics_library.c
 		source/graphics/graphics_object.cpp
 		source/graphics/light.c

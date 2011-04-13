@@ -2367,16 +2367,16 @@ Creates a spectrum_editor widget.
 								graphics_module, spectrum_editor->private_region);
 							Cmiss_scene_set_region(spectrum_editor->spectrum_editor_scene,
 								spectrum_editor->private_region);
-							const char *spectrum_graphic_filter_name = "spectrum_editor_graphic_filter";
-							Cmiss_graphic_filter *filter = Cmiss_graphics_module_find_graphic_filter_by_name(
-								graphics_module, spectrum_graphic_filter_name);
+							const char *spectrum_graphics_filter_name = "spectrum_editor_graphics_filter";
+							Cmiss_graphics_filter *filter = Cmiss_graphics_module_find_filter_by_name(
+								graphics_module, spectrum_graphics_filter_name);
 							if (!filter)
 							{
-								Cmiss_graphics_module_create_graphic_filter_all(graphics_module);
-								Cmiss_graphic_filter_set_name(filter, spectrum_graphic_filter_name);
+								Cmiss_graphics_module_create_filter_all(graphics_module);
+								Cmiss_graphics_filter_set_name(filter, spectrum_graphics_filter_name);
 							}
 							Cmiss_scene_set_filter(spectrum_editor->spectrum_editor_scene, filter);
-							Cmiss_graphic_filter_destroy(&filter);
+							Cmiss_graphics_filter_destroy(&filter);
 							spectrum_editor->rendition = Cmiss_region_get_rendition_internal(
 								spectrum_editor->private_region);
 							viewer_light = CREATE(Light)("spectrum_editor_light");
