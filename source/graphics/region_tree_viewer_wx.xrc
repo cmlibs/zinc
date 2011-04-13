@@ -153,6 +153,23 @@
 														<style>wxLI_HORIZONTAL</style>
 													</object>
 												</object>
+												
+												<object class="sizeritem">
+					  	 							<object class = "wxBoxSizer">	
+														<orient>wxHORIZONTAL</orient>
+														<object class="sizeritem">
+															<flag>wxALIGN_CENTRE_VERTICAL</flag>
+															<object class = "wxStaticText"> 
+																<label>Coordinate System:</label>
+	 														</object>
+														</object>
+														<object class="sizeritem">
+															<object class="wxPanel" name="CoordinateSystemChooserPanel">
+																<size>300,30</size>
+	 														</object>
+														</object>
+													</object>
+												</object>
 
 												<object class="sizeritem">
 				  	 								<object class = "wxBoxSizer">	
@@ -650,24 +667,7 @@
 															</object>	
 														</object>
 													</object>
--->
-													<object class="sizeritem">
-					  	 								<object class = "wxBoxSizer">	
-															<orient>wxHORIZONTAL</orient>
-															<object class="sizeritem">
-																<flag>wxALIGN_CENTRE_VERTICAL</flag>
-																<object class = "wxStaticText"> 
-																	<label>Coordinate System:</label>
-	 															</object>
-															</object>
-															<object class="sizeritem">
-																<object class="wxPanel" name="CoordinateSystemChooserPanel">
-																	<size>300,30</size>
-	 															</object>
-															</object>
-														</object>
-													</object>
-													
+-->													
 													<object class="sizeritem">
 														<object class = "wxBoxSizer">	
 															<orient>wxHORIZONTAL</orient>
