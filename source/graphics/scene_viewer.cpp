@@ -2711,7 +2711,7 @@ The previous fast_changing state is kept so that the onscreen graphics are
 kept in a sensible state.
 ==============================================================================*/
 {
-	int keep_fast_changing_state, return_code;
+	int keep_fast_changing_state = 0, return_code = 1;
 
 	ENTER(Scene_viewer_render_scene_in_viewport);
 	if (scene_viewer)
@@ -3095,10 +3095,10 @@ Creates abstract interactive events relating to the mouse input to the
 scene_viewer.
 ==============================================================================*/
 {
-	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
+	double centre_x = 0.0,centre_y = 0.0,size_x,size_y,viewport_bottom,viewport_height,
 		viewport_left,viewport_width;
-	enum Interactive_event_type interactive_event_type;
-	int button_number,i,input_modifier,j,modifier_state,mouse_event,return_code;
+	enum Interactive_event_type interactive_event_type = INTERACTIVE_EVENT_BUTTON_PRESS;
+	int button_number = 0,i,input_modifier,j,modifier_state = 0,mouse_event,return_code;
 	GLdouble temp_modelview_matrix[16], temp_projection_matrix[16];
 	GLint viewport[4];
 	struct Interactive_event *interactive_event;
@@ -8276,7 +8276,7 @@ Sets a flag so that the redraw will necessarily fully render the scene in
 pixel buffer mode
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Scene_viewer_set_update_pixel_image);
 	if (scene_viewer)

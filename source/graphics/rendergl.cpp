@@ -3204,7 +3204,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	int draw_selected, Render_graphics_opengl *renderer,
 	Graphics_object_rendering_type rendering_type)
 {
-	float proportion,*times;
+	float proportion = 0.0,*times;
 	int itime, name_selected, number_of_times, picking_names, return_code, strip;
 #if defined (OPENGL_API)
 	int lighting_off, line_width;
@@ -3221,7 +3221,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	struct GT_voltex *voltex;
 	struct Multi_range *selected_name_ranges;
 	struct Spectrum *spectrum;
-	union GT_primitive_list *primitive_list1, *primitive_list2;
+	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(render_GT_object_opengl_immediate)
 	if (object)

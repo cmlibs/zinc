@@ -395,7 +395,7 @@ by the escape/backslash character in the input file.
 ==============================================================================*/
 {
 	char *location, *the_string;
-	int allocated_length, length, quote_mark, reading_token, return_code,
+	int allocated_length, length, quote_mark, reading_token, return_code = 0,
 		this_char;
 
 	ENTER(read_string_value);
@@ -560,7 +560,7 @@ for node and element fields.
 	char *field_name, *location, *next_block;
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type = UNKNOWN_FE_FIELD;
-	enum Value_type value_type;
+	enum Value_type value_type = UNKNOWN_VALUE;
 	FE_value focus;
 	int i, number_of_components, number_of_indexed_values, return_code;
 	struct Coordinate_system coordinate_system;

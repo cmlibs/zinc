@@ -263,7 +263,7 @@ Sets the data structure so that it represents a calculation of the type
 identified in the type enum and also sets 'number_of_components' parameters.
 ==============================================================================*/
 {
-	int i,return_code;
+	int i,return_code = 1;
 
 	ENTER(set_Iso_field_calculation_with_floats);
 	if (data)

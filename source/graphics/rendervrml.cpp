@@ -2089,8 +2089,8 @@ Only writes the geometry field.
 ???RC Crap
 ==============================================================================*/
 {
-	float proportion,*times;
-	int group, itime, number_of_times, return_code;
+	float proportion = 0.0, *times;
+	int group = 0, itime, number_of_times, return_code;
 	/* struct GT_nurbs *nurbs; */
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_point *point;
@@ -2099,7 +2099,7 @@ Only writes the geometry field.
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	/* struct GT_userdef *userdef; */
 	struct GT_voltex *voltex;
-	union GT_primitive_list *primitive_list1, *primitive_list2;
+	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(makevrml);
 	return_code=1;

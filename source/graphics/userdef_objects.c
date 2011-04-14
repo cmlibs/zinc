@@ -749,7 +749,7 @@ DESCRIPTION :
 Clean up a hair.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(destroy_hair);
 	if (*hair_struct)

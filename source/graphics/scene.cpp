@@ -1875,7 +1875,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 {
-	int return_code;
+	int return_code = 0;
 // 	struct LIST(Light) *temp_list_of_lights;
 #if defined (USE_SCENE_OBJECT)
 	struct LIST(Scene_object) *temp_scene_object_list;

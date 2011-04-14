@@ -1523,7 +1523,7 @@ accordance with the spectrum.
 ==============================================================================*/
 {
 	float rgba[4];
-	int return_code;
+	int return_code = 1;
 
 	ENTER(spectrum_renderGL_value);
 	USE_PARAMETER(material);

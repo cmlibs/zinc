@@ -588,13 +588,13 @@ derivatives; helps make smooth snakes from few data points.
 ==============================================================================*/
 {
 	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
-		double_xi, *force_vectors, phi[4], phi_m, *pos, *stiffness_matrix,
+		double_xi, *force_vectors = NULL, phi[4], phi_m, *pos, *stiffness_matrix  = NULL,
 		*stiffness_offset, weight;
 	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
 		{FE_NODAL_D_DS1};
 	FE_value *coordinates = NULL, *fitting_field_values = NULL, density_multiplier,
 		length_multiplier, *lengths = NULL, *value, *weights = NULL, xi;
-	int component, element_number, i, *indx, j, local_components, m, n, node_number, 
+	int component, element_number, i, *indx = NULL, j, local_components, m, n, node_number, 
 		number_of_components, number_of_coordinate_components, number_of_data,
 		number_of_fe_fields, number_of_rows, return_code, row, start_row;
 	struct CM_element_information cm;
@@ -634,9 +634,6 @@ derivatives; helps make smooth snakes from few data points.
 			lengths = (FE_value *)NULL;
 			coordinates = (FE_value *)NULL;
 			weights = (FE_value *)NULL;
-			stiffness_matrix = (double *)NULL;
-			force_vectors = (double *)NULL;
-			indx = (int *)NULL;
 			/* 1. Make table of lengths from first data point up to last */
 			if (0 < number_of_components)
 			{

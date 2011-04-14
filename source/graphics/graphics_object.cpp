@@ -2514,7 +2514,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(GT_glyph_set_set_integer_identifier);
 	if (glyph_set)
@@ -2541,7 +2541,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(GT_glyph_set_set_auxiliary_integer_identifier);
 	if (glyph_set)
@@ -2674,7 +2674,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(GT_nurbs_set_integer_identifier);
 	if (nurbs)
@@ -2995,7 +2995,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(GT_point_set_integer_identifier);
 	if (point)
@@ -3338,7 +3338,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(GT_polyline_set_integer_identifier);
 	if (polyline)
@@ -6256,7 +6256,7 @@ LAST MODIFIED : 11 November 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code, time_number;
+	int return_code = 0, time_number;
 	struct GT_voltex *voltex;
 
 	ENTER(GT_object_decimate_GT_voltex);
@@ -6274,6 +6274,7 @@ DESCRIPTION :
 					GT_voltex_decimate_triangles(voltex, threshold_distance);
 					voltex = voltex->ptrnext;
 				}
+				return_code = 1;
 			}
 			else
 			{
@@ -6291,7 +6292,6 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_decimate_GT_voltex.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 

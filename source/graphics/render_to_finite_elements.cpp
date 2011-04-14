@@ -848,7 +848,7 @@ LAST MODIFIED : 8 December 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	float proportion,*times;
+	float proportion= 0,*times;
 	int itime, number_of_times, return_code;
 #if defined (NEW_CODE)
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -858,7 +858,7 @@ DESCRIPTION :
 	struct GT_polyline *interpolate_line,*line,*line_2;
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	struct GT_voltex *voltex;
-	union GT_primitive_list *primitive_list1, *primitive_list2;
+	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(Graphics_object_render_to_finite_elements);
 	return_code=1;

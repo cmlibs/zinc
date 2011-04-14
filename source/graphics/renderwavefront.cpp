@@ -869,7 +869,7 @@ DESCRIPTION :
 Convert graphical object into Wavefront object file.
 ==============================================================================*/
 {
-	float proportion,*times;
+	float proportion = 0.0,*times;
 	int itime, number_of_times, return_code;
 	struct Graphical_material *current_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -877,7 +877,7 @@ Convert graphical object into Wavefront object file.
 	struct GT_surface *interpolate_surface,*surface,*surface_2 = NULL;
 	struct GT_voltex *voltex;
 	struct LIST(Wavefront_vertex) *vertex_list;
-	union GT_primitive_list *primitive_list1, *primitive_list2;
+	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(makewavefront);
 	/* check arguments */
