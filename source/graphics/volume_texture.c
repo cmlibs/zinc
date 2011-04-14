@@ -1810,7 +1810,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(VT_volume_texture,name,const char *)
 {
-	char *destination_name;
+	char *destination_name = NULL;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(VT_volume_texture,name));

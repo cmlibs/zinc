@@ -1141,7 +1141,7 @@ Give the textctrl a value.
 	 FE_value *values, time;
 	 struct FE_field *fe_field;
 	 struct FE_node *node = NULL;
-	 struct Computed_field *temp_field;
+	 struct Computed_field *temp_field  = NULL;
 
 	 ENTER(node_viewer_update_value);
 	 if (node_viewer&&(node = node_viewer->current_node) &&

@@ -1950,7 +1950,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,const char *)
 {
-	const char *destination_name;
+	const char *destination_name = NULL;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Scene,name));

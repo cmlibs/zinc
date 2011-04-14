@@ -214,7 +214,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
 {
-	char *destination_name;
+	char *destination_name = NULL;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Spectrum,name));

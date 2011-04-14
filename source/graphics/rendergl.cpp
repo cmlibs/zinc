@@ -1664,7 +1664,7 @@ DESCRIPTION :
 {
 	int return_code;
 #if defined (OPENGL_API)
-	GTDATA *datum;
+	GTDATA *datum = NULL;
 	int i;
 	Triple *normal = NULL, *point = NULL;
 #endif /* defined (OPENGL_API) */
@@ -2118,8 +2118,9 @@ DESCRIPTION :
 {
 	int return_code;
 #if defined (OPENGL_API)
-	GLfloat *cknots_temp,*control_temp,*normal_temp,*pwl_temp,*sknots_temp,*tknots_temp,
-		*texture_temp,*trimarray_temp;
+	GLfloat *cknots_temp = NULL, *control_temp = NULL, *normal_temp = NULL,
+		*pwl_temp = NULL, *sknots_temp = NULL, *tknots_temp = NULL,	*texture_temp = NULL,
+		*trimarray_temp = NULL;
 	GLUnurbsObj *the_nurb;
 	int i;
 #endif /* defined (OPENGL_API) */
@@ -2312,7 +2313,7 @@ preference to normal materials.
 ==============================================================================*/
 {
 	int i, j, return_code;
-	struct Spectrum_render_data *render_data;
+	struct Spectrum_render_data *render_data = NULL;
 	struct VT_iso_triangle *triangle;
 	struct VT_iso_vertex *vertex;
 
@@ -2594,7 +2595,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
    /* We will be overriding this so we will need to store the original value */
    GLuint object_position_vertex_buffer_object;
 	/* Sizes of our first pass render */
-	GLuint tex_width, tex_height;
+	GLuint tex_width = 0, tex_height = 0;
 
 	renderer->Material_compile(object->secondary_material);
 

@@ -368,9 +368,9 @@ DESCRIPTION :
 Updates the arrays of all the choosable objects and their names.
 ============================================================================*/
 	{
-		char **new_item_names;
+		char **new_item_names = NULL;
 		int i,max_number_of_objects,return_code;
-		Managed_object **new_items;
+		Managed_object **new_items = NULL;
 
 		return_code=0;
 

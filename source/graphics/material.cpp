@@ -4214,7 +4214,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 {
-	char *destination_name;
+	char *destination_name = NULL;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Graphical_material,name));

@@ -1665,7 +1665,7 @@ DESCRIPTION :
 Writes out the element nodal template represented in <component> to <output_file>.
 ==============================================================================*/
 {
-	enum FE_nodal_value_type *nodal_value_types;
+	enum FE_nodal_value_type *nodal_value_types = NULL;
 	enum Global_to_element_map_type component_type;
 	int j, k, nodal_value_index, node_index, number_of_derivatives,
 		number_of_nodal_values, number_of_nodes, number_of_versions, return_code,
@@ -2181,7 +2181,7 @@ are passed to this function.
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
 	int field_no, i, j, node_index, number_of_components = 0, 
-		number_of_nodes_in_component, number_of_fields,
+		number_of_nodes_in_component, number_of_fields = 0,
 		number_of_fields_in_header, number_of_nodes, number_of_scale_factor_sets,
 		number_of_scale_factors, return_code, *scale_factor_set_in_use,
 		*temp_indices, write_field_values;
@@ -3224,7 +3224,7 @@ Notes:
 ==============================================================================*/
 {
 	const char *write_path_const;
-	char *write_path_copy;
+	char *write_path_copy = NULL;
 	int return_code;
 	struct Cmiss_region *write_path_region;
 	struct FE_region *fe_region;

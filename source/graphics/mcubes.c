@@ -1370,6 +1370,9 @@ resultant triangles are stored in module global clipped_triangle_list.
 			printf("recurse_clip : NULL triangle, aborting\n");
 		return;
 	}
+	new_m[0] = 0;
+	new_m[1] = 0;
+	new_m[2] = 0;
 
 	/* if no more clipping planes then done */
 	/* examine triangle to see if not 1D */

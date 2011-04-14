@@ -217,7 +217,7 @@ Module functions
 #if defined (OPENGL_API)
 static GLenum Texture_get_target_enum(Texture *texture)
 {
-	GLenum texture_target;
+	GLenum texture_target = GL_TEXTURE_1D;
 	
 	switch (texture->dimension)
 	{
@@ -1121,7 +1121,7 @@ tiles (and <texture_tiling> wasn't NULL.
 {
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
-	int max_texture_size_int, next_reduction, pixel_size, return_code;
+	int max_texture_size_int, next_reduction, pixel_size = 0, return_code;
 	GLenum format = GL_COLOR_INDEX, type = GL_INT;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;

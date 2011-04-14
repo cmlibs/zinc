@@ -3930,8 +3930,8 @@ it.
 	const char **valid_strings;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 	char *window_title;
-	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
-	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;;
 #if defined (WX_USER_INTERFACE)
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	int ortho_front_axis,ortho_up_axis;
