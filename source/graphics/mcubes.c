@@ -1844,7 +1844,7 @@ intersections with the boundary.
 	/* mc array size=2 bigger than standard array nx,ny,nz to account for closed surfaces */
 	int mcnx, mcny, mcnz;
 	int x_min, x_max, y_min, y_max, z_min, z_max;
-	int list_index;
+	int list_index = 0;
 	int a_count, a_count2;
 	int a,b;
 	int nx,ny,nz;
@@ -2943,7 +2943,7 @@ routine cant touch the set nodes.
 	double val[3],kfactor,sigmadist,sigmadist2;
 	int incx,decx,incy,decy,incz,decz;
 	struct VT_texture_node *node;
-	double clipping,scalar;
+	double clipping = 0.0,scalar;
 	struct VT_texture_curve *p;
 	double point[3];
 

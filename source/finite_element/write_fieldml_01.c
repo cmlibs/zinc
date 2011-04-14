@@ -1001,8 +1001,8 @@ has been selected for output) then the header is written out.
 {
 	char *template_name;
 	FILE *output_file;
-	int i, indent, number_of_fields, number_of_fields_in_header, return_code,
-		write_field_values;
+	int i, indent, number_of_fields = 0, number_of_fields_in_header, return_code,
+		write_field_values = 0;
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
 	struct Node_template *templates;

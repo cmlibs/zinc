@@ -963,7 +963,7 @@ LAST MODIFIED : 17 November 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Graphics_font_rendergl_text);
 
@@ -987,9 +987,9 @@ DESCRIPTION :
 		}
 		else
 		{
-		display_message(ERROR_MESSAGE,
-			"Graphics_font_rendergl_text.  "
-			"Font is being used to render text before being compiled.");
+			display_message(ERROR_MESSAGE,
+				"Graphics_font_rendergl_text.  "
+				"Font is being used to render text before being compiled.");
 		}
 	}
 	else
@@ -997,7 +997,6 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"Graphics_font_rendergl_text.  "
 			"Invalid arguments");
-		return_code = 0;
 	}
 
 	LEAVE;

@@ -327,7 +327,7 @@ Changes the currently chosen settings.
 {
  	 char temp_string[50];
  	 enum Spectrum_settings_type type;
-	 enum Spectrum_settings_colour_mapping colour_mapping;
+	 enum Spectrum_settings_colour_mapping colour_mapping = SPECTRUM_ALPHA;
  	 float exaggeration, step_value, band_ratio;
  	 int component, number_of_bands, black_band_proportion, extend,fix; //,i, num_children, number_of_bands, black_band_proportion,
 	 int return_code;
@@ -617,7 +617,7 @@ DESCRIPTION :
 Called when a modify button - add, delete, up, down - is activated.
 ==============================================================================*/
 {
-	 int list_changed, position, return_code;
+	 int list_changed = 0, position, return_code = 0;
 	 struct Spectrum_settings *settings;
 
 	 ENTER(spectrum_editor_settings_wx_key_presssed);
@@ -1216,7 +1216,7 @@ DESCRIPTION :
 Callback for colour settings
 ==============================================================================*/
 {
-	enum Spectrum_settings_colour_mapping new_colour_mapping;
+	enum Spectrum_settings_colour_mapping new_colour_mapping = SPECTRUM_ALPHA;
 	struct Spectrum_settings *settings;
 	char *string_selection;
 	int selection;
@@ -1386,7 +1386,7 @@ DESCRIPTION :
 Callback for the settings type.
 ==============================================================================*/
 {
-	 enum Spectrum_settings_type new_spectrum_type;
+	 enum Spectrum_settings_type new_spectrum_type = SPECTRUM_INVALID_TYPE;
 	 struct Spectrum_settings *settings;
 	 int selection;
 	 char *string_selection;
@@ -1778,7 +1778,7 @@ Destroys the edit_spectrum member of <spectrum_editor> and rebuilds it as
 a complete copy of <Spectrum>.
 ==============================================================================*/
 {
-	 int return_code;
+	int return_code = 0;
 
 	ENTER(make_current_spectrum);
 	if (spectrum_editor)
@@ -1834,7 +1834,7 @@ DESCRIPTION :
 	char **strings, *string_data;
 	const float extend_ends = 0.04;
 	struct Colour black ={0, 0, 0}, white = {1.0, 1.0, 1.0};
-	int i, j, npts1, npts2, number_of_points,
+	int i, j, npts1, npts2, number_of_points = 0,
 		tick_label_count, tick_line_count, return_code;
 	float bar_min, bar_max, min, max, value_xi1;
 	GTDATA *data;

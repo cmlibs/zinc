@@ -101,7 +101,7 @@ graphics_objects that don't come from finite_elements?
 	int allocated_labels,i,j,number_of_ticks,points_along_bar,points_around_bar,
 		return_code;
 	GTDATA spectrum_value,*data,*datum;
-	struct GT_object *bar_graphics_object,*label_graphics_object,
+	struct GT_object *bar_graphics_object,*label_graphics_object = NULL,
 		*tick_graphics_object;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;

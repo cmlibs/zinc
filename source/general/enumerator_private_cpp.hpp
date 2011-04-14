@@ -156,7 +156,7 @@ an error message, for the calling function to handle. \
 Default version assumes all valid enumerator values are sequential from 0. \
 ============================================================================*/ \
 { \
-	const char *other_enumerator_string; \
+	const char *other_enumerator_string = NULL; \
 	int enumerator_value, return_code;	\
 \
 	ENTER(STRING_TO_ENUMERATOR(enumerator_type)); \

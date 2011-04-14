@@ -689,7 +689,7 @@ fastest the edge is less likely to collapse.
 		number_of_triangles, remove_triangle, return_code, triangle_index,
 		triangles_removed, vertex_index;
 	struct Decimation_cost *cost, *update_cost;
-	struct Decimation_quadric *independent_quadric, *quadric, *quadric2;
+	struct Decimation_quadric *independent_quadric = NULL, *quadric, *quadric2;
 	struct LIST(Decimation_cost) *cost_list, *pre_cost_list;
 	struct LIST(Decimation_quadric) *quadric_list;
 	struct VT_iso_vertex **edges_list, **new_edges_list, **new_vertex_list_ptr,

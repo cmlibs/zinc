@@ -501,7 +501,7 @@ assumed to be available.  Otherwise just the single component identified by the
 iso_field_component number is expected.
 ==============================================================================*/
 {
-	FE_value angle,clip,dot_prod,min_angle,onex,oney,return_clip,return_value,
+	FE_value angle,clip,dot_prod,min_angle,onex,oney,return_clip = 0.0,return_value,
 		sign,twox,twoy;
 	int i,number_of_points;
 

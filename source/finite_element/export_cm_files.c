@@ -584,7 +584,7 @@ Writes the node to an ipmap file.
 	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
 		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
 		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
-	FE_value diff, sum, *values;
+	FE_value diff, sum, *values = NULL;
 	int component_number_of_versions, i, inverse_match, inverse_match_version,
 		j, k, m, n, map_derivatives, match_version, match, node_number,
 		number_of_versions, return_code;

@@ -2361,7 +2361,7 @@ Reads a control curve from a file.
 {
 	char *name;
 	enum FE_basis_type fe_basis_type;
-	int j, local_node_no, nodes_per_element, elements, derivatives,
+	int j, local_node_no = 0, nodes_per_element, elements, derivatives,
 		return_code;
 	FE_value time, total_time, value;
 	struct Curve *curve;
@@ -2657,7 +2657,7 @@ Reads stuff from a file.
 	const char *constname;
 	FE_value *shape_vector,total_time;
 	int face_index, face_values, header, i, index, j, n_modes, return_code,
-		solid_body_index, values;
+		solid_body_index = 0, values;
 	unsigned int integer_data;
 	struct read_file_data *file_data;
 	struct Emoter_combine_slider *combine_slider, **new_combine_sliders;

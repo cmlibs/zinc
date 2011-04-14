@@ -2450,7 +2450,7 @@ passed in render data.
 {
 	FE_value *values;
 	int i, number_of_components, return_code,texels_per_band;
-	float data_component,value,step_xi,total_texels;
+	float data_component,value = 0.0,step_xi,total_texels;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_activate);

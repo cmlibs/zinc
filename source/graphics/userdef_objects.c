@@ -283,7 +283,8 @@ Render a hair.
 	int s,j,k,hairnum,hairoff;
 	float eyelashx[3],eyelashy[3],eyelashz[3];
 	double t,tt,tstep,ttstep,bend,bend2;
-	float hairx,hairy,hairz,browx,browy,browz,hairxprev,hairyprev,hairzprev;
+	float hairx = 0.0,hairy = 0.0,hairz = 0.0,browx,browy,browz,
+		hairxprev,hairyprev,hairzprev;
 #if defined (GL_API)
 	float dummynorm[3] = {0,1,0};
 #endif /* defined (GL_API) */

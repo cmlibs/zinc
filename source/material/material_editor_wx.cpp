@@ -142,9 +142,9 @@ Uses gl to draw a sphere with a lighting source.
 	int height,i,j,return_code,width;
 #if defined (OPENGL_API)
 	float texture_depth, texture_height, texture_width;
-	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor,horiz_offset,
+	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor = 0.0,horiz_offset = 0.0,
 		lower_coordinate,lower_radius,sin_angle,texture_coordinates[2],
-		upper_coordinate,upper_radius,vert_factor,vert_offset,viewport_size[4];
+		upper_coordinate,upper_radius,vert_factor = 0.0,vert_offset = 0.0,viewport_size[4];
 	GLfloat light_position[]=
 	{
 		0.0, 5.0, 4.0, 0.0
@@ -721,7 +721,7 @@ Callback for the alpha slider.
 ==============================================================================*/
  {
 		int value;
-		float alpha;
+		float alpha = 0.0;
 		
 		ENTER(OnMaterialEditorAlphaSliderChanged);
 	USE_PARAMETER(event);
@@ -744,7 +744,7 @@ Callback for the shininess slider.
 ==============================================================================*/
  {
 		int value;
-		float shininess;
+		float shininess = 0.0;
 		
 		ENTER(OnMaterialEditorShininessSliderChanged);
 	USE_PARAMETER(event);
@@ -963,7 +963,7 @@ Destroys the current material member of <material_editor> and rebuilds it as
 a complete copy of <Material>.
 ==============================================================================*/
 {
-	 int return_code;
+	int return_code = 0;
 	ENTER(make_current_material);
 	if (material_editor)
 	{

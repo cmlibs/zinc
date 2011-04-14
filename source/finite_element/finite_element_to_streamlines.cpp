@@ -718,15 +718,16 @@ in that region.
 ==============================================================================*/
 {
 	FE_value angle,coordinates[3],cos_angle,curl[3],curl_component,data_value,
-		displacement[3],dv_dxi[9],dv_dx[9],dx_dxi[9],dxi_dx[9],magnitude,normal[3],
-		normal2[3],old_normal[3],previous_curl_component,previous_total_stepped_A,
+		displacement[3] = {0.0, 0.0, 0.0},dv_dxi[9],dv_dx[9],dx_dxi[9],dxi_dx[9],
+		magnitude,normal[3],normal2[3] = {0.0, 0.0, 0.0},old_normal[3] = {0.0, 0.0, 0.0},
+		previous_curl_component = 0.0,previous_total_stepped_A,
 		previous_total_stepped_B,sin_angle,step_size,stream_vector_values[9],
 		temp,total_stepped,vector[3],vector_magnitude;
 	GTDATA *stream_datum,*tmp_stream_data;
 	int add_point,allocated_number_of_points,calculate_curl,element_dimension,
 		i,keep_tracking,number_of_coordinate_components,
 		number_of_stream_vector_components,return_code;
-	struct FE_element *previous_element_A, *previous_element_B;
+	struct FE_element *previous_element_A = NULL, *previous_element_B = NULL;
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples = NULL;
 
 	ENTER(track_streamline_from_FE_element);
@@ -1474,13 +1475,13 @@ in that region.
 {
 	float cosw,magnitude,sinw,thickness;
 	gtDataType gt_data_type;
-	GTDATA *data,*datum,*stream_data,stream_datum;
+	GTDATA *data,*datum,*stream_data,stream_datum= 0.0;
 	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
 		number_of_stream_vector_components,surface_points_per_step;
 	struct GT_surface *surface;
 	Triple cross_thickness,cross_width,*normal,*normalpoints,*point,*points,stream_cross,
 		stream_normal,*stream_normals,stream_point,*stream_points,
-		stream_unit_vector,stream_vector,*stream_vectors;
+		stream_unit_vector = {1.0, 0.0, 0.0},stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
 	if (element&&FE_element_is_top_level(element, NULL)&&

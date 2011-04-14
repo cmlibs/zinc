@@ -961,7 +961,7 @@ DESCRIPTION :
 Returns the node currently in the <node_viewer>.
 ==============================================================================*/
 {
-	struct FE_node *node;
+	struct FE_node *node = NULL;
 
 	ENTER(node_viewer_get_node);
 	if (node_viewer)
@@ -975,7 +975,6 @@ Returns the node currently in the <node_viewer>.
 	{
 		display_message(ERROR_MESSAGE,
 			"node_viewer_get_node.  Missing dialog.");
-		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
 
@@ -990,14 +989,14 @@ DESCRIPTION :
 Makes <node> the current_node in <node_viewer>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Node_viewer_set_node);
 	if (node_viewer&&node)
 	{
 		 if (node_viewer->wx_node_viewer)
 		 {
-				return_code= node_viewer->wx_node_viewer->set_selected_node(node);
+				return_code = node_viewer->wx_node_viewer->set_selected_node(node);
 				Node_viewer_set_viewer_node(node_viewer);
 				if (node_viewer->wx_node_viewer && node_viewer->collpane)
 				{
@@ -1009,7 +1008,6 @@ Makes <node> the current_node in <node_viewer>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Node_viewer_set_node.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -1138,11 +1136,11 @@ DESCRIPTION :
 Give the textctrl a value.
 ==============================================================================*/
 	 char *cmiss_number_string, *new_value_string, temp_value_string[VALUE_STRING_SIZE];
-	 int element_dimension, j, number_of_components, return_code;
+	 int element_dimension, j, number_of_components = 0, return_code;
 	 struct CM_element_information cm_identifier;
 	 FE_value *values, time;
 	 struct FE_field *fe_field;
-	 struct FE_node *node;
+	 struct FE_node *node = NULL;
 	 struct Computed_field *temp_field;
 
 	 ENTER(node_viewer_update_value);
@@ -1190,7 +1188,7 @@ Give the textctrl a value.
 				 {
 						case ELEMENT_XI_VALUE:
 						{
-							 char element_char, xi_string[30];
+							 char element_char = '\0', xi_string[30];
 							 FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 							 struct FE_element *element;
 							 if (get_FE_nodal_element_xi_value(

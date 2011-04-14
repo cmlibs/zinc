@@ -6280,7 +6280,7 @@ LAST MODIFIED : 2 July 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-  	int return_code;
+  	int return_code = 0;
 
 	ENTER(Graphics_buffer_make_current);
 

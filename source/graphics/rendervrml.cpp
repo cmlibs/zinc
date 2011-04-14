@@ -403,7 +403,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *dot_pointer, *material_name;
-	int return_code;
+	int return_code = 0;
 	struct VRML_prototype *vrml_prototype;
 
 	ENTER(activate_material_vrml);
@@ -1718,7 +1718,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int i,j,return_code;
-	int index,index_1,index_2,number_of_points;
+	int index = 0,index_1,index_2,number_of_points;
 	struct Texture *texture;
 	Triple *triple;
 
@@ -2598,7 +2598,7 @@ DESCRIPTION :
 #if defined (OLD_CODE)
 	fpos_t file_pointer, save_file_pointer;
 #endif
-	long file_pointer,save_file_pointer;
+	long file_pointer,save_file_pointer = 0L;
 
 	ENTER(write_graphics_object_vrml);
 	if (vrml_file&&gt_object&&gt_object->name&&default_material)
@@ -2750,7 +2750,7 @@ graphics_object_tree_iterator_function
 ==============================================================================*/
 {
 	FILE *vrml_file;
-	int return_code;
+	int return_code = 0;
 	struct Export_to_vrml_data *export_to_vrml_data;
 
 	ENTER(Scene_object_export_to_vrml);

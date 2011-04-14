@@ -390,7 +390,7 @@ LAST MODIFIED : 6 October 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Time_object_info *object_info, *previous;
 
 	ENTER(Time_keeper_add_time_object);
@@ -470,8 +470,8 @@ LAST MODIFIED : 6 October 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
-	struct Time_object_info *object_info, *previous;
+	int return_code = 0;
+	struct Time_object_info *object_info, *previous = NULL;
 
 	ENTER(Time_keeper_remove_time_object);
 

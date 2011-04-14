@@ -467,7 +467,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 	char *file_name;
 	double *destination_double,*grid_spacing,*source_double;
 	int *destination_int,*group_nodes,i,j,k,l,m,n_cells,n_groups,n_mc_cells,
-		n_nodes,n_points,n_triangle_lists,return_code,*source_deform,
+		n_nodes,n_points,n_triangle_lists = 0,return_code,*source_deform,
 		*source_int,maxk;
 	struct MC_cell *cell,**cells,*source_cell,**source_cells;
 	struct MC_iso_surface *iso_surface,*source_iso_surface;

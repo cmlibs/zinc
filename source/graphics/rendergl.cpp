@@ -755,11 +755,11 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	float *label_bound;
 	GLfloat transformation[16], x, y, z;
 	Graphics_object_glyph_labels_function glyph_labels_function;
-	GTDATA *datum;
-	int draw_all, i, j, *name, name_selected, label_bounds_per_glyph,
+	GTDATA *datum = NULL;
+	int draw_all, i, j, *name, name_selected = NULL, label_bounds_per_glyph = 0,
 		return_code;
-	struct GT_object *temp_glyph;
-	struct Spectrum_render_data *render_data;
+	struct GT_object *temp_glyph = NULL;
+	struct Spectrum_render_data *render_data = NULL;
 	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
 		temp_axis3, temp_point;
 
@@ -1367,9 +1367,9 @@ simultaneously.
 {
 	char **text_string;
 	float half_marker_size,x,x1,x2,x3,y,y1,y2,y3,z,z1,z2,z3;
-	GTDATA *datum;
+	GTDATA *datum = NULL;
 	int i,*name,offset,return_code;
-	struct Spectrum_render_data *render_data;
+	struct Spectrum_render_data *render_data = NULL;
 	Triple *point;
 
 	ENTER(draw_pointsetGL);
@@ -1666,9 +1666,9 @@ DESCRIPTION :
 #if defined (OPENGL_API)
 	GTDATA *datum;
 	int i;
-	Triple *normal, *point;
+	Triple *normal = NULL, *point = NULL;
 #endif /* defined (OPENGL_API) */
-	struct Spectrum_render_data *render_data;
+	struct Spectrum_render_data *render_data = NULL;
 
 	ENTER(drawpolylineGL);
 #if defined (DEBUG)
@@ -1742,10 +1742,10 @@ DESCRIPTION :
 	int return_code;
 #if defined (OPENGL_API)
 	int i;
-	Triple *point, *normal;
-	GTDATA *datum;
+	Triple *point = NULL, *normal = NULL;
+	GTDATA *datum = NULL;
 #endif /* defined (OPENGL_API) */
-	struct Spectrum_render_data *render_data;
+	struct Spectrum_render_data *render_data = NULL;
 
 	ENTER(draw_dc_polylineGL);
 
@@ -2003,9 +2003,9 @@ polygon is drawn for each of the <npolys>.
 #if defined (OPENGL_API)
 	GLenum mode;
 #endif /* defined (OPENGL_API) */
-	GTDATA *data_item;
-	int i,j,return_code;
-	Triple *normal_point, *point, *texture_point;
+	GTDATA *data_item = NULL;
+	int i,j,return_code = 0;
+	Triple *normal_point = NULL, *point = NULL, *texture_point = NULL;
 
 	ENTER(draw_data_dc_surfaceGL);
 	USE_PARAMETER(tangent_points);
@@ -3213,8 +3213,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	struct GT_nurbs *nurbs;
 	struct GT_point *point;
 	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
-	struct GT_polyline *interpolate_line,*line,*line_2;
-	struct GT_surface *interpolate_surface,*surface,*surface_2,*tile_surface,
+	struct GT_polyline *interpolate_line,*line = NULL,*line_2 = NULL;
+	struct GT_surface *interpolate_surface,*surface = NULL,*surface_2 = NULL,*tile_surface,
 		 *tile_surface_2;
 	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
@@ -3817,7 +3817,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 
 							float *position_buffer, *data_buffer, *normal_buffer,
 								*texture_coordinate0_buffer;
-							struct Spectrum_render_data *render_data;
+							struct Spectrum_render_data *render_data = NULL;
 							unsigned int position_values_per_vertex, position_vertex_count,
 							data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
 							normal_vertex_count, texture_coordinate0_values_per_vertex,
@@ -3898,8 +3898,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										glLoadName((GLuint)object_name);
 									}
 									unsigned int i, index_start, index_count;
-									float *position_vertex, *data_vertex, *normal_vertex,
-										*texture_coordinate0_vertex;
+									float *position_vertex = NULL, *data_vertex = NULL, *normal_vertex = NULL,
+										*texture_coordinate0_vertex = NULL;
 									
 									object->vertex_array->get_unsigned_integer_attribute(
 										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,

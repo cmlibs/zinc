@@ -6597,7 +6597,7 @@ obtained from the node_field_component for the field at the node.
 	char *basis_string;
 	FE_value *array,*blended_element_value,*blended_element_values,
 		*blending_matrix,*element_value,*element_values,
-		*scale_factors = NULL,temp_value,xi;
+		*scale_factors = NULL,temp_value = 0.0,xi;
 	int *coefficient_index,*global_value_index,i,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
 		number_of_element_values,number_of_global_values,number_of_map_values = 0,
@@ -17070,7 +17070,7 @@ perform interpolation, etc.
 ==============================================================================*/
 {	
 	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
-	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
+	FE_value first_time = 0,last_time = 0,this_time,fe_value_index,time_high,time_low;
 
 	ENTER(get_FE_field_time_array_index_at_FE_value_time);
 	return_code=0;

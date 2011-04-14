@@ -738,7 +738,7 @@ be shared by multiple materials using the same program.
 						*vertex_program_string = NULL, *geometry_program_string = NULL;
 				enum Graphics_library_vendor_id vendor_id;
 				const char *colour_texture_string[] = {"float", "vec2", "vec3", "vec4"};
-				int colour_texture_dimension, components_error, number_of_inputs,
+				int colour_texture_dimension = 0, components_error, number_of_inputs,
 					error;
 
 				vendor_id = Graphics_library_get_vendor_id();
@@ -1826,7 +1826,7 @@ be shared by multiple materials using the same program.
 
 					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
 					{
-						int colour_texture_string_index;
+						int colour_texture_string_index = 0;
 						char tex_string[100];
 						if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 						{

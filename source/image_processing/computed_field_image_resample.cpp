@@ -119,7 +119,7 @@ Compare the type specific data.
 ==============================================================================*/
 {
 	Computed_field_image_resample* other;
-	int i, return_code;
+	int i, return_code = 0;
 
 	ENTER(Computed_field_image_resample::compare);
 	if (field && (other = dynamic_cast<Computed_field_image_resample*>(other_core)))

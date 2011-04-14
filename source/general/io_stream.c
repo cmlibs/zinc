@@ -680,7 +680,7 @@ LAST MODIFIED : 23 March 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	int read_characters, return_code;
+	int read_characters = 0, return_code;
 #if defined (IO_STREAM_SPEED_UP_SSCANF)
 	int copy_size;
 #endif /* defined (IO_STREAM_SPEED_UP_SSCANF) */
@@ -1462,7 +1462,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *new_data;
-	int bytes_read, read_to_memory_chunk = 10000, return_code, total_read;
+	int bytes_read = 0, read_to_memory_chunk = 10000, return_code, total_read;
 
 	ENTER(IO_stream_read_to_memory);
 

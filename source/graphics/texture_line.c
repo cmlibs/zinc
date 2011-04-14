@@ -268,7 +268,7 @@ Calculates distance potential at a point p from a line segment p1-p2 of charge
 (q1,q2)
 ==============================================================================*/
 {
-	double a,a1,b[3],dist,r[3],return_code,v[3];
+	double a = 0.0,a1,b[3],dist,r[3],return_code,v[3];
 	int i;
 
 	ENTER(line_segment_distance);
@@ -432,7 +432,7 @@ translating to the origin and solving the minimum sum Q(t)*Q(t) =>
 0 = sum Q'(t).Q(t)
 ==============================================================================*/
 {
-	double at,bt,ct,dist,dt,min_dist,min_t,pt1[3],pt2[3],pt3[3],pt4[3],t;
+	double at,bt,ct,dist,dt,min_dist,min_t = 0.0,pt1[3],pt2[3],pt3[3],pt4[3],t;
 	/* intermediate calculations */
 	double a[3],b[3],c[3],d[3],e[3],f[3],g[3],r[3];
 	/* coefficients of Q'(t).Q(t) */

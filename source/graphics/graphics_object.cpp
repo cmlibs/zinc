@@ -1321,7 +1321,7 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 	char **source_text,**text;
 	float marker_size;
 	GTDATA *data;
-	struct GT_pointset *point_set;
+	struct GT_pointset *point_set = NULL;
 	int i,j,number_of_points,*names,*morph_names;
 	Triple *point;
 
@@ -1498,7 +1498,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 ==============================================================================*/
 {
 	GTDATA *data;
-	struct GT_polyline *polyline;
+	struct GT_polyline *polyline = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point;
 
@@ -1648,7 +1648,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 ==============================================================================*/
 {
 	GTDATA *data;
-	struct GT_surface *surface;
+	struct GT_surface *surface = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point,*tangentlist,*texturelist;
 
@@ -2055,8 +2055,8 @@ DESCRIPTION :
 Creates a new GT_surface which is the interpolation of two GT_surfaces.
 ==============================================================================*/
 {
-	GTDATA *data;
-	struct GT_surface *surface;
+	GTDATA *data = NULL;
+	struct GT_surface *surface = NULL;
 	int i,j,number_of_nodes;
 	Triple *normallist,*point,*tangentlist,*texturelist;
 
@@ -4611,7 +4611,7 @@ will produce the range of all the graphics objects.
 ==============================================================================*/
 {
 	float temp,*maximum,*minimum;
-	int *first, i, j, number_of_positions, number_of_times, position_offset,
+	int *first, i, j, number_of_positions = 0, number_of_times = 0, position_offset = 0,
 		return_code;
 	struct Graphics_object_range_struct *graphics_object_range;
 	struct GT_glyph_set *glyph_set;
@@ -5290,8 +5290,8 @@ valid.
 					} break;
 					case g_POLYLINE_VERTEX_BUFFERS:
 					{
-						float *vertex_buffer;
-						unsigned int values_per_vertex, vertex_count;
+						float *vertex_buffer = NULL;
+						unsigned int values_per_vertex = 0, vertex_count = 0;
 						graphics_object->vertex_array->get_float_vertex_buffer(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 							&vertex_buffer, &values_per_vertex, &vertex_count);
@@ -5656,7 +5656,7 @@ DECLARE_GT_OBJECT_ADD_FUNCTION(GT_voltex,g_VOLTEX,gt_voltex)
 int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 	struct GT_object *graphics_object, struct GT_polyline_vertex_buffers *primitive)
 {
-	int return_code;
+	int return_code = 0;
 	
 	if (graphics_object && !graphics_object->primitive_lists)
 	{
@@ -6202,8 +6202,8 @@ added in the normal way.  If a GT_voltex is already contained in the
 any co-located vertices are merged, stitching the two voltexes together.
 ==============================================================================*/
 {
-	int return_code, time_number;
-	struct GT_voltex *existing_voltex;
+	int return_code = 0, time_number = 0;
+	struct GT_voltex *existing_voltex = NULL;
 
 	ENTER(GT_object_merge_GT_voltex);
 	if (graphics_object && (g_VOLTEX == graphics_object->object_type) && voltex)
@@ -7883,7 +7883,7 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 	Graphics_vertex_array_attribute_type vertex_type,
 	unsigned int values_per_vertex)
 {
-	Graphics_vertex_array_attribute_type vertex_buffer_type;
+	Graphics_vertex_array_attribute_type vertex_buffer_type = GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION;
 	Graphics_vertex_buffer *buffer;
 
    switch (type)
@@ -7919,7 +7919,7 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer_for_attribute(
 	Graphics_vertex_array_attribute_type vertex_type)
 {
-	Graphics_vertex_array_attribute_type vertex_buffer_type;
+	Graphics_vertex_array_attribute_type vertex_buffer_type = GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION;
 	Graphics_vertex_buffer *buffer;
 
    switch (type)
@@ -8017,7 +8017,7 @@ template <class value_type> int Graphics_vertex_array_internal::get_attribute(
 	unsigned int number_of_values, value_type *values)
 {
 	Graphics_vertex_buffer *buffer;
-	int return_code;
+	int return_code = 0;
 
 	if (buffer = get_vertex_buffer_for_attribute(vertex_type))
 	{

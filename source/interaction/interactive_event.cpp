@@ -94,7 +94,7 @@ Also, both this object and the <interaction_volume> may be accessed to keep as l
 necessary - they are not modifiable.
 ==============================================================================*/
 {
-	struct Interactive_event *interactive_event;
+	struct Interactive_event *interactive_event = NULL;
 
 	ENTER(CREATE(Interactive_event));
 	if (interaction_volume)

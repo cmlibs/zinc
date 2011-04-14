@@ -1693,7 +1693,7 @@ Render the scene multiple times perturbing the viewing frustrum to antialias
 the entire scene.
 ==============================================================================*/
 {
-	double pixel_offset_x, pixel_offset_y;
+	double pixel_offset_x = 0.0, pixel_offset_y = 0.0;
 	GLdouble temp_matrix[16];
 	int accumulation_count, antialias, return_code;
 	GLint framebuffer_flag = 0;
@@ -4419,7 +4419,7 @@ performed in idle time so that multiple redraws are avoided.
 {
  	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
- 	enum Scene_viewer_buffering_mode buffering_mode;
+ 	enum Scene_viewer_buffering_mode buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
 	enum Scene_viewer_stereo_mode stereo_mode;
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;

@@ -1729,8 +1729,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	float hint_maximums[3];
 	float hint_resolution[3];
 	float multiplier;
-	struct Colour fail_colour;
-	float	rgba[4], fail_alpha, texture_depth, texture_height,
+	struct Colour fail_colour = {0.0, 0.0, 0.0};
+	float	rgba[4], fail_alpha = 0.0, texture_depth, texture_height,
 		texture_width;
 	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,

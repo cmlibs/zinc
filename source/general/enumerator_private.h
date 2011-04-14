@@ -154,7 +154,7 @@ an error message, for the calling function to handle. \
 Default version assumes all valid enumerator values are sequential from 0. \
 ============================================================================*/ \
 { \
-	const char *other_enumerator_string; \
+	const char *other_enumerator_string = NULL; \
 	enum enumerator_type enumerator_value; \
 	int return_code; \
 \
@@ -214,7 +214,7 @@ value. \
 ==============================================================================*/ \
 { \
 	char *enumerator_string_value; \
-	enum enumerator_type *enumerator_address, other_enumerator; \
+	enum enumerator_type *enumerator_address, other_enumerator = 0; \
 	int return_code; \
 \
 	ENTER(set_enumerator(enumerator_type)); \

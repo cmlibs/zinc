@@ -1031,7 +1031,7 @@ Updates the time display of the time_slider
 #if defined (MOTIF_USER_INTERFACE)
 	EDIT_VAR_PRECISION time;
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	int return_code;
+	int return_code = 0;
 	struct Graphics_window *window;
 #if defined (WX_USER_INTERFACE)
 	wxString time_string;
@@ -3206,7 +3206,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int antialias_mode,current_pane,i,layered_transparency,number_of_tools,
 		number_of_valid_strings,order_independent_transparency,pane_no,
-		perturb_lines,redraw,return_code,transparency_layers;
+		perturb_lines,redraw,return_code,transparency_layers = 0;
 	struct Graphics_window *graphics_window;
 	struct Interactive_tool *interactive_tool;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
@@ -5577,7 +5577,7 @@ Sets the layout mode in effect on the <window>.
 	Widget viewing_area;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-	wxPanel* current_panel;
+	wxPanel* current_panel = NULL;
 #endif /* defined (WX_USER_INTERFACE) */
 
 
@@ -6750,18 +6750,18 @@ graphics window on screen.
 ==============================================================================*/
 {
 	int frame_width, frame_height, number_of_components, return_code;
-	double bottom, fraction_across, fraction_down, left,
-		NDC_left, NDC_top, NDC_width, NDC_height,
+	double bottom = 0.0, fraction_across, fraction_down, left,
+		NDC_left = 0.0, NDC_top = 0.0, NDC_width = 0.0, NDC_height = 0.0,
 		original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height,
 		original_left, original_right, original_bottom, original_top,
-		original_near_plane, original_far_plane, right, top,
-		viewport_left, viewport_top, viewport_pixels_per_x, viewport_pixels_per_y,
+		original_near_plane, original_far_plane, right, top = 0.0,
+		viewport_left, viewport_top = 0.0, viewport_pixels_per_x = 0.0, viewport_pixels_per_y = 0.0,
 		original_viewport_left, original_viewport_top,
 		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
 		real_left, real_right, real_bottom, real_top,
 		scaled_NDC_width,scaled_NDC_height ;
-	int i, j, number_of_panes, pane,
-		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
+	int i, j, number_of_panes = 0, pane,
+		pane_i, pane_j, pane_width = 0, pane_height = 0, panes_across = 0, panes_down = 0,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
 #if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
@@ -7740,7 +7740,7 @@ Writes the properties of the <window> to the command window.
 	unsigned int antialias, transparency_layers;
 	struct Colour colour;
 	struct Scene *overlay_scene;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer = NULL;
 	struct Texture *texture;
 
 	ENTER(list_Graphics_window);
@@ -8046,7 +8046,7 @@ and establishing the views in it to the command window to a com file.
 	unsigned int antialias, transparency_layers;
 	struct Colour colour;
 	struct Scene *overlay_scene;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer = NULL;
 	struct Texture *texture;
 
 	ENTER(list_Graphics_window);
@@ -8360,7 +8360,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 	const char *dialog_string;
 	char *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
-		return_code,select_enabled, streaming_create_enabled,
+		return_code = 0,select_enabled, streaming_create_enabled,
 		constrain_to_surface;
 #if defined (WX_USER_INTERFACE)
 	int element_dimension, element_create_enabled;

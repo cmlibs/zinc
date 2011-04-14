@@ -593,7 +593,7 @@ Finds a independent set of nodes that are sufficient to distinguish the first
 	double greatest_value, *ucopy, factor;
 	float coordinate_tolerance = 1e-5;
 	FILE *node_file;
-	int i, j, *free_coordinate, mode, *nodeset, best_coordinate, return_code;
+	int i, j, *free_coordinate, mode, *nodeset, best_coordinate = 0, return_code;
 
 	ENTER(EM_calculate_minimum_nodeset);
 

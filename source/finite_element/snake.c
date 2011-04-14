@@ -592,8 +592,8 @@ derivatives; helps make smooth snakes from few data points.
 		*stiffness_offset, weight;
 	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
 		{FE_NODAL_D_DS1};
-	FE_value *coordinates, *fitting_field_values, density_multiplier,
-		length_multiplier, *lengths, *value, *weights, xi;
+	FE_value *coordinates = NULL, *fitting_field_values = NULL, density_multiplier,
+		length_multiplier, *lengths = NULL, *value, *weights = NULL, xi;
 	int component, element_number, i, *indx, j, local_components, m, n, node_number, 
 		number_of_components, number_of_coordinate_components, number_of_data,
 		number_of_fe_fields, number_of_rows, return_code, row, start_row;

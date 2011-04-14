@@ -1122,7 +1122,7 @@ tiles (and <texture_tiling> wasn't NULL.
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
 	int max_texture_size_int, next_reduction, pixel_size, return_code;
-	GLenum format, type;
+	GLenum format = GL_COLOR_INDEX, type = GL_INT;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;
 #endif /* defined (OPENGL_API) */
@@ -1950,11 +1950,12 @@ then it is allocated, otherwise it is assumed large enough for the image tile
 and overwritten. 
 ==============================================================================*/
 {
-	int bytes_per_pixel, copy_row_width_bytes, end_x, end_y, end_z, i,
+	int bytes_per_pixel, copy_row_width_bytes = 0, end_x = 0, end_y = 0, end_z = 0, i,
 		number_of_components, number_of_bytes_per_component, overlap_bytes,
-		pad_x_start, pad_x_end, pad_y_start, pad_y_end, pad_z_start, pad_z_end,
-		return_code, source_row_width_bytes, tile_row_width_bytes,
-		start_x, start_y, start_z, tile_x, tile_y, tile_z, y, z;
+		pad_x_start = 0, pad_x_end = 0, pad_y_start = 0, pad_y_end = 0,
+		pad_z_start = 0, pad_z_end = 0, return_code, source_row_width_bytes,
+		tile_row_width_bytes, start_x = 0, start_y = 0, start_z = 0,
+		tile_x, tile_y, tile_z, y, z;
 	Triple cropped_size;
 	unsigned char *destination, *destination_y_start, *destination_z_start, *source;
 
@@ -2559,10 +2560,10 @@ Directly outputs the commands setting up the <texture>.
 ==============================================================================*/
 {
 	int  return_code;
-	int hardware_storage_format, i, number_of_components, number_of_tiles,
+	int hardware_storage_format, i, number_of_components, number_of_tiles = 0,
 		reduction_flag,reductions[3],
-		render_tile_width, render_tile_height, render_tile_depth;
-	GLenum format, texture_target, type;
+		render_tile_width = 0, render_tile_height = 0, render_tile_depth = 0;
+	GLenum format = GL_COLOR_INDEX, texture_target, type = GL_INT;
 	unsigned char *reduced_image, *rendered_image;
 
 	ENTER(direct_render_Texture);
@@ -3936,7 +3937,7 @@ DESCRIPTION :
 Returns how the texture is combined with the material: blend, decal or modulate.
 ==============================================================================*/
 {
-	enum Texture_combine_mode combine_mode;
+	enum Texture_combine_mode combine_mode = TEXTURE_BLEND;
 
 	ENTER(Texture_get_combine_mode);
 	if (texture)
@@ -4083,7 +4084,7 @@ DESCRIPTION :
 Returns how the texture is compressed.
 ==============================================================================*/
 {
-	enum Texture_compression_mode compression_mode;
+	enum Texture_compression_mode compression_mode = TEXTURE_UNCOMPRESSED;
 
 	ENTER(Texture_get_compression_mode);
 	if (texture)
@@ -4140,7 +4141,7 @@ DESCRIPTION :
 Returns the texture filter: linear or nearest.
 ==============================================================================*/
 {
-	enum Texture_filter_mode filter_mode;
+	enum Texture_filter_mode filter_mode = TEXTURE_LINEAR_FILTER;
 
 	ENTER(Texture_get_filter_mode);
 	if (texture)
@@ -4225,7 +4226,7 @@ DESCRIPTION :
 Returns the texture filter: linear or nearest.
 ==============================================================================*/
 {
-	enum Texture_resize_filter_mode resize_filter_mode;
+	enum Texture_resize_filter_mode resize_filter_mode = TEXTURE_RESIZE_LINEAR_FILTER;
 
 	ENTER(Texture_get_resize_filter_mode);
 	if (texture)
@@ -4471,10 +4472,10 @@ positive. Cropping is not available in the depth direction.
 	static unsigned char fill_byte = 0;
 	enum Texture_storage_type storage;
 	int bytes_per_pixel, dimension, padded_width_bytes,
-		texture_bottom, texture_left,
+		texture_bottom = 0, texture_left = 0,
 		image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images,
-		return_code, texture_depth, texture_height, texture_width;
+		return_code, texture_depth, texture_height = 0, texture_width = 0;
 	unsigned char *texture_image;
 	unsigned char *destination;
 
@@ -4715,11 +4716,11 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 {
 	static unsigned char fill_byte = 0;
-	int allocate_texture_depth, bytes_per_pixel, dimension, texture_bottom,
-		texture_left, i, image_height, image_width, k, number_of_bytes_per_component,
+	int allocate_texture_depth, bytes_per_pixel, dimension, texture_bottom = 0,
+		texture_left = 0, i, image_height, image_width, k, number_of_bytes_per_component,
 		number_of_components, number_of_images, return_code;
 	long int padded_width_bytes,
-		texture_depth, texture_height, texture_width;
+		texture_depth, texture_height = 0, texture_width = 0;
 	unsigned char *texture_image;
 	unsigned char *destination;
 
@@ -6391,7 +6392,7 @@ DESCRIPTION :
 Returns how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 {
-	enum Texture_wrap_mode wrap_mode;
+	enum Texture_wrap_mode wrap_mode = TEXTURE_CLAMP_WRAP;
 
 	ENTER(Texture_get_wrap_mode);
 	if (texture)

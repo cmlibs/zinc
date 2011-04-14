@@ -413,7 +413,7 @@ LAST MODIFIED : 3 October 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,j,index,npts12,return_code, *vertex_index_array, *vertex_index;
+	int i,j,index,npts12,return_code = 0, *vertex_index_array, *vertex_index;
 	struct Wavefront_vertex *vertex;
 	struct Wavefront_vertex_position position;
 	Triple *surface_point_1, *texture_point;
@@ -874,7 +874,7 @@ Convert graphical object into Wavefront object file.
 	struct Graphical_material *current_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
-	struct GT_surface *interpolate_surface,*surface,*surface_2;
+	struct GT_surface *interpolate_surface,*surface,*surface_2 = NULL;
 	struct GT_voltex *voltex;
 	struct LIST(Wavefront_vertex) *vertex_list;
 	union GT_primitive_list *primitive_list1, *primitive_list2;

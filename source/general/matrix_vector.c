@@ -684,7 +684,7 @@ decomposition is still completed
 Adapted from "Numerical Recipes in C".
 ==============================================================================*/
 {
-	int i,imax,j,k,return_code;
+	int i,imax = 0,j,k,return_code;
 	double big,dum,sum,temp,*vv;
 
 	ENTER(LU_decompose);

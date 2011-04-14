@@ -1766,7 +1766,7 @@ DESCRIPTION :
 clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct LIST(Spectrum_settings) *list_of_settings;
 
 	ENTER(Spectrum_clear_all_fixed_flags);

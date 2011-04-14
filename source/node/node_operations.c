@@ -431,11 +431,11 @@ struct LIST(FE_node) *
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data)
 {
-	int i, node_number, nodes_in_region, nodes_in_ranges,
-		number_of_ranges, return_code, selected = 1, start, stop;
+	int i, node_number, nodes_in_region, nodes_in_ranges = 0,
+		number_of_ranges = 0, return_code, selected = 1, start, stop;
 	struct FE_node *node;
 	struct FE_node_fe_region_selection_ranges_condition_data data;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = NULL;
 
 	ENTER(FE_node_list_from_region_selection_ranges_condition);
 	data.node_list = (struct LIST(FE_node) *)NULL;
@@ -606,8 +606,8 @@ Creates and returns an node list that is the intersection of:
 Up to the calling function to destroy the returned node list.
 ==============================================================================*/
 {
-	int i, node_number, nodes_in_region, nodes_in_ranges,
-		number_of_ranges, return_code, selected, start, stop;
+	int i, node_number, nodes_in_region, nodes_in_ranges = 0,
+		number_of_ranges = 0, return_code, selected, start, stop;
 	struct FE_node *node;
 	struct FE_node_fe_region_selection_ranges_condition_data data;
 

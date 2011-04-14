@@ -1186,7 +1186,7 @@ LAST MODIFIED : 8 December 2005
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Render_to_finite_elements_data *data;
 
 	ENTER(Graphics_object_render_to_finite_elements_iterator);

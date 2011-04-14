@@ -2432,7 +2432,7 @@ has been selected for output) then the header is written out.
 ==============================================================================*/
 {
 	FILE *output_file;
-	int i, number_of_fields, number_of_fields_in_header, return_code,
+	int i, number_of_fields = 0, number_of_fields_in_header, return_code,
 		write_field_values;
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
