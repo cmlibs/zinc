@@ -1835,7 +1835,7 @@ DESCRIPTION :
 	const float extend_ends = 0.04;
 	struct Colour black ={0, 0, 0}, white = {1.0, 1.0, 1.0};
 	int i, j, npts1, npts2, number_of_points = 0,
-		tick_label_count, tick_line_count, return_code;
+		tick_label_count, tick_line_count, return_code = 1;
 	float bar_min, bar_max, min, max, value_xi1;
 	GTDATA *data;
 	Triple *line_points, *label_points;

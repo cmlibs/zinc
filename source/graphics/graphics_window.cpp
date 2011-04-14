@@ -1705,7 +1705,7 @@ DESCRIPTION :
 Change the values on the wx interface if different.
 ==============================================================================*/
 {
-	 int return_code;
+	 int return_code = 0;
 	 double time;
 	 wxString text_entry;
 
@@ -1725,6 +1725,7 @@ Change the values on the wx interface if different.
 			window->time_step_size_text_ctrl->ChangeValue(text_entry);
 			window->time_play_every_frame_checkbox->SetValue(
 				 Time_keeper_get_play_every_frame(window->time_keeper));
+			return_code = 1;
 	 }
 	 LEAVE;
 

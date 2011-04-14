@@ -1775,7 +1775,7 @@ this widget.
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
 	struct Computed_field *field;
-	struct FE_node *template_node;
+	struct FE_node *template_node = NULL;
 
 	if (node_viewer)
 	{
