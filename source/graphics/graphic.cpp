@@ -7860,10 +7860,10 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	enum Xi_discretization_mode xi_discretization_mode;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
-	float length, width;
+	float length = 0.0, width = 0.0;
 	int number_of_components,number_of_valid_strings,return_code,
 		reverse_track_int, visibility;
-	struct Computed_field *stream_vector_field, *xi_point_density_field;
+	struct Computed_field *stream_vector_field = NULL, *xi_point_density_field = NULL;
 	struct Cmiss_region *seed_node_region;
 	struct FE_region *fe_region;
 	struct Rendition_command_data *rendition_command_data;

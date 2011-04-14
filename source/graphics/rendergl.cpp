@@ -756,7 +756,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	GLfloat transformation[16], x, y, z;
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum = NULL;
-	int draw_all, i, j, *name, name_selected = NULL, label_bounds_per_glyph = 0,
+	int draw_all, i, j, *name = NULL, name_selected = 0, label_bounds_per_glyph = 0,
 		return_code;
 	struct GT_object *temp_glyph = NULL;
 	struct Spectrum_render_data *render_data = NULL;

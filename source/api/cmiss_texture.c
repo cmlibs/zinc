@@ -584,7 +584,7 @@ equal to the number_of_components.
 	ENTER(Cmiss_texture_get_pixels);
 	if (texture)
 	{
-		if (cmgui_image = Texture_get_image(texture))
+		if (NULL != (cmgui_image = Texture_get_image(texture)))
 		{
 			if ((0 <= ((int)depth_start + depth)) &&
 				(((int)depth_start + depth) <=

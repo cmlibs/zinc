@@ -280,7 +280,7 @@ the corresponding nodes.
 				IO_stream_fread(stream, &n_nodes,sizeof(int),1);
 				IO_stream_fread(stream, &n_modes,sizeof(int),1);
 				n_nodes=n_nodes/3;
-				if (ptr=create_EM_Object(n_modes,n_nodes))
+				if (NULL != (ptr = create_EM_Object(n_modes,n_nodes)))
 				{
 					IO_stream_fread(stream, ptr->index,sizeof(int),   n_nodes);
 					IO_stream_fread(stream, ptr->u,    sizeof(double),n_nodes*3*n_modes);
@@ -310,7 +310,7 @@ the corresponding nodes.
 				 
 				IO_stream_scan(stream, "%d%d", &n_nodes, &n_modes);
 				n_nodes=n_nodes/3;
-				if (ptr=create_EM_Object(n_modes,n_nodes))
+				if (NULL != (ptr = create_EM_Object(n_modes,n_nodes)))
 				{
 					for (i=0;i<n_modes;i++)
 					{
@@ -604,7 +604,7 @@ Finds a independent set of nodes that are sufficient to distinguish the first
 			ALLOCATE(ucopy,double,(em_object->m)*(em_object->n_modes)) &&
 			ALLOCATE(free_coordinate,int,(em_object->m)))
 		{
-			if ( node_file = fopen("minimum_set.exnode", "w"))
+			if ( NULL != (node_file = fopen("minimum_set.exnode", "w")))
 			{
 				return_code = 1;
 				em_object->minimum_nodes = nodeset;

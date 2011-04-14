@@ -587,7 +587,7 @@ A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
 ==============================================================================*/
 {
-	double d, d2phi_dxi2[4], d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
+	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors, phi[4], phi_m, *pos, *stiffness_matrix,
 		*stiffness_offset, weight;
 	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =

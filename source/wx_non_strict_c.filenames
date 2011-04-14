@@ -1,11 +1,8 @@
-api/cmiss_region.c
-api/cmiss_texture.c
 command/command.c
 command/console.c
 command/example_path.c
 command/parser.c
 curve/curve.c
-emoter/em_cmgui.c
 finite_element/export_cm_files.c
 finite_element/finite_element_adjacent_elements.c
 finite_element/finite_element_discretization.c
