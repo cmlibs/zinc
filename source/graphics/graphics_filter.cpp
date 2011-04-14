@@ -890,7 +890,7 @@ int gfx_define_graphics_filter_match_or(struct Parse_state *state, void *graphic
 		}
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table, "FILTERS ... ", filter_data,
+		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OR )
