@@ -169,6 +169,7 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_trigonometry.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -5726,6 +5727,7 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 			Computed_field_register_types_arithmetic_operators(package);
 			Computed_field_register_types_trigonometry(package);
 			Computed_field_register_types_composite(package);
+			Computed_field_register_types_finite_element(package);
 			// execute command
 			struct Parse_state *state = create_Parse_state(command_string);
 			return_code = define_Computed_field(state,static_cast<void*>(field_module->region),static_cast<void*>(package));
