@@ -293,11 +293,11 @@ Render a hair.
 #endif
 
 	ENTER(render_hair);
-	if (
+	if ( NULL != (
 #if defined (GL_API) || defined (OPENGL_API)
 		hair=(struct Userdef_hair *)
 #endif /* defined (GL_API) || defined (OPENGL_API) */
-		hair_struct)
+		hair_struct))
 	{
 #if defined (GL_API) || defined (OPENGL_API)
 		seed = 0.5;

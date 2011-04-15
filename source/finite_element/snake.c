@@ -371,8 +371,8 @@ Hermite basis over it.
 
 		cm.type = CM_ELEMENT;
 		cm.number = 0;
-		if (element = CREATE(FE_element)(&cm, element_shape, fe_region,
-			/*template*/(struct FE_element *)NULL))
+		if (NULL != (element = CREATE(FE_element)(&cm, element_shape, fe_region,
+			/*template*/(struct FE_element *)NULL)))
 		{
 			number_of_scale_factors = 4;
 			number_of_nodes = 2;
@@ -412,14 +412,14 @@ Hermite basis over it.
 					}
 					for (n = 0; (n < maximum_number_of_components) && element; n++)
 					{
-						if (component = CREATE(FE_element_field_component)(
-								 STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
-							element_basis, (FE_element_field_component_modify)NULL))
+						if (NULL != (component = CREATE(FE_element_field_component)(
+							STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
+							element_basis, (FE_element_field_component_modify)NULL)))
 						{
 							for (j = 0; j < number_of_nodes; j++)
 							{
-								if (standard_node_map = CREATE(Standard_node_to_element_map)(
-									/*node_index*/j, /*number_of_values*/2))
+								if (NULL != (standard_node_map = CREATE(Standard_node_to_element_map)(
+									/*node_index*/j, /*number_of_values*/2)))
 								{
 									if (!(Standard_node_to_element_map_set_nodal_value_index(
 										standard_node_map,
@@ -903,8 +903,8 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				/* create a template node suitable for 1-D Hermite interpolation of the
 					 coordinate_field */
-				if (template_node = CREATE(FE_node)(/*node_number*/0, fe_region,
-					/*template_node*/(struct FE_node *)NULL))
+				if (NULL != (template_node = CREATE(FE_node)(/*node_number*/0, fe_region,
+					/*template_node*/(struct FE_node *)NULL)))
 				{
 					for (n = 0 ; return_code && (n < number_of_fe_fields) ; n++)
 					{
@@ -929,8 +929,8 @@ derivatives; helps make smooth snakes from few data points.
 					/* get next unused node number from fe_region */
 					node_number = FE_region_get_next_FE_node_identifier(fe_region,
 						node_number);
-					if (nodes[j] = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
-						template_node))
+					if (NULL != (nodes[j] = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+						template_node)))
 					{
 						/* set the coordinate and derivatives */
 						component = 0;
@@ -975,8 +975,8 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				if (return_code)
 				{
-					if (template_element = create_1d_hermite_element(fe_region,
-						number_of_fe_fields, fe_field_array))
+					if (NULL != (template_element = create_1d_hermite_element(fe_region,
+						number_of_fe_fields, fe_field_array)))
 					{
 						cm.type = CM_ELEMENT;
 						cm.number = 1;
@@ -985,9 +985,9 @@ derivatives; helps make smooth snakes from few data points.
 							/* get next unused element identifier from fe_region */
 							cm.number = FE_region_get_next_FE_element_identifier(
 								fe_region, /*dimension*/1, cm.number);
-							if (element = CREATE(FE_element)(&cm,
+							if (NULL != (element = CREATE(FE_element)(&cm,
 								(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
-								template_element))
+								template_element)))
 							{
 								ACCESS(FE_element)(element);
 								if (!(set_FE_element_node(element, 0, nodes[j]) &&

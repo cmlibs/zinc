@@ -606,7 +606,7 @@ static int Graphics_library_query_environment_extension(const char *extName)
 
 	append_string(&environment_variable, extName, &error);
 			
-	if (environment_value = getenv(environment_variable))
+	if (NULL != (environment_value = getenv(environment_variable)))
 	{
 		if (0 != atoi(environment_value))
 		{

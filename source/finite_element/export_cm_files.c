@@ -238,9 +238,9 @@ Writes text for an <ipbase_file> to support <field>.
 			data->number_of_bases);
 		
 		basis_number = 0;
-		while (basis = FIRST_OBJECT_IN_LIST_THAT(FE_basis)(
+		while (NULL != (basis = FIRST_OBJECT_IN_LIST_THAT(FE_basis)(
 			(LIST_CONDITIONAL_FUNCTION(FE_basis) *)NULL, (void *)NULL,
-			add_basis_data.basis_types))
+			add_basis_data.basis_types)))
 		{
 			/* Put it in the array */
 			data->basis_array[basis_number] = basis;
@@ -814,8 +814,8 @@ Writes text for an <ipbase_file> to support <field>.
 		cm_node_data.maximum_number_of_derivatives = 0;
 		cm_node_data.ipnode_file = ipnode_file;
 		cm_node_data.ipmap_file = ipmap_file;
-		if (return_code = FE_region_for_each_FE_node(region,
-				FE_node_write_cm_check_node_values, (void *)&cm_node_data))
+		if (0 != (return_code = FE_region_for_each_FE_node(region,
+			FE_node_write_cm_check_node_values, (void *)&cm_node_data)))
 		{
 			for (i = 0 ; i < cm_node_data.number_of_components ; i++)
 			{
@@ -1093,8 +1093,6 @@ Writes text for an <ipbase_file> to support <field>.
 	ENTER(write_ipelem_file);
 	if (ipelem_file && region && field)
 	{
-		return_code = 1;
-
 		fprintf(ipelem_file, " CMISS Version 1.21 ipelem File Version 2\n");
 		fprintf(ipelem_file, " Heading: cmgui generated file\n\n"); 
 
@@ -1104,8 +1102,9 @@ Writes text for an <ipbase_file> to support <field>.
 		cm_element_data.number_of_bases = data->number_of_bases;
 		cm_element_data.basis_array = data->basis_array;
 		cm_element_data.ipelem_file = ipelem_file;
-		if (return_code = FE_region_for_each_FE_element(region,
-				FE_element_write_cm_check_element_values, (void *)&cm_element_data))
+		return_code = FE_region_for_each_FE_element(region,
+			FE_element_write_cm_check_element_values, (void *)&cm_element_data);
+		if (return_code)
 		{
 			fprintf(ipelem_file, " The number of elements is [1]: %d\n\n", 
 				cm_element_data.number_of_elements);
@@ -1214,7 +1213,7 @@ optional, all the others are required.
 		(NULL != (write_region = Cmiss_region_find_subregion_at_path(root_region, write_path))))
 	{
 		return_code = 1;
-		if (fe_region = Cmiss_region_get_FE_region(write_region))
+		if (NULL != (fe_region = Cmiss_region_get_FE_region(write_region)))
 		{
 			return_code = write_cm_FE_region(ipcoor_file, ipbase_file,
 				ipnode_file, ipelem_file, ipmap_file, fe_region, field);

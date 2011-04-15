@@ -817,7 +817,7 @@ returned.
 		if (!(fe_time_sequence = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(
 			source_fe_time_sequence, fe_time->fe_time_sequence_manager)))
 		{
-			if (fe_time_sequence = CREATE(FE_time_sequence)())
+			if (NULL != (fe_time_sequence = CREATE(FE_time_sequence)()))
 			{
 				return_code = 1;
 				switch (source_fe_time_sequence->type)
@@ -906,9 +906,9 @@ If no equivalent fe_time_sequence is found one is created and returned.
 		local_fe_time_sequence->number_of_times = number_of_times;
 		local_fe_time_sequence->times = times;
 		/* search the manager for a fe_time_sequence of that name */
-		if (fe_time_sequence=
+		if (NULL != (fe_time_sequence=
 			FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(local_fe_time_sequence,
-				fe_time->fe_time_sequence_manager))
+				fe_time->fe_time_sequence_manager)))
 		{
 			/* Found so get rid of our local one. */
 			local_fe_time_sequence->number_of_times = 0;

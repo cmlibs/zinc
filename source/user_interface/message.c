@@ -292,7 +292,7 @@ A function for writing out commands to com file.
 	{
 		 case INFORMATION_MESSAGE:
 		 {
-				if (com_file = fopen("temp_file_com.com", "a"))
+				if (NULL != (com_file = fopen("temp_file_com.com", "a")))
 				{
 #if defined (WIN32_USER_INTERFACE)
 					 fprintf(com_file, "%s", message_string);

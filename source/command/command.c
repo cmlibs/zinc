@@ -118,7 +118,7 @@ Submits a command to open an iod file.
 		(execute_command=(struct Execute_command *)execute_command_void))
 	{
 		/* remove the file extension */
-		if (file_extension=strrchr(file_name,'.'))
+		if (NULL != (file_extension=strrchr(file_name,'.')))
 		{
 			length=file_extension-file_name;
 		}

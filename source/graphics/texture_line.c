@@ -80,7 +80,7 @@ DESCRIPTION :
 	/* check arguments */
 	if (ptrfirst&&curve)
 	{
-		if (p= *ptrfirst)
+		if (NULL != (p = *ptrfirst))
 		{
 			while (p&&
 				!(((p->point1[0]==curve->point1[0])&&(p->point1[1]==curve->point1[1])&&
@@ -172,7 +172,7 @@ printf("removing curve from list\n");
 	/* checking arguments */
 	if (curve&&ptrfirst)
 	{
-		if (p= *ptrfirst)
+		if (NULL != (p = *ptrfirst))
 		{
 			if (p==curve)
 			{

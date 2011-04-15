@@ -170,7 +170,7 @@ struct Time_object *Time_object_create_regular(double update_frequency,
 	struct Time_object *time;
 
 	ENTER(Time_object_create_regular);
-	if (time = CREATE(Time_object)())
+	if (NULL != (time = CREATE(Time_object)()))
 	{
 		time->update_frequency = update_frequency;
 		time->time_offset = time_offset;

@@ -258,8 +258,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_tool,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_tool,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_tool,name)(
+				destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -526,7 +527,7 @@ if <destination_interactive_tool> is NULL and adds that to the manager.
 	int return_code;
 
 	ENTER(Interactive_tool_copy);
-	if (source_interactive_tool && destination_interactive_tool || destination_tool_manager)
+	if (source_interactive_tool && (destination_interactive_tool || destination_tool_manager))
 	{
 		if (destination_interactive_tool)
 		{

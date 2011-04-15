@@ -438,13 +438,13 @@ DESCRIPTION :
 		number_of_values, return_code, version_number;
 	struct FE_field *field;
 	struct FE_node *node;
-   struct Fieldml_label_name *current_assign_labels;
+	struct Fieldml_label_name *current_assign_labels;
 	struct Fieldml_sax_data *fieldml_data;
 	struct FE_import_time_index *time_index;
 
 	ENTER(Fieldml_label_name_process_label);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void))
 	{
 		return_code = 1;
 		if (FIELDML_LABEL_TYPE_ASSIGN_LABELS == label->type)
@@ -452,8 +452,8 @@ DESCRIPTION :
 			fieldml_data->character_buffer = label->character_buffer;
 			fieldml_data->buffer_length = strlen(fieldml_data->character_buffer);
 			fieldml_data->character_index = label->character_buffer;
-			if (current_assign_labels = FIND_BY_IDENTIFIER_IN_LIST
-				(Fieldml_label_name,name)(label->name, fieldml_data->label_templates))
+			if (NULL != (current_assign_labels = FIND_BY_IDENTIFIER_IN_LIST
+				(Fieldml_label_name,name)(label->name, fieldml_data->label_templates)))
 			{
 				Fieldml_label_name_process_label_in_node(current_assign_labels,
 					fieldml_data);
@@ -502,9 +502,9 @@ DESCRIPTION :
 				fieldml_data->current_component_number_of_versions = 0;
 				if (fieldml_data->current_field_ref)
 				{
-					if (component_name = get_FE_field_component_name(
+					if (NULL != (component_name = get_FE_field_component_name(
 							 fieldml_data->current_field_ref,
-							 fieldml_data->current_component_number))
+							 fieldml_data->current_component_number)))
 					{
 						if (!(strcmp(component_name, label->name)))
 						{
@@ -749,8 +749,9 @@ DESCRIPTION :
 									{
 										if (time_index)
 										{
-											if (return_code=set_FE_nodal_field_FE_values_at_time(
-													 field,node,values,&length,time_index->time))
+											return_code = set_FE_nodal_field_FE_values_at_time(
+												field,node,values,&length,time_index->time);
+											if (return_code)
 											{
 												if (length != number_of_values)
 												{
@@ -764,8 +765,9 @@ DESCRIPTION :
 										}
 										else
 										{
-											if (return_code=set_FE_nodal_field_FE_value_values(
-													 field,node,values,&length))
+											return_code=set_FE_nodal_field_FE_value_values(
+													 field,node,values,&length);
+											if (return_code)
 											{
 												if (length != number_of_values)
 												{
@@ -810,8 +812,9 @@ DESCRIPTION :
 									}
 									if (return_code)
 									{
-										if (return_code=set_FE_nodal_field_int_values(field,
-												node,values,&length))
+										return_code = set_FE_nodal_field_int_values(field,
+												node,values,&length);
+										if (return_code)
 										{
 											if (length != number_of_values)
 											{
@@ -912,6 +915,8 @@ DESCRIPTION :
 						return_code = 0;
 					}
 				} break;
+				default:
+					return_code = 1;
 			}
 			if (return_code)
 			{
@@ -1020,7 +1025,7 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_assign_local_index);
 
-	if (local_index = (int *)local_index_void)
+	if (NULL != (local_index = (int *)local_index_void))
 	{
 		label->local_index = *local_index;
 		label->current_node = (struct FE_node *)NULL;
@@ -1109,9 +1114,9 @@ DESCRIPTION :
 			{
 				if (fieldml_data->current_field_ref)
 				{
-					if (component_name = get_FE_field_component_name(
+					if (NULL != (component_name = get_FE_field_component_name(
 							 fieldml_data->current_field_ref,
-							 fieldml_data->current_component_number))
+							 fieldml_data->current_component_number)))
 					{
 						if (!(strcmp(component_name, label_in_list->name)))
 						{
@@ -1272,7 +1277,7 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_create_node_and_element_lookup_lists);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void))
 	{
 		return_code = 1;
 		if (FIELDML_LABEL_TYPE_NODE_INDEX == label->type)
@@ -1339,13 +1344,13 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_assign_scale_factor_lists);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void))
 	{
 		/* We need the offsets in the parent as we are going to use this
 			as a template with many referenced lookups */
 		label->scale_factor_list_offset = fieldml_data->scale_factor_list_offset;
-		if (returned_label = Fieldml_label_name_resolve_element_lookup(
-			label, fieldml_data))
+		if (NULL != (returned_label = Fieldml_label_name_resolve_element_lookup(
+			label, fieldml_data)))
 		{
 			returned_label->scale_factor_list_offset = label->scale_factor_list_offset;
 			returned_label->scale_factor_list_size = label->scale_factor_list_size;
@@ -1395,7 +1400,7 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_process_label_in_element);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void))
 	{
 		follow_children = 1;
 		return_code = 1;
@@ -1417,8 +1422,9 @@ DESCRIPTION :
 					{
 						fieldml_data->current_field_ref = label->field;
 						fieldml_data->current_component_number = 0;
-						if (number_of_components = get_FE_field_number_of_components(
-								 label->field))
+						number_of_components = get_FE_field_number_of_components(
+							label->field);
+						if (number_of_components > 0)
 						{
 							if(ALLOCATE(fieldml_data->current_element_field_components,
 									struct FE_element_field_component *, number_of_components))
@@ -1453,9 +1459,9 @@ DESCRIPTION :
 		{
 			if (fieldml_data->current_field_ref)
 			{
-				if (component_name = get_FE_field_component_name(
+				if (NULL != (component_name = get_FE_field_component_name(
 					fieldml_data->current_field_ref, 
-					fieldml_data->current_component_number))
+					fieldml_data->current_component_number)))
 				{
 					if (!(strcmp(component_name, label->name)))
 					{
@@ -1507,8 +1513,8 @@ DESCRIPTION :
 		}
 		else if (FIELDML_LABEL_TYPE_ELEMENT_LOOKUP == label->type)
 		{
-			if (returned_label = Fieldml_label_name_resolve_element_lookup(
-					 label, fieldml_data))
+			if (NULL != (returned_label = Fieldml_label_name_resolve_element_lookup(
+					 label, fieldml_data)))
 			{
 				if (returned_label->scale_factor_list_size)
 				{
@@ -1546,9 +1552,9 @@ DESCRIPTION :
 					if (label->child_labels && (1 ==
 							 NUMBER_IN_LIST(Fieldml_label_name)(label->child_labels)))
 					{
-						if (sub_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)
+						if (NULL != (sub_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)
 							((LIST_ITERATOR_FUNCTION(Fieldml_label_name) *)NULL, NULL,
-								label->child_labels))
+								label->child_labels)))
 						{
 							Fieldml_label_name_process_label_in_element(sub_label,
 								fieldml_data_void);
@@ -1561,9 +1567,9 @@ DESCRIPTION :
 								if (sub_label && sub_label->value &&
 									(1 == sscanf(sub_label->value, "%d", &node_number)))
 								{
-									if (label->current_node = 
+									if (NULL != (label->current_node = 
 										FE_region_get_FE_node_from_identifier(fieldml_data->current_fe_region,
-											node_number))
+											node_number)))
 									{
 										/* OK */
 									}
@@ -1639,15 +1645,15 @@ DESCRIPTION :
 			node_index_value = -1;
 			/* Find the node_index label */
 			label_type = FIELDML_LABEL_TYPE_NODE_INDEX;
-			if (node_index = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-				Fieldml_label_is_type, (void *)&label_type, label->child_labels))
+			if (NULL != (node_index = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+				Fieldml_label_is_type, (void *)&label_type, label->child_labels)))
 			{
 				node_index_value = node_index->local_index;
 				if (node_index_value < 0)
 				{
-					if (node_index = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+					if (NULL != (node_index = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
 						Fieldml_label_references_same_value, (void *)node_index,
-						fieldml_data->element_node_index_list))
+						fieldml_data->element_node_index_list)))
 					{
 						node_index_value = node_index->local_index;
 					}
@@ -1662,16 +1668,16 @@ DESCRIPTION :
 						version_number = 0;
 						index = 0;
 						label_type = FIELDML_LABEL_TYPE_FIELD_LOOKUP;
-						if (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-								 Fieldml_label_is_type, (void *)&label_type, label->child_labels))
+						if (NULL != (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+								 Fieldml_label_is_type, (void *)&label_type, label->child_labels)))
 						{
 							label_type = FIELDML_LABEL_TYPE_COMPONENT_LOOKUP;
-							if (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-									 Fieldml_label_is_type, (void *)&label_type, value_type_label->child_labels))
+							if (NULL != (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+									 Fieldml_label_is_type, (void *)&label_type, value_type_label->child_labels)))
 							{
 								label_type = FIELDML_LABEL_TYPE_LABEL_LOOKUP;
-								if (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-										 Fieldml_label_is_type, (void *)&label_type, value_type_label->child_labels))
+								if (NULL != (value_type_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+										 Fieldml_label_is_type, (void *)&label_type, value_type_label->child_labels)))
 								{
 									if (!strncmp("version", value_type_label->name, 7))
 									{
@@ -1810,8 +1816,8 @@ DESCRIPTION :
 					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label_in_element.  "
 						"Unable to define FE_field at element.");
 				}
-				if (number_of_components = get_FE_field_number_of_components(
-					label->field))
+				number_of_components = get_FE_field_number_of_components(label->field);
+				if (number_of_components > 0)
 				{
 					for (j = 0 ; j < number_of_components ; j++)
 					{
@@ -1873,12 +1879,12 @@ DESCRIPTION :
 				if (!fieldml_data->current_element_field_components[
 					fieldml_data->current_component_number])
 				{
-					if (fieldml_data->current_element_field_components[
+					if ( NULL != (fieldml_data->current_element_field_components[
 						fieldml_data->current_component_number] =
 						CREATE(FE_element_field_component)(
 						STANDARD_NODE_TO_ELEMENT_MAP,
 						fieldml_data->current_element_field_component_nodes,
-						label->basis, label->modify))
+						label->basis, label->modify)))
 					{
 						for (j = 0 ; j < fieldml_data->current_element_field_component_nodes ; j++)
 						{
@@ -1942,7 +1948,7 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_set_nodes_in_element);
 
-	if (element = (struct FE_element *)element_void)
+	if (NULL != (element = (struct FE_element *)element_void))
 	{
 		set_FE_element_node(element,label->local_index,label->current_node);
 		return_code = 1;
@@ -1975,13 +1981,13 @@ DESCRIPTION :
 
 	ENTER(Fieldml_label_name_set_scale_factors_in_element);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void))
 	{
 		follow_children = 1;
 		if (FIELDML_LABEL_TYPE_ELEMENT_LOOKUP == label->type)
 		{
-			if (returned_label = Fieldml_label_name_resolve_element_lookup(
-				label, fieldml_data))
+			if (NULL != (returned_label = Fieldml_label_name_resolve_element_lookup(
+				label, fieldml_data)))
 			{
 				/* The element_lookup list is used as a template for
 					many elements so the offset must be fetched from there */
@@ -2147,7 +2153,7 @@ DESCRIPTION :
 				attribute_value = (char *)attributes[i + 1];
 				if (!strcmp(attribute_name, "xmlns"))
 				{
-					if (version_string = strstr(attribute_value, "fieldml/"))
+					if (NULL != (version_string = strstr(attribute_value, "fieldml/")))
 					{
 						sscanf(version_string + 8, "%d.%d", &fieldml_data->fieldml_version,
 							&fieldml_data->fieldml_subversion);
@@ -2316,8 +2322,8 @@ DESCRIPTION :
 	}
 	if (label_name)
 	{
-		if (field = FE_region_get_FE_field_from_name(fieldml_data->current_fe_region,
-			label_name))
+		if (NULL != (field = FE_region_get_FE_field_from_name(fieldml_data->current_fe_region,
+			label_name)))
 		{
 			fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
 				label_name, FIELDML_LABEL_TYPE_FIELD_REF, 
@@ -2464,8 +2470,8 @@ DESCRIPTION :
 	}
 	if (label_name)
 	{
-		if (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
-			label_name, fieldml_data->basis_mappings))
+		if (NULL != (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
+			label_name, fieldml_data->basis_mappings)))
 		{
 			if (fieldml_data->current_label_name)
 			{
@@ -2753,17 +2759,17 @@ DESCRIPTION :
 		}
 
 		/* Process any characters */
-		if (index = fieldml_data->character_buffer)
+		if (NULL != (index = fieldml_data->character_buffer))
 		{
 			count = fieldml_data->buffer_length;
-			while ((count > 0) && (*index == ' ') || (*index == '\n') || (*index == '\t'))
+			while ((count > 0) && ((*index == ' ') || (*index == '\n') || (*index == '\t')))
 			{
 				index++;
 				count--;
 			}
 			while (count > 0)
 			{
-				if (index2 = strpbrk(index, " \n\t"))
+				if (NULL != (index2 = strpbrk(index, " \n\t")))
 				{
 					length = index2 - index;
 				}
@@ -2776,8 +2782,8 @@ DESCRIPTION :
 					number_in_list = NUMBER_IN_LIST(Fieldml_label_name)(
 						fieldml_data->current_label_name->child_labels);
 					sprintf(name, "%d", number_in_list + 1);
-					if (label = CREATE(Fieldml_label_name)(name,
-							 FIELDML_LABEL_TYPE_LABEL))
+					if (NULL != (label = CREATE(Fieldml_label_name)(name,
+							 FIELDML_LABEL_TYPE_LABEL)))
 					{
 						ADD_OBJECT_TO_LIST(Fieldml_label_name)(
 							label, fieldml_data->current_label_name->child_labels);
@@ -2790,8 +2796,8 @@ DESCRIPTION :
 						fieldml_data->current_label_name->child_labels =
 							CREATE(LIST(Fieldml_label_name))();
 						sprintf(name, "%d", 1);
-						if (label = CREATE(Fieldml_label_name)(name,
-								 FIELDML_LABEL_TYPE_LABEL))
+						if (NULL != (label = CREATE(Fieldml_label_name)(name,
+								 FIELDML_LABEL_TYPE_LABEL)))
 						{
 							label->value = fieldml_data->current_label_name->value;
 							fieldml_data->current_label_name->value = (char *)NULL;
@@ -2799,8 +2805,8 @@ DESCRIPTION :
 								label, fieldml_data->current_label_name->child_labels);
 						}
 						sprintf(name, "%d", 2);
-						if (label = CREATE(Fieldml_label_name)(name,
-								 FIELDML_LABEL_TYPE_LABEL))
+						if (NULL != (label = CREATE(Fieldml_label_name)(name,
+								 FIELDML_LABEL_TYPE_LABEL)))
 						{
 							ADD_OBJECT_TO_LIST(Fieldml_label_name)(
 								label, fieldml_data->current_label_name->child_labels);
@@ -2818,7 +2824,7 @@ DESCRIPTION :
 				}
 				index += length;
 				count -= length;
-				while ((count > 0) && (*index == ' ') || (*index == '\n') || (*index == '\t'))
+				while ((count > 0) && ((*index == ' ') || (*index == '\n') || (*index == '\t')))
 				{
 					index++;
 					count--;
@@ -3056,8 +3062,8 @@ DESCRIPTION :
 	}
 	if (label_name)
 	{
-		if (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
-			label_name, fieldml_data->label_templates))
+		if (NULL != (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
+			label_name, fieldml_data->label_templates)))
 		{
 			if (fieldml_data->current_label_name)
 			{
@@ -3384,10 +3390,10 @@ DESCRIPTION :
 		sscanf(fieldml_data->current_label_name->name, "%d", &node_number);
 		if (node_number)
 		{
-			if (equivalent_node_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+			if (NULL != (equivalent_node_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
 				Fieldml_label_names_define_equivalent_nodes, 
 				(void *)fieldml_data->current_label_name,
-				fieldml_data->node_label_templates))
+				fieldml_data->node_label_templates)))
 			{
 				/* An equivalent node already exist so copy that one */
 				fieldml_data->current_node = CREATE(FE_node)(
@@ -3463,7 +3469,7 @@ DESCRIPTION :
 	dimension=1;
 
 	index = shape_string;
-	while (index = strchr(index,'*'))
+	while (NULL != (index = strchr(index,'*')))
 	{
 		index++;
 		dimension++;
@@ -3819,9 +3825,9 @@ DESCRIPTION :
 			{
 				if (fieldml_data->face_numbers[j])
 				{
-					if (face_element = FE_region_get_FE_element_from_identifier(
+					if (NULL != (face_element = FE_region_get_FE_element_from_identifier(
 						fieldml_data->current_fe_region, face_dimension,
-						fieldml_data->face_numbers[j]))
+						fieldml_data->face_numbers[j])))
 					{
 						if (!set_FE_element_face(fieldml_data->current_element,j,
 							face_element))
@@ -4067,7 +4073,7 @@ Some examples of basis descriptions in an input file are:
 	basis=(struct FE_basis *)NULL;
 	if (fieldml_data&&basis_description_string)
 	{
-		if (basis_type=FE_basis_string_to_type_array(basis_description_string))
+		if (NULL != (basis_type=FE_basis_string_to_type_array(basis_description_string)))
 		{
 			basis=FE_region_get_FE_basis_matching_basis_type(
 				fieldml_data->current_fe_region,basis_type);
@@ -4173,11 +4179,11 @@ DESCRIPTION :
 						"Invalid modify function");
 				}
 			}
-			if (basis = fieldml_read_FE_basis(fieldml_data, basis_string))
+			if (NULL != (basis = fieldml_read_FE_basis(fieldml_data, basis_string)))
 			{
-				if (fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
-				mapping_name, FIELDML_LABEL_TYPE_BASIS_MAPPING,
-				fieldml_data->current_label_name, fieldml_data->label_name_stack))
+				if (NULL != (fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
+					mapping_name, FIELDML_LABEL_TYPE_BASIS_MAPPING,
+					fieldml_data->current_label_name, fieldml_data->label_name_stack)))
 				{
 					fieldml_data->current_basis_mapping =
 						fieldml_data->current_label_name;
@@ -4272,8 +4278,8 @@ DESCRIPTION :
 			}
 			if (name)
 			{
-				if (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
-					name, fieldml_data->element_interpolations))
+				if (NULL != (label = FIND_BY_IDENTIFIER_IN_LIST(Fieldml_label_name,name)(
+					name, fieldml_data->element_interpolations)))
 				{
 					fieldml_data->current_element_interpolation_ref = label;
 				}
@@ -4984,7 +4990,7 @@ DESCRIPTION :
 
 	ENTER(general_start_xml_element);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)user_data)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)user_data))
 	{
 		attributes = (char **)const_attributes;
 		if (fieldml_data->unknown_depth > 0)
@@ -5061,7 +5067,7 @@ DESCRIPTION :
 
 	ENTER(general_end_xml_element);
 
-	if (fieldml_data = (struct Fieldml_sax_data *)user_data)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)user_data))
 	{
 		if (fieldml_data->unknown_depth > 0)
 		{
@@ -5189,7 +5195,7 @@ DESCRIPTION :
 	struct Fieldml_sax_data *fieldml_data;
 
 	ENTER(general_sax_characters);
-	if (fieldml_data = (struct Fieldml_sax_data *)user_data)
+	if (NULL != (fieldml_data = (struct Fieldml_sax_data *)user_data))
 	{
 		if (fieldml_data->unknown_depth > 0)
 		{

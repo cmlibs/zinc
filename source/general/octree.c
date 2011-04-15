@@ -221,9 +221,9 @@ instead an array of new branches with the appropriate objects in them.
 					}
 					branch->branch_array[i] = new_branch;
 				}
-				while (object = FIRST_OBJECT_IN_LIST_THAT(Octree_object)(
+				while (NULL != (object = FIRST_OBJECT_IN_LIST_THAT(Octree_object)(
 					(LIST_CONDITIONAL_FUNCTION(Octree_object) *)NULL, (void *)NULL,
-					branch->object_list))
+					branch->object_list)))
 				{
 					i = 0;
 					for (j = 0 ; j < OCTREE_DIMENSION ; j++)

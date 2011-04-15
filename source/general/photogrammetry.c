@@ -79,7 +79,8 @@ Returns the 2-D position of point <pos3> by transformation with matrix <t>.
 		p[1]=pos3[1];
 		p[2]=pos3[2];
 		p[3]=1.0;
-		if (return_code=multiply_matrix(1,4,3,p,t,r))
+		return_code = multiply_matrix(1,4,3,p,t,r);
+		if (return_code)
 		{
 			if (0.0 != r[2])
 			{
@@ -529,9 +530,10 @@ point_3d_to_2d_view.
 	ENTER(photogrammetry_project);
 	if (t&&pos3&&win_pos)
 	{
-		if (return_code=photogrammetry_to_graphics_projection(t,near_plane,far_plane,
+		return_code = photogrammetry_to_graphics_projection(t,near_plane,far_plane,
 			NDC_left,NDC_bottom,NDC_width,NDC_height,
-			modelview_matrixT,projection_matrixT,eye,lookat,up))
+			modelview_matrixT,projection_matrixT,eye,lookat,up);
+		if (return_code)
 		{
 			viewport[0]=0;
 			viewport[1]=0;
@@ -600,9 +602,10 @@ of the viewing volume.
 	ENTER(photogrammetry_unproject);
 	if (t&&pos2&&near_pos&&far_pos)
 	{
-		if (return_code=photogrammetry_to_graphics_projection(t,near_plane,far_plane,
+		return_code = photogrammetry_to_graphics_projection(t,near_plane,far_plane,
 			NDC_left,NDC_bottom,NDC_width,NDC_height,
-			modelview_matrixT,projection_matrixT,eye,lookat,up))
+			modelview_matrixT,projection_matrixT,eye,lookat,up);
+		if (return_code)
 		{
 			viewport[0]=0;
 			viewport[1]=0;

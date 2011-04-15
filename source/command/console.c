@@ -109,7 +109,7 @@ This function is called to process stdin from a console.
 
 	USE_PARAMETER(fdio);
 
-	if (console=(struct Console *)console_void)
+	if (NULL != (console=(struct Console *)console_void))
 	{
 		length = read(console->fd, buffer, MAX_CONSOLE_BUFFER);
 		if (length)

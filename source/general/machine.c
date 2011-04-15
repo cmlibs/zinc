@@ -199,12 +199,12 @@ Parses the name, and turns it into a type.
 	if (state)
 	{
 #if !defined (WINDOWS_DEV_FLAG)
-		if (current_token=state->current_token)
+		if (NULL != (current_token=state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (machine_type_address=(enum Machine_type *)machine_type_address_void)
+				if (NULL != (machine_type_address=(enum Machine_type *)machine_type_address_void))
 				{
 					if (fuzzy_string_compare(current_token,"UNKNOWN"))
 					{
@@ -252,7 +252,7 @@ Parses the name, and turns it into a type.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," <UNKNOWN|UNIX|VMS|WINDOWS>");
-				if (machine_type_address=(enum Machine_type *)machine_type_address_void)
+				if (NULL != (machine_type_address=(enum Machine_type *)machine_type_address_void))
 				{
 					switch(*machine_type_address)
 					{

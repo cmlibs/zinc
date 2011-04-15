@@ -608,7 +608,8 @@ Modifies <multi_range> so it contains only ranges or part ranges in both it and
 				{
 					stop=last_stop;
 				}
-				if (return_code=Multi_range_remove_range(multi_range,start,stop))
+				return_code = Multi_range_remove_range(multi_range,start,stop);
+				if (return_code)
 				{
 					Multi_range_get_next_stop_value(other_multi_range,stop,&start);
 					stop=start;
@@ -999,7 +1000,7 @@ Writes <empty> if there is nothing in the multi-range.
 		return_code=1;
 		if (0<multi_range->number_of_ranges)
 		{
-			if (ranges_string=Multi_range_get_ranges_string(multi_range))
+			if (NULL != (ranges_string=Multi_range_get_ranges_string(multi_range)))
 			{
 				remaining_string = ranges_string;
 				remaining_length = strlen(remaining_string);
@@ -1170,7 +1171,7 @@ Ranges may overlap and be increasing or decreasing. Typical inputs are:
 	USE_PARAMETER(dummy_user_data);
 	if (state&&(multi_range=(struct Multi_range *)multi_range_void))
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token=state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1208,7 +1209,8 @@ Ranges may overlap and be increasing or decreasing. Typical inputs are:
 					{
 						if (Multi_range_add_range(multi_range,first,last))
 						{
-							if (return_code=shift_Parse_state(state,1))
+							return_code = shift_Parse_state(state,1);
+							if (return_code)
 							{
 								current_token=state->current_token;
 							}

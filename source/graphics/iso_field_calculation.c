@@ -99,6 +99,9 @@ Clears the memory used in storing a type without destroying the structure.
 			{
 				DEALLOCATE(data->parameters.floats.coeffs);
 			} break;
+			default:
+			{
+			}
 		}
 		data->type=NULL_TYPE;
 		return_code=1;

@@ -254,9 +254,10 @@ It must therefore be transposed to be used by OpenGL.
 						interaction_volume->data.ray_frustum.centre_y) +
 						interaction_volume->data.ray_frustum.viewport_height) /
 					interaction_volume->data.ray_frustum.size_y;
-				if (return_code=multiply_matrix(4,4,4,temp_matrix,
+				return_code = multiply_matrix(4,4,4,temp_matrix,
 					interaction_volume->data.ray_frustum.projection_matrix,
-					interaction_volume->projection_matrix))
+					interaction_volume->projection_matrix);
+				if (return_code)
 				{
 					interaction_volume->projection_matrix_calculated=1;
 				}
@@ -545,7 +546,7 @@ direction.
 	interaction_volume=(struct Interaction_volume *)NULL;
 	if ((0.0 < size_x)&&(0.0 < size_y)&&(0.0 < size_z))
 	{
-		if (interaction_volume=CREATE(Interaction_volume)())
+		if (NULL != (interaction_volume=CREATE(Interaction_volume)()))
 		{
 			interaction_volume->type=INTERACTION_VOLUME_CENTRED_BOX;
 			interaction_volume->data.centred_box.centre_x=centre_x;
@@ -595,7 +596,7 @@ compressed - that interaction is taking place on.
 	if ((0.0 < viewport_width)&&(0.0 < viewport_height)&&
 		(0.0 < size_x)&&(0.0 < size_y))
 	{
-		if (interaction_volume=CREATE(Interaction_volume)())
+		if (NULL != (interaction_volume=CREATE(Interaction_volume)()))
 		{
 			interaction_volume->type=INTERACTION_VOLUME_RAY_FRUSTUM;
 			for (i=0;i<16;i++)

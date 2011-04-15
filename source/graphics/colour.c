@@ -124,12 +124,12 @@ A modifier function to set the colour rgb values.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token=state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (colour=(struct Colour *)colour_void)
+				if (NULL != (colour=(struct Colour *)colour_void))
 				{
 					if ((1==sscanf(current_token," %"COLOUR_PRECISION_STRING" ",&red))&&
 						shift_Parse_state(state,1)&&(state->current_token)&&
@@ -194,7 +194,7 @@ A modifier function to set the colour rgb values.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," RED#");
-				if (colour=(struct Colour *)colour_void)
+				if (NULL != (colour=(struct Colour *)colour_void))
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",colour->red);
 				}

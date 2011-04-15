@@ -100,8 +100,8 @@ the <element> has.
 				if (get_FE_element_node(element, node_index, &node) && node)
 				{
 					node_number = get_FE_node_identifier(node);
-					if (node_elements = FIND_BY_IDENTIFIER_IN_LIST
-						(Index_multi_range,index_number)(node_number,list))
+					if (NULL != (node_elements = FIND_BY_IDENTIFIER_IN_LIST
+						(Index_multi_range,index_number)(node_number,list)))
 					{
 						return_code = Index_multi_range_add_range(node_elements,
 							element_number, element_number);
@@ -169,8 +169,8 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 		if (get_FE_element_node(element, node_index, &node) && node)
 		{
 			node_number = get_FE_node_identifier(node);
-			if (node_elements = FIND_BY_IDENTIFIER_IN_LIST
-				(Index_multi_range,index_number)(node_number, node_element_list))
+			if (NULL != (node_elements = FIND_BY_IDENTIFIER_IN_LIST
+				(Index_multi_range,index_number)(node_number, node_element_list)))
 			{
 				/* This list includes the element itself so we are safe but probably
 					overallocating the array */
@@ -185,8 +185,8 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 					{
 						for (range_no=0;return_code&&(range_no<number_of_ranges);range_no++)
 						{
-							if (return_code=
-								Index_multi_range_get_range(node_elements,range_no,&start,&stop))
+							return_code = Index_multi_range_get_range(node_elements,range_no,&start,&stop);
+							if (return_code)
 							{
 								for (j = start ; j <= stop ; j++)
 								{

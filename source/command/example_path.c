@@ -217,21 +217,21 @@ be DEALLOCATED by the calling function.
 						   requirements_offset = (char *)NULL;
 						   /* Look for the first space separator in the 
 							  returned string */
-						   if (comfile_offset = strchr(return_string, ' '))
+						   if (NULL != (comfile_offset = strchr(return_string, ' ')))
 						   {
 							  /* Terminate the example path string */
 							  *comfile_offset = 0;
 							  comfile_offset++;
 
 							  /* Look for the next space */
-							  if (requirements_offset = strchr(comfile_offset, ' '))
+							  if (NULL != (requirements_offset = strchr(comfile_offset, ' ')))
 							  {
 								 /* Terminate the comfile string */
 								 *requirements_offset = 0;
 								 requirements_offset++;
 
 								 /* Look for the end of this word */
-								 if (end_offset = strchr(requirements_offset, ' '))
+								 if (NULL != (end_offset = strchr(requirements_offset, ' ')))
 								 {
 									/* Terminate the requirements string */
 									*end_offset = 0;

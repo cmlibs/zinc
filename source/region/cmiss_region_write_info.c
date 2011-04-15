@@ -170,8 +170,8 @@ DESCRIPTION :
 			(CMISS_REGION_WRITTEN == write_status)))
 	{
 		return_code = 1;
-		if (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
-			region, write_info_list))
+		if (NULL != (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
+			region, write_info_list)))
 		{
 			/* only need to handle updating from DECLARED to WRITTEN */
 			if (CMISS_REGION_DECLARED == write_info->status)
@@ -181,7 +181,7 @@ DESCRIPTION :
 		}
 		else
 		{
-			if (write_info = CREATE(Cmiss_region_write_info)())
+			if (NULL != (write_info = CREATE(Cmiss_region_write_info)()))
 			{
 				write_info->region = ACCESS(Cmiss_region)(region);
 				write_info->status = write_status;
@@ -234,8 +234,8 @@ The returned path is not to be deallocated.
 	if (write_info_list && region && write_status_address && path_address)
 	{
 		return_code = 1;
-		if (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
-			region, write_info_list))
+		if (NULL != (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
+			region, write_info_list)))
 		{
 			*write_status_address = write_info->status;
 			*path_address = write_info->path;
