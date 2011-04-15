@@ -405,4 +405,6 @@ int Node_tool_set_execute_command(struct Node_tool *node_tool,
 	struct Execute_command *execute_command);
 
 int Node_tool_execute_command(struct Node_tool *node_tool, const char *command_string);
+
+int Node_tool_execute_command_with_parse_state(struct Node_tool *node_tool, struct Parse_state *state);
 #endif /* !defined (NODE_TOOL_H) */
