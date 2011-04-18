@@ -34,13 +34,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_MATERIAL_H__
-#define __CMISS_MATERIAL_H__
+#ifndef __CMISS_GRAPHIC_MATERIAL_H__
+#define __CMISS_GRAPHIC_MATERIAL_H__
 
 #include "api/cmiss_texture.h"
 
 struct Graphical_material;
-#ifndef CMISS_MATERIAL_ID_DEFINED
+#ifndef CMISS_GRAPHIC_MATERIAL_ID_DEFINED
 /***************************************************************************//**
  * A handle to cmiss material. cmiss material describes the
  * colour, shading and other graphical properties of a material, it is highly 
@@ -58,9 +58,9 @@ struct Graphical_material;
  * Please see available Cmiss_graphic_material API functions belong for 
  * configuarble properties.
  */
-typedef struct Graphical_material * Cmiss_material_id;
-#define CMISS_MATERIAL_ID_DEFINED
-#endif /* CMISS_MATERIAL_ID_DEFINED */
+typedef struct Graphical_material * Cmiss_graphic_material_id;
+#define CMISS_GRAPHIC_MATERIAL_ID_DEFINED
+#endif /* CMISS_GRAPHIC_MATERIAL_ID_DEFINED */
 
 #ifndef CMISS_FIELD_ID_DEFINED
 #define Cmiss_field Computed_field
@@ -70,18 +70,18 @@ typedef struct Graphical_material * Cmiss_material_id;
 #endif /* CMISS_FIELD_ID_DEFINED */
 
 /***************************************************************************//**
- * Enumerator to identify different image fields used in Cmiss_material.
+ * Enumerator to identify different image fields used in Cmiss_graphic_material.
  */
-enum Cmiss_material_image_field_identifier
+enum Cmiss_graphic_material_image_field_identifier
 {
-	CMISS_MATERIAL_INVALID_FIELD = 0,
-	CMISS_MATERIAL_FIRST_IMAGE_FIELD = 1, /*!<Used as the first texture for C
+	CMISS_GRAPHIC_MATERIAL_INVALID_FIELD = 0,
+	CMISS_GRAPHIC_MATERIAL_FIRST_IMAGE_FIELD = 1, /*!<Used as the first texture for C
 								 miss_material*/
-	CMISS_MATERIAL_SECOND_IMAGE_FIELD = 2, /*!<Used as the second texture for C
+	CMISS_GRAPHIC_MATERIAL_SECOND_IMAGE_FIELD = 2, /*!<Used as the second texture for C
 								 miss_material*/
-	CMISS_MATERIAL_THIRD_IMAGE_FIELD = 3, /*!<Used as the third texture for C
+	CMISS_GRAPHIC_MATERIAL_THIRD_IMAGE_FIELD = 3, /*!<Used as the third texture for C
 								 miss_material*/
-	CMISS_MATERIAL_FOURTH_IMAGE_FIELD = 4 /*!<Used as the fourth texture for C
+	CMISS_GRAPHIC_MATERIAL_FOURTH_IMAGE_FIELD = 4 /*!<Used as the fourth texture for C
 								 miss_material*/
 };
 
@@ -89,9 +89,9 @@ enum Cmiss_material_image_field_identifier
  * Labels of material attributes which may be set or obtained using generic
  * get/set_attribute functions.
  */
-enum Cmiss_material_attribute_id
+enum Cmiss_graphic_material_attribute_id
 {
-	CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
+	CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) material is destroyed when no
 	 * longer in use, i.e. when number of external references to it drops to
 	 * zero. Set to 1 to manage material object indefinitely, or until this
@@ -105,7 +105,7 @@ enum Cmiss_material_attribute_id
  * @param material  handle to the "to be access" cmiss material.
  * @return  handle to material if successfully access material.
  */
-Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
+Cmiss_graphic_material_id Cmiss_graphic_material_access(Cmiss_graphic_material_id material);
 
 /***************************************************************************//**
  * Destroys this reference to the material (and sets it to NULL).
@@ -115,7 +115,7 @@ Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
  *   cmiss material.
  * @return  1 if successfully destroy material, otherwise 0.
  */
-int Cmiss_material_destroy(Cmiss_material_id *material);
+int Cmiss_graphic_material_destroy(Cmiss_graphic_material_id *material);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the graphics material.
@@ -124,8 +124,8 @@ int Cmiss_material_destroy(Cmiss_material_id *material);
  * @param attribute_id  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-int Cmiss_material_get_attribute_integer(Cmiss_material_id material,
-	enum Cmiss_material_attribute_id attribute_id);
+int Cmiss_graphic_material_get_attribute_integer(Cmiss_graphic_material_id material,
+	enum Cmiss_graphic_material_attribute_id attribute_id);
 
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the graphics material.
@@ -137,8 +137,8 @@ int Cmiss_material_get_attribute_integer(Cmiss_material_id material,
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this material object.
  */
-int Cmiss_material_set_attribute_integer(Cmiss_material_id material,
-	enum Cmiss_material_attribute_id attribute_id, int value);
+int Cmiss_graphic_material_set_attribute_integer(Cmiss_graphic_material_id material,
+	enum Cmiss_graphic_material_attribute_id attribute_id, int value);
 
 /***************************************************************************//**
  * Return an allocated string containing material name.
@@ -146,7 +146,7 @@ int Cmiss_material_set_attribute_integer(Cmiss_material_id material,
  * @param material  handle to the cmiss material.
  * @return  allocated string containing material name, otherwise NULL.
  */
-char *Cmiss_material_get_name(Cmiss_material_id material);
+char *Cmiss_graphic_material_get_name(Cmiss_graphic_material_id material);
 
 /***************************************************************************//**
  * Set/change name for <material>.
@@ -155,8 +155,8 @@ char *Cmiss_material_get_name(Cmiss_material_id material);
  * @param name  name to be set to the material
  * @return  1 if successfully set/change name for material, otherwise 0.
  */
-int Cmiss_material_set_name(
-	Cmiss_material_id material, const char *name);
+int Cmiss_graphic_material_set_name(
+	Cmiss_graphic_material_id material, const char *name);
 
 /***************************************************************************//**
  * Set the alpha value (opacity) of the material.
@@ -167,8 +167,8 @@ int Cmiss_material_set_name(
  *   and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_alpha(
-	Cmiss_material_id material, float alpha);
+int Cmiss_graphic_material_set_alpha(
+	Cmiss_graphic_material_id material, float alpha);
 
 /***************************************************************************//**
  * Set the size and brigtness of the highlight.
@@ -179,8 +179,8 @@ int Cmiss_material_set_alpha(
  *   and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_shininess(
-	Cmiss_material_id material, float shininess);
+int Cmiss_graphic_material_set_shininess(
+	Cmiss_graphic_material_id material, float shininess);
 
 /***************************************************************************//**
  * Set the ambient colour of the material. Ambient colour simulates the colour 
@@ -195,8 +195,8 @@ int Cmiss_material_set_shininess(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_ambient(
-	Cmiss_material_id material, float red, float green, float blue);
+int Cmiss_graphic_material_set_ambient(
+	Cmiss_graphic_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the diffuse color of the material. Diffuse colour response to light that 
@@ -212,8 +212,8 @@ int Cmiss_material_set_ambient(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_diffuse(
-	Cmiss_material_id material, float red, float green, float blue);
+int Cmiss_graphic_material_set_diffuse(
+	Cmiss_graphic_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the emissive colour of the material. Emissive colour simulates colours
@@ -229,8 +229,8 @@ int Cmiss_material_set_diffuse(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_emission(
-	Cmiss_material_id material, float red, float green, float blue);
+int Cmiss_graphic_material_set_emission(
+	Cmiss_graphic_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the specular colour of the material. Specular colour produces highlights.
@@ -246,8 +246,8 @@ int Cmiss_material_set_emission(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_material_set_specular(
-	Cmiss_material_id material, float red, float green, float blue);
+int Cmiss_graphic_material_set_specular(
+	Cmiss_graphic_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
@@ -257,15 +257,15 @@ int Cmiss_material_set_specular(
  * NOTE: This function may be removed in the future once more API functions are
  * made available to the users.
  *
- * @param material  Handle to a cmiss_material object.
+ * @param material  Handle to a Cmiss_graphic_material object.
  * @param command  Command to be executed.
  * @return  1 if command completed successfully, otherwise 0.
  */
-int Cmiss_material_execute_command(Cmiss_material_id material,
+int Cmiss_graphic_material_execute_command(Cmiss_graphic_material_id material,
 	const char *command_string);
 
 /***************************************************************************//**
- * Set a cmiss_field containing an image for a Cmiss_material.
+ * Set a cmiss_field containing an image for a Cmiss_graphic_material.
  * This image will be displayed with the material as the corresponding texture.
  * This function read in a general field but it may not work properly if
  * the field passing in is not an image field.
@@ -276,12 +276,12 @@ int Cmiss_material_execute_command(Cmiss_material_id material,
  * 		material.
  * @return  1 if successfully set an image field, otherwise 0.
  */
-int Cmiss_material_set_image_field(Cmiss_material_id material,
-		enum Cmiss_material_image_field_identifier identifier, Cmiss_field_id field);
+int Cmiss_graphic_material_set_image_field(Cmiss_graphic_material_id material,
+		enum Cmiss_graphic_material_image_field_identifier identifier, Cmiss_field_id field);
 
 /***************************************************************************//**
- * Get the cmiss_field containing an image from a Cmiss_material which is used
- * as a texture when displaying. The target image field is specified by the
+ * Get the cmiss_field containing an image from a Cmiss_graphic_material which is
+ * used as a texture when displaying. The target image field is specified by the
  * identifier.
  *
  * @param material  handle to the cmiss material.
@@ -290,28 +290,28 @@ int Cmiss_material_set_image_field(Cmiss_material_id material,
  * @return  cmiss_field if a field has been sett for the material, otherwise NULL.
  * 		This also incremenet the access count of the cmiss_field by 1;
  */
-Cmiss_field_id  Cmiss_material_get_image_field(Cmiss_material_id material,
-	enum Cmiss_material_image_field_identifier identifier);
+Cmiss_field_id  Cmiss_graphic_material_get_image_field(Cmiss_graphic_material_id material,
+	enum Cmiss_graphic_material_image_field_identifier identifier);
 
 /***************************************************************************//**
- * Deprecated function for getting generic CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_material_get_attribute_integer
+ * Deprecated function for getting generic CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_graphic_material_get_attribute_integer
  *
  * @param material  The material to query.
- * @return  Value of attribute CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ * @return  Value of attribute CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED.
  */
-#define Cmiss_material_get_persistent(material) \
-	Cmiss_material_get_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED)
+#define Cmiss_graphic_material_get_persistent(material) \
+	Cmiss_graphic_material_get_attribute_integer(material, CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED)
 
 /***************************************************************************//**
- * Deprecated function for setting attribute CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_material_set_attribute_integer
+ * Deprecated function for setting attribute CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_graphic_material_set_attribute_integer
  *
  * @param material  The material to modify.
  * @param value  Non-zero for managed, 0 for not managed.
  * @return  1 on success, 0 on failure.
  */
-#define Cmiss_material_set_persistent(material, value) \
-	Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, value)
+#define Cmiss_graphic_material_set_persistent(material, value) \
+	Cmiss_graphic_material_set_attribute_integer(material, CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED, value)
 
 #endif

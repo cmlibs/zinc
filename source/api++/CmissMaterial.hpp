@@ -36,103 +36,103 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_MATERIAL_HPP__
-#define __CMISS_MATERIAL_HPP__
+#ifndef __CMISS_GRAPHIC_MATERIAL_HPP__
+#define __CMISS_GRAPHIC_MATERIAL_HPP__
 
 extern "C" {
-#include "api/cmiss_material.h"
+#include "api/cmiss_graphic_material.h"
 }
 
 namespace Cmiss
 {
 
-class Material
+class GraphicMaterial
 {
 protected:
-	Cmiss_material_id id;
+	Cmiss_graphic_material_id id;
 
 public:
-	Material() : id(NULL)
+	GraphicMaterial() : id(NULL)
 	{	}
 
 	// takes ownership of C-style field reference
-	Material(Cmiss_material_id in_material_id): id(in_material_id)
+	GraphicMaterial(Cmiss_graphic_material_id in_material_id): id(in_material_id)
 	{ }
 
-	Material(const Material& material) : id(Cmiss_material_access(material.id))
+	GraphicMaterial(const GraphicMaterial& material) : id(Cmiss_graphic_material_access(material.id))
 	{ }
 
-	Material& operator=(const Material& material)
+	GraphicMaterial& operator=(const GraphicMaterial& material)
 	{
-		Cmiss_material_id temp_id = Cmiss_material_access(material.id);
+		Cmiss_graphic_material_id temp_id = Cmiss_graphic_material_access(material.id);
 		if (NULL != id)
 		{
-			Cmiss_material_destroy(&id);
+			Cmiss_graphic_material_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 	
-	~Material()
+	~GraphicMaterial()
 	{
 		if (NULL != id)
 		{
-			Cmiss_material_destroy(&id);
+			Cmiss_graphic_material_destroy(&id);
 		}
 	}
 
-	int getAttributeInteger(Cmiss_material_attribute_id attribute_id)
+	int getAttributeInteger(Cmiss_graphic_material_attribute_id attribute_id)
 	{
-		return Cmiss_material_get_attribute_integer(id, attribute_id);
+		return Cmiss_graphic_material_get_attribute_integer(id, attribute_id);
 	}
 
-	int setAttributeInteger(Cmiss_material_attribute_id attribute_id, int value)
+	int setAttributeInteger(Cmiss_graphic_material_attribute_id attribute_id, int value)
 	{
-		return Cmiss_material_set_attribute_integer(id, attribute_id, value);
+		return Cmiss_graphic_material_set_attribute_integer(id, attribute_id, value);
 	}
 
 	char *getName()
 	{
-		return Cmiss_material_get_name(id);
+		return Cmiss_graphic_material_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_material_set_name(id, name);
+		return Cmiss_graphic_material_set_name(id, name);
 	}
 
 	int setAlpha(float alpha)
 	{
-		return Cmiss_material_set_alpha(id, alpha);
+		return Cmiss_graphic_material_set_alpha(id, alpha);
 	}
 
 	int setShininess(float shininess)
 	{
-		return Cmiss_material_set_shininess(id, shininess);
+		return Cmiss_graphic_material_set_shininess(id, shininess);
 	}
 
 	int setAmbient(float red, float green, float blue)
 	{
-		return Cmiss_material_set_ambient(id, red, green, blue);
+		return Cmiss_graphic_material_set_ambient(id, red, green, blue);
 	}
 
 	int setDiffuse(float red, float green, float blue)
 	{
-		return Cmiss_material_set_diffuse(id, red, green, blue);
+		return Cmiss_graphic_material_set_diffuse(id, red, green, blue);
 	}
 
 	int setEmission(float red, float green, float blue)
 	{
-		return Cmiss_material_set_emission(id, red, green, blue);
+		return Cmiss_graphic_material_set_emission(id, red, green, blue);
 	}
 
 	int setSpecular(float red, float green, float blue)
 	{
-		return Cmiss_material_set_specular(id, red, green, blue);
+		return Cmiss_graphic_material_set_specular(id, red, green, blue);
 	}
 
 };
 
 } // namespace Cmiss
 
-#endif /* __CMISS_MATERIAL_HPP__ */
+#endif /* __CMISS_GRAPHIC_MATERIAL_HPP__ */

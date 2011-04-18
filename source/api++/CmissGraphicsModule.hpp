@@ -47,7 +47,7 @@ extern "C" {
 namespace Cmiss
 {
 
-class Material;
+class GraphicMaterial;
 
 class GraphicsModule
 {
@@ -86,14 +86,14 @@ public:
 		}
 	}
 
-	Material createMaterial() const
+	GraphicMaterial createMaterial() const
 	{
-		return Material(Cmiss_graphics_module_create_material(id));
+		return GraphicMaterial(Cmiss_graphics_module_create_material(id));
 	}
 
-	Material findMaterialByName(const char *material_name) const
+	GraphicMaterial findMaterialByName(const char *material_name) const
 	{
-		return Material(Cmiss_graphics_module_find_material_by_name(id, material_name));
+		return GraphicMaterial(Cmiss_graphics_module_find_material_by_name(id, material_name));
 	}
 	
 };

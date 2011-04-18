@@ -37,7 +37,7 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
-#include "api/cmiss_material.h"
+#include "api/cmiss_graphic_material.h"
 
 struct Cmiss_graphics_module;
 
@@ -92,7 +92,7 @@ typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
  * @param name  The name of the material.
  * @return  Handle to the material with that name, or NULL if not found.
  */
-Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
+Cmiss_graphic_material_id Cmiss_graphics_module_find_material_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
@@ -102,7 +102,7 @@ Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
  * belong to.
  * @return  Handle to the newly created material if successful, otherwise NULL.
  */
-Cmiss_material_id Cmiss_graphics_module_create_material(
+Cmiss_graphic_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**

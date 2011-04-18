@@ -46,7 +46,7 @@ The public interface to the Cmiss_rendition.
 #define __CMISS_GRAPHIC_H__
 
 #include "api/cmiss_field.h"
-#include "api/cmiss_material.h"
+#include "api/cmiss_graphic_material.h"
 
 struct Cmiss_graphic;
 
@@ -159,7 +159,7 @@ int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  * @param material  The material to be set to graphic as the default material
  * @return  If successfully set material for graphic returns 1, otherwise 0
  */
-int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_material_id material);
+int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphic_material_id material);
 
 /***************************************************************************//** 
  * Set the selected material of the cmiss graphic
@@ -169,7 +169,7 @@ int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_material_id mater
  * @return  If successfully set material for graphic returns 1, otherwise 0
  */
 int Cmiss_graphic_set_selected_material(
-	Cmiss_graphic_id graphic, Cmiss_material_id material);
+	Cmiss_graphic_id graphic, Cmiss_graphic_material_id material);
 
 /***************************************************************************//** 
  * Set the texture coordinate field of the cmiss graphic.

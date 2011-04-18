@@ -51,7 +51,7 @@ extern "C" {
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
-#include "api/cmiss_material.h"
+#include "api/cmiss_graphic_material.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -474,23 +474,23 @@ void material_editor_wx_update_image_field(Material_editor *material_editor,
 {
 	if (selection == 0)
 	{
-		Cmiss_material_set_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_FIRST_IMAGE_FIELD, field);
+		Cmiss_graphic_material_set_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_FIRST_IMAGE_FIELD, field);
 	}
 	else if (selection == 1)
 	{
-		Cmiss_material_set_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_SECOND_IMAGE_FIELD, field);
+		Cmiss_graphic_material_set_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_SECOND_IMAGE_FIELD, field);
 	}
 	else if (selection == 2)
 	{
-		Cmiss_material_set_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_THIRD_IMAGE_FIELD, field);
+		Cmiss_graphic_material_set_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_THIRD_IMAGE_FIELD, field);
 	}
 	else if (selection == 3)
 	{
-		Cmiss_material_set_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_FOURTH_IMAGE_FIELD, field);
+		Cmiss_graphic_material_set_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_FOURTH_IMAGE_FIELD, field);
 	}
 	 material_editor_update_picture(material_editor);
 }
@@ -763,17 +763,17 @@ void OnMaterialEditorTextureChoice(wxCommandEvent& event)
 	int num = event.GetSelection();
 	struct Computed_field *field = NULL;
 	if (num == 0)
-		field = Cmiss_material_get_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_FIRST_IMAGE_FIELD);
+		field = Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_FIRST_IMAGE_FIELD);
 	else if (num == 1)
-		field = Cmiss_material_get_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_SECOND_IMAGE_FIELD);
+		field = Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_SECOND_IMAGE_FIELD);
 	else if (num == 2)
-		field = Cmiss_material_get_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_THIRD_IMAGE_FIELD);
+		field = Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_THIRD_IMAGE_FIELD);
 	else if (num == 3)
-		field =	Cmiss_material_get_image_field(material_editor->edit_material,
-			CMISS_MATERIAL_FOURTH_IMAGE_FIELD);
+		field =	Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+			CMISS_GRAPHIC_MATERIAL_FOURTH_IMAGE_FIELD);
 	Set_region_and_image_field_chooser(field);
 	if (field)
 		Cmiss_field_destroy(&field);
@@ -843,7 +843,7 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 				 {
 						material_copy_bump_mapping_and_per_pixel_lighting_flag(material_editor->edit_material,
 							 material);
-						Cmiss_material_set_attribute_integer(material, CMISS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
+						Cmiss_graphic_material_set_attribute_integer(material, CMISS_GRAPHIC_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 						ADD_OBJECT_TO_MANAGER(Graphical_material)(
 							 material, material_editor->graphical_material_manager);
 						make_current_material(material_editor, material);
@@ -897,8 +897,8 @@ void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 	bump_mapping_flag = 0;
 	if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
 	{
-		Cmiss_field_id field = Cmiss_material_get_image_field(material_editor->edit_material,
-				CMISS_MATERIAL_SECOND_IMAGE_FIELD);
+		Cmiss_field_id field = Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+				CMISS_GRAPHIC_MATERIAL_SECOND_IMAGE_FIELD);
 		if (field)
 		{
 			material_editor->material_editor_bump_mapping_checkbox->Enable(true);
@@ -1327,8 +1327,8 @@ Sets the <material> to be edited by the <material_editor>.
 							shininess);	 
 				}
 
-				field=Cmiss_material_get_image_field(material_editor->edit_material,
-					CMISS_MATERIAL_FIRST_IMAGE_FIELD);
+				field=Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+					CMISS_GRAPHIC_MATERIAL_FIRST_IMAGE_FIELD);
 				material_editor->wx_material_editor->Set_region_and_image_field_chooser(field);
 				if (field)
 					Cmiss_field_destroy(&field);
@@ -1337,8 +1337,8 @@ Sets the <material> to be edited by the <material_editor>.
 				if (per_pixel_set)
 				{
 					 material_editor->material_editor_per_pixel_checkbox->SetValue(true);
-					 field=Cmiss_material_get_image_field(material_editor->edit_material,
-							CMISS_MATERIAL_SECOND_IMAGE_FIELD);
+					 field=Cmiss_graphic_material_get_image_field(material_editor->edit_material,
+							CMISS_GRAPHIC_MATERIAL_SECOND_IMAGE_FIELD);
 					 if (field)
 					 {
 							material_editor->material_editor_bump_mapping_checkbox->Enable(true);
