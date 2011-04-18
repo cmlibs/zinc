@@ -1247,10 +1247,10 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
 	return rendition;
 }
 
-Cmiss_graphic_material_id Cmiss_graphics_module_find_material_by_name(
+Cmiss_graphics_material_id Cmiss_graphics_module_find_material_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name)
 {
-	Cmiss_graphic_material_id material = NULL;
+	Cmiss_graphics_material_id material = NULL;
 
 	ENTER(Cmiss_graphics_module_find_material_by_name);
 	if (graphics_module && name)
@@ -1271,10 +1271,10 @@ Cmiss_graphic_material_id Cmiss_graphics_module_find_material_by_name(
 	return material;
 }
 
-Cmiss_graphic_material_id Cmiss_graphics_module_create_material(
+Cmiss_graphics_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module)
 {
-	Cmiss_graphic_material_id material = NULL;
+	Cmiss_graphics_material_id material = NULL;
 	struct MANAGER(Graphical_material) *material_manager =
 		Cmiss_graphics_module_get_material_manager(graphics_module);
 	int i = 0;

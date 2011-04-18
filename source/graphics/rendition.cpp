@@ -1502,11 +1502,11 @@ int Cmiss_rendition_material_change(struct Cmiss_rendition *rendition,
 	if (rendition && manager_message)
 	{
 		return_code = 1;
-		Cmiss_graphic_material_change_data material_change_data;
+		Cmiss_graphics_material_change_data material_change_data;
 		material_change_data.manager_message = manager_message;
 		material_change_data.graphics_changed = 0;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_material_change, (void *)&material_change_data,
+			Cmiss_graphics_material_change, (void *)&material_change_data,
 			rendition->list_of_graphics);
 		if (material_change_data.graphics_changed)
 		{

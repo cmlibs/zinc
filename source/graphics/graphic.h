@@ -890,9 +890,9 @@ struct Cmiss_graphic_FE_region_change_data
 }; /* struct Cmiss_graphic_FE_region_change_data */
 
 /***************************************************************************//**
- * Data to pass to Cmiss_graphic_material_change.
+ * Data to pass to Cmiss_graphics_material_change.
  */
-struct Cmiss_graphic_material_change_data
+struct Cmiss_graphics_material_change_data
 {
 	struct MANAGER_MESSAGE(Graphical_material) *manager_message;
 	int graphics_changed;
@@ -904,9 +904,9 @@ struct Cmiss_graphic_material_change_data
  * Note: only graphics combining a material with data/spectrum are updated;
  * pure material changes do not require update.
  *
- * @param material_change_data_void  Cmiss_graphic_material_change_data.
+ * @param material_change_data_void  Cmiss_graphics_material_change_data.
  */
-int Cmiss_graphic_material_change(struct Cmiss_graphic *graphic,
+int Cmiss_graphics_material_change(struct Cmiss_graphic *graphic,
 	void *material_change_data_void);
 
 /***************************************************************************//**

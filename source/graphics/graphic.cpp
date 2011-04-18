@@ -9271,12 +9271,12 @@ int Cmiss_graphic_update_time_behaviour(
 	return (return_code);
 } /* Cmiss_graphic_update_time_behaviour */
 
-int Cmiss_graphic_material_change(
+int Cmiss_graphics_material_change(
 	struct Cmiss_graphic *graphic, void *material_change_data_void)
 {
 	int return_code;
-	Cmiss_graphic_material_change_data *material_change_data =
-		(Cmiss_graphic_material_change_data *)material_change_data_void;
+	Cmiss_graphics_material_change_data *material_change_data =
+		(Cmiss_graphics_material_change_data *)material_change_data_void;
 	if (graphic && material_change_data)
 	{
 		return_code = 1;
@@ -9313,7 +9313,7 @@ int Cmiss_graphic_material_change(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_material_change.  Invalid argument(s)");
+			"Cmiss_graphics_material_change.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;
