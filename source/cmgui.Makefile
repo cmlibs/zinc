@@ -1063,6 +1063,7 @@ FIELD_IO_SRCS = \
 FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.cpp \
 	finite_element/finite_element.cpp \
+	finite_element/finite_element_basis.cpp \
 	finite_element/finite_element_discretization.cpp \
 	finite_element/finite_element_helper.cpp \
 	finite_element/finite_element_region.cpp \

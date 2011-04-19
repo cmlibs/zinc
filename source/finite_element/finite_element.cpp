@@ -70,10 +70,8 @@ extern "C" {
 }
 #include "general/enumerator_private_cpp.hpp"
 extern "C" {
-#include "general/heapsort.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
-#include "general/manager_private.h"
 #include "general/matrix_vector.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
@@ -381,72 +379,6 @@ struct Cmiss_node_iterator : public Cmiss_set_FE_node::ext_iterator
 };
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
-
-struct FE_basis
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating basis function values from xi
-coordinates.  For each of basis there will be only one copy stored in a global
-list.
-==============================================================================*/
-{
-	/* an integer array that specifies the basis as a "product" of the bases for
-		the different coordinates.  The first entry is the number_of_xi_coordinates.
-		The other entries are the upper triangle of a <number_of_xi_coordinates> by
-		<number_of_xi_coordinates> matrix.  The entries on the diagonal specify the
-		basis type for each coordinate and entries in the same row/column indicate
-		associated coordinates eg.
-		1.  CUBIC_HERMITE       0              0
-											CUBIC_HERMITE        0
-																		LINEAR_LAGRANGE
-			has cubic variation in xi1 and xi2 and linear variation in xi3 (8 nodes).
-		2.  SERENDIPITY       0            1
-										CUBIC_HERMITE      0
-																	SERENDIPITY
-			has cubic variation in xi2 and 2-D serendipity variation for xi1 and
-			xi3 (16 nodes).
-		3.  CUBIC_HERMITE        0               0
-											LINEAR_SIMPLEX         1
-																			LINEAR_SIMPLEX
-			has cubic variation in xi1 and 2-D linear simplex variation for xi2 and
-			xi3 (6 nodes)
-		4.  POLYGON        0           5
-								LINEAR_LAGRANGE    0
-																POLYGON
-			has linear variation in xi2 and a 2-D 5-gon for xi1 and xi3 (12 nodes,
-			5-gon has 5 peripheral nodes and a centre node) */
-	int *type;
-	/* the number of basis functions */
-	int number_of_basis_functions;
-	/* the names for the basis values eg. "0", "dXi1 1,1" */
-	char **value_names;
-	/* the blending matrix is a linear mapping from the basis used (eg. cubic
-		Hermite) to the standard basis (eg. Chebyshev polynomials).  In some cases,
-		for example a non-polynomial basis, this may be NULL, which indicates the
-		identity matrix */
-	FE_value *blending_matrix;
-	/* this array gives the row number of the last non-zero value for each of the
-		number_of_standard_basis_functions columns in blending_matrix, if exists */
-	int *blending_matrix_column_size;
-	/* to calculate the values of the "standard" basis functions */
-	int number_of_standard_basis_functions;
-	void *arguments;
-	Standard_basis_function *standard_basis;
-	
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(FE_basis) *manager;
-	int manager_change_status;
-
-	/* the number of structures that point to this basis.  The basis cannot be
-		destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct FE_basis */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_basis);
-
-FULL_DECLARE_MANAGER_TYPE(FE_basis);
 
 struct Linear_combination_of_global_values
 /*******************************************************************************
@@ -1048,161 +980,6 @@ Stores a list of fields in the order they are added.
 	int allocated_number_of_fields, number_of_fields;
 	struct FE_field **fields;
 }; /* FE_field_order_info */
-
-/*
-Module variables
-----------------
-*/
-
-/* blending matricies for the monomial basis */
-
-static FE_value linear_lagrange_blending_matrix[]=
-{
-	1,-1, /* phi1 = 1 - x */
-	0, 1  /* phi2 = x     */
-};
-
-static FE_value quadratic_lagrange_blending_matrix[]=
-{
-	1,-3, 2, /* phi1 = 1 - 3x + 2xx */
-	0, 4,-4,
-	0,-1, 2
-};
-
-static FE_value cubic_lagrange_blending_matrix[]=
-{
-	1,-5.5,  9  , -4.5,
-	0, 9  ,-22.5, 13.5,
-	0,-4.5, 18  ,-13.5,
-	0, 1  , -4.5,  4.5
-};
-
-static FE_value cubic_hermite_blending_matrix[]=
-{
-	1,0,-3, 2,
-	0,1,-2, 1,
-	0,0, 3,-2,
-	0,0,-1, 1
-};
-
-static FE_value lagrange_hermite_blending_matrix[]=
-{
-	1,-2, 1,
-	0, 2,-1,
-	0,-1, 1
-};
-
-static FE_value hermite_lagrange_blending_matrix[]=
-{
-	1,0,-1,
-	0,1,-1,
-	0,0, 1
-};
-
-/*???DB.  Start by blending to full monomial.  Think about reduced later */
-static FE_value linear_simplex_2d_blending_matrix[]=
-{
-	/* coefficients of 1 x y xy; all cooefficients of xy are zero, so can be "reduced" */
-	1,-1,-1, 0, /* phi1 = 1 - x - y */
-	0, 1, 0, 0,
-	0, 0, 1, 0
-};
-
-static FE_value quadratic_simplex_2d_blending_matrix[]=
-{
-	/* coefficients of 1 x  xx y xy xxy yy xyy xxyy; starting to be wasteful with lots of zero terms */
-	1,-3, 2,-3, 4, 0, 2, 0, 0, /* phi1 = 1 - 3x + 2xx - 3y + 4xy + 2yy */
-	0, 4,-4, 0,-4, 0, 0, 0, 0,
-	0,-1, 2, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 4,-4, 0,-4, 0, 0,
-	0, 0, 0, 0, 4, 0, 0, 0, 0,
-	0, 0, 0,-1, 0, 0, 2, 0, 0
-};
-
-static FE_value linear_simplex_3d_blending_matrix[]=
-{
-	1,-1,-1, 0,-1, 0, 0, 0, /* i.e. phi(0) = 1 - xi1 - xi2 - xi3; no quadratic or cubic (xi1*xi2*xi3) terms */
-	0, 1, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 1, 0, 0, 0
-};
-
-static FE_value quadratic_simplex_3d_blending_matrix[]=
-{
-	/* Very wasteful! 27 standard basis functions with as few as 1 non-zero coefficient!
-	   Intend to use simplex basis functions directly once testing examples running.
-	   coefficients of monomial set, with x=xi1 y=xi2 z=xi3
-		 1  x   xx   y   xy   xxy   yy   xyy   xxyy
-	 	 z  xz  xxz  yz  xyz  xxyz  yyz  xyyz  xxyyz
-	 	 zz xzz xxzz yzz xyzz xxyzz yyzz xyyzz xxyyzz */
-	1,-3, 2,-3, 4,  0,  2,  0,0, -3, 4,  0,  4,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0,
-	0, 4,-4, 0,-4,  0,  0,  0,0,  0,-4,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0,-1, 2, 0, 0,  0,  0,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 4,-4,  0, -4,  0,0,  0, 0,  0, -4,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 0, 4,  0,  0,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0,-1, 0,  0,  2,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 0, 0,  0,  0,  0,0,  4,-4,  0, -4,  0,0,0,0,0, -4,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 0, 0,  0,  0,  0,0,  0, 4,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 0, 0,  0,  0,  0,0,  0, 0,  0,  4,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
-	0, 0, 0, 0, 0,  0,  0,  0,0, -1, 0,  0,  0,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0
-};
-
-
-
-#if defined (NEW_NEW_CODE)
-/*???DB.  For reduced monomial */
-/* simplex elements have zero coefficients for most/all higher order monomial terms, e.g. xi1*xi1 or xi1*xi2*xi2, so
- * in theory these could be removed from the monomial basis. Similarly for serendipity element bases which
- * are like Lagrangian elements but omitting certain interior or midface nodes associated with higher order monomial terms */ 
-static FE_value linear_simplex_2d_blending_matrix[]=
-{
-	1,-1,-1,
-	0, 1, 0,
-	0, 0, 1
-};
-
-static FE_value quadratic_simplex_2d_blending_matrix[]=
-{
-	1,-3, 2,-3,-4, 2,
-	0, 4,-4, 0,-4, 0,
-	0,-1, 2, 0, 0, 0,
-	0, 0, 0, 4,-4,-4,
-	0, 0, 0, 0, 4, 0,
-	0, 0, 0,-1, 0, 2
-};
-
-static FE_value linear_simplex_3d_blending_matrix[]=
-{
-	1,-1,-1,-1,
-	0, 1, 0, 0,
-	0, 0, 1, 0,
-	0, 0, 0, 1
-};
-#endif /* defined (NEW_NEW_CODE) */
-
-struct Add_FE_element_and_faces_to_manager_data
-/*******************************************************************************
-LAST MODIFIED : 29 April 1999
-
-DESCRIPTION :
-User data for function add_FE_element_and_faces_to_manager - created by
-CREATE(Add_FE_element_and_faces_to_manager_data).
-==============================================================================*/
-{
-	/* this flag should initially be set; if add_FE_element_and_faces_to_manager
-		 needs to find an existing face for the first time (ie. this flag is set),
-		 it does the lengthy job of taking all existing faces and lines and making
-		 an element_type_node_sequence item in the list for them so it can be found
-		 easily again. Any new faces automatically have an entry put in the list,
-		 hence this flag is then immediately cleared. */
-	int first_time_called;
-	/* keep next free identifiers so don't have expensive search to get them
-		 each time we call add_FE_element_and_faces_to_manager */
-	struct CM_element_information next_free_face_identifier,
-		next_free_line_identifier;
-	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
-	struct MANAGER(FE_element) *element_manager;
-}; /* struct Add_FE_element_and_faces_to_manager_data */
 
 /*
 Module functions
@@ -4841,91 +4618,6 @@ in <fe_field_change_log>.
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
 
-static int compare_FE_basis_type(int *basis_type_1,int *basis_type_2)
-/*******************************************************************************
-LAST MODIFIED : 2 November 1995
-
-DESCRIPTION :
-Returns -1 if basis_type_1 < basis_type_2, 0 if basis_type_1 = basis_type_2 and
-1 if basis_type_1 > basis_type_2.
-==============================================================================*/
-{
-	int return_code,*type_1,*type_2;
-	int i;
-
-	ENTER(compare_FE_basis_type);
-	if (type_1=basis_type_1)
-	{
-		if (type_2=basis_type_2)
-		{
-			if ((i= *type_1)== *type_2)
-			{
-				if (i>0)
-				{
-					i *= i+1;
-					i /= 2;
-					do
-					{
-						type_1++;
-						type_2++;
-						i--;
-					} while ((i>0)&&(*type_1== *type_2));
-					if (*type_1< *type_2)
-					{
-						return_code= -1;
-					}
-					else
-					{
-						if (*type_1> *type_2)
-						{
-							return_code=1;
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				if (*type_1< *type_2)
-				{
-					return_code= -1;
-				}
-				else
-				{
-					return_code=1;
-				}
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		if (basis_type_2)
-		{
-			return_code= -1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_FE_basis_type */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_basis,type,int *,compare_FE_basis_type)
-
 #ifdef OLD_CODE
 // not used by STL set; see FE_element_compare_identifier
 static int compare_CM_element_information(
@@ -5318,394 +5010,6 @@ Returns a pointer to the identifier of the <element_type_node_sequence>.
 } /* FE_element_type_node_sequence_get_identifier */
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_field)
-
-static FE_value *tensor_product(int row_dimension_1,int column_dimension_1,
-	FE_value *matrix_1,int row_dimension_2,int column_dimension_2,
-	FE_value *matrix_2)
-/*******************************************************************************
-LAST MODIFIED : 17 June 1994
-
-DESCRIPTION :
-This function returns the tensor product (memory allocated within the function)
-of <matrix_1> and <matrix_2>.  All matricies are assumed to be stored row-wise.
-==============================================================================*/
-{
-	FE_value *product,*row_start_1,*row_start_2,*value,*value_1 = NULL, *value_2 = NULL;
-	int i,j,k,l;
-
-	ENTER(tensor_product);
-	if ((row_dimension_1>0)&&(column_dimension_1>0)&&matrix_1&&
-		(row_dimension_2>0)&&(column_dimension_2>0)&&matrix_2)
-	{
-		if (ALLOCATE(product,FE_value,
-			row_dimension_1*column_dimension_1*row_dimension_2*column_dimension_2))
-		{
-			value=product;
-			row_start_1=matrix_1;
-			for (i=row_dimension_1;i>0;i--)
-			{
-				row_start_2=matrix_2;
-				for (j=row_dimension_2;j>0;j--)
-				{
-					value_1=row_start_1;
-					for (k=column_dimension_1;k>0;k--)
-					{
-						value_2=row_start_2;
-						for (l=column_dimension_2;l>0;l--)
-						{
-							*value=(*value_2)*(*value_1);
-							value++;
-							value_2++;
-						}
-						value_1++;
-					}
-					row_start_2=value_2;
-				}
-				row_start_1=value_1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"tensor_product.  Could not allocate memory for product");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "tensor_product.  Invalid argument(s)");
-		product=(FE_value *)NULL;
-	}
-	LEAVE;
-
-	return (product);
-} /* tensor_product */
-
-static int sort_integers(const void *number_1_address, const void *number_2_address)
-/*******************************************************************************
-LAST MODIFIED : 10 May 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int number_1,number_2,return_code;
-
-	ENTER(sort_integers);
-	number_1= *((int *)number_1_address);
-	number_2= *((int *)number_2_address);
-	if (number_1<number_2)
-	{
-		return_code= -1;
-	}
-	else
-	{
-		if (number_1>number_2)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* sort_integers */
-
-static int sort_basis_functions(const void *tuple_1_void,const void *tuple_2_void)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int i,number_of_xi_coordinates,return_code,*tuple_1,*tuple_2;
-
-	ENTER(sort_basis_functions);
-	tuple_1=(int *)tuple_1_void;
-	tuple_2=(int *)tuple_2_void;
-	number_of_xi_coordinates=tuple_1[1];
-	i=number_of_xi_coordinates-1;
-	tuple_1 += 2*number_of_xi_coordinates;
-	tuple_2 += 2*number_of_xi_coordinates;
-	while ((i>0)&&(*tuple_1== *tuple_2))
-	{
-		tuple_1 -= 2;
-		tuple_2 -= 2;
-	}
-	if (*tuple_1< *tuple_2)
-	{
-		return_code= -1;
-	}
-	else
-	{
-		if (*tuple_1> *tuple_2)
-		{
-			return_code=1;
-		}
-		else
-		{
-			tuple_1=(int *)tuple_1_void;
-			tuple_2=(int *)tuple_2_void;
-			i=number_of_xi_coordinates-1;
-			tuple_1 += 2*number_of_xi_coordinates+1;
-			tuple_2 += 2*number_of_xi_coordinates+1;
-			while ((i>0)&&(*tuple_1== *tuple_2))
-			{
-				tuple_1 -= 2;
-				tuple_2 -= 2;
-			}
-			if (*tuple_1< *tuple_2)
-			{
-				return_code= -1;
-			}
-			else
-			{
-				if (*tuple_1> *tuple_2)
-				{
-					return_code=1;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* sort_basis_functions */
-
-static int monomial_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values)
-/*******************************************************************************
-LAST MODIFIED : 29 January 1994
-
-DESCRIPTION :
-Calculates the monomial basis function values.  Expects the memory to already be
-allocated for the <function_values>.  The first entry of the <type_arguments> is
-the number of xi coordinates and the other entries are the orders of the
-monomials for each xi coordinate.
-NB.  xi_1 is varying slowest (xi_n fastest)
-==============================================================================*/
-{
-	FE_value *temp_value,*value,xi,*xi_coordinate,xi_power;
-	int *argument,i,j,k,order,number_of_values,number_of_xi_coordinates,
-		return_code;
-
-	ENTER(monomial_basis_functions);
-	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
-		function_values)
-	{
-		number_of_xi_coordinates= *argument;
-		value=function_values;
-		*value=1;
-		number_of_values=1;
-		for (i=number_of_xi_coordinates;i>0;i--)
-		{
-			xi= *xi_coordinate;
-			xi_coordinate++;
-			xi_power=xi;
-			argument++;
-			order= *argument;
-			for (j=order;j>0;j--)
-			{
-				temp_value=function_values;
-				for (k=number_of_values;k>0;k--)
-				{
-					value++;
-					*value=(*temp_value)*xi_power;
-					temp_value++;
-				}
-				xi_power *= xi;
-			}
-			number_of_values *= (order+1);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"monomial_basis_functions.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* monomial_basis_functions */
-
-static int polygon_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values)
-/*******************************************************************************
-LAST MODIFIED : 23 November 2001
-
-SCRIPTION :
-For a polygon
-a) xi1 is circumferential and xi2 is radial.
-b) the nodal basis functions are
-	phi0 = 1 - xi2,  centre node
-				/ xi2 * (1 - n*xi1), 0<=n*xi1<1
-	phi1 = | xi2 * (n*xi1 - (n-1)), n-1<n*xi1<n
-				\ 0, otherwise
-				/ xi2 * (i - n*xi1), i-1<=n*xi1<i
-	phii = | xi2 * (n*xi1 - (i-2)), i-2<n*xi1<i-1 ,  1<i<=n
-				\ 0, otherwise
-	where n is the number of polygon verticies/sides.
-c) the standard basis functions are
-				/ 1, xi1=1
-	s001 = | 1, 0<=n*xi1<1
-				\ 0, otherwise
-	s00i = / 1, i-1<=n*xi1<i ,  2<=i<=n
-				\ 0, otherwise
-	s10i = / n*xi1-i+1, i-1<=n*xi1<i ,  1<=i<=n
-				\ 0, otherwise
-	s01i = xi2 * s00i ,  1<=i<=n
-	s11i = xi2 * s10i ,  1<=i<=n
-???DB.  Should this be
-				/ 0.5, xi1=0 or xi1=1 or n*xi1=1
-	s001 = | 1, 0<n*xi1<1
-				\ 0, otherwise
-				/ 0.5, n*xi1=i-1 or n*xi1=i
-	s00i = | 1, i-1<n*xi1<i           ,  2<=i<=n
-				\ 0, otherwise
-				/ 0.5, n*xi1=i
-	s10i = | n*xi1-i+1, i-1<n*xi1<i ,  1<=i<=n
-				\ 0, otherwise
-	s01i = xi2 * s00i ,  1<=i<=n
-	s11i = xi2 * s10i ,  1<=i<=n
-	to get derivatives right (better) at vertices ?
-d) the blending matrix is
-	1 1 1 . . . 1 0 0 0 . . . 0 -1 -1 -1 . . . -1  0  0  0 . . .  0
-	0 0 0 . . . 0 0 0 0 . . . 0  1  0  0 . . .  0 -1  0  0 . . .  1
-	0 0 0 . . . 0 0 0 0 . . . 0  0  1  0 . . .  0  1 -1  0 . . .  0
-	0 0 0 . . . 0 0 0 0 . . . 0  0  0  1 . . .  0  0  1 -1 . . .  0
-	.             .              .              .              .
-	.             .              .              .              .
-	.             .              .              .              .
-	0 0 0 . . . 0 0 0 0 . . . 0  0  0  0 . . .  1  0  0  0 . 0 1 -1
-==============================================================================*/
-{
-	FE_value basis_function10, basis_function11, save_value, *temp_value, *value,
-		xi, xi_circumferential, *xi_coordinate, xi_power, xi_radial;
-	int *argument, i, j, k, number_of_polygon_verticies,
-		number_of_values, number_of_xi_coordinates, offset00, offset01, offset10,
-		offset11, order, polygon_offset, polygon_vertex, return_code;
-
-	ENTER(polygon_basis_functions);
-	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
-		function_values)
-	{
-		number_of_xi_coordinates= *argument;
-		value=function_values;
-		*value=1;
-		number_of_values=1;
-		for (i=number_of_xi_coordinates;i>0;i--)
-		{
-			xi= *xi_coordinate;
-			argument++;
-			order= *argument;
-			if (order<0)
-			{
-				/* polygon */
-				order= -order;
-				/* need to distinguish between first and second polygon coordinates */
-				if (order%2)
-				{
-					/* first polygon coordinate */
-					order /= 2;
-					polygon_offset=order%number_of_xi_coordinates;
-					order /= number_of_xi_coordinates;
-					/* first polygon coordinate is circumferential */
-					xi_circumferential=xi;
-					/* second polygon coordinate is radial */
-					xi_radial=xi_coordinate[polygon_offset];
-					/* may be called with xi outside the element (eg. during streamline
-						tracking).  Wrap the circumferential coordinate */
-					xi_circumferential -= floor(xi_circumferential);
-					number_of_polygon_verticies=(-argument[polygon_offset])/2;
-					/*???DB.  Need to do higher order polygons */
-					basis_function10=
-						xi_circumferential*(FE_value)number_of_polygon_verticies;
-					polygon_vertex=(int)(basis_function10);
-					basis_function10 -= (FE_value)polygon_vertex;
-					if (number_of_polygon_verticies==polygon_vertex)
-					{
-						polygon_vertex=0;
-					}
-					basis_function11=xi_radial*basis_function10;
-					temp_value=function_values;
-					offset00=polygon_vertex*number_of_values;
-					offset11=number_of_polygon_verticies*number_of_values;
-					offset10=offset00+offset11;
-					offset01=offset10+offset11;
-					offset11=offset01+offset11;
-					for (j=number_of_values;j>0;j--)
-					{
-						save_value= *temp_value;
-						temp_value[offset00]=save_value;
-						temp_value[offset10]=basis_function10*save_value;
-						temp_value[offset01]=xi_radial*save_value;
-						temp_value[offset11]=basis_function11*save_value;
-						temp_value++;
-					}
-					temp_value=function_values;
-					offset10=number_of_polygon_verticies*number_of_values;
-					offset01=2*offset10;
-					offset11=3*offset10;
-					for (j=offset00;j>0;j--)
-					{
-						*temp_value=0;
-						temp_value[offset10]=0;
-						temp_value[offset01]=0;
-						temp_value[offset11]=0;
-						temp_value++;
-					}
-					temp_value += number_of_values;
-					for (j=(number_of_polygon_verticies-polygon_vertex-1)*
-						number_of_values;j>0;j--)
-					{
-						*temp_value=0;
-						temp_value[offset10]=0;
-						temp_value[offset01]=0;
-						temp_value[offset11]=0;
-						temp_value++;
-					}
-					number_of_values *= 4*number_of_polygon_verticies;
-					value=function_values+(number_of_values-1);
-				}
-			}
-			else
-			{
-				/* not polygon */
-				xi_power=xi;
-				for (j=order;j>0;j--)
-				{
-					temp_value=function_values;
-					for (k=number_of_values;k>0;k--)
-					{
-						value++;
-						*value=(*temp_value)*xi_power;
-						temp_value++;
-					}
-					xi_power *= xi;
-				}
-				number_of_values *= (order+1);
-			}
-			xi_coordinate++;
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"polygon_basis_functions.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* polygon_basis_functions */
 
 static int count_nodal_values(struct FE_node_field *node_field,
 	void *number_of_nodal_values)
@@ -6576,8 +5880,6 @@ A NULL <type> means an unspecified shape of <dimension>.
 	return (shape);
 } /* find_FE_element_shape_in_list */
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_basis)
-
 static int global_to_element_map_values(struct FE_element *element,
 	struct FE_element_field *element_field, FE_value time, int component_number,
 	int *number_of_values,FE_value **values)
@@ -6595,10 +5897,9 @@ obtained from the node_field_component for the field at the node.
 ==============================================================================*/
 {
 	char *basis_string;
-	FE_value *array,*blended_element_value,*blended_element_values,
-		*blending_matrix,*element_value,*element_values,
+	FE_value *array, *blended_element_values, *element_value, *element_values,
 		*scale_factors = NULL,temp_value = 0.0,xi;
-	int *coefficient_index,*global_value_index,i,j,k,l,
+	int *coefficient_index,*global_value_index,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
 		number_of_element_values,number_of_global_values,number_of_map_values = 0,
 		number_of_scale_factors,return_code,*scale_factor_index,scale_index,
@@ -7199,185 +6500,27 @@ printf("\n");*/
 			}
 			if (return_code)
 			{
-				/* check that there is a valid basis */
-				if ((basis=component->basis)&&
-					(number_of_element_values==basis->number_of_basis_functions)&&
-					(basis->standard_basis)&&((number_of_blended_element_values=
-					basis->number_of_standard_basis_functions)>0))
+				basis = component->basis;
+				if (FE_basis_get_number_of_functions(basis) == number_of_element_values)
 				{
-					/* if there is a blending matrix then the element values are the
-						product of the element values and the blending matrix */
-					if (blending_matrix=basis->blending_matrix)
+					number_of_blended_element_values = FE_basis_get_number_of_blended_functions(basis);
+					if (number_of_blended_element_values > 0)
 					{
-						/* allocate storage for the blended element values */
-						if (ALLOCATE(blended_element_values,FE_value,
-							number_of_blended_element_values))
-						{
-							/* calculate the blended element values */
-							blended_element_value=blended_element_values;
-							for (i=0;i<number_of_blended_element_values;i++)
-							{
-								sum=0;
-								element_value=element_values;
-								blending_matrix=(basis->blending_matrix)+i;
-								for (j=basis->blending_matrix_column_size[i];j>0;j--)
-								{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-									sum += (double)(*blending_matrix)*(double)(*element_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									sum += (*blending_matrix)*(*element_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									element_value++;
-									blending_matrix += number_of_blended_element_values;
-								}
-								*blended_element_value=(FE_value)sum;
-								blended_element_value++;
-							}
-							*values=blended_element_values;
-							*number_of_values=number_of_blended_element_values;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-"global_to_element_map_values.  Could not allocate memory for blended values");
-							return_code=0;
-						}
+						blended_element_values = FE_basis_get_blended_element_values(basis, element_values);
+						*values=blended_element_values;
+						*number_of_values=number_of_blended_element_values;
 						DEALLOCATE(element_values);
-#if defined (OLD_CODE)
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-						double *blended_element_value_double,*blended_element_values_double,
-							blending_double,element_double;
-
-						/* allocate storage for the blended element values */
-						if (ALLOCATE(blended_element_values_double,double,
-							number_of_blended_element_values))
-						{
-							/* calculate the blended element values */
-							blended_element_value_double=blended_element_values_double;
-							for (i=number_of_blended_element_values;i>0;i--)
-							{
-								*blended_element_value_double=0;
-								blended_element_value_double++;
-							}
-							element_value=element_values;
-							for (j=number_of_element_values;j>0;j--)
-							{
-								element_double=(double)(*element_value);
-								blended_element_value_double=blended_element_values_double;
-								for (i=number_of_blended_element_values;i>0;i--)
-								{
-									blending_double=(double)(*blending_matrix);
-									*blended_element_value_double +=
-										blending_double*element_double;
-									blended_element_value_double++;
-									blending_matrix++;
-								}
-								element_value++;
-							}
-							if (REALLOCATE(element_value,element_values,FE_value,
-								number_of_blended_element_values))
-							{
-								element_values=element_value;
-								blended_element_value_double=blended_element_values_double;
-								for (i=number_of_blended_element_values;i>0;i--)
-								{
-									*element_value=(float)(*blended_element_value_double);
-									element_value++;
-									blended_element_value_double++;
-								}
-								*values=element_values;
-								*number_of_values=number_of_blended_element_values;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-"global_to_element_map_values.  Could not allocate memory for blended values 2");
-								DEALLOCATE(element_values);
-								return_code=0;
-							}
-							DEALLOCATE(blended_element_values_double);
-						}
-						else
+						if (!blended_element_values)
 						{
 							display_message(ERROR_MESSAGE,
-"global_to_element_map_values.  Could not allocate memory for blended values");
-							DEALLOCATE(element_values);
-							return_code=0;
+								"global_to_element_map_values.  Could not allocate memory for blended values");
+							return_code = 0;
 						}
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-						/* allocate storage for the blended element values */
-						if (ALLOCATE(blended_element_values,FE_value,
-							number_of_blended_element_values))
-						{
-/*???debug */
-/*{
-	FE_value *value;
-	int i;
-
-	printf("unblended values :");
-	value=element_values;
-	i=number_of_element_values;
-	while (i>0)
-	{
-		printf(" %.10g",*value);
-		value++;
-		i--;
-	}
-	printf("\n");
-}*/
-							/* calculate the blended element values */
-							blended_element_value=blended_element_values;
-							for (i=number_of_blended_element_values;i>0;i--)
-							{
-								*blended_element_value=0;
-								blended_element_value++;
-							}
-							element_value=element_values;
-							for (j=number_of_element_values;j>0;j--)
-							{
-								temp_value= *element_value;
-								blended_element_value=blended_element_values;
-								for (i=number_of_blended_element_values;i>0;i--)
-								{
-									*blended_element_value += (*blending_matrix)*temp_value;
-									blended_element_value++;
-									blending_matrix++;
-								}
-								element_value++;
-							}
-/*???debug */
-/*{
-	FE_value *value;
-	int i;
-
-	printf("blended values :");
-	value=blended_element_values;
-	i=number_of_blended_element_values;
-	while (i>0)
-	{
-		printf(" %.10g",*value);
-		value++;
-		i--;
-	}
-	printf("\n");
-}*/
-							*values=blended_element_values;
-							*number_of_values=number_of_blended_element_values;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-"global_to_element_map_values.  Could not allocate memory for blended values");
-							return_code=0;
-						}
-						DEALLOCATE(element_values);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-#endif /* defined (OLD_CODE) */
 					}
 					else
 					{
-						*values=element_values;
-						*number_of_values=number_of_element_values;
+						*values = element_values;
+						*number_of_values = number_of_element_values;
 					}
 				}
 				else
@@ -7388,7 +6531,7 @@ printf("\n");*/
 						number_of_element_values, basis_string);
 					DEALLOCATE(basis_string);
 					DEALLOCATE(element_values);
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			else
@@ -7625,776 +6768,6 @@ value for a <component>.  The storage for the nodes array
 	return (return_code);
 } /* global_to_element_map_nodes */
 
-static int calculate_standard_basis_transformation(struct FE_basis *basis,
-	FE_value *coordinate_transformation,int inherited_dimension,
-	int **inherited_arguments_address,int *number_of_inherited_values_address,
-	Standard_basis_function **inherited_standard_basis_function_address,
-	FE_value **blending_matrix_address)
-/*******************************************************************************
-LAST MODIFIED : 5 August 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FE_value *blending_matrix,*expanded_coordinate_transformation,
-		*inherited_value,*reorder_blending_matrix,scalar,*sumand,*transformation,
-		*value;
-	int basis_dimension,*field_to_element,i,inherited_polygon_offset,
-		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
-		l,m,need_reordering,number_of_inherited_values,number_of_polygon_verticies,
-		number_of_values,offset,order,p,polygon_offset,polygon_vertex,
-		*reorder_coordinate,*reorder_value,*reorder_values,return_code,row_size,
-		*standard_basis_argument,*standard_basis_arguments;
-	Standard_basis_function *standard_basis_function;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-
-	ENTER(calculate_standard_basis_transformation);
-#if defined (DEBUG)
-	/*???debug */
-	printf("enter calculate_standard_basis_transformation\n");
-#endif /* defined (DEBUG) */
-	return_code=0;
-	if (basis&&(inherited_dimension>0)&&inherited_arguments_address&&
-		inherited_standard_basis_function_address&&blending_matrix_address)
-	{
-		standard_basis_arguments=(int *)(basis->arguments);
-		standard_basis_function=basis->standard_basis;
-		basis_dimension=(basis->type)[0];
-		if (monomial_basis_functions==standard_basis_function)
-		{
-			/* calculate the blending matrix from the monomial basis for the full
-				<basis> to the inherited monomial basis */
-			ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
-			ALLOCATE(expanded_coordinate_transformation,FE_value,
-				(basis_dimension+1)*(inherited_dimension+1));
-			if (inherited_standard_basis_arguments&&
-				expanded_coordinate_transformation)
-			{
-				inherited_standard_basis_argument=
-					inherited_standard_basis_arguments;
-				*inherited_standard_basis_argument=inherited_dimension;
-				for (i=inherited_dimension;i>0;i--)
-				{
-					inherited_standard_basis_argument++;
-					*inherited_standard_basis_argument=0;
-				}
-				standard_basis_argument=standard_basis_arguments;
-				expanded_coordinate_transformation[0]=1;
-				transformation=expanded_coordinate_transformation;
-				for (j=inherited_dimension;j>0;j--)
-				{
-					transformation++;
-					*transformation=0;
-				}
-				if (value=coordinate_transformation)
-				{
-					for (i=basis_dimension;i>0;i--)
-					{
-						standard_basis_argument++;
-						order= *standard_basis_argument;
-						inherited_standard_basis_argument=
-							inherited_standard_basis_arguments;
-						for (j=inherited_dimension;j>=0;j--)
-						{
-							transformation++;
-							*transformation= *value;
-							value++;
-							if (j>0)
-							{
-								inherited_standard_basis_argument++;
-								if ((0!= *value)&&(order> *inherited_standard_basis_argument))
-								{
-									*inherited_standard_basis_argument=order;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
-					{
-						transformation++;
-						*transformation=0;
-					}
-					transformation=expanded_coordinate_transformation+
-						(inherited_dimension+1);
-					inherited_standard_basis_argument=
-						inherited_standard_basis_arguments;
-					i=1;
-					while (i<=basis_dimension)
-					{
-						standard_basis_argument++;
-						inherited_standard_basis_argument++;
-						transformation[i]=1;
-						i++;
-						transformation += inherited_dimension+1;
-						*inherited_standard_basis_argument= *standard_basis_argument;
-					}
-				}
-				row_size=basis->number_of_standard_basis_functions;
-				number_of_inherited_values=1;
-				inherited_standard_basis_argument=
-					inherited_standard_basis_arguments;
-				for (j=inherited_dimension;j>0;j--)
-				{
-					inherited_standard_basis_argument++;
-					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
-				}
-				if (ALLOCATE(blending_matrix,FE_value,
-					row_size*number_of_inherited_values))
-				{
-					value=blending_matrix;
-					*value=1;
-					for (i=row_size*number_of_inherited_values-1;i>0;i--)
-					{
-						value++;
-						*value=0;
-					}
-					standard_basis_argument=standard_basis_arguments;
-					row_size=1;
-					transformation=expanded_coordinate_transformation+
-						(inherited_dimension+1);
-					for (i=basis_dimension;i>0;i--)
-					{
-						standard_basis_argument++;
-						order= *standard_basis_argument;
-						for (j=0;j<order;j++)
-						{
-							offset=0;
-							for (k=0;k<=inherited_dimension;k++)
-							{
-								if (0!= *transformation)
-								{
-									/* loop over blending matrix rows */
-									value=blending_matrix+(j*row_size*number_of_inherited_values);
-									for (l=0;l<row_size;l++)
-									{
-										for (p=number_of_inherited_values-offset;p>0;p--)
-										{
-											if (0!= *value)
-											{
-												value[row_size*number_of_inherited_values+offset] +=
-													(*value)*(*transformation);
-											}
-											value++;
-										}
-										value += offset;
-									}
-								}
-								if (k>0)
-								{
-									offset *= (1+inherited_standard_basis_arguments[k]);
-								}
-								else
-								{
-									offset=1;
-								}
-								transformation++;
-							}
-							transformation -= inherited_dimension+1;
-						}
-						transformation += inherited_dimension+1;
-						row_size *= (order+1);
-					}
-					*inherited_arguments_address=inherited_standard_basis_arguments;
-					*blending_matrix_address=blending_matrix;
-					*number_of_inherited_values_address=number_of_inherited_values;
-					*inherited_standard_basis_function_address=monomial_basis_functions;
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_standard_basis_transformation.  "
-						"Insufficient memory for blending_matrix");
-					DEALLOCATE(inherited_standard_basis_arguments);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_standard_basis_transformation.  Insufficient memory 1");
-				DEALLOCATE(inherited_standard_basis_arguments);
-				return_code=0;
-			}
-			DEALLOCATE(expanded_coordinate_transformation);
-		}
-		else
-		{
-			if (polygon_basis_functions==standard_basis_function)
-			{
-				/* calculate the blending matrix from the standard basis for the full
-					<basis> to the inherited standard basis */
-				ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
-				ALLOCATE(field_to_element,int,basis_dimension);
-				ALLOCATE(reorder_coordinate,int,inherited_dimension);
-				row_size=basis->number_of_standard_basis_functions;
-				ALLOCATE(blending_matrix,FE_value,row_size*row_size);
-				if (inherited_standard_basis_arguments&&field_to_element&&
-					reorder_coordinate&&blending_matrix)
-				{
-					return_code=1;
-					/* determine the correspondence between the xi coordinates for the
-						element field and the xi coordinates for the element */
-					/*???DB.  At present only able to do transformations that are one to
-						one in the xi coordinates.  This is equivalent to one non-zero in
-						each column of A and at most one non-zero in each row of A */
-					if (value=coordinate_transformation)
-					{
-						i=0;
-						k=0;
-						need_reordering=0;
-						standard_basis_argument=standard_basis_arguments;
-						while (return_code&&(i<basis_dimension))
-						{
-							field_to_element[i]=0;
-							standard_basis_argument++;
-							order= *standard_basis_argument;
-							/* skip translate b */
-							value++;
-							/* examine matrix A */
-							j=0;
-							while (return_code&&(j<inherited_dimension))
-							{
-								if (0!= *value)
-								{
-									if (0==field_to_element[i])
-									{
-										field_to_element[i]=j+1;
-										reorder_coordinate[k]=j;
-										if (j!=k)
-										{
-											need_reordering=1;
-										}
-										k++;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-"calculate_standard_basis_transformation.  Coordinate transformation not 1 to 1");
-										return_code=0;
-									}
-								}
-								value++;
-								j++;
-							}
-							i++;
-						}
-						if (return_code)
-						{
-							if (!need_reordering)
-							{
-								/* coordinate reordering is not needed */
-								DEALLOCATE(reorder_coordinate);
-							}
-						}
-					}
-					else
-					{
-						need_reordering=0;
-						DEALLOCATE(reorder_coordinate);
-						for (i=inherited_dimension;i>0;i--)
-						{
-							field_to_element[i-1]=i;
-						}
-					}
-					if (return_code)
-					{
-						/* calculate the arguments for the standard basis function */
-						number_of_inherited_values=1;
-						*inherited_standard_basis_arguments=inherited_dimension;
-						standard_basis_argument=standard_basis_arguments;
-						standard_basis_function=monomial_basis_functions;
-						i=0;
-						while (return_code&&(i<basis_dimension))
-						{
-							standard_basis_argument++;
-							order= *standard_basis_argument;
-							if (order<0)
-							{
-								/* polygon */
-								order= -order;
-								if (order%2)
-								{
-									/* first polygon coordinate */
-									order /= 2;
-									polygon_offset=order%basis_dimension;
-									order /= basis_dimension;
-									number_of_polygon_verticies=
-										(-standard_basis_argument[polygon_offset])/2;
-									if (field_to_element[i])
-									{
-										if (field_to_element[i+polygon_offset])
-										{
-											/* radial and circumferential coordinates inherited */
-											standard_basis_function=polygon_basis_functions;
-											inherited_polygon_offset=
-												field_to_element[i+polygon_offset]-field_to_element[i];
-											if (inherited_polygon_offset<0)
-											{
-												display_message(ERROR_MESSAGE,
-													"calculate_standard_basis_transformation.  "
-													"Reordering of polygon coordinates is not supported");
-												return_code=0;
-											}
-											else
-											{
-												inherited_standard_basis_arguments[field_to_element[i]]=
-													-(1+2*(inherited_polygon_offset+
-													order*inherited_dimension));
-												inherited_standard_basis_arguments[field_to_element[
-													i+polygon_offset]]= -2*number_of_polygon_verticies;
-											}
-											number_of_inherited_values *=
-												4*number_of_polygon_verticies;
-										}
-										else
-										{
-											/* circumferential coordinate inherited */
-											inherited_standard_basis_arguments[field_to_element[i]]=
-												order;
-											number_of_inherited_values *= order+1;
-										}
-									}
-									else
-									{
-										if (field_to_element[i+polygon_offset])
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_standard_basis_transformation.  "
-												"Cannot inherit polygon radial coordinate by itself");
-											return_code=0;
-										}
-									}
-								}
-								else
-								{
-									/* second polygon coordinate.  Validity checked and argument
-										assigned with first coordinate */
-								}
-							}
-							else
-							{
-								/* not polygon */
-								if (field_to_element[i])
-								{
-									inherited_standard_basis_arguments[field_to_element[i]]=order;
-									number_of_inherited_values *= order+1;
-								}
-							}
-							i++;
-						}
-						if (return_code)
-						{
-							/* calculate the blending matrix */
-							/* start with the identity */
-							value=blending_matrix;
-							*value=1;
-							for (i=row_size-1;i>0;i--)
-							{
-								for (j=row_size;j>0;j--)
-								{
-									value++;
-									*value=0;
-								}
-								value++;
-								*value=1;
-							}
-							if (transformation=coordinate_transformation)
-							{
-								number_of_inherited_values=1;
-								standard_basis_argument=standard_basis_arguments;
-								number_of_values=basis->number_of_standard_basis_functions;
-								offset=1;
-								for (i=0;i<basis_dimension;i++)
-								{
-									standard_basis_argument++;
-									order= *standard_basis_argument;
-									if (order<0)
-									{
-										/* polygon */
-										order= -order;
-										if (order%2)
-										{
-											/* first polygon component */
-											order /= 2;
-											polygon_offset=order%basis_dimension;
-											order /= basis_dimension;
-											number_of_polygon_verticies=
-												(-standard_basis_argument[polygon_offset])/2;
-											/* NB.  Have already checked validity when calculating
-												inherited arguments */
-											if (field_to_element[i])
-											{
-												if (field_to_element[i+polygon_offset])
-												{
-													/* polygon is in projection */
-													number_of_inherited_values *=
-														4*number_of_polygon_verticies;
-												}
-												else
-												{
-													/* edge of polygon in projection */
-													polygon_vertex=(int)(0.1+(*transformation)*
-														(FE_value)number_of_polygon_verticies);
-													value=blending_matrix;
-													inherited_value=value;
-													if (number_of_polygon_verticies-1==polygon_vertex)
-													{
-														for (j=number_of_values/
-															(4*number_of_polygon_verticies*
-															number_of_inherited_values);j>0;j--)
-														{
-															for (k=number_of_inherited_values;k>0;k--)
-															{
-																for (l=row_size;l>0;l--)
-																{
-																	scalar=value[polygon_vertex*
-																		number_of_inherited_values*row_size]+
-																		value[(polygon_vertex+
-																		2*number_of_polygon_verticies)*
-																		number_of_inherited_values*row_size];
-																	inherited_value[
-																		number_of_inherited_values*row_size]=
-																		(*value)+
-																		value[2*number_of_polygon_verticies*
-																		number_of_inherited_values*row_size]-scalar;
-																	*inherited_value=scalar;
-																	inherited_value++;
-																	value++;
-																}
-															}
-															inherited_value +=
-																number_of_inherited_values*row_size;
-															value +=
-																(4*number_of_polygon_verticies-1)*
-																number_of_inherited_values*row_size;
-														}
-													}
-													else
-													{
-														if (number_of_polygon_verticies==polygon_vertex)
-														{
-															polygon_vertex=0;
-														}
-														value += polygon_vertex*number_of_inherited_values*
-															row_size;
-														for (j=number_of_values/
-															(4*number_of_polygon_verticies*
-															number_of_inherited_values);j>0;j--)
-														{
-															for (k=number_of_inherited_values;k>0;k--)
-															{
-																for (l=row_size;l>0;l--)
-																{
-																	scalar= (*value)+
-																		value[2*number_of_polygon_verticies*
-																		number_of_inherited_values*row_size];
-																	inherited_value[
-																		number_of_inherited_values*row_size]=
-																		value[number_of_inherited_values*row_size]+
-																		value[(2*number_of_polygon_verticies+1)*
-																		number_of_inherited_values*row_size]-
-																		scalar;
-																	*inherited_value=scalar;
-																	inherited_value++;
-																	value++;
-																}
-															}
-															inherited_value +=
-																number_of_inherited_values*row_size;
-															value += (4*number_of_polygon_verticies-1)*
-																number_of_inherited_values*row_size;
-														}
-													}
-													number_of_values /= 4*number_of_polygon_verticies;
-													number_of_values *= 2;
-													number_of_inherited_values *= 2;
-												}
-											}
-											else
-											{
-												/* polygon is not in projection */
-												polygon_vertex=(int)(0.1+(*transformation)*
-													(FE_value)number_of_polygon_verticies);
-												if (number_of_polygon_verticies==polygon_vertex)
-												{
-													polygon_vertex=0;
-												}
-												value=blending_matrix;
-												inherited_value=value;
-												value +=
-													polygon_vertex*number_of_inherited_values*row_size;
-												for (j=number_of_values/(4*number_of_polygon_verticies*
-													number_of_inherited_values);j>0;j--)
-												{
-													for (k=number_of_inherited_values;k>0;k--)
-													{
-														for (l=row_size;l>0;l--)
-														{
-															*inherited_value= *value+
-																value[2*number_of_polygon_verticies*
-																number_of_inherited_values*row_size];
-															inherited_value++;
-															value++;
-														}
-													}
-													value += (4*number_of_polygon_verticies-1)*
-														number_of_inherited_values*row_size;
-												}
-												number_of_values /=
-													4*number_of_polygon_verticies;
-											}
-										}
-									}
-									else
-									{
-										/* not polygon */
-										if (field_to_element[i])
-										{
-											/* in projection */
-											number_of_inherited_values *= order+1;
-										}
-										else
-										{
-											/* not in projection */
-											if (*transformation)
-											{
-												/* assume *transformation (b) is 1 */
-												value=blending_matrix;
-												inherited_value=value;
-												for (j=number_of_values/
-													((order+1)*number_of_inherited_values);j>0;j--)
-												{
-													for (k=number_of_inherited_values;k>0;k--)
-													{
-														for (l=row_size;l>0;l--)
-														{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-															sum=(double)(*value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-															sum= *value;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-															sumand=value;
-															for (m=order;m>0;m--)
-															{
-																sumand += number_of_inherited_values*row_size;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-																sum += (double)(*sumand);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-																sum += *sumand;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-															}
-															*inherited_value=(FE_value)sum;
-															inherited_value++;
-															value++;
-														}
-													}
-													value += order*number_of_inherited_values*row_size;
-												}
-												number_of_values /= order+1;
-											}
-											else
-											{
-												/* *transformation (b) is 0 */
-												value=blending_matrix;
-												inherited_value=value;
-												for (j=number_of_values/
-													((order+1)*number_of_inherited_values);j>0;j--)
-												{
-													for (k=number_of_inherited_values*row_size;k>0;k--)
-													{
-														*inherited_value= *value;
-														inherited_value++;
-														value++;
-													}
-													value += order*number_of_inherited_values*row_size;
-												}
-												number_of_values /= order+1;
-											}
-										}
-									}
-									transformation += inherited_dimension+1;
-								}
-								/* transpose so that stored by columns */
-								value=blending_matrix;
-								for (i=0;i<row_size;i++)
-								{
-									inherited_value=blending_matrix+i;
-									for (j=0;j<i;j++)
-									{
-										scalar= *inherited_value;
-										*inherited_value= *value;
-										*value=scalar;
-										value++;
-										inherited_value += row_size;
-									}
-									value += row_size-i;
-								}
-								/* compress by reducing the column length */
-								value=blending_matrix;
-								inherited_value=blending_matrix;
-								for (j=row_size;j>0;j--)
-								{
-									for (i=number_of_inherited_values;i>0;i--)
-									{
-										*inherited_value= *value;
-										inherited_value++;
-										value++;
-									}
-									value += row_size-number_of_inherited_values;
-								}
-								if (reorder_coordinate)
-								{
-									ALLOCATE(reorder_blending_matrix,FE_value,
-										number_of_inherited_values*row_size);
-									ALLOCATE(reorder_values,int,number_of_inherited_values);
-									if (reorder_blending_matrix&&reorder_values)
-									{
-										value=blending_matrix;
-										blending_matrix=reorder_blending_matrix;
-										reorder_blending_matrix=value;
-										inherited_value=blending_matrix;
-										for (l=row_size;l>0;l--)
-										{
-											*inherited_value= *value;
-											value += number_of_inherited_values;
-											inherited_value += number_of_inherited_values;
-										}
-										reorder_value=reorder_values;
-										*reorder_value=0;
-										k=1;
-										for (i=0;i<inherited_dimension;i++)
-										{
-											offset=1;
-											inherited_standard_basis_argument=
-												inherited_standard_basis_arguments;
-											for (j=reorder_coordinate[i];j>0;j--)
-											{
-												inherited_standard_basis_argument++;
-												order= *inherited_standard_basis_argument;
-												if (order<0)
-												{
-													/* polygon */
-													order= -order;
-													if (order%2)
-													{
-														/* first polygon coordinate */
-														order /= 2;
-														polygon_offset=order%inherited_dimension;
-														number_of_polygon_verticies=
-															(-inherited_standard_basis_argument[
-															polygon_offset])/2;
-														offset *= 4*number_of_polygon_verticies;
-													}
-												}
-												else
-												{
-													/* not polygon */
-													offset *= order+1;
-												}
-											}
-											inherited_standard_basis_argument++;
-											order= *inherited_standard_basis_argument;
-											if (order<0)
-											{
-												/* polygon */
-												order= -order;
-												if (order%2)
-												{
-													/* first polygon coordinate */
-													order /= 2;
-													polygon_offset=order%inherited_dimension;
-													order=4*(-inherited_standard_basis_argument[
-														polygon_offset])/2;
-												}
-												else
-												{
-													order=0;
-												}
-											}
-											reorder_value=reorder_values;
-											for (j=0;j<k*order;j++)
-											{
-												reorder_value[k]=(*reorder_value)+offset;
-												inherited_value=blending_matrix+reorder_value[k];
-												value=reorder_blending_matrix+(j+k);
-												for (l=row_size;l>0;l--)
-												{
-													*inherited_value= *value;
-													value += number_of_inherited_values;
-													inherited_value += number_of_inherited_values;
-												}
-												reorder_value++;
-											}
-											k *= (order+1);
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"calculate_standard_basis_transformation.  "
-											"Insufficient memory 2");
-										return_code=0;
-									}
-									DEALLOCATE(reorder_values);
-									DEALLOCATE(reorder_blending_matrix);
-								}
-							}
-							if (return_code)
-							{
-								*number_of_inherited_values_address=number_of_inherited_values;
-								*inherited_standard_basis_function_address=
-									standard_basis_function;
-								*inherited_arguments_address=inherited_standard_basis_arguments;
-								*blending_matrix_address=blending_matrix;
-							}
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_standard_basis_transformation.  Insufficient memory 1");
-					return_code=0;
-				}
-				if (!return_code)
-				{
-					DEALLOCATE(blending_matrix);
-					DEALLOCATE(inherited_standard_basis_arguments);
-				}
-				DEALLOCATE(field_to_element);
-				DEALLOCATE(reorder_coordinate);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_standard_basis_transformation.  Invalid basis");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"calculate_standard_basis_transformation.  Invalid argument(s)");
-		return_code=0;
-	}
-#if defined (DEBUG)
-	/*???debug */
-	printf("leave calculate_standard_basis_transformation %d\n",return_code);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* calculate_standard_basis_transformation */
-
 struct Check_element_grid_map_values_storage_data
 {
 	int check_sum,values_storage_size;
@@ -8436,7 +6809,9 @@ check_sum.
 				{
 					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
 					number_of_values=1;
-					for (j=((*component)->basis->type)[0];j>0;j--)
+					int number_of_xi_coordinates = 0;
+					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
+					for (j = number_of_xi_coordinates; j > 0; j--)
 					{
 						number_of_values *= (*number_in_xi)+1;
 						number_in_xi++;
@@ -10082,34 +8457,6 @@ list we will be looking at will not be global but will belong to the region.
 	return (return_code);
 } /* FE_field_has_multiple_times */
 
-static int FE_basis_is_non_linear(struct FE_basis *basis)
-{
-	if (basis)
-	{
-		int dimensions, i, j;
-		const int *type;
-		type = basis->type;
-		dimensions = *type;
-		++type;
-		for (i = 0; i < dimensions; i++)
-		{
-			/* Admittedly, even linear lagrange elements have non-linear terms for 2 or more dimensions */
-			if ((FE_BASIS_CONSTANT != *type) &&
-				(LINEAR_LAGRANGE != *type) &&
-				(LINEAR_SIMPLEX != *type) &&
-				(POLYGON != *type))
-			{
-				return 1;
-			}
-			for (j = i; j < dimensions; j++)
-			{
-				++type;
-			}
-		}
-	}
-	return 0;
-}
-
 static int FE_element_field_uses_non_linear_basis(
 	struct FE_element_field *element_field)
 {
@@ -10765,7 +9112,7 @@ fill struct Coordinate_system at address passed to this function.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_coordinate_system.  Invalid field");
-		coordinate_system = (struct Coordinate_system *)NULL;	
+		coordinate_system = (struct Coordinate_system *)NULL;
 	}
 	LEAVE;
 
@@ -10793,7 +9140,7 @@ Sets the coordinate system of the <field>.
 	{
 		display_message(ERROR_MESSAGE,
 			"set_FE_field_coordinate_system.  Invalid argument(s)");
-		return_code=0;	
+		return_code=0;
 	}
 	LEAVE;
 
@@ -10920,7 +9267,7 @@ Should only call this function for unmanaged fields.
 				if (field->values_storage)
 				{
 					free_value_storage_array(field->values_storage,field->value_type,
-						(struct FE_time_sequence *)NULL,field->number_of_values);		
+						(struct FE_time_sequence *)NULL,field->number_of_values);
 					DEALLOCATE(field->values_storage);
 				}
 				/* 3. establish the new number_of_components and associated data */
@@ -11008,8 +9355,8 @@ LAST MODIFIED : 9 June 1999
 
 DESCRIPTION :
 Sets the number of times stored with the <field>
-REALLOCATES the requires memory in field->value_storage, based upon the 
-field->time_value_type. 
+REALLOCATES the requires memory in field->value_storage, based upon the
+field->time_value_type.
 
 For non-array types, the contents of field->times_storage is:
    | data type (eg FE_value) | x number_of_times
@@ -11028,29 +9375,29 @@ Should only call this function for unmanaged fields.
 
 	ENTER(set_FE_field_number_of_times);
 	if (field&&(0<=number_of_times))
-	{					
+	{
 		return_code=1;
 		if (number_of_times != 0)
-		{	
-			field->number_of_times=number_of_times;			
+		{
+			field->number_of_times=number_of_times;
 			size = get_Value_storage_size(field->time_value_type,
-				(struct FE_time_sequence *)NULL);		
+				(struct FE_time_sequence *)NULL);
 
 			if (REALLOCATE(times,field->times,Value_storage,
-				size*number_of_times))	
-			{		
-				field->times = times;		 	
+				size*number_of_times))
+			{
+				field->times = times;
 				for (i=0;i<number_of_times;i++)
 				{
-					switch (field->time_value_type) 
+					switch (field->time_value_type)
 					{
 						/* set values to zero*/
-						case DOUBLE_VALUE: 
-						{						
+						case DOUBLE_VALUE:
+						{
 							*((double *)times) = 0;
 						}	break;
 						case ELEMENT_XI_VALUE:
-						{						
+						{
 							new_value = times;
 							*((struct FE_element **)new_value) = (struct FE_element *)NULL;
 							new_value+=sizeof(struct FE_element *);
@@ -11061,86 +9408,86 @@ Should only call this function for unmanaged fields.
 							}
 						}	break;
 						case FE_VALUE_VALUE:
-						{						
+						{
 							*((FE_value *)times) = 0;
 						}	break;
-						case FLT_VALUE: 
-						{							
+						case FLT_VALUE:
+						{
 							*((float *)times) = 0;
-						} break;	
-						case SHORT_VALUE: 
-						{							
-							display_message(ERROR_MESSAGE," set_FE_field_number_of_times." 
+						} break;
+						case SHORT_VALUE:
+						{
+							display_message(ERROR_MESSAGE," set_FE_field_number_of_times."
 								"SHORT_VALUE. Code not written yet. Beware alignment problems ");
 							return_code =0;
 						} break;
-						case INT_VALUE: 
-						{						
+						case INT_VALUE:
+						{
 							*((int *)times) = 0;
-						}	break;	
-						case UNSIGNED_VALUE: 
-						{							
+						}	break;
+						case UNSIGNED_VALUE:
+						{
 							*((unsigned *)times) = 0;
 						}	break;
 						/* set number of array values to 0, array pointers to NULL*/
 						case DOUBLE_ARRAY_VALUE:
-						{ 						
+						{
 							double **array_address;
-							/* copy the number of array values (0!) to times*/						
+							/* copy the number of array values (0!) to times*/
 							*((int *)times) = 0;
 							/* copy the pointer to the array values (currently NULL), to times*/
 							array_address = (double **)(times+sizeof(int));
 							*array_address = (double *)NULL;
 						} break;
-						case FE_VALUE_ARRAY_VALUE:				
-						{	
-							FE_value **array_address;												
-							*((int *)times) = 0;						
+						case FE_VALUE_ARRAY_VALUE:
+						{
+							FE_value **array_address;
+							*((int *)times) = 0;
 							array_address = (FE_value **)(times+sizeof(int));
 							*array_address = (FE_value *)NULL;
 						} break;
-						case FLT_ARRAY_VALUE:			
-						{		
-							float **array_address;												
-							*((int *)times) = 0;						
+						case FLT_ARRAY_VALUE:
+						{
+							float **array_address;
+							*((int *)times) = 0;
 							array_address = (float **)(times+sizeof(int));
 							*array_address = (float *)NULL;
-						} break;	
-						case SHORT_ARRAY_VALUE:			
-						{		
-							short **array_address;												
-							*((int *)times) = 0;						
+						} break;
+						case SHORT_ARRAY_VALUE:
+						{
+							short **array_address;
+							*((int *)times) = 0;
 							array_address = (short **)(times+sizeof(int));
 							*array_address = (short *)NULL;
-						} break;			
-						case INT_ARRAY_VALUE:								
-						{	
-							int **array_address;												
-							*((int *)times) = 0;						
+						} break;
+						case INT_ARRAY_VALUE:
+						{
+							int **array_address;
+							*((int *)times) = 0;
 							array_address = (int **)(times+sizeof(int));
 							*array_address = (int *)NULL;
-						} break;	
-						case UNSIGNED_ARRAY_VALUE:			
-						{ 
-							unsigned **array_address;												
-							*((int *)times) = 0;						
+						} break;
+						case UNSIGNED_ARRAY_VALUE:
+						{
+							unsigned **array_address;
+							*((int *)times) = 0;
 							array_address = (unsigned **)(times+sizeof(int));
 							*array_address = (unsigned *)NULL;
-						} break;	
+						} break;
 						case STRING_VALUE:
-						{	
-							char **str_address;							
+						{
+							char **str_address;
 							str_address = (char **)(times);
-							*str_address = (char *)NULL;	
+							*str_address = (char *)NULL;
 						} break;
 						case UNKNOWN_VALUE:
 						{
-							display_message(ERROR_MESSAGE," set_FE_field_number_of_times." 
+							display_message(ERROR_MESSAGE," set_FE_field_number_of_times."
 								" UNKNOWN_VALUE");
 							return_code =0;
 						} break;
-					}	/*	switch (field->time_value_type) */				
-					times += size;	
+					}	/*	switch (field->time_value_type) */
+					times += size;
 				}/* (i=0;i<number_of_times;i++) */
 			}/* if (REALLOCATE */
 			else
@@ -11148,7 +9495,7 @@ Should only call this function for unmanaged fields.
 				display_message(ERROR_MESSAGE,"set_FE_field_number_of_times."
 					" Not enough memory");
 				return_code=0;
-			}	
+			}
 		}
 	}
 	else
@@ -11271,7 +9618,7 @@ Should only call this function for unmanaged fields.
 			if (field->values_storage)
 			{
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_sequence *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);
 				DEALLOCATE(field->values_storage);
 			}
 			REACCESS(FE_field)(&(field->indexer_field),NULL);
@@ -11321,7 +9668,7 @@ Should only call this function for unmanaged fields.
 		if (field->values_storage)
 		{
 			free_value_storage_array(field->values_storage,field->value_type,
-				(struct FE_time_sequence *)NULL,field->number_of_values);		
+				(struct FE_time_sequence *)NULL,field->number_of_values);
 			DEALLOCATE(field->values_storage);
 		}
 		REACCESS(FE_field)(&(field->indexer_field),NULL);
@@ -11407,7 +9754,7 @@ Should only call this function for unmanaged fields.
 			if (field->values_storage)
 			{
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_sequence *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);
 				DEALLOCATE(field->values_storage);
 			}
 			/* 3. establish the new type */
@@ -11557,7 +9904,7 @@ it was. Should only call this function for unmanaged fields.
 				if (field->values_storage)
 				{
 					free_value_storage_array(field->values_storage,field->value_type,
-						(struct FE_time_sequence *)NULL,field->number_of_values);		
+						(struct FE_time_sequence *)NULL,field->number_of_values);
 					DEALLOCATE(field->values_storage);
 				}
 				/* 3. establish the new value_type and associated data */
@@ -11636,7 +9983,7 @@ Should only call this function for unmanaged fields.
 	return (return_code);
 }/*set_FE_field_time_value_type */
 
-int get_FE_field_max_array_size(struct FE_field *field,int *max_number_of_array_values, 
+int get_FE_field_max_array_size(struct FE_field *field,int *max_number_of_array_values,
 	enum Value_type *value_type)
 /*******************************************************************************
 LAST MODIFIED : 20 April 1999
@@ -11647,7 +9994,7 @@ max_number_of_array_values. Return the field value_type.
 ====================================================================================*/
 {
  int return_code,size,i,number_of_array_values;
- 
+
 	Value_storage *values_storage;
 
 	ENTER(get_FE_field_max_array_size);
@@ -11664,19 +10011,19 @@ max_number_of_array_values. Return the field value_type.
 				case FLT_ARRAY_VALUE:
 				case SHORT_ARRAY_VALUE:
 				case INT_ARRAY_VALUE:
-				case UNSIGNED_ARRAY_VALUE:	
+				case UNSIGNED_ARRAY_VALUE:
 				case STRING_VALUE:
-				{	
+				{
 					*max_number_of_array_values = 0;
 					size = get_Value_storage_size(*value_type,
 						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage;
 					for (i=0;i<field->number_of_values;i++)
-					{		
+					{
 						if (field->value_type == STRING_VALUE)
 						{
-							char *the_string,**str_address;										
-							/* get the string's length*/					
+							char *the_string,**str_address;
+							/* get the string's length*/
 							str_address = (char **)(values_storage);
 							the_string = *str_address;
 							number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
@@ -11685,8 +10032,8 @@ max_number_of_array_values. Return the field value_type.
 								*max_number_of_array_values = number_of_array_values;
 							}
 						}
-						else	
-						{	
+						else
+						{
 							/* get the number of array values  for the specified array in vaules_storage */
 							number_of_array_values = *((int *)values_storage);
 							if (number_of_array_values > *max_number_of_array_values)
@@ -11696,7 +10043,7 @@ max_number_of_array_values. Return the field value_type.
 						}
 						values_storage+=(i*size);
 					}
-				} break;		
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE," get_FE_field_max_array_size. Not an array type)");
@@ -11708,16 +10055,16 @@ max_number_of_array_values. Return the field value_type.
 		else
 		{
 			display_message(ERROR_MESSAGE," get_FE_field_max_array_size. No values at field");
-			
+
 			return_code=0;
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE," get_FE_field_max_array_size. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 } /* get_FE_field_max_array_size */
 
@@ -11727,14 +10074,14 @@ int get_FE_field_array_attributes(struct FE_field *field, int value_number,
 LAST MODIFIED : 20 April 1999
 
 DESCRIPTION :
-Get the value_type and the number of array values for the array in field->values_storage 
-specified by value_number. 
+Get the value_type and the number of array values for the array in field->values_storage
+specified by value_number.
 Give an error if field->values_storage isn't storing array types.
 ====================================================================================*/
 {
 
   int return_code,size;
- 
+
 	Value_storage *values_storage;
 
 	ENTER(get_FE_field_array_attributes);
@@ -11748,26 +10095,26 @@ Give an error if field->values_storage isn't storing array types.
 			{
 				case DOUBLE_ARRAY_VALUE:
 				case FE_VALUE_ARRAY_VALUE:
-				case FLT_ARRAY_VALUE: 
+				case FLT_ARRAY_VALUE:
 				case SHORT_ARRAY_VALUE:
 				case INT_ARRAY_VALUE:
 				case UNSIGNED_ARRAY_VALUE:
-				{				
-					/* get the correct offset*/	
+				{
+					/* get the correct offset*/
 					size = get_Value_storage_size(*value_type,
 						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage+(value_number*size);
-					/* get the number of array values  for the specified array in vaules_storage */			
+					/* get the number of array values  for the specified array in vaules_storage */
 					*number_of_array_values = *((int *)values_storage);
 				} break;
 				case STRING_VALUE:
 				{
 					char *the_string,**str_address;
-					/* get the correct offset*/	
+					/* get the correct offset*/
 					size = get_Value_storage_size(*value_type,
 						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage+(value_number*size);
-					/* get the string*/	
+					/* get the string*/
 					str_address = (char **)(values_storage);
 					the_string = *str_address;
 					*number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
@@ -11787,11 +10134,11 @@ Give an error if field->values_storage isn't storing array types.
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,"get_FE_field_array_attributes. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 } /* get_FE_field_array_attributes */
 
@@ -11802,17 +10149,17 @@ LAST MODIFIED : 20 April 1999
 
 DESCRIPTION :
 Get the double array in field->values_storage specified by value_number, of
-of length number_of_array_values. If number_of_array_values > the stored arrays 
+of length number_of_array_values. If number_of_array_values > the stored arrays
 max length, gets the max length.
 MUST allocate space for the array before calling this function.
 
-Use get_FE_field_array_attributes() or get_FE_field_max_array_size() 
+Use get_FE_field_array_attributes() or get_FE_field_max_array_size()
 to get the size of an array.
 ==============================================================================*/
 {
 
 	int return_code,size,the_array_number_of_values,array_size;
-	
+
 
 	Value_storage *values_storage;
 	double *the_array,**array_address;
@@ -11822,12 +10169,12 @@ to get the size of an array.
 	{
 		if (field->number_of_values)
 		{
-			return_code=1;	 			 
+			return_code=1;
 			size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
 				(struct FE_time_sequence *)NULL);
 			/* get the correct offset*/
 			values_storage = field->values_storage+(value_number*size);
-			/* get the number of array values  for the specified array in vaules_storage */	
+			/* get the number of array values  for the specified array in vaules_storage */
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
 			{
@@ -11835,24 +10182,24 @@ to get the size of an array.
 			}
 			array_size = number_of_array_values*sizeof(double);
 
-			/* get the address to copy from*/	
+			/* get the address to copy from*/
 			array_address = (double **)(values_storage+sizeof(int));
 			the_array = *array_address;
 			/*copy the data to the passed array */
 			memcpy(array,the_array,array_size);
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,"get_FE_field_double_array_value. No values at field");
 			return_code=0;
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,"get_FE_field_double_array_value. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 }/* get_FE_field_double_array_value */
 
@@ -11862,13 +10209,13 @@ int set_FE_field_double_array_value(struct FE_field *field, int value_number,
 LAST MODIFIED : 1 September 1999
 
 DESCRIPTION :
-Finds any existing double array at the place specified by  value_number in 
+Finds any existing double array at the place specified by  value_number in
 field->values_storage.
 Frees it.
-Allocates a new array, according to number_of_array_values. 
+Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
 Copies number of array values, and the pointer to the allocated array to the
-specified  place in the field->values_storage. 
+specified  place in the field->values_storage.
 
 Therefore, should free the passed array, after passing it to this function.
 
@@ -11885,33 +10232,33 @@ The <field> must be of the correct FE_field_type to have such values and
 	ENTER(set_FE_field_double_array_value);
 	if (field&&array&&(0<=value_number)&&(value_number<=field->number_of_values))
 	{
-		return_code=1;	 
-	
+		return_code=1;
+
 		if (field->value_type!=DOUBLE_ARRAY_VALUE)
 		{
 			display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. "
 				" value type doesn't match");
 			return_code=0;
-		}								
+		}
 
 		size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
 			(struct FE_time_sequence *)NULL);
 
 		/* get the correct offset*/
 		values_storage = field->values_storage+(value_number*size);
-		/* get the pointer to stored the array, free any existing one */	
+		/* get the pointer to stored the array, free any existing one */
 		array_address = (double **)(values_storage+sizeof(int));
 		pointer = *array_address;
 		if (pointer!=NULL)
-			DEALLOCATE(pointer);		
-		/* copy the number of array values into field->values_storage*/	
-		*((int *)values_storage) = number_of_array_values; 
+			DEALLOCATE(pointer);
+		/* copy the number of array values into field->values_storage*/
+		*((int *)values_storage) = number_of_array_values;
 		/* Allocate the space for the array, and copy the data in */
 		array_size = number_of_array_values*sizeof(double);
 		if (ALLOCATE(the_array,double,array_size))
 		{
 			memcpy(the_array,array,array_size);
-			/*copy the pointer to the array into field->values_storage  */		
+			/*copy the pointer to the array into field->values_storage  */
 			*array_address = the_array;
 		}
 		else
@@ -11921,11 +10268,11 @@ The <field> must be of the correct FE_field_type to have such values and
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 }/* set_FE_field_double_array_value */
 
@@ -11942,12 +10289,12 @@ Returned <*string> may be a valid NULL if that is what is in the field.
 {
 	int return_code,size;
 	char *the_string,**string_address;
-	
+
 	ENTER(get_FE_field_string_value);
 	return_code=0;
 	if (field&&(0<=value_number)&&(value_number<field->number_of_values)&&string)
 	{
-		/* get the pointer to the stored string */			
+		/* get the pointer to the stored string */
 		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL);
 		string_address = (char **)(field->values_storage+value_number*size);
 		if (the_string = *string_address)
@@ -11955,7 +10302,7 @@ Returned <*string> may be a valid NULL if that is what is in the field.
 			if (ALLOCATE(*string,char,strlen(the_string)+1))
 			{
 				strcpy(*string,the_string);
-				return_code=1;	 
+				return_code=1;
 			}
 			else
 			{
@@ -11967,11 +10314,11 @@ Returned <*string> may be a valid NULL if that is what is in the field.
 		{
 			/* no string, so successfully return NULL */
 			*string = (char *)NULL;
-			return_code=1;	 
+			return_code=1;
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_string_value.  Invalid argument(s)");
 		return_code=0;
@@ -11998,7 +10345,7 @@ Copies and sets the <string> stored at <value_number> in the <field>.
 	return_code=0;
 	if (field&&(0<=value_number)&&(value_number<field->number_of_values))
 	{
-		/* get the pointer to the stored string */			
+		/* get the pointer to the stored string */
 		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL);
 		string_address = (char **)(field->values_storage+value_number*size);
 		if (string)
@@ -12032,7 +10379,7 @@ Copies and sets the <string> stored at <value_number> in the <field>.
 			"set_FE_field_string_value.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 
 	return (return_code);
 } /* set_FE_field_string_value */
@@ -12061,7 +10408,7 @@ Gets the specified global value for the <field>.
 			values_storage = field->values_storage + (number*(sizeof(struct FE_element *) +
 				MAXIMUM_ELEMENT_XI_DIMENSIONS * sizeof(FE_value)));
 
-			/* copy the element and xi out */	
+			/* copy the element and xi out */
 			*element = *((struct FE_element **)values_storage);
 			values_storage += sizeof(struct FE_element *);
 			number_of_xi_dimensions = (*element)->shape->dimension;
@@ -12081,7 +10428,7 @@ Gets the specified global value for the <field>.
 				return_code=0;
 			}
 		}
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_field_element_xi_value. no values at field");
 			return_code=0;
@@ -12116,7 +10463,7 @@ The <field> must be of the correct FE_field_type to have such values and
 	if (field&&(0<=number)&&(number<=field->number_of_values)
 		&&(field->value_type==ELEMENT_XI_VALUE) && element && xi)
 	{
-		return_code=1;	 
+		return_code=1;
 		number_of_xi_dimensions = element->shape->dimension;
 		if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 		{
@@ -12124,8 +10471,8 @@ The <field> must be of the correct FE_field_type to have such values and
 			/* get the correct offset*/
 			values_storage = field->values_storage + (number*(sizeof(struct FE_element *) +
 				MAXIMUM_ELEMENT_XI_DIMENSIONS * sizeof(FE_value)));
-			
-			/* copy the element in ensuring correct accessing */	
+
+			/* copy the element in ensuring correct accessing */
 			REACCESS(FE_element)(((struct FE_element **)values_storage), element);
 			values_storage += sizeof(struct Element *);
 			/* Write in the xi values */
@@ -12151,11 +10498,11 @@ The <field> must be of the correct FE_field_type to have such values and
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE," set_FE_field_element_xi_value. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 } /* set_FE_field_element_xi_value */
 
@@ -12209,7 +10556,7 @@ The <field> must be of type FE_VALUE_VALUE to have such values and
 		return_code=1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"set_FE_field_FE_value_value.  Invalid argument(s)");
 		return_code=0;
@@ -12267,7 +10614,7 @@ The <field> must be of type INT_VALUE to have such values and
 		return_code=1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"set_FE_field_int_value.  Invalid argument(s)");
 		return_code=0;
@@ -12296,11 +10643,11 @@ Gets the specified global time value for the <field>.
 			return_code=1;
 			/* get the correct offset*/
 			times = field->times+(number*sizeof(FE_value));
-			/* copy the value in*/	
-			*value = *((FE_value *)times);		
+			/* copy the value in*/
+			*value = *((FE_value *)times);
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_field_time_FE_value.  no times at field");
 			return_code=0;
@@ -12327,30 +10674,30 @@ The field value MUST have been previously allocated with set_FE_field_number_of_
 ==============================================================================*/
 {
 
-	int return_code; 
+	int return_code;
 	FE_value *times;
 
 	ENTER( set_FE_field_time_FE_value);
 	if (field&&(0<=number)&&(number<=field->number_of_times))
 	{
-		return_code=1;	 	
+		return_code=1;
 		if (field->time_value_type!=FE_VALUE_VALUE)
 		{
 			display_message(ERROR_MESSAGE," set_FE_field_time_FE_value. "
 				" value type doesn't match");
 			return_code=0;
-		}								
+		}
 		/* get the correct offset*/
 		times = (FE_value *)(field->times+(number*sizeof(FE_value)));
-		/* copy the value in*/		
+		/* copy the value in*/
 		*times = value;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE," set_FE_field_time_FE_value. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;	
+	LEAVE;
 	return (return_code);
 } /* set_FE_field_time_FE_value */
 
@@ -12590,11 +10937,11 @@ By default each component has 1 version and no derivatives.
 	if (number_of_components)
 	{
 		if ((ALLOCATE(node_field_creator, struct FE_node_field_creator, 1))&&
-			(ALLOCATE(node_field_creator->numbers_of_versions, int, 
+			(ALLOCATE(node_field_creator->numbers_of_versions, int,
 			number_of_components)) &&
-			(ALLOCATE(node_field_creator->numbers_of_derivatives, int, 
+			(ALLOCATE(node_field_creator->numbers_of_derivatives, int,
 			number_of_components))&&
-			(ALLOCATE(node_field_creator->nodal_value_types, 
+			(ALLOCATE(node_field_creator->nodal_value_types,
 			enum FE_nodal_value_type *, number_of_components)))
 		{
 			node_field_creator->number_of_components = number_of_components;
@@ -12602,7 +10949,7 @@ By default each component has 1 version and no derivatives.
 			{
 				node_field_creator->numbers_of_versions[i] = 1;
 				node_field_creator->numbers_of_derivatives[i] = 0;
-				if (ALLOCATE(node_field_creator->nodal_value_types[i], 
+				if (ALLOCATE(node_field_creator->nodal_value_types[i],
 					enum FE_nodal_value_type, 1))
 				{
 					*(node_field_creator->nodal_value_types[i]) = FE_NODAL_VALUE;
@@ -12650,13 +10997,13 @@ Creates an FE_node_field_creator from <node>,<field>
 	struct FE_node_field *node_field;
 
 	ENTER(create_FE_node_field_creator_from_node_field);
-	node_field_creator = (struct FE_node_field_creator *)NULL;			
+	node_field_creator = (struct FE_node_field_creator *)NULL;
 	if (node&&field&&node->fields)
-	{	
+	{
 		if((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 			node->fields->node_field_list))&&
 			(node_field_components=node_field->components))
-		{	
+		{
 			number_of_components=field->number_of_components;
 			if (node_field_creator=CREATE(FE_node_field_creator)(number_of_components))
 			{
@@ -12688,7 +11035,7 @@ Creates an FE_node_field_creator from <node>,<field>
 				}
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"create_FE_node_field_creator_from_node_field.  Unable to allocate");
 			}
@@ -12715,7 +11062,7 @@ int DESTROY(FE_node_field_creator)(
 LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
-Frees the memory for the node field creator and sets 
+Frees the memory for the node field creator and sets
 <*node_field_creator_address> to NULL.
 ==============================================================================*/
 {
@@ -12723,7 +11070,7 @@ Frees the memory for the node field creator and sets
 	struct FE_node_field_creator *node_field_creator;
 
 	ENTER(DESTROY(FE_node_field_creator));
-	if ((node_field_creator_address)&&(node_field_creator = 
+	if ((node_field_creator_address)&&(node_field_creator =
 		*node_field_creator_address))
 	{
 		for (i = 0 ; i < node_field_creator->number_of_components ; i++)
@@ -12746,19 +11093,19 @@ Frees the memory for the node field creator and sets
 } /* DESTROY(FE_node_field_creator) */
 
 int FE_node_field_creator_get_nodal_derivative_versions(
-	struct FE_node_field_creator *node_field_creator, 
-	int *number_of_derivatives, 
+	struct FE_node_field_creator *node_field_creator,
+	int *number_of_derivatives,
 	enum FE_nodal_value_type **nodal_derivative_types,int **max_versions)
 /*******************************************************************************
 LAST MODIFIED: 11 February 2002
 
 DESCRIPTION:
 Given <node_field_creator>, returns <number_of_derivatives>
-which is the size of the arrays <nodal_derivative_types> (containing the 
-FE_nodal_value_type of the derivates present at the node_field_creator) 
-and <max_versions> (which contains the maximum number of versions of each 
+which is the size of the arrays <nodal_derivative_types> (containing the
+FE_nodal_value_type of the derivates present at the node_field_creator)
+and <max_versions> (which contains the maximum number of versions of each
 derivative type).
-Note: This function allocates the arrays nodal_derivative_types and max_versions, 
+Note: This function allocates the arrays nodal_derivative_types and max_versions,
 the user is responsible for freeing them.
 ==============================================================================*/
 {
@@ -12782,30 +11129,30 @@ the user is responsible for freeing them.
 		}
 		if(ALLOCATE(the_nodal_derivative_types,enum FE_nodal_value_type,max_array_size)&&
 			ALLOCATE(max_nodal_versions,int,max_array_size))
-		{	
+		{
 			/*fill in arrays with blanks*/
 			for(i=0;i<max_array_size;i++)
 			{
 				the_nodal_derivative_types[i]=FE_NODAL_UNKNOWN;
 				max_nodal_versions[i]=0;
 			}
-			return_code = 1;			
+			return_code = 1;
 			/*nodal_value_types an array of arrays of FE_nodal_value_type*/
 			nodal_value_types=node_field_creator->nodal_value_types;
-			/*for all components*/		
+			/*for all components*/
 			array_size=0;
 			for(i=0;i<number_of_components;i++)
-			{										
+			{
 				number_of_component_derivatives=node_field_creator->numbers_of_derivatives[i];
-				number_of_versions=node_field_creator->numbers_of_versions[i];						
+				number_of_versions=node_field_creator->numbers_of_versions[i];
 				/*the_nodal_value_types an array of FE_nodal_value_type*/
 				the_nodal_value_types=*nodal_value_types;
 				/* for all the derivatives*/
 				/* number_of_component_derivatives+1 as also have nodal value*/
 				for(j=0;j<number_of_component_derivatives+1;j++)
-				{	
+				{
 					if(j!=0)/*don't consider 1st as this is nodal value, not derivative*/
-					{						
+					{
 						a_nodal_value_type=*the_nodal_value_types;
 						k=0;
 						found=0;
@@ -12829,13 +11176,13 @@ the user is responsible for freeing them.
 							the_nodal_derivative_types[array_size]=a_nodal_value_type;
 							max_nodal_versions[array_size]=number_of_versions;
 							array_size++;
-						}					
+						}
 					}/* 	if(j!=0)*/
 					the_nodal_value_types++;
 				}/* for(j=0;j<number_of_component_derivatives+1;j++) */
 				nodal_value_types++;
 			}/* for(i=0;i<number_of_components;i++) */
-			*number_of_derivatives=array_size;	
+			*number_of_derivatives=array_size;
 			*nodal_derivative_types=the_nodal_derivative_types;
 			*max_versions=max_nodal_versions;
 		}
@@ -12847,7 +11194,7 @@ the user is responsible for freeing them.
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_node_field_creator_get_nodal_derivative_versions. Invalid arguments");
 		return_code = 0;
@@ -12871,16 +11218,16 @@ specified.
 	int number_of_derivatives, return_code;
 	ENTER(FE_node_field_creator_define_derivative);
 
-	if (node_field_creator && (component_number >= 0) && 
+	if (node_field_creator && (component_number >= 0) &&
 		 (component_number < node_field_creator->number_of_components))
 	{
 		number_of_derivatives = node_field_creator->numbers_of_derivatives
 			[component_number];
-		if (REALLOCATE(new_nodal_value_types, 
+		if (REALLOCATE(new_nodal_value_types,
 			node_field_creator->nodal_value_types[component_number],
 			enum FE_nodal_value_type, number_of_derivatives + 2))
 		{
-			node_field_creator->nodal_value_types[component_number] = 
+			node_field_creator->nodal_value_types[component_number] =
 				new_nodal_value_types;
 			node_field_creator->nodal_value_types[component_number][
 				number_of_derivatives + 1] = derivative_type;
@@ -12918,7 +11265,7 @@ Specifies the <number_of_versions> for <component_number> specified.
 	int return_code;
 	ENTER(FE_node_field_creator_define_derivative);
 
-	if (node_field_creator && (component_number >= 0) && 
+	if (node_field_creator && (component_number >= 0) &&
 		 (component_number < node_field_creator->number_of_components))
 	{
 		node_field_creator->numbers_of_versions[component_number] =
@@ -13043,7 +11390,7 @@ Frees the memory for the node, sets <*node_address> to NULL.
 			{
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 					FE_node_field_free_values_storage_arrays,
-					(void *)node->values_storage,node->fields->node_field_list);		
+					(void *)node->values_storage,node->fields->node_field_list);
 				DEACCESS(FE_node_field_info)(&(node->fields));
 			}
 			DEALLOCATE(node->values_storage);
@@ -13087,17 +11434,17 @@ Creates an EXACT copy of the node.
 		DEACCESS(FE_node_field_info)(&(destination->fields));
 		/* free the node values_storage */
 		if (destination->fields)
-		{			
+		{
 			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 				FE_node_field_free_values_storage_arrays,
-				(void *)destination->values_storage,destination->fields->node_field_list);		
+				(void *)destination->values_storage,destination->fields->node_field_list);
 		}
 		DEALLOCATE(destination->values_storage);
 
 		/* copy the new */
 		node_field_info=source->fields;
 		if ( allocate_and_copy_FE_node_values_storage(source,&(destination->values_storage)))
-		{			
+		{
 			destination->fields=ACCESS(FE_node_field_info)(node_field_info);
 			destination->cm_node_identifier=source->cm_node_identifier;
 			return_code=1;
@@ -13156,7 +11503,7 @@ the copy is set to the current <value_storage_size>, and both it and the
 						node_field->time_sequence);
 				/* adjust size for proper word alignment in memory */
 				ADJUST_VALUE_STORAGE_SIZE(values_storage_size);
-				
+
 				if ((offset_node_field =
 					copy_create_FE_node_field_with_offset(node_field,
 						copy_data->values_storage_size - node_field->components->value)) &&
@@ -13319,7 +11666,7 @@ Up to the calling routine to deallocate the returned char string!
 } /* GET_NAME(FE_node) */
 
 int FE_region_get_FE_node_field_info_adding_new_times(
-	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
+	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address,
 	struct FE_node_field *new_node_field)
 /*******************************************************************************
 LAST MODIFIED : 13 December 2005
@@ -13329,10 +11676,10 @@ Updates the pointer to <node_field_info_address> to point to a node_field info
 which appends to the fields in <node_field_info_address> one <new_node_field>.
 The node_field_info returned in <node_field_info_address> will be for the
 <new_number_of_values>.
-The <fe_region> maintains an internal list of these structures so they can be 
-shared between nodes.  This function allows a fast path when adding a single 
+The <fe_region> maintains an internal list of these structures so they can be
+shared between nodes.  This function allows a fast path when adding a single
 field.  If the node_field passed in is only referenced by one external object
-then it is assumed that this function can modify it rather than copying.  If 
+then it is assumed that this function can modify it rather than copying.  If
 there are more references then the object is copied and then modified.
 This function handles the access and deaccess of the <node_field_info_address>
 as if it is just updating then there is nothing to do.
@@ -13344,7 +11691,7 @@ as if it is just updating then there is nothing to do.
 	struct LIST(FE_node_field) *node_field_list;
 
 	ENTER(FE_region_get_FE_node_field_info_adding_new_times);
-	if (fe_region && node_field_info_address && 
+	if (fe_region && node_field_info_address &&
 		(existing_node_field_info = *node_field_info_address))
 	{
 		return_code = 1;
@@ -13419,7 +11766,7 @@ as if it is just updating then there is nothing to do.
 } /* FE_region_get_FE_node_field_info_adding_new_field */
 
 int define_FE_field_at_node(struct FE_node *node, struct FE_field *field,
-	struct FE_time_sequence *fe_time_sequence, 
+	struct FE_time_sequence *fe_time_sequence,
 	struct FE_node_field_creator *fe_node_field_creator)
 /*******************************************************************************
 LAST MODIFIED : 1 May 2003
@@ -13470,7 +11817,7 @@ Defines a field at a node (does not assign values)
 			ACCESS(FE_node_field)(node_field);
 			if (fe_time_sequence)
 			{
-				FE_node_field_set_FE_time_sequence(node_field, 
+				FE_node_field_set_FE_time_sequence(node_field,
 					fe_time_sequence);
 			}
 			number_of_values = 0;
@@ -13541,7 +11888,7 @@ Defines a field at a node (does not assign values)
 								/* Offsets must not have changed so we can use the existing_node_field */
 								storage = node->values_storage + existing_node_field->components->value;
 								value_size=get_Value_storage_size(value_type, new_node_field->time_sequence);
-								time_sequence_mapping = 
+								time_sequence_mapping =
 									FE_time_sequences_mapping(existing_time_sequence, new_node_field->time_sequence);
 								switch (time_sequence_mapping)
 								{
@@ -13556,7 +11903,7 @@ Defines a field at a node (does not assign values)
 										new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
 										for (i=0;(i<number_of_values)&&return_code;i++)
 										{
-											reallocate_time_values_storage_array(value_type, 
+											reallocate_time_values_storage_array(value_type,
 												new_number_of_times, storage, storage,
 												/*initialise_storage*/1, previous_number_of_times);
 											storage += value_size;
@@ -13565,10 +11912,10 @@ Defines a field at a node (does not assign values)
 									default:
 									{
 										/* Need a temporary pointer as we will be allocating the new
-											memory, copying the existing values and then replacing the 
+											memory, copying the existing values and then replacing the
 											pointer with the new value */
 										void *temp_storage;
-										
+
 										/* Fallback default implementation */
 										for (i=0;(i<number_of_values)&&return_code;i++)
 										{
@@ -13633,7 +11980,7 @@ Defines a field at a node (does not assign values)
 										switch (value_type)
 										{
 											case ELEMENT_XI_VALUE:
-											{											
+											{
 												*((struct FE_element **)new_value) =
 													(struct FE_element *)NULL;
 												new_value += sizeof(struct FE_element *);
@@ -13644,27 +11991,27 @@ Defines a field at a node (does not assign values)
 												}
 											} break;
 											case FE_VALUE_VALUE:
-											{																					
+											{
 												*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
 												new_value += size;
 											} break;
 											case UNSIGNED_VALUE:
-											{																					
+											{
 												*((unsigned *)new_value) = 0;
 												new_value += size;
-											} break;	
+											} break;
 											case INT_VALUE:
-											{																			
+											{
 												*((int *)new_value) = 0;
 												new_value += size;
 											} break;
 											case DOUBLE_VALUE:
-											{																							
+											{
 												*((double *)new_value) = 0;
 												new_value += size;
-											} break;	
+											} break;
 											case FLT_VALUE:
-											{																						
+											{
 												*((float *)new_value) = 0;
 												new_value += size;
 											} break;
@@ -13676,10 +12023,10 @@ Defines a field at a node (does not assign values)
 												return_code = 0;
 											} break;
 											case DOUBLE_ARRAY_VALUE:
-											{	
+											{
 												double *array = (double *)NULL;
 												double **array_address;
-												int zero = 0;										
+												int zero = 0;
 												/* copy number of array values to values_storage*/
 												*((int *)new_value) = zero;
 												/* copy pointer to array values to values_storage */
@@ -13687,67 +12034,67 @@ Defines a field at a node (does not assign values)
 													(double **)(new_value + sizeof(int));
 												*array_address = array;
 												new_value += size;
-											} break;																			
+											} break;
 											case FE_VALUE_ARRAY_VALUE:
-											{	
+											{
 												FE_value *array = (FE_value *)NULL;
 												FE_value **array_address;
 												int zero = 0;
-												*((int *)new_value) = zero;													
+												*((int *)new_value) = zero;
 												array_address =
 													(FE_value **)(new_value + sizeof(int));
-												*array_address = array;	
+												*array_address = array;
 												new_value += size;
 											} break;
 											case FLT_ARRAY_VALUE:
-											{	
-												float *array = (float *)NULL;	
+											{
+												float *array = (float *)NULL;
 												float **array_address;
 												int zero = 0;
-												*((int *)new_value) = zero;												
+												*((int *)new_value) = zero;
 												array_address = (float **)(new_value + sizeof(int));
-												*array_address = array;	
+												*array_address = array;
 												new_value += size;
-											} break;		
+											} break;
 											case SHORT_ARRAY_VALUE:
-											{	
-												short *array = (short *)NULL;	
+											{
+												short *array = (short *)NULL;
 												short **array_address;
 												int zero = 0;
-												*((int *)new_value) = zero;												
+												*((int *)new_value) = zero;
 												array_address = (short **)(new_value + sizeof(int));
-												*array_address = array;	
+												*array_address = array;
 												new_value += size;
-											} break;									
+											} break;
 											case  INT_ARRAY_VALUE:
-											{	
-												int *array = (int *)NULL;	
+											{
+												int *array = (int *)NULL;
 												int **array_address;
 												int zero = 0;
-												*((int *)new_value) = zero;												
+												*((int *)new_value) = zero;
 												array_address = (int **)(new_value + sizeof(int));
-												*array_address = array;	
+												*array_address = array;
 												new_value += size;
-											} break;															
+											} break;
 											case  UNSIGNED_ARRAY_VALUE:
-											{	
-												unsigned *array = (unsigned *)NULL;	
+											{
+												unsigned *array = (unsigned *)NULL;
 												unsigned **array_address;
 												int zero = 0;
-												*((int *)new_value) = zero;												
+												*((int *)new_value) = zero;
 												array_address =
 													(unsigned **)(new_value + sizeof(int));
-												*array_address = array;	
+												*array_address = array;
 												new_value += size;
 											} break;
 											case STRING_VALUE:
-											{	
+											{
 												char **string_address;
 
 												string_address = (char **)(new_value);
-												*string_address = (char *)NULL;	
+												*string_address = (char *)NULL;
 												new_value += size;
-											} break;	
+											} break;
 											case  UNKNOWN_VALUE:
 											{
 												display_message(ERROR_MESSAGE,
@@ -13794,7 +12141,7 @@ Defines a field at a node (does not assign values)
 	LEAVE;
 
 	return (return_code);
-} /* define_FE_field_at_node */ 
+} /* define_FE_field_at_node */
 
 struct FE_node_field_add_to_list_with_exclusion_data
 {
@@ -14088,7 +12435,7 @@ and <nodal_value_types> for each component, and only 1 version.
 			{
 				for (j = 0 ; j < number_of_derivatives ; j++)
 				{
-					FE_node_field_creator_define_derivative(node_field_creator, 
+					FE_node_field_creator_define_derivative(node_field_creator,
 						/*component_number*/n, derivative_value_types[j]);
 				}
 			}
@@ -14143,7 +12490,7 @@ Otherwise, zero is returned.
 	{
 		node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 			node->fields->node_field_list);
-	
+
 		if (node_field)
 		{
 			if (iterator)
@@ -14189,7 +12536,7 @@ called.
 	{
 		iterator_and_data.iterator=iterator;
 		iterator_and_data.user_data=user_data;
-		iterator_and_data.node=node;	
+		iterator_and_data.node=node;
 		return_code=FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 			for_FE_field_at_node_iterator,&iterator_and_data,
 			node->fields->node_field_list);
@@ -14290,7 +12637,7 @@ the field.
 	ENTER(FE_node_has_FE_field_values);
 	if (node&&node->fields)
 	{
-		return_code=((struct FE_node_field *)NULL != 
+		return_code=((struct FE_node_field *)NULL !=
 			FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
 				FE_node_field_has_FE_field_values,(void *)NULL,
 				node->fields->node_field_list));
@@ -14446,7 +12793,7 @@ Note this will also return true if <field> is not defined at both nodes.
 			node_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 				node_2->fields->node_field_list);
 			return_code = ((!node_field_1) && (!node_field_2)) || (
-				node_field_1 && node_field_2 && 
+				node_field_1 && node_field_2 &&
 				FE_node_fields_match(node_field_1, node_field_2,
 					/*ignore_field_and_time_sequence*/0, /*ignore_component_value*/1));
 		}
@@ -14516,10 +12863,10 @@ node and valid at <time>.
 			return_code=1;
 		}
 		else
-		{	
-			return_code=0;	
-		}	
-	}		
+		{
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -14958,7 +13305,7 @@ at the <node>.
 					return_code=1;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,"get_FE_nodal_element_xi_value.  "
 						"find_FE_nodal_values_storage_dest failed");
 				}
@@ -14978,21 +13325,21 @@ at the <node>.
 							get_Value_storage_size(ELEMENT_XI_VALUE,
 							(struct FE_time_sequence *)NULL)*
 							(field->number_of_indexed_values*component_number+index-1);
-						return_code=1;	
+						return_code=1;
 					}
 					else
-					{	
+					{
 						display_message(ERROR_MESSAGE,"get_FE_nodal_element_xi_value.  "
 							"Index field %s gave out-of-range index %d in field %s",
 							field->indexer_field->name,index,field->name);
 					}
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,"get_FE_nodal_element_xi_value.  "
 						"Field %s, indexed by %s not defined at node %",
 						field->name,field->indexer_field->name,node->cm_node_identifier);
-					return_code=0;	
+					return_code=0;
 				}
 			} break;
 			default:
@@ -15020,7 +13367,7 @@ at the <node>.
 				return_code=0;
 			}
 		}
-	}		
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -15042,7 +13389,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 <component> at the <node>.
 ==============================================================================*/
 {
-	int i, number_of_xi_dimensions, return_code; 
+	int i, number_of_xi_dimensions, return_code;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -15057,7 +13404,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 		{
 			number_of_xi_dimensions = element->shape->dimension;
-			/* copy in the element_xi_value */		
+			/* copy in the element_xi_value */
 			REACCESS(FE_element)((struct FE_element **)values_storage, element);
 			values_storage += sizeof(struct FE_element *);
 			for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
@@ -15076,7 +13423,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 			return_code=1;
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  "
 				"find_FE_nodal_values_storage_dest failed");
 			return_code=0;
@@ -15104,7 +13451,7 @@ calls <iterator_function> with it and the <iterator_user_data>.
 {
 	int return_code;
 	struct FE_node_conditional_iterator_data *data;
-	
+
 	ENTER(FE_node_conditional_iterator);
 	if (node && (data = (struct FE_node_conditional_iterator_data *)data_void) &&
 		data->conditional_function && data->iterator_function)
@@ -15600,7 +13947,7 @@ the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string
 Otherwise returns false (0)
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
 	struct FE_field_and_string_data *field_and_string_data;
 	struct FE_field *fe_field;
 	char *required_string,*field_string;
@@ -15609,7 +13956,7 @@ Otherwise returns false (0)
 	field_and_string_data=(struct FE_field_and_string_data *)NULL;
 	fe_field=(struct FE_field *)NULL;
 	required_string=(char *)NULL;
-	field_string=(char *)NULL;	
+	field_string=(char *)NULL;
 	return_code=0;
 	if (node&&(field_and_string_data=(struct FE_field_and_string_data *)data_void))
 	{
@@ -15628,7 +13975,7 @@ Otherwise returns false (0)
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_node_has_FE_field_and_string_data.  Invalid argument(s)");	
+		display_message(ERROR_MESSAGE,"FE_node_has_FE_field_and_string_data.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -15744,7 +14091,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_nodal_value_type)
 
-#if defined (OLD_CODE) 
+#if defined (OLD_CODE)
 /* superceded by  get_FE_nodal_value_type,get_FE_nodal_array_number_of_elements */
 int get_FE_nodal_array_attributes(struct FE_node *node,
 	struct FE_field_component *component,int version,
@@ -15754,7 +14101,7 @@ int get_FE_nodal_array_attributes(struct FE_node *node,
 LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
-Get the value_type and the number of array values for the array in the nodal 
+Get the value_type and the number of array values for the array in the nodal
 values_storage for the given node, component, version,type.
 
 Give an error if field->values_storage isn't storing array types.
@@ -15782,12 +14129,12 @@ Give an error if field->values_storage isn't storing array types.
 				{
 					case DOUBLE_ARRAY_VALUE:
 					case FE_VALUE_ARRAY_VALUE:
-					case FLT_ARRAY_VALUE:	
+					case FLT_ARRAY_VALUE:
 					case SHORT_ARRAY_VALUE:
 					case INT_ARRAY_VALUE:
-					case UNSIGNED_ARRAY_VALUE:	
-					case STRING_VALUE:				
-					{								
+					case UNSIGNED_ARRAY_VALUE:
+					case STRING_VALUE:
+					{
 						node_field_component += component->number;
 						if (version<node_field_component->number_of_versions)
 						{
@@ -15805,12 +14152,12 @@ Give an error if field->values_storage isn't storing array types.
 									((version*length+i)*size);
 								if (node_field->field->value_type!=STRING_VALUE)
 								{
-								/*copy in the number_of_array_values  */							
+								/*copy in the number_of_array_values  */
 								*number_of_array_values = *((int *)(values_storage));
 								}
 								else
-								{	
-									char *the_string,**str_address;								
+								{
+									char *the_string,**str_address;
 									str_address = (char **)(values_storage);
 									the_string = *str_address;
 									*number_of_array_values = strlen(the_string)+1;/* +1 for NULL term.*/
@@ -15818,9 +14165,9 @@ Give an error if field->values_storage isn't storing array types.
 								return_code=1;
 							}
 						}
-					} break;				
+					} break;
 					default:
-					{					
+					{
 						display_message(ERROR_MESSAGE,
 							"get_FE_nodal_array_attributes. Not an array type");
 					} break;
@@ -15864,9 +14211,9 @@ Get's a node's field's value type
 		(component_number<field->number_of_components)&&(0<=version))
 	{
 		if (node_field = FE_node_get_FE_node_field(node, field))
-		{		
+		{
 			/* get the value type*/
-			value_type	= node_field->field->value_type;		
+			value_type	= node_field->field->value_type;
 		}
 	}
 	else
@@ -15887,7 +14234,7 @@ int get_FE_nodal_array_number_of_elements(struct FE_node *node,
 LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
-Returns the number of elements  for the array in the nodal 
+Returns the number of elements  for the array in the nodal
 values_storage for the given node, component, version,type.
 
 Returns -1 upon error.
@@ -15910,17 +14257,17 @@ Give an error if field->values_storage isn't storing array types.
 		{
 			if ((node_field_component=node_field->components + component_number)&&
 				(nodal_value_type=node_field_component->nodal_value_types))
-			{			
+			{
 				switch (node_field->field->value_type)
 				{
 					case DOUBLE_ARRAY_VALUE:
 					case FE_VALUE_ARRAY_VALUE:
-					case FLT_ARRAY_VALUE:	
+					case FLT_ARRAY_VALUE:
 					case SHORT_ARRAY_VALUE:
 					case INT_ARRAY_VALUE:
-					case UNSIGNED_ARRAY_VALUE:	
-					case STRING_VALUE:				
-					{								
+					case UNSIGNED_ARRAY_VALUE:
+					case STRING_VALUE:
+					{
 						if (version<node_field_component->number_of_versions)
 						{
 							length=1+(node_field_component->number_of_derivatives);
@@ -15930,7 +14277,7 @@ Give an error if field->values_storage isn't storing array types.
 								i++;
 							}
 							if (i<length)
-							{/* get the value type*/			
+							{/* get the value type*/
 								size = get_Value_storage_size(node_field->field->value_type,
 									(struct FE_time_sequence *)NULL);
 								/* get the offset into nodal values_storage*/
@@ -15938,21 +14285,21 @@ Give an error if field->values_storage isn't storing array types.
 									((version*length+i)*size);
 								if (node_field->field->value_type!=STRING_VALUE)
 								{
-								/*copy in the number_of_array_values  */							
+								/*copy in the number_of_array_values  */
 								number_of_array_elements = *((int *)(values_storage));
 								}
 								else
-								{	
-									char *the_string,**str_address;								
+								{
+									char *the_string,**str_address;
 									str_address = (char **)(values_storage);
 									the_string = *str_address;
 									number_of_array_elements = strlen(the_string)+1;/* +1 for NULL term.*/
-								}							
+								}
 							}
 						}
-					} break;				
+					} break;
 					default:
-					{					
+					{
 						display_message(ERROR_MESSAGE,
 							"get_FE_nodal_array_number_of_elements. Not an array type");
 					} break;
@@ -15982,14 +14329,14 @@ int get_FE_nodal_double_array_value(struct FE_node *node,
 LAST MODIFIED : 20 April 1999
 
 DESCRIPTION :
-Gets a particular double array value (<version>, <type>) for the field <component> 
-at the <node> of length number_of_array_values. 
+Gets a particular double array value (<version>, <type>) for the field <component>
+at the <node> of length number_of_array_values.
 If number_of_array_values > the stored arrays max length, gets the max length.
 MUST allocate space for the array before calling this function.
 
 Use get_FE_nodal_array_attributes to get the size of an array.
-??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES 
-if need to locally and repetatively get many arrays.  
+??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES
+if need to locally and repetatively get many arrays.
 
 ==============================================================================*/
 {
@@ -16007,7 +14354,7 @@ if need to locally and repetatively get many arrays.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,
 			version,type,DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
 			{
@@ -16015,7 +14362,7 @@ if need to locally and repetatively get many arrays.
 			}
 			array_size = number_of_array_values*sizeof(double);
 
-			/* get the address to copy from*/		
+			/* get the address to copy from*/
 			array_address = (double **)(values_storage+sizeof(int));
 			the_array = *array_address;
 			/*copy the data to the passed array */
@@ -16026,9 +14373,9 @@ if need to locally and repetatively get many arrays.
 		{	
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_double_array_value. find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16046,18 +14393,18 @@ int set_FE_nodal_double_array_value(struct FE_node *node,
 LAST MODIFIED : 20 April 1999
 
 DESCRIPTION :
-Finds any existing double array at the place specified by (<version>, <type>) 
+Finds any existing double array at the place specified by (<version>, <type>)
 for the field <component>  at the <node>.
 
 Frees it.
-Allocates a new array, according to number_of_array_values. 
+Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
 Copies number of array values, and the pointer to the allocated array to the
-specified place in the node->values_storage. 
+specified place in the node->values_storage.
 
 Therefore, should free the passed array, after passing it to this function.
 
-The nodal values_storage MUST have been previously allocated within 
+The nodal values_storage MUST have been previously allocated within
 define_FE_field_at_node.
 ==============================================================================*/
 {
@@ -16075,15 +14422,15 @@ define_FE_field_at_node.
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{				
+		{
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (double **)(values_storage+sizeof(int));
-			pointer = *array_address;		
+			pointer = *array_address;
 			if (pointer!=NULL)
-			{				
-				DEALLOCATE(pointer);		
+			{
+				DEALLOCATE(pointer);
 			}
-			/* copy the number of array values into field->values_storage*/			
+			/* copy the number of array values into field->values_storage*/
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(double);
@@ -16091,12 +14438,12 @@ define_FE_field_at_node.
 			{
 				memcpy(the_array,array,array_size);
 				/*copy the pointer to the array into field->values_storage  */
-				*array_address = the_array;				
+				*array_address = the_array;
 				return_code=1;
 			}
 			else
 			{
-				*array_address = (double *)NULL;	
+				*array_address = (double *)NULL;
 				*((int *)values_storage) = 0;
 				display_message(ERROR_MESSAGE,
 					"set_FE_nodal_double_array_value. Out of Memory )");
@@ -16104,7 +14451,7 @@ define_FE_field_at_node.
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,"set_FE_nodal_double_array_value.  "
 				"find_FE_nodal_values_storage_dest failed");
 			return_code=0;
@@ -16127,14 +14474,14 @@ int get_FE_nodal_short_array(struct FE_node *node,
 LAST MODIFIED : 8 June 1999
 
 DESCRIPTION :
-Gets a particular short array value (<version>, <type>) for the field <component> 
-at the <node> of length number_of_array_values. 
+Gets a particular short array value (<version>, <type>) for the field <component>
+at the <node> of length number_of_array_values.
 If number_of_array_values > the stored arrays max length, gets the max length.
 MUST allocate space for the array before calling this function.
 
 Use get_FE_nodal_array_attributes to get the size of an array.
-??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES 
-if need to locally and repetatively get many arrays.  
+??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES
+if need to locally and repetatively get many arrays.
 
 ==============================================================================*/
 {
@@ -16152,7 +14499,7 @@ if need to locally and repetatively get many arrays.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
 			{
@@ -16160,7 +14507,7 @@ if need to locally and repetatively get many arrays.
 			}
 			array_size = number_of_array_values*sizeof(short);
 
-			/* get the address to copy from*/		
+			/* get the address to copy from*/
 			array_address = (short **)(values_storage+sizeof(int));
 			the_array = *array_address;
 			/*copy the data to the passed array */
@@ -16168,12 +14515,12 @@ if need to locally and repetatively get many arrays.
 			return_code =1;
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_short_array. find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16191,22 +14538,22 @@ int set_FE_nodal_short_array(struct FE_node *node,
 LAST MODIFIED : 8 June 1999
 
 DESCRIPTION :
-Finds any existing short array at the place specified by (<version>, <type>) 
+Finds any existing short array at the place specified by (<version>, <type>)
 for the field <component>  at the <node>.
 
 Frees it.
-Allocates a new array, according to number_of_array_values. 
+Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
-Copies number of array values, and the pointer to the allocated array to the specified 
-place in the node->values_storage. 
+Copies number of array values, and the pointer to the allocated array to the specified
+place in the node->values_storage.
 
 Therefore, should free the passed array, after passing it to this function.
 
-The nodal values_storage MUST have been previously allocated within 
+The nodal values_storage MUST have been previously allocated within
 define_FE_field_at_node.
 ==============================================================================*/
 {
-	int return_code,array_size; 
+	int return_code,array_size;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 	short *pointer,*the_array,**array_address;
@@ -16220,15 +14567,15 @@ define_FE_field_at_node.
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
-		{				
+		{
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (short **)(values_storage+sizeof(int));
-			pointer = *array_address;		
+			pointer = *array_address;
 			if (pointer!=NULL)
-			{				
-				DEALLOCATE(pointer);		
+			{
+				DEALLOCATE(pointer);
 			}
-			/* copy the number of array values into field->values_storage*/			
+			/* copy the number of array values into field->values_storage*/
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(short);
@@ -16236,12 +14583,12 @@ define_FE_field_at_node.
 			{
 				memcpy(the_array,array,array_size);
 				/*copy the pointer to the array into field->values_storage  */
-				*array_address = the_array;				
+				*array_address = the_array;
 				return_code=1;
 			}
 			else
 			{
-				*array_address = (short *)NULL;	
+				*array_address = (short *)NULL;
 				*((int *)values_storage) = 0;
 				display_message(ERROR_MESSAGE,
 					"set_FE_nodal_short_array. Out of Memory )");
@@ -16249,7 +14596,7 @@ define_FE_field_at_node.
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"set_FE_nodal_short_array. find_FE_nodal_values_storage_dest failed");
 			return_code=0;
@@ -16272,14 +14619,14 @@ int get_FE_nodal_FE_value_array(struct FE_node *node,
 LAST MODIFIED : 8 June 1999
 
 DESCRIPTION :
-Gets a particular FE_value array value (<version>, <type>) for the field <component> 
-at the <node> of length number_of_array_values. 
+Gets a particular FE_value array value (<version>, <type>) for the field <component>
+at the <node> of length number_of_array_values.
 If number_of_array_values > the stored arrays max length, gets the max length.
 MUST allocate space for the array before calling this function.
 
 Use get_FE_nodal_array_attributes to get the size of an array.
-??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES 
-if need to locally and repetatively get many arrays.  
+??JW write get_FE_nodal_max_array_size() to avoid many ALLOCATES
+if need to locally and repetatively get many arrays.
 
 ==============================================================================*/
 {
@@ -16297,7 +14644,7 @@ if need to locally and repetatively get many arrays.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
 			{
@@ -16305,7 +14652,7 @@ if need to locally and repetatively get many arrays.
 			}
 			array_size = number_of_array_values*sizeof(FE_value);
 
-			/* get the address to copy from*/		
+			/* get the address to copy from*/
 			array_address = (FE_value **)(values_storage+sizeof(int));
 			the_array = *array_address;
 			/*copy the data to the passed array */
@@ -16313,12 +14660,12 @@ if need to locally and repetatively get many arrays.
 			return_code =1;
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_FE_value_array. find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16336,19 +14683,19 @@ int set_FE_nodal_FE_value_array(struct FE_node *node,
 LAST MODIFIED : 13 September 2000
 
 DESCRIPTION :
-Finds any existing FE_value array at the place specified by (<version>, <type>) 
+Finds any existing FE_value array at the place specified by (<version>, <type>)
 for the field <component>  at the <node>.
 
 Frees it.
-Allocates a new array, according to number_of_array_values. 
+Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
-Copies number of array values, and the pointer to the allocated array to the specified 
-place in the node->values_storage. 
+Copies number of array values, and the pointer to the allocated array to the specified
+place in the node->values_storage.
 Can pass a null <array>, with <number_of_array_values>=0.
 
 Therefore, should free the passed array, after passing it to this function.
 
-The nodal values_storage MUST have been previously allocated within 
+The nodal values_storage MUST have been previously allocated within
 define_FE_field_at_node.
 ==============================================================================*/
 {
@@ -16366,15 +14713,15 @@ define_FE_field_at_node.
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{				
+		{
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (FE_value **)(values_storage+sizeof(int));
-			pointer = *array_address;		
+			pointer = *array_address;
 			if (pointer!=NULL)
-			{				
-				DEALLOCATE(pointer);		
+			{
+				DEALLOCATE(pointer);
 			}
-			/* copy the number of array values into field->values_storage*/			
+			/* copy the number of array values into field->values_storage*/
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(FE_value);
@@ -16384,12 +14731,12 @@ define_FE_field_at_node.
 				{
 					memcpy(the_array,array,array_size);
 					/*copy the pointer to the array into field->values_storage  */
-					*array_address = the_array;				
+					*array_address = the_array;
 					return_code=1;
 				}
 				else
 				{
-					*array_address = (FE_value *)NULL;	
+					*array_address = (FE_value *)NULL;
 					*((int *)values_storage) = 0;
 					display_message(ERROR_MESSAGE,
 						"set_FE_nodal_FE_value_array. Out of Memory )");
@@ -16404,7 +14751,7 @@ define_FE_field_at_node.
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"set_FE_nodal_FE_value_array. find_FE_nodal_values_storage_dest failed");
 			return_code=0;
@@ -16427,9 +14774,9 @@ FE_value get_FE_nodal_FE_value_array_element(struct FE_node *node,
 LAST MODIFIED : 4 October 1999
 
 DESCRIPTION :
-Gets a particular FE_value_array_value element for the array 
-(<version>, <type>) for the field <component> 
-at the <node>. 
+Gets a particular FE_value_array_value element for the array
+(<version>, <type>) for the field <component>
+at the <node>.
 
 ==============================================================================*/
 {
@@ -16447,11 +14794,11 @@ at the <node>.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (FE_value **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				value=the_array[element_number];
@@ -16459,15 +14806,15 @@ at the <node>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"get_FE_nodal_FE_value_array_element. element_number_out_of_range");	
+				"get_FE_nodal_FE_value_array_element. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_FE_value_array_element. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"get_FE_nodal_FE_value_array_element. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16485,8 +14832,8 @@ FE_value get_FE_nodal_FE_value_array_interpolated_value(struct FE_node *node,
 LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
-returns the interpolated value between the array (*element_number= value_low) 
-and *(element_number+1)=value_high, according to 
+returns the interpolated value between the array (*element_number= value_low)
+and *(element_number+1)=value_high, according to
 value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 {
@@ -16506,11 +14853,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (FE_value **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				/* interpolate between adjacent values */
@@ -16529,15 +14876,15 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"get_FE_nodal_FE_value_array_interpolated_value. element_number_out_of_range");	
+				"get_FE_nodal_FE_value_array_interpolated_value. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_FE_value_array_interpolated_value. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"get_FE_nodal_FE_value_array_interpolated_value. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16555,9 +14902,9 @@ int set_FE_nodal_FE_value_array_element(struct FE_node *node,
 LAST MODIFIED : 4 October 1999
 
 DESCRIPTION :
-sets a particular FE_value_array_value element for the array 
-(<version>, <type>) for the field <component> 
-at the <node>. 
+sets a particular FE_value_array_value element for the array
+(<version>, <type>) for the field <component>
+at the <node>.
 
 ==============================================================================*/
 {
@@ -16575,11 +14922,11 @@ at the <node>.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (FE_value **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				the_array[element_number]=value;
@@ -16588,15 +14935,15 @@ at the <node>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"set_FE_nodal_FE_value_array_element. element_number_out_of_range");	
+				"set_FE_nodal_FE_value_array_element. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_FE_value_array_element. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"set_FE_nodal_FE_value_array_element. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16614,9 +14961,9 @@ short get_FE_nodal_short_array_element(struct FE_node *node,
 LAST MODIFIED : 5 October 1999
 
 DESCRIPTION :
-Gets a particular short_array_value element for the array 
-(<version>, <type>) for the field <component> 
-at the <node>. 
+Gets a particular short_array_value element for the array
+(<version>, <type>) for the field <component>
+at the <node>.
 
 ==============================================================================*/
 {
@@ -16634,11 +14981,11 @@ at the <node>.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (short **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				value=the_array[element_number];
@@ -16646,15 +14993,15 @@ at the <node>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"get_FE_nodal_short_array_element. element_number_out_of_range");	
+				"get_FE_nodal_short_array_element. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_short_array_element. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"get_FE_nodal_short_array_element. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16672,8 +15019,8 @@ short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
 LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
-returns the interpolated value between the array (*element_number= value_low) 
-and *(element_number+1)=value_high, according to 
+returns the interpolated value between the array (*element_number= value_low)
+and *(element_number+1)=value_high, according to
 value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 {
@@ -16693,11 +15040,11 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (short **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				/* interpolate between adjacent values */
@@ -16716,15 +15063,15 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"get_FE_nodal_short_array_interpolated_value. element_number_out_of_range");	
+				"get_FE_nodal_short_array_interpolated_value. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_short_array_interpolated_value. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"get_FE_nodal_short_array_interpolated_value. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16742,9 +15089,9 @@ int set_FE_nodal_short_array_element(struct FE_node *node,
 LAST MODIFIED : 4 October 1999
 
 DESCRIPTION :
-sets a particular short_array_value element for the array 
-(<version>, <type>) for the field <component> 
-at the <node>. 
+sets a particular short_array_value element for the array
+(<version>, <type>) for the field <component>
+at the <node>.
 ==============================================================================*/
 {
 	int the_array_number_of_values,return_code;
@@ -16761,11 +15108,11 @@ at the <node>.
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
 			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{					
+		{
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
 			{
-				/* get the address to copy from*/		
+				/* get the address to copy from*/
 				array_address = (short **)(values_storage+sizeof(int));
 				the_array = *array_address;
 				the_array[element_number]=value;
@@ -16774,15 +15121,15 @@ at the <node>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-				"set_FE_nodal_short_array_element. element_number_out_of_range");	
+				"set_FE_nodal_short_array_element. element_number_out_of_range");
 			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_short_array_element. find_FE_nodal_values_storage_dest failed");			
-		}	
-	}		
+				"set_FE_nodal_short_array_element. find_FE_nodal_values_storage_dest failed");
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16803,16 +15150,16 @@ DESCRIPTION :
 Gets the FE_value <value> from the node's FE_value array at the given
 <component> <version> <type>, using the <time> to index the array.
 The field must have time defined for it, and the number of times must match
-the number of array elements. If <time> is within the node field's time array's 
-range, but doesn't correspond exactly to an array element, interpolates to determine 
-<value>.	
- 	
+the number of array elements. If <time> is within the node field's time array's
+range, but doesn't correspond exactly to an array element, interpolates to determine
+<value>.
+
 ==============================================================================*/
 {
 	int array_number_of_values,array_index,index_high,index_low,number_of_times,
-		return_code;	
+		return_code;
 	FE_value time_high,time_low,prop;
-	
+
 	ENTER(get_FE_nodal_FE_value_array_value_at_FE_value_time);
 	return_code=0;
 	if (node&&field&&(0<=component_number)&&
@@ -16820,9 +15167,9 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	{
 		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
-		{	
+		{
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
-				field,component_number,version,type);									
+				field,component_number,version,type);
 			if (number_of_times==array_number_of_values)
 			{
 				/* field has the right time values, and is defined at node. We're OK*/
@@ -16832,23 +15179,23 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 				prop=(time_high-time)/(time_high-time_low);
 				/* interpolate the nodal value at this array index*/
 				*value=get_FE_nodal_FE_value_array_interpolated_value(node,field,component_number,version,
-					type,index_low,prop);					
+					type,index_low,prop);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_FE_value_array_value_at_FE_value_time."
 					" number_of_times!=array_number_of_values");
-			}					
+			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_FE_value_array_value_at_FE_value_time."
 				" Time is not stored as FE_VALUE_VALUE");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16869,16 +15216,16 @@ DESCRIPTION :
 Gets the short <value> from the node's short array at the given
 <component> <version> <type>, using the <time> to index the array.
 The field must have time defined for it, and the number of times must match
-the number of array elements. If <time> is within the node field's time array's 
-range, but doesn't correspond exactly to an array element, interpolates to determine 
-<value>.	
- 	
+the number of array elements. If <time> is within the node field's time array's
+range, but doesn't correspond exactly to an array element, interpolates to determine
+<value>.
+
 ==============================================================================*/
 {
 	int array_number_of_values,array_index,index_high,index_low,number_of_times,
-		return_code;	
+		return_code;
 	FE_value time_high,time_low,prop;
-	
+
 	ENTER(get_FE_nodal_short_array_value_at_FE_value_time);
 	return_code=0;
 	if (node&&field&&(0<=component_number)&&
@@ -16886,35 +15233,35 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 	{
 		if ((get_FE_field_time_value_type(field)==FE_VALUE_VALUE)
 			&&(number_of_times=get_FE_field_number_of_times(field)))
-		{	
+		{
 			array_number_of_values = get_FE_nodal_array_number_of_elements(node,
-				field,component_number,version,type);									
+				field,component_number,version,type);
 			if (number_of_times==array_number_of_values)
-			{			
+			{
 				/* field has the right time values, and is defined at node. We're OK*/
 				/*get the field's time array index of <time>*/
 				return_code=get_FE_field_time_array_index_at_FE_value_time(field,
-					time,&time_high,&time_low,&array_index,&index_high,&index_low);				
-				prop=(time_high-time)/(time_high-time_low);		
-				/* interpolate the nodal value at this array index*/ 
+					time,&time_high,&time_low,&array_index,&index_high,&index_low);
+				prop=(time_high-time)/(time_high-time_low);
+				/* interpolate the nodal value at this array index*/
 				*value=get_FE_nodal_short_array_interpolated_value(node,field,component_number,version,
-					type,index_low,prop);					
+					type,index_low,prop);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_short_array_value_at_FE_value_time."
 					" number_of_times!=array_number_of_values");
-			}					
+			}
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_short_array_value_at_FE_value_time."
 				" Time is not stored as FE_VALUE_VALUE");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16932,7 +15279,7 @@ int get_FE_nodal_FE_value_array_min_max(struct FE_node *node,
 LAST MODIFIED : 29 September 1999
 
 DESCRIPTION :
-Gets a the minimum and maximum values for the FE_value_array 
+Gets a the minimum and maximum values for the FE_value_array
 (<version>, <type>) for the field <component> at the <node>
 
 ==============================================================================*/
@@ -16949,11 +15296,11 @@ Gets a the minimum and maximum values for the FE_value_array
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
-		{							
-			array_number_of_values = *((int *)values_storage);		
-			/* get the address to copy from*/		
+		{
+			array_number_of_values = *((int *)values_storage);
+			/* get the address to copy from*/
 			array_address = (FE_value **)(values_storage+sizeof(int));
-			array = *array_address;	
+			array = *array_address;
 			min=array[0];
 			max=array[0];
 			for (count=0;count<array_number_of_values;count++)
@@ -16972,12 +15319,12 @@ Gets a the minimum and maximum values for the FE_value_array
 			return_code =1;
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_FE_value_array_min_max. find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -16995,7 +15342,7 @@ int get_FE_nodal_short_array_min_max(struct FE_node *node,
 LAST MODIFIED : 29 September 1999
 
 DESCRIPTION :
-Gets a the minimum and maximum values for the _value_array 
+Gets a the minimum and maximum values for the _value_array
 (<version>, <type>) for the field <component> at the <node>
 
 ==============================================================================*/
@@ -17012,11 +15359,11 @@ Gets a the minimum and maximum values for the _value_array
 	{
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,version,type,
          SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
-		{							
-			array_number_of_values = *((int *)values_storage);		
-			/* get the address to copy from*/		
+		{
+			array_number_of_values = *((int *)values_storage);
+			/* get the address to copy from*/
 			array_address = (short **)(values_storage+sizeof(int));
-			array = *array_address;	
+			array = *array_address;
 			min=array[0];
 			max=array[0];
 			for (count=0;count<array_number_of_values;count++)
@@ -17035,12 +15382,12 @@ Gets a the minimum and maximum values for the _value_array
 			return_code =1;
 		}
 		else
-		{	
+		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_short_array_min_max. find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -17057,7 +15404,7 @@ int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
 /*******************************************************************************
 LAST MODIFIED : 1 August 2000
 
-DESCRIPTION 
+DESCRIPTION
 Given a <field> and <time>, checks that <field> has times defined and returns:
 <the_array_index>, the array index of <field> times closest to <time>.
 <the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
@@ -17068,18 +15415,18 @@ Given a <field> and <time>, checks that <field> has times defined and returns:
 All this information (rather than just <the_array_index> ) is returned so can
 perform interpolation, etc.
 ==============================================================================*/
-{	
-	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
+{
+	int array_index,done,index_high,index_low,number_of_times,return_code,step;
 	FE_value first_time = 0,last_time = 0,this_time,fe_value_index,time_high,time_low;
 
 	ENTER(get_FE_field_time_array_index_at_FE_value_time);
 	return_code=0;
 	if (field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
 		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
-	{		
+	{
 		get_FE_field_time_FE_value(field,0,&first_time);
 		get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+		/*Initial est. of the array index, assuming times evenly spaced, no gaps */
 		/*This assumption and hence estimate is true for most signal files. */
 		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
 		fe_value_index+=0.5;/*round float to nearest int */
@@ -17093,23 +15440,23 @@ perform interpolation, etc.
 		/* adjacent array element, as index estimate may be slightly off due to*/
 		/* rounding error. This avoids unnecessarily long search from end of array */
 		while(!done)
-		{	
+		{
 			if (get_FE_field_time_FE_value(field,array_index,&this_time))
 			{
 				if (this_time>=time)
-				{ 
-					index_high=array_index;					
+				{
+					index_high=array_index;
 					if (array_index>0)
 					{
 						/* get adjacent array element*/
 						get_FE_field_time_FE_value(field,array_index-1,&time_low);
 						/* are we between elements?*/
 						if (time_low<time)
-						{			
+						{
 							index_low=array_index-1;
 							return_code=1;
 							done=1;
-						}	
+						}
 						else
 						{
 							time_low=0;
@@ -17130,14 +15477,14 @@ perform interpolation, etc.
 					if (array_index<(number_of_times-1))
 					{
 						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index+1,&time_high);	
+						get_FE_field_time_FE_value(field,array_index+1,&time_high);
 						/* are we between elements?*/
 						if (time_high>time)
-						{		
+						{
 							index_high=array_index+1;
 							return_code=1;
 							done=1;
-						}	
+						}
 						else
 						{
 							time_high=0;
@@ -17152,21 +15499,21 @@ perform interpolation, etc.
 						return_code=1;
 						done=1;
 					}
-				}	
+				}
 				if (!done)
-				{	
-					step=(index_high-index_low)/2;	
+				{
+					step=(index_high-index_low)/2;
 					/* No exact match, can't subdivide further, must do interpolation.*/
-					if (step==0)												
-					{	
-						done=1;	
-						return_code=1;														
+					if (step==0)
+					{
+						done=1;
+						return_code=1;
 					}
 					else
 					{
 						array_index=index_low+step;
 					}
-						
+
 				}/* if (!done)	*/
 			}
 			else
@@ -17195,7 +15542,7 @@ perform interpolation, etc.
 		return_code=0;
 		display_message(ERROR_MESSAGE,
 			"get_FE_field_time_array_index_at_FE_value_time. Invalid arguments time out of range");
-	}	
+	}
 	LEAVE;
 	return (return_code);
 }/*get_FE_field_time_array_index_at_FE_value_time*/
@@ -17207,7 +15554,7 @@ int get_FE_nodal_string_value(struct FE_node *node,
 LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
-Returns a copy of the string for <version>, <type> of <field><component_number> 
+Returns a copy of the string for <version>, <type> of <field><component_number>
 at the <node>. Up to the calling function to DEALLOCATE the returned string.
 Returned <*string> may be a valid NULL if that is what is in the node.
 ==============================================================================*/
@@ -17260,7 +15607,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 							get_Value_storage_size(STRING_VALUE,
 							(struct FE_time_sequence *)NULL)*
 							(field->number_of_indexed_values*component_number+index-1);
-						return_code=1;	
+						return_code=1;
 					}
 					else
 					{
@@ -17270,11 +15617,11 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 					}
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,"get_FE_nodal_string_value.  "
 						"Field %s, indexed by %s not defined at node %",
 						field->name,field->indexer_field->name,node->cm_node_identifier);
-					return_code=0;	
+					return_code=0;
 				}
 			} break;
 			default:
@@ -17313,7 +15660,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 				return_code=0;
 			}
 		}
-	}		
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -17336,7 +15683,7 @@ at the <node>. <string> may be NULL.
 ==============================================================================*/
 {
 	char *the_string,**string_address;
-	int return_code; 
+	int return_code;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -17349,7 +15696,7 @@ at the <node>. <string> may be NULL.
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,
 			version,type,STRING_VALUE,&values_storage,&time_sequence))
 		{
-			/* get the pointer to the stored string */			
+			/* get the pointer to the stored string */
 			string_address = (char **)(values_storage);
 			if (string)
 			{
@@ -17398,13 +15745,13 @@ int set_FE_nodal_field_double_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the doubles in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the doubles in values.
 Returns the number of doubles copied in number_of_values.
 Assumes that values is set up with the correct number of doubles.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 {
@@ -17427,7 +15774,7 @@ place the values.
 				number_of_components = node_field->field->number_of_components;
 				source = values;
 				for (i=0;i<number_of_components;i++)
-				{					
+				{
 					j=0;
 					component = &(node_field->components[i]);
 					dest = (double *)(node->values_storage + component->value);
@@ -17440,13 +15787,13 @@ place the values.
 						j++;
 						dest++;
 						source++;
-					}				
+					}
 					the_number_of_values += length;
 				}
-				*number_of_values = the_number_of_values; 			
+				*number_of_values = the_number_of_values;
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,"set_FE_nodal_field_double_values.  "
 					"Can't find field in node");
 			}
@@ -17479,7 +15826,7 @@ sum of <1+num_derivatives>*num_versions for each component.
 {
 	int number_of_values;
 	struct FE_node_field *node_field;
-	
+
 	ENTER(get_FE_nodal_field_number_of_values);
 	if (field&&node&&node->fields)
 	{
@@ -17589,7 +15936,7 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 				}
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_field_FE_value_values.  Can't find field %s at node %d",
 					field->name,node->cm_node_identifier);
@@ -17617,13 +15964,13 @@ int set_FE_nodal_field_FE_value_values(struct FE_field *field,
 LAST MODIFIED : 21 September 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the FE_values in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the FE_values in values.
 Returns the number of FE_values copied in number_of_values.
 Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 {
@@ -17646,7 +15993,7 @@ place the values.
 				number_of_components = node_field->field->number_of_components;
 				source = values;
 				for (i=0;i<number_of_components;i++)
-				{					
+				{
 					j=0;
 					component = &(node_field->components[i]);
 					dest = (FE_value *)(node->values_storage + component->value);
@@ -17659,13 +16006,13 @@ place the values.
 						j++;
 						dest++;
 						source++;
-					}				
+					}
 					the_number_of_values += length;
 				}
-				*number_of_values = the_number_of_values; 			
+				*number_of_values = the_number_of_values;
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,"set_FE_nodal_field_FE_value_values.  "
 					"Can't find field in node");
 			}
@@ -17693,13 +16040,13 @@ int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
 LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the FE_values in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the FE_values in values.
 Returns the number of FE_values copied in number_of_values.
 Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 {
@@ -17727,7 +16074,7 @@ place the values.
 					number_of_components = node_field->field->number_of_components;
 					source = values;
 					for (i=0;(i<number_of_components)&&return_code;i++)
-					{					
+					{
 						j=0;
 						component = &(node_field->components[i]);
 						dest = (FE_value **)(node->values_storage + component->value);
@@ -17741,13 +16088,13 @@ place the values.
 							j++;
 							dest++;
 							source++;
-						}				
+						}
 						the_number_of_values += length;
 					}
-					*number_of_values = the_number_of_values; 			
+					*number_of_values = the_number_of_values;
 				}
 				else
-				{	
+				{
 					display_message(ERROR_MESSAGE,
 						"set_FE_nodal_field_FE_values_at_time.  "
 						"Either the field does not depend on time or the specified time (%f) has not been defined.", time);
@@ -17788,13 +16135,13 @@ int set_FE_nodal_field_float_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the floats in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the floats in values.
 Returns the number of floats copied in number_of_values.
 Assumes that values is set up with the correct number of floats.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 {
@@ -17812,12 +16159,12 @@ place the values.
 		{
 			if (node_field =FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 				node->fields->node_field_list))
-			{		 
+			{
 				return_code=1;
 				number_of_components = node_field->field->number_of_components;
 				source = values;
 				for (i=0;i<number_of_components;i++)
-				{					
+				{
 					j=0;
 					component = &(node_field->components[i]);
 					dest = (float *)(node->values_storage + component->value);
@@ -17830,13 +16177,13 @@ place the values.
 						j++;
 						dest++;
 						source++;
-					}				
+					}
 					the_number_of_values += length;
 				}
-				*number_of_values = the_number_of_values; 			
+				*number_of_values = the_number_of_values;
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,"set_FE_nodal_field_float_values.  "
 					"Can't find field in node");
 			}
@@ -17939,7 +16286,7 @@ It is up to the calling function to DEALLOCATE the returned array.
 				}
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_field_int_values.  Can't find field %s at node %d",
 					field->name,node->cm_node_identifier);
@@ -17967,13 +16314,13 @@ int set_FE_nodal_field_int_values(struct FE_field *field,
 LAST MODIFIED : 30 August 1999
 
 DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT 
-field->values_storage) with the integers in values. 
+Sets the node field's values storage (at node->values_storage, NOT
+field->values_storage) with the integers in values.
 Returns the number of integers copied in number_of_values.
 Assumes that values is set up with the correct number of ints.
-Assumes that the node->values_storage has been allocated with enough 
+Assumes that the node->values_storage has been allocated with enough
 memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to 
+Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 {
@@ -17996,7 +16343,7 @@ place the values.
 				number_of_components = node_field->field->number_of_components;
 				source = values;
 				for (i=0;i<number_of_components;i++)
-				{					
+				{
 					j=0;
 					component = &(node_field->components[i]);
 					dest = (int *)(node->values_storage + component->value);
@@ -18009,13 +16356,13 @@ place the values.
 						j++;
 						dest++;
 						source++;
-					}				
+					}
 					the_number_of_values += length;
 				}
-				*number_of_values = the_number_of_values; 			
+				*number_of_values = the_number_of_values;
 			}
 			else
-			{	
+			{
 				display_message(ERROR_MESSAGE,"set_FE_nodal_field_int_values.  "
 					"Can't find field in node");
 			}
@@ -18214,7 +16561,7 @@ Returns the number of derivatives for the node field component.
 		if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 			field,node->fields->node_field_list))
 		{
-			number_of_derivatives = 
+			number_of_derivatives =
 				node_field->components[component_number].number_of_derivatives;
 		}
 		else
@@ -18255,7 +16602,7 @@ Returns the number of versions for the node field component.
 		if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 			field,node->fields->node_field_list))
 		{
-			number_of_versions = 
+			number_of_versions =
 				node_field->components[component_number].number_of_versions;
 		}
 		else
@@ -18427,7 +16774,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 		{
 			/* sum the values_storage_size and number_of_values */
 			number_of_values = 0;
-			values_storage_size = 0; 
+			values_storage_size = 0;
 			if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(count_nodal_size,
 				(void *)(&values_storage_size), node_field_list) &&
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(count_nodal_values,
@@ -18471,10 +16818,10 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 								if (destination->values_storage)
 								{
 									if (destination_fields)
-									{			
+									{
 										FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 											FE_node_field_free_values_storage_arrays,
-											(void *)destination->values_storage, 
+											(void *)destination->values_storage,
 											destination_fields->node_field_list);
 									}
 									DEALLOCATE(destination->values_storage);
@@ -18598,2429 +16945,6 @@ Cmiss_node_id Cmiss_node_iterator_next_non_access(Cmiss_node_iterator_id node_it
 }
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
-
-struct FE_basis *CREATE(FE_basis)(int *type)
-/*******************************************************************************
-LAST MODIFIED : 02 April 2008
-
-DESCRIPTION :
-A basis is created with the specified <type> (duplicated).  The basis is
-returned.
-==============================================================================*/
-{
-	char valid_type;
-	FE_value *blending_matrix = NULL,*polygon_blending_matrix,*reorder_1,*reorder_2,
-		*temp_matrix;
-	int *argument,*arguments,*basis_function_number,*basis_function_numbers = NULL,
-		*basis_type = NULL,fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
-		number_of_basis_functions,
-		number_of_polygon_verticies,number_of_standard_basis_functions,
-		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
-		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_offset,
-		simplex_type,step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,
-		temp_int_2,temp_int_3,*type_column,*type_entry,xi_coordinate;
-	Standard_basis_function *standard_basis;
-	struct FE_basis *basis;
-
-	ENTER(CREATE(FE_basis));
-	if (type&&((number_of_xi_coordinates= *type)>0))
-	{
-		/* check that the type is valid */
-		if (ALLOCATE(arguments,int,number_of_xi_coordinates+1)&&
-			ALLOCATE(blending_matrix,FE_value,1)&&
-			ALLOCATE(basis_function_numbers,int,2*(number_of_xi_coordinates+1))&&
-			ALLOCATE(reorder_xi,int,number_of_xi_coordinates))
-		{
-#if defined (DEBUG)
-			/*???debug */
-			printf("create basis : %d\n",number_of_xi_coordinates);
-#endif /* defined (DEBUG) */
-			*arguments=number_of_xi_coordinates;
-			*blending_matrix=1;
-			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function
-				so that can order the basis functions (rows of the blending matrix) with
-				FE_nodal_value_type varying fastest, xi1 varying next fastest, xi2
-				varying next fastest and so on */
-			basis_function_number=basis_function_numbers;
-			for (i=2*(number_of_xi_coordinates+1);i>0;i--)
-			{
-				*basis_function_number=0;
-				basis_function_number++;
-			}
-			basis_function_numbers[1]=number_of_xi_coordinates;
-			valid_type=1;
-			number_of_basis_functions=1;
-			number_of_standard_basis_functions=1;
-			xi_coordinate=0;
-			type_entry=type+1;
-			standard_basis=monomial_basis_functions;
-			polygon_offset = 0;
-			/* for non-tensor product bases (simplex and polygon), the blending
-				matrix is initially calculated as the tensor product of the current
-				blending matrix and the blending matrix for the non-tensor product
-				basis.  This implies that all the coordinates for the non-tensor
-				product basis will be consecutive.  The coordinates (columns of the
-				blending matrix) then have to be reordered */
-			reorder_xi_entry=reorder_xi;
-			argument=arguments+1;
-			while (valid_type&&(xi_coordinate<number_of_xi_coordinates))
-			{
-				xi_coordinate++;
-				switch (*type_entry)
-				{
-					case FE_BASIS_CONSTANT:
-					{
-						*reorder_xi_entry=xi_coordinate;
-						reorder_xi_entry++;
-						*argument=0;
-						argument++;
-						valid_type = 1;
-					} break;
-					case LINEAR_LAGRANGE:
-					{
-						if (temp_matrix=tensor_product(2,2,
-							linear_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								2*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 2;
-								number_of_standard_basis_functions *= 2;
-								*argument=1;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case QUADRATIC_LAGRANGE:
-					{
-						if (temp_matrix=tensor_product(3,3,
-							quadratic_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=2;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						if (temp_matrix=tensor_product(4,4,cubic_lagrange_blending_matrix,
-							number_of_basis_functions,number_of_standard_basis_functions,
-							blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(3*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=2;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number[2*temp_int_1]=3;
-									basis_function_number[2*temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 4;
-								number_of_standard_basis_functions *= 4;
-								*argument=3;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case CUBIC_HERMITE:
-					{
-						if (temp_matrix=tensor_product(4,4,cubic_hermite_blending_matrix,
-							number_of_basis_functions,number_of_standard_basis_functions,
-							blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(3*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=0;
-									basis_function_number[1]=1;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number[2*temp_int_1]=1;
-									basis_function_number[2*temp_int_1+1]=1;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 4;
-								number_of_standard_basis_functions *= 4;
-								*argument=3;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case HERMITE_LAGRANGE:
-					{
-						if (temp_matrix=tensor_product(3,3,
-							hermite_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=0;
-									basis_function_number[1]=1;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case LAGRANGE_HERMITE:
-					{
-						if (temp_matrix=tensor_product(3,3,
-							lagrange_hermite_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=1;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
-					} break;
-					case POLYGON:
-					{
-						/* check if the other polygon coordinate is before */
-						valid_type=2;
-						number_of_polygon_verticies=0;
-						type_column=type_entry;
-						i=xi_coordinate-1;
-						j=number_of_xi_coordinates-xi_coordinate;
-						while (valid_type&&(i>0))
-						{
-							j++;
-							type_column -= j;
-							if (NO_RELATION!= *type_column)
-							{
-								if (0<number_of_polygon_verticies)
-								{
-									valid_type=0;
-								}
-								else
-								{
-									if ((number_of_polygon_verticies= *type_column)<3)
-									{
-										valid_type=0;
-									}
-								}
-							}
-							i--;
-						}
-						if (valid_type)
-						{
-							if (0<number_of_polygon_verticies)
-							{
-								/* make sure that it is not connected to a following xi */
-								type_entry++;
-								i=number_of_xi_coordinates-xi_coordinate;
-								while (valid_type&&(i>0))
-								{
-									if (NO_RELATION!= *type_entry)
-									{
-										valid_type=0;
-									}
-									type_entry++;
-									i--;
-								}
-							}
-							else
-							{
-								/* check if the other polygon coordinate is after */
-								type_entry++;
-								i=number_of_xi_coordinates-xi_coordinate;
-								while (valid_type&&(i>0))
-								{
-									if (NO_RELATION!= *type_entry)
-									{
-										if (0<number_of_polygon_verticies)
-										{
-											valid_type=0;
-										}
-										else
-										{
-											if ((number_of_polygon_verticies= *type_entry)>2)
-											{
-												polygon_offset=number_of_xi_coordinates-xi_coordinate+
-													1-i;
-												if (POLYGON!=type_entry[(polygon_offset*
-													(2*(number_of_xi_coordinates-xi_coordinate+1)-
-													polygon_offset+1))/2-polygon_offset])
-												{
-													valid_type=0;
-												}
-											}
-											else
-											{
-												valid_type=0;
-											}
-										}
-									}
-									type_entry++;
-									i--;
-								}
-								if (valid_type&&(0<number_of_polygon_verticies))
-								{
-									*reorder_xi_entry=xi_coordinate;
-									reorder_xi_entry++;
-									*reorder_xi_entry=xi_coordinate+polygon_offset;
-									reorder_xi_entry++;
-									/* see polygon_basis_functions for the polygon blending
-										matrix */
-									if (ALLOCATE(polygon_blending_matrix,FE_value,
-										(number_of_polygon_verticies+1)*
-										4*number_of_polygon_verticies))
-									{
-										temp_matrix=polygon_blending_matrix;
-										for (j=number_of_polygon_verticies;j>0;j--)
-										{
-											*temp_matrix=1;
-											temp_matrix++;
-										}
-										for (j=number_of_polygon_verticies;j>0;j--)
-										{
-											*temp_matrix=0;
-											temp_matrix++;
-										}
-										for (j=number_of_polygon_verticies;j>0;j--)
-										{
-											*temp_matrix= -1;
-											temp_matrix++;
-										}
-										for (j=(4*number_of_polygon_verticies+1)*
-											number_of_polygon_verticies;j>0;j--)
-										{
-											*temp_matrix=0;
-											temp_matrix++;
-										}
-										temp_matrix=polygon_blending_matrix+
-											(6*number_of_polygon_verticies);
-										*temp_matrix=1;
-										temp_matrix += number_of_polygon_verticies;
-										*temp_matrix= -1;
-										temp_matrix[number_of_polygon_verticies-1]=1;
-										step_1=3*number_of_polygon_verticies+1;
-										step_2=number_of_polygon_verticies-1;
-										for (j=number_of_polygon_verticies-1;j>0;j--)
-										{
-											temp_matrix += step_1;
-											*temp_matrix=1;
-											temp_matrix += step_2;
-											*temp_matrix=1;
-											temp_matrix++;
-											*temp_matrix= -1;
-										}
-										if (temp_matrix=tensor_product(
-											number_of_polygon_verticies+1,
-											4*number_of_polygon_verticies,polygon_blending_matrix,
-											number_of_basis_functions,
-											number_of_standard_basis_functions,blending_matrix))
-										{
-											DEALLOCATE(blending_matrix);
-											blending_matrix=temp_matrix;
-											temp_int_1=number_of_basis_functions*
-												2*(number_of_xi_coordinates+1);
-											if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-												(number_of_polygon_verticies+1)*temp_int_1))
-											{
-												basis_function_numbers=temp_int_ptr_1;
-												for (i=number_of_polygon_verticies;i>0;i--)
-												{
-													memcpy(basis_function_numbers+(i*temp_int_1),
-														basis_function_numbers,temp_int_1*sizeof(int));
-												}
-												basis_function_number=basis_function_numbers+
-													(2*xi_coordinate);
-												for (i=number_of_basis_functions;i>0;i--)
-												{
-													for (j=number_of_polygon_verticies;j>0;j--)
-													{
-														basis_function_number[j*temp_int_1]=j;
-														basis_function_number[j*temp_int_1+1]=0;
-													}
-													basis_function_number +=
-														2*(number_of_xi_coordinates+1);
-												}
-												number_of_basis_functions *=
-													number_of_polygon_verticies+1;
-												number_of_standard_basis_functions *=
-													4*number_of_polygon_verticies;
-												*argument= -(1+2*(1/*polygon_offset*/+1/*order*/*
-													number_of_xi_coordinates));
-												argument++;
-												*argument= -2*number_of_polygon_verticies;
-												argument++;
-												standard_basis=polygon_basis_functions;
-												valid_type=2;
-											}
-											else
-											{
-												valid_type=0;
-											}
-										}
-										else
-										{
-											valid_type=0;
-										}
-										DEALLOCATE(polygon_blending_matrix);
-									}
-									else
-									{
-										valid_type=0;
-									}
-								}
-								else
-								{
-									valid_type=0;
-								}
-							}
-						}
-					} break;
-					case LINEAR_SIMPLEX:
-					case QUADRATIC_SIMPLEX:
-					{
-						int simplex_order = 0;
-						/* simplex */
-						/* to avoid increment/check of row */
-						valid_type=2;
-						/* determine if this is the first component of the simplex */
-						simplex_dimension=1;
-						type_column=type_entry;
-						i=xi_coordinate-1;
-						j=number_of_xi_coordinates-xi_coordinate;
-						while (valid_type&&(i>0))
-						{
-							j++;
-							type_column -= j;
-							if (NO_RELATION!= *type_column)
-							{
-								simplex_dimension++;
-							}
-							i--;
-						}
-						if (1==simplex_dimension)
-						{
-							/* first component of the simplex */
-							*reorder_xi_entry=xi_coordinate;
-							reorder_xi_entry++;
-							simplex_type= *type_entry;
-								/*???DB.  Maybe able to remove if can work how to calculate the
-									blending matrix for an arbitrary order */
-							/* determine the simplex dimension */
-							type_entry++;
-							i=1;
-							while (valid_type && (i<=number_of_xi_coordinates-xi_coordinate))
-							{
-								if (NO_RELATION!= *type_entry)
-								{
-									simplex_offset=i;
-									if (simplex_type==type_entry[simplex_offset*
-										(2*(number_of_xi_coordinates-xi_coordinate+1)+
-										(1-simplex_offset))/2-i])
-									{
-										*reorder_xi_entry=xi_coordinate+i;
-										reorder_xi_entry++;
-										simplex_dimension++;
-									}
-									else
-									{
-										valid_type = 0;
-									}
-								}
-								type_entry++;
-								i++;
-							}
-							if (valid_type && (2<=simplex_dimension))
-							{
-								/*???DB.  Should be able to calculate the blending matrix for
-									arbitrary dimension and arbitrary order, but get the basics
-									going first */
-								switch (simplex_type)
-								{
-									case LINEAR_SIMPLEX:
-									{
-										simplex_order=1;
-										switch (simplex_dimension)
-										{
-											case 2:
-											{
-												if (temp_matrix=tensor_product(3,4,
-													linear_simplex_2d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,3*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=temp_int_1+
-															2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_2]=1;
-															basis_function_number[temp_int_2+1]=0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 3;
-														number_of_standard_basis_functions *= 4;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
-											} break;
-											case 3:
-											{
-												if (temp_matrix=tensor_product(4,8,
-													linear_simplex_3d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,4*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(3*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=temp_int_1+
-															2*(*(reorder_xi_entry-2)-xi_coordinate);
-														temp_int_3=2*temp_int_1+
-															2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_2]=1;
-															basis_function_number[temp_int_2+1]=0;
-															basis_function_number[temp_int_3]=1;
-															basis_function_number[temp_int_3+1]=0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 4;
-														number_of_standard_basis_functions *= 8;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
-											} break;
-											default:
-											{
-												valid_type=0;
-											} break;
-										}
-									} break;
-									case QUADRATIC_SIMPLEX:
-									{
-										simplex_order=2;
-										switch (simplex_dimension)
-										{
-											case 2:
-											{
-												if (temp_matrix=tensor_product(6,9,
-													quadratic_simplex_2d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,6*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(3*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(4*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(5*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_1]=2;
-															basis_function_number[temp_int_1+1]=0;
-															basis_function_number[2*temp_int_1+temp_int_2]=1;
-															basis_function_number[2*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number[3*temp_int_1]=1;
-															basis_function_number[3*temp_int_1+1]=0;
-															basis_function_number[3*temp_int_1+temp_int_2]=1;
-															basis_function_number[3*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number[4*temp_int_1+temp_int_2]=2;
-															basis_function_number[4*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 6;
-														number_of_standard_basis_functions *= 9;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
-											} break;
-											case 3:
-											{
-												new_func_count = 10;
-												new_std_func_count = 27;
-												if (temp_matrix=tensor_product(new_func_count,new_std_func_count,
-													quadratic_simplex_3d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,new_func_count*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														for (fn=1; fn<new_func_count; ++fn)
-														{
-															memcpy(basis_function_numbers+(fn*temp_int_1),
-																basis_function_numbers,temp_int_1*sizeof(int));
-														}
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=2*(*(reorder_xi_entry-2)-xi_coordinate);
-														temp_int_3=2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_1]=2;
-															basis_function_number[temp_int_1+1]=0;
-															basis_function_number[2*temp_int_1+temp_int_2]=1;
-															basis_function_number[2*temp_int_1+temp_int_2+1]=0;
-															
-															basis_function_number[3*temp_int_1]=1;
-															basis_function_number[3*temp_int_1+1]=0;
-															basis_function_number[3*temp_int_1+temp_int_2]=1;
-															basis_function_number[3*temp_int_1+temp_int_2+1]=0;
-
-															basis_function_number[4*temp_int_1+temp_int_2]=2;
-															basis_function_number[4*temp_int_1+temp_int_2+1]=0;
-
-															basis_function_number[5*temp_int_1+temp_int_3]=1;
-															basis_function_number[5*temp_int_1+temp_int_3+1]=0;
-															
-															basis_function_number[6*temp_int_1]=1;
-															basis_function_number[6*temp_int_1+1]=0;
-															basis_function_number[6*temp_int_1+temp_int_3]=1;
-															basis_function_number[6*temp_int_1+temp_int_3+1]=0;
-															
-															basis_function_number[7*temp_int_1+temp_int_2]=1;
-															basis_function_number[7*temp_int_1+temp_int_2+1]=0;
-															basis_function_number[7*temp_int_1+temp_int_3]=1;
-															basis_function_number[7*temp_int_1+temp_int_3+1]=0;
-															
-															basis_function_number[8*temp_int_1+temp_int_3]=2;
-															basis_function_number[8*temp_int_1+temp_int_3+1]=0;
-															
-															basis_function_number += 2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= new_func_count;
-														number_of_standard_basis_functions *= new_std_func_count;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
-											} break;
-											default:
-											{
-												valid_type=0;
-											} break;
-										}
-									} break;
-									default:
-									{
-										valid_type=0;
-									} break;
-								}
-								for (i=simplex_dimension;i>0;i--)
-								{
-									*argument=simplex_order;
-									argument++;
-								}
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							/* skip rest of row */
-							type_entry += number_of_xi_coordinates-xi_coordinate+1;
-						}
-					} break;
-					default:
-					{
-						valid_type=0;
-					} break;
-				}
-				if (1==valid_type)
-				{
-					/* 1-dimensional basis component */
-					type_entry++;
-					i=number_of_xi_coordinates-xi_coordinate;
-					while (valid_type&&(i>0))
-					{
-						if (NO_RELATION!= *type_entry)
-						{
-							valid_type=0;
-						}
-						type_entry++;
-						i--;
-					}
-				}
-			}
-			if (valid_type)
-			{
-				/* allocate memory for the basis */
-				if (ALLOCATE(basis,struct FE_basis,1)&&ALLOCATE(basis_type,int,
-					1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2)&&
-					ALLOCATE(basis->blending_matrix,FE_value,number_of_basis_functions*
-					number_of_standard_basis_functions)&&
-					ALLOCATE(basis->blending_matrix_column_size,int,
-					number_of_standard_basis_functions))
-				{
-					/* reorder the xi coordinates */
-					need_reorder=0;
-					for (i=0;i<number_of_xi_coordinates;i++)
-					{
-						if (i+1!=reorder_xi[i])
-						{
-							need_reorder=1;
-						}
-						reorder_xi[i]=number_of_xi_coordinates*reorder_xi[i]+i;
-					}
-					if (need_reorder)
-					{
-						ALLOCATE(reorder_offsets,int,number_of_standard_basis_functions);
-						ALLOCATE(temp_int_ptr_1,int,number_of_xi_coordinates+1);
-						if (reorder_offsets&&temp_int_ptr_1)
-						{
-							heapsort((void *)reorder_xi,number_of_xi_coordinates,sizeof(int),
-								sort_integers);
-							for (i=0;i<number_of_xi_coordinates;i++)
-							{
-								reorder_xi[i] %= number_of_xi_coordinates;
-							}
-							reorder_1=basis->blending_matrix;
-							reorder_2=blending_matrix;
-							for (i=number_of_basis_functions;i>0;i--)
-							{
-								*reorder_1= *reorder_2;
-								reorder_1 += number_of_standard_basis_functions;
-								reorder_2 += number_of_standard_basis_functions;
-							}
-							offset_1=1;
-							reorder_offsets[0]=0;
-							for (i=0;i<number_of_xi_coordinates;i++)
-							{
-								offset_2=1;
-								for (j=reorder_xi[i];j>0;j--)
-								{
-									if ((temp_int_1=arguments[j])<0)
-									{
-										/* polygon */
-										temp_int_1= -temp_int_1;
-										if (temp_int_1%2)
-										{
-											/* first polygon coordinate */
-											/* do nothing for second because all standard basis
-												functions carried by first */
-											temp_int_1 /= 2;
-											temp_int_1 %= number_of_xi_coordinates;
-											offset_2 *= 4*(-arguments[j+temp_int_1])/2;
-										}
-									}
-									else
-									{
-										offset_2 *= temp_int_1+1;
-									}
-								}
-								if ((temp_int_1=arguments[reorder_xi[i]+1])<0)
-								{
-									/* polygon */
-									temp_int_1= -temp_int_1;
-									if (temp_int_1%2)
-									{
-										/* first polygon coordinate */
-										temp_int_1 /= 2;
-										temp_int_1 %= number_of_xi_coordinates;
-										temp_int_1=4*(-arguments[reorder_xi[i]+1+temp_int_1])/2-1;
-									}
-									else
-									{
-										/* do nothing for second because all standard basis
-											functions carried by first */
-										temp_int_1=0;
-									}
-								}
-								for (j=1;j<=temp_int_1;j++)
-								{
-									for (k=0;k<offset_1;k++)
-									{
-										reorder_1=basis->blending_matrix+j*offset_1+k;
-										reorder_offsets[j*offset_1+k]=
-											reorder_offsets[(j-1)*offset_1+k]+offset_2;
-										reorder_2=blending_matrix+reorder_offsets[j*offset_1+k];
-										for (l=number_of_basis_functions;l>0;l--)
-										{
-											*reorder_1= *reorder_2;
-											reorder_1 += number_of_standard_basis_functions;
-											reorder_2 += number_of_standard_basis_functions;
-										}
-									}
-								}
-								offset_1 *= temp_int_1+1;
-							}
-							reorder_1=basis->blending_matrix;
-							basis->blending_matrix=blending_matrix;
-							blending_matrix=reorder_1;
-							temp_int_ptr_1[0]=arguments[0];
-							/* don't need to allow for reordering polygon coordinates because
-								the exelem format only allows specification of bases with
-								circumferential first */
-							for (i=number_of_xi_coordinates;i>0;i--)
-							{
-								if ((temp_int_1=arguments[reorder_xi[i-1]+1])<0)
-								{
-									/* polygon */
-									if ((-temp_int_1)%2)
-									{
-										temp_int_1= -temp_int_1;
-										/* first polygon coordinate */
-										temp_int_1 /= 2;
-										polygon_offset=temp_int_1%number_of_xi_coordinates;
-										temp_int_1 /= number_of_xi_coordinates;
-										polygon_offset=reorder_xi[i-1+polygon_offset]-
-											reorder_xi[i-1];
-										temp_int_1= -(1+2*(polygon_offset+
-											temp_int_1*number_of_xi_coordinates));
-									}
-								}
-								temp_int_ptr_1[i]=temp_int_1;
-							}
-							temp_int_ptr_2=arguments;
-							arguments=temp_int_ptr_1;
-							temp_int_ptr_1=temp_int_ptr_2;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-							"CREATE(FE_basis).  Could not allocate memory for reordering xi");
-							DEALLOCATE(basis->blending_matrix_column_size);
-							DEALLOCATE(basis->blending_matrix);
-							DEALLOCATE(basis_type);
-							DEALLOCATE(arguments);
-							DEALLOCATE(basis);
-							basis=NULL;
-						}
-						DEALLOCATE(reorder_offsets);
-						DEALLOCATE(temp_int_ptr_1);
-					}
-					if (basis)
-					{
-						basis->access_count=0;
-						basis->manager = (struct MANAGER(FE_basis) *)NULL;
-						basis->manager_change_status = MANAGER_CHANGE_NONE(FE_basis);
-						
-						/* copy the basis type */
-						basis->type=basis_type;
-						type_entry=type;
-						for (i=1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2-1;
-							i>=0;i--)
-						{
-							*basis_type= *type_entry;
-							basis_type++;
-							type_entry++;
-						}
-						basis->number_of_basis_functions=number_of_basis_functions;
-						basis->number_of_standard_basis_functions=
-							number_of_standard_basis_functions;
-						/* reorder the basis functions */
-						basis_function_number=basis_function_numbers;
-						for (i=0;i<number_of_basis_functions;i++)
-						{
-							*basis_function_number=i;
-							basis_function_number += 2*(number_of_xi_coordinates+1);
-						}
-						heapsort((void *)basis_function_numbers,number_of_basis_functions,
-							2*(number_of_xi_coordinates+1)*sizeof(int),sort_basis_functions);
-						/* reorder the blending matrix */
-						reorder_1=basis->blending_matrix;
-						basis_function_number=basis_function_numbers;
-						for (i=0;i<number_of_basis_functions;i++)
-						{
-							reorder_2=blending_matrix+(((*basis_function_number)%
-								number_of_basis_functions)*number_of_standard_basis_functions);
-							for (j=0;j<number_of_standard_basis_functions;j++)
-							{
-								*reorder_1=  *reorder_2;
-								reorder_1++;
-								reorder_2++;
-							}
-							basis_function_number += 2*(number_of_xi_coordinates+1);
-						}
-						/* calculate the size of column containing non-zero entries, to reduce
-						 	dot product calculation in global_to_element_map_values() */
-						for (j=0;j<number_of_standard_basis_functions;j++)
-						{
-							reorder_1 = basis->blending_matrix + number_of_basis_functions*number_of_standard_basis_functions + j;
-							for (i=number_of_basis_functions;i>0;i--)
-							{
-								reorder_1 -= number_of_standard_basis_functions;
-								if (*reorder_1 != 0.0)
-									break;
-							}
-							basis->blending_matrix_column_size[j] = i;
-						}
-/*???debug */
-/*{
-	FE_value *value;
-	int i,j;
-
-	printf("%d) %d %d\n",xi_coordinate,number_of_basis_functions,
-		number_of_standard_basis_functions);
-	value=basis->blending_matrix;
-	for (i=number_of_standard_basis_functions;i>0;i--)
-	{
-		for (j=number_of_basis_functions;j>0;j--)
-		{
-			printf("%g ",*value);
-			value++;
-		}
-		printf("\n");
-	}
-	for (i=0;i<number_of_basis_functions;i++)
-	{
-		printf("%d ",basis_function_numbers[i]);
-	}
-	printf("\n");
-	for (i=0;i<=xi_coordinate;i++)
-	{
-		printf("%d ",arguments[i]);
-	}
-	printf("\n");
-	printf("%p %p %p\n",standard_basis,monomial_basis_functions,
-		polygon_basis_functions);
-}*/
-						/* create the names for the values that multiply the basis
-							functions */
-							/*???DB.  To be done */
-						basis->value_names=(char **)NULL;
-						basis->arguments=arguments;
-						basis->standard_basis=standard_basis;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_basis).  Could not allocate memory for basis");
-					if (basis)
-					{
-						DEALLOCATE(basis);
-						DEALLOCATE(basis_type);
-					}
-					DEALLOCATE(arguments);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"CREATE(FE_basis).  Invalid basis type");
-				DEALLOCATE(arguments);
-				basis=(struct FE_basis *)NULL;
-			}
-			DEALLOCATE(basis_function_numbers);
-			DEALLOCATE(blending_matrix);
-			DEALLOCATE(reorder_xi);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_basis).  Could not allocate memory for basis calculation");
-			if (arguments)
-			{
-				DEALLOCATE(arguments);
-				if (blending_matrix)
-				{
-					DEALLOCATE(blending_matrix);
-					DEALLOCATE(basis_function_numbers);
-				}
-			}
-			basis=(struct FE_basis *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(FE_basis).  Invalid argument(s)");
-		basis=(struct FE_basis *)NULL;
-	}
-	LEAVE;
-
-	return (basis);
-} /* CREATE(FE_basis) */
-
-int DESTROY(FE_basis)(struct FE_basis **basis_address)
-/*******************************************************************************
-LAST MODIFIED : 1 October 1995
-
-DESCRIPTION :
-Frees the memory for the basis and sets <*basis_address> to NULL.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_basis *basis;
-
-	ENTER(DESTROY(FE_basis));
-	/* check the arguments */
-	if ((basis_address)&&(basis= *basis_address))
-	{
-		if (0==basis->access_count)
-		{
-			DEALLOCATE(basis->type);
-			DEALLOCATE(basis->blending_matrix);
-			DEALLOCATE(basis->blending_matrix_column_size);
-			DEALLOCATE(basis->arguments);
-			DEALLOCATE(*basis_address);
-			return_code=1;
-		}
-		else
-		{
-			return_code=1;
-			*basis_address=(struct FE_basis *)NULL;
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_basis) */
-
-struct FE_basis *make_FE_basis(int *basis_type,
-	struct MANAGER(FE_basis) *basis_manager )
-/*******************************************************************************
-LAST MODIFIED : 2 August 1999
-
-DESCRIPTION :
-Finds the specfied FE_basis in the basis manager. If it isn't there, creates it,
-and adds it to the manager.
-==============================================================================*/
-{
-	struct FE_basis *basis;
-
-	ENTER(make_FE_basis);
-	if (basis_manager)
-	{
-		if (!(basis=FIND_BY_IDENTIFIER_IN_MANAGER(FE_basis,type)
-			(basis_type,basis_manager)))
-		{
-			if (basis=CREATE(FE_basis)(basis_type))
-			{
-				if (!ADD_OBJECT_TO_MANAGER(FE_basis)(basis,basis_manager))
-				{
-					DESTROY(FE_basis)(&basis);
-					display_message(ERROR_MESSAGE,
-						"make_FE_basis. Could not add basis to manager");
-					basis = (struct FE_basis *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"make_FE_basis Could not create a new basis");
-				basis = (struct FE_basis *)NULL;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"make_FE_basis. Invalid arguments");
-		basis = (struct FE_basis *)NULL;
-	}
-	LEAVE;
-
-	return (basis);
-} /* make_FE_basis */
-
-DECLARE_OBJECT_FUNCTIONS(FE_basis)
-
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_basis)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_basis,type,int *, \
-	compare_FE_basis_type)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_basis,type)
-
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
-{
-	char **destination_value_names,**source_value_name,**value_name;
-	FE_value *blending_matrix;
-	int *argument,*destination_arguments,i,return_code,*source_argument;
-
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type));
-	if (source&&destination)
-	{
-		/* copy the source value names */
-		if (source_value_name=source->value_names)
-		{
-			i=source->number_of_basis_functions;
-			if (ALLOCATE(destination_value_names,char *,i))
-			{
-				value_name=destination_value_names;
-				return_code=1;
-				while (return_code&&(i>0))
-				{
-					if (*source_value_name)
-					{
-						if (ALLOCATE(*value_name,char,strlen(*source_value_name)+1))
-						{
-							strcpy(*value_name,*source_value_name);
-							value_name++;
-							source_value_name++;
-							i--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for value name");
-							return_code=0;
-							while (i<source->number_of_basis_functions)
-							{
-								value_name--;
-								if (*value_name)
-								{
-									DEALLOCATE(*value_name);
-								}
-								i++;
-							}
-							DEALLOCATE(destination_value_names);
-						}
-					}
-					else
-					{
-						*value_name=(char *)NULL;
-						value_name++;
-						source_value_name++;
-						i--;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for value names");
-				return_code=0;
-			}
-		}
-		else
-		{
-			return_code=1;
-			destination_value_names=(char **)NULL;
-		}
-		if (return_code)
-		{
-			FE_value *destination_blending_matrix = 0;
-			/* copy the source blending matrix */
-			if (source->blending_matrix)
-			{
-				FE_value *source_blending_matrix = source->blending_matrix;
-				i=(source->number_of_basis_functions)*
-					(source->number_of_standard_basis_functions);
-				if (ALLOCATE(destination_blending_matrix,FE_value,i))
-				{
-					blending_matrix=destination_blending_matrix;
-					while (i>0)
-					{
-						*blending_matrix= *source_blending_matrix;
-						blending_matrix++;
-						source_blending_matrix++;
-						i--;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for blending matrix");
-					return_code=0;
-					if (value_name=destination_value_names)
-					{
-						for (i=source->number_of_basis_functions;i>0;i--)
-						{
-							if (*value_name)
-							{
-								DEALLOCATE(*value_name);
-							}
-							value_name++;
-						}
-						DEALLOCATE(destination_value_names);
-					}
-				}
-			}
-			if (return_code)
-			{
-				i=(source->number_of_standard_basis_functions)+1;
-				if (ALLOCATE(destination_arguments,int,i))
-				{
-					argument=destination_arguments;
-					source_argument=(int *)(source->arguments);
-					while (i>0)
-					{
-						*argument= *source_argument;
-						argument++;
-						source_argument++;
-						i--;
-					}
-					/* clear the destination value names */
-					if (value_name=destination->value_names)
-					{
-						for (i=destination->number_of_basis_functions;i>0;i--)
-						{
-							DEALLOCATE(*value_name);
-							value_name++;
-						}
-						DEALLOCATE(destination->value_names);
-					}
-					destination->number_of_basis_functions=
-						source->number_of_basis_functions;
-					destination->value_names=destination_value_names;
-					/* clear the destination blending matrix */
-					DEALLOCATE(destination->blending_matrix);
-					destination->blending_matrix=destination_blending_matrix;
-					destination->number_of_standard_basis_functions=
-						source->number_of_standard_basis_functions;
-					/* clear the destination standard basis function arguments */
-					DEALLOCATE(destination->arguments);
-					destination->arguments=(void *)destination_arguments;
-					source->standard_basis=destination->standard_basis;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for arguments");
-					return_code=0;
-					DEALLOCATE(destination_blending_matrix);
-					if (value_name=destination_value_names)
-					{
-						for (i=source->number_of_basis_functions;i>0;i--)
-						{
-							if (*value_name)
-							{
-								DEALLOCATE(*value_name);
-							}
-							value_name++;
-						}
-						DEALLOCATE(destination_value_names);
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type) */
-
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_basis,type,int *)
-{
-	int *basis_type,*destination_type,i,number_of_xi_coordinates,return_code,size;
-
-	ENTER(MANAGER_COPY_IDENTIFIER(FE_basis,type));
-	if (destination&&(basis_type=type)&&((number_of_xi_coordinates= *type)>0))
-	{
-		size=1+(number_of_xi_coordinates*(number_of_xi_coordinates+1))/2;
-		if (ALLOCATE(destination_type,int,size))
-		{
-			DEALLOCATE(destination->type);
-			destination->type=destination_type;
-			for (i=size;i>0;i--)
-			{
-				*destination_type= *basis_type;
-				basis_type++;
-				destination_type++;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-"MANAGER_COPY_IDENTIFIER(FE_basis,type).  Could not allocate memory for type");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(FE_basis,type).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(FE_basis,type) */
-
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_basis,type)
-{
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type));
-	if (source&&destination)
-	{
-		if (return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type)(
-			destination,source))
-		{
-			return_code=MANAGER_COPY_IDENTIFIER(FE_basis,type)(destination,
-				source->type);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type) */
-
-DECLARE_MANAGER_FUNCTIONS(FE_basis,manager)
-
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_basis,manager)
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *,manager)
-
-int *FE_basis_string_to_type_array(const char *basis_description_string)
-/*******************************************************************************
-LAST MODIFIED : 3 November 2004
-
-DESCRIPTION :
-Creates a type array from the <basis_description_string>.  Returns the type
-array which can be used in CREATE(FE_basis) and make_FE_basis.
-It is up to the calling function to DEALLOCATE the returned array.
-
-Some examples of basis descriptions are:
-1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
-	linear variation in xi3.
-2. c.Hermite*l.simplex(3)*l.simplex  This has cubic variation in xi1 and 2-D
-	linear simplex variation for xi2 and xi3.
-3. polygon(5,3)*l.Lagrange*polygon  This has linear variation in xi2 and a 2-D
-	5-gon for xi1 and xi3.
-==============================================================================*/
-{
-	const char *index,*start_basis_name;
-	int *basis_type,component,i,j,*first_simplex,no_error,
-		number_of_polygon_vertices,number_of_xi_coordinates,previous_component,
-		*temp_basis_type,*xi_basis_type,xi_number;
-
-	ENTER(FE_basis_string_to_type_array);
-	basis_type=(int *)NULL;
-	if (basis_description_string)
-	{
-		number_of_xi_coordinates=1;
-		index=basis_description_string;
-		while (index=strchr(index,'*'))
-		{
-			index++;
-			number_of_xi_coordinates++;
-		}
-		if (ALLOCATE(basis_type,int,
-			1+(number_of_xi_coordinates*(1+ number_of_xi_coordinates))/2))
-		{
-			/* decipher the basis description */
-			xi_number=0;
-			start_basis_name=basis_description_string;
-			/* skip leading blanks */
-			while (' '== *start_basis_name)
-			{
-				start_basis_name++;
-			}
-			xi_basis_type=basis_type;
-			*xi_basis_type=number_of_xi_coordinates;
-			xi_basis_type++;
-			no_error=1;
-			while (no_error&&(xi_number<number_of_xi_coordinates))
-			{
-				xi_number++;
-				/* determine the interpolation in the xi direction */
-				if ((0==strncmp(start_basis_name,"l.simplex",9))||
-					(0==strncmp(start_basis_name,"q.simplex",9)))
-				{
-					/*???debug */
-					/*printf("simplex\n");*/
-					if (0==strncmp(start_basis_name,"l.simplex",9))
-					{
-						*xi_basis_type=LINEAR_SIMPLEX;
-					}
-					else
-					{
-						*xi_basis_type=QUADRATIC_SIMPLEX;
-					}
-					/*???debug */
-					/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
-					start_basis_name += 9;
-					/* skip blanks */
-					while (' '== *start_basis_name)
-					{
-						start_basis_name++;
-					}
-					/* check for links to other simplex components */
-					if ('('== *start_basis_name)
-					{
-						/*???debug */
-						/*printf("first simplex component\n");*/
-						xi_basis_type++;
-						/* assign links to other simplex components */
-						previous_component=xi_number+1;
-						if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
-							(previous_component<=component)&&
-							(component<=number_of_xi_coordinates))
-						{
-							do
-							{
-								start_basis_name += i;
-								while (previous_component<component)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									previous_component++;
-								}
-								*xi_basis_type=1;
-								xi_basis_type++;
-								previous_component++;
-							} while ((')'!=start_basis_name[0])&&
-								(1==sscanf(start_basis_name,"%*[; ]%d %n",&component,&i))&&
-								(previous_component<=component)&&
-								(component<=number_of_xi_coordinates));
-							if (')'==start_basis_name[0])
-							{
-								/* fill rest of basis_type row with NO_RELATION */
-								while (previous_component <= number_of_xi_coordinates)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									previous_component++;
-								}
-								start_basis_name ++;
-							}
-							else
-							{
-								/* have no links to succeeding xi directions */
-								display_message(ERROR_MESSAGE,
-									"Invalid simplex component of basis");
-								no_error=0;
-							}
-						}
-						else
-						{
-							/* have no links to succeeding xi directions */
-							display_message(ERROR_MESSAGE,
-								"Invalid simplex component of basis");
-							no_error=0;
-						}
-					}
-					else
-					{
-						/*???debug */
-						/*printf("not first simplex component\n");*/
-						/* check that links have been assigned */
-						temp_basis_type=xi_basis_type;
-						i=xi_number-1;
-						j=number_of_xi_coordinates-xi_number;
-						first_simplex=(int *)NULL;
-						while (no_error&&(i>0))
-						{
-							j++;
-							temp_basis_type -= j;
-							if (NO_RELATION!= *temp_basis_type)
-							{
-								/*???debug */
-								/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
-								  printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
-								if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
-								{
-									first_simplex=temp_basis_type;
-								}
-								else
-								{
-									no_error=0;
-								}
-							}
-							i--;
-						}
-						/*???debug */
-						/*printf("%d %p\n",no_error,first_simplex);*/
-						if (no_error&&first_simplex)
-						{
-							xi_basis_type++;
-							first_simplex++;
-							i=xi_number;
-							while (i<number_of_xi_coordinates)
-							{
-								*xi_basis_type= *first_simplex;
-								xi_basis_type++;
-								first_simplex++;
-								i++;
-							}
-						}
-						else
-						{
-							no_error=0;
-						}
-					}
-				}
-				else
-				{
-					if (0==strncmp(start_basis_name,"polygon",7))
-					{
-						*xi_basis_type=POLYGON;
-						start_basis_name += 7;
-						/* skip blanks */
-						while (' '== *start_basis_name)
-						{
-							start_basis_name++;
-						}
-						/* check for link to other polygon component */
-						if ('('== *start_basis_name)
-						{
-							/* assign link to other polygon component */
-							if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
-									  &number_of_polygon_vertices,&component,&i))&&
-								(3<=number_of_polygon_vertices)&&
-								(xi_number<component)&&
-								(component<=number_of_xi_coordinates)&&
-								('*'== start_basis_name[i]))
-							{
-								start_basis_name += i;
-								/* assign link */
-								xi_basis_type++;
-								i=xi_number+1;
-								while (i<component)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-								*xi_basis_type=number_of_polygon_vertices;
-								xi_basis_type++;
-								while (i<number_of_xi_coordinates)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-							}
-							else
-							{
-								/* have no links to succeeding xi directions */
-								display_message(ERROR_MESSAGE,
-									"Invalid polygon component of basis");
-								no_error=0;
-							}
-						}
-						else
-						{
-							/* check that link has been assigned */
-							temp_basis_type=xi_basis_type;
-							i=xi_number-1;
-							j=number_of_xi_coordinates-xi_number;
-							number_of_polygon_vertices=0;
-							while (no_error&&(i>0))
-							{
-								j++;
-								temp_basis_type -= j;
-								if (NO_RELATION!= *temp_basis_type)
-								{
-									if (0<number_of_polygon_vertices)
-									{
-										no_error=0;
-									}
-									else
-									{
-										if ((number_of_polygon_vertices= *temp_basis_type)<3)
-										{
-											no_error=0;
-										}
-									}
-								}
-								i--;
-							}
-							if (no_error&&(3<=number_of_polygon_vertices))
-							{
-								xi_basis_type++;
-								i=xi_number;
-								while (i<number_of_xi_coordinates)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-							}
-							else
-							{
-								no_error=0;
-							}
-						}
-					}
-					else
-					{
-						if (0==strncmp(start_basis_name,"l.Lagrange",10))
-						{
-							*xi_basis_type=LINEAR_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"q.Lagrange",10))
-						{
-							*xi_basis_type=QUADRATIC_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"c.Lagrange",10))
-						{
-							*xi_basis_type=CUBIC_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"c.Hermite",9))
-						{
-							*xi_basis_type=CUBIC_HERMITE;
-							start_basis_name += 9;
-						}
-						else if (0==strncmp(start_basis_name,"constant",8))
-						{
-							*xi_basis_type=FE_BASIS_CONSTANT;
-							start_basis_name += 8;
-						}
-						else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-						{
-							*xi_basis_type=LAGRANGE_HERMITE;
-							start_basis_name += 15;
-						}
-						else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-						{
-							*xi_basis_type=HERMITE_LAGRANGE;
-							start_basis_name += 15;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Invalid basis type");
-							no_error=0;
-						}
-						if (no_error)
-						{
-							/* skip blanks */
-							while (' '== *start_basis_name)
-							{
-								start_basis_name++;
-							}
-							/* check for simplex elements */
-							if ('('== *start_basis_name)
-							{
-								/* assign links to succeeding simplex xi directions */
-								temp_basis_type=xi_basis_type;
-								i=xi_number;
-								while (no_error&&(i<number_of_xi_coordinates)&&
-									(')'!= *start_basis_name))
-								{
-									temp_basis_type++;
-									if (';'== *start_basis_name)
-									{
-										*temp_basis_type=NO_RELATION;
-										start_basis_name++;
-									}
-									else
-									{
-										if (0==strncmp(start_basis_name,"l.Lagrange",10))
-										{
-											*xi_basis_type=LINEAR_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"q.Lagrange",10))
-										{
-											*xi_basis_type=QUADRATIC_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"c.Lagrange",10))
-										{
-											*xi_basis_type=CUBIC_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"c.Hermite",9))
-										{
-											*xi_basis_type=CUBIC_HERMITE;
-											start_basis_name += 9;
-										}
-										else if (0==strncmp(start_basis_name,"constant",8))
-										{
-											*xi_basis_type=FE_BASIS_CONSTANT;
-											start_basis_name += 8;
-										}
-										else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-										{
-											*xi_basis_type=LAGRANGE_HERMITE;
-											start_basis_name += 15;
-										}
-										else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-										{
-											*xi_basis_type=HERMITE_LAGRANGE;
-											start_basis_name += 15;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE, "Invalid basis type");
-											no_error=0;
-										}
-										if (';'== *start_basis_name)
-										{
-											start_basis_name++;
-										}
-									}
-									i++;
-								}
-								if (no_error)
-								{
-									while (i<number_of_xi_coordinates)
-									{
-										temp_basis_type++;
-										*temp_basis_type=NO_RELATION;
-										i++;
-									}
-								}
-							}
-							else
-							{
-								temp_basis_type=xi_basis_type;
-								for (i=xi_number;i<number_of_xi_coordinates;i++)
-								{
-									temp_basis_type++;
-									*temp_basis_type=NO_RELATION;
-								}
-							}
-							if (no_error&&(xi_number<number_of_xi_coordinates))
-							{
-								xi_basis_type += number_of_xi_coordinates-xi_number+1;
-							}
-						}
-					}
-				}
-				if ('*' == *start_basis_name)
-				{
-					start_basis_name++;
-				}
-				else
-				{
-					if ('\0' != *start_basis_name)
-					{
-						display_message(ERROR_MESSAGE,"Invalid basis type");
-						no_error=0;
-					}
-				}
-			}
-			if (!no_error)
-			{
-				display_message(ERROR_MESSAGE,"Invalid basis description");
-				DEALLOCATE(basis_type);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_basis_string_to_type_array.  "
-				"Unable to allocate basis type array.");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_string_to_type_array.  Invalid argument)");
-	}
-	LEAVE;
-
-	return (basis_type);
-} /* FE_basis_string_to_type_array */
-
-/*******************************************************************************
- * Returns the string description of the basis type used in serialisation.
- * Currently limited to handling one polygon or one simplex. Will have to
- * be rewritten for 4-D and above elements.
- * 
- * @param type_array  FE_basis type array - see struct FE_basis
- * @return  allocated basis description string
- */
-static char *FE_basis_type_array_to_string(const int *type_array)
-{
-	char *basis_string, temp[20];
-	const char *basis_type_string;
-	const int *type, *relation_type;
-	enum FE_basis_type basis_type;
-	int dimension, error, i, linked_dimensions, number_of_polygon_vertices,
-		xi_number;
-
-	ENTER(FE_basis_type_array_to_string);
-	basis_string = (char *)NULL;
-	if (type_array && (0 < (dimension = *type_array)) &&
-		(dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
-	{
-		type = type_array + 1;
-		linked_dimensions = 0;
-		error = 0;
-		for (xi_number = 0; (xi_number < dimension) && !error; xi_number++)
-		{
-			basis_type = (enum FE_basis_type)(*type);
-			if (basis_type_string = FE_basis_type_string(basis_type))
-			{
-				append_string(&basis_string, basis_type_string, &error);
-				switch (basis_type)
-				{
-					case CUBIC_HERMITE:
-					case CUBIC_LAGRANGE:
-					case FE_BASIS_CONSTANT:
-					case HERMITE_LAGRANGE:
-					case LAGRANGE_HERMITE:
-					case LINEAR_LAGRANGE:
-					case QUADRATIC_LAGRANGE:
-					case BSPLINE:
-					case FOURIER:
-						/* not sure about the following two: */
-					case SINGULAR:
-					case TRANSITION:
-					{
-						/* no linking between dimensions */
-					} break;
-					case LINEAR_SIMPLEX:
-					case QUADRATIC_SIMPLEX:
-					case SERENDIPITY:
-					{
-						/* write (linked_xi[;linked_xi]) */
-						/* logic currently limited to one simplex in shape - ok to 3D */
-						if (0 == linked_dimensions)
-						{
-							linked_dimensions++;
-							/* for first linked simplex dimension write (N1[;N2]) where N1
-								 is first linked dimension, N2 is second - for tetrahedra */
-							append_string(&basis_string, "(", &error);
-							relation_type = type + 1;
-							for (i = xi_number + 2; i <= dimension; i++)
-							{
-								if (*relation_type)
-								{
-									linked_dimensions++;
-									if (linked_dimensions > 2)
-									{
-										append_string(&basis_string, ";", &error);
-									}
-									sprintf(temp, "%d", i);
-									append_string(&basis_string, temp, &error);
-								}
-								relation_type++;
-							}
-							append_string(&basis_string, ")", &error);
-							if (1 == linked_dimensions)
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_basis_type_array_to_string.  Too few linked dimensions in simplex");
-								DEALLOCATE(basis_string);
-								error = 1;
-							}
-						}
-					} break;
-					case POLYGON:
-					{
-						/* write (number_of_polygon_vertices;linked_xi) */
-						/* logic currently limited to one polygon in basis - ok to 3D */
-						if (0 == linked_dimensions)
-						{
-							linked_dimensions++;
-							number_of_polygon_vertices = 0;
-							relation_type = type + 1;
-							for (i = xi_number + 2; i <= dimension; i++)
-							{
-								if (*relation_type)
-								{
-									linked_dimensions++;
-									if (0 == number_of_polygon_vertices)
-									{
-										number_of_polygon_vertices = *relation_type;
-										if (number_of_polygon_vertices >= 3)
-										{
-											sprintf(temp, "(%d;%d)", number_of_polygon_vertices, i);
-											append_string(&basis_string, temp, &error);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE, "write_FE_basis.  "
-												"Invalid number of vertices in polygon: %d",
-												number_of_polygon_vertices);
-											DEALLOCATE(basis_string);
-											error = 1;
-										}
-									}
-								}
-								relation_type++;
-							}
-							if (2 != linked_dimensions)
-							{
-								display_message(ERROR_MESSAGE, "FE_basis_type_array_to_string.  "
-									"Invalid number of linked dimensions in polygon: %d", linked_dimensions);
-								DEALLOCATE(basis_string);
-								error = 1;
-							}
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"write_FE_basis.  Unknown basis type: %s", basis_type_string);
-						error = 1;
-					}
-				}
-				type += (dimension - xi_number);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_basis_type_array_to_string.  Invalid basis type");
-				error = 1;
-			}
-			if (xi_number < (dimension - 1))
-			{
-				append_string(&basis_string, "*", &error);
-			}
-		}
-	}
-	LEAVE;
-
-	return (basis_string);
-}
-
-char *FE_basis_get_description_string(struct FE_basis *basis)
-{
-	char *basis_string;
-
-	ENTER(FE_basis_get_description_string);
-	basis_string = (char *)NULL;
-	if (basis && (basis->type))
-	{
-		basis_string = FE_basis_type_array_to_string(basis->type);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_description_string.  Invalid basis");
-	}
-	LEAVE;
-	
-	return (basis_string);
-}
-
-const char *FE_basis_type_string(enum FE_basis_type basis_type)
-/*******************************************************************************
-LAST MODIFIED : 1 April 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <basis_type>.
-The calling function must not deallocate the returned string.
-???RC Not complete
-#### Must ensure implemented correctly for new FE_basis_types ####
-==============================================================================*/
-{
-	const char *basis_type_string;
-
-	ENTER(FE_basis_type_string);
-	switch (basis_type)
-	{
-		case NO_RELATION:
-		{
-			basis_type_string="no_relation";
-		} break;
-		case BSPLINE:
-		{
-			basis_type_string="???bspline";
-		} break;
-		case CUBIC_HERMITE:
-		{
-			basis_type_string="c.Hermite";
-		} break;
-		case CUBIC_LAGRANGE:
-		{
-			basis_type_string="c.Lagrange";
-		} break;
-		case FE_BASIS_CONSTANT:
-		{
-			basis_type_string="constant";
-		} break;
-		case FOURIER:
-		{
-			basis_type_string="???fourier";
-		} break;
-		case HERMITE_LAGRANGE:
-		{
-			basis_type_string="HermiteLagrange";
-		} break;
-		case LAGRANGE_HERMITE:
-		{
-			basis_type_string="LagrangeHermite";
-		} break;
-		case LINEAR_LAGRANGE:
-		{
-			basis_type_string="l.Lagrange";
-		} break;
-		case LINEAR_SIMPLEX:
-		{
-			basis_type_string="l.simplex";
-		} break;
-		case POLYGON:
-		{
-			basis_type_string="polygon";
-		} break;
-		case QUADRATIC_LAGRANGE:
-		{
-			basis_type_string="q.Lagrange";
-		} break;
-		case QUADRATIC_SIMPLEX:
-		{
-			basis_type_string="q.simplex";
-		} break;
-		case SERENDIPITY:
-		{
-			basis_type_string="???serendipity";
-		} break;
-		case SINGULAR:
-		{
-			basis_type_string="???singular";
-		} break;
-		case TRANSITION:
-		{
-			basis_type_string="???transition";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_basis_type_string.  Invalid basis_type");
-			basis_type_string=(const char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (basis_type_string);
-} /* FE_basis_type_string */
-
-int FE_basis_get_dimension(struct FE_basis *basis,
-	int *dimension_address)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Returns the dimension of <basis>.
-If fails, puts zero at <dimension_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_basis_get_dimension);
-	if (basis && basis->type && dimension_address)
-	{
-		*dimension_address = basis->type[0];
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_dimension.  Invalid argument(s)");
-		if (dimension_address)
-		{
-			*dimension_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_basis_get_dimension */
-
-int FE_basis_get_number_of_basis_functions(struct FE_basis *basis,
-	int *number_of_basis_functions_address)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
-
-DESCRIPTION :
-Returns the number_of_basis_functions of <basis>.
-If fails, puts zero at <number_of_basis_functions_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_basis_get_number_of_basis_functions);
-	if (basis && basis->type && number_of_basis_functions_address)
-	{
-		*number_of_basis_functions_address = basis->number_of_basis_functions;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_number_of_basis_functions.  Invalid argument(s)");
-		if (number_of_basis_functions_address)
-		{
-			*number_of_basis_functions_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_basis_get_number_of_basis_functions */
-
-int FE_basis_get_xi_basis_type(struct FE_basis *basis,
-	int xi_number, enum FE_basis_type *basis_type_address)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Returns the basis type of <basis> on <xi_number> -- on main diagonal of
-type array. The first xi_number is 0.
-==============================================================================*/
-{
-	int i, offset, return_code;
-
-	ENTER(FE_basis_get_xi_basis_type);
-	if (basis && basis->type && (0 <= xi_number) &&
-		(xi_number < basis->type[0]) && basis_type_address)
-	{
-		/* first value in basis->type is the dimension */
-		offset = 1;
-		for (i = 0; i < xi_number; i++)
-		{
-			offset += *(basis->type) - i;
-		}
-		*basis_type_address = (enum FE_basis_type)basis->type[offset];
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_xi_basis_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_basis_get_xi_basis_type */
-
-int FE_basis_get_next_linked_xi_number(
-	struct FE_basis *basis, int xi_number,
-	int *next_xi_number_address, int *xi_link_number_address)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Returns in <next_xi_number_address> the next xi number higher than <xi_number>
-which is linked in basis with it, plus in <xi_link_number_address> the number
-denoting how it is linked; currently used only for polygon basiss to denote the
-number of polygon sides.
-If there is no remaining linked dimension, 0 is returned in both addresses.
-<xi_number> is from 0 to one less than the basis dimension.
-Also checks that the linked xi numbers have the same basis type.
-==============================================================================*/
-{
-	enum FE_basis_type basis_type;
-	int i, limit, offset, return_code;
-
-	ENTER(FE_basis_get_next_linked_xi_number);
-	if (basis && basis->type &&
-		(0 <= xi_number) && (xi_number < *(basis->type)) &&
-		next_xi_number_address && xi_link_number_address)
-	{
-		return_code = 1;
-		offset = 1; /* The first element is the dimension */
-		for (i = 0; i < xi_number; i++)
-		{
-			offset += *(basis->type) - i;
-		}
-		basis_type = (enum FE_basis_type)basis->type[offset];
-		limit = *(basis->type) - xi_number;
-		offset++;
-		for (i = 1; (i < limit) && (0 == basis->type[offset]); i++)
-		{
-			offset++;
-		}
-		if (i < limit)
-		{
-			*next_xi_number_address = i + xi_number;
-			*xi_link_number_address = basis->type[offset];
-			/* finally check the basis type matches */
-			offset = 1; /* The first element is the dimension */
-			for (i = 0; i < *next_xi_number_address; i++)
-			{
-				offset += *(basis->type) - i;
-			}
-			if (basis->type[offset] != basis_type)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_basis_get_next_linked_xi_number.  "
-					"Basis has linked xi directions with different basis type");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			*next_xi_number_address = 0;
-			*xi_link_number_address = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_next_linked_xi_number.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_basis_get_next_linked_xi_number */
 
 struct Linear_combination_of_global_values
 	*CREATE(Linear_combination_of_global_values)(int number_of_global_values)
@@ -21743,7 +17667,9 @@ Creates and returns an exact copy of the struct FE_element_field_component
 				}	break;
 				case ELEMENT_GRID_MAP:
 				{					
-					for(i=0;i<source_component->basis->type[0];i++)
+					int number_of_xi_coordinates = 0;
+					FE_basis_get_dimension(source_component->basis, &number_of_xi_coordinates);
+					for(i = 0; i < number_of_xi_coordinates; i++)
 					{
 						component->map.element_grid_based.number_in_xi[i]=
 							source_component->map.element_grid_based.number_in_xi[i];
@@ -21858,11 +17784,12 @@ Allocates storage for the global to element maps and sets to NULL.
 				} break;
 				case ELEMENT_GRID_MAP:
 				{
-					if (ALLOCATE(component->map.element_grid_based.number_in_xi,int,
-						(basis->type)[0]))
+					int basis_dimension = 0;
+					FE_basis_get_dimension(basis, &basis_dimension);
+					if ((ALLOCATE(component->map.element_grid_based.number_in_xi,int,basis_dimension)))
 					{
 						number_in_xi=component->map.element_grid_based.number_in_xi;
-						for (i=(basis->type)[0];i>0;i--)
+						for (i=basis_dimension;i>0;i--)
 						{
 							*number_in_xi=0;
 							number_in_xi++;
@@ -22845,7 +18772,8 @@ headers have to change in output files.
 				{
 					number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
 					number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
-					j = (component_1->basis->type)[0];
+					j = 0;
+					FE_basis_get_dimension(component_1->basis, &j);
 					number_of_values = 1;
 					while (j && (*number_in_xi_1 == *number_in_xi_2))
 					{
@@ -23020,7 +18948,8 @@ Checks if the <element_field> is not in the <element_field_list>.
 					((*component_1)->basis==(*component_2)->basis)&&
 					((*component_1)->modify==(*component_2)->modify))
 				{
-					number_of_xi_coordinates=((*component_1)->basis->type)[0];
+					number_of_xi_coordinates = 0;
+					FE_basis_get_dimension((*component_1)->basis, &number_of_xi_coordinates);
 					switch ((*component_1)->type)
 					{
 						case STANDARD_NODE_TO_ELEMENT_MAP:
@@ -23428,7 +19357,7 @@ static int list_FE_element_field(struct FE_element *element,
 {
 	char *component_name;
 	const char *type_string;
-	int *basis_type,i,j,k,*nodal_value_index,*number_in_xi,
+	int i,j,k,*nodal_value_index,*number_in_xi,
 		number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
 	struct FE_element_field *element_field;
@@ -23488,58 +19417,9 @@ static int list_FE_element_field(struct FE_element *element,
 					if (*element_field_component)
 					{
 						display_message(INFORMATION_MESSAGE,".  ");
-						if (((*element_field_component)->basis)&&
-							(basis_type=(*element_field_component)->basis->type))
-						{
-							/*???DB.  Only correct for tensor products */
-							number_of_xi_coordinates= *basis_type;
-							basis_type++;
-							j=number_of_xi_coordinates;
-							while (j>0)
-							{
-								switch (*basis_type)
-								{
-									case LINEAR_LAGRANGE:
-									{
-										display_message(INFORMATION_MESSAGE,"linear Lagrange");
-									} break;
-									case QUADRATIC_LAGRANGE:
-									{
-										display_message(INFORMATION_MESSAGE,"quadratic Lagrange");
-									} break;
-									case CUBIC_LAGRANGE:
-									{
-										display_message(INFORMATION_MESSAGE,"cubic Lagrange");
-									} break;
-									case CUBIC_HERMITE:
-									{
-										display_message(INFORMATION_MESSAGE,"cubic Hermite");
-									} break;
-									case LAGRANGE_HERMITE:
-									{
-										display_message(INFORMATION_MESSAGE,"Lagrange Hermite");
-									} break;
-									case HERMITE_LAGRANGE:
-									{
-										display_message(INFORMATION_MESSAGE,"Hermite Lagrange");
-									} break;
-									case LINEAR_SIMPLEX:
-									{
-										display_message(INFORMATION_MESSAGE,"linear Simplex");
-									} break;
-									case QUADRATIC_SIMPLEX:
-									{
-										display_message(INFORMATION_MESSAGE,"quadratic Simplex");
-									} break;
-								}
-								if (j>1)
-								{
-									display_message(INFORMATION_MESSAGE,"*");
-								}
-								basis_type += j;
-								j--;
-							}
-						}
+						char *basis_string = FE_basis_get_description_string((*element_field_component)->basis);
+						display_message(INFORMATION_MESSAGE, basis_string);
+						DEALLOCATE(basis_string);
 						if ((*element_field_component)->modify)
 						{
 							display_message(INFORMATION_MESSAGE,", modify");
@@ -23606,8 +19486,8 @@ static int list_FE_element_field(struct FE_element *element,
 								display_message(INFORMATION_MESSAGE,", grid based\n");
 								number_in_xi=(*element_field_component)->map.element_grid_based.
 									number_in_xi;
-								number_of_xi_coordinates=
-									((*element_field_component)->basis->type)[0];
+								number_of_xi_coordinates = 0;
+								FE_basis_get_dimension((*element_field_component)->basis, &number_of_xi_coordinates);
 								display_message(INFORMATION_MESSAGE,"      ");
 								for (j=0;j<number_of_xi_coordinates;j++)
 								{
@@ -24388,7 +20268,9 @@ No values_storage arrays are allocated or copied by this function.
 											new_number_in_xi =
 												((*new_component)->map).element_grid_based.number_in_xi;
 											number_of_values = 1;
-											for (j = ((*component)->basis->type)[0]; j > 0; j--)
+											int number_of_xi_coordinates = 0;
+											FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
+											for (j = number_of_xi_coordinates; j > 0; j--)
 											{
 												*number_in_xi = *new_number_in_xi;
 												number_of_values *= (*number_in_xi) + 1;
@@ -24644,29 +20526,6 @@ Returns true if the <element_field_values> are valid for calculating derivatives
 
 	return (return_code);
 } /* FE_element_field_values_have_derivatives_calculated */
-
-int standard_basis_function_is_monomial(Standard_basis_function *function,
-	void *arguments_void)
-/*******************************************************************************
-LAST MODIFIED : 12 June 2002
-
-DESCRIPTION :
-Returns true if the standard basis function is a monomial.
-==============================================================================*/
-{
-	int *arguments,return_code;
-
-	ENTER(standard_basis_function_is_monomial);
-	return_code=0;
-	if ((monomial_basis_functions==function)&&(arguments=(int *)arguments_void)&&
-		(1<=arguments[0]))
-	{
-		return_code=1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* standard_basis_function_is_monomial */
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element_field, field, \
 	struct FE_field *, compare_FE_field)
@@ -25742,7 +21601,9 @@ in them. Only certain value types, eg. arrays, strings, element_xi require this.
 				{
 					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
 					number_of_values=1;
-					for (j=((*component)->basis->type)[0];j>0;j--)
+					int number_of_xi_coordinates = 0;
+					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
+					for (j = number_of_xi_coordinates; j > 0; j--)
 					{
 						number_of_values *= (*number_in_xi)+1;
 						number_in_xi++;
@@ -26264,7 +22125,9 @@ been allocated but is uninitialised.
 				{
 					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
 					number_of_values=1;
-					for (j=((*component)->basis->type)[0];j>0;j--)
+					int number_of_xi_coordinates = 0;
+					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
+					for (j = number_of_xi_coordinates; j > 0; j--)
 					{
 						number_of_values *= (*number_in_xi)+1;
 						number_in_xi++;
@@ -29699,7 +25562,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 											DEALLOCATE(blending_matrix);
 											blending_matrix=NULL;
 										}
-										*standard_basis_address=previous_basis->standard_basis;
+										*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
 										if (coordinate_transformation)
 										{
 											return_code=calculate_standard_basis_transformation(
@@ -29712,7 +25575,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 										{
 											/* standard basis transformation is just a big identity matrix, so don't compute */
 											/* also use the real basis arguments */
-											*standard_basis_arguments_address=(int*)(previous_basis->arguments);
+											*standard_basis_arguments_address =
+												const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
 										}
 									}
 									if (return_code)
@@ -30516,11 +26380,11 @@ The optional <top_level_element> forces inheritance from it as needed.
 NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 ==============================================================================*/
 {
-	FE_value *blending_matrix,*combined_blending_matrix,
-		*coordinate_transformation,*row,*column,*transformation;
+	FE_value *blending_matrix, *combined_blending_matrix,
+		*coordinate_transformation, *transformation;
 	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
 		number_of_components,number_of_element_values = 0,number_of_element_field_nodes,
-		number_of_inherited_values,number_of_standard_basis_functions,
+		number_of_inherited_values, number_of_blended_values,
 		previous_number_of_element_values,return_code;
 	struct FE_basis *basis,*previous_basis;
 	struct FE_element *field_element;
@@ -30529,11 +26393,6 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 	struct FE_node **element_field_nodes_array,**element_value,**element_values = NULL,
 		**previous_element_values,**temp_element_field_nodes_array;
 	Standard_basis_function *standard_basis_function;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_FE_element_field_nodes);
 	return_code=0;
@@ -30569,11 +26428,8 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 					if (global_to_element_map_nodes(component,field_element,
 						element_field->field,&number_of_element_values,&element_values))
 					{
-						/* check that there is a valid basis */
-						if ((basis=component->basis)&&
-							(number_of_element_values==basis->number_of_basis_functions)&&
-							(basis->standard_basis)&&((number_of_standard_basis_functions=
-							basis->number_of_standard_basis_functions)>0))
+						basis = component->basis;
+						if (FE_basis_get_number_of_functions(basis) == number_of_element_values)
 						{
 							if ((i=number_of_element_values)==
 								previous_number_of_element_values)
@@ -30595,43 +26451,18 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 									&inherited_basis_arguments,&number_of_inherited_values,
 									&standard_basis_function,&blending_matrix))
 								{
-									if (basis->blending_matrix)
+									number_of_blended_values = FE_basis_get_number_of_blended_functions(basis);
+									if (number_of_blended_values > 0)
 									{
-										if (ALLOCATE(combined_blending_matrix,FE_value,
-											number_of_element_values*number_of_inherited_values))
-										{
-											transformation=combined_blending_matrix;
-											for (i=0;i<number_of_element_values;i++)
-											{
-												for (j=0;j<number_of_inherited_values;j++)
-												{
-													sum=0;
-													row=(basis->blending_matrix)+
-														(i*number_of_standard_basis_functions);
-													column=blending_matrix+j;
-													for (k=number_of_standard_basis_functions;k>0;k--)
-													{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)(*row)*(double)(*column);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += (*row)*(*column);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														row++;
-														column += number_of_inherited_values;
-													}
-													*transformation=(FE_value)sum;
-													transformation++;
-												}
-											}
-											DEALLOCATE(blending_matrix);
-											blending_matrix=combined_blending_matrix;
-										}
-										else
+										combined_blending_matrix = FE_basis_calculate_combined_blending_matrix(basis,
+											number_of_blended_values, number_of_inherited_values, blending_matrix);
+										DEALLOCATE(blending_matrix);
+										blending_matrix = combined_blending_matrix;
+										if (!blending_matrix)
 										{
 											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_nodes.  "
-												"Could not allocate combined_blending_matrix");
-											return_code=0;
+												"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix");
+											return_code = 0;
 										}
 									}
 									if (return_code)
@@ -34695,19 +30526,23 @@ Modifies the already calculated <values>.
 	enum Coordinate_system_type coordinate_system_type;
 	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
 		value_xi1,value_xi2,value_xi3;
-	int *basis_type,i,j,k,return_code,xi2_basis_type;
+	const int *basis_type;
+	int i,j,k,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
 	struct FE_node **node;
 	struct Standard_node_to_element_map **node_to_element_map,
 		**node_to_element_map_2;
 
 	ENTER(modify_theta_in_xi1);
+	int basis_dimension = 0;
 	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
 		(node_to_element_map=(component->map).standard_node_based.
 		node_to_element_maps)&&(component->basis)&&
-		(basis_type=component->basis->type)&&((1== *basis_type)||
-		((2== *basis_type)&&(NO_RELATION==basis_type[2]))||
-		((3== *basis_type)&&(NO_RELATION==basis_type[2])&&
+		(basis_type = FE_basis_get_basis_type(component->basis)) &&
+		(basis_dimension = *basis_type) &&
+		((1 == basis_dimension) ||
+		((2 == basis_dimension) && (NO_RELATION==basis_type[2]))||
+		((3 == basis_dimension) && (NO_RELATION==basis_type[2])&&
 		(NO_RELATION==basis_type[3])&&(NO_RELATION==basis_type[5])))&&
 		element&&field&&(0<number_of_values)&&values)
 	{
@@ -34785,13 +30620,13 @@ Modifies the already calculated <values>.
 					} break;
 				}
 				/* determine the number of nodes in the xi2 direction */
-				if (1== *basis_type)
+				if (1 == basis_dimension)
 				{
 					number_of_nodes_in_xi2=1;
 				}
 				else
 				{
-					if (2== *basis_type)
+					if (2 == basis_dimension)
 					{
 						xi2_basis_type=basis_type[3];
 					}
@@ -34817,7 +30652,7 @@ Modifies the already calculated <values>.
 					}
 				}
 				/* determine the number of nodes in the xi3 direction */
-				if (3== *basis_type)
+				if (3 == basis_dimension)
 				{
 					switch (basis_type[6])
 					{
