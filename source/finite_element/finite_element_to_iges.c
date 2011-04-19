@@ -253,8 +253,9 @@ DESCRIPTION :
 				coordinate_element_field_values, /*component_number*/2, monomial_z) &&
 			(2 == monomial_z[0]) && (monomial_z[1] <= 3) && (monomial_z[2] <= 3))
 		{
-			if (surface_entity=create_iges_entity_info(element,&(get_data->head),
-				&(get_data->tail)))
+			surface_entity=create_iges_entity_info(element,&(get_data->head),
+				&(get_data->tail));
+			if (surface_entity != NULL)
 			{
 				surface_directory_pointer=surface_entity->directory_pointer;
 				/* blanked */
@@ -396,8 +397,9 @@ DESCRIPTION :
 								get_FE_element_identifier(face, &cm))
 							{
 								/* create an entity for the edge in material coordinates */
-								if (entity=create_iges_entity_info(face,&(get_data->head),
-									&(get_data->tail)))
+								entity = create_iges_entity_info(face,&(get_data->head),
+									&(get_data->tail));
+								if (entity != NULL)
 								{
 									faces_material[reorder_faces[i]]=entity->directory_pointer;
 									/* blanked */
@@ -463,8 +465,9 @@ DESCRIPTION :
 									else
 									{
 										/* create an entity for the edge in material coordinates */
-										if (entity=create_iges_entity_info(face,&(get_data->head),
-											&(get_data->tail)))
+										entity=create_iges_entity_info(face,&(get_data->head),
+											&(get_data->tail));
+										if (entity != NULL)
 										{
 											faces_world[reorder_faces[i]]=entity->directory_pointer;
 											/* blanked */
@@ -617,8 +620,9 @@ DESCRIPTION :
 											faces_world[j];
 									}
 									/* combine the world and material boundary descriptions */
-									if (entity=create_iges_entity_info(element,&(get_data->head),
-										&(get_data->tail)))
+									entity=create_iges_entity_info(element,&(get_data->head),
+										&(get_data->tail));
+									if (entity != NULL)
 									{
 										outer_boundary_directory_pointer=entity->directory_pointer;
 										/* blanked */
@@ -643,8 +647,9 @@ DESCRIPTION :
 										(entity->parameter).type_142.preferred_representation=1;
 										/* create the trimmed surface that can be stitched
 											together */
-										if (entity=create_iges_entity_info(element,
-											&(get_data->head),&(get_data->tail)))
+										entity=create_iges_entity_info(element,
+											&(get_data->head),&(get_data->tail));
+										if (entity != NULL)
 										{
 											/* trimmed parametric surface entity */
 											entity->type=144;
@@ -758,8 +763,9 @@ basis type, however every element type will be converted to a cubic.
 					return_code=0;
 				}
 
-				if (node_field_creator = CREATE(FE_node_field_creator)(
-						 /*number_of_components*/3))
+				node_field_creator = CREATE(FE_node_field_creator)(
+						 /*number_of_components*/3);
+				if (node_field_creator != NULL)
 				{
 #if defined (OLD_CODE)
 					for (i = 0 ; i < 3 ; i++)
@@ -777,8 +783,9 @@ basis type, however every element type will be converted to a cubic.
 #endif /* defined (OLD_CODE) */
 					for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
 					{
-						if (get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
-							 get_data->fe_region, (struct FE_node *)NULL))
+						get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
+							 get_data->fe_region, (struct FE_node *)NULL);
+						if (get_data->nodes[i] != NULL)
 						{
 							ACCESS(FE_node)(get_data->nodes[i]);
 							if (!define_FE_field_at_node(get_data->nodes[i], get_data->fe_field,
@@ -834,8 +841,9 @@ basis type, however every element type will be converted to a cubic.
 					for (i = 0 ; return_code && (i < 4) ; i++)
 					{
 						face_shape = get_FE_element_shape_of_face(element_shape, i, get_data->fe_region);
-						if (face = CREATE(FE_element)(&cm, face_shape,
-								 get_data->fe_region, (struct FE_element *)NULL))
+						face = CREATE(FE_element)(&cm, face_shape,
+								 get_data->fe_region, (struct FE_element *)NULL);
+						if (face != NULL)
 						{
 							/* must put the face in the element to inherit fields */
 							set_FE_element_face(get_data->element, i, face);
@@ -941,7 +949,8 @@ Write bicubic elements to an IGES file.
 	USE_PARAMETER(field);
 	if (file_name && fe_region && region_path)
 	{
-		if (iges=fopen(file_name,"w"))
+		iges = fopen(file_name,"w");
+		if (iges != NULL)
 		{
 			return_code=1;
 			/* write IGES header */

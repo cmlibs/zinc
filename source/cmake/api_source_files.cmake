@@ -36,10 +36,10 @@ SET( API_HDRS
 	source/api/cmiss_field_window_projection.h
 	source/api/cmiss_graphic.h
 	source/api/cmiss_graphics_filter.h
+	source/api/cmiss_graphics_material.h
 	source/api/cmiss_graphics_window.h
 	source/api/cmiss_idle.h
 	source/api/cmiss_interactive_tool.h
-	source/api/cmiss_material.h
 	source/api/cmiss_node.h
 	source/api/cmiss_region.h
 	source/api/cmiss_rendition.h

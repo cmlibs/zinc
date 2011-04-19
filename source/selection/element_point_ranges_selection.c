@@ -536,20 +536,23 @@ Element_point_ranges_selection_update.
 	if (element_point_ranges_selection&&element_point_ranges)
 	{
 		Element_point_ranges_get_identifier(element_point_ranges,&identifier);
-		if (existing_element_point_ranges=FIND_BY_IDENTIFIER_IN_LIST(
+		existing_element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
 			Element_point_ranges,identifier)(&identifier,
-			element_point_ranges_selection->element_point_ranges_list))
+			element_point_ranges_selection->element_point_ranges_list);
+		if (existing_element_point_ranges != NULL)
 		{
 			/* add ranges actually removed to newly_unselected list = intersection of
 				 element_point_ranges and existing_element_point_ranges */
-			if (intersecting_ranges=CREATE(Multi_range)())
+			intersecting_ranges=CREATE(Multi_range)();
+			if (intersecting_ranges != NULL)
 			{
 				Multi_range_copy(intersecting_ranges,
 					Element_point_ranges_get_ranges(element_point_ranges));
 				Multi_range_intersect(intersecting_ranges,
 					Element_point_ranges_get_ranges(existing_element_point_ranges));
-				if (removed_element_point_ranges=
-					CREATE(Element_point_ranges)(&identifier))
+				removed_element_point_ranges=
+					CREATE(Element_point_ranges)(&identifier);
+				if (removed_element_point_ranges != NULL)
 				{
 					number_of_ranges=
 						Multi_range_get_number_of_ranges(intersecting_ranges);
@@ -665,9 +668,10 @@ selected_element_point_ranges in <element_point_ranges_selection>.
 	if (element_point_ranges_selection&&element_point_ranges)
 	{
 		Element_point_ranges_get_identifier(element_point_ranges,&identifier);
-		if (existing_element_point_ranges=
+		existing_element_point_ranges =
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(&identifier,
-				element_point_ranges_selection->element_point_ranges_list))
+				element_point_ranges_selection->element_point_ranges_list);
+		if (existing_element_point_ranges != NULL)
 		{
 			return_code=Multi_ranges_overlap(
 				Element_point_ranges_get_ranges(element_point_ranges),

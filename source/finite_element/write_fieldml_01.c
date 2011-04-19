@@ -276,7 +276,8 @@ Examples:
 		}
 		indent_fprintf(output_file, indent + 7, "value_type=\"%s\"",
 			Value_type_string(get_FE_field_value_type(field)));
-		if (coordinate_system=get_FE_field_coordinate_system(field))
+		coordinate_system=get_FE_field_coordinate_system(field);
+		if (coordinate_system != NULL)
 		{
 			switch (coordinate_system->type)
 			{
@@ -331,7 +332,8 @@ Examples:
 		number_of_components=get_FE_field_number_of_components(field);
 		for (i = 0 ; i < number_of_components ; i++)
 		{
-			if (component_name = get_FE_field_component_name(field, i))
+			component_name = get_FE_field_component_name(field, i);
+			if (component_name != NULL)
 			{
 				indent_fprintf(output_file, indent, "<component name=\"%s\"/>\n",
 					component_name);
@@ -585,7 +587,8 @@ time this function is called - this function adds on
 		number_of_components=get_FE_field_number_of_components(field);
 		for (i=0;i<number_of_components;i++)
 		{
-			if (component_name=get_FE_field_component_name(field,i))
+			component_name = get_FE_field_component_name(field,i);
+			if (component_name != NULL)
 			{
 				indent_fprintf(output_file, indent, "<component_ref ref=\"%s\">\n",
 					component_name);
@@ -599,8 +602,9 @@ time this function is called - this function adds on
 				get_FE_node_field_component_number_of_derivatives(node,field,i);
 				number_of_versions=
 				get_FE_node_field_component_number_of_versions(node,field,i);
-				if (nodal_value_types=
-					get_FE_node_field_component_nodal_value_types(node,field,i))
+				nodal_value_types =
+					get_FE_node_field_component_nodal_value_types(node,field,i);
+				if (nodal_value_types != NULL)
 				{
 					for (j = 0 ; j < number_of_versions ; j++)
 					{
@@ -619,6 +623,10 @@ time this function is called - this function adds on
 								{
 									indent_fprintf(output_file, indent,
 										"<label name=\"unknown\"/>\n");
+								} break;
+								case FE_NODAL_VALUE:
+								{
+									/* Not a derivatvie just completing the enumerator */
 								} break;
 								case FE_NODAL_D_DS1:
 								{
@@ -707,7 +715,8 @@ Calls the write_FE_node_field routine for each FE_node_field
 	struct Write_FE_node_field_info_sub *write_data;
 
 	ENTER(write_FE_node_field_info_sub);
-	if (write_data=(struct Write_FE_node_field_info_sub *)user_data)
+	write_data=(struct Write_FE_node_field_info_sub *)user_data;
+	if (write_data != NULL)
 	{
 		return_code=write_FE_node_field_template(write_data->output_file,
 			write_data->indent,node,field,&(write_data->value_index));
@@ -2097,7 +2106,8 @@ Writes information describing how <field> is defined at <element>.
 					}
 					if (basis_mapping && element_template)
 					{
-						if (component_name = get_FE_field_component_name(field, i))
+						component_name = get_FE_field_component_name(field, i);
+						if (component_name != NULL)
 						{
 							indent_fprintf(output_file, indent, "<component_ref ref=\"%s\">\n",
 								component_name);
@@ -2306,8 +2316,8 @@ are passed to this function.
 						get_FE_field_order_info_number_of_fields(field_order_info);
 					for (field_no = 0; field_no < number_of_fields; field_no++)
 					{
-						if (field =
-							get_FE_field_order_info_field(field_order_info, field_no))
+						field =	get_FE_field_order_info_field(field_order_info, field_no);
+						if (field != NULL)
 						{
 							number_of_fields_in_header++;
 							if (0 < get_FE_field_number_of_values(field))
@@ -2436,6 +2446,13 @@ are passed to this function.
 													return_code=0;
 												}
 											} break;
+											default:
+											{
+												display_message(ERROR_MESSAGE,
+													"write_FE_element_element_interpolation.  "
+													"Enumeration value not handled.");
+												return_code = 0;
+											}
 										}
 									}
 									else
@@ -3098,7 +3115,8 @@ If <field_order_info> contains fields, they are written in that order.
 				field_order_info);
 			for (i = 0; i < number_of_fields; i++)
 			{
-				if (field = get_FE_field_order_info_field(field_order_info, i))
+				field = get_FE_field_order_info_field(field_order_info, i);
+				if (field != NULL)
 				{
 					write_FE_region_field(output_file, indent, field);
 				}
@@ -3261,7 +3279,8 @@ Notes:
 		}
 		if (return_code)
 		{
-			if (fe_region = Cmiss_region_get_FE_region(region))
+			fe_region = Cmiss_region_get_FE_region(region);
+			if (fe_region != NULL)
 			{
 				return_code = write_FE_region(output_file, indent, fe_region,
 					write_elements, write_nodes, field_order_info);

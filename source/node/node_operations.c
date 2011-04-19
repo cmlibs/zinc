@@ -447,7 +447,8 @@ struct LIST(FE_node) *
 	}
 	if (fe_region)
 	{
-		if (data.node_list = CREATE(LIST(FE_node))())
+		data.node_list = CREATE(LIST(FE_node))();
+		if (NULL != data.node_list)
 		{
 			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
 			if (node_ranges)
@@ -479,8 +480,9 @@ struct LIST(FE_node) *
 					Multi_range_get_range(node_ranges, i, &start, &stop);
 					for (node_number = start ; node_number <= stop ; node_number++)
 					{
-						if (node = FE_region_get_FE_node_from_identifier(
-								 fe_region, node_number))
+						node = FE_region_get_FE_node_from_identifier(
+								 fe_region, node_number);
+						if (node != NULL)
 						{
 							if (group_field)
 							{
@@ -552,7 +554,8 @@ struct LIST(FE_node) *
 
 	if (fe_region)
 	{
-		if (data.node_list = CREATE(LIST(FE_node))())
+		data.node_list = CREATE(LIST(FE_node))();
+		if (data.node_list != NULL)
 		{
 			data.fe_region = fe_region;
 			/* Seems odd to specify an empty node_ranges but I have
@@ -615,7 +618,8 @@ Up to the calling function to destroy the returned node list.
 	data.node_list = (struct LIST(FE_node) *)NULL;
 	if (fe_region)
 	{
-		if (data.node_list = CREATE(LIST(FE_node))())
+		data.node_list = CREATE(LIST(FE_node))();
+		if (data.node_list != NULL)
 		{
 			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
 			if (node_ranges)
@@ -648,8 +652,9 @@ Up to the calling function to destroy the returned node list.
 					Multi_range_get_range(node_ranges, i, &start, &stop);
 					for (node_number = start ; node_number <= stop ; node_number++)
 					{
-						if (node = FE_region_get_FE_node_from_identifier(
-								 fe_region, node_number))
+						node = FE_region_get_FE_node_from_identifier(
+								 fe_region, node_number);
+						if (node != NULL)
 						{
 							selected = 1;
 							if (selected && conditional_field)
