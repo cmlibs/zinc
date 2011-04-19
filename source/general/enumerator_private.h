@@ -111,8 +111,8 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			ALLOCATE(valid_strings, const char *, *number_of_valid_strings)) \
 		{ \
 			i = 0; \
-			for (enumerator_value = first_enumerator_value; enumerator_string = \
-				ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
+			for (enumerator_value = first_enumerator_value; (NULL != (enumerator_string = \
+				ENUMERATOR_STRING(enumerator_type)(enumerator_value))); \
 				enumerator_value++) \
 			{ \
 				if ((NULL == conditional_function) || \
@@ -275,7 +275,8 @@ no further errors will be reported on subsequent calls. \
 	{ \
 		if (Option_table_is_valid(option_table))	\
 		{ \
-			if (suboption_table=CREATE(Option_table)()) \
+			suboption_table=CREATE(Option_table)();  \
+			if (NULL != suboption_table) \
 			{ \
 				for (i=0;i<number_of_valid_strings;i++) \
 				{ \

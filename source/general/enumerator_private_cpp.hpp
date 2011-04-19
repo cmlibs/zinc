@@ -113,8 +113,8 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			ALLOCATE(valid_strings, const char *, *number_of_valid_strings)) \
 		{ \
 			i = 0; \
-			for (enumerator_value = first_enumerator_value; (enumerator_string = \
-				ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value))); \
+			for (enumerator_value = first_enumerator_value; ((NULL != (enumerator_string = \
+				ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value))))); \
 					enumerator_value++)		\
 			{ \
 				if ((NULL == conditional_function) || \
@@ -214,7 +214,6 @@ A modifier function for setting an enumerated type variable to a specified \
 value. \
 ==============================================================================*/ \
 { \
-	const char *current_token; \
 	char *enumerator_string_value; \
 	enum enumerator_type *enumerator_address, other_enumerator = (enumerator_type)0; \
 	int return_code; \
@@ -224,9 +223,9 @@ value. \
 		&&(enumerator_string_value=(char *)enumerator_string_value_void)) \
 	{ \
 		return_code=1; \
-		if (!(current_token=state->current_token)|| \
-			(strcmp(PARSER_HELP_STRING,current_token)&& \
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))) \
+		if (!(state->current_token)|| \
+			(strcmp(PARSER_HELP_STRING,state->current_token)&& \
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))) \
 		{ \
 			STRING_TO_ENUMERATOR(enumerator_type)( \
 				enumerator_string_value, enumerator_address); \
@@ -277,7 +276,8 @@ no further errors will be reported on subsequent calls. \
 	{ \
 		if (Option_table_is_valid(option_table))	\
 		{ \
-			if ((suboption_table=CREATE(Option_table)()))	\
+			suboption_table=CREATE(Option_table)();  \
+			if (NULL != suboption_table)	\
 			{ \
 				for (i=0;i<number_of_valid_strings;i++) \
 				{ \
