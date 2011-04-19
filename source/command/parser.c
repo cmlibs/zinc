@@ -361,18 +361,21 @@ Executes a VARIABLE operation command.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (operation_type=(enum Variable_operation_type *)operation_type_void)
+				operation_type=(enum Variable_operation_type *)operation_type_void;
+				if (operation_type != NULL)
 				{
 					/* get number */
 					if (1==sscanf(current_token," %i",&number))
 					{
 						shift_Parse_state(state,1);
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token != NULL)
 						{
 							/* get value */
 							if (1==sscanf(current_token," %f",&value))
@@ -479,7 +482,8 @@ Executes a VARIABLE SHOW command.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -700,7 +704,8 @@ with the same text.
 	exclusive_option++;
 	if (state && (entry = modifier_table))
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -1235,7 +1240,8 @@ DESCRIPTION :
 	if (option_table_address)
 	{
 		return_code=1;
-		if (option_table = *option_table_address)
+		option_table = *option_table_address;
+		if (option_table != NULL)
 		{
 			/* clean up suboption_tables added to option_table */
 			if (option_table->suboption_tables)
@@ -1492,7 +1498,8 @@ The <on_string> and <off_string> should be static, eg. passed in quotes.
 	{
 		if (option_table->valid)
 		{
-			if (suboption_table=CREATE(Option_table)())
+			suboption_table=CREATE(Option_table)();
+			if (suboption_table != NULL)
 			{
 				Option_table_add_entry(suboption_table,on_string,
 					value_address,(void *)on_string,set_int_switch);
@@ -1596,7 +1603,7 @@ value.
 		&&(enumerator_string_value=(char *)enumerator_string_value_void))
 	{
 		return_code=1;
-		if (!(current_token=state->current_token)||
+		if (!(NULL != (current_token=state->current_token))||
 			(strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 		{
@@ -1647,7 +1654,8 @@ no further errors will be reported on subsequent calls.
 	{
 		if (option_table->valid)
 		{
-			if (suboption_table=CREATE(Option_table)())
+			suboption_table=CREATE(Option_table)();
+			if (suboption_table != NULL)
 			{
 				for (i=0;i<number_of_valid_strings;i++)
 				{
@@ -1754,8 +1762,9 @@ entered.
 				}
 				else
 				{
-					if (space_offset = strchr(
-							 option_table->help + index + 50, ' '))
+					space_offset = strchr(
+							 option_table->help + index + 50, ' ');
+					if (space_offset != NULL)
 					{
 						space_offset++;
 						while (*space_offset == ' ')
@@ -2158,7 +2167,8 @@ DESCRIPTION :
 	ENTER(destroy_Parse_state);
 	if (state_address)
 	{
-		if (state= *state_address)
+		state = *state_address;
+		if (state != NULL)
 		{
 			if ((number_of_tokens=state->number_of_tokens)>0)
 			{
@@ -2205,7 +2215,8 @@ PARSER_HELP_STRING or PARSER_RECURSIVE_HELP_STRING.
 	ENTER(Parse_state_help_mode);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2386,10 +2397,12 @@ if it exists.
 	{
 		return_code=1;
 		/* try to find a % */
-		if (begin=strchr(*token,'%'))
+		begin=strchr(*token,'%');
+		if (begin != NULL)
 		{
 			/* look for another % */
-			if (end=strchr(begin+1,'%'))
+			end=strchr(begin+1,'%');
+			if (end != NULL)
 			{
 				length=end-begin+1;
 				/* find the variable number (starting after the format) */
@@ -2501,8 +2514,9 @@ if it exists.
 					{
 						strncpy(var_name, begin, end - begin);
 						var_name[end - begin] = 0;
-						if (variable = FIND_BY_IDENTIFIER_IN_LIST(Assign_variable, name)
-							(var_name, assign_variable_list))
+						variable = FIND_BY_IDENTIFIER_IN_LIST(Assign_variable, name)
+							(var_name, assign_variable_list);
+						if (variable != NULL)
 						{
 							if (ALLOCATE(new_token, char, strlen(variable->value) +
 								strlen(*token) - (end - begin)))
@@ -2651,7 +2665,8 @@ use of this command.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2672,7 +2687,8 @@ use of this command.
 				if (return_code && variable)
 				{
 					shift_Parse_state(state,1);
-					if (current_token=state->current_token)
+					current_token=state->current_token;
+					if (current_token != NULL)
 					{
 						if (strcmp(PARSER_HELP_STRING,current_token)&&
 							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2680,9 +2696,11 @@ use of this command.
 							/* Implement special case getenv command */
 							if (!strncmp(current_token, "getenv", 6))
 							{
-								if (begin=strchr(current_token,'('))
+								begin=strchr(current_token,'(');
+								if (begin != NULL)
 								{
-									if (begin2=strchr(begin,'"'))
+									begin2=strchr(begin,'"');
+									if (begin2 != NULL)
 									{
 										begin = begin2;
 										if (!(end = strchr(begin + 1,'"')))
@@ -2717,7 +2735,8 @@ use of this command.
 									{
 										strncpy(var_name, begin + 1, end - begin - 1);
 										var_name[end - begin - 1] = 0;
-										if (env_string = getenv(var_name))
+										env_string = getenv(var_name);
+										if (env_string != NULL)
 										{
 											return_code = 
 												Assign_variable_set_value(variable,
@@ -2822,12 +2841,14 @@ Allocates memory for a name, then copies the passed string into it.
 	ENTER(set_name);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (name_address=(char **)name_address_void)
+				name_address=(char **)name_address_void;
+				if (name_address != NULL)
 				{
 					if (*name_address)
 					{
@@ -2906,7 +2927,8 @@ or pointing to allocated strings.
 	if (state&&(names=(char **)names_void)&&number_of_names_address_void&&
 		(0<(number_of_names=*((int *)number_of_names_address_void))))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -2914,13 +2936,14 @@ or pointing to allocated strings.
 			{
 				for (i=0;return_code&&(i<number_of_names);i++)
 				{
-					if (current_token=state->current_token)
+					current_token=state->current_token;
+					if (current_token != NULL)
 					{
 						if (names[i])
 						{
 							DEALLOCATE(names[i]);
 						}
-						if (names[i]=duplicate_string(current_token))
+						if (NULL != (names[i]=duplicate_string(current_token)))
 						{
 							return_code=shift_Parse_state(state,1);
 						}
@@ -3007,7 +3030,7 @@ all be initialised to zero).
 		return_code = 1;
 		valid_token = 1;
 		counter = 0;
-		while (return_code && (current_token=state->current_token) && valid_token)
+		while (return_code && (NULL != (current_token=state->current_token)) && valid_token)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -3078,18 +3101,20 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
 	ENTER(set_string);
 	if (state && string_description_void)
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (string_address = (char **)string_address_void)
+				string_address = (char **)string_address_void;
+				if (string_address != NULL)
 				{
 					if (*string_address)
 					{
 						DEALLOCATE(*string_address);
 					}
-					if (*string_address = duplicate_string(current_token))
+					if (NULL != (*string_address = duplicate_string(current_token)))
 					{
 						return_code = shift_Parse_state(state,1);
 					}
@@ -3155,7 +3180,8 @@ int set_string_no_realloc(struct Parse_state *state,void *string_address_void,
 	if (state && (string_address = (char **)string_address_void) &&
 		string_description_void)
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -3167,7 +3193,7 @@ int set_string_no_realloc(struct Parse_state *state,void *string_address_void,
 					display_parse_state_location(state);
 					return_code = 0;
 				}
-				else if (*string_address = duplicate_string(current_token))
+				else if (NULL != (*string_address = duplicate_string(current_token)))
 				{
 					return_code = shift_Parse_state(state,1);
 				}
@@ -3217,12 +3243,14 @@ A modifier function for setting a int.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %d ",&value))
 					{
@@ -3245,7 +3273,8 @@ A modifier function for setting a int.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
 				}
@@ -3286,12 +3315,14 @@ In help mode writes the <description_string>.
 	ENTER(set_int_with_description);
 	if (state && description_string_void)
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address = (int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1 == sscanf(current_token, " %d ", &value))
 					{
@@ -3354,9 +3385,11 @@ int is set to 1.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (value_address=(int *)value_address_void)
+		value_address=(int *)value_address_void;
+		if (value_address != NULL)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token != NULL)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3416,12 +3449,14 @@ A modifier function for setting a int to a non-negative value.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %d ",&value))
 					{
@@ -3457,7 +3492,8 @@ A modifier function for setting a int to a non-negative value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
 				}
@@ -3498,12 +3534,14 @@ A modifier function for setting a int to a positive value.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %d ",&value))
 					{
@@ -3539,7 +3577,8 @@ A modifier function for setting a int to a positive value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
 				}
@@ -3580,10 +3619,11 @@ indicate that the int has been set.
 	int return_code;
 
 	ENTER(set_int_and_char_flag);
-	if (state && (value_address = (int *)value_address_void) &&
+	if (state && (NULL != (value_address = (int *)value_address_void)) &&
 		(flag_address = (char *)flag_address_void))
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3654,7 +3694,8 @@ Now prints current contents of the vector with help.
 	{
 		values_address=(int *)values_address_void;
 		number_of_components= *((int *)number_of_components_address_void);
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -3664,7 +3705,8 @@ Now prints current contents of the vector with help.
 				{
 					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
 					{
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token != NULL)
 						{
 							if (1==sscanf(current_token," %d ",&value))
 							{
@@ -3744,12 +3786,14 @@ A modifier function for setting a float.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -3773,7 +3817,8 @@ A modifier function for setting a float.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -3815,13 +3860,15 @@ indicate that the float has been set.
 	ENTER(set_float_and_char_flag);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((value_address=(float *)value_address_void) &&
-					 (flag_address=(char *)flag_address_void))
+				value_address=(float *)value_address_void;
+			 	flag_address=(char *)flag_address_void;
+				if ((value_address != NULL) && (flag_address != NULL))
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -3847,7 +3894,8 @@ indicate that the float has been set.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -3892,7 +3940,8 @@ A modifier function for setting a float to a positive value.
 			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 			{
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(state->current_token," %f ",&value))
 					{
@@ -3928,7 +3977,8 @@ A modifier function for setting a float to a positive value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -3974,7 +4024,8 @@ A modifier function for setting a FE_value to a positive value.
 			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 			{
-				if (value_address=(FE_value *)value_address_void)
+				value_address=(FE_value *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(state->current_token," "FE_VALUE_INPUT_STRING" ",&value))
 					{
@@ -4010,7 +4061,8 @@ A modifier function for setting a FE_value to a positive value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(FE_value *)value_address_void)
+				value_address=(FE_value *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4052,12 +4104,14 @@ A modifier function for setting a float to a non_negative value.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -4093,7 +4147,8 @@ A modifier function for setting a float to a non_negative value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4135,12 +4190,14 @@ A modifier function for setting a float to a value in [0,1].
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -4176,7 +4233,8 @@ A modifier function for setting a float to a value in [0,1].
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				value_address=(float *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4218,12 +4276,14 @@ A modifier function for setting a double.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(double *)value_address_void)
+				value_address=(double *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %lf ",&value))
 					{
@@ -4247,7 +4307,8 @@ A modifier function for setting a double.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(double *)value_address_void)
+				value_address=(double *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4291,13 +4352,15 @@ indicate that the double has been set.
 	ENTER(set_double_and_char_flag);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((value_address=(double *)value_address_void) &&
-					 (flag_address=(char *)flag_address_void))
+				value_address=(double *)value_address_void;
+				flag_address=(char *)flag_address_void;
+				if ((value_address != NULL) && (flag_address != NULL))
 				{
 					if (1==sscanf(current_token," %lf ",&value))
 					{
@@ -4323,7 +4386,8 @@ indicate that the double has been set.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(double *)value_address_void)
+				value_address=(double *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4364,12 +4428,14 @@ A modifier function for setting a double to a non_negative value.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(double *)value_address_void)
+				value_address = (double *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token," %lf ",&value))
 					{
@@ -4405,7 +4471,8 @@ A modifier function for setting a double to a non_negative value.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(double *)value_address_void)
+				value_address=(double *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%lg]",*value_address);
 				}
@@ -4459,7 +4526,8 @@ third component of the float only to 3.
 		(separator=*((char *)separation_char_address_void))&&
 		(('*'==separator)||(','==separator)))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -4541,7 +4609,8 @@ Now prints current contents of the vector with help.
 			number_of_components_address_void&&(0<(number_of_components=
 			*((int *)number_of_components_address_void))))
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token != NULL)
 			{
 				return_code=1;
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -4549,7 +4618,8 @@ Now prints current contents of the vector with help.
 				{
 					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
 					{
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token != NULL)
 						{
 							if (1==sscanf(current_token," %f ",&value))
 							{
@@ -4629,12 +4699,14 @@ A modifier function for setting a float.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(FE_value *)value_address_void)
+				value_address=(FE_value *)value_address_void;
+				if (value_address != NULL)
 				{
 					if (1==sscanf(current_token,FE_VALUE_INPUT_STRING,&value))
 					{
@@ -4658,7 +4730,8 @@ A modifier function for setting a float.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(FE_value *)value_address_void)
+				value_address=(FE_value *)value_address_void;
+				if (value_address != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4706,7 +4779,8 @@ Now prints current contents of the vector with help.
 	{
 		values = (FE_value *)values_void;
 		number_of_components = *((int *)number_of_components_address_void);
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4716,7 +4790,8 @@ Now prints current contents of the vector with help.
 					return_code = 1;
 					for (i = 0; return_code && (i < number_of_components); i++)
 					{
-						if (current_token = state->current_token)
+						current_token = state->current_token;
+						if (current_token != NULL)
 						{
 							if (1 == sscanf(current_token, " "FE_VALUE_INPUT_STRING" ", &value))
 							{
@@ -4808,7 +4883,8 @@ Now prints current contents of the vector with help.
 	{		
 		values_address=(double *)values_address_void;
 		number_of_components=	*((int *)number_of_components_address_void);
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -4818,7 +4894,8 @@ Now prints current contents of the vector with help.
 				{
 					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
 					{
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token != NULL)
 						{
 							if (1==sscanf(current_token," %lf ",&value))
 							{
@@ -4908,7 +4985,8 @@ number_of_components floats.
 		if ((values_address=(double **)values_address_void)&&
 			number_of_components_address_void)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token != NULL)
 			{
 				return_code=1;
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -4935,7 +5013,8 @@ number_of_components floats.
 								VARIABLE_LENGTH_VECTOR_ALLOCATION + allocated_length);
 							allocated_length += VARIABLE_LENGTH_VECTOR_ALLOCATION;
 						}
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token != NULL)
 						{
 							if (1==sscanf(current_token," %lf%n ",&value,&length_read))
 							{
@@ -5032,7 +5111,8 @@ may not be initialised (calling function could put them in the help text).
 		(struct Set_vector_with_help_data *)set_vector_with_help_data_void)&&
 		(0<set_vector_data->num_values)&&set_vector_data->help_text)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -5041,7 +5121,8 @@ may not be initialised (calling function could put them in the help text).
 				return_code=1;
 				for (i=set_vector_data->num_values;return_code&&(0<i);i--)
 				{
-					if (current_token=state->current_token)
+					current_token=state->current_token;
+					if (current_token != NULL)
 					{
 						*vector=atof(current_token);
 						vector++;
@@ -5093,7 +5174,8 @@ A modifier function for setting a character flag to 1.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (value_address=(char *)value_address_void)
+		value_address=(char *)value_address_void;
+		if (value_address != NULL)
 		{
 			*value_address=1;
 			return_code=1;
@@ -5130,7 +5212,8 @@ A modifier function for setting a character flag to 0.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (value_address=(char *)value_address_void)
+		value_address=(char *)value_address_void;
+		if (value_address != NULL)
 		{
 			*value_address=0;
 			return_code=1;
@@ -5168,7 +5251,8 @@ If the option's <token> is supplied and its value is currently set, it
 	int return_code;
 
 	ENTER(set_int_switch);
-	if (state&&(value_address=(int *)value_address_void))
+	value_address=(int *)value_address_void;
+	if (state && (value_address != NULL))
 	{
 		if (!Parse_state_help_mode(state))
 		{
@@ -5180,7 +5264,8 @@ If the option's <token> is supplied and its value is currently set, it
 			/* indicate if switch currently set */
 			if (*value_address)
 			{
-				if (token=(char *)token_void)
+				token = (char *)token_void;
+				if (token != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%s]",token);
 				}
@@ -5219,7 +5304,8 @@ If the option's <token> is supplied and its value is currently set, it
 	int return_code;
 
 	ENTER(unset_int_switch);
-	if (state&&(value_address=(int *)value_address_void))
+	value_address=(int *)value_address_void;
+	if (state && (value_address != NULL))
 	{
 		if (!Parse_state_help_mode(state))
 		{
@@ -5231,7 +5317,8 @@ If the option's <token> is supplied and its value is currently set, it
 			/* indicate if switch currently unset */
 			if (!(*value_address))
 			{
-				if (token=(char *)token_void)
+				token = (char *)token_void;
+				if (token != NULL)
 				{
 					display_message(INFORMATION_MESSAGE,"[%s]",token);
 				}
@@ -5270,12 +5357,14 @@ memory for the file name string.
 	ENTER(set_file_name);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token = state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (name_address=(char **)name_address_void)
+				name_address=(char **)name_address_void;
+				if (name_address != NULL)
 				{
 					if (*name_address)
 					{
@@ -5370,7 +5459,8 @@ of two forms - # or #..#
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -5393,7 +5483,8 @@ of two forms - # or #..#
 				}
 				if (return_code)
 				{
-					if (integer_range_address=(int **)integer_range_address_void)
+					integer_range_address=(int **)integer_range_address_void;
+					if (integer_range_address != NULL)
 					{
 						if ((integer_range= *integer_range_address)&&
 							(0<(number_of_sub_ranges=integer_range[0])))
@@ -6185,7 +6276,7 @@ int set_multiple_strings(struct Parse_state *state,void *multiple_strings_addres
 		last_separator = 1;
 		return_code = 1;
 		finished = 0;
-		while (!finished && (current_token = state->current_token) && return_code)
+		while (!finished && (NULL != (current_token = state->current_token)) && return_code)
 		{
 			if ((0 == strcmp(PARSER_HELP_STRING, current_token)) ||
 				(0 == strcmp(PARSER_RECURSIVE_HELP_STRING, current_token)))
@@ -6216,7 +6307,8 @@ int set_multiple_strings(struct Parse_state *state,void *multiple_strings_addres
 				if (REALLOCATE(new_strings, multiple_strings->strings, char *, multiple_strings->number_of_strings + 1))
 				{
 					multiple_strings->strings = new_strings;
-					if (new_strings[multiple_strings->number_of_strings] = duplicate_string(current_token))
+					new_strings[multiple_strings->number_of_strings] = duplicate_string(current_token);
+					if (new_strings[multiple_strings->number_of_strings] != NULL)
 					{
 						multiple_strings->number_of_strings++;
 						return_code = shift_Parse_state(state, 1);
