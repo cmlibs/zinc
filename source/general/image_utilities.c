@@ -6742,11 +6742,11 @@ equal to the number_of_components.
 - different colour spaces output;
 ==============================================================================*/
 {
-        int bytes_per_pixel, fill_byte_number, i, number_of_components,
-            padding_bytes, return_code, width_bytes, y, y_limit;
+	int bytes_per_pixel, fill_byte_number, i, number_of_components,
+		padding_bytes, return_code, width_bytes, y, y_limit;
 	unsigned char *destination;
 #if defined (USE_IMAGEMAGICK)
-	char *magick_image_storage;
+	const char *magick_image_storage;
 	ExceptionInfo magick_exception;
 	Image *magick_image;
 	int image_height_minus_1;
@@ -6757,13 +6757,18 @@ equal to the number_of_components.
 #endif /* defined (USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_dispatch);
-
-	if(components == 0){
+	number_of_components = 0;
+	if (components == 0)
+	{
 	  number_of_components = cmgui_image->number_of_components;
 	  components = cmgui_image->number_of_components;
-	}else if(components <= 4){
+	}
+	else if (components <= 4)
+	{
 	  number_of_components = components;
-	}else if(components == 5){
+	}
+	else if (components == 5)
+	{
 	  number_of_components = 3;
 	}
 
@@ -6804,6 +6809,7 @@ equal to the number_of_components.
 				"Cmgui_image_dispatch.  No image at image number %d",image_number);
 			return_code = 0;
 		}
+		magick_image_storage = (const char *)NULL;
 		switch (components)
 		{
 			case 1:
