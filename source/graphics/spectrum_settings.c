@@ -2737,46 +2737,46 @@ passed in render data.
 						} break;
 						case SPECTRUM_RAINBOW:
 						{
-              if (value<1.0/3.0)
-              {
-                  render_data->rgba[0]=1.0;
-                  render_data->rgba[2]=0.0;
-                  if (value<1.0/6.0)
-                  {
-                      render_data->rgba[1]=value*4.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
-                  }
-              }
-              else if (value<2.0/3.0)
-              {
-                  render_data->rgba[1]=1.0;
-                  if (value<0.5)
-                  {
-                      render_data->rgba[0] = 2.5 - 4.5*value;
-                      render_data->rgba[2] = 1.5*value - 0.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[0] = 1.0 - 1.5*value;
-                      render_data->rgba[2] = -2.0 + 4.5*value;
-                  }
-              }
-              else
-              {
-                  render_data->rgba[0]=0.0;
-                  render_data->rgba[2]=1.0;
-                  if (value<5.0/6.0)
-                  {
-                      render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
-                  }
-                  else
-                  {
-                      render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
-                  }
-              }
+							if (value<1.0/3.0)
+							{
+								render_data->rgba[0]=1.0;
+								render_data->rgba[2]=0.0;
+								if (value<1.0/6.0)
+								{
+									render_data->rgba[1]=value*4.5;
+								}
+								else
+								{
+									render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
+								}
+							}
+							else if (value<2.0/3.0)
+							{
+								render_data->rgba[1]=1.0;
+								if (value<0.5)
+								{
+									render_data->rgba[0] = 2.5 - 4.5*value;
+									render_data->rgba[2] = 1.5*value - 0.5;
+								}
+								else
+								{
+									render_data->rgba[0] = 1.0 - 1.5*value;
+									render_data->rgba[2] = -2.0 + 4.5*value;
+								}
+							}
+							else
+							{
+								render_data->rgba[0]=0.0;
+								render_data->rgba[2]=1.0;
+								if (value<5.0/6.0)
+								{
+									render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
+								}
+								else
+								{
+									render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
+								}
+							}
 						} break;
 						case SPECTRUM_RED:
 						{
