@@ -274,9 +274,9 @@ Returns -1 if basis_type_1 < basis_type_2, 0 if basis_type_1 = basis_type_2 and
 	int i;
 
 	ENTER(compare_FE_basis_type);
-	if ((type_1=basis_type_1))
+	if (NULL != (type_1=basis_type_1))
 	{
-		if ((type_2=basis_type_2))
+		if (NULL != (type_2=basis_type_2))
 		{
 			if ((i= *type_1)== *type_2)
 			{
@@ -522,7 +522,7 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 		return_code;
 
 	ENTER(monomial_basis_functions);
-	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
+	if (NULL != (argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
 		function_values)
 	{
 		number_of_xi_coordinates= *argument;
@@ -620,7 +620,7 @@ d) the blending matrix is
 		offset11, order, polygon_offset, polygon_vertex, return_code;
 
 	ENTER(polygon_basis_functions);
-	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
+	if (NULL != (argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
 		function_values)
 	{
 		number_of_xi_coordinates= *argument;
@@ -928,7 +928,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 					transformation++;
 					*transformation=0;
 				}
-				if ((value=coordinate_transformation))
+				if (NULL != (value=coordinate_transformation))
 				{
 					for (i=basis_dimension;i>0;i--)
 					{
@@ -1083,7 +1083,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 					/*???DB.  At present only able to do transformations that are one to
 						one in the xi coordinates.  This is equivalent to one non-zero in
 						each column of A and at most one non-zero in each row of A */
-					if ((value=coordinate_transformation))
+					if (NULL != (value=coordinate_transformation))
 					{
 						i=0;
 						k=0;
@@ -1244,7 +1244,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 								value++;
 								*value=1;
 							}
-							if ((transformation=coordinate_transformation))
+							if (NULL != (transformation=coordinate_transformation))
 							{
 								number_of_inherited_values=1;
 								standard_basis_argument=standard_basis_arguments;
@@ -1745,7 +1745,7 @@ returned.
 					} break;
 					case LINEAR_LAGRANGE:
 					{
-						if ((temp_matrix=tensor_product(2,2,
+						if (NULL != (temp_matrix = tensor_product(2,2,
 							linear_lagrange_blending_matrix,number_of_basis_functions,
 							number_of_standard_basis_functions,blending_matrix)))
 						{
@@ -1787,7 +1787,7 @@ returned.
 					} break;
 					case QUADRATIC_LAGRANGE:
 					{
-						if ((temp_matrix=tensor_product(3,3,
+						if (NULL != (temp_matrix = tensor_product(3,3,
 							quadratic_lagrange_blending_matrix,number_of_basis_functions,
 							number_of_standard_basis_functions,blending_matrix)))
 						{
@@ -1833,7 +1833,7 @@ returned.
 					} break;
 					case CUBIC_LAGRANGE:
 					{
-						if ((temp_matrix=tensor_product(4,4,cubic_lagrange_blending_matrix,
+						if (NULL != (temp_matrix = tensor_product(4,4,cubic_lagrange_blending_matrix,
 							number_of_basis_functions,number_of_standard_basis_functions,
 							blending_matrix)))
 						{
@@ -1883,7 +1883,7 @@ returned.
 					} break;
 					case CUBIC_HERMITE:
 					{
-						if ((temp_matrix=tensor_product(4,4,cubic_hermite_blending_matrix,
+						if (NULL != (temp_matrix = tensor_product(4,4,cubic_hermite_blending_matrix,
 							number_of_basis_functions,number_of_standard_basis_functions,
 							blending_matrix)))
 						{
@@ -1933,7 +1933,7 @@ returned.
 					} break;
 					case HERMITE_LAGRANGE:
 					{
-						if ((temp_matrix=tensor_product(3,3,
+						if (NULL != (temp_matrix = tensor_product(3,3,
 							hermite_lagrange_blending_matrix,number_of_basis_functions,
 							number_of_standard_basis_functions,blending_matrix)))
 						{
@@ -1979,7 +1979,7 @@ returned.
 					} break;
 					case LAGRANGE_HERMITE:
 					{
-						if ((temp_matrix=tensor_product(3,3,
+						if (NULL != (temp_matrix = tensor_product(3,3,
 							lagrange_hermite_blending_matrix,number_of_basis_functions,
 							number_of_standard_basis_functions,blending_matrix)))
 						{
@@ -2154,7 +2154,7 @@ returned.
 											temp_matrix++;
 											*temp_matrix= -1;
 										}
-										if ((temp_matrix=tensor_product(
+										if (NULL != (temp_matrix = tensor_product(
 											number_of_polygon_verticies+1,
 											4*number_of_polygon_verticies,polygon_blending_matrix,
 											number_of_basis_functions,
@@ -2288,7 +2288,7 @@ returned.
 										{
 											case 2:
 											{
-												if ((temp_matrix=tensor_product(3,4,
+												if (NULL != (temp_matrix = tensor_product(3,4,
 													linear_simplex_2d_blending_matrix,
 													number_of_basis_functions,
 													number_of_standard_basis_functions,blending_matrix)))
@@ -2333,7 +2333,7 @@ returned.
 											} break;
 											case 3:
 											{
-												if ((temp_matrix=tensor_product(4,8,
+												if (NULL != (temp_matrix = tensor_product(4,8,
 													linear_simplex_3d_blending_matrix,
 													number_of_basis_functions,
 													number_of_standard_basis_functions,blending_matrix)))
@@ -2395,7 +2395,7 @@ returned.
 										{
 											case 2:
 											{
-												if ((temp_matrix=tensor_product(6,9,
+												if (NULL != (temp_matrix = tensor_product(6,9,
 													quadratic_simplex_2d_blending_matrix,
 													number_of_basis_functions,
 													number_of_standard_basis_functions,blending_matrix)))
@@ -2458,7 +2458,7 @@ returned.
 											{
 												new_func_count = 10;
 												new_std_func_count = 27;
-												if ((temp_matrix=tensor_product(new_func_count,new_std_func_count,
+												if (NULL != (temp_matrix = tensor_product(new_func_count,new_std_func_count,
 													quadratic_simplex_3d_blending_matrix,
 													number_of_basis_functions,
 													number_of_standard_basis_functions,blending_matrix)))
@@ -2920,10 +2920,11 @@ and adds it to the manager.
 	ENTER(make_FE_basis);
 	if (basis_manager)
 	{
-		if (!(basis=FIND_BY_IDENTIFIER_IN_MANAGER(FE_basis,type)
-			(basis_type,basis_manager)))
+		basis = FIND_BY_IDENTIFIER_IN_MANAGER(FE_basis,type)(basis_type,basis_manager);
+		if (NULL == basis)
 		{
-			if ((basis=CREATE(FE_basis)(basis_type)))
+			basis = CREATE(FE_basis)(basis_type);
+			if (NULL != basis)
 			{
 				if (!ADD_OBJECT_TO_MANAGER(FE_basis)(basis,basis_manager))
 				{
@@ -2969,7 +2970,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 	if (source&&destination)
 	{
 		/* copy the source value names */
-		if ((source_value_name=source->value_names))
+		if (NULL != (source_value_name=source->value_names))
 		{
 			i=source->number_of_basis_functions;
 			if (ALLOCATE(destination_value_names,char *,i))
@@ -3050,7 +3051,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 					display_message(ERROR_MESSAGE,
 "MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for blending matrix");
 					return_code=0;
-					if ((value_name=destination_value_names))
+					if (NULL != (value_name=destination_value_names))
 					{
 						for (i=source->number_of_basis_functions;i>0;i--)
 						{
@@ -3079,7 +3080,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 						i--;
 					}
 					/* clear the destination value names */
-					if ((value_name=destination->value_names))
+					if (NULL != (value_name=destination->value_names))
 					{
 						for (i=destination->number_of_basis_functions;i>0;i--)
 						{
@@ -3107,7 +3108,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 "MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for arguments");
 					return_code=0;
 					DEALLOCATE(destination_blending_matrix);
-					if ((value_name=destination_value_names))
+					if (NULL != (value_name=destination_value_names))
 					{
 						for (i=source->number_of_basis_functions;i>0;i--)
 						{
@@ -3179,8 +3180,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_basis,type)
 	ENTER(MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type));
 	if (source&&destination)
 	{
-		if ((return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type)(
-			destination,source)))
+		return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type)(
+			destination,source);
+		if (return_code)
 		{
 			return_code=MANAGER_COPY_IDENTIFIER(FE_basis,type)(destination,
 				source->type);
@@ -3677,7 +3679,8 @@ static char *FE_basis_type_array_to_string(const int *type_array)
 		for (xi_number = 0; (xi_number < dimension) && !error; xi_number++)
 		{
 			basis_type = (enum FE_basis_type)(*type);
-			if ((basis_type_string = FE_basis_type_string(basis_type)))
+			basis_type_string = FE_basis_type_string(basis_type);
+			if (NULL != basis_type_string)
 			{
 				append_string(&basis_string, basis_type_string, &error);
 				switch (basis_type)
@@ -4102,8 +4105,9 @@ Returns true if the standard basis function is a monomial.
 
 	ENTER(standard_basis_function_is_monomial);
 	return_code=0;
-	if ((monomial_basis_functions==function)&&(arguments=(int *)arguments_void)&&
-		(1<=arguments[0]))
+	arguments=(int *)arguments_void;
+	if ((monomial_basis_functions==function) && (NULL != arguments) &&
+		(1 <= arguments[0]))
 	{
 		return_code=1;
 	}
