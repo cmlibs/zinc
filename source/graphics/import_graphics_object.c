@@ -330,8 +330,8 @@ DESCRIPTION :
 									transform[3][3]);
 							}
 						}
-						if (obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-							objname,object_list))
+						obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(objname,object_list);
+						if (obj)
 						{
 							if (GT_object_has_time(obj,time))
 							{
@@ -470,6 +470,9 @@ DESCRIPTION :
 													IO_stream_scan(stream,"%f",&(normallist[i][j]));
 												}
 											}
+										} break;
+										default:
+										{
 										} break;
 									}
 									polyline = CREATE(GT_polyline)(polyline_type,
@@ -692,7 +695,8 @@ DESCRIPTION :
 										}
 									}
 								}
-								if(nurbs=CREATE(GT_nurbs)())
+								nurbs=CREATE(GT_nurbs)();
+								if(nurbs)
 								{
 									GT_nurbs_set_surface(nurbs, sorder, torder,
 										sknotcnt, tknotcnt, sknots, tknots,
@@ -827,8 +831,8 @@ DESCRIPTION :
 	return_code = 1;
 	if (file_name && graphical_material_manager)
 	{
-		if((file = CREATE(IO_stream)(io_stream_package))
-			&& (IO_stream_open_for_read(file, file_name)))
+		file = CREATE(IO_stream)(io_stream_package);
+		if (file && (IO_stream_open_for_read(file, file_name)))
 		{
 			if(graphics_object_name)
 			{
@@ -838,8 +842,8 @@ DESCRIPTION :
 			{
 				sprintf(objname, "%s", file_name);
 			}
-			if(obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-					objname, object_list))
+			obj=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(objname, object_list);
+			if(obj)
 			{
 				next_obj = obj;
 				while (next_obj)
@@ -948,9 +952,10 @@ DESCRIPTION :
 									number_of_triangles && triangle_list)
 								{
 									/* Add the voltex we currently have and reset the vertex and triangle lists */
-									if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-											number_of_triangles, triangle_list,
-											/*n_data_components*/0, n_texture_coordinates, voltex_type))
+									voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
+										number_of_triangles, triangle_list,
+										/*n_data_components*/0, n_texture_coordinates, voltex_type);
+									if (voltex)
 									{
 										return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 									}
@@ -988,8 +993,8 @@ DESCRIPTION :
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{
-									if((scanned_material = CREATE(Graphical_material)
-											(matname)) && 
+									scanned_material = CREATE(Graphical_material)(matname);
+									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
 											(scanned_material, graphical_material_manager)))
 									{
@@ -1000,8 +1005,8 @@ DESCRIPTION :
 										scanned_material = (struct Graphical_material *)NULL;
 									}
 								}
-								
-								if (new_obj = GT_object_get_next_object(obj))
+								new_obj = GT_object_get_next_object(obj);
+								if (new_obj)
 								{
 									/* Could check that the materials match although I don't know
 										what to do if they don't */
@@ -1037,7 +1042,7 @@ DESCRIPTION :
 								vertex_reindex[n_obj_coordinate_vertices] = -1;
 								new_coordinate_vertices = coordinate_vertices + 3 * n_obj_coordinate_vertices;
 								i=0;
-								while (word=strtok(NULL," "))
+								while (NULL != (word=strtok(NULL," ")))
 								{
 									new_coordinate_vertices[i]=atof(word);
 									i++;
@@ -1060,7 +1065,7 @@ DESCRIPTION :
 								
 								new_texture_vertices = texture_vertices + 3 * n_obj_texture_vertices;
 								i=0;
-								while (word=strtok(NULL," "))
+								while (NULL != (word=strtok(NULL," ")))
 								{
 									new_texture_vertices[i]=atof(word);
 									i++;
@@ -1083,7 +1088,7 @@ DESCRIPTION :
 								
 								new_normal_vertices = normal_vertices + 3 * n_obj_normal_vertices;
 								i=0;
-								while (word=strtok(NULL," "))
+								while (NULL != (word=strtok(NULL," ")))
 								{
 									new_normal_vertices[i]=atof(word);
 									i++;
@@ -1104,7 +1109,7 @@ DESCRIPTION :
 								an extra face when there is a blank on the end of a
 								line */
 							n_face_vertices=0;
-							while (word=strtok(NULL," "))
+							while (NULL != (word=strtok(NULL," ")))
 							{
 								if (n_face_vertices<MAX_OBJ_VERTICES)
 								{
@@ -1133,10 +1138,10 @@ DESCRIPTION :
 								{
 									if (strstr(face_word[i],"//"))
 									{
-										if (word=strtok(face_word[i],"//"))
+										if (NULL != (word=strtok(face_word[i],"//")))
 										{
 											face_vertex[i][0]=atoi(word);
-											if(word=strtok(NULL,"//"))
+											if(NULL != (word=strtok(NULL,"//")))
 											{
 												face_vertex[i][1]=0;
 												face_vertex[i][2]=atoi(word);
@@ -1150,13 +1155,13 @@ DESCRIPTION :
 									}
 									else
 									{
-										if (word=strtok(face_word[i], "/"))
+										if (NULL != (word=strtok(face_word[i], "/")))
 										{
 											face_vertex[i][0]=atoi(word);
-											if (word=strtok(NULL,"/"))
+											if (NULL != (word=strtok(NULL,"/")))
 											{
 												face_vertex[i][1]=atoi(word);
-												if(word=strtok(NULL,"/"))
+												if(NULL != (word=strtok(NULL,"/")))
 												{
 													face_vertex[i][2]=atoi(word);
 												}
@@ -1406,9 +1411,10 @@ DESCRIPTION :
 
 			if (return_code)
 			{
-				if (voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-						number_of_triangles, triangle_list,
-						/*n_data_components*/0, n_texture_coordinates, voltex_type))
+				voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
+										number_of_triangles, triangle_list,
+										/*n_data_components*/0, n_texture_coordinates, voltex_type);
+				if (voltex)
 				{
 					return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 				}

@@ -960,8 +960,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(
-				destination,source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(
+				destination,source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -1509,18 +1510,21 @@ DESCRIPTION :
 	struct Option_table *option_table;
 
 	ENTER(modify_Light);
-	if (state &&
-		(modify_light_data=(struct Modify_light_data *)modify_light_data_void))
+	modify_light_data=(struct Modify_light_data *)modify_light_data_void;
+	if (state && modify_light_data)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			process=0;
-			if (light_to_be_modified=(struct Light *)light_void)
+			light_to_be_modified=(struct Light *)light_void;
+			if (light_to_be_modified)
 			{
 				if (IS_MANAGED(Light)(light_to_be_modified,modify_light_data->
 					light_manager))
 				{
-					if (light_to_be_modified_copy=CREATE(Light)("copy"))
+					light_to_be_modified_copy=CREATE(Light)("copy");
+					if (light_to_be_modified_copy)
 					{
 						MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(
 							light_to_be_modified_copy,light_to_be_modified);
@@ -1545,12 +1549,15 @@ DESCRIPTION :
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (light_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(
-						current_token,modify_light_data->light_manager))
+					light_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(
+						current_token,modify_light_data->light_manager);
+					if (light_to_be_modified)
 					{
-						if (return_code=shift_Parse_state(state,1))
+						return_code=shift_Parse_state(state,1);
+						if (return_code)
 						{
-							if (light_to_be_modified_copy=CREATE(Light)("copy"))
+							light_to_be_modified_copy=CREATE(Light)("copy");
+							if (light_to_be_modified_copy)
 							{
 								MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(
 									light_to_be_modified_copy,light_to_be_modified);
@@ -1573,7 +1580,8 @@ DESCRIPTION :
 				}
 				else
 				{
-					if (light_to_be_modified=CREATE(Light)("help"))
+					light_to_be_modified=CREATE(Light)("help");
+					if (light_to_be_modified)
 					{
 						if (modify_light_data->default_light)
 						{
@@ -1734,6 +1742,9 @@ Writes the properties of the <light> to the command window.
 					"  position  x = %.3g, y = %.3g, z = %.3g\n",
 					light->position[0], light->position[1], light->position[2]);
 			} break;
+			default:
+			{
+			}	break;
 		}
 		switch (light->type)
 		{
@@ -1743,6 +1754,9 @@ Writes the properties of the <light> to the command window.
 					"  direction  x = %.3g, y = %.3g, z = %.3g\n",
 					light->direction[0], light->direction[1], light->direction[2]);
 			} break;
+			default:
+			{
+			}	break;
 		}
 		switch (light->type)
 		{
@@ -1755,6 +1769,9 @@ Writes the properties of the <light> to the command window.
 					light->linear_attenuation,
 					light->quadratic_attenuation);
 			} break;
+			default:
+			{
+			}	break;
 		}
 		if (SPOT_LIGHT == light->type)
 		{
@@ -1795,11 +1812,13 @@ name of the light if it contains any special characters.
 	ENTER(list_Light_name);
 	if (light)
 	{
-		if (preceding_text=(char *)preceding_text_void)
+		preceding_text=(char *)preceding_text_void;
+		if (preceding_text)
 		{
 			display_message(INFORMATION_MESSAGE,preceding_text);
 		}
-		if (name=duplicate_string(light->name))
+		name=duplicate_string(light->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -1835,11 +1854,13 @@ Follows the light name with semicolon and carriage return.
 	ENTER(list_Light_name_command);
 	if (light)
 	{
-		if (preceding_text=(char *)preceding_text_void)
+		preceding_text=(char *)preceding_text_void;
+		if (preceding_text)
 		{
 			display_message(INFORMATION_MESSAGE,preceding_text);
 		}
-		if (name=duplicate_string(light->name))
+		name=duplicate_string(light->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -1875,11 +1896,13 @@ Follows the light name with semicolon and carriage return.
 	ENTER(write_Light_name_command_to_comfile);
 	if (light)
 	{
-		if (preceding_text=(char *)preceding_text_void)
+		preceding_text=(char *)preceding_text_void;
+		if (preceding_text)
 		{
 			write_message_to_file(INFORMATION_MESSAGE,preceding_text);
 		}
-		if (name=duplicate_string(light->name))
+		name=duplicate_string(light->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -2113,7 +2136,8 @@ Modifier function to set the light from a command.
 	ENTER(set_Light);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2134,8 +2158,9 @@ Modifier function to set the light from a command.
 					}
 					else
 					{
-						if (temp_light=FIND_BY_IDENTIFIER_IN_MANAGER(Light,
-							name)(current_token,light_manager))
+						temp_light=FIND_BY_IDENTIFIER_IN_MANAGER(Light,
+							name)(current_token,light_manager);
+						if (temp_light)
 						{
 							if (*light_address!=temp_light)
 							{
@@ -2164,10 +2189,11 @@ Modifier function to set the light from a command.
 			{
 				display_message(INFORMATION_MESSAGE," LIGHT_NAME|none");
 				/* if possible, then write the name */
-				if (light_address=
-					(struct Light **)light_address_void)
+				light_address=(struct Light **)light_address_void;
+				if (light_address)
 				{
-					if (temp_light= *light_address)
+					temp_light= *light_address;
+					if (temp_light)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_light->name);
 					}

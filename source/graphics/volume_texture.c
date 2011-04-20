@@ -276,7 +276,8 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 	ENTER(DESTROY(VT_volume_texture));
 	if (texture_address)
 	{
-		if (texture= *texture_address)
+		texture= *texture_address;
+		if (texture)
 		{
 			if (texture->access_count<=0)
 			{
@@ -428,8 +429,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(VT_volume_texture,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name)(
+				destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -530,7 +532,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 		if (return_code)
 		{
 			/* texture curve list */
-			if (texture_curve_list=source->texture_curve_list)
+			texture_curve_list=source->texture_curve_list;
+			if (texture_curve_list)
 			{
 				source_curve= *texture_curve_list;
 				if (ALLOCATE(texture_curve_list,struct VT_texture_curve *,1))
@@ -561,7 +564,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 								(destination_curve->point4)[1]=(source_curve->point4)[1];
 								(destination_curve->point4)[2]=(source_curve->point4)[2];
 								destination_curve->ptrnext=(struct VT_texture_curve *)NULL;
-								if (source_curve=source_curve->ptrnext)
+								source_curve=source_curve->ptrnext;
+								if (source_curve)
 								{
 									if (ALLOCATE(destination_curve->ptrnext,
 										struct VT_texture_curve,1))
@@ -601,7 +605,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 			if (return_code)
 			{
 				/* texture cell list */
-				if (source_texture_cell=source->texture_cell_list)
+				source_texture_cell=source->texture_cell_list;
+				if (source_texture_cell)
 				{
 					n_cells=(source->dimension[0])*(source->dimension[1])*
 						(source->dimension[2]);
@@ -651,7 +656,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 				if (return_code)
 				{
 					/* node_groups */
-					if (source_node_groups=source->node_groups)
+					source_node_groups=source->node_groups;
+					if (source_node_groups)
 					{
 						n_groups=source->n_groups;
 						if (ALLOCATE(node_groups,struct VT_node_group *,n_groups))
@@ -749,7 +755,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 				if (return_code)
 				{
 					/* global node list */
-					if (source_node=source->global_texture_node_list)
+					source_node=source->global_texture_node_list;
+					if (source_node)
 					{
 						n_nodes=(source->dimension[0]+1)*(source->dimension[1]+1)*
 							(source->dimension[2]+1);
@@ -1011,7 +1018,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 									if (return_code)
 									{
 										/* iso surface */
-										if (source_iso_surface=source->mc_iso_surface)
+										source_iso_surface=source->mc_iso_surface;
+										if (source_iso_surface)
 										{
 											if (ALLOCATE(iso_surface,struct MC_iso_surface,1))
 											{
@@ -1052,7 +1060,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 													(source_iso_surface->xi_face_poly_index)[5];
 
 												/* 1. copy over deformable vertices if list not NULL */
-												if (source_deform=source_iso_surface->deform)
+												source_deform=source_iso_surface->deform;
+												if (source_deform)
 												{
 													if (ALLOCATE(iso_surface->deform,int,
 														source_iso_surface->n_vertices))
@@ -1435,12 +1444,14 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 														DEALLOCATE(iso_surface->detail_map);
 													}
 													/* cells */
-													if (cells=iso_surface->mc_cells)
+													cells=iso_surface->mc_cells;
+													if (cells)
 													{
 														n_triangle_lists=(iso_surface->n_scalar_fields)+6;
 														for (i=0;i<n_mc_cells;i++)
 														{
-															if (cell= *cells)
+															cell= *cells;
+															if (cell)
 															{
 																for (j=0;j<n_triangle_lists;j++)
 																{
@@ -1458,7 +1469,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 														DEALLOCATE(iso_surface->mc_cells);
 													}
 													/* triangles */
-													if (compiled_triangle=iso_surface->compiled_triangle_list)
+													compiled_triangle=iso_surface->compiled_triangle_list;
+													if (compiled_triangle)
 													{
 														for (i=0;i<iso_surface->n_triangles;i++)
 														{
@@ -1468,7 +1480,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 														DEALLOCATE(iso_surface->compiled_triangle_list);
 													}
 													/* vertices */
-													if (compiled_vertex=iso_surface->compiled_vertex_list)
+													compiled_vertex=iso_surface->compiled_vertex_list;
+													if (compiled_vertex)
 													{
 														for (i=0;i<iso_surface->n_vertices;i++)
 														{
@@ -1503,7 +1516,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 
 										if (return_code)
 										{
-											if (grid_spacing=source->grid_spacing)
+											grid_spacing=source->grid_spacing;
+											if (grid_spacing)
 											{
 												i=(source->dimension)[0]+(source->dimension)[1]+
 													(source->dimension)[2]+3;
@@ -1541,7 +1555,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 												{
 													/*printf("destroy texture_curve_list\n");*/
 													source_curve= *(destination->texture_curve_list);
-													while (destination_curve=source_curve)
+													while (NULL != (destination_curve=source_curve))
 													{
 														source_curve=source_curve->ptrnext;
 														DEALLOCATE(destination_curve);
@@ -1698,7 +1712,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 			if (texture_curve_list)
 			{
 				source_curve= *texture_curve_list;
-				while (destination_curve=source_curve)
+				while (NULL != (destination_curve=source_curve))
 				{
 					source_curve=source_curve->ptrnext;
 					DEALLOCATE(destination_curve);
@@ -1747,7 +1761,8 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 					while (i<0)
 					{
 						cells--;
-						if (cell= *cells)
+						cell= *cells;
+						if (cell)
 						{
 							j=n_triangle_lists;
 							while (j>0)
@@ -1928,15 +1943,15 @@ Modifier function to set the volume texture from a command.
 	ENTER(set_VT_volume_texture);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((texture_address=
-					(struct VT_volume_texture **)texture_address_void)&&
-					(volume_texture_manager=(struct MANAGER(VT_volume_texture) *)
-					volume_texture_manager_void))
+				texture_address=(struct VT_volume_texture **)texture_address_void;
+				volume_texture_manager=(struct MANAGER(VT_volume_texture) *)volume_texture_manager_void;
+				if (texture_address && volume_texture_manager)
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
@@ -1949,8 +1964,9 @@ Modifier function to set the volume texture from a command.
 					}
 					else
 					{
-						if (temp_texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,
-							name)(current_token,volume_texture_manager))
+						temp_texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,
+							name)(current_token,volume_texture_manager);
+						if (temp_texture)
 						{
 							if (*texture_address!=temp_texture)
 							{
@@ -1978,9 +1994,11 @@ Modifier function to set the volume texture from a command.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," VTEXTURE_NAME|none");
-				if (texture_address=(struct VT_volume_texture **)texture_address_void)
+				texture_address=(struct VT_volume_texture **)texture_address_void;
+				if (texture_address)
 				{
-					if (temp_texture= *texture_address)
+					temp_texture= *texture_address;
+					if (temp_texture)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_texture->name);
 					}
@@ -2115,7 +2133,8 @@ Frees the memory for the clipping and sets <*clipping_address> to NULL.
 	ENTER(DESTROY(Clipping));
 	if (clipping_address)
 	{
-		if (clipping= *clipping_address)
+		clipping= *clipping_address;
+		if (clipping)
 		{
 			DEALLOCATE(clipping->parameters);
 			DEALLOCATE(*clipping_address);
@@ -2150,12 +2169,14 @@ Modifier function to set the clipping from a command.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (clipping_address=(struct Clipping **)clipping_address_void)
+				clipping_address=(struct Clipping **)clipping_address_void;
+				if (clipping_address)
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
@@ -2188,7 +2209,8 @@ Modifier function to set the clipping from a command.
 														clipping_parameters+3))
 													{
 														shift_Parse_state(state,1);
-														if (clipping=CREATE(Clipping)())
+														clipping=CREATE(Clipping)();
+														if (clipping)
 														{
 															if (*clipping_address)
 															{

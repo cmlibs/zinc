@@ -377,7 +377,8 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 	ENTER(DESTROY(Spectrum_settings));
 	if (settings_ptr)
 	{
-		if (settings= *settings_ptr)
+		settings= *settings_ptr;
+		if (settings)
 		{
 #if defined (OPENGL_API)
 			if (settings->texture_id)
@@ -526,11 +527,12 @@ Makes a copy of the settings and puts it in the list_of_settings.
 	struct LIST(Spectrum_settings) *list_of_settings;
 
 	ENTER(Spectrum_settings_copy_and_put_in_list);
-	if (settings&&(list_of_settings=
-		(struct LIST(Spectrum_settings) *)list_of_settings_void))
+	if (settings&&(NULL != (list_of_settings=
+		(struct LIST(Spectrum_settings) *)list_of_settings_void)))
 	{
 		/* create new settings to take the copy */
-		if (copy_settings=CREATE(Spectrum_settings)())
+		copy_settings=CREATE(Spectrum_settings)();
+		if (copy_settings)
 		{
 			/* copy and insert in list */
 			if (!(return_code=COPY(Spectrum_settings)(copy_settings,settings)&&
@@ -618,8 +620,9 @@ Adds the new_settings in the list_of_settings at the given <priority>
 		{
 			settings->position=position;
 			/* is there already a settings with that position? */
-			if (settings_in_way=FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,
-				position)(position,list_of_settings))
+			settings_in_way=FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,
+				position)(position,list_of_settings);
+			if (settings_in_way)
 			{
 				/* remove the old settings to make way for the new */
 				ACCESS(Spectrum_settings)(settings_in_way);
@@ -1065,7 +1068,8 @@ Writes out the settings as a text string.
 		(SPECTRUM_SETTINGS_STRING_COMPLETE==settings_detail)||
 		(SPECTRUM_SETTINGS_STRING_COMPLETE_PLUS==settings_detail)))
 	{
-		if (settings_string=Spectrum_settings_string(settings,settings_detail))
+		settings_string=Spectrum_settings_string(settings,settings_detail);
+		if (settings_string)
 		{
 			sprintf(line,"%4i.",settings->position);
 			display_message(INFORMATION_MESSAGE,line);
@@ -2582,6 +2586,9 @@ passed in render data.
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
+						default:
+						{
+						} break;
 					}
 				}
 				else if (2 == number_of_components)
@@ -2824,6 +2831,9 @@ passed in render data.
 							glTexCoord1f(value);
 #endif /* defined (OPENGL_API) */
 						} break;
+						default:
+						{
+						} break;
 					}
 				}
 			}
@@ -2921,8 +2931,9 @@ Writes out the <settings> as a text string in the command window with the
 	if (settings&&
 		(list_data=(struct Spectrum_settings_list_data *)list_data_void))
 	{
-		if (settings_string=Spectrum_settings_string(settings,
-			list_data->settings_string_detail))
+		settings_string=Spectrum_settings_string(settings,
+			list_data->settings_string_detail);
+		if (settings_string)
 		{
 			if (list_data->line_prefix)
 			{
@@ -2976,11 +2987,12 @@ Writes out the <settings> as a text string in the command window with the
 	struct Spectrum_settings_list_data *list_data;
 
 	ENTER(Spectrum_settings_write_contents);
-	if (settings&&
-		(list_data=(struct Spectrum_settings_list_data *)list_data_void))
+	list_data=(struct Spectrum_settings_list_data *)list_data_void;
+	if (settings&&list_data)
 	{
-		if (settings_string=Spectrum_settings_string(settings,
-			list_data->settings_string_detail))
+		settings_string=Spectrum_settings_string(settings,
+			list_data->settings_string_detail);
+		if (settings_string)
 		{
 			if (list_data->line_prefix)
 			{
@@ -3044,12 +3056,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	USE_PARAMETER(spectrum_command_data_void);
 	if (state)
 	{
-		if (modify_spectrum_data=
-			(struct Modify_spectrum_data *)modify_spectrum_data_void)
+		modify_spectrum_data=
+			(struct Modify_spectrum_data *)modify_spectrum_data_void;
+		if (modify_spectrum_data)
 		{
 			/* create the spectrum_settings: */
-			if (settings=modify_spectrum_data->settings=
-				CREATE(Spectrum_settings)())
+			settings=modify_spectrum_data->settings=CREATE(Spectrum_settings)();
+			if (settings)
 			{
 				/* access since deaccessed in gfx_modify_spectrum */
 				ACCESS(Spectrum_settings)(modify_spectrum_data->settings);
@@ -3281,12 +3294,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	USE_PARAMETER(spectrum_command_data_void);
 	if (state)
 	{
-		if (modify_spectrum_data=
-			(struct Modify_spectrum_data *)modify_spectrum_data_void)
+		modify_spectrum_data=(struct Modify_spectrum_data *)modify_spectrum_data_void;
+		if (modify_spectrum_data)
 		{
 			/* create the spectrum_settings: */
-			if (settings=modify_spectrum_data->settings=
-				CREATE(Spectrum_settings)())
+			settings=modify_spectrum_data->settings=CREATE(Spectrum_settings)();
+			if (settings)
 			{
 				/* access since deaccessed in gfx_modify_spectrum */
 				ACCESS(Spectrum_settings)(modify_spectrum_data->settings);
@@ -3546,12 +3559,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	USE_PARAMETER(spectrum_command_data_void);
 	if (state)
 	{
-		if (modify_spectrum_data=
-			(struct Modify_spectrum_data *)modify_spectrum_data_void)
+		modify_spectrum_data=(struct Modify_spectrum_data *)modify_spectrum_data_void;
+		if (modify_spectrum_data)
 		{
 			/* create the spectrum_settings: */
-			if (settings=modify_spectrum_data->settings=
-				CREATE(Spectrum_settings)())
+			settings=modify_spectrum_data->settings=CREATE(Spectrum_settings)();
+			if (settings)
 			{
 				/* access since deaccessed in gfx_modify_spectrum */
 				ACCESS(Spectrum_settings)(modify_spectrum_data->settings);

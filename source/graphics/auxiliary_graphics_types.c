@@ -112,12 +112,14 @@ A modifier function for setting exterior flag and face number.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(int *)value_address_void)
+				value_address=(int *)value_address_void;
+				if (value_address)
 				{
 					return_code=1;
 					/*???DB.  Only valid for cubes (not polygons) */
@@ -186,7 +188,8 @@ A modifier function for setting exterior flag and face number.
 		}
 		else
 		{
-			if (value_address=(int *)value_address_void)
+			value_address=(int *)value_address_void;
+			if (value_address)
 			{
 				*value_address=1;
 				return_code=1;
@@ -302,8 +305,8 @@ read_Circle_discretization_defaults().
 	ENTER(check_Circle_discretization);
 	if (circle_discretization)
 	{
-		if (return_code=read_circle_discretization_defaults(&default_value,
-			user_interface))
+		if (0 != (return_code=read_circle_discretization_defaults(&default_value,
+			user_interface)))
 		{
 			initial_value = *circle_discretization;
 			if (2 > *circle_discretization)
@@ -348,13 +351,15 @@ A modifier function for setting number of segments used to draw circles.
 	ENTER(set_Circle_discretization);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				user_interface=(struct User_interface *)user_interface_void;
-				if (circle_discretization = (int *)circle_discretization_void)
+				circle_discretization = (int *)circle_discretization_void;
+				if (circle_discretization)
 				{
 					if (1==sscanf(current_token,"%d",circle_discretization))
 					{
@@ -379,7 +384,8 @@ A modifier function for setting number of segments used to draw circles.
 			}
 			else
 			{
-				if (circle_discretization = (int *)circle_discretization_void)
+				circle_discretization = (int *)circle_discretization_void;
+				if (circle_discretization)
 				{
 					/* use negative value to signal that it is not determined which
 						 current value is the default */
@@ -516,8 +522,8 @@ read_Element_discretization_defaults().
 	ENTER(check_Element_discretization);
 	if (element_discretization)
 	{
-		if (return_code=read_element_discretization_defaults(&default_value,
-			user_interface))
+		if (0 != (return_code=read_element_discretization_defaults(&default_value,
+			user_interface)))
 		{
 			discretization_change=0;
 			initial.number_in_xi1=element_discretization->number_in_xi1;
@@ -579,14 +585,16 @@ A modifier function for setting discretization in each element direction.
 	ENTER(set_Element_discretization);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				user_interface=(struct User_interface *)user_interface_void;
-				if (element_discretization=
-					(struct Element_discretization *)element_discretization_void)
+				element_discretization=
+					(struct Element_discretization *)element_discretization_void;
+				if (element_discretization)
 				{
 					if (1==sscanf(current_token,"%d",
 						&(element_discretization->number_in_xi1)))
@@ -633,8 +641,9 @@ A modifier function for setting discretization in each element direction.
 			else
 			{
 				/* write help */
-				if (element_discretization=
-					(struct Element_discretization *)element_discretization_void)
+				element_discretization=
+					(struct Element_discretization *)element_discretization_void;
+				if (element_discretization)
 				{
 					multiple_default=
 						(0>element_discretization->number_in_xi1)

@@ -735,9 +735,10 @@ Ensures the <element_point_ranges> are in <element_point_ranges_list>.
 		(0<(number_of_ranges=
 			Multi_range_get_number_of_ranges(element_point_ranges->ranges))))
 	{
-		if (existing_element_point_ranges=
+		existing_element_point_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
-				element_point_ranges->identifier,element_point_ranges_list))
+				element_point_ranges->identifier,element_point_ranges_list);
+		if (existing_element_point_ranges)
 		{
 			return_code=1;
 			for (i=0;(i<number_of_ranges)&&return_code;i++)
@@ -810,9 +811,10 @@ Shortcut for ensuring the element point indicated by
 		Element_point_ranges_identifier_element_point_number_is_valid(
 			element_point_ranges_identifier,element_point_number))
 	{
-		if (existing_element_point_ranges=
+		existing_element_point_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
-				element_point_ranges_identifier,element_point_ranges_list))
+				element_point_ranges_identifier,element_point_ranges_list);
+		if (existing_element_point_ranges)
 		{
 			return_code=Multi_range_add_range(existing_element_point_ranges->ranges,
 				element_point_number,element_point_number);
@@ -871,9 +873,10 @@ Ensures the <element_point_ranges> is not in <element_point_ranges_list>.
 		(0<(number_of_ranges=
 			Multi_range_get_number_of_ranges(element_point_ranges->ranges))))
 	{
-		if (existing_element_point_ranges=
+		existing_element_point_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
-				element_point_ranges->identifier,element_point_ranges_list))
+				element_point_ranges->identifier,element_point_ranges_list);
+		if (existing_element_point_ranges)
 		{
 			/* handle case where object from list is being removed */
 			if (existing_element_point_ranges == element_point_ranges)
@@ -942,9 +945,10 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 		(0<(number_of_ranges=
 			Multi_range_get_number_of_ranges(element_point_ranges->ranges))))
 	{
-		if (existing_element_point_ranges=
+		existing_element_point_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
-				element_point_ranges->identifier,element_point_ranges_list))
+				element_point_ranges->identifier,element_point_ranges_list);
+		if (existing_element_point_ranges)
 		{
 			return_code=1;
 			for (i=0;(i<number_of_ranges)&&return_code;i++)
@@ -1069,7 +1073,8 @@ returned in this location, for the calling function to use or destroy.
 			element_point_ranges_identifier.exact_xi[i]=xi[i]=0.5;
 		}
 		return_code=1;
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1097,15 +1102,17 @@ returned in this location, for the calling function to use or destroy.
 				if (return_code)
 				{
 					shift_Parse_state(state,1);
-					if (current_token=state->current_token)
+					current_token=state->current_token;
+					if (current_token)
 					{
 						if (strcmp(PARSER_HELP_STRING,current_token)&&
 							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 						{
 							element_identifier.number=atoi(current_token);
-							if (element_point_ranges_identifier.element =
+							element_point_ranges_identifier.element =
 								FE_region_get_FE_element_from_identifier_deprecated(fe_region,
-									&element_identifier))
+									&element_identifier);
+							if (element_point_ranges_identifier.element)
 							{
 								shift_Parse_state(state,1);
 							}
@@ -1134,21 +1141,24 @@ returned in this location, for the calling function to use or destroy.
 				/* top_level_element number */
 				if (return_code)
 				{
-					if ((current_token=state->current_token)&&
+					current_token=state->current_token;
+					if (current_token&&
 						fuzzy_string_compare(current_token,"top_level_element"))
 					{
 						element_identifier.type = CM_ELEMENT;
 						shift_Parse_state(state,1);
-						if (current_token=state->current_token)
+						current_token=state->current_token;
+						if (current_token)
 						{
 							if (strcmp(PARSER_HELP_STRING,current_token)&&
 								strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 							{
 								element_identifier.number=atoi(current_token);
 								shift_Parse_state(state,1);
-								if (element_point_ranges_identifier.top_level_element =
+								element_point_ranges_identifier.top_level_element =
 									FE_region_get_top_level_FE_element_from_identifier(fe_region,
-										element_identifier.number))
+										element_identifier.number);
+								if (element_point_ranges_identifier.top_level_element)
 								{
 									if (!FE_element_is_top_level_parent_of_element(
 										element_point_ranges_identifier.top_level_element,
@@ -1208,7 +1218,8 @@ returned in this location, for the calling function to use or destroy.
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&xi_discretization_mode_string);
 					DEALLOCATE(valid_strings);
-					if (return_code=Option_table_parse(option_table,state))
+					return_code=Option_table_parse(option_table,state);
+					if (return_code)
 					{
 						STRING_TO_ENUMERATOR(Xi_discretization_mode)(
 							xi_discretization_mode_string, &xi_discretization_mode);
@@ -1231,9 +1242,10 @@ returned in this location, for the calling function to use or destroy.
 						case XI_DISCRETIZATION_CELL_CENTRES:
 						{
 							/* number_in_xi */
-							if (return_code=set_int_vector(state,
+							return_code=set_int_vector(state,
 								(void *)element_point_ranges_identifier.number_in_xi,
-								(void *)&dimension))
+									(void *)&dimension);
+							if (return_code)
 							{
 								/* check number_in_xi are all > 0 */
 								if ((!FE_element_get_xi_points(
@@ -1273,8 +1285,9 @@ returned in this location, for the calling function to use or destroy.
 				if (return_code)
 				{
 					/* create the element_point_ranges */
-					if (element_point_ranges=CREATE(Element_point_ranges)(
-						&element_point_ranges_identifier))
+					element_point_ranges=CREATE(Element_point_ranges)(
+						&element_point_ranges_identifier);
+					if (element_point_ranges)
 					{
 						switch (element_point_ranges_identifier.xi_discretization_mode)
 						{
@@ -1316,6 +1329,9 @@ returned in this location, for the calling function to use or destroy.
 									DESTROY(Element_point_ranges)(&element_point_ranges);
 									return_code=0;
 								}
+							} break;
+							default:
+							{
 							} break;
 						}
 						if (element_point_ranges)
@@ -1437,7 +1453,8 @@ No Element_point_ranges object is returned without error if:
 					{
 						identifier.exact_xi[i]=0.5;
 					}
-					if (element_point_ranges=CREATE(Element_point_ranges)(&identifier))
+					element_point_ranges=CREATE(Element_point_ranges)(&identifier);
+					if (element_point_ranges)
 					{
 						for (i=0;i<number_of_grid_values;i++)
 						{
@@ -1567,8 +1584,9 @@ If field and element_point_ranges not identically grid-based, clear
 				element_point_ranges->id.xi_discretization_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
 		{
-			if (return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
-				grid_fe_field,/*component_number*/0,number_in_xi))
+			return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
+				grid_fe_field,/*component_number*/0,number_in_xi);
+			if (return_code)
 			{
 				native=1;
 				for (i=0;(i<dimension)&&native;i++)
@@ -1582,8 +1600,9 @@ If field and element_point_ranges not identically grid-based, clear
 		}
 		if (native)
 		{
-			if (return_code=get_FE_element_field_component_grid_int_values(element,
-				grid_fe_field,/*component_number*/0,&values))
+			return_code=get_FE_element_field_component_grid_int_values(element,
+				grid_fe_field,/*component_number*/0,&values);
+			if (return_code)
 			{
 				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
 					element, grid_fe_field, /*component_number*/0);

@@ -109,7 +109,8 @@ Set the <environment_map> to face materials.
 	ENTER(set_Environment_map_face_materials);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -279,7 +280,8 @@ NULL.
 	ENTER(DESTROY(Environment_map));
 	if (environment_map_address)
 	{
-		if (environment_map= *environment_map_address)
+		environment_map= *environment_map_address;
+		if (environment_map)
 		{
 			if (environment_map->access_count<=0)
 			{
@@ -349,20 +351,23 @@ DESCRIPTION :
 	/* check the arguments */
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
-			if (modify_environment_map_data=
-				(struct Modify_environment_map_data *)modify_environment_map_data_void)
+			modify_environment_map_data=
+				(struct Modify_environment_map_data *)modify_environment_map_data_void;
+			if (modify_environment_map_data)
 			{
 				process=0;
-				if (environment_map_to_be_modified=
-					(struct Environment_map *)environment_map_void)
+				environment_map_to_be_modified=
+					(struct Environment_map *)environment_map_void;
+				if (environment_map_to_be_modified)
 				{
 					if (IS_MANAGED(Environment_map)(environment_map_to_be_modified,
 						modify_environment_map_data->environment_map_manager))
 					{
-						if (environment_map_to_be_modified_copy=
-							CREATE(Environment_map)((char *)NULL))
+						environment_map_to_be_modified_copy = CREATE(Environment_map)((char *)NULL);
+						if (environment_map_to_be_modified_copy)
 						{
 							MANAGER_COPY_WITH_IDENTIFIER(Environment_map,name)(
 								environment_map_to_be_modified_copy,
@@ -388,14 +393,15 @@ DESCRIPTION :
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (environment_map_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
-							Environment_map,name)(current_token,
-							modify_environment_map_data->environment_map_manager))
+						environment_map_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
+							Environment_map,name)(current_token, modify_environment_map_data->environment_map_manager);
+						if (environment_map_to_be_modified)
 						{
-							if (return_code=shift_Parse_state(state,1))
+							return_code=shift_Parse_state(state,1);
+							if (return_code)
 							{
-								if (environment_map_to_be_modified_copy=
-									CREATE(Environment_map)((char *)NULL))
+								environment_map_to_be_modified_copy = CREATE(Environment_map)((char *)NULL);
+								if (environment_map_to_be_modified_copy)
 								{
 									MANAGER_COPY_WITH_IDENTIFIER(Environment_map,name)(
 										environment_map_to_be_modified_copy,
@@ -420,8 +426,8 @@ DESCRIPTION :
 					}
 					else
 					{
-						if (environment_map_to_be_modified=
-							CREATE(Environment_map)((char *)NULL))
+						environment_map_to_be_modified =	CREATE(Environment_map)((char *)NULL);
+						if (environment_map_to_be_modified)
 						{
 							(help_option_table[0]).to_be_modified=
 								(void *)environment_map_to_be_modified;
@@ -443,7 +449,8 @@ DESCRIPTION :
 						(void *)environment_map_to_be_modified_copy;
 					(option_table[0]).user_data=
 						modify_environment_map_data->graphical_material_manager;
-					if (return_code=process_multiple_options(state,option_table))
+					return_code=process_multiple_options(state,option_table);
+					if (return_code)
 					{
 						if (environment_map_to_be_modified)
 						{
@@ -622,8 +629,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Environment_map,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Environment_map,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Environment_map,name)(
+				destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -750,15 +758,17 @@ with the specified name and the default properties.
 		if (IO_stream_read_string(stream,"s",&environment_map_name))
 		{
 			/*???DB.  Should this read function be in another module ? */
-			if (environment_map=FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,name)(
-				environment_map_name,environment_map_manager))
+			environment_map=FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,name)(
+				environment_map_name,environment_map_manager);
+			if (environment_map)
 			{
 				*environment_map_address=environment_map;
 				return_code=1;
 			}
 			else
 			{
-				if (environment_map=CREATE(Environment_map)(environment_map_name))
+				environment_map=CREATE(Environment_map)(environment_map_name);
+				if (environment_map)
 				{
 					if (ADD_OBJECT_TO_MANAGER(Environment_map)(environment_map,
 						environment_map_manager))
