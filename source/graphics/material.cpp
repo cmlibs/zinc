@@ -398,8 +398,8 @@ static struct Material_program *Material_program_create_from_program_strings(
 	struct Material_program *material_program;
 
 	ENTER(Material_program_create_from_program_strings);
-
-	if (material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS))
+	material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS);
+	if (material_program)
 	{
 #if defined (OPENGL_API)
 		material_program->vertex_program_string =
@@ -661,6 +661,9 @@ static int Material_program_uniform_write_glsl_values(Material_program_uniform *
 							glUniform4f(location, uniform->values[0], uniform->values[1], uniform->values[2], uniform->values[3]);
 						} break;
 					}
+				} break;
+				default:
+				{
 				} break;
 			}
 		}
@@ -3663,8 +3666,8 @@ DESCRIPTION :
 			display_message(ERROR_MESSAGE,
 				"Material_package_manage_material.  This material is already being managed");
 		}
-		if (return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(
-			material, material_package->material_manager))
+		return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(material, material_package->material_manager);
+		if (return_code)
 		{
 			Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 			/* Cannot ACCESS the package as the package is
@@ -4085,8 +4088,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -5253,18 +5256,22 @@ If the material already exists, then behaves like gfx modify material.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
-			if (material_package=(struct Material_package *)material_package_void)
+			material_package=(struct Material_package *)material_package_void;
+			if (material_package)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
 					/* if there is an existing material of that name, just modify it */
-					if (!(material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						current_token,material_package->material_manager)))
+					material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						current_token,material_package->material_manager);
+					if (!material)
 					{
-						if (material=CREATE(Graphical_material)(current_token))
+						material=CREATE(Graphical_material)(current_token);
+						if (material)
 						{
 							/*???DB.  Temporary */
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(material,
@@ -5589,16 +5596,17 @@ DESCRIPTION : Check the material program and renew it if necessary.
 			{
 				 DEACCESS(Material_program)(&material_to_be_modified->program);
 			}
-			if (material_to_be_modified->program =
-				 FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-						type, material_package->material_program_list))
+			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
+				type, material_package->material_program_list);
+			if (material_to_be_modified->program)
 			{
 				 ACCESS(Material_program)(material_to_be_modified->program);
 			}
 			else
 			{
-				 if (material_to_be_modified->program = ACCESS(Material_program)(
-								CREATE(Material_program)(type)))
+				material_to_be_modified->program = ACCESS(Material_program)(
+					CREATE(Material_program)(type));
+				 if (material_to_be_modified->program)
 				 {
 						ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified->program,
 							 material_package->material_program_list);
@@ -5715,7 +5723,8 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 
 	ENTER(Material_set_material_program_strings);
 
-	if (old_program = material_to_be_modified->program)
+	old_program = material_to_be_modified->program;
+	if (old_program)
 	{
 #if defined (OPENGL_API)
 		if (!vertex_program_string)
@@ -5732,9 +5741,10 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 		}
 #endif /* defined (OPENGL_API) */
 	}
-	if (material_to_be_modified->program = ACCESS(Material_program)(
+	material_to_be_modified->program = ACCESS(Material_program)(
 		Material_program_create_from_program_strings(
-		vertex_program_string, fragment_program_string, geometry_program_string)))
+			vertex_program_string, fragment_program_string, geometry_program_string));
+	if (material_to_be_modified->program)
 	{
 		return_code = 1;
 	}
@@ -5947,17 +5957,21 @@ DESCRIPTION :
 	ENTER(modify_Graphical_material);
 	if (state)
 	{
-		if (material_package = (struct Material_package *)material_package_void)
+		material_package = (struct Material_package *)material_package_void;
+		if (material_package)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token)
 			{
 				process=0;
-				if (material_to_be_modified=(struct Graphical_material *)material_void)
+				material_to_be_modified=(struct Graphical_material *)material_void;
+				if (material_to_be_modified)
 				{
 					if (IS_MANAGED(Graphical_material)(material_to_be_modified,
 						material_package->material_manager))
 					{
-						if (material_to_be_modified_copy=CREATE(Graphical_material)("copy"))
+						material_to_be_modified_copy=CREATE(Graphical_material)("copy");
+						if (material_to_be_modified_copy)
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(
 								material_to_be_modified_copy,material_to_be_modified);
@@ -5982,14 +5996,15 @@ DESCRIPTION :
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (material_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
-							Graphical_material,name)(current_token,
-							material_package->material_manager))
+						material_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(current_token,
+							material_package->material_manager);
+						if (material_to_be_modified)
 						{
-							if (return_code=shift_Parse_state(state,1))
+							return_code=shift_Parse_state(state,1);
+							if (return_code)
 							{
-								if (material_to_be_modified_copy=CREATE(Graphical_material)(
-									"copy"))
+								material_to_be_modified_copy=CREATE(Graphical_material)("copy");
+								if (material_to_be_modified_copy)
 								{
 									MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(
 										material_to_be_modified_copy,material_to_be_modified);
@@ -6013,7 +6028,8 @@ DESCRIPTION :
 					}
 					else
 					{
-						if (material_to_be_modified=CREATE(Graphical_material)("help"))
+						material_to_be_modified=CREATE(Graphical_material)("help");
+						if (material_to_be_modified)
 						{
 							if (material_package->default_material)
 							{
@@ -6210,7 +6226,8 @@ DESCRIPTION :
 						&uniform_name);
 					Option_table_add_variable_length_double_vector_entry(option_table,
 						"uniform_values", &number_of_uniform_values, &uniform_values);
-					if (return_code=Option_table_multi_parse(option_table, state))
+					return_code=Option_table_multi_parse(option_table, state);
+					if (return_code)
 					{
 						if (normal_mode_flag + per_pixel_mode_flag > 1)
 						{
@@ -6614,7 +6631,8 @@ The command is started with the string pointed to by <command_prefix>.
 	if (material&&(command_prefix=(char *)command_prefix_void))
 	{
 		display_message(INFORMATION_MESSAGE,command_prefix);
-		if (name=duplicate_string(material->name))
+		name=duplicate_string(material->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -6725,8 +6743,9 @@ The command is started with the string pointed to by <command_prefix>.
 	ENTER(write_Graphical_material_commands_to_comfile);
 	if (material&&(command_prefix=(char *)command_prefix_void))
 	{
-		 write_message_to_file(INFORMATION_MESSAGE,command_prefix);
-		if (name=duplicate_string(material->name))
+		write_message_to_file(INFORMATION_MESSAGE,command_prefix);
+		name=duplicate_string(material->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -6891,16 +6910,17 @@ specified name and the default properties.
 			/*???DB.  Should this read function be in another module ? */
 			/* either find an existing material of that name, use no material if the
 				 name is "none", or make a material of the given name */
-			if ((material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-				material_name,graphical_material_manager))||
-				fuzzy_string_compare_same_length(material_name,"NONE"))
+			material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+				material_name,graphical_material_manager);
+			if (material || fuzzy_string_compare_same_length(material_name,"NONE"))
 			{
 				*material_address=material;
 				return_code=1;
 			}
 			else
 			{
-				if (material=CREATE(Graphical_material)(material_name))
+				material=CREATE(Graphical_material)(material_name);
+				if (material)
 				{
 					Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, 1);
 					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
@@ -7199,8 +7219,9 @@ will work with order_independent_transparency.
 					Material_program,type)((Material_program_type)modified_type,
 						material_package->material_program_list)))
 				{
-					if (material->program = ACCESS(Material_program)(
-						CREATE(Material_program)((Material_program_type)modified_type)))
+					material->program = ACCESS(Material_program)(
+						CREATE(Material_program)((Material_program_type)modified_type));
+					if (material->program)
 					{
 						ADD_OBJECT_TO_LIST(Material_program)(material->program,
 							material_package->material_program_list);
@@ -7474,15 +7495,15 @@ Modifier function to set the material from a command.
 	ENTER(set_Graphical_material);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((material_address=
-					(struct Graphical_material **)material_address_void)&&
-					(graphical_material_manager=(struct MANAGER(Graphical_material) *)
-					graphical_material_manager_void))
+				material_address=	(struct Graphical_material **)material_address_void;
+				graphical_material_manager=(struct MANAGER(Graphical_material) *)graphical_material_manager_void;
+				if (material_address && graphical_material_manager)
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
@@ -7495,8 +7516,9 @@ Modifier function to set the material from a command.
 					}
 					else
 					{
-						if (temp_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
-							name)(current_token,graphical_material_manager))
+						temp_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
+							name)(current_token,graphical_material_manager);
+						if (temp_material)
 						{
 							if (*material_address!=temp_material)
 							{
@@ -7526,10 +7548,11 @@ Modifier function to set the material from a command.
 			{
 				display_message(INFORMATION_MESSAGE," MATERIAL_NAME|none");
 				/* if possible, then write the name */
-				if (material_address=
-					(struct Graphical_material **)material_address_void)
+				material_address=(struct Graphical_material **)material_address_void;
+				if (material_address)
 				{
-					if (temp_material= *material_address)
+					temp_material= *material_address;
+					if (temp_material)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_material->name);
 					}

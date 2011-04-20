@@ -188,7 +188,8 @@ Copied from the control curve editor.
 		j=1;
 		while (fabs(scale*(*minor_grid_size)) < min_minor_grid)
 		{
-			if (j=(j+1)%3)
+			j=(j+1)%3;
+			if (j)
 			{
 				*minor_grid_size *= 2.0;
 			}
@@ -210,7 +211,8 @@ Copied from the control curve editor.
 		while (fabs(scale*(*minor_grids_per_major)*(*minor_grid_size))<
 			min_major_grid)
 		{
-			if (j=(j+1)%2)
+			j=(j+1)%2;
+			if (j)
 			{
 				*minor_grids_per_major *= 5;
 			}
@@ -460,12 +462,14 @@ Renders the label_bounds as lines and labels.
 					number_of_minor_lines++;
 				}
 			}
-			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+			if (polyline)
 			{
-				if (graphics_object=CREATE(GT_object)(name,g_POLYLINE,
-						/*use the default material, must be before graphics which specify a material*/
-						(struct Graphical_material *)NULL))
+				graphics_object=CREATE(GT_object)(name,g_POLYLINE,
+					/*use the default material, must be before graphics which specify a material*/
+					(struct Graphical_material *)NULL);
+				if (graphics_object)
 				{
 					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 					{
@@ -483,11 +487,13 @@ Renders the label_bounds as lines and labels.
 			{
 				DEALLOCATE(major_linepoints);
 			}
-			if (label_set = CREATE(GT_pointset)(number_of_labels, label_string_locations,
+			label_set = CREATE(GT_pointset)(number_of_labels, label_string_locations,
 				label_strings, g_NO_MARKER, /*marker_size*/0, /*n_data_components*/0,
-				(GTDATA *)NULL, /*names*/(int *)NULL, font))
+				(GTDATA *)NULL, /*names*/(int *)NULL, font);
+			if (label_set)
 			{
-				if (graphics_object=CREATE(GT_object)(name, g_POINTSET, material))
+				graphics_object=CREATE(GT_object)(name, g_POINTSET, material);
+				if (graphics_object)
 				{
 					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
 					{
@@ -510,11 +516,12 @@ Renders the label_bounds as lines and labels.
 				}
 				DEALLOCATE(label_strings);
 			}
-
-			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+			if (polyline)
 			{
-				if (graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material))
+				graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material);
+				if (graphics_object)
 				{
 					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 					{
@@ -692,8 +699,8 @@ from the shaft.
 		}
 		if (polyline)
 		{
-			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-					(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_POLYLINE,(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 				{
@@ -751,8 +758,8 @@ the arrow points in.
 	if (name&&(2<number_of_segments_around)&&(0<shaft_radius)&&(1>shaft_radius)&&
 		(0<shaft_length)&&(1>shaft_length))
 	{
-		if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+		if (glyph)
 		{
 			for (i=0;(i<4)&&glyph;i++)
 			{
@@ -967,11 +974,12 @@ The length and width of the arrow heads are specified by the final parameters.
 				points[28][2]=1.0;
 				points[29][2]=1.0-head_length;
 				points[29][1]=-half_head_width;
-				if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-						15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+				polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+					15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL);
+				if (polyline)
 				{
-					if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-							(struct Graphical_material *)NULL))
+					glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
+					if (glyph)
 					{
 						GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
 						last_object = glyph;
@@ -1006,11 +1014,13 @@ The length and width of the arrow heads are specified by the final parameters.
 				points[2][1]=0.0;
 				points[2][2]=1.0+label_offset;
 				strcpy(text[2],labels[2]);
-				if (pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
-						g_NO_DATA,(GTDATA *)NULL,(int *)NULL, font))
+				pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
+					g_NO_DATA,(GTDATA *)NULL,(int *)NULL, font);
+				if (pointset)
 				{
-					if (labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
-						(struct Graphical_material *)NULL))
+					labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
+						(struct Graphical_material *)NULL);
+					if (labels_object)
 					{
 						GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
 						GT_object_set_next_object(last_object, labels_object);
@@ -1077,8 +1087,8 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 		}
 		if (surface)
 		{
-			if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 				{
@@ -1124,8 +1134,8 @@ solid base.
 	ENTER(make_glyph_cone_solid);
 	if (name&&(2<number_of_segments_around))
 	{
-		if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+		if (glyph)
 		{
 			surface=(struct GT_surface *)NULL;
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
@@ -1248,8 +1258,8 @@ from <0,0,-0.5> to <0,0,+0.5>
 		}
 		if (polyline)
 		{
-			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 				{
@@ -1363,8 +1373,8 @@ cube centred at <0,0,0>.
 		}
 		if (surface)
 		{
-			if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 				{
@@ -1456,8 +1466,8 @@ wireframe cube centred at <0,0,0>.
 		}
 		if (polyline)
 		{
-			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 				{
@@ -1525,8 +1535,8 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 		}
 		if (surface)
 		{
-			if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 				{
@@ -1573,8 +1583,8 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 	ENTER(make_glyph_cylinder);
 	if (name&&(2<number_of_segments_around))
 	{
-		if (glyph=CREATE(GT_object)(name,g_SURFACE,
-			(struct Graphical_material *)NULL))
+		glyph=CREATE(GT_object)(name,g_SURFACE, (struct Graphical_material *)NULL);
+		if (glyph)
 		{
 			surface=(struct GT_surface *)NULL;
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
@@ -1706,8 +1716,8 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 		}
 		if (polyline)
 		{
-			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
 				{
@@ -1753,8 +1763,8 @@ Makes a glyph with the given <name> that automatically mirrors the given
 	if (name && mirror_glyph)
 	{
 		/*???temporary. Use dummy GT_object until we have struct Glyph */
-		if (glyph = CREATE(GT_object)(name, g_SURFACE,
-			(struct Graphical_material *)NULL))
+		glyph = CREATE(GT_object)(name, g_SURFACE, (struct Graphical_material *)NULL);
+		if (glyph)
 		{
 			GT_object_set_glyph_mirror_mode(glyph, 1);
 			GT_object_set_next_object(glyph, mirror_glyph);
@@ -1801,8 +1811,8 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 		}
 		if (pointset)
 		{
-			if (glyph=CREATE(GT_object)(name,g_POINTSET,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_POINTSET, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_pointset)(glyph,/*time*/0.0,pointset))
 				{
@@ -1923,8 +1933,8 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 		}
 		if (surface)
 		{
-			if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 				{
@@ -2045,8 +2055,8 @@ twice <number_of_segments_down> look remotely spherical.
 		}
 		if (surface)
 		{
-			if (glyph=CREATE(GT_object)(name,g_SURFACE,
-				(struct Graphical_material *)NULL))
+			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+			if (glyph)
 			{
 				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 				{
@@ -2089,144 +2099,176 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 	struct MANAGER(GT_object) *glyph_manager;
 
 	ENTER(make_glyph_sphere);
-	if (glyph_manager = CREATE(MANAGER(GT_object))())
+	glyph_manager = CREATE(MANAGER(GT_object))();
+	if (glyph_manager)
 	{
 		/* add standard glyphs */
-		if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
+		glyph=make_glyph_arrow_line("arrow_line",0.25,0.125);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph))
+		glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
-				12,2./3.,1./6.,/*cone_radius*/0.5))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(const char **)NULL, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(const char **)NULL, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025,
-			labels_xyz, 0.1,font))
-		{
-			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
-		}
-		if (glyph=make_glyph_cone("cone",12))
+		glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
+			12,2./3.,1./6.,/*cone_radius*/0.5);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_cone",mirror_glyph))
+		glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cone_solid("cone_solid",12))
+		glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cross("cross"))
+		glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cube_solid("cube_solid"))
+		glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cube_wireframe("cube_wireframe"))
+		glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(const char **)NULL, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cylinder("cylinder6",6))
+		glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(const char **)NULL, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cylinder("cylinder",12))
+		glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025, labels_xyz, 0.1,font);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cylinder_solid("cylinder_solid",12))
+		glyph=make_glyph_cone("cone",12);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cylinder("cylinder_hires",48))
+		mirror_glyph = glyph;
+		glyph=make_glyph_mirror("mirror_cone",mirror_glyph);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_cylinder_solid("cylinder_solid_hires",48))
+		glyph=make_glyph_cone_solid("cone_solid",12);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_sphere("diamond",4,2))
+		glyph=make_glyph_cross("cross");
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_axes("grid_lines",
-				/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
-				/*labels*/(const char **)NULL, /*label_offset*/0.1, font))
+		glyph=make_glyph_cube_solid("cube_solid");
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cube_wireframe("cube_wireframe");
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cylinder("cylinder6",6);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cylinder("cylinder",12);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cylinder_solid("cylinder_solid",12);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cylinder("cylinder_hires",48);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_cylinder_solid("cylinder_solid_hires",48);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_sphere("diamond",4,2);
+		if (glyph)
+		{
+			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
+		}
+		glyph=make_glyph_axes("grid_lines",
+			/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
+			/*labels*/(const char **)NULL, /*label_offset*/0.1, font);
+		if (glyph)
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_line("line"))
+		glyph=make_glyph_line("line");
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
 		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
+		glyph=make_glyph_mirror("mirror_line",mirror_glyph);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_empty("empty"))
+		glyph=make_glyph_empty("empty");
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_line("line_ticks"))
+		glyph=make_glyph_line("line_ticks");
+		if (glyph)
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_axes_ticks);
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
+		glyph=make_glyph_point("point",g_POINT_MARKER,0);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_sheet("sheet", /*define_texturepoints*/0))
+		glyph=make_glyph_sheet("sheet", /*define_texturepoints*/0);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_sphere("sphere",12,6))
+		glyph=make_glyph_sphere("sphere",12,6);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_sphere("sphere_hires",48,24))
+		glyph=make_glyph_sphere("sphere_hires",48,24);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}
-		if (glyph=make_glyph_sheet("textured_sheet", /*define_texturepoints*/1))
+		glyph=make_glyph_sheet("textured_sheet", /*define_texturepoints*/1);
+		if (glyph)
 		{
 			ADD_OBJECT_TO_MANAGER(GT_object)(glyph,glyph_manager);
 		}

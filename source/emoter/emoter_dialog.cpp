@@ -687,7 +687,8 @@ Sets the nodes according to all the values of the sliders
 
 	if ( !shared->movie_playing )
 	{
-		if ( total_shape_vector = emoter_sum_all_modes( shared ))
+		total_shape_vector = emoter_sum_all_modes(shared);
+		if (total_shape_vector)
 		{
 			for ( i = 0; i < shared->mode_limit + SOLID_BODY_MODES ; i++ )
 			{
@@ -931,8 +932,8 @@ Sets the emoter marker according to the <new_value> given.
 	if ( emoter_marker && emoter_marker->shared )
 	{
 		emoter_show_marker_value( emoter_marker, new_value );
-
-		if ( active = emoter_marker->shared->active_slider)
+		active = emoter_marker->shared->active_slider;
+		if (active)
 		{
 			if ( active == emoter_marker->slider_parent )
 			{
@@ -1038,7 +1039,8 @@ marker
 	struct Emoter_marker *emoter_marker;
 
 	ENTER(DESTROY(Emoter_marker));
-	if (emoter_marker = *emoter_marker_address)
+	emoter_marker = *emoter_marker_address;
+	if (emoter_marker)
 	{
 		if ( emoter_marker->name )
 		{
@@ -1072,7 +1074,8 @@ slider
 	struct Curve *temp_var;
 
 	ENTER(DESTROY(Emoter_slider));
-	if (emoter_slider = *emoter_slider_address)
+	emoter_slider = *emoter_slider_address;
+	if (emoter_slider)
 	{
 		return_code = 1;
 		for (i = 0 ; i < emoter_slider->number_of_emoter_markers ; i++)
@@ -1097,7 +1100,8 @@ slider
 			/* To complete this destruction the reference to the Curve
 				in the combine slider also needs to be removed */
 			combine_slider = (emoter_slider->combine_sliders[j])->slider;
-			if ( temp_var = (emoter_slider->combine_sliders[j])->timebase_curve)
+			temp_var = (emoter_slider->combine_sliders[j])->timebase_curve;
+			if (temp_var)
 			{
 				/* Check the combine_slider is still active.
 				   Would be preferable to have removed this reference to an invalid slider
@@ -1183,8 +1187,8 @@ Callback for the emoter dialog - tidies up all details - mem etc
 	struct Emoter_dialog *emoter_dialog;
 
 	ENTER(DESTROY(Emoter_dialog));
-
-	if (emoter_dialog = *emoter_dialog_address)
+	emoter_dialog = *emoter_dialog_address;
+	if (emoter_dialog)
 	{
 		return_code = 1;
 		for (i = 0 ; i < emoter_dialog->shared->number_of_sliders ; i++)
@@ -1331,8 +1335,9 @@ Callback for the play slider which sets the min and max and stores the widget
 		{
 			for ( i = 0 ; i < slider->number_of_combine_sliders ; i++ )
 			{
-				if ((curve=(slider->combine_sliders[i])->curve) &&
-					(combine_slider = (slider->combine_sliders[i])->slider))
+				curve=(slider->combine_sliders[i])->curve;
+				combine_slider = (slider->combine_sliders[i])->slider;
+				if (curve && combine_slider)
 				{
 					if (ALLOCATE(combine_vector,FE_value,
 						Curve_get_number_of_components(curve)))
@@ -1346,7 +1351,8 @@ Callback for the play slider which sets the min and max and stores the widget
 						DEALLOCATE ( combine_vector );
 					}
 					(slider->combine_sliders[i])->combine_time = slider->shared->time;
-					if (timebase_curve=(slider->combine_sliders[i])->timebase_curve)
+					timebase_curve=(slider->combine_sliders[i])->timebase_curve;
+					if (timebase_curve)
 					{
 						if (ALLOCATE(combine_vector,FE_value,
 							Curve_get_number_of_components(timebase_curve)))
@@ -1484,7 +1490,8 @@ emoter slider's Curve
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 		/* Update the 'combine' sliders from the active slider */
-		if ( active = emoter_dialog->shared->active_slider )
+		active = emoter_dialog->shared->active_slider;
+		if (active)
 		{
 			emoter_update_combine_sliders(active);
 		}
@@ -2433,8 +2440,8 @@ Reads a control curve from a file.
 				REALLOCATE(name, name, char, strlen(name)+2);
 				strcat(name,"+");
 			}
-			if ( curve = CREATE(Curve)(
-				name, fe_basis_type, 1 ))
+			curve = CREATE(Curve)(name, fe_basis_type, 1);
+			if (curve)
 			{
 				Curve_set_type(curve,
 					CURVE_TYPE_EMOTER_COMBINE );
@@ -2671,9 +2678,11 @@ Reads stuff from a file.
 	if ( slider && filename )
 	{
 		shared = slider->shared;
-		if (file_data = read_file_open(filename, shared->io_stream_package))
+		file_data = read_file_open(filename, shared->io_stream_package);
+		if (file_data)
 		{
-			if ( constname = strrchr( filename, '/'))
+			constname = strrchr( filename, '/');
+			if (constname)
 			{
 				constname++;
 				basename = duplicate_string(filename);
@@ -2726,7 +2735,8 @@ Reads stuff from a file.
 #endif /* defined (WX_USER_INTERFACE) */
  ))
 						{
-							if ( temp_filename = strrchr( temp_string, '/'))
+							temp_filename = strrchr( temp_string, '/');
+							if (temp_filename)
 							{
 								temp_filename = duplicate_string(temp_filename + 1);
 							}
@@ -2736,15 +2746,14 @@ Reads stuff from a file.
 								temp_filename = duplicate_string(basename);
 								append_string(&temp_filename, temp_string, &error);
 							}
-							if (slider_to_combine = create_emoter_slider(temp_filename,
+							slider_to_combine = create_emoter_slider(temp_filename,
 								temp_string,
-#if defined (MOTIF_USER_INTERFACE)
-								emoter_dialog->slider_form,
-#endif /* defined (MOTIF_USER_INTERFACE) */
-								1, shared,
-								shared->number_of_sliders,
-								(struct Curve *)NULL,
-									emoter_dialog, no_confirm ))
+							#if defined (MOTIF_USER_INTERFACE)
+															emoter_dialog->slider_form,
+							#endif /* defined (MOTIF_USER_INTERFACE) */
+								1, shared, shared->number_of_sliders,
+								(struct Curve *)NULL, emoter_dialog, no_confirm );
+							if (slider_to_combine)
 							{
 								return_code = 1;
 							}
@@ -2762,7 +2771,8 @@ Reads stuff from a file.
 							strlen( slider_to_combine->name ) + 20 /* Allocate enough for timebase name too */ ))
 						{
 							sprintf(name, "%s in %s", slider_to_combine->name, slider->name );
-							if ( curve = read_emoter_curve(file_data, name, shared) )
+							curve = read_emoter_curve(file_data, name, shared);
+							if (curve)
 							{
 								/* Need to add new combine slider */
 								if ( REALLOCATE( new_combine_sliders, slider->combine_sliders,
@@ -2781,8 +2791,8 @@ Reads stuff from a file.
 										if ( read_file_marker(file_data, "TIMEBASE"))
 										{
 											strcat( name, " timebase" );
-											if ( combine_slider->timebase_curve =
-												read_emoter_curve(file_data, name, shared))
+											combine_slider->timebase_curve = read_emoter_curve(file_data, name, shared);
+											if (combine_slider->timebase_curve)
 											{
 												if ( REALLOCATE( new_timebase_curves, slider_to_combine->timebase_curves,
 													struct Curve *, slider_to_combine->number_of_timebase_curves + 1))
@@ -2998,8 +3008,8 @@ Reads stuff from a file.
 									REALLOCATE(name, name, char, strlen(name)+2);
 									strcat(name,"+");
 								}
-								if (emoter_curve = CREATE(Curve)(name,
-									LINEAR_LAGRANGE, shared->number_of_modes + slider->solid_body_motion))
+								emoter_curve = CREATE(Curve)(name, LINEAR_LAGRANGE, shared->number_of_modes + slider->solid_body_motion);
+								if (emoter_curve)
 								{
 									if (ADD_OBJECT_TO_MANAGER(Curve)(
 										emoter_curve, shared->curve_manager))
@@ -3506,7 +3516,8 @@ DESCRIPTION :
 
 	if ( slider && filename )
 	{
-		if ( file = fopen( filename, "w" ) )
+		file = fopen(filename, "w");
+		if (file)
 		{
 			/* Write header comment */
 			fprintf(file, "#Emoter emotion file '%s' written ", slider->name);
@@ -3629,7 +3640,8 @@ DESCRIPTION :
 							}
 							fprintf(file, "\n");
 						}
-						if ( curve = (slider->combine_sliders[i])->timebase_curve)
+						curve = (slider->combine_sliders[i])->timebase_curve;
+						if (curve)
 						{
 							fprintf(file, "TIMEBASE\n");
 							nodes_per_element = Curve_get_nodes_per_element
@@ -3912,7 +3924,8 @@ Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is f
 	struct Emoter_dialog *emoter_dialog;
 
 	ENTER(emoter_autoplay);
-	if (emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void)
+	emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void;
+	if (emoter_dialog)
 	{
 		time = emoter_dialog->shared->time + 1;
 		if ( time > emoter_dialog->time_maximum )
@@ -4402,7 +4415,8 @@ DESCRIPTION :
 			XmTextSetString(emoter_dialog->mode_text, value_text_string);
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
-		if ( node_numbers = emoter_dialog->shared->em_object->minimum_nodes )
+		node_numbers = emoter_dialog->shared->em_object->minimum_nodes;
+		if (node_numbers)
 		{
 			number_of_nodes = new_value;
 			root_fe_region = Cmiss_region_get_FE_region(
@@ -4808,9 +4822,9 @@ DESCRIPTION :
 					solid_body_modes = 0;
 					mode_offset = SOLID_BODY_MODES;
 				}
-
-				if (active->mode_curve = CREATE(Curve)(var_name,
-						LINEAR_LAGRANGE, shared->number_of_modes + solid_body_modes ))
+				active->mode_curve = CREATE(Curve)(var_name,
+					LINEAR_LAGRANGE, shared->number_of_modes + solid_body_modes);
+				if (active->mode_curve)
 				{
 					if (ADD_OBJECT_TO_MANAGER(Curve)(
 						active->mode_curve, shared->curve_manager))
@@ -4898,7 +4912,8 @@ DESCRIPTION :
 						(temp_var, shared->curve_manager);
 
 					combine_slider = (active->combine_sliders[i])->slider;
-					if ( temp_var = (active->combine_sliders[i])->timebase_curve)
+					temp_var = (active->combine_sliders[i])->timebase_curve;
+					if (temp_var)
 					{
 						j = 0;
 						while ( j < combine_slider->number_of_timebase_curves
@@ -6112,7 +6127,8 @@ int gfx_create_emoter(struct Parse_state *state,void *dummy_to_be_modified,
 			if (return_code)
 			{
 				em_object=(struct EM_Object *)NULL;
-				if (fe_region = Cmiss_region_get_FE_region(region))
+				fe_region = Cmiss_region_get_FE_region(region);
+				if (fe_region)
 				{
 					number_of_index_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 					if (ALLOCATE(index_nodes, int, number_of_index_nodes))
@@ -6317,7 +6333,8 @@ Executes a GFX MODIFY EMOTER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (emoter_dialog = static_cast<Emoter_dialog *>(emoter_dialog_void))
+		emoter_dialog = static_cast<Emoter_dialog *>(emoter_dialog_void);
+		if (emoter_dialog)
 		{
 			maximum_time = emoter_dialog->time_maximum;
 			minimum_time = emoter_dialog->time_minimum;
@@ -6529,7 +6546,8 @@ Executes a GFX MODIFY EMOTER command.
 					}
 					if (filename)
 					{
-						if ( temp_filename = strrchr(filename, '/'))
+						temp_filename = strrchr(filename, '/');
+						if (temp_filename)
 						{
 							temp_filename++;
 						}
@@ -6568,9 +6586,10 @@ Executes a GFX MODIFY EMOTER command.
 						struct Graphics_window *graphics_window;
 						/* SAB This would be better implemented by adding a special
 							manager message to the Scene Manager and then calling that. */
-						if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
+						graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
 							(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-							(void *)NULL,emoter_dialog->shared->graphics_window_manager))
+							(void *)NULL,emoter_dialog->shared->graphics_window_manager);
+						if (graphics_window)
 						{
 							Graphics_window_update_now(graphics_window);
 						}

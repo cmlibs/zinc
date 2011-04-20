@@ -333,16 +333,14 @@ DESCRIPTION :
 
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
-		
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 
 			return_code = FE_field_is_defined_in_element(fe_field,element);
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
 		{
 			FE_node *node = node_location->get_node();
 
@@ -427,7 +425,8 @@ The FE_field must also not be in use.
 	if (field)
 	{
 		/* check the fe_field can be destroyed */
-		if (fe_region = FE_field_get_FE_region(fe_field))
+		fe_region = FE_field_get_FE_region(fe_field);
+		if (fe_region)
 		{
 			/* ask owning FE_region if fe_field is used in nodes and elements */
 			if (FE_region_is_FE_field_in_use(fe_region, fe_field))
@@ -498,7 +497,8 @@ is already set up in the correct way, does nothing.
 						FE_element_field_values, element)(element, field_values_cache)))
 			{
 				need_update = 1;
-				if (fe_element_field_values = CREATE(FE_element_field_values)())
+				fe_element_field_values = CREATE(FE_element_field_values)();
+				if (fe_element_field_values)
 				{
 					need_to_add_to_list = 1;
 				}
@@ -583,9 +583,8 @@ Evaluate the fields cache at the location
 	{
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
-
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -596,9 +595,9 @@ Evaluate the fields cache at the location
 			/* 1. Precalculate any source fields that this field depends on.
 				For type COMPUTED_FIELD_FINITE_ELEMENT, this means getting
 				FE_element_field_values.*/
-			if (return_code=
-				calculate_FE_element_field_values_for_element(
-					(0<number_of_derivatives),element,time,top_level_element))
+			return_code=calculate_FE_element_field_values_for_element(
+				(0<number_of_derivatives),element,time,top_level_element);
+			if (return_code)
 			{
 				/* 2. Calculate the field */
 				value_type=get_FE_field_value_type(fe_field);
@@ -673,8 +672,7 @@ Evaluate the fields cache at the location
 				}
 			}
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
 		{
 			double double_value;
 			float float_value;
@@ -826,9 +824,8 @@ Sets the <values> of the computed <field> over the <element>.
 
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
-
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 			FE_value* xi = element_xi_location->get_xi();
@@ -935,8 +932,7 @@ Sets the <values> of the computed <field> over the <element>.
 					Computed_field_get_type_string(field));
 			}
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
 		{
 			double double_value;
 			float float_value;
@@ -1113,7 +1109,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_finite_element);
 	if (field)
 	{
-		if (return_code=GET_NAME(FE_field)(fe_field,&field_name))
+		return_code=GET_NAME(FE_field)(fe_field,&field_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			DEALLOCATE(field_name);
@@ -1164,7 +1161,8 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " component_names", &error);
 		for (i = 0; i < number_of_components; i++)
 		{
-			if (component_name = get_FE_field_component_name(fe_field, i))
+			component_name = get_FE_field_component_name(fe_field, i);
+			if (component_name)
 			{
 				make_valid_token(&component_name);
 				append_string(&command_string, " ", &error);
@@ -1565,7 +1563,8 @@ FE_field being made and/or modified.
 				}
 			}
 			/* parse the number_of_components */
-			if (return_code&&(current_token=state->current_token))
+			current_token=state->current_token;
+			if (return_code && current_token)
 			{
 				/* ... only if the "number_of_components" token is next */
 				if (fuzzy_string_compare(current_token,"number_of_components"))
@@ -1573,7 +1572,8 @@ FE_field being made and/or modified.
 					option_table=CREATE(Option_table)();
 					Option_table_add_entry(option_table,"number_of_components",
 						&number_of_components,NULL,set_int_positive);
-					if (return_code=Option_table_parse(option_table,state))
+					return_code=Option_table_parse(option_table,state);
+					if (return_code)
 					{
 						if (number_of_components != original_number_of_components)
 						{
@@ -1754,9 +1754,8 @@ Evaluate the fields cache in the element.
 	{
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
-
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 
@@ -1779,8 +1778,7 @@ Evaluate the fields cache in the element.
 			}
 			field->derivatives_valid = 1;
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
 		{
 			FE_node *node = node_location->get_node();
 
@@ -2302,9 +2300,8 @@ Check the fe_field
 	ENTER(Computed_field_node_value_is_defined_at_node);
 	if (field && location)
 	{
-		Field_node_location *node_location;
-
-		if (node_location = dynamic_cast<Field_node_location*>(location))
+		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+		if (node_location)
 		{
 			FE_node *node = node_location->get_node();
 			
@@ -2384,10 +2381,9 @@ Evaluate the fields cache at the node.
 	ENTER(Computed_field_node_value::evaluate_cache_at_location);
 	if (field && location)
 	{
-		Field_node_location *node_location;
+		Field_node_location *node_location =	dynamic_cast<Field_node_location*>(location);
 
-		if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		if (node_location)
 		{
 			FE_node *node = node_location->get_node();
 			FE_value time = node_location->get_time();
@@ -2493,10 +2489,9 @@ Sets the <values> of the computed <field> at <node>.
 	ENTER(Computed_field_node_value_set_values_at_node);
 	if (field&&location&&values)
 	{
-		Field_node_location *node_location;
+		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
 
-		if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		if (node_location)
 		{
 			FE_node *node = node_location->get_node();
 			FE_value time = node_location->get_time();
@@ -2586,7 +2581,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_node_value);
 	if (field)
 	{
-		if (return_code=GET_NAME(FE_field)(fe_field,&field_name))
+		return_code=GET_NAME(FE_field)(fe_field,&field_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
@@ -2831,7 +2827,8 @@ and allows its contents to be modified.
 				ACCESS(FE_field)(fe_field);
 			}
 			/* try to handle help first */
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token)
 			{
 				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
@@ -2856,15 +2853,16 @@ and allows its contents to be modified.
 			/* parse the fe_field if the "fe_field" token is next */
 			if (return_code)
 			{
-				if ((current_token=state->current_token)&&
-					fuzzy_string_compare(current_token,"fe_field"))
+				current_token=state->current_token;
+				if (current_token && fuzzy_string_compare(current_token,"fe_field"))
 				{
 					option_table=CREATE(Option_table)();
 					/* fe_field */
 					Option_table_add_set_FE_field_from_FE_region(
 						option_table, "fe_field" ,&fe_field,
 					  Cmiss_region_get_FE_region(field_modify->get_region()));
-					if (return_code=Option_table_parse(option_table,state))
+					return_code=Option_table_parse(option_table,state);
+					if (return_code)
 					{
 						if (!fe_field)
 						{
@@ -3143,10 +3141,9 @@ DESCRIPTION :
 	ENTER(Computed_field_embedded::is_defined_at_location);
 	if (field && location)
 	{
-		Field_node_location *node_location;
+		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
 
-		if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		if (node_location)
 		{
 			FE_node *node = node_location->get_node();
 			
@@ -3239,10 +3236,8 @@ Evaluate the fields cache at the node.
 	ENTER(Computed_field_embedded::evaluate_cache_at_location);
 	if (field && location)
 	{
-		Field_node_location *node_location;
-
-		if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+		if (node_location)
 		{
 			FE_node *node = node_location->get_node();
 			FE_value time = node_location->get_time();
@@ -3340,7 +3335,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_embedded);
 	if (field)
 	{
-		if (return_code=GET_NAME(FE_field)(element_xi_fe_field, &field_name))
+		return_code=GET_NAME(FE_field)(element_xi_fe_field, &field_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
 			DEALLOCATE(field_name);
@@ -3698,10 +3694,9 @@ Evaluate the fields cache at the location
 	ENTER(Computed_field_xi_coordinates::evaluate_cache_at_location);
 	if (field && location)
 	{
-		Field_element_xi_location *element_xi_location;
+		Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 			FE_value* xi = element_xi_location->get_xi();
@@ -4096,16 +4091,14 @@ DESCRIPTION :
 
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
-		
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 
 			return_code = FE_field_is_defined_in_element(fe_field,element);
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location =	dynamic_cast<Field_node_location*>(location)))
 		{
 			FE_node *node = node_location->get_node();
 
@@ -4213,11 +4206,13 @@ is already set up in the correct way, does nothing.
 			{
 				field_values_cache = CREATE(LIST(FE_element_field_values))();
 			}
-			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
-						FE_element_field_values, element)(element, field_values_cache)))
+			fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
+				FE_element_field_values, element)(element, field_values_cache);
+			if (!fe_element_field_values)
 			{
 				need_update = 1;
-				if (fe_element_field_values = CREATE(FE_element_field_values)())
+				fe_element_field_values = CREATE(FE_element_field_values)();
+				if (fe_element_field_values)
 				{
 					need_to_add_to_list = 1;
 				}
@@ -4306,10 +4301,9 @@ Evaluate the fields cache at the location
 	ENTER(Computed_field_basis_derivative::evaluate_cache_at_location);
 	if (field && location)
 	{
-		Field_element_xi_location *element_xi_location;
+		Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(location);
 		//Field_node_location *node_location;
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -4320,9 +4314,9 @@ Evaluate the fields cache at the location
 			/* 1. Precalculate any source fields that this field depends on.
 				For type COMPUTED_FIELD_BASIS_DERIVATIVE, this means getting
 				FE_element_field_values.*/
-			if (return_code=
-				calculate_FE_element_field_values_for_element(
-					/*derivatives_required*/1,element,time,top_level_element))
+			return_code=calculate_FE_element_field_values_for_element(
+				/*derivatives_required*/1,element,time,top_level_element);
+			if (return_code)
 			{
 				/* 2. Calculate the field */
 				value_type=get_FE_field_value_type(fe_field);
@@ -4463,7 +4457,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_basis_derivative);
 	if (field)
 	{
-		if (return_code=GET_NAME(FE_field)(fe_field,&field_name))
+		return_code=GET_NAME(FE_field)(fe_field,&field_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);			
 			display_message(INFORMATION_MESSAGE,"    order : %d\n",order);
@@ -4733,7 +4728,8 @@ FE_field being made and/or modified.
 				ACCESS(FE_field)(fe_field);
 			}
 			/* try to handle help first */
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token)
 			{
 				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
@@ -5133,7 +5129,8 @@ Returns the list of FE_fields that <field> depends on.
 	fe_field_list = (struct LIST(FE_field) *)NULL;
 	if (field)
 	{
-		if (fe_field_list = CREATE(LIST(FE_field))())
+		fe_field_list = CREATE(LIST(FE_field))();
+		if (fe_field_list)
 		{
 			if (!Computed_field_for_each_ancestor(field,
 				Computed_field_add_source_FE_field_to_list, (void *)fe_field_list))
@@ -5264,7 +5261,8 @@ coordinate type fe_field.
 	if (field)
 	{
 		return_code = 0;
-		if (core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		core = dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core)
 		{
 			return_code = FE_field_is_coordinate_field(core->fe_field, NULL);
 		}
@@ -5298,7 +5296,8 @@ element_xi type fe_field.
 	if (field)
 	{
 		return_code = 0;
-		if (core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		core = dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core)
 		{
 			enum Value_type field_value_type = get_FE_field_value_type(core->fe_field);
 			return_code = (field_value_type == ELEMENT_XI_VALUE);
@@ -5566,7 +5565,8 @@ perform interpolation, etc.
 	ENTER(Computed_field_get_FE_field_time_array_index_at_FE_value_time);
 	if (field)
 	{
-		if (core=dynamic_cast<Computed_field_finite_element*>(field->core))
+		core=dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core)
 		{
 			 return_code = get_FE_field_time_array_index_at_FE_value_time(
 					core->fe_field, time, the_time_high, the_time_low, the_array_index,

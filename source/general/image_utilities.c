@@ -6405,7 +6405,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 #if defined (USE_IMAGEMAGICK)
 #  if MagickLibVersion >= 0x636
 			ExceptionInfo magick_exception;
-			char *magick_map;
+			char *magick_map = NULL;
 			char magick_map_i[] = "I";
 			char magick_map_ia[] = "IA";
 			char magick_map_rgb[] = "RGB";

@@ -211,8 +211,8 @@ writes the discretization in use, otherwise N/A.
 	if (element_point_viewer)
 	{
 		 return_code=1;
-		 if (value_string=
-				const_cast<char *>(element_point_viewer->discretizationtextctrl->GetValue().c_str()))
+		 value_string = const_cast<char *>(element_point_viewer->discretizationtextctrl->GetValue().c_str());
+		 if (value_string)
 		 {
 				if ((element=element_point_viewer->element_point_identifier.element)&&
 					 (dimension=get_FE_element_dimension(element))&&
@@ -281,7 +281,8 @@ writes its number, otherwise N/A.
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if (value_string=const_cast<char *>(element_point_viewer->pointtextctrl->GetValue().c_str()))
+		value_string=const_cast<char *>(element_point_viewer->pointtextctrl->GetValue().c_str());
+		if (value_string)
 		{
 			if (element_point_viewer->element_point_identifier.element)
 			{
@@ -334,11 +335,12 @@ value otherwise N/A.
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if (value_string =	const_cast<char *>(element_point_viewer->xitextctrl->GetValue().c_str()))
+		value_string =	const_cast<char *>(element_point_viewer->xitextctrl->GetValue().c_str());
+		if (value_string)
 		{
-			 if ((element=element_point_viewer->element_point_identifier.element)&&
-				 (dimension=get_FE_element_dimension(element))&&
-				(xi=element_point_viewer->xi))
+			 if (NULL != (element=element_point_viewer->element_point_identifier.element)&&
+					 0 != (dimension=get_FE_element_dimension(element))&&
+					 NULL!= (xi=element_point_viewer->xi))
 			{
 				switch (dimension)
 				{
@@ -425,7 +427,8 @@ Furthermore, if the <element_point_viewer>
 		if (0<NUMBER_IN_LIST(Field_value_index_ranges)(
 			element_point_viewer->modified_field_components))
 		{
-			if (element_point_ranges_list=CREATE(LIST(Element_point_ranges))())
+			element_point_ranges_list=CREATE(LIST(Element_point_ranges))();
+			if (element_point_ranges_list)
 			{
 				/* put current element point in list */
 				return_code=
@@ -458,7 +461,8 @@ Furthermore, if the <element_point_viewer>
 					{
 						/* get multi-range of values of match_grid_field for points in
 							 element_point_ranges_list */
-						if (grid_to_multi_range_data.multi_range=CREATE(Multi_range)())
+						grid_to_multi_range_data.multi_range=CREATE(Multi_range)();
+						if (grid_to_multi_range_data.multi_range)
 						{
 							/* if following flag is cleared it means that some of the selected
 								 element points are not grid points */
@@ -519,9 +523,9 @@ Furthermore, if the <element_point_viewer>
 					if (0<NUMBER_IN_LIST(Element_point_ranges)(element_point_ranges_list))
 					{
 						/* to modify, need the element point to take values from */
-						if (return_code=
-							COPY(Element_point_ranges_identifier)(&source_identifier,
-								&(element_point_viewer->element_point_identifier)))
+						return_code=COPY(Element_point_ranges_identifier)(&source_identifier,
+							&(element_point_viewer->element_point_identifier));
+						if (return_code)
 						{
 							source_identifier.element=element_point_viewer->element_copy;
 							/* note values taken from the local element_copy... */
@@ -668,9 +672,10 @@ and passes it to the element_point_viewer_widget.
 				/* copy the element - now guaranteed to be top-level */
 				get_FE_element_identifier(temp_element_point_identifier.element,
 					 &element_identifier);
-				if (element_point_viewer->element_copy = ACCESS(FE_element)(
-							 CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
-									(struct FE_region *)NULL, temp_element_point_identifier.element)))
+				element_point_viewer->element_copy = ACCESS(FE_element)(
+					CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
+						(struct FE_region *)NULL, temp_element_point_identifier.element));
+				if (element_point_viewer->element_copy)
 				{
 					 /* clear the faces of element_copy as messes up exterior calculations
 							for graphics created from them */
@@ -837,8 +842,9 @@ selection. Does nothing if no current element point.
 	{
 		if (element_point_viewer->element_point_identifier.element)
 		{
-			if (element_point_ranges=CREATE(Element_point_ranges)(
-				&(element_point_viewer->element_point_identifier)))
+			element_point_ranges=CREATE(Element_point_ranges)(
+				&(element_point_viewer->element_point_identifier));
+			if (element_point_ranges)
 			{
 				Element_point_ranges_add_range(element_point_ranges,
 					element_point_viewer->element_point_number,
@@ -1118,8 +1124,9 @@ public:
 
 			struct Computed_field *grid_field = 0;
 			struct MANAGER(Computed_field) *computed_field_manager;
-			if (computed_field_manager = Computed_field_package_get_computed_field_manager(
-						 element_point_viewer->computed_field_package))
+			computed_field_manager = Computed_field_package_get_computed_field_manager(
+				element_point_viewer->computed_field_package);
+			if (computed_field_manager)
 			{
 				 if (!(grid_field=
 							 FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -1420,8 +1427,8 @@ Called when entry is made into the point_number_text field.
 	 if (element_point_viewer)
 	 {
 			/* Get the text string */
-			if (value_string=
-				 const_cast<char *>(element_point_viewer->pointtextctrl->GetValue().c_str()))
+		 value_string=const_cast<char *>(element_point_viewer->pointtextctrl->GetValue().c_str());
+			if (value_string)
 			{
 				 if ((1==sscanf(value_string,"%d",&element_point_number))&&
 						Element_point_ranges_identifier_element_point_number_is_valid(
@@ -1469,10 +1476,11 @@ Called when entry is made into the discretization_text field.
 	if (element_point_viewer)
 	{
 		 /* Get the text string */
-		 if (value_string=
-				const_cast<char *>(element_point_viewer->discretizationtextctrl->GetValue().c_str()))
+		value_string=const_cast<char *>(element_point_viewer->discretizationtextctrl->GetValue().c_str());
+		 if (value_string)
 		 {
-				if (temp_state=create_Parse_state(value_string))
+			 temp_state=create_Parse_state(value_string);
+				if (temp_state)
 				{
 					 temp_discretization.number_in_xi1=
 							element_point_viewer->element_point_identifier.number_in_xi[0];
@@ -1550,15 +1558,16 @@ Called when entry is made into the xi_text field.
 	USE_PARAMETER(event);
 	if (element_point_viewer)
 	{
-		 if ((element = element_point_viewer->element_point_identifier.element) &&
-				(dimension = get_FE_element_dimension(element)))
+		 if ((NULL!= (element = element_point_viewer->element_point_identifier.element)) &&
+				(0 != (dimension = get_FE_element_dimension(element))))
 		 {
 				/* Get the text string */
-				if (value_string=
-					 const_cast<char *>(element_point_viewer->xitextctrl->GetValue().c_str()))
+			 value_string=const_cast<char *>(element_point_viewer->xitextctrl->GetValue().c_str());
+				if (value_string)
 				{
 					 /* clean up spaces? */
-					 if (temp_state=create_Parse_state(value_string))
+					temp_state=create_Parse_state(value_string);
+					 if (temp_state)
 					 {
 							if (set_float_vector(temp_state,xi,(void *)&dimension))
 							{
@@ -1599,19 +1608,21 @@ void OnGridValueEntered(wxCommandEvent &event)
 	 if (element_point_viewer)
 	 {
 			/* Get the text string */
-			if (value_string= const_cast<char *>(element_point_viewer->gridvaluetextctrl->GetValue().c_str()))
+		 value_string= const_cast<char *>(element_point_viewer->gridvaluetextctrl->GetValue().c_str());
+			if (value_string)
 			{
-				 if ((grid_field=get_grid_field())&&
-						Computed_field_get_type_finite_element(grid_field,&grid_fe_field))
+				grid_field=get_grid_field();
+				 if (grid_field &&	Computed_field_get_type_finite_element(grid_field,&grid_fe_field))
 				 {
 						if (1==sscanf(value_string,"%d",&grid_value))
 						{
-							 if ((grid_to_list_data.grid_value_ranges=CREATE(Multi_range)())&&
+							grid_to_list_data.grid_value_ranges=CREATE(Multi_range)();
+							 if (grid_to_list_data.grid_value_ranges &&
 									Multi_range_add_range(grid_to_list_data.grid_value_ranges,
 										 grid_value,grid_value))
 							 {
-									if (grid_to_list_data.element_point_ranges_list=
-										 CREATE(LIST(Element_point_ranges))())
+								 grid_to_list_data.element_point_ranges_list=CREATE(LIST(Element_point_ranges))();
+									if (grid_to_list_data.element_point_ranges_list)
 									{
 										 grid_to_list_data.grid_fe_field=grid_fe_field;
 										 /* inefficient: go through every element in FE_region */
@@ -1785,7 +1796,8 @@ data, and then changes the correct value in the array structure.
 			time = Time_object_get_current_time(element_point_field_viewer->time_object);
 			/* get old_value_string to prevent needless updating and preserve text
 				 selections for cut-and-paste */
-			if (value_string=const_cast<char *>((textctrl->GetValue()).c_str()))
+			value_string=const_cast<char *>((textctrl->GetValue()).c_str());
+			if (value_string)
 			{
 				 if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
 							 element_point_identifier.xi_discretization_mode)&&
@@ -1879,9 +1891,9 @@ data, and then changes the correct value in the array structure.
 				 }
 			}
 			/* redisplay the actual value for the field component */
-			if (field_value_string=
-				 Computed_field_evaluate_as_string_in_element(
-						field,component_number,element,xi,time,top_level_element))
+			field_value_string=Computed_field_evaluate_as_string_in_element(
+				field,component_number,element,xi,time,top_level_element);
+			if (field_value_string)
 			{
 				 /* only set string from field if different from that shown */
 				 if (strcmp(field_value_string,value_string))
@@ -2046,8 +2058,8 @@ Add textctrl box onto the viewer.
 	 char *temp_string;
 	 wxElementPointViewerTextCtrl *element_point_viewer_text = 
 			new wxElementPointViewerTextCtrl(element_point_viewer, field, component_number);
-	 if (temp_string = element_point_viewer_update_value(
-					element_point_viewer, field, component_number))
+	 temp_string = element_point_viewer_update_value(element_point_viewer, field, component_number);
+	 if (temp_string)
 	 {
 			if (editable)
 			{
@@ -2121,7 +2133,8 @@ static int element_point_viewer_add_collpane(struct Computed_field *current_fiel
 				 strcat(identifier, field_name);
 				 identifier[length+length+length+1]='\0';
 			}
-			if (element_point_viewer->element_point_win = panel->FindWindowByName(identifier))
+			element_point_viewer->element_point_win = panel->FindWindowByName(identifier);
+			if (element_point_viewer->element_point_win)
 			{
 				 element_point_viewer->element_point_win->DestroyChildren();
 				 element_point_viewer->paneSz = new wxBoxSizer(wxVERTICAL);
@@ -2255,10 +2268,11 @@ fields.
 				element_point_viewer->element_point_grid_field = NULL;			
 #endif /* defined (WX_USER_INTERFACE) */		
 				/* initialise the structure */
-				if (element_point_ranges=FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)
-					 ((LIST_CONDITIONAL_FUNCTION(Element_point_ranges) *)NULL,(void *)NULL,
-							Element_point_ranges_selection_get_element_point_ranges_list(
-								 element_point_ranges_selection)))
+				element_point_ranges=FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)
+					((LIST_CONDITIONAL_FUNCTION(Element_point_ranges) *)NULL,(void *)NULL,
+						Element_point_ranges_selection_get_element_point_ranges_list(
+							element_point_ranges_selection));
+				if (element_point_ranges)
 				{
 					 Element_point_ranges_get_identifier(element_point_ranges,
 							&(element_point_viewer->element_point_identifier));
@@ -2270,9 +2284,10 @@ fields.
 				}
 				else
 				{
-					 if (element_point_viewer->element_point_identifier.element =
-							FE_region_get_first_FE_element_that(fe_region,
-								 FE_element_is_top_level, (void *)NULL))
+					element_point_viewer->element_point_identifier.element =
+						FE_region_get_first_FE_element_that(fe_region,
+							FE_element_is_top_level, (void *)NULL);
+					 if (element_point_viewer->element_point_identifier.element)
 					 {
 							element_point_viewer->element_point_identifier.top_level_element=
 								 element_point_viewer->element_point_identifier.element;
@@ -2687,8 +2702,8 @@ Creates the array of cells containing field component names and values.
 				for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
 				{
 					 /* component name label */
-					 
-					 if (component_name=Computed_field_get_component_name(field,comp_no))
+					component_name=Computed_field_get_component_name(field,comp_no);
+					 if (component_name)
 					 {
 							new_string = component_name;
 							tmp_string = new_string;
@@ -2749,7 +2764,8 @@ unmanaged elements in the identifier to this widget.
 	 {
 		 struct FE_element *element = NULL, *template_element = NULL;
 		 change_conditional_function=0;
-		 if (element = element_point_identifier->element)
+		 element = element_point_identifier->element;
+		 if (element)
 		 {
 			 field=element_point_viewer->current_field;
 			 if (!(element_point_viewer->template_element) ||
@@ -2831,19 +2847,20 @@ the field value, otherwise N/A.
 	{
 		return_code=1;
 		/* Get the text string */
-		if (value_string = const_cast<char *>(element_point_viewer->gridvaluetextctrl->GetValue().c_str()))
+		value_string = const_cast<char *>(element_point_viewer->gridvaluetextctrl->GetValue().c_str());
+		if (value_string)
 		{
-			 
-			if ((element=element_point_viewer->element_point_identifier.element)&&
-				(top_level_element=
-					element_point_viewer->element_point_identifier.top_level_element)&&
-				 (grid_field= element_point_viewer->wx_element_point_viewer->get_grid_field())&&
+			element = element_point_viewer->element_point_identifier.element;
+			top_level_element = element_point_viewer->element_point_identifier.top_level_element;
+			grid_field = element_point_viewer->wx_element_point_viewer->get_grid_field();
+			if (element && top_level_element && grid_field &&
 				Computed_field_is_defined_in_element(grid_field,element))
 			{
 				time = Time_object_get_current_time(element_point_viewer->time_object);
-				if (field_value_string=Computed_field_evaluate_as_string_in_element(
+				field_value_string=Computed_field_evaluate_as_string_in_element(
 					grid_field,/*component_number*/-1,element,
-					element_point_viewer->xi,time,top_level_element))
+					element_point_viewer->xi,time,top_level_element);
+				if (field_value_string)
 				{
 					/* only set string from field if different from that shown */
 					if (strcmp(field_value_string,value_string))

@@ -227,7 +227,8 @@ found or there is an error.
 	{
 		if (0<(time_number=graphics_object->number_of_times))
 		{
-			if (times=graphics_object->times)
+			times=graphics_object->times;
+			if (times)
 			{
 				times += time_number-1;
 				while ((time_number>0)&&(time< *times))
@@ -279,7 +280,8 @@ returned if <time> is lower than any times in the array or an error occurs.
 	{
 		if (0<(time_number=graphics_object->number_of_times))
 		{
-			if (times=graphics_object->times)
+			times=graphics_object->times;
+			if (times)
 			{
 				times += time_number-1;
 				while ((time_number>0)&&(time< *times))
@@ -341,7 +343,8 @@ from the conditional_function causes the primitive to be removed. \
 	if (graphics_object && (gt_object_type == graphics_object->object_type) && \
 		(0 < time_number) && (time_number <= graphics_object->number_of_times)) \
 	{ \
-		if (times = graphics_object->times) \
+		times = graphics_object->times; \
+		if (times) \
 		{ \
 			if (graphics_object->primitive_lists) \
 			{ \
@@ -349,7 +352,7 @@ from the conditional_function causes the primitive to be removed. \
 				last_primitive = (struct primitive_type *)NULL; \
 				primitive_ptr = &(primitive_list->primitive_var.first); \
 				/* remove primitives at this time */ \
-				while (primitive = *primitive_ptr) \
+				while (NULL != (primitive = *primitive_ptr)) \
 				{ \
 					if ((!conditional_function) || \
 						(conditional_function)(primitive->object_name, user_data)) \
@@ -444,7 +447,8 @@ conditional_function. \
 	if (graphics_object && (gt_object_type == graphics_object->object_type) && \
 		(0 < time_number) && (time_number <= graphics_object->number_of_times)) \
 	{ \
-		if (times = graphics_object->times) \
+		times = graphics_object->times; \
+		if (times) \
 		{ \
 			if (graphics_object->primitive_lists) \
 			{ \
@@ -452,7 +456,7 @@ conditional_function. \
 				last_primitive = (struct primitive_type *)NULL; \
 				primitive_ptr = &(primitive_list->primitive_var.first); \
 				/* remove primitives at this time */ \
-				while (primitive = *primitive_ptr) \
+				while (NULL != (primitive = *primitive_ptr)) \
 				{ \
 					if ((!conditional_function) || \
 						(conditional_function)(primitive->object_name, user_data) || \
@@ -1245,12 +1249,13 @@ this gets tricky when done on all axes consistently.
 			}
 			if (return_code)
 			{
-				if (glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
+				glyph_set = CREATE(GT_glyph_set)(number_of_points, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
 					initial->font, labels, initial->n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 					/*label_density_list*/(Triple *)NULL,
-					nearest_glyph_set->object_name, names))
+					nearest_glyph_set->object_name, names);
+				if (glyph_set)
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
@@ -1429,17 +1434,19 @@ Creates a new GT_pointset which is the interpolation of two GT_pointsets.
 			}
 			if (point)
 			{
-				if (point_set=CREATE(GT_pointset)(initial->n_pts,point,text,
+				point_set=CREATE(GT_pointset)(initial->n_pts,point,text,
 					initial->marker_type,marker_size,initial->n_data_components,data,
-						morph_names,initial->font))
+					morph_names,initial->font);
+				if (point_set)
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
 					/* go recursive in case it is a linked list */
 					if (initial->ptrnext&&final->ptrnext)
 					{
-						if (!(point_set->ptrnext=morph_GT_pointset(proportion,
-							initial->ptrnext,final->ptrnext)))
+						point_set->ptrnext=morph_GT_pointset(proportion,
+													initial->ptrnext,final->ptrnext);
+						if (!(point_set->ptrnext))
 						{
 							DESTROY(GT_pointset)(&point_set);
 						}
@@ -1588,17 +1595,19 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 			}
 			if (point)
 			{
-				if (polyline=CREATE(GT_polyline)(initial->polyline_type,
+				polyline=CREATE(GT_polyline)(initial->polyline_type,
 					initial->line_width,initial->n_pts,point,normallist,
-					initial->n_data_components,data))
+					initial->n_data_components,data);
+				if (polyline)
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
 					/* go recursive in case it is a linked list */
 					if (initial->ptrnext&&final->ptrnext)
 					{
-						if (!(polyline->ptrnext=morph_GT_polyline(proportion,
-							initial->ptrnext,final->ptrnext)))
+						polyline->ptrnext=morph_GT_polyline(proportion,
+							initial->ptrnext,final->ptrnext);
+						if (!(polyline->ptrnext))
 						{
 							DEALLOCATE(polyline->pointlist);
 							DEALLOCATE(polyline->data);
@@ -1830,17 +1839,19 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			}
 			if (point)
 			{
-				if (surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
+				surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
 					initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
-					initial->n_data_components,data))
+					initial->n_data_components,data);
+				if (surface)
 				{
 					/* go recursive in case it is a linked list */
 					if (initial->ptrnext&&final->ptrnext)
 					{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on DESTROY and morph_ or neither */
-						if (!(surface->ptrnext=morph_GT_surface(proportion,
-							initial->ptrnext,final->ptrnext)))
+						surface->ptrnext=morph_GT_surface(proportion,
+							initial->ptrnext,final->ptrnext;
+						if (!(surface->ptrnext))
 						{
 							DEALLOCATE(surface->pointlist);
 							DEALLOCATE(surface->data);
@@ -1914,8 +1925,9 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 		final->times && final->primitive_lists /*&&
 		(initial->default_material == final->default_material)*/)
 	{
-		if (graphics_object=CREATE(GT_object)(name,initial->object_type,
-				initial->default_material))
+		graphics_object=CREATE(GT_object)(name,initial->object_type,
+			initial->default_material);
+		if (graphics_object)
 		{
 			return_code = 1;
 			for (i = 0; (i < number_of_times) && return_code; i++)
@@ -1931,8 +1943,9 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 							pointset_final = final->primitive_lists[i].gt_pointset.first;
 							while (pointset_initial && pointset_final && return_code)
 							{
-								if (pointset = morph_GT_pointset(proportion, pointset_initial,
-									pointset_final))
+								pointset = morph_GT_pointset(proportion, pointset_initial,
+									pointset_final);
+								if (pointset)
 								{
 									if (!GT_OBJECT_ADD(GT_pointset)(graphics_object, time,
 										pointset))
@@ -1959,8 +1972,9 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 							polyline_final= final->primitive_lists[i].gt_polyline.first;
 							while (polyline_initial && polyline_final && return_code)
 							{
-								if (polyline = morph_GT_polyline(proportion, polyline_initial,
-									polyline_final))
+								polyline = morph_GT_polyline(proportion, polyline_initial,
+									polyline_final);
+								if (polyline)
 								{
 									if (!GT_OBJECT_ADD(GT_polyline)(graphics_object, time,
 										polyline))
@@ -1987,8 +2001,9 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 							surface_final= final->primitive_lists[i].gt_surface.first;
 							while (surface_initial && surface_final && return_code)
 							{
-								if (surface = morph_GT_surface(proportion, surface_initial,
-									surface_final))
+								surface = morph_GT_surface(proportion, surface_initial,
+									surface_final);
+								if (surface)
 								{
 									if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time,
 										surface))
@@ -2231,9 +2246,10 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 		}
 		if (point)
 		{
-			if (surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
+			surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
 				initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
-				initial->n_data_components,data))
+				initial->n_data_components,data);
+			if (surface)
 			{
 				/* go recursive in case it is a linked list */
 				if (initial->ptrnext)
@@ -2302,8 +2318,9 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 	graphics_object = (struct GT_object *)NULL;
 	if (object)
 	{
-		if (graphics_object=CREATE(GT_object)(object->name,object->object_type,
-			object->default_material))
+		graphics_object=CREATE(GT_object)(object->name,object->object_type,
+			object->default_material);
+		if (graphics_object)
 		{
 			return_code = 1;
 			number_of_times = object->number_of_times;
@@ -2465,7 +2482,8 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		{
 			DEACCESS(Graphics_font)(&(glyph_set->font));
 		}
-		if (labels = glyph_set->labels)
+		labels = glyph_set->labels;
+		if (labels)
 		{
 			for (i = glyph_set->number_of_points; 0 < i; i--)
 			{
@@ -3086,7 +3104,8 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 		{
 			DEALLOCATE((*pointset)->pointlist);
 			DEALLOCATE((*pointset)->data);
-			if (text=(*pointset)->text)
+			text=(*pointset)->text;
+			if (text)
 			{
 				for (i=(*pointset)->n_pts;i>0;i--)
 				{
@@ -4507,7 +4526,8 @@ Note that time numbers range from 1 to number_of_times.
 	{
 		if ((0 <= time_number)&&(time_number < graphics_object->number_of_times))
 		{
-			if (times=graphics_object->times)
+			times=graphics_object->times;
+			if (times)
 			{
 				return_time=times[time_number-1];
 			}
@@ -4560,7 +4580,8 @@ routines updated to use this, may be changed to get actual nearest time.
 	{
 		if (0<(time_number=graphics_object->number_of_times))
 		{
-			if (times=graphics_object->times)
+			times=graphics_object->times;
+			if (times)
 			{
 				time_number--;
 				times += time_number;
@@ -4995,8 +5016,12 @@ will produce the range of all the graphics objects.
 										break;
 									}
 								} break;
+								default:
+								{
+								} break;
 							}
-							if ((position=surface->pointlist)&&(0<number_of_positions))
+							position=surface->pointlist;
+							if (position&&(0<number_of_positions))
 							{
 								if (*first)
 								{
@@ -5197,7 +5222,8 @@ valid.
 						glyph_set = primitive_list->gt_glyph_set.first;
 						while (glyph_set)
 						{
-							if (field_data=glyph_set->data)
+							field_data=glyph_set->data;
+							if (field_data)
 							{
 								if (first)
 								{
@@ -5229,7 +5255,8 @@ valid.
 						pointset = primitive_list->gt_pointset.first;
 						while (pointset)
 						{
-							if (field_data=pointset->data)
+							field_data=pointset->data;
+							if (field_data)
 							{
 								if (first)
 								{
@@ -5261,7 +5288,8 @@ valid.
 						polyline = primitive_list->gt_polyline.first;
 						while (polyline)
 						{
-							if (field_data=polyline->data)
+							field_data=polyline->data;
+							if (field_data)
 							{
 								if (first)
 								{
@@ -5333,7 +5361,8 @@ valid.
 								{
 									while (surface)
 									{
-										if (field_data=surface->data)
+										field_data=surface->data;
+										if (field_data)
 										{
 											if (first)
 											{
@@ -5364,7 +5393,8 @@ valid.
 								{
 									while (surface)
 									{
-										if (field_data=surface->data)
+										field_data=surface->data;
+										if (field_data)
 										{
 											if (first)
 											{
@@ -5410,6 +5440,9 @@ valid.
 														}
 														field_data++;
 													}
+												} break;
+												default:
+												{
 												} break;
 											}
 										}
@@ -5500,7 +5533,8 @@ Enlarges the minimum and maximum time range by that of the graphics_object.
 		return_code=1;
 		if (0 < graphics_object->number_of_times)
 		{
-			if (times=graphics_object->times)
+			times=graphics_object->times;
+			if (times)
 			{
 				if (graphics_object_time_range->first)
 				{
@@ -5937,7 +5971,8 @@ The extracted primitives are returned in a linked-list. \
 			(0 < (time_number = GT_object_get_time_number(graphics_object, time)))) \
 		{ \
 			primitive_list = graphics_object->primitive_lists + time_number - 1; \
-			if (primitive = primitive_list->primitive_var.first) \
+			primitive = primitive_list->primitive_var.first; \
+			if (primitive) \
 			{ \
 				if (primitive->object_name == object_name) \
 				{ \
@@ -6010,7 +6045,8 @@ Version for objects using the auxiliary_object_name in place of object_name. \
 			(0 < (time_number = GT_object_get_time_number(graphics_object, time)))) \
 		{ \
 			primitive_list = graphics_object->primitive_lists + time_number - 1; \
-			if (primitive = primitive_list->primitive_var.first) \
+			primitive = primitive_list->primitive_var.first; \
+			if (primitive) \
 			{ \
 				if (primitive->auxiliary_object_name == object_name) \
 				{ \
@@ -6484,8 +6520,8 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 			{
 				switch (surface->surface_type)
 				{
-				case g_SH_DISCONTINUOUS:
-				case g_SH_DISCONTINUOUS_TEXMAP:
+					case g_SH_DISCONTINUOUS:
+					case g_SH_DISCONTINUOUS_TEXMAP:
 					{
 						for (int i = 0; i < surface->n_pts1; i++)
 						{
@@ -6506,6 +6542,9 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 								triangle_index++;
 							}
 						}
+					} break;
+					default:
+					{
 					} break;
 				}
 			}
@@ -7034,13 +7073,15 @@ graphics_object.
 	if (graphics_object&&(GRAPHICS_NO_SELECT != graphics_object->select_mode))
 	{
 		/* clear current selected_graphic for number */
-		if (selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-			number,graphics_object->selected_graphic_list))
+		selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
+			number,graphics_object->selected_graphic_list);
+		if (selected_graphic)
 		{
 			REMOVE_OBJECT_FROM_LIST(Selected_graphic)(selected_graphic,
 				graphics_object->selected_graphic_list);
 		}
-		if (selected_graphic=CREATE(Selected_graphic)(number))
+		selected_graphic=CREATE(Selected_graphic)(number);
+		if (selected_graphic)
 		{
 			if (((!subranges)||Selected_graphic_set_subranges(selected_graphic,
 				subranges))&&ADD_OBJECT_TO_LIST(Selected_graphic)(selected_graphic,
@@ -7091,8 +7132,9 @@ viewing only as they belong the the Selected_graphic containing them.
 	if (graphics_object&&subranges)
 	{
 		/* clear current selected_graphic for number */
-		if (selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-			number,graphics_object->selected_graphic_list))
+		selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
+			number,graphics_object->selected_graphic_list);
+		if (selected_graphic)
 		{
 			return_code=1;
 			*subranges=Selected_graphic_get_subranges(selected_graphic);
@@ -7253,7 +7295,8 @@ Changes the name of <graphics_object> to a copy of <name>.
 	ENTER(GT_object_set_name);
 	if (graphics_object && name)
 	{
-		if (temp_name = duplicate_string(name))
+		temp_name = duplicate_string(name);
+		if (temp_name)
 		{
 			DEALLOCATE(graphics_object->name);
 			graphics_object->name = temp_name;
@@ -7589,7 +7632,8 @@ Modifier function to set the graphics_object from a command.
 	ENTER(set_Graphics_Object);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -7610,8 +7654,9 @@ Modifier function to set the graphics_object from a command.
 					}
 					else
 					{
-						if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-							current_token,graphics_object_manager))
+						graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+							current_token,graphics_object_manager);
+						if (graphics_object)
 						{
 							if (*graphics_object_address != graphics_object)
 							{
@@ -7644,10 +7689,11 @@ Modifier function to set the graphics_object from a command.
 			{
 				display_message(INFORMATION_MESSAGE," GRAPHICS_OBJECT_NAME|none");
 				/* if possible, then write the name */
-				if (graphics_object_address=
-					(struct GT_object **)graphics_object_address_void)
+				graphics_object_address=(struct GT_object **)graphics_object_address_void;
+				if (graphics_object_address)
 				{
-					if (graphics_object= *graphics_object_address)
+					graphics_object= *graphics_object_address;
+					if (graphics_object)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",graphics_object->name);
 					}
@@ -7886,15 +7932,16 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 	Graphics_vertex_array_attribute_type vertex_buffer_type = GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION;
 	Graphics_vertex_buffer *buffer;
 
-   switch (type)
-   {
+	switch (type)
+	{
 		case GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS:
-    	{
-    		vertex_buffer_type = vertex_type;
-    	} break;
-    }
-	if (buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
-		(vertex_buffer_type, buffer_list))
+		{
+			vertex_buffer_type = vertex_type;
+		} break;
+	}
+	buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
+  		 (vertex_buffer_type, buffer_list);
+	if (buffer)
 	{
 		if (buffer->values_per_vertex != values_per_vertex)
 		{
@@ -7903,8 +7950,9 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 	}
 	else
 	{
-		if (buffer = CREATE(Graphics_vertex_buffer)(vertex_buffer_type,
-			values_per_vertex))
+		buffer = CREATE(Graphics_vertex_buffer)(vertex_buffer_type,
+			values_per_vertex);
+		if (buffer)
 		{
 			if (!ADD_OBJECT_TO_LIST(Graphics_vertex_buffer)(buffer,
 				buffer_list))
@@ -7953,7 +8001,8 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 	int return_code = 1;
 	Graphics_vertex_buffer *buffer;
 	
-	if (buffer = get_or_create_vertex_buffer(vertex_type, values_per_vertex))
+	buffer = get_or_create_vertex_buffer(vertex_type, values_per_vertex);
+	if (buffer)
 	{
 		Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
 		if (!buffer->memory)
@@ -8019,7 +8068,8 @@ template <class value_type> int Graphics_vertex_array_internal::get_attribute(
 	Graphics_vertex_buffer *buffer;
 	int return_code = 0;
 
-	if (buffer = get_vertex_buffer_for_attribute(vertex_type))
+	buffer = get_vertex_buffer_for_attribute(vertex_type);
+	if (buffer)
 	{
 		Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
 		if (buffer->values_per_vertex == number_of_values)
@@ -8052,7 +8102,8 @@ template <class value_type> int Graphics_vertex_array_internal::get_vertex_buffe
 	Graphics_vertex_buffer *buffer;
 	int return_code;
 
-   if (buffer = get_vertex_buffer(vertex_buffer_type))
+	buffer = get_vertex_buffer(vertex_buffer_type);
+	if (buffer)
 	{
 		*vertex_buffer = static_cast<value_type*>(buffer->memory);
 		*values_per_vertex = buffer->values_per_vertex;
@@ -8162,15 +8213,15 @@ unsigned int Graphics_vertex_array::get_number_of_vertices(
 {
 	Graphics_vertex_buffer *buffer;
 	unsigned int vertex_count;
-	
-   if (buffer = internal->get_vertex_buffer(vertex_buffer_type))
+	buffer = internal->get_vertex_buffer(vertex_buffer_type);
+	if (buffer)
 	{
-    	vertex_count = buffer->vertex_count;
-   }
-   else
-   {
+		vertex_count = buffer->vertex_count;
+	}
+	else
+	{
 		vertex_count = 0;
-   }
+	}
 
 	return vertex_count;
 }

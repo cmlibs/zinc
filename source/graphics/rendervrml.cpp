@@ -418,7 +418,7 @@ DESCRIPTION :
 			if (GET_NAME(Graphical_material)(material,&material_name))
 			{
 				/* Can't have . in a name */
-				while (dot_pointer = strchr(material_name, '.'))
+				while (NULL != (dot_pointer = strchr(material_name, '.')))
 				{
 					*dot_pointer = '_';
 				}
@@ -1183,7 +1183,8 @@ points  given by the positions in <point_list> and oriented and scaled by
 					DESTROY(Graphical_material)(&material_copy);
 				}
 			}
-			if (label = labels)
+			label = labels;
+			if (label)
 			{
 				point=point_list;
 				if (number_of_data_components && data && material && spectrum)
@@ -1236,7 +1237,8 @@ points  given by the positions in <point_list> and oriented and scaled by
 					}
 					fprintf(vrml_file,"  geometry Text {\n");
 					fprintf(vrml_file,"    string [\n");
-					if (label_token = duplicate_string(*label))
+					label_token = duplicate_string(*label);
+					if (label_token)
 					{
 						make_valid_token(&label_token);
 						if (('\"' == label_token[0]) || ('\'' == label_token[0]))
@@ -1486,7 +1488,8 @@ Writes VRML code to the file handle which represents the given pointset.
 			display_message(INFORMATION_MESSAGE,"draw_point_set_vrml.  "
 				"VRML does not allow a texture to be applied to a pointset");
 		}
-		if (text_string=text)
+		text_string=text;
+		if (text_string)
 		{
 			if (g_DERIVATIVE_MARKER==marker_type)
 			{
@@ -1682,6 +1685,9 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 						fprintf(vrml_file,"      %d,%d,-1\n",2*i,2*i+1);
 					}
 				} break;
+				default:
+				{
+				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
 			fprintf(vrml_file,"  } #IndexedLineSet\n");
@@ -1744,6 +1750,9 @@ DESCRIPTION :
 						number_of_points=(npts1*(npts1+1))/2;
 						return_code=1;
 					} break;
+					default:
+					{
+					} break;
 				}
 			} break;
 			case g_SH_DISCONTINUOUS:
@@ -1760,6 +1769,9 @@ DESCRIPTION :
 					} break;
 				}
 			} break;
+			default:
+			{
+			} break;
 		}
 		if (return_code)
 		{
@@ -1770,7 +1782,8 @@ DESCRIPTION :
 			activate_material_vrml(vrml_file,material,
 				vrml_prototype_list,
 				/*no_define_material*/0,/*emissive_only*/0);
-			if (texture = Graphical_material_get_texture(material))
+			texture = Graphical_material_get_texture(material);
+			if (texture)
 			{
 				write_texture_vrml(vrml_file, texture);
 			}
@@ -1797,7 +1810,8 @@ DESCRIPTION :
 			fprintf(vrml_file,"    }\n");
 			if (RENDER_TYPE_SHADED == render_type)
 			{
-				if (triple=normalpts)
+				triple=normalpts;
+				if (triple)
 				{
 					fprintf(vrml_file,"    normal Normal {\n");
 					fprintf(vrml_file,"      vector [\n");
@@ -1824,7 +1838,8 @@ DESCRIPTION :
 			/* texture coordinates */
 			if (RENDER_TYPE_SHADED == render_type)
 			{
-				if (triple=texturepts)
+				triple=texturepts;
+				if (triple)
 				{
 					fprintf(vrml_file,"    texCoord TextureCoordinate {\n");
 					fprintf(vrml_file,"      point [\n");
@@ -1926,6 +1941,9 @@ DESCRIPTION :
 								}
 							}
 						} break;
+						default:
+						{
+						} break;
 					}
 				} break;
 				case g_SH_DISCONTINUOUS:
@@ -1964,6 +1982,9 @@ DESCRIPTION :
 							fprintf(vrml_file,"-1\n");
 						}
 					}
+				} break;
+				default:
+				{
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
@@ -2178,7 +2199,8 @@ Only writes the geometry field.
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set = primitive_list1->gt_glyph_set.first)
+					glyph_set = primitive_list1->gt_glyph_set.first;
+					if (glyph_set)
 					{
 						if (glyph_set->ptrnext)
 						{
@@ -2191,8 +2213,8 @@ Only writes the geometry field.
 							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
-								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2))
+								interpolate_glyph_set=morph_GT_glyph_set(proportion,glyph_set,glyph_set_2);
+								if (interpolate_glyph_set)
 								{
 									draw_glyph_set_vrml(vrml_file,
 										interpolate_glyph_set->number_of_points,
@@ -2264,7 +2286,8 @@ Only writes the geometry field.
 				} break;
 				case g_POINT:
 				{
-					if (point = primitive_list1->gt_point.first)
+					point = primitive_list1->gt_point.first;
+					if (point)
 					{
 						draw_point_set_vrml(vrml_file,
 							1, point->position, &(point->text), point->marker_type,
@@ -2280,7 +2303,8 @@ Only writes the geometry field.
 				} break;
 				case g_POINTSET:
 				{
-					if (point_set = primitive_list1->gt_pointset.first)
+					point_set = primitive_list1->gt_pointset.first;
+					if (point_set)
 					{
 						if (point_set->ptrnext)
 						{
@@ -2293,8 +2317,8 @@ Only writes the geometry field.
 							point_set_2 = primitive_list2->gt_pointset.first;
 							while (point_set&&point_set_2)
 							{
-								if (interpolate_point_set=morph_GT_pointset(proportion,
-									point_set, point_set_2))
+								interpolate_point_set=morph_GT_pointset(proportion,point_set, point_set_2);
+								if (interpolate_point_set)
 								{
 									draw_point_set_vrml(vrml_file,
 										interpolate_point_set->n_pts,
@@ -2334,7 +2358,8 @@ Only writes the geometry field.
 				} break;
 				case g_POLYLINE:
 				{
-					if (line = primitive_list1->gt_polyline.first)
+					line = primitive_list1->gt_polyline.first;
+					if (line)
 					{
 						if (line->ptrnext)
 						{
@@ -2347,8 +2372,8 @@ Only writes the geometry field.
 							line_2 = primitive_list2->gt_polyline.first;
 							while (line&&line_2)
 							{
-								if (interpolate_line=
-									morph_GT_polyline(proportion,line,line_2))
+								interpolate_line=morph_GT_polyline(proportion,line,line_2);
+								if (interpolate_line)
 								{
 									draw_polyline_vrml(vrml_file,*interpolate_line->pointlist,
 										interpolate_line->n_data_components,interpolate_line->data,
@@ -2387,7 +2412,8 @@ Only writes the geometry field.
 				case g_POLYLINE_VERTEX_BUFFERS:
 				{
 					GT_polyline_vertex_buffers *line;
-					if (line = primitive_list1->gt_polyline_vertex_buffers)
+					line = primitive_list1->gt_polyline_vertex_buffers;
+					if (line)
 					{
 						unsigned int line_index;
 						unsigned int line_count =
@@ -2469,7 +2495,8 @@ Only writes the geometry field.
 				} break;
 				case g_SURFACE:
 				{
-					if (surface = primitive_list1->gt_surface.first)
+					surface = primitive_list1->gt_surface.first;
+					if (surface)
 					{
 						if (surface->ptrnext)
 						{
@@ -2482,8 +2509,8 @@ Only writes the geometry field.
 							surface_2 = primitive_list2->gt_surface.first;
 							while (surface&&surface_2)
 							{
-								if (interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2))
+								interpolate_surface=morph_GT_surface(proportion,surface,surface_2);
+								if (interpolate_surface)
 								{
 									draw_surface_vrml(vrml_file,interpolate_surface->pointlist,
 										interpolate_surface->normallist,
@@ -2530,7 +2557,8 @@ Only writes the geometry field.
 				} break;
 				case g_VOLTEX:
 				{
-					if (voltex = primitive_list1->gt_voltex.first)
+					voltex = primitive_list1->gt_voltex.first;
+					if (voltex)
 					{
 						if (voltex->ptrnext)
 						{
@@ -2818,7 +2846,8 @@ Renders the visible objects to a VRML file.
 	{
 		build_Scene(scene);
 		/* open file and add header */
-		if (vrml_file=fopen(file_name,"w"))
+		vrml_file=fopen(file_name,"w");
+		if (vrml_file)
 		{
 			/* 1. Write the VRML header */
 			/*???RC Add copyright message, source/how to contact UniServices??

@@ -678,7 +678,8 @@ Clean-up function for FE_regions accessed by their any_object.
 	struct FE_region *fe_region;
 
 	ENTER(FE_region_void_detach_from_Cmiss_region);
-	if (fe_region = (struct FE_region *)fe_region_void)
+	fe_region = (struct FE_region *)fe_region_void;
+	if (fe_region)
 	{
 		fe_region->cmiss_region = (struct Cmiss_region *)NULL;
 		return_code = DEACCESS(FE_region)(&fe_region);
@@ -1070,8 +1071,9 @@ If <node_field_list> is omitted, an empty list is assumed.
 		}
 		else
 		{
-			if (fe_node_field_info = CREATE(FE_node_field_info)(master_fe_region,
-				fe_node_field_list, number_of_values))
+			fe_node_field_info = CREATE(FE_node_field_info)(master_fe_region,
+				fe_node_field_list, number_of_values);
+			if (fe_node_field_info)
 			{
 				if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(fe_node_field_info,
 					master_fe_region->fe_node_field_info_list))
@@ -1126,7 +1128,7 @@ as if it is just updating then there is nothing to do.
 
 	ENTER(FE_region_get_FE_node_field_info_adding_new_field);
 	if (fe_region && node_field_info_address && 
-		(existing_node_field_info = *node_field_info_address))
+		(NULL != (existing_node_field_info = *node_field_info_address)))
 	{
 		return_code = 1;
 		master_fe_region = fe_region;
@@ -1138,11 +1140,12 @@ as if it is just updating then there is nothing to do.
 		{
 			FE_node_field_info_add_node_field(existing_node_field_info,
 				new_node_field, new_number_of_values);
-			if (new_node_field_info =
+			new_node_field_info =
 				FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
 					FE_node_field_info_has_matching_FE_node_field_list,
 					(void *)FE_node_field_info_get_node_field_list(existing_node_field_info),
-					master_fe_region->fe_node_field_info_list))
+					master_fe_region->fe_node_field_info_list);
+			if (new_node_field_info)
 			{
 				REACCESS(FE_node_field_info)(node_field_info_address,
 					new_node_field_info);
@@ -1159,8 +1162,9 @@ as if it is just updating then there is nothing to do.
 				if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, node_field_list))
 				{
 					/* create the new node information */
-					if (new_node_field_info = FE_region_get_FE_node_field_info(
-						master_fe_region, new_number_of_values, node_field_list))
+					new_node_field_info = FE_region_get_FE_node_field_info(
+						master_fe_region, new_number_of_values, node_field_list);
+					if (new_node_field_info)
 					{
 						REACCESS(FE_node_field_info)(node_field_info_address,
 							new_node_field_info);
@@ -1201,9 +1205,10 @@ It is an error if an equivalent/same name FE_field is not found in <fe_region>.
 	clone_fe_node_field_info = (struct FE_node_field_info *)NULL;
 	if (fe_region && fe_node_field_info)
 	{
-		if (fe_node_field_list = FE_node_field_list_clone_with_FE_field_list(
+		fe_node_field_list = FE_node_field_list_clone_with_FE_field_list(
 			FE_node_field_info_get_node_field_list(fe_node_field_info),
-			fe_region->fe_field_list, fe_region->fe_time))
+			fe_region->fe_field_list, fe_region->fe_time);
+		if (fe_node_field_list)
 		{
 			clone_fe_node_field_info = FE_region_get_FE_node_field_info(
 				fe_region, FE_node_field_info_get_number_of_values(fe_node_field_info),
@@ -1304,8 +1309,9 @@ If <element_field_list> is omitted, an empty list is assumed.
 		}
 		else
 		{
-			if (fe_element_field_info =
-				CREATE(FE_element_field_info)(master_fe_region, fe_element_field_list))
+			fe_element_field_info =
+				CREATE(FE_element_field_info)(master_fe_region, fe_element_field_list);
+			if (fe_element_field_info)
 			{
 				if (!ADD_OBJECT_TO_LIST(FE_element_field_info)(fe_element_field_info,
 					master_fe_region->fe_element_field_info_list))
@@ -1354,9 +1360,10 @@ It is an error if an equivalent/same name FE_field is not found in <fe_region>.
 	clone_fe_element_field_info = (struct FE_element_field_info *)NULL;
 	if (fe_region && fe_element_field_info)
 	{
-		if (fe_element_field_list = FE_element_field_list_clone_with_FE_field_list(
+		fe_element_field_list = FE_element_field_list_clone_with_FE_field_list(
 			FE_element_field_info_get_element_field_list(fe_element_field_info),
-			fe_region->fe_field_list))
+			fe_region->fe_field_list);
+		if (fe_element_field_list)
 		{
 			clone_fe_element_field_info = FE_region_get_FE_element_field_info(
 				fe_region, fe_element_field_list);
@@ -1641,8 +1648,9 @@ Returns NULL with error if <fe_region> is itself a data region.
 				{
 					data_master_fe_region = fe_region;
 				}
-				if (data_fe_region = CREATE(FE_region)(data_master_fe_region,
-					(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
+				data_fe_region = CREATE(FE_region)(data_master_fe_region,
+					(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
+				if (data_fe_region)
 				{
 					fe_region->data_fe_region = ACCESS(FE_region)(data_fe_region);
 					data_fe_region->base_fe_region = fe_region;
@@ -1999,8 +2007,8 @@ This function is recursive.
 		{
 			/* access element in case it is only accessed here */
 			ACCESS(FE_element)(element);
-			if (return_code =
-				REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list))
+			return_code =	REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list);
+			if (return_code)
 			{
 				/* for master_FE_region, remove face elements from all their parents;
 					 mark parent elements as OBJECT_NOT_IDENTIFIER_CHANGED */
@@ -2211,8 +2219,9 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 			master_fe_region = master_fe_region->master_fe_region;
 		}
 		/* search the FE_region for a field of that name */
-		if (fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
-			master_fe_region->fe_field_list))
+		fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
+			master_fe_region->fe_field_list);
+		if (fe_field)
 		{
 			/* make sure the field matches in every way */
 			if (!FE_field_matches_description(fe_field, name, fe_field_type,
@@ -2228,7 +2237,8 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 		}
 		else
 		{
-			if ((fe_field = CREATE(FE_field)(name, master_fe_region)) &&
+			fe_field = CREATE(FE_field)(name, master_fe_region);
+			if (fe_field &&
 				set_FE_field_external_information(fe_field, external) &&						
 				set_FE_field_value_type(fe_field, value_type) &&
 				set_FE_field_number_of_components(fe_field, number_of_components) &&
@@ -2248,7 +2258,8 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 				{
 					for (i = 0; (i < number_of_components) && fe_field; i++)
 					{
-						if (component_name = component_names[i])
+						component_name = component_names[i];
+						if (component_name)
 						{
 							if (!set_FE_field_component_name(fe_field, i, component_name))
 							{
@@ -2321,8 +2332,9 @@ A NULL value is returned on any error.
 		/* check fe_field belongs to master_fe_region */
 		if (FE_field_get_FE_region(fe_field) == master_fe_region)
 		{
-			if (merged_fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
-				get_FE_field_name(fe_field), master_fe_region->fe_field_list))
+			merged_fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
+				get_FE_field_name(fe_field), master_fe_region->fe_field_list);
+			if (merged_fe_field)
 			{
 				/* no change needs to be noted if fields are exactly the same */
 				if (!FE_fields_match_exact(merged_fe_field, fe_field))
@@ -2505,8 +2517,9 @@ Fields can only be removed if not defined on any nodes and element in
 			{
 				/* access field in case it is only accessed here */
 				ACCESS(FE_field)(fe_field);
-				if (return_code = REMOVE_OBJECT_FROM_LIST(FE_field)(fe_field,
-					master_fe_region->fe_field_list))
+				return_code = REMOVE_OBJECT_FROM_LIST(FE_field)(fe_field,
+					master_fe_region->fe_field_list);
+				if (return_code)
 				{
 					FE_REGION_FE_FIELD_CHANGE(master_fe_region, fe_field,
 						CHANGE_LOG_OBJECT_REMOVED(FE_field));
@@ -2985,8 +2998,9 @@ coordinate field or returns 0 and sets *<fe_field> to NULL if it has no
 		{
 			/* This is a proper FE_region, find the first FE_field
 				that is a coordinate field */
-			if (*fe_field = FE_region_get_first_FE_field_that(
-				fe_region, FE_field_is_coordinate_field, (void *)NULL))
+			*fe_field = FE_region_get_first_FE_field_that(
+				fe_region, FE_field_is_coordinate_field, (void *)NULL);
+			if (*fe_field)
 			{
 				return_code = 1;
 			}
@@ -3428,8 +3442,9 @@ Should place multiple calls to this function between begin_change/end_change.
 			}
 			if (return_code)
 			{
-				if (return_code = define_FE_field_at_node(node, fe_field,
-					fe_time_sequence, node_field_creator))
+				return_code = define_FE_field_at_node(node, fe_field,
+					fe_time_sequence, node_field_creator);
+				if (return_code)
 				{
 					if (FE_region_contains_FE_node(master_fe_region, node))
 					{
@@ -3579,11 +3594,12 @@ used by element fields of <fe_field>.
 					*number_in_elements_address -=
 						NUMBER_IN_LIST(FE_node)(tmp_fe_node_list);
 					while (return_code &&
-						(node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+						(NULL != (node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 							(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
-							tmp_fe_node_list)))
+							tmp_fe_node_list))))
 					{
-						if (return_code = undefine_FE_field_at_node(node, fe_field))
+						return_code = undefine_FE_field_at_node(node, fe_field);
+						if (return_code)
 						{
 							return_code =
 								REMOVE_OBJECT_FROM_LIST(FE_node)(node, tmp_fe_node_list);
@@ -3708,8 +3724,9 @@ A NULL value is returned on any error.
 		{
 			/* begin/end change to prevent multiple messages */
 			FE_region_begin_change(fe_region);
-			if (merged_node =
-				FE_region_merge_FE_node(fe_region->master_fe_region, node))
+			merged_node =
+				FE_region_merge_FE_node(fe_region->master_fe_region, node);
+			if (merged_node)
 			{
 				if (!IS_OBJECT_IN_LIST(FE_node)(merged_node, fe_region->fe_node_list))
 				{
@@ -3736,9 +3753,9 @@ A NULL value is returned on any error.
 				(fe_region->top_data_hack &&
 					(fe_region->master_fe_region == FE_node_get_FE_region(node))))
 			{
-				if (merged_node =
-					FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-						get_FE_node_identifier(node), fe_region->fe_node_list))
+				merged_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+					get_FE_node_identifier(node), fe_region->fe_node_list);
+				if (merged_node)
 				{
 					/* since we use merge to add existing nodes to list, often no
 						 merge will be necessary, hence the following */
@@ -4035,8 +4052,8 @@ one node.
 			{
 				/* access node in case it is only accessed here */
 				ACCESS(FE_node)(node);
-				if (return_code = REMOVE_OBJECT_FROM_LIST(FE_node)(node,
-					fe_region->fe_node_list))
+				return_code = REMOVE_OBJECT_FROM_LIST(FE_node)(node, fe_region->fe_node_list);
+				if (return_code)
 				{
 					FE_REGION_FE_NODE_CHANGE(fe_region, node,
 						CHANGE_LOG_OBJECT_REMOVED(FE_node), node);
@@ -4096,8 +4113,8 @@ FE_region_begin_change and FE_region_end_change to minimise messages.
 	struct FE_region_remove_FE_node_iterator_data *data;
 
 	ENTER(FE_region_remove_FE_node_iterator);
-	if (node && (data =
-		(struct FE_region_remove_FE_node_iterator_data *)data_void) &&
+	if (node && (NULL != (data =
+		(struct FE_region_remove_FE_node_iterator_data *)data_void)) &&
 		(fe_region = data->fe_region))
 	{
 		return_code = 1;
@@ -4105,8 +4122,8 @@ FE_region_begin_change and FE_region_end_change to minimise messages.
 		{
 			if (!IS_OBJECT_IN_LIST(FE_node)(node, data->exclusion_node_list))
 			{
-				if (return_code = REMOVE_OBJECT_FROM_LIST(FE_node)(node,
-					fe_region->fe_node_list))
+				return_code = REMOVE_OBJECT_FROM_LIST(FE_node)(node, fe_region->fe_node_list);
+				if (return_code)
 				{
 					FE_REGION_FE_NODE_CHANGE(fe_region, node,
 						CHANGE_LOG_OBJECT_REMOVED(FE_node), node);
@@ -4324,7 +4341,8 @@ Used in command parsing to translate a node name into an node from <fe_region>.
 	if ((state) && (node_address) &&
 		(fe_region = (struct FE_region *)fe_region_void))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4345,7 +4363,8 @@ Used in command parsing to translate a node name into an node from <fe_region>.
 			else
 			{
 				display_message(INFORMATION_MESSAGE, " NODE_NUMBER");
-				if (node= *node_address)
+				node= *node_address;
+				if (node)
 				{
 					display_message(INFORMATION_MESSAGE, "[%d]",
 						get_FE_node_identifier(node));
@@ -4720,9 +4739,8 @@ with FE_region_begin/end_change.
 			{
 				struct FE_element_shape *element_shape;
 				/* create an element with an unspecified shape of <dimension> */
-				if (element_shape =
-					CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL,
-					fe_region))
+				element_shape =	CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL, fe_region);
+				if (element_shape)
 				{
 					ACCESS(FE_element_shape)(element_shape);
 					element = CREATE(FE_element)(identifier, element_shape,
@@ -4955,8 +4973,8 @@ Should place multiple calls to this function between begin_change/end_change.
 				}
 				if (return_code)
 				{
-					if (return_code =
-						define_FE_field_at_element(element, fe_field, components))
+					return_code =	define_FE_field_at_element(element, fe_field, components);
+					if (return_code)
 					{
 						FE_REGION_FE_ELEMENT_FIELD_CHANGE(master_fe_region, element,
 							fe_field);
@@ -5062,8 +5080,8 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 		{
 			/* begin/end change to prevent multiple messages */
 			FE_region_begin_change(fe_region);
-			if (merged_element =
-				FE_region_merge_FE_element(fe_region->master_fe_region, element))
+			merged_element =	FE_region_merge_FE_element(fe_region->master_fe_region, element);
+			if (merged_element)
 			{
 				/* data_fe_region does not contain element; only merges into
 					 eventual master, the true root_region */
@@ -5100,14 +5118,15 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 			/* check element was created for this fe_region */
 			if (fe_region == FE_element_get_FE_region(element))
 			{
-				if (merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-					&identifier, element_list))
+				merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&identifier, element_list);
+				if (merged_element)
 				{
 					/* since we use merge to add existing elements to list, often no
 						 merge will be necessary, hence the following */
 					if (merged_element != element)
 					{
-						if (changed_fe_field_list = CREATE(LIST(FE_field))())
+						changed_fe_field_list = CREATE(LIST(FE_field))();
+						if (changed_fe_field_list)
 						{
 							/* merge fields from element into global merged_element */
 							if (merge_FE_element(merged_element, element,
@@ -5297,8 +5316,9 @@ Should put face definition calls between calls to begin_change/end_change.
 		}
 		else
 		{
-			if (master_fe_region->element_type_node_sequence_list =
-				CREATE(LIST(FE_element_type_node_sequence))())
+			master_fe_region->element_type_node_sequence_list =
+				CREATE(LIST(FE_element_type_node_sequence))();
+			if (master_fe_region->element_type_node_sequence_list)
 			{
 				bool have_elements = false;
 				for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
@@ -5420,7 +5440,8 @@ If the element has no parent, merges nodes directly referenced by <element>.
 			{
 				for (i = 0; i < number_of_element_field_nodes; i++)
 				{
-					if (node = element_field_nodes_array[i])
+					node = element_field_nodes_array[i];
+					if (node)
 					{
 						if (!FE_region_merge_FE_node(fe_region, node))
 						{
@@ -5530,8 +5551,8 @@ against.
 			if ((return_code = get_FE_element_face(element, face_number, &face)) &&
 				(!face) && master_fe_region->element_type_node_sequence_list)
 			{
-				if (face_shape =
-					get_FE_element_shape_of_face(element_shape, face_number, fe_region))
+				face_shape = get_FE_element_shape_of_face(element_shape, face_number, fe_region);
+				if (face_shape)
 				{
 					ACCESS(FE_element_shape)(face_shape);
 					get_FE_element_shape_dimension(face_shape, &face_dimension);
@@ -5539,16 +5560,16 @@ against.
 						fe_region, face_dimension, 0);
 					struct CM_element_information face_identifier =
 						{ DIMENSION_TO_CM_ELEMENT_TYPE(face_dimension), new_face_number };
-					if (face = CREATE(FE_element)(&face_identifier, face_shape,
-						master_fe_region, (struct FE_element *)NULL))
+					face = CREATE(FE_element)(&face_identifier, face_shape,	master_fe_region, (struct FE_element *)NULL);
+					if (face)
 					{
 						/* must put the face in the element to inherit fields */
 						set_FE_element_face(element, face_number, face);
 						new_faces++;
 						/* try to find an existing face in the FE_region with the same
 							 shape and the same nodes as face */
-						if (element_type_node_sequence =
-							CREATE(FE_element_type_node_sequence)(face))
+						element_type_node_sequence = CREATE(FE_element_type_node_sequence)(face);
+						if (element_type_node_sequence)
 						{
 							ACCESS(FE_element_type_node_sequence)(element_type_node_sequence);
 							if (FE_element_type_node_sequence_is_collapsed(
@@ -5562,11 +5583,12 @@ against.
 							}
 							else
 							{
-								if (existing_element_type_node_sequence =
+								existing_element_type_node_sequence =
 									FIND_BY_IDENTIFIER_IN_LIST(FE_element_type_node_sequence,
 										identifier)(FE_element_type_node_sequence_get_identifier(
 											element_type_node_sequence),
-											master_fe_region->element_type_node_sequence_list))
+											master_fe_region->element_type_node_sequence_list);
+								if (existing_element_type_node_sequence)
 								{
 									face = FE_element_type_node_sequence_get_FE_element(
 										existing_element_type_node_sequence);
@@ -6234,7 +6256,8 @@ struct FE_element *FE_region_any_element_string_to_FE_element(
 	{
 		const char *number_string, *type_string;
 		struct CM_element_information cm;
-		if (type_string = strpbrk(name,"eEfFlL"))
+		type_string = strpbrk(name,"eEfFlL");
+		if (type_string)
 		{
 			if (('l' == *type_string)||('L' == *type_string))
 			{
@@ -6253,7 +6276,8 @@ struct FE_element *FE_region_any_element_string_to_FE_element(
 		{
 			cm.type = CM_ELEMENT;
 		}
-		if (number_string = strpbrk(name,"+-0123456789"))
+		number_string = strpbrk(name,"+-0123456789");
+		if (number_string)
 		{
 			cm.number = atoi(number_string);
 			int dimension = CM_ELEMENT_TYPE_TO_DIMENSION(cm.type);
@@ -6289,7 +6313,8 @@ set the seed element for a xi_texture_coordinate computed_field.
 	if (state && (element_address = (struct FE_element **)element_address_void) &&
 		(fe_region = (struct FE_region *)fe_region_void))
 	{
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -6315,7 +6340,8 @@ set the seed element for a xi_texture_coordinate computed_field.
 			else
 			{
 				display_message(INFORMATION_MESSAGE, " ELEMENT_NUMBER");
-				if (element = *element_address)
+				element = *element_address;
+				if (element)
 				{
 					struct CM_element_information cm;
 					get_FE_element_identifier(element, &cm);
@@ -7072,8 +7098,9 @@ matching node must exist in either case.
 		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
 			cm_node_identifier, merge_data->fe_region->fe_node_list))
 		{
-			if (add_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-				cm_node_identifier, merge_data->master_fe_region->fe_node_list))
+			add_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+				cm_node_identifier, merge_data->master_fe_region->fe_node_list);
+			if (add_node)
 			{
 				if (!ADD_OBJECT_TO_LIST(FE_node)(add_node,
 					merge_data->fe_region->fe_node_list))
@@ -7494,8 +7521,9 @@ into <node> an appropriate node field info from <fe_region>.
 			{
 				master_fe_region = fe_region;
 			}
-			if (node_field_info = FE_region_clone_FE_node_field_info(
-				master_fe_region, current_node_field_info))
+			node_field_info = FE_region_clone_FE_node_field_info(
+				master_fe_region, current_node_field_info);
+			if (node_field_info)
 			{
 				/* store combination of node field info in matching list */
 				if (REALLOCATE(matching_node_field_info,
@@ -7538,9 +7566,9 @@ into <node> an appropriate node field info from <fe_region>.
 						number_of_derivatives =
 							get_FE_node_field_component_number_of_derivatives(node, field,
 								component_number);
-						if (nodal_value_types =
-							get_FE_node_field_component_nodal_value_types(node, field,
-								component_number))
+						nodal_value_types =	get_FE_node_field_component_nodal_value_types(node, field,
+							component_number);
+						if (nodal_value_types)
 						{
 							for (version_number = 0; version_number < number_of_versions;
 								version_number++)
@@ -7704,8 +7732,9 @@ plus nodes from <fe_region> of the same number as those currently used.
 			}
 			if (!element_field_info)
 			{
-				if (element_field_info = FE_region_clone_FE_element_field_info(
-					fe_region, current_element_field_info))
+				element_field_info = FE_region_clone_FE_element_field_info(
+					fe_region, current_element_field_info);
+				if (element_field_info)
 				{
 					/* store combination of element field info in matching list */
 					if (REALLOCATE(matching_element_field_info,
@@ -7742,9 +7771,9 @@ plus nodes from <fe_region> of the same number as those currently used.
 						{
 							if (old_node)
 							{
-								if (new_node =
-									FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-										get_FE_node_identifier(old_node), fe_region->fe_node_list))
+								new_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+									get_FE_node_identifier(old_node), fe_region->fe_node_list);
+								if (new_node)
 								{
 									if (!set_FE_element_node(element, i, new_node))
 									{

@@ -1297,20 +1297,26 @@ orthographic axes.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (ortho_axes=(struct Graphics_window_ortho_axes *)ortho_axes_void)
+		ortho_axes=(struct Graphics_window_ortho_axes *)ortho_axes_void;
+		if (ortho_axes)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (ortho_axes->up=axis_name_to_axis_number(current_token))
+					ortho_axes->up=axis_name_to_axis_number(current_token);
+					if (ortho_axes->up)
 					{
-						if (return_code=shift_Parse_state(state,1))
+						return_code=shift_Parse_state(state,1);
+						if (return_code)
 						{
-							if (current_token=state->current_token)
+							current_token=state->current_token;
+							if (current_token)
 							{
-								if (ortho_axes->front=axis_name_to_axis_number(current_token))
+								ortho_axes->front=axis_name_to_axis_number(current_token);
+								if (ortho_axes->front)
 								{
 									return_code=shift_Parse_state(state,1);
 								}
@@ -1507,8 +1513,9 @@ the changes are to be applied to all panes.
 	ENTER(modify_Graphics_window_background);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		modify_graphics_window_data=(struct Modify_graphics_window_data *)
+			modify_graphics_window_data_void;
+		if (modify_graphics_window_data)
 		{
 			if (state->current_token)
 			{
@@ -1561,7 +1568,8 @@ the changes are to be applied to all panes.
 				Option_table_add_char_flag_entry(undistort_option_table, "no_undistort_texture",
 					&no_undistort_flag);
 				Option_table_add_suboption_table(option_table, undistort_option_table);
-				if (return_code=Option_table_multi_parse(option_table, state))
+				return_code=Option_table_multi_parse(option_table, state);
+				if (return_code)
 				{
 					if (scene_viewer)
 					{
@@ -1913,9 +1921,10 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 				 force_onscreen = 0;
 				 width = 0;
 				 height = 0;
-				 if(cmgui_image = Graphics_window_get_image(graphics_window,
-							 force_onscreen, width, height, /*preferred_antialias*/8,
-							 /*preferred_transparency_layers*/0, storage))
+				 cmgui_image = Graphics_window_get_image(graphics_window,
+				 	force_onscreen, width, height, /*preferred_antialias*/8,
+				 	/*preferred_transparency_layers*/0, storage);
+				 if(cmgui_image)
 				 {
 						cmgui_image_information = CREATE(Cmgui_image_information)();
 						Cmgui_image_information_add_file_name(cmgui_image_information,filename);
@@ -2613,22 +2622,24 @@ a spaceship/submarine, where:
 	ENTER(modify_Graphics_window_image);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		modify_graphics_window_data=(struct Modify_graphics_window_data *)
+			modify_graphics_window_data_void;
+		if (modify_graphics_window_data)
 		{
 			if (state->current_token)
 			{
 				 
 				 /* get defaults from scene_viewer for first pane of window */
-				 if ((window=(struct Graphics_window *)window_void) && 
-						(window->scene_viewer_array) &&
+				window=(struct Graphics_window *)window_void;
+				 if (window && (window->scene_viewer_array) &&
 						(scene_viewer=window->scene_viewer_array[0]))
 				 {
-						if (light_model=Scene_viewer_get_light_model(scene_viewer))
-						{
-							 ACCESS(Light_model)(light_model);
-						}
-						scene=ACCESS(Scene)(window->scene);
+					 light_model=Scene_viewer_get_light_model(scene_viewer);
+					 if (light_model)
+					 {
+						 ACCESS(Light_model)(light_model);
+					 }
+					 scene=ACCESS(Scene)(window->scene);
 				 }
 				 else
 				 {
@@ -2665,7 +2676,8 @@ a spaceship/submarine, where:
 				/* view_all */
 				Option_table_add_char_flag_entry(option_table, "view_all", 
 					&view_all_flag);
-				if (return_code=Option_table_multi_parse(option_table, state))
+				return_code=Option_table_multi_parse(option_table, state);
+				if (return_code)
 				{
 					if (scene_viewer)
 					{
@@ -2845,7 +2857,8 @@ etc.) in all panes of the <window>.
 		if (state->current_token)
 		{
 			/* get defaults from scene_viewer for first pane of window */
-			if (graphics_window=(struct Graphics_window *)graphics_window_void)
+			graphics_window=(struct Graphics_window *)graphics_window_void;
+			if (graphics_window)
 			{
 				layout_mode=Graphics_window_get_layout_mode(graphics_window);
 				Graphics_window_get_viewing_area_size(graphics_window,&width,&height);
@@ -2886,7 +2899,8 @@ etc.) in all panes of the <window>.
 			/* width */
 			Option_table_add_entry(option_table,"width",&width,
 				NULL,set_int_non_negative);
-			if (return_code=Option_table_multi_parse(option_table,state))
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
 				if (graphics_window)
 				{
@@ -2963,17 +2977,19 @@ Parser commands for modifying the overlay scene of the current pane of the
 	ENTER(modify_Graphics_window_overlay);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		modify_graphics_window_data=(struct Modify_graphics_window_data *)
+			modify_graphics_window_data_void;
+		if (modify_graphics_window_data)
 		{
 			if (state->current_token)
 			{
 				/* get defaults from scene_viewer for first pane of window */
-				if ((window=(struct Graphics_window *)window_void)&&
-					 (window->scene_viewer_array) &&
-					(scene_viewer=window->scene_viewer_array[window->current_pane]))
+				window=(struct Graphics_window *)window_void;
+				if (window && (window->scene_viewer_array) &&
+					(NULL != (scene_viewer=window->scene_viewer_array[window->current_pane])))
 				{
-					if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
+					overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
+					if (overlay_scene)
 					{
 						ACCESS(Scene)(overlay_scene);
 					}
@@ -2988,7 +3004,8 @@ Parser commands for modifying the overlay scene of the current pane of the
 				/* scene */
 				Option_table_add_entry(option_table, "scene", &overlay_scene,
 					modify_graphics_window_data->scene_manager, set_Scene);
-				if (return_code=Option_table_multi_parse(option_table, state))
+				return_code=Option_table_multi_parse(option_table, state);
+				if (return_code)
 				{
 					if (scene_viewer)
 					{
@@ -3221,15 +3238,17 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 	ENTER(modify_Graphics_window_set);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		modify_graphics_window_data=(struct Modify_graphics_window_data *)
+			modify_graphics_window_data_void;
+		if (modify_graphics_window_data)
 		{
 			/* Keep the handle in case we need it sometime */
 			USE_PARAMETER(modify_graphics_window_data);
 			if (state->current_token)
 			{
 				/* get defaults from scene_viewer for first pane of window */
-				if (graphics_window=(struct Graphics_window *)window_void)
+				graphics_window=(struct Graphics_window *)window_void;
+				if (graphics_window)
 				{
 					current_pane=graphics_window->current_pane+1;
 					depth_of_field=graphics_window->depth_of_field;
@@ -3288,9 +3307,10 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 					&focal_depth,(void *)NULL,set_double);
 				/* transform|other tools. tool_names not deallocated until later */
 				tool_name=(char *)NULL;
-				if (tool_names=interactive_tool_manager_get_tool_names(
+				tool_names=interactive_tool_manager_get_tool_names(
 					modify_graphics_window_data->interactive_tool_manager,
-					&number_of_tools,interactive_tool,&tool_name))
+					&number_of_tools,interactive_tool,&tool_name);
+				if (tool_names)
 				{
 					Option_table_add_enumerator(option_table,number_of_tools,
 						tool_names,&tool_name);
@@ -3323,7 +3343,8 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 					&slow_transparency_flag,(void *)NULL,set_char_flag);
 				Option_table_add_suboption_table(option_table,
 					transparency_option_table);
-				if (return_code=Option_table_multi_parse(option_table,state))
+				return_code=Option_table_multi_parse(option_table,state);
+				if (return_code)
 				{
 					if ((1>current_pane)||(current_pane>graphics_window->number_of_panes))
 					{
@@ -3360,9 +3381,9 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 						{
 							Graphics_window_set_current_pane(graphics_window,current_pane);
 						}
-						if (interactive_tool=
-							FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-								tool_name,graphics_window->interactive_tool_manager))
+						interactive_tool=FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+							tool_name,graphics_window->interactive_tool_manager);
+						if (interactive_tool)
 						{
 #if defined (WX_USER_INTERFACE)
 							wxBitmapButton *current_tool_button;
@@ -3674,7 +3695,8 @@ view angle, interest point etc.
 				&distorting_relative_viewport_flag);
 			Option_table_add_suboption_table(option_table,
 				viewport_mode_option_table);
-			if (return_code=Option_table_multi_parse(option_table, state))
+			return_code=Option_table_multi_parse(option_table, state);
+			if (return_code)
 			{
 				if (1<(absolute_viewport_flag+relative_viewport_flag+
 					distorting_relative_viewport_flag))
@@ -4794,12 +4816,12 @@ it.
 			/* make sure the first scene_viewer shows */
 			if (window->panel)
 			{
-				 if (graphics_buffer = create_Graphics_buffer_wx(
-								graphics_buffer_package,
-								window->panel,
-								graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
-								minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-								minimum_accumulation_buffer_depth, (Graphics_buffer *)NULL))
+				graphics_buffer = create_Graphics_buffer_wx(
+					graphics_buffer_package,
+					window->panel, graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+					minimum_accumulation_buffer_depth, (Graphics_buffer *)NULL);
+				 if (graphics_buffer)
 				 {
 						/* create one Scene_viewers */
 						window->number_of_scene_viewers = 1;
@@ -4808,12 +4830,10 @@ it.
 									window->number_of_scene_viewers))
 						{
 							 pane_no = 0;
-							 if (window->scene_viewer_array[pane_no] = 
-									CREATE(Scene_viewer)(graphics_buffer,
-										 background_colour, light_manager,default_light,
-										 light_model_manager,default_light_model,
-										 scene_manager, window->scene,
-										 user_interface))
+							 window->scene_viewer_array[pane_no] = CREATE(Scene_viewer)(graphics_buffer,
+							 	background_colour, light_manager,default_light, light_model_manager,
+							 	default_light_model, scene_manager, window->scene, user_interface);
+							 if (window->scene_viewer_array[pane_no])
 							 {
 									ortho_up_axis=window->ortho_up_axis;
 									ortho_front_axis=window->ortho_front_axis;
@@ -5202,8 +5222,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_window,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_window,name)(
-				destination,source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_window,name)(destination,source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -5658,21 +5678,19 @@ Sets the layout mode in effect on the <window>.
 					// create_Graphics_buffer_wx will eventually create a
 					// graphics buffer from another buffer if a buffer_to_match
 					// is passed in.
-					if (graphics_buffer = create_Graphics_buffer_wx(window->graphics_buffer_package,
-						current_panel,
-						GRAPHICS_BUFFER_DOUBLE_BUFFERING,
-						GRAPHICS_BUFFER_ANY_STEREO_MODE,
+					graphics_buffer = create_Graphics_buffer_wx(window->graphics_buffer_package,
+						current_panel, GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
-								/*minimum_accumulation_buffer_depth*/0, Scene_viewer_get_graphics_buffer(first_scene_viewer)))
+						/*minimum_accumulation_buffer_depth*/0, Scene_viewer_get_graphics_buffer(first_scene_viewer));
+					if (graphics_buffer)
 #endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
-						if (window->scene_viewer_array[pane_no]=
-							CREATE(Scene_viewer)(graphics_buffer,&background_colour,
-								window->light_manager,window->default_light,
-								window->light_model_manager,window->default_light_model,
-								window->scene_manager,window->scene,
-								window->user_interface))
+						window->scene_viewer_array[pane_no]=
+							CREATE(Scene_viewer)(graphics_buffer,&background_colour,window->light_manager,
+								window->default_light, window->light_model_manager,window->default_light_model,
+								window->scene_manager,window->scene,window->user_interface);
+						if (window->scene_viewer_array[pane_no])
 						{
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
@@ -5747,7 +5765,8 @@ Sets the layout mode in effect on the <window>.
 		}
 		if (return_code)
 		{
-			if (new_layout=(layout_mode != window->layout_mode))
+			new_layout=(layout_mode != window->layout_mode);
+			if (new_layout)
 			{
 				window->layout_mode=layout_mode;
 				/* get the number of panes for the new layout */
@@ -6225,8 +6244,9 @@ Must call Graphics_window_view_changed after changing tied pane.
 		if (Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 			window->layout_mode,pane_no,projection_mode))
 		{
-			if (return_code=Scene_viewer_set_projection_mode(
-				window->scene_viewer_array[pane_no],projection_mode))
+			return_code=Scene_viewer_set_projection_mode(
+				window->scene_viewer_array[pane_no],projection_mode);
+			if (return_code)
 			{
 				/* update perspective button widget if current_pane changed */
 				if (pane_no == window->current_pane)
@@ -7338,11 +7358,12 @@ current layout_mode, the function adjusts the view in all the panes tied to
 			Scene_viewer_get_viewing_volume(window->scene_viewer_array[pane_no],
 				&left,&right,&bottom,&top,&(near_plane[pane_no]),&(far_plane[pane_no]));
 		}
-		if (return_code=(Scene_viewer_get_lookat_parameters(
+		return_code=(Scene_viewer_get_lookat_parameters(
 			window->scene_viewer_array[changed_pane],&(eye[0]),&(eye[1]),&(eye[2]),
 			&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
 			Scene_viewer_get_viewing_volume(window->scene_viewer_array[changed_pane],
-				&left,&right,&bottom,&top,&(near_plane[changed_pane]),&(far_plane[changed_pane]))))
+				&left,&right,&bottom,&top,&(near_plane[changed_pane]),&(far_plane[changed_pane])));
+		if (return_code)
 		{
 			projection_mode=Graphics_window_get_projection_mode(window,changed_pane);
 			/* get orthogonal view, up and left directions in changed_pane */
@@ -7749,7 +7770,8 @@ Writes the properties of the <window> to the command window.
 	if (window && window->scene_viewer_array)
 	{
 		display_message(INFORMATION_MESSAGE,"Graphics window : %s\n",window->name);
-		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
+		buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]);
+		if (buffering_mode)
 		{
 			display_message(INFORMATION_MESSAGE,"  %s\n",
 				Scene_viewer_buffering_mode_string(buffering_mode));
@@ -7923,7 +7945,8 @@ Writes the properties of the <window> to the command window.
 				viewport_pixels_per_unit_y);
 			/* overlay */
 			display_message(INFORMATION_MESSAGE,"    overlay scene: ");
-			if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
+			overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
+			if (overlay_scene)
 			{
 				if (GET_NAME(Scene)(overlay_scene,&name))
 				{
@@ -8053,14 +8076,16 @@ and establishing the views in it to the command window to a com file.
 	ENTER(list_Graphics_window);
 	if (window&&window->scene_viewer_array&& ALLOCATE(prefix,char,50+strlen(window->name)))
 	{
-		if (name=duplicate_string(window->name))
+		name=duplicate_string(window->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			process_message->process_command(INFORMATION_MESSAGE,"gfx create window %s",name);
 			DEALLOCATE(name);
 		}
-		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
+		buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]);
+		if (buffering_mode)
 		{
 			process_message->process_command(INFORMATION_MESSAGE," %s",
 				Scene_viewer_buffering_mode_string(buffering_mode));
@@ -8210,7 +8235,8 @@ and establishing the views in it to the command window to a com file.
 			/* overlay */
 			process_message->process_command(INFORMATION_MESSAGE,
 				"gfx modify window %s overlay",window->name);
-			if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
+			overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
+			if (overlay_scene)
 			{
 				if (GET_NAME(Scene)(overlay_scene,&name))
 				{
@@ -8408,8 +8434,8 @@ Parameter <help_mode> should be NULL when calling this function.
 	ENTER(modify_Graphics_window);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		modify_graphics_window_data=(struct Modify_graphics_window_data *)modify_graphics_window_data_void;
+		if (modify_graphics_window_data)
 		{
 			return_code=1;
 			/* initialize defaults */
@@ -8511,7 +8537,8 @@ function, and DEACCESS any returned window.
 	ENTER(set_Graphics_window);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))

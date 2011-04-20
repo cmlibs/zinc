@@ -148,8 +148,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)(destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -354,6 +354,9 @@ some predetermined simple types.
 					{
 						Spectrum_settings_set_reverse_flag(settings, 1);
 					} break;
+					default:
+					{
+					} break;
 				}
 			} break;
 			case LOG_RED_TO_BLUE_SPECTRUM:
@@ -408,7 +411,9 @@ some predetermined simple types.
 						Spectrum_settings_set_colour_value_minimum(second_settings, 0.0);
 						Spectrum_settings_set_colour_value_maximum(second_settings, 0.5);
 					} break;
-				
+					default:
+					{
+					} break;
 				}			
 			} break;
 			case BLUE_WHITE_RED_SPECTRUM:
@@ -937,15 +942,15 @@ the name given in the next token of the parser
 	ENTER(set_Spectrum);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if ((spectrum_address=
-					(struct Spectrum **)spectrum_address_void)&&
-					(spectrum_manager=(struct MANAGER(Spectrum) *)
-					spectrum_manager_void))
+				spectrum_address=(struct Spectrum **)spectrum_address_void;
+				spectrum_manager=(struct MANAGER(Spectrum) *)spectrum_manager_void;
+				if (spectrum_address && spectrum_manager)
 				{
 					if (fuzzy_string_compare(current_token,"NONE"))
 					{
@@ -958,8 +963,8 @@ the name given in the next token of the parser
 					}
 					else
 					{
-						if (temp_spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,
-							name)(current_token,spectrum_manager))
+						temp_spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,	name)(current_token,spectrum_manager);
+						if (temp_spectrum)
 						{
 							if (*spectrum_address!=temp_spectrum)
 							{
@@ -989,10 +994,11 @@ the name given in the next token of the parser
 			{
 				display_message(INFORMATION_MESSAGE," SPECTRUM_NAME|none");
 				/* if possible, then write the name */
-				if (spectrum_address=
-					(struct Spectrum **)spectrum_address_void)
+				spectrum_address = (struct Spectrum **)spectrum_address_void;
+				if (spectrum_address)
 				{
-					if (temp_spectrum= *spectrum_address)
+					temp_spectrum = *spectrum_address;
+					if (temp_spectrum)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_spectrum->name);
 					}
@@ -1110,12 +1116,14 @@ A modifier function to set the spectrum minimum.
 	ENTER(set_Spectrum_minimum);
 	if (state && (!dummy_user_data))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (spectrum= *((struct Spectrum **)spectrum_ptr_void))
+				spectrum = *((struct Spectrum **)spectrum_ptr_void);
+				if (spectrum)
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -1141,7 +1149,8 @@ A modifier function to set the spectrum minimum.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," MINIMUM_VALUE#");
-				if (spectrum= *((struct Spectrum **)spectrum_ptr_void))
+				spectrum = *((struct Spectrum **)spectrum_ptr_void);
+				if (spectrum)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",spectrum->minimum);
 				}
@@ -1186,12 +1195,14 @@ A modifier function to set the spectrum maximum.
 	ENTER(set_Spectrum_maximum);
 	if (state && (!dummy_user_data))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (spectrum= *((struct Spectrum **)spectrum_ptr_void))
+				spectrum = *((struct Spectrum **)spectrum_ptr_void);
+				if (spectrum)
 				{
 					if (1==sscanf(current_token," %f ",&value))
 					{
@@ -1216,7 +1227,8 @@ A modifier function to set the spectrum maximum.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," MAXIMUM_VALUE#");
-				if (spectrum= *((struct Spectrum **)spectrum_ptr_void))
+				spectrum = *((struct Spectrum **)spectrum_ptr_void);
+				if (spectrum)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",spectrum->maximum);
 				}
@@ -2057,16 +2069,17 @@ Executes a GFX DESTROY SPECTRUM command.
 	ENTER(gfx_destroy_spectrum);
 	if (state && (!dummy_to_be_modified))
 	{
-		if (spectrum_manager=
-			(struct MANAGER(Spectrum) *)spectrum_manager_void)
+		spectrum_manager = (struct MANAGER(Spectrum) *)spectrum_manager_void;
+		if (spectrum_manager)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token)
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,name)(
-						current_token,spectrum_manager))
+					spectrum=FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,name)(current_token,spectrum_manager);
+					if (spectrum)
 					{
 						return_code=REMOVE_OBJECT_FROM_MANAGER(Spectrum)(spectrum,
 							spectrum_manager);
@@ -2126,7 +2139,8 @@ to the comfile.
 	/* check the arguments */
 	if (spectrum)
 	{
-		if (name=duplicate_string(spectrum->name))
+		name=duplicate_string(spectrum->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -2210,7 +2224,8 @@ For each spectrum in manager, list the spectrum commands to the command windows 
 	 char *write_enabled;
 	 int return_code;
 	 ENTER(for_each_spectrum_list_or_write_commands);
-	 if (write_enabled = (char *)write_enabled_void)
+	 write_enabled = (char *)write_enabled_void;
+	 if (write_enabled)
 	 {
 			if (strcmp(write_enabled, "false") == 0)
 			{
@@ -2329,6 +2344,10 @@ Writes the properties of the <spectrum> to the command window.
 			{
 				display_message(INFORMATION_MESSAGE,"  simple spectrum type: BLUE_WHITE_RED\n");
 			} break;			
+			default:
+			{
+				display_message(INFORMATION_MESSAGE,"  simple spectrum type: UNKNOWN\n");
+			} break;
 		}
 		display_message(INFORMATION_MESSAGE,"  minimum=%.3g, maximum=%.3g\n",
 			spectrum->minimum,spectrum->maximum);
@@ -2379,7 +2398,8 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->access_count=1;
 			spectrum->colour_lookup_texture = (struct Texture *)NULL;
 			spectrum->is_managed_flag = false;
-			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())
+			spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))();
+			if (spectrum->list_of_settings)
 			{
 				if (name)
 				{
@@ -2570,10 +2590,9 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					rgba[2] = 0.0;
 					rgba[3] = 1.0;
 				}
-				
-				if (return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
-					Spectrum_settings_activate,(void *)&render_data,
-					spectrum->list_of_settings))
+				return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+					Spectrum_settings_activate,(void *)&render_data,spectrum->list_of_settings);
+				if (return_code)
 				{
 					if (colour_components != SPECTRUM_COMPONENT_ALPHA)
 					{
@@ -2880,7 +2899,8 @@ int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum, const char *comma
 					Cmiss_graphics_module_get_scene_manager(graphics_module),set_Scene);
 				Option_table_add_entry(option_table,"red_to_blue",&red_to_blue,
 					NULL,set_char_flag);
-				if (return_code=Option_table_multi_parse(option_table,state))
+				return_code=Option_table_multi_parse(option_table,state);
+				if (return_code)
 				{
 					if (return_code)
 					{
