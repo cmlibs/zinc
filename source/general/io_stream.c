@@ -305,8 +305,9 @@ DESCRIPTION :
 	{
 		struct IO_memory_block *io_memory_block;
 		/* Add object to list */
-		if (io_memory_block = 
-			CREATE(IO_memory_block)(block_name, memory_block, memory_block_length))
+		io_memory_block =
+			CREATE(IO_memory_block)(block_name, memory_block, memory_block_length);
+		if (NULL != io_memory_block)
 		{
 			return_code = ADD_OBJECT_TO_LIST(IO_memory_block)(io_memory_block,
 				stream_class->memory_block_list);
@@ -346,8 +347,9 @@ DESCRIPTION :
 	if (stream_class && block_name)
 	{
 		/* Add object to list */
-		if (memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(block_name,
-				stream_class->memory_block_list))
+		memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(block_name,
+			stream_class->memory_block_list);
+		if (NULL != memory_block)
 		{
 			return_code = REMOVE_OBJECT_FROM_LIST(IO_memory_block)(memory_block,
 				stream_class->memory_block_list);
@@ -532,8 +534,9 @@ DESCRIPTION :
 	{
 		if (!strncmp("memory:", stream_uri, 7))
 		{
-			if (stream->memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(stream_uri + 7,
-					stream->class->memory_block_list))
+			stream->memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(stream_uri + 7,
+				stream->class->memory_block_list);
+			if (NULL != stream->memory_block)
 			{
 				return_code = 1;
 				ACCESS(IO_memory_block)(stream->memory_block);
@@ -609,7 +612,8 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
-					if (stream->gzip_file_handle = gzopen(filename, "rb"))
+					stream->gzip_file_handle = gzopen(filename, "rb");
+					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
 						stream->buffer_chunk_size = 131072;
@@ -623,9 +627,10 @@ DESCRIPTION :
 				else 
 #endif /* defined (HAVE_ZLIB) */
 #if defined (HAVE_BZLIB)
-                                    if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
+				if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
 				{
-					if (stream->bz2_file_handle = BZ2_bzopen(filename, "rb"))
+     				stream->bz2_file_handle = BZ2_bzopen(filename, "rb");
+					if (NULL != stream->bz2_file_handle)
 					{
 						stream->type = IO_STREAM_BZ2_FILE_TYPE;
 						stream->buffer_chunk_size = 131072;
@@ -639,7 +644,8 @@ DESCRIPTION :
 				else
 #endif /* defined (HAVE_BZLIB) */
 				{
-					if (stream->file_handle = fopen(filename, "r"))
+					stream->file_handle = fopen(filename, "r");
+					if (NULL != stream->file_handle)
 					{
 						stream->type = IO_STREAM_FILE_TYPE;
 						return_code = 1;
@@ -1543,6 +1549,12 @@ DESCRIPTION :
 									stream->bz2_memory_stream->avail_in;
 							} break;
 #endif /* defined (HAVE_BZLIB) */
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"IO_stream_read_to_memory.  IO stream type not supported.");
+								return_code = 0;
+							} break;
 						}
 						total_read += bytes_read;
 					}

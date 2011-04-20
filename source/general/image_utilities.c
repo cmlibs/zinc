@@ -983,7 +983,8 @@ Returns the <Image_file_format> determined from the file_extension in
 	ENTER(Image_file_format_from_file_name);
 	if (file_name && image_file_format_address)
 	{
-		if (file_extension = strrchr(file_name, '.'))
+		file_extension = strrchr(file_name, '.');
+		if (NULL != file_extension)
 		{
 			file_extension++;
 			image_file_format = (enum Image_file_format)0;
@@ -5449,7 +5450,8 @@ Clears 'valid' flag if fails.
 	ENTER(Cmgui_image_information_add_file_name);
 	if (cmgui_image_information && file_name)
 	{
-		if (temp_file_name = duplicate_string(file_name))
+		temp_file_name = duplicate_string(file_name);
+		if (NULL != temp_file_name)
 		{
 			if (REALLOCATE(temp_file_names, cmgui_image_information->file_names,
 				char *, cmgui_image_information->number_of_file_names + 1))
@@ -5655,7 +5657,8 @@ Clears 'valid' flag if fails.
 		(file_name_number < cmgui_image_information->number_of_file_names) &&
 		file_name)
 	{
-		if (temp_file_name = duplicate_string(file_name))
+		temp_file_name = duplicate_string(file_name);
+		if (NULL != temp_file_name)
 		{
 			/* change_existing file_name */
 			DEALLOCATE(cmgui_image_information->file_names[file_name_number]);
@@ -6396,7 +6399,8 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 		(width*number_of_components*number_of_bytes_per_component <=
 			source_width_bytes) && source_pixels)
 	{
-		if (cmgui_image = CREATE(Cmgui_image)())
+		cmgui_image = CREATE(Cmgui_image)();
+		if (NULL != cmgui_image)
 		{
 #if defined (USE_IMAGEMAGICK)
 #  if MagickLibVersion >= 0x636
@@ -6456,7 +6460,8 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			}
 			if (return_code)
 			{
-				if (magick_image = AllocateImage((ImageInfo *) NULL))
+				magick_image = AllocateImage((ImageInfo *) NULL);
+				if (NULL != magick_image)
 				{
 					magick_image->columns = width;
 					magick_image->rows = height;
@@ -7133,12 +7138,14 @@ and other parameters for formats that require them.
 		(cmgui_image_information->file_names ||
 		cmgui_image_information->memory_block))
 	{
-		if (cmgui_image = CREATE(Cmgui_image)())
+		cmgui_image = CREATE(Cmgui_image)();
+		if (NULL != cmgui_image)
 		{
 			return_code = 1;
 #if defined (USE_IMAGEMAGICK)
 			GetExceptionInfo(&magick_exception);
-			if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
+			magick_image_info = CloneImageInfo((ImageInfo *) NULL);
+			if (NULL != magick_image_info)
 			{
 				old_magick_size = magick_image_info->size;
 				magick_image_info->size = (char *)NULL;
@@ -7256,7 +7263,8 @@ and other parameters for formats that require them.
 					}
 					else
 					{
-						if (image_file = CREATE(IO_stream)(cmgui_image_information->io_stream_package))
+						image_file = CREATE(IO_stream)(cmgui_image_information->io_stream_package);
+						if (NULL != image_file)
 						{
 							if (IO_stream_open_for_read(image_file, magick_image_info->filename))
 							{
@@ -7330,9 +7338,10 @@ and other parameters for formats that require them.
 				magick_image_info->size = old_magick_size;
 				if (return_code && cmgui_image->magick_image)
 				{
-					if (cmgui_image->number_of_images =
+					cmgui_image->number_of_images =
 						get_magick_image_number_of_consistent_images(
-							cmgui_image->magick_image))
+							cmgui_image->magick_image);
+					if (0 < cmgui_image->number_of_images)
 					{
 						get_magick_image_parameters(cmgui_image->magick_image,
 							&cmgui_image->width, &cmgui_image->height,
@@ -7516,7 +7525,8 @@ that the images be adjoined in the single file.
 #if defined (USE_IMAGEMAGICK)
 		GetExceptionInfo(&magick_exception);
 		local_magick_image = (Image *)NULL;
-		if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
+		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
+		if (NULL != magick_image_info)
 		{
 			magick_image = cmgui_image->magick_image;
 			for (i = 0; (i < number_of_file_names) && return_code; i++)
@@ -7636,10 +7646,10 @@ that the images be adjoined in the single file.
 
 					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
 
-					if (cmgui_image_information->memory_block =
+					cmgui_image_information->memory_block =
 						ImagesToBlob(magick_image_info, magick_image,
-        				&magick_memory_block_length,
-						&magick_exception))
+        				&magick_memory_block_length, &magick_exception);
+					if (NULL != cmgui_image_information->memory_block)
 					{
 						cmgui_image_information->memory_block_length
 							= magick_memory_block_length;
@@ -7795,7 +7805,8 @@ string containing it's value.  Otherwise returns NULL.
 	if (cmgui_image)
 	{
 #if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
-		if (value = GetImageProperty(cmgui_image->magick_image, property))
+		value = GetImageProperty(cmgui_image->magick_image, property);
+		if (NULL != value)
 		{
 			return_value = duplicate_string(value);
 		}
@@ -7912,7 +7923,8 @@ When the end of the list is reached returns NULL.
 	{
 #if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 
-		if (value = GetNextImageProperty(cmgui_image->magick_image))
+		value = GetNextImageProperty(cmgui_image->magick_image);
+		if (NULL != value)
 		{
 			return_value = duplicate_string(value);
 		}

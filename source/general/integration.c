@@ -367,6 +367,11 @@ also defines the dimension of the integration scheme.
 										}
 										number_of_weights *= 3;
 									} break;
+									default:
+									{
+										// shouldn't be reachable due to last switch default action
+										display_message(ERROR_MESSAGE,"CREATE(Integration_scheme).  Invalid basis");
+									} break;
 								}
 							}
 						}

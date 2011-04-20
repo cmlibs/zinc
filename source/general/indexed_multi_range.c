@@ -225,8 +225,9 @@ index_number in index_multi_range_list.
 	if (index_multi_range&&(index_multi_range_list=(struct LIST(Index_multi_range) *)
 		index_multi_range_list_void))
 	{
-		if (index_multi_range_to_modify=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-			index_multi_range->index_number,index_multi_range_list))
+		index_multi_range_to_modify = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
+			index_multi_range->index_number,index_multi_range_list);
+		if (NULL != index_multi_range_to_modify)
 		{
 			return_code=Index_multi_range_add(index_multi_range_to_modify,index_multi_range);
 		}
@@ -280,8 +281,9 @@ list it is modified by may be changed; it is no error if they do not match up.
 	{
 		if (Multi_range_is_value_in_range(index_multi_range->ranges,modify_data->value))
 		{
-			if (index_multi_range_to_modify=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-				index_multi_range->index_number,modify_data->index_multi_range_list_to_modify))
+			index_multi_range_to_modify = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
+				index_multi_range->index_number, modify_data->index_multi_range_list_to_modify);
+			if (NULL != index_multi_range_to_modify)
 			{
 				if (modify_data->adding)
 				{
@@ -389,7 +391,8 @@ Puts a copy of <index_multi_range> in <index_multi_range_list_copy>, creating it
 		if (!(index_multi_range_copy=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			index_multi_range->index_number,index_multi_range_list_copy)))
 		{
-			if (index_multi_range_copy=CREATE(Index_multi_range)(index_multi_range->index_number))
+			index_multi_range_copy = CREATE(Index_multi_range)(index_multi_range->index_number);
+			if (NULL != index_multi_range_copy)
 			{
 				if (!ADD_OBJECT_TO_LIST(Index_multi_range)(index_multi_range_copy,
 					index_multi_range_list_copy))
@@ -832,8 +835,9 @@ same index_number in index_multi_range_list.
 	if (index_multi_range&&(index_multi_range_list=(struct LIST(Index_multi_range) *)
 		index_multi_range_list_void))
 	{
-		if (index_multi_range_to_modify=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-			index_multi_range->index_number,index_multi_range_list))
+		index_multi_range_to_modify = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
+			index_multi_range->index_number, index_multi_range_list);
+		if (NULL != index_multi_range_to_modify)
 		{
 			return_code=Index_multi_range_subtract(index_multi_range_to_modify,index_multi_range);
 		}
@@ -962,11 +966,15 @@ For each range write the index_number, start and stop with the supplied format.
 		return_code=1;
 		for (range_no=0;return_code&&(range_no<number_of_ranges);range_no++)
 		{
-			if (return_code=Multi_range_get_range(index_multi_range->ranges,
+			if (Multi_range_get_range(index_multi_range->ranges,
 				range_no,&start,&stop))
 			{
 				fprintf(write_data->out_file,write_data->line_format,
 					index_multi_range->index_number,start,stop);
+			}
+			else
+			{
+				return_code = 0;
 			}
 		}
 	}
@@ -1083,7 +1091,8 @@ Returns a new list containing an exact copy of <index_multi_range_list>.
 	ENTER(Index_multi_range_list_duplicate);
 	if (index_multi_range_list)
 	{
-		if (index_multi_range_list_copy=CREATE(LIST(Index_multi_range))())
+		index_multi_range_list_copy = CREATE(LIST(Index_multi_range))();
+		if (NULL != index_multi_range_list_copy)
 		{
 			if (!FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(Index_multi_range_copy_to_list,
 				(void *)index_multi_range_list_copy,index_multi_range_list))
@@ -1192,7 +1201,8 @@ index_multi_range_list.
 	ENTER(Index_multi_range_list_read);
 	if (index_multi_range_list&&file_name)
 	{
-		if (in_file=fopen(file_name,"r"))
+		in_file = fopen(file_name,"r");
+		if (NULL != in_file)
 		{
 			return_code=1;
 			end_of_file=0;
@@ -1213,8 +1223,9 @@ index_multi_range_list.
 #endif /* defined (OLD_CODE) */
 						if (4==sscanf(buff,"%c %d %d %d",&type,&index_number,&start,&stop))
 						{
-							if (index_multi_range=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-								index_number,index_multi_range_list))
+							index_multi_range = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
+								index_number,index_multi_range_list);
+							if (NULL != index_multi_range)
 							{
 								return_code=Index_multi_range_add_range(index_multi_range,start,stop);
 							}
@@ -1270,7 +1281,8 @@ line format. Also write the header_text at the top of the file.
 	ENTER(Index_multi_range_list_write);
 	if (index_multi_range_list&&file_name&&header_text&&line_format)
 	{
-		if (write_data.out_file=fopen(file_name,"w"))
+		write_data.out_file=fopen(file_name,"w");
+		if (NULL != write_data.out_file)
 		{
 			fprintf(write_data.out_file,"%s",header_text);
 			write_data.line_format=line_format;
