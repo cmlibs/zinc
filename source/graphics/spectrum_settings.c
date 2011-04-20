@@ -2812,7 +2812,7 @@ passed in render data.
 				}
 				else
 				{
-					switch (settings->settings_type)
+					switch (settings->colour_mapping)
 					{
 						case SPECTRUM_BANDED:
 						case SPECTRUM_STEP:
