@@ -662,7 +662,8 @@ Called when "close" is selected from the window menu, or it is double clicked.
 
 	ENTER(Graphics_window_gtk_close_CB);
 	USE_PARAMETER(object);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	graphics_window=(struct Graphics_window *)graphics_window_void;
+	if (graphics_window)
 	{
 		if (graphics_window->graphics_window_manager)
 		{
@@ -4461,16 +4462,17 @@ it.
 			}
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			window->close_handler_id = 0;
-			if (window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+			window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+			if (window->shell_window)
 			{
 				gtk_window_set_title(GTK_WINDOW(window->shell_window),
 					window_title);
-				if (graphics_buffer = create_Graphics_buffer_gtkgl(
-					graphics_buffer_package,
-					GTK_CONTAINER(window->shell_window),
+				graphics_buffer = create_Graphics_buffer_gtkgl(
+					graphics_buffer_package, GTK_CONTAINER(window->shell_window),
 					graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-					minimum_accumulation_buffer_depth))
+					minimum_accumulation_buffer_depth);
+				if (graphics_buffer)
 				{
 					/* create one Scene_viewers */
 					window->number_of_scene_viewers = 1;
@@ -4479,12 +4481,11 @@ it.
 						window->number_of_scene_viewers))
 					{
 						pane_no = 0;
-						if (window->scene_viewer_array[pane_no] = 
-							 CREATE(Scene_viewer)(graphics_buffer,
-							 background_colour, light_manager,default_light,
-							 light_model_manager,default_light_model,
-							 scene_manager, window->scene,
-							 user_interface))
+						window->scene_viewer_array[pane_no] =
+						 CREATE(Scene_viewer)(graphics_buffer, background_colour, light_manager,
+							default_light, light_model_manager,default_light_model, scene_manager,
+							window->scene, user_interface);
+						if (window->scene_viewer_array[pane_no])
 						{
 							Scene_viewer_set_interactive_tool(
 								window->scene_viewer_array[pane_no],
