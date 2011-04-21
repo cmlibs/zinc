@@ -461,9 +461,9 @@ to change the interactive tool settings.
 	global_interactive_tool = (struct Interactive_tool *)interactive_tool_void;
 	GET_NAME(Interactive_tool)(global_interactive_tool,&tool_name);
 	interactive_tool_manager = Graphics_window_get_interactive_tool_manager(graphics_window);
-	if (wx_interactive_tool=
+	if (NULL != (wx_interactive_tool=
 		FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-		(char *)tool_name,interactive_tool_manager))
+		(char *)tool_name,interactive_tool_manager)))
 	{
 		Interactive_tool_copy(wx_interactive_tool,
 			global_interactive_tool, (struct MANAGER(Interactive_tool) *)NULL);
@@ -658,7 +658,7 @@ DESCRIPTION :
 		/* time */
 		Option_table_add_entry(option_table, "time", &time, NULL, set_FE_value);
 
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
@@ -700,7 +700,7 @@ DESCRIPTION :
 				}
 				if (data_flag)
 				{
-					if (data_fe_region=FE_region_get_data_FE_region(fe_region))
+					if (NULL != (data_fe_region=FE_region_get_data_FE_region(fe_region)))
 					{
 						FE_region_begin_change(data_fe_region);
 						if (!FE_region_change_node_identifiers(data_fe_region,
@@ -769,7 +769,7 @@ with tick marks and labels for showing the scale of a spectrum.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("colour_bar");
@@ -840,7 +840,7 @@ with tick marks and labels for showing the scale of a spectrum.
 			/* tick_length */
 			Option_table_add_entry(option_table,"tick_length",&tick_length,
 				NULL,set_float_non_negative);
-			if (return_code=Option_table_multi_parse(option_table,state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if (100 < tick_divisions)
 				{
@@ -931,7 +931,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -947,7 +947,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (command_data->element_creator)
 				{
@@ -1052,7 +1052,7 @@ Executes a GFX CREATE GROUP command.
 				/* region */
 				Option_table_add_entry(option_table, "region", &region_path,
 					root_region, set_Cmiss_region_path);
-				if (return_code = Option_table_multi_parse(option_table, state))
+				if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 				{
 					Cmiss_region_get_region_from_path_deprecated(root_region, region_path,
 						&base_region);
@@ -1149,9 +1149,9 @@ Executes a GFX CREATE ENVIRONMENT_MAP command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1337,12 +1337,12 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 		}
 		if (return_code)
 		{
-			if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-				graphics_object_name,command_data->glyph_manager))
+			if (NULL != (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+				graphics_object_name,command_data->glyph_manager)))
 			{
 				if (create_more)
 				{
-					if (pointset = GT_OBJECT_GET(GT_pointset)(graphics_object, time))
+					if (NULL != (pointset = GT_OBJECT_GET(GT_pointset)(graphics_object, time)))
 					{
 						GT_pointset_get_point_list(pointset,
 							&current_number_of_particles, &old_particle_positions);
@@ -1539,7 +1539,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			coordinate_field=(struct Computed_field *)NULL;
 			stream_vector_field=(struct Computed_field *)NULL;
@@ -1628,7 +1628,7 @@ editor at a time.  This implementation may be changed later.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1644,7 +1644,7 @@ editor at a time.  This implementation may be changed later.
 		}
 		else 
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 #if defined (WX_USER_INTERFACE)
 				return_code=material_editor_bring_up_editor(
@@ -1693,9 +1693,9 @@ Invokes the grid field calculator dialog.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1754,7 +1754,7 @@ Executes a GFX CREATE IM_CONTROL command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1770,7 +1770,7 @@ Executes a GFX CREATE IM_CONTROL command.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 #if defined (EXT_INPUT)
 				return_code=bring_up_input_module_dialog(
@@ -1823,9 +1823,9 @@ Executes a GFX CREATE LIGHT command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1833,7 +1833,7 @@ Executes a GFX CREATE LIGHT command.
 					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(current_token,
 						command_data->light_manager))
 					{
-						if (light=CREATE(Light)(current_token))
+						if (NULL != (light=CREATE(Light)(current_token)))
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(light,
 								command_data->default_light);
@@ -1918,9 +1918,9 @@ Executes a GFX CREATE LMODEL command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1928,7 +1928,7 @@ Executes a GFX CREATE LMODEL command.
 					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(current_token,
 						command_data->light_model_manager))
 					{
-						if (light_model=CREATE(Light_model)(current_token))
+						if (NULL != (light_model=CREATE(Light_model)(current_token)))
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Light_model,name)(light_model,
 								command_data->default_light_model);
@@ -2018,7 +2018,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2034,7 +2034,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (command_data->node_viewer)
 				{
@@ -2049,12 +2049,12 @@ Executes a GFX CREATE NODE_VIEWER command.
 								time_object)))
 					{
 						Time_object_set_name(time_object, "node_viewer_time");
-						if (command_data->node_viewer = CREATE(Node_viewer)(
+						if (NULL != (command_data->node_viewer = CREATE(Node_viewer)(
 							&(command_data->node_viewer),
 							"Node Viewer",
 							(struct FE_node *)NULL,
 							command_data->root_region, /*use_data*/0,
-							time_object))
+							time_object)))
 						{
 							return_code=1;
 						}
@@ -2110,7 +2110,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2126,7 +2126,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (command_data->data_viewer)
 				{
@@ -2141,12 +2141,12 @@ Executes a GFX CREATE DATA_VIEWER command.
 									time_object)))
 					{
 						Time_object_set_name(time_object, "data_viewer_time");
-						if (command_data->data_viewer = CREATE(Node_viewer)(
+						if (NULL != (command_data->data_viewer = CREATE(Node_viewer)(
 							&(command_data->data_viewer),
 							"Data Viewer",
 							(struct FE_node *)NULL,
 							command_data->root_region, /*use_data*/1,
-							time_object))
+							time_object)))
 						{
 							return_code=1;
 						}
@@ -2202,7 +2202,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -2218,7 +2218,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (command_data->element_point_viewer)
 				{
@@ -2233,13 +2233,13 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 								time_object)))
 					{
 						Time_object_set_name(time_object, "element_point_viewer_time");
-						if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
+						if (NULL != (command_data->element_point_viewer=CREATE(Element_point_viewer)(
 									&(command_data->element_point_viewer),
 									command_data->root_region,
 									command_data->element_point_ranges_selection,
 									command_data->computed_field_package,
 									time_object,
-									command_data->user_interface))
+									command_data->user_interface)))
 						{
 							return_code=1;
 						}
@@ -2582,12 +2582,12 @@ static and referred to by gfx_create_Spectrum
 	ENTER(gfx_modify_Spectrum);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				process=0;
-				if (spectrum_to_be_modified=(struct Spectrum *)spectrum_void)
+				if (NULL != (spectrum_to_be_modified=(struct Spectrum *)spectrum_void))
 				{
 					if (IS_MANAGED(Spectrum)(spectrum_to_be_modified,
 						command_data->spectrum_manager))
@@ -2619,11 +2619,12 @@ static and referred to by gfx_create_Spectrum
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (spectrum_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
+						if (NULL != (spectrum_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
 							Spectrum,name)(current_token,
-							command_data->spectrum_manager))
+							command_data->spectrum_manager)))
 						{
-							if (return_code=shift_Parse_state(state,1))
+							return_code = shift_Parse_state(state, 1);
+							if (return_code)
 							{
 								spectrum_to_be_modified_copy=CREATE(Spectrum)(
 									"spectrum_modify_temp");
@@ -2724,7 +2725,7 @@ static and referred to by gfx_create_Spectrum
 						command_data->scene_manager,set_Scene);
 					Option_table_add_entry(option_table,"red_to_blue",&red_to_blue,
 						NULL,set_char_flag);									
-					if (return_code=Option_table_multi_parse(option_table,state))
+					if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 					{
 						if (return_code)
 						{
@@ -2881,9 +2882,9 @@ Executes a GFX CREATE SPECTRUM command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3122,12 +3123,12 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (value_address = (int *)value_address_void)
+				if (NULL != (value_address = (int *)value_address_void))
 				{
 					if (fuzzy_string_compare_same_length(current_token, "ALL"))
 					{
@@ -3157,7 +3158,7 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 			else
 			{
 				display_message(INFORMATION_MESSAGE, " #|ALL");
-				if (value_address = (int *)value_address_void)
+				if (NULL != (value_address = (int *)value_address_void))
 				{
 					if (0 == *value_address)
 					{
@@ -3306,7 +3307,7 @@ Modifies the properties of a texture.
 		(command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code=1;
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3338,7 +3339,7 @@ Modifies the properties of a texture.
 		}
 		if (return_code)
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				option_table = CREATE(Option_table)();
 				/* example */
@@ -3398,7 +3399,7 @@ Modifies the properties of a texture.
 	if (state && (data = (struct Texture_file_number_series_data *)data_void))
 	{
 		return_code = 1;
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -3503,12 +3504,12 @@ Modifies the properties of a texture.
 	cmgui_image_information = NULL;
 	if (state)
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data = (struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				process = 0;
-				if (texture = (struct Texture *)texture_void)
+				if (NULL != (texture = (struct Texture *)texture_void))
 				{
 					process = 1;
 				}
@@ -3576,7 +3577,7 @@ Modifies the properties of a texture.
 					}
 					else
 					{
-						if (texture = CREATE(Texture)((char *)NULL))
+						if (NULL != (texture = CREATE(Texture)((char *)NULL)))
 						{
 							option_table = CREATE(Option_table)();
 							Option_table_add_entry(option_table, "TEXTURE_NAME",
@@ -3911,6 +3912,7 @@ Modifies the properties of a texture.
 										cmgui_image_information, 2);
 								} break;
 								case TEXTURE_RGB:
+								case TEXTURE_BGR:
 								{
 									Cmgui_image_information_set_number_of_components(
 										cmgui_image_information, 3);
@@ -3925,6 +3927,12 @@ Modifies the properties of a texture.
 									Cmgui_image_information_set_number_of_components(
 										cmgui_image_information, 4);
 								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx modify texture:  Invalid value for specify_format");
+									return_code = 0;
+								} break;
 							}
 							if (specify_number_of_bytes_per_component)
 							{
@@ -3933,7 +3941,7 @@ Modifies the properties of a texture.
 							}
 							if (return_code)
 							{
-								if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+								if (NULL != (cmgui_image = Cmgui_image_read(cmgui_image_information)))
 								{
 									char *property, *value;
 
@@ -3982,7 +3990,7 @@ Modifies the properties of a texture.
 											/*file_name_template*/image_data.image_file_name,
 											file_number_pattern, /*start*/file_number,
 											/*end*/file_number, /*increment*/1);
-										if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+										if (NULL != (cmgui_image = Cmgui_image_read(cmgui_image_information)))
 										{
 											return_code = Texture_add_image(texture, cmgui_image,
 												image_data.crop_left_margin, image_data.crop_bottom_margin,
@@ -4146,9 +4154,9 @@ Executes a GFX CREATE TEXTURE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4277,7 +4285,7 @@ editor at a time.  This implementation may be changed later.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4293,7 +4301,7 @@ editor at a time.  This implementation may be changed later.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 #if defined (MOTIF_USER_INTERFACE)
 				return_code=bring_up_time_editor_dialog(
@@ -4351,7 +4359,7 @@ editor at a time.  This implementation may be changed later.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4367,7 +4375,7 @@ editor at a time.  This implementation may be changed later.
 		}
 		else
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				return_code=bring_up_curve_editor_dialog(
 					&(command_data->curve_editor_dialog),
@@ -4420,7 +4428,7 @@ Executes a GFX CREATE WINDOW command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			return_code=1;
 			/* set_defaults */
@@ -4526,8 +4534,8 @@ Executes a GFX CREATE WINDOW command.
 			}
 			if (return_code)
 			{
-				if (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(name,
-					command_data->graphics_window_manager))
+				if (NULL != (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(name,
+					command_data->graphics_window_manager)))
 				{
 					display_message(WARNING_MESSAGE,
 						"Graphics window '%s' already exists",name);
@@ -4585,7 +4593,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper),
 								command_data->execute_command);
-						if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
+						if (NULL != (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 							minimum_accumulation_buffer_depth,
 							command_data->graphics_buffer_package,
@@ -4595,7 +4603,7 @@ Executes a GFX CREATE WINDOW command.
 							command_data->scene_manager,command_data->default_scene,
 							interactive_tool_manager,
 							command_data->default_time_keeper,
-							command_data->user_interface))
+							command_data->user_interface)))
 						{
 							if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
 							   command_data->graphics_window_manager))
@@ -4700,7 +4708,7 @@ Executes a GFX CREATE HAPTIC command.
 	ENTER(gfx_create_haptic);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			return_code=1;
 			/* set_defaults */
@@ -4709,7 +4717,7 @@ Executes a GFX CREATE HAPTIC command.
 			static_friction = 0.35;
 			damping = 0.0;
 			spring_k = 1.0;
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				(option_table[0]).to_be_modified= &scene;
 				(option_table[0]).user_data=command_data->scene_manager;
@@ -4717,7 +4725,7 @@ Executes a GFX CREATE HAPTIC command.
 				(option_table[2]).to_be_modified= &static_friction;
 				(option_table[3]).to_be_modified= &damping;
 				(option_table[4]).to_be_modified= &spring_k;
-				if (return_code=process_multiple_options(state,option_table))
+				if (0 != (return_code = process_multiple_options(state,option_table)))
 				{
 					/* SAB Damping is really in Kg/1000.0*sec and ranges from
 						0 to 0.005, so the parameter is scaled here */
@@ -4790,7 +4798,7 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialise defaults */
 			if (command_data->cm_examples_directory)
@@ -4955,21 +4963,21 @@ Executes an ATTACH command.
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		device = (struct Io_device *)NULL;
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				if (command_data->device_list)
 				{
-					if (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
-						(current_token,command_data->device_list))
+					if (NULL != (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
+						(current_token,command_data->device_list)))
 					{
 						return_code=shift_Parse_state(state,1);
 					}
 					else
 					{
-						if (device = CREATE(Io_device)(current_token))
+						if (NULL != (device = CREATE(Io_device)(current_token)))
 						{
 							if (ADD_OBJECT_TO_LIST(Io_device)(device, command_data->device_list))
 							{
@@ -5083,15 +5091,15 @@ Executes a DETACH command.
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		device = (struct Io_device *)NULL;
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				if (command_data->device_list)
 				{
-					if (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
-						(current_token,command_data->device_list))
+					if (NULL != (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
+						(current_token,command_data->device_list)))
 					{
 						if (REMOVE_OBJECT_FROM_LIST(Io_device)(device,
 							command_data->device_list))
@@ -5217,7 +5225,7 @@ Executes a GFX CONVERT ELEMENTS command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			Cmiss_region *source_region = Cmiss_region_access(command_data->root_region);
 			Cmiss_region *destination_region = NULL;
@@ -5392,7 +5400,7 @@ Executes a GFX CREATE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			struct Cmiss_region *input_region = NULL;
 			output_region_path = Cmiss_region_get_root_region_path();
@@ -5601,7 +5609,7 @@ Executes a GFX CREATE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -5776,7 +5784,7 @@ Executes a GFX DEFINE FACES command.
 		/* egroup */
 		Option_table_add_entry(option_table, "egroup", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) && region &&
@@ -5821,7 +5829,7 @@ Executes a GFX DEFINE FONT command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -5895,7 +5903,7 @@ Executes a GFX DEFINE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -6028,7 +6036,7 @@ Executes a GFX DESTROY REGION command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -6147,7 +6155,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		/* default option: element number ranges */
 		Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
 			NULL, set_Multi_range);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (((region_path &&
 				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
@@ -6222,7 +6230,12 @@ Executes a GFX DESTROY ELEMENTS command.
 									display_message(INFORMATION_MESSAGE,
 											"gfx destroy lines:  No lines specified\n");
 								}
-									break;
+								break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx_destroy_elements.  Invalid CM_ELEMENT_TYPE");
+								} break;
 							}
 							return_code = 0;
 						}
@@ -6290,7 +6303,7 @@ Executes a GFX DESTROY FIELD command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (root_region=(struct Cmiss_region *)root_region_void))
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -6374,15 +6387,15 @@ Executes a GFX DESTROY GRAPHICS_OBJECT command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-						current_token,command_data->glyph_manager))
+					if (NULL != (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+						current_token,command_data->glyph_manager)))
 					{
 						REMOVE_OBJECT_FROM_MANAGER(GT_object)(graphics_object,
 							command_data->glyph_manager);
@@ -6445,14 +6458,14 @@ Executes a GFX DESTROY MATERIAL command.
 	if (state && (graphical_material_manager =
 		(struct MANAGER(Graphical_material) *)graphical_material_manager_void))
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (graphical_material =
+				if (NULL != (graphical_material =
 					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
-						current_token, graphical_material_manager))
+						current_token, graphical_material_manager)))
 				{
 					if (REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(graphical_material,
 						graphical_material_manager))
@@ -6559,7 +6572,7 @@ use node_manager and node_selection.
 		/* default option: node number ranges */
 		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
 			NULL, set_Multi_range);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (((region_path &&
 				Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)) ||
@@ -6679,13 +6692,13 @@ Executes a GFX DESTROY SCENE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (scene_manager = (struct MANAGER(Scene) *)scene_manager_void))
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (scene = FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(
-					current_token, scene_manager))
+				if (NULL != (scene = FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(
+					current_token, scene_manager)))
 				{
 					if (REMOVE_OBJECT_FROM_MANAGER(Scene)(scene, scene_manager))
 					{
@@ -6746,16 +6759,16 @@ Executes a GFX DESTROY VTEXTURES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (volume_texture_manager=
-			(struct MANAGER(VT_volume_texture) *)volume_texture_manager_void)
+		if (NULL != (volume_texture_manager=
+			(struct MANAGER(VT_volume_texture) *)volume_texture_manager_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (volume_texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,
-						name)(current_token,volume_texture_manager))
+					if (NULL != (volume_texture=FIND_BY_IDENTIFIER_IN_MANAGER(VT_volume_texture,
+						name)(current_token,volume_texture_manager)))
 					{
 						/* remove object from list (destroys automatically) */
 						return_code=REMOVE_OBJECT_FROM_MANAGER(VT_volume_texture)(
@@ -6819,7 +6832,7 @@ Executes a GFX DESTROY WINDOW command.
 	if (state && (graphics_window_manager =
 		(struct MANAGER(Graphics_window) *)graphics_window_manager_void))
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -6889,7 +6902,7 @@ Executes a GFX DESTROY command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -7209,7 +7222,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 		/* default when token omitted (graphics_object_name) */
 		Option_table_add_entry(option_table, (char *)NULL, &region_path,
 			(void *)0, set_name);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (region_path && Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &region) && region)
@@ -7227,7 +7240,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 						if (Cmiss_rendition_has_transformation(rendition)&&
 								Cmiss_rendition_get_transformation(rendition, &(data.transformation)))
 						{
-							if (fe_region = Cmiss_region_get_FE_region(region))
+							if (NULL != (fe_region = Cmiss_region_get_FE_region(region)))
 							{
 								/* nodes */
 								data.fe_region = fe_region;
@@ -7323,7 +7336,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 		/* close (editor) */
 		Option_table_add_entry(option_table, "close", &close_flag,
 			NULL, set_char_flag);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (command_data->region_tree_viewer)
 			{
@@ -7431,7 +7444,7 @@ Invokes the graphical spectrum group editor.
 		option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table, (char *)NULL, &spectrum,
 			command_data->spectrum_manager, set_Spectrum);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			Cmiss_region *spectrum_region = Cmiss_region_create_region(command_data->root_region);
 			return_code = bring_up_spectrum_editor_dialog(
@@ -7586,7 +7599,7 @@ Executes a GFX ELEMENT_CREATOR command.
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (element_creator)
 			{
@@ -7659,7 +7672,7 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
-		if (element_point_tool=command_data->element_point_tool)
+		if (NULL != (element_point_tool=command_data->element_point_tool))
 		{
 			command_field = Element_point_tool_get_command_field(element_point_tool);
 		}
@@ -7685,7 +7698,7 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 		set_command_field_data.conditional_function_user_data = (void *)NULL;
 		Option_table_add_entry(option_table, "command_field", &command_field,
 			&set_command_field_data, set_Computed_field_conditional);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (element_point_tool)
 			{
@@ -7759,7 +7772,7 @@ Executes a GFX ELEMENT_TOOL command.
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
-		if (element_tool=command_data->element_tool)
+		if (NULL != (element_tool = command_data->element_tool))
 		{
 			select_elements_enabled=
 				Element_tool_get_select_elements_enabled(element_tool);
@@ -7801,7 +7814,7 @@ Executes a GFX ELEMENT_TOOL command.
 		set_command_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"command_field",&command_field,
 			&set_command_field_data,set_Computed_field_conditional);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (element_tool)
 			{
@@ -7879,7 +7892,7 @@ Executes a GFX ERASE command.
 		/* default option: scene object name */
 		Option_table_add_entry(option_table, (char *)NULL, &graphic_name,
 			NULL, set_name);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (scene && graphic_name)
 			{
@@ -7983,7 +7996,7 @@ Executes a GFX EXPORT ALIAS command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialize defaults */
 #if defined (NEW_ALIAS)
@@ -8119,7 +8132,7 @@ Executes a GFX EXPORT CM command.
 		Option_table_add_entry(option_table, "region", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (!region_path)
 			{
@@ -8277,7 +8290,7 @@ Executes a GFX EXPORT IGES command.
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
 		/* no errors, not asking for help */
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
@@ -8301,7 +8314,7 @@ Executes a GFX EXPORT IGES command.
 					}
 					if (file_name)
 					{
-						if (return_code = check_suffix(&file_name,".igs"))
+						if (0 != (return_code = check_suffix(&file_name, ".igs")))
 						{
 							return_code = export_to_iges(file_name, fe_region, region_path,
 								coordinate_field);
@@ -8351,7 +8364,7 @@ Executes a GFX EXPORT STL command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			scene = ACCESS(Scene)(command_data->default_scene);
@@ -8362,7 +8375,7 @@ Executes a GFX EXPORT STL command.
 			/* scene */
 			Option_table_add_entry(option_table,"scene",&scene,
 				command_data->scene_manager,set_Scene);
-			if (return_code = Option_table_multi_parse(option_table,state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if (scene)
 				{
@@ -8423,7 +8436,7 @@ Executes a GFX EXPORT VRML command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialize defaults */
 			file_name=(char *)NULL;
@@ -8450,7 +8463,7 @@ Executes a GFX EXPORT VRML command.
 				{
 					if (file_name)
 					{
-						if (return_code=check_suffix(&file_name,".wrl"))
+						if (0 != (return_code = check_suffix(&file_name, ".wrl")))
 						{
 							return_code=export_to_vrml(file_name,scene);
 						}
@@ -8512,7 +8525,7 @@ Executes a GFX EXPORT WAVEFRONT command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialize defaults */
 			file_name=(char *)NULL;
@@ -8934,7 +8947,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			Option_table_add_string_entry(option_table,"meshsize_file",
 				&meshsize_file, " FILENAME");
 
-			if ((return_code = Option_table_multi_parse(option_table,state)))
+			if ((return_code = Option_table_multi_parse(option_table, state)))
 			{
 #if defined (USE_NETGEN)
 				Triangle_mesh *trimesh = NULL;
@@ -9044,7 +9057,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table,"clear_region",
 				&clear,(void *)NULL,set_char_flag);
-			if ((return_code = Option_table_multi_parse(option_table,state)))
+			if ((return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if (scene)
 				{
@@ -9241,7 +9254,7 @@ DESCRIPTION :
 		Option_table_add_entry(option_table, "source", &source_field,
 			&set_source_field_data, set_Computed_field_conditional);
 
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (destination_field && source_field)
 			{
@@ -9401,7 +9414,7 @@ Executes a GFX FILTER command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			(option_table[0]).user_data=(void *)(command_data->node_group_manager);
 			return_code=process_option(state,option_table);
@@ -9442,7 +9455,7 @@ Executes a GFX LIST ALL_COMMANDS.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{ 
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -9456,7 +9469,7 @@ Executes a GFX LIST ALL_COMMANDS.
 		}
 		else
 		{
-			if (command_data = (struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				cmiss_execute_command("gfx list field commands", command_data_void);
 				/* Commands of spectrum */
@@ -9466,8 +9479,8 @@ Executes a GFX LIST ALL_COMMANDS.
 						for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
 				}
 				/* Command of graphical_material */
-				if (graphical_material_manager =
-					Material_package_get_material_manager(command_data->material_package))
+				if (NULL != (graphical_material_manager =
+					Material_package_get_material_manager(command_data->material_package)))
 				{
 					command_prefix="gfx create material ";
 					return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
@@ -9507,15 +9520,15 @@ Executes a GFX LIST ENVIRONMENT_MAP.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (command_data=(struct Cmiss_command_data *)command_data_void)
+				if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 				{
-					if (environment_map=FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,
-						name)(current_token,command_data->environment_map_manager))
+					if (NULL != (environment_map=FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,
+						name)(current_token,command_data->environment_map_manager)))
 					{
 						return_code=list_Environment_map(environment_map);
 					}
@@ -9592,7 +9605,7 @@ Executes a GFX LIST FIELD.
 		/* default option: region_path and/or field_name */
 		Option_table_add_region_path_and_or_field_name_entry(
 			option_table, (char *)NULL, &region_path_and_name, root_region);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			field = (struct Computed_field *)NULL;
 			if (region_path_and_name.name)
@@ -9642,7 +9655,7 @@ Executes a GFX LIST FIELD.
 					}
 					else
 					{
-						if (list_of_fields = CREATE(LIST(Computed_field))())
+						if (NULL != (list_of_fields = CREATE(LIST(Computed_field))()))
 						{
 							list_commands_data.command_prefix = command_prefix_plus_region_path;
 							list_commands_data.listed_fields = 0;
@@ -9761,7 +9774,7 @@ Executes a GFX LIST ELEMENT.
 		/* default option: element number ranges */
 		Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
 			NULL, set_Multi_range);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			struct LIST(FE_element) *element_list = NULL;
 			int dimension = 0;
@@ -9812,7 +9825,7 @@ Executes a GFX LIST ELEMENT.
 					{
 		  				Cmiss_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
 		  				Cmiss_element_id element = 0;
-		  				while (element = Cmiss_element_iterator_next_non_access(iter))
+		  				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
 		  				{
 		  					list_FE_element(element);
 		  				}
@@ -9835,6 +9848,12 @@ Executes a GFX LIST ELEMENT.
 							case CM_LINE:
 							{
 								display_message(INFORMATION_MESSAGE,"Lines:\n");
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_list_FE_element.  Invalid CM_ELEMENT_TYPE");
+								return_code = 0;
 							} break;
 						}
 						Multi_range_clear(element_ranges);
@@ -9872,6 +9891,12 @@ Executes a GFX LIST ELEMENT.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"gfx list lines:  No lines specified\n");
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_list_FE_element.  Invalid CM_ELEMENT_TYPE");
+							return_code = 0;
 						} break;
 					}
 				}
@@ -9941,7 +9966,7 @@ use node_manager and node_selection.
 		/* default option: node number ranges */
 		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
 			NULL, set_Multi_range);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			struct Cmiss_rendition *rendition = NULL;
 		  if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region))
@@ -9985,7 +10010,7 @@ use node_manager and node_selection.
 		  			{
 		  				Cmiss_node_iterator_id iter = CREATE_LIST_ITERATOR(FE_node)(node_list);
 		  				Cmiss_node_id node = 0;
-		  				while (node = Cmiss_node_iterator_next_non_access(iter))
+		  				while (NULL != (node = Cmiss_node_iterator_next_non_access(iter)))
 		  				{
 		  					list_FE_node(node);
 		  				}
@@ -10082,8 +10107,8 @@ Executes a GFX LIST MATERIAL.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (graphical_material_manager=
-			(struct MANAGER(Graphical_material) *)graphical_material_manager_void)
+		if (NULL != (graphical_material_manager=
+			(struct MANAGER(Graphical_material) *)graphical_material_manager_void))
 		{
 			commands_flag=0;
 			/* if no material specified, list all materials */
@@ -10093,7 +10118,7 @@ Executes a GFX LIST MATERIAL.
 			(option_table[1]).user_data= graphical_material_manager_void;
 			(option_table[2]).to_be_modified= &material;
 			(option_table[2]).user_data= graphical_material_manager_void;
-			if (return_code=process_multiple_options(state,option_table))
+			if (0 != (return_code = process_multiple_options(state,option_table)))
 			{
 				if (commands_flag)
 				{
@@ -10250,7 +10275,7 @@ Executes a GFX LIST G_ELEMENT.
 		/* default option: group name */
 		Option_table_add_entry(option_table, (char *)NULL, &region_path,
 			command_data->root_region, set_Cmiss_region_path);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (GET_NAME(Scene)(scene,&scene_name))
 			{
@@ -10334,15 +10359,15 @@ Executes a GFX LIST GLYPH/GRAPHICS_OBJECT command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (list=(struct MANAGER(GT_object) *)object_list_void)
+		if (NULL != (list=(struct MANAGER(GT_object) *)object_list_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
-						current_token,list))
+					if (NULL != (object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)(
+						current_token,list)))
 					{
 						return_code=GT_object_list_contents(object,(void *)NULL);
 					}
@@ -10443,11 +10468,11 @@ use node_manager and node_selection.
 		/* default option: grid point number ranges */
 		Option_table_add_entry(option_table,(char *)NULL,(void *)grid_point_ranges,
 			NULL,set_Multi_range);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (grid_field)
 			{
-				if (multi_range=CREATE(Multi_range)())
+				if (NULL != (multi_range=CREATE(Multi_range)()))
 				{
 					ranges_flag=(0<Multi_range_get_number_of_ranges(grid_point_ranges));
 					if (selected_flag)
@@ -10542,15 +10567,15 @@ Executes a GFX LIST LIGHT.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (light_manager=(struct MANAGER(Light) *)light_manager_void)
+		if (NULL != (light_manager=(struct MANAGER(Light) *)light_manager_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (light=FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(current_token,
-						light_manager))
+					if (NULL != (light=FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(current_token,
+						light_manager)))
 					{
 						return_code=list_Light(light,(void *)NULL);
 					}
@@ -10608,16 +10633,16 @@ Executes a GFX LIST LMODEL.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (light_model_manager=
-			(struct MANAGER(Light_model) *)light_model_manager_void)
+		if (NULL != (light_model_manager=
+			(struct MANAGER(Light_model) *)light_model_manager_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (light_model=FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(
-						current_token,light_model_manager))
+					if (NULL != (light_model=FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(
+						current_token,light_model_manager)))
 					{
 						return_code=list_Light_model(light_model,(void *)NULL);
 					}
@@ -10677,7 +10702,7 @@ static int gfx_list_scene(struct Parse_state *state,
 		Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table, /*token*/(const char *)NULL,
 			(void *)&scene, scene_manager_void, set_Scene);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (scene)
 			{
@@ -10736,7 +10761,7 @@ Executes a GFX LIST SPECTRUM.
 		/* default option: spectrum name */
 		Option_table_add_entry(option_table, (char *)NULL, &spectrum,
 			spectrum_manager_void, set_Spectrum);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (commands_flag)
 			{
@@ -10933,7 +10958,7 @@ Executes a GFX LIST TRANSFORMATION.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialise defaults */
 			commands_flag=0;
@@ -11041,7 +11066,7 @@ Executes a GFX LIST MOVIE.
 		if (movie_graphics_manager=
 			(struct MANAGER(Movie_graphics) *)movie_graphics_manager_void)
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -11114,8 +11139,8 @@ Executes a GFX LIST WINDOW.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (graphics_window_manager=
-			(struct MANAGER(Graphics_window) *)graphics_window_manager_void)
+		if (NULL != (graphics_window_manager=
+			(struct MANAGER(Graphics_window) *)graphics_window_manager_void))
 		{
 			commands_flag=0;
 			/* if no window specified, list all windows */
@@ -11125,7 +11150,7 @@ Executes a GFX LIST WINDOW.
 			(option_table[1]).user_data= graphics_window_manager_void;
 			(option_table[2]).to_be_modified= &window;
 			(option_table[2]).user_data= graphics_window_manager_void;
-			if (return_code=process_multiple_options(state,option_table))
+			if (0 != (return_code = process_multiple_options(state,option_table)))
 			{
 				if (commands_flag)
 				{
@@ -11395,7 +11420,7 @@ be specified at once.
 			/* default option: element number ranges */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
 				NULL, set_Multi_range);
-			if (return_code = Option_table_multi_parse(option_table, state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if (add_flag && remove_flag)
 				{
@@ -11638,16 +11663,16 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			(strcmp(PARSER_HELP_STRING,state->current_token)&&
 			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
-			if(graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)
-				(state->current_token,command_data->glyph_manager))
+			if (NULL != (graphics_object=FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)
+				(state->current_token,command_data->glyph_manager)))
 			{
 				shift_Parse_state(state,1);
 				/* initialise defaults */
-				if (material = get_GT_object_default_material(graphics_object))
+				if (NULL != (material = get_GT_object_default_material(graphics_object)))
 				{
 					ACCESS(Graphical_material)(material);
 				}
-				if (spectrum = get_GT_object_spectrum(graphics_object))
+				if (NULL != (spectrum = get_GT_object_spectrum(graphics_object)))
 				{
 					ACCESS(Spectrum)(spectrum);
 				}
@@ -11819,7 +11844,7 @@ use node_manager and node_selection.
 			/* default option: node number ranges */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
 				NULL, set_Multi_range);
-			if (return_code = Option_table_multi_parse(option_table, state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if (add_flag && remove_flag)
 				{
@@ -12018,7 +12043,7 @@ help mode.
 		(field_address = (struct FE_field **)field_address_void))
 	{
 		return_code = 1;
-		if (field = *field_address)
+		if (NULL != (field = *field_address))
 		{
 			number_of_components = get_FE_field_number_of_components(field);
 		}
@@ -12027,7 +12052,7 @@ help mode.
 			/* following used for help */
 			number_of_components = 3;
 		}
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -12203,7 +12228,7 @@ entering this function, unless in help mode.
 		(field_address = (struct FE_field **)field_address_void))
 	{
 		return_code = 1;
-		if (field = *field_address)
+		if (NULL != (field = *field_address))
 		{
 			number_of_components = get_FE_field_number_of_components(field);
 		}
@@ -12212,7 +12237,7 @@ entering this function, unless in help mode.
 			/* following used for help */
 			number_of_components = 3;
 		}
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -12418,7 +12443,7 @@ use node_manager and node_selection.
 		/* default option: node number ranges */
 		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
 			NULL, set_Multi_range);
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (define_field && undefine_field)
 			{
@@ -12482,8 +12507,8 @@ use node_manager and node_selection.
 						{
 							number_of_components =
 								get_FE_field_number_of_components(define_field);
-							if (node_field_creator =
-								CREATE(FE_node_field_creator)(number_of_components))
+							if (NULL != (node_field_creator =
+								CREATE(FE_node_field_creator)(number_of_components)))
 							{
 								if (component_versions_data.number_of_components)
 								{
@@ -12682,7 +12707,7 @@ Executes a GFX MODIFY command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -12827,7 +12852,7 @@ movie is being created.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialise defaults */
 			if (ALLOCATE(movie_name,char,strlen(default_movie_name)+1))
@@ -13276,9 +13301,9 @@ Executes a GFX PRINT command.
 		/* default file format is to obtain it from the filename extension */
 		image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
 		/* must have at least one graphics_window to print */
-		if (window = FIRST_OBJECT_IN_MANAGER_THAT(
+		if (NULL != (window = FIRST_OBJECT_IN_MANAGER_THAT(
 			Graphics_window)((MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL, command_data->graphics_window_manager))
+				(void *)NULL, command_data->graphics_window_manager)))
 		{
 			ACCESS(Graphics_window)(window);
 		}
@@ -13362,9 +13387,9 @@ Executes a GFX PRINT command.
 				file_name);
 			Cmgui_image_information_set_io_stream_package(cmgui_image_information,
 				command_data->io_stream_package);
-			if (cmgui_image = Graphics_window_get_image(window,
+			if (NULL != (cmgui_image = Graphics_window_get_image(window,
 				force_onscreen_flag, width, height, antialias,
-				transparency_layers, storage))
+				transparency_layers, storage)))
 			{
 				if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 				{
@@ -13424,7 +13449,7 @@ instruction to read in the mesh.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			option_table = CREATE(Option_table)();
@@ -13461,7 +13486,7 @@ instruction to read in the mesh.
 				if (return_code)
 				{
 					/* open the file */
-					if (return_code=check_suffix(&file_name,".curve.com"))
+					if (0 != (return_code = check_suffix(&file_name, ".curve.com")))
 					{
 						return_code=execute_comfile(file_name, command_data->io_stream_package,
 							 command_data->execute_command);
@@ -13778,7 +13803,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 	input_file=NULL;
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			node_offset_flag = 0;
@@ -14040,7 +14065,7 @@ otherwise the file of graphics objects is read.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			option_table=CREATE(Option_table)();
@@ -14069,7 +14094,7 @@ otherwise the file of graphics objects is read.
 				if (return_code)
 				{
 					/* open the file */
-					if (return_code=check_suffix(&file_name,".exgobj"))
+					if (0 != (return_code = check_suffix(&file_name, ".exgobj")))
 					{
 						return_code=file_read_graphics_objects(file_name, command_data->io_stream_package,
 							Material_package_get_material_manager(command_data->material_package),
@@ -14139,7 +14164,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (!file_name)
 			{
@@ -14293,7 +14318,7 @@ otherwise the wavefront obj file is read.
 						graphics_object_name = file_name;
 					}
 					/* open the file */
-					if (return_code=check_suffix(&file_name,".obj"))
+					if (0 != (return_code = check_suffix(&file_name, ".obj")))
 					{
 						return_code=file_read_voltex_graphics_object_from_obj(file_name,
 							command_data->io_stream_package,
@@ -14617,7 +14642,7 @@ Executes a GFX SELECT command.
 			/* default option: multi range */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
 				NULL, set_Multi_range);
-			if (return_code=Option_table_multi_parse(option_table,state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if ((data_flag + elements_flag + faces_flag + grid_points_flag
 					+ lines_flag + nodes_flag) != 1)
@@ -14641,8 +14666,8 @@ Executes a GFX SELECT command.
 				/* data */
 				if (data_flag)
 				{
-					if (node_list =
-						FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time))
+					if (NULL != (node_list =
+						FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time)))
 					{
 						if (region)
 						{
@@ -14674,9 +14699,9 @@ Executes a GFX SELECT command.
 					{
 				  		int dimension = FE_region_CM_element_type_to_dimension(
 				  			Cmiss_region_get_FE_region(region), CM_ELEMENT);
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, dimension, multi_range, NULL, conditional_field, time))
+									region, dimension, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -14702,9 +14727,9 @@ Executes a GFX SELECT command.
 				{
 					if (region)
 					{
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, /*dimension*/2, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/2, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -14732,8 +14757,8 @@ Executes a GFX SELECT command.
 					{
 						if (grid_field)
 						{
-							if (grid_to_list_data.element_point_ranges_list=
-								CREATE(LIST(Element_point_ranges))())
+							if (NULL != (grid_to_list_data.element_point_ranges_list=
+								CREATE(LIST(Element_point_ranges))()))
 							{
 								grid_to_list_data.grid_fe_field=grid_field;
 								grid_to_list_data.grid_value_ranges=multi_range;
@@ -14774,9 +14799,9 @@ Executes a GFX SELECT command.
 				{
 					if (region)
 					{
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, /*dimension*/1, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/1, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -14800,8 +14825,8 @@ Executes a GFX SELECT command.
 				/* nodes */
 				if (nodes_flag)
 				{
-					if (node_list =
-							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time))
+					if (NULL != (node_list =
+							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time)))
 					{
 						if (region)
 						{
@@ -14974,7 +14999,7 @@ Executes a GFX UNSELECT command.
 			/* default option: multi range */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)multi_range,
 				NULL, set_Multi_range);
-			if (return_code=Option_table_multi_parse(option_table,state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				if ((data_flag + elements_flag + faces_flag + grid_points_flag
 					+ lines_flag + nodes_flag) != 1)
@@ -14998,8 +15023,8 @@ Executes a GFX UNSELECT command.
 				/* data */
 				if (data_flag)
 				{
-					if (node_list =
-							FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time))
+					if (NULL != (node_list =
+							FE_node_list_from_ranges(FE_region_get_data_FE_region(fe_region), multi_range, conditional_field, time)))
 					{
 						if (region)
 						{
@@ -15031,9 +15056,9 @@ Executes a GFX UNSELECT command.
 					{
 				  		int dimension = FE_region_CM_element_type_to_dimension(
 				  			Cmiss_region_get_FE_region(region), CM_ELEMENT);
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, dimension, multi_range, NULL, conditional_field, time))
+									region, dimension, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15059,9 +15084,9 @@ Executes a GFX UNSELECT command.
 				{
 					if (region)
 					{
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, /*dimension*/2, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/2, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15089,8 +15114,8 @@ Executes a GFX UNSELECT command.
 					{
 						if (grid_field)
 						{
-							if (grid_to_list_data.element_point_ranges_list=
-								CREATE(LIST(Element_point_ranges))())
+							if (NULL != (grid_to_list_data.element_point_ranges_list=
+								CREATE(LIST(Element_point_ranges))()))
 							{
 								grid_to_list_data.grid_fe_field=grid_field;
 								grid_to_list_data.grid_value_ranges=multi_range;
@@ -15131,9 +15156,9 @@ Executes a GFX UNSELECT command.
 				{
 					if (region)
 					{
-						if (element_list =
+						if (NULL != (element_list =
 								FE_element_list_from_region_and_selection_group(
-									region, /*dimension*/1, multi_range, NULL, conditional_field, time))
+									region, /*dimension*/1, multi_range, NULL, conditional_field, time)))
 						{
 							Cmiss_rendition *local_rendition = Cmiss_graphics_module_get_rendition(
 								command_data->graphics_module, region);
@@ -15157,8 +15182,8 @@ Executes a GFX UNSELECT command.
 				/* nodes */
 				if (nodes_flag)
 				{
-					if (node_list =
-							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time))
+					if (NULL != (node_list =
+							FE_node_list_from_ranges(fe_region, multi_range, conditional_field, time)))
 					{
 						if (region)
 						{
@@ -15245,13 +15270,13 @@ Sets nodal field values from a command.
 	{
 		fe_region = Cmiss_region_get_FE_region(command_data->root_region);
 		node = (struct FE_node *)NULL;
-		if (return_code = set_FE_node_FE_region(state,(void *)&node,
-			(void *)fe_region))
+		if (0 != (return_code = set_FE_node_FE_region(state,(void *)&node,
+			(void *)fe_region)))
 		{
 			component.field = (struct FE_field *)NULL;
 			component.number = 0;
-			if (return_code = set_FE_field_component_FE_region(state,
-				(void *)&component, (void *)fe_region))
+			if (0 != (return_code = set_FE_field_component_FE_region(state,
+				(void *)&component, (void *)fe_region)))
 			{
 				value_type=FE_NODAL_UNKNOWN;
 				option_table[0].to_be_modified= &value_type;
@@ -15278,9 +15303,9 @@ Sets nodal field values from a command.
 				option_table[7].to_be_modified= &value_type;
 				fe_nodal_d3_ds1ds2ds3=FE_NODAL_D3_DS1DS2DS3;
 				option_table[7].user_data= &fe_nodal_d3_ds1ds2ds3;
-				if (return_code=process_option(state,option_table))
+				if (0 != (return_code = process_option(state,option_table)))
 				{
-					if (current_token=state->current_token)
+					if (NULL != (current_token = state->current_token))
 					{
 						if (1 == sscanf(current_token, FE_VALUE_INPUT_STRING, &value))
 						{
@@ -15439,7 +15464,7 @@ Sets the time from the command line.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			ALLOCATE(timekeeper_name,char,10);
 			/* there is only a default timekeeper at the moment but I am making the
@@ -15507,7 +15532,7 @@ Sets a transformation matrix from the command line.
 			!strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 		{
 			display_message(INFORMATION_MESSAGE,"# # # # # # # # # # # # # # # #");
-			if (transformation_matrix=(gtMatrix *)transformation_matrix_void)
+			if (NULL != (transformation_matrix=(gtMatrix *)transformation_matrix_void))
 			{
 				display_message(INFORMATION_MESSAGE,
 					" [%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g]",
@@ -15524,7 +15549,7 @@ Sets a transformation matrix from the command line.
 		}
 		else
 		{
-			if (transformation_matrix=(gtMatrix *)transformation_matrix_void)
+			if (NULL != (transformation_matrix=(gtMatrix *)transformation_matrix_void))
 			{
 				return_code=1;
 				i=0;
@@ -15602,7 +15627,7 @@ static int gfx_set_transformation(struct Parse_state *state,
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			 /* initialise defaults */
 			computed_field=(struct Computed_field *)NULL;
@@ -15729,7 +15754,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialize defaults */
 			name=(char *)NULL;
@@ -16012,7 +16037,7 @@ DESCRIPTION :
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -16048,7 +16073,7 @@ DESCRIPTION :
 			if (return_code)
 			{
 				/* initialise defaults */
-				if (time_keeper = command_data->default_time_keeper)
+				if (NULL != (time_keeper = command_data->default_time_keeper))
 				{
 					maximum = Time_keeper_get_maximum(time_keeper);
 					minimum = Time_keeper_get_minimum(time_keeper);
@@ -16214,7 +16239,7 @@ Executes a GFX TRANSFORM_TOOL command.
 		option_table=CREATE(Option_table)();
 		/* free_spin/no_free_spin */
 		Option_table_add_switch(option_table,"free_spin","no_free_spin",&free_spin_flag);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			Interactive_tool_transform_set_free_spin(transform_tool, free_spin_flag);
 #if defined (WX_USER_INTERFACE)
@@ -16262,7 +16287,7 @@ Executes a GFX UPDATE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			/* initialize defaults */
 			window=(struct Graphics_window *)NULL;
@@ -16395,7 +16420,7 @@ Can also write individual groups with the <group> option.
 			/* default option: file name */
 			Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
-			if (return_code = Option_table_multi_parse(option_table, state))
+			if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 			{
 				 if (file_name)
 				 {
@@ -16676,7 +16701,7 @@ Can also write individual groups with the <group> option.
 				 }
 				 if (com_return_code)
 				 {		 
-						if (com_file = fopen("temp_file_com.com", "w"))
+						if (NULL != (com_file = fopen("temp_file_com.com", "w")))
 						{
 							 if (data_file_name)
 							 {		
@@ -16695,7 +16720,7 @@ Can also write individual groups with the <group> option.
 										 Computed_field_package_get_computed_field_manager(
 												command_data->computed_field_package)))
 							 {
-									if (list_of_fields = CREATE(LIST(Computed_field))())
+									if (NULL != (list_of_fields = CREATE(LIST(Computed_field))()))
 									{
 										 command_prefix="gfx define field ";
 										 list_commands_data.command_prefix = command_prefix;
@@ -16728,8 +16753,8 @@ Can also write individual groups with the <group> option.
 									FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
 										 for_each_spectrum_list_or_write_commands, (void *)"true", command_data->spectrum_manager);			
 							 }
-							 if (graphical_material_manager =
-									Material_package_get_material_manager(command_data->material_package))
+							 if (NULL != (graphical_material_manager =
+									Material_package_get_material_manager(command_data->material_package)))
 							 {
 									command_prefix="gfx create material ";
 									return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
@@ -16854,7 +16879,7 @@ Writes a com file
 		(option_table[0]).to_be_modified= &write_all_curves_flag;
 		(option_table[1]).to_be_modified= &curve;
 		(option_table[1]).user_data=command_data->curve_manager;
-		if (return_code=process_multiple_options(state,option_table))
+		if (0 != (return_code = process_multiple_options(state,option_table)))
 		{
 			if (write_all_curves_flag&&!curve)
 			{
@@ -16922,7 +16947,7 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 		(option_table[0]).to_be_modified= &write_all_curves_flag;
 		(option_table[1]).to_be_modified= &curve;
 		(option_table[1]).user_data=command_data->curve_manager;
-		if (return_code=process_multiple_options(state,option_table))
+		if (0 != (return_code = process_multiple_options(state,option_table)))
 		{
 			if (write_all_curves_flag&&!curve)
 			{
@@ -17028,7 +17053,7 @@ Can also write individual element groups with the <group> option.
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
 			if ((1 == field_names.number_of_strings) && field_names.strings)
@@ -17103,7 +17128,7 @@ Can also write individual element groups with the <group> option.
 			if (return_code)
 			{
 				/* open the file */
-				if (return_code = check_suffix(&file_name,".exelem"))
+				if (0 != (return_code = check_suffix(&file_name, ".exelem")))
 				{
 					return_code = write_exregion_file_of_name(file_name, region, root_region,
 						/*write_elements*/1, (int)nodes_flag, /*write_data*/0,
@@ -17230,7 +17255,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
 			if ((1 == field_names.number_of_strings) && field_names.strings)
@@ -17304,7 +17329,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			if (return_code)
 			{
 				/* open the file */
-				if (return_code = check_suffix(&file_name, file_ext))
+				if (0 != (return_code = check_suffix(&file_name, file_ext)))
 				{
 					return_code = write_exregion_file_of_name(file_name, region, root_region,
 						/*write_elements*/0, /*write_nodes*/!use_data, /*write_data*/(0 != use_data),
@@ -17384,7 +17409,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
-		if (return_code = Option_table_multi_parse(option_table, state))
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
 		{
 			if (!file_name)
 			{
@@ -17408,7 +17433,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			if (return_code)
 			{
 				/* open the file */
-				if (return_code = check_suffix(&file_name, file_ext))
+				if (0 != (return_code = check_suffix(&file_name, file_ext)))
 				{
 					file = fopen(file_name, "w");
 					return_code =
@@ -17465,7 +17490,7 @@ Executes a GFX WRITE TEXTURE command.
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		texture = (struct Texture *)NULL;
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -17640,7 +17665,7 @@ Executes a GFX WRITE TEXTURE command.
 				}
 				if (return_code)
 				{
-					if (cmgui_image = Texture_get_image(texture))
+					if (NULL != (cmgui_image = Texture_get_image(texture)))
 					{
 						if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 						{
@@ -17888,7 +17913,7 @@ Executes a cm (back end) command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -17938,7 +17963,7 @@ Executes a cm (back end) command.
 			}
 			else
 			{
-				if (prompt=(char *)prompt_void)
+				if (NULL != (prompt=(char *)prompt_void))
 				{
 					set_command_prompt(prompt,command_data);
 				}
@@ -17981,7 +18006,7 @@ Executes a CELL OPEN command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (!((current_token=state->current_token)&&
 				!(strcmp(PARSER_HELP_STRING,current_token)&&
@@ -18079,7 +18104,7 @@ Executes a CELL CLOSE command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (!((current_token=state->current_token)&&
 				!(strcmp(PARSER_HELP_STRING,current_token)&&
@@ -18144,7 +18169,7 @@ Executes a CELL READ MODEL command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			option_table=CREATE(Option_table)();
@@ -18286,7 +18311,7 @@ Executes a CELL WRITE MODEL command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			option_table=CREATE(Option_table)();
@@ -18392,7 +18417,7 @@ Executes a CELL WRITE IPCELL command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			file_name = (char *)NULL;
 			option_table=CREATE(Option_table)();
@@ -18542,7 +18567,7 @@ Executes a CELL LIST XMLPARSER_PROPERTIES command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -18610,7 +18635,7 @@ Executes a CELL SET XMLPARSER_PROPERTIES command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
       strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -18631,7 +18656,7 @@ Executes a CELL SET XMLPARSER_PROPERTIES command.
             /* entity expansion */
             Option_table_add_entry(option_table,"do_expand",
               XMLParser_properties+i,NULL,set_int);
-            if (return_code = Option_table_multi_parse(option_table,state))
+            if (0 != (return_code = Option_table_multi_parse(option_table, state)))
             {
               if (!Cell_interface_set_XMLParser_properties(cell_interface,
                 XMLParser_properties))
@@ -18703,7 +18728,7 @@ Executes a CELL SET VARIABLE_VALUE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
       option_table = CREATE(Option_table)();
       component_name = (char *)NULL;
@@ -18715,7 +18740,7 @@ Executes a CELL SET VARIABLE_VALUE command.
       value_string = (char *)NULL;
       Option_table_add_entry(option_table,"value",&value_string,
         (void *)1,set_name);
-      if (return_code = Option_table_multi_parse(option_table,state))
+      if (0 != (return_code = Option_table_multi_parse(option_table, state)))
       {
         if (!((state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -18793,7 +18818,7 @@ Executes a CELL SET CALCULATE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
       if (!((state->current_token)&&
         !(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -18834,7 +18859,7 @@ Executes a CELL SET CALCULATE command.
             Cell_interface_get_data_file_name(cell_interface);
           Option_table_add_entry(option_table,"data_file",
             &data_file_name,NULL,set_file_name);
-          if (return_code = Option_table_multi_parse(option_table,state))
+          if (0 != (return_code = Option_table_multi_parse(option_table, state)))
           {
             /* check for essential parameters */
             if (model_routine_name && intg_routine_name && (Tstart <= Tend) &&
@@ -18956,7 +18981,7 @@ Executes a CELL LIST COPY_TAGS command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -19021,7 +19046,7 @@ Executes a CELL SET COPY_TAGS command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
       strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -19092,7 +19117,7 @@ Executes a CELL LIST REF_TAGS command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -19153,7 +19178,7 @@ Executes a CELL LIST CALCULATE command.
       !(strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
     {
-      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -19211,12 +19236,12 @@ Executes a CELL LIST COMPONENTS command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
       option_table = CREATE(Option_table)();
       full = 0;
       Option_table_add_entry(option_table,"full",&full,NULL,set_char_flag);
-      if (return_code = Option_table_multi_parse(option_table,state))
+      if (0 != (return_code = Option_table_multi_parse(option_table, state)))
       {
         if (!((state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -19279,7 +19304,7 @@ Executes a CELL LIST VARIABLES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
       option_table = CREATE(Option_table)();
       full = 0;
@@ -19290,7 +19315,7 @@ Executes a CELL LIST VARIABLES command.
       variable_name = (char *)NULL;
       Option_table_add_entry(option_table,"name",&variable_name,
         (void *)1,set_name);
-      if (return_code = Option_table_multi_parse(option_table,state))
+      if (0 != (return_code = Option_table_multi_parse(option_table, state)))
       {
         if (cell_interface = command_data->cell_interface)
         {
@@ -19362,14 +19387,14 @@ Executes a CELL LIST HIERARCHY command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
       option_table = CREATE(Option_table)();
       full = 0;
       Option_table_add_entry(option_table,"full",&full,NULL,set_char_flag);
       name = (char *)NULL;
       Option_table_add_entry(option_table,"name",&name,(void *)1,set_name);
-      if (return_code = Option_table_multi_parse(option_table,state))
+      if (0 != (return_code = Option_table_multi_parse(option_table, state)))
       {
         if (!((state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -19526,13 +19551,13 @@ Executes a CELL SOLVE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-    if (command_data=(struct Cmiss_command_data *)command_data_void)
+    if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
     {
 /*        option_table = CREATE(Option_table)(); */
 /*        data_file_name = (char *)NULL; */
 /*        Option_table_add_entry(option_table,"data_file",&data_file_name, */
 /*          (void *)1,set_name); */
-/*        if (return_code = Option_table_multi_parse(option_table,state)) */
+/*        if (0 != (return_code = Option_table_multi_parse(option_table, state))) */
       {
         if (!((state->current_token)&&
           !(strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -19690,9 +19715,9 @@ Executes a HELP command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token = state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -19835,7 +19860,7 @@ Executes a OPEN URL command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -19894,7 +19919,7 @@ Executes a READ command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -19963,7 +19988,7 @@ Opens an example.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 		   example = (char *)NULL;
 			execute_flag = 0;
@@ -20001,7 +20026,7 @@ Opens an example.
 					currently set as a sideeffect of "set dir" */
 				if (command_data->example_requirements)
 				{
-					if (found_cm = strstr(command_data->example_requirements, "cm"))
+					if (NULL != (found_cm = strstr(command_data->example_requirements, "cm")))
 					{
 						if ((found_cm[2] == 0) || (found_cm[2] == ':') || 
 							(found_cm[2] == ','))
@@ -20072,7 +20097,7 @@ Executes a OPEN command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -20149,7 +20174,7 @@ Executes a QUIT command.
 			!(strcmp(PARSER_HELP_STRING,current_token)&&
 			strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
 				User_interface_end_application_loop(command_data->user_interface);
 				return_code=1;
@@ -20205,7 +20230,7 @@ Executes a SET DIR command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (
 #if defined (LINK_CMISS)
@@ -20225,9 +20250,9 @@ Executes a SET DIR command.
 						if (directory_name)
 						{							
 							/* Lookup the example path */
-							if (example_directory = 
+							if (NULL != (example_directory =
 								resolve_example_path(command_data->examples_directory, 
-								directory_name, &comfile_name, &example_requirements))
+								directory_name, &comfile_name, &example_requirements)))
 							{
 								if (command_data->example_directory)
 								{
@@ -20378,7 +20403,7 @@ Executes a SET command.
 	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 		{
 			if (state->current_token)
 			{
@@ -20436,7 +20461,7 @@ Executes a SET DIR #CMGUI_EXAMPLE_DIRECTORY_SYMBOL command.
 	/* check argument */
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -20501,9 +20526,9 @@ DESCRIPTION:
 
 	ENTER(execute_command);
 	USE_PARAMETER(quit);
-	if (command_data=(struct Cmiss_command_data *)command_data_void)
+	if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (state=create_Parse_state(command_string))
+		if (NULL != (state = create_Parse_state(command_string)))
 			/*???DB.  create_Parse_state has to be extended */
 		{
 			i=state->number_of_tokens;
@@ -20644,7 +20669,7 @@ and then executes the returned strings
 
 	ENTER(cmiss_execute_command);
 	command_data = (struct Cmiss_command_data *)NULL;
-	if (command_data=(struct Cmiss_command_data *)command_data_void)
+	if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 #if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
@@ -20694,9 +20719,9 @@ Execute a <command_string>. If there is a command
 	struct Parse_state *state;
 
 	ENTER(cmiss_execute_command);
-	if (command_data=(struct Cmiss_command_data *)command_data_void)
+	if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (state=create_Parse_state(command_string))
+		if (NULL != (state = create_Parse_state(command_string)))
 			/*???DB.  create_Parse_state has to be extended */
 		{
 			i=state->number_of_tokens;
@@ -21042,7 +21067,7 @@ Used to avoid parsing possible command line switches.
 	ENTER(set_string_no_command_line_option);
 	if (state)
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if ('-' != current_token[0])
 			{
@@ -21092,7 +21117,7 @@ of this parse state routine.
 	USE_PARAMETER(dummy_void);
 	if (state)
 	{
-		if (current_token = state->current_token)
+		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -21262,7 +21287,7 @@ int Cmiss_command_data_process_command_line(int argc, const char *argv[],
 	command_line_options->visual_id_number = 0;
 	command_line_options->command_file_name = NULL;
 	
-	if (state = create_Parse_state_from_tokens(argc,argv))
+	if (NULL != (state = create_Parse_state_from_tokens(argc, argv)))
 	{
 		option_table = CREATE(Option_table)();
 		Option_table_add_entry(option_table, argv[0], NULL,
@@ -21513,7 +21538,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_line_options.visual_id_number = visual_id;
 		command_line_options.command_file_name = comfile_name;
 	
-		if (state = create_Parse_state_from_tokens(UI_module->argc,(const char **)(UI_module->argv)))
+		if (NULL != (state = create_Parse_state_from_tokens(UI_module->argc, (const char **)(UI_module->argv))))
 		{
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, UI_module->argv[0], NULL,
@@ -21629,7 +21654,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			command_data->examples_directory = examples_directory;
 		}
-		else if (examples_environment = getenv("CMISS_EXAMPLES"))
+		else if (NULL != (examples_environment = getenv("CMISS_EXAMPLES")))
 		{
 			command_data->examples_directory = duplicate_string(examples_environment);
 		}
@@ -21709,7 +21734,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		if (NULL != (command_data->material_package = 
 				Cmiss_graphics_module_get_material_package(command_data->graphics_module)))
 		{
-			if (material = Material_package_get_default_material(command_data->material_package))
+			if (NULL != (material = Material_package_get_default_material(command_data->material_package)))
 			{
 #if defined (MOTIF_USER_INTERFACE)
 				Graphical_material_set_ambient(material, &(command_data->foreground_colour));
