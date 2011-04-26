@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : cmiss_time_sequence.h
-
-LAST MODIFIED : 11 November 2004
-
-DESCRIPTION :
-The public interface to Cmiss_time_sequence.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_time_sequence.h
+ *
+ * The public interface to Cmiss_time_sequence.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -63,17 +60,11 @@ DESCRIPTION :
 
 typedef struct Cmiss_time_sequence_package *Cmiss_time_sequence_package_id;
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_time_sequence FE_time_sequence
-
-struct Cmiss_time_sequence;
-/*******************************************************************************
-LAST MODIFIED : 11 November 2004
-
-DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
+#ifndef CMISS_TIME_SEQUENCE_ID_DEFINED
+	struct Cmiss_time_sequence;
+	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
+	#define CMISS_TIME_SEQUENCE_ID_DEFINED
+#endif /* CMISS_TIME_SEQUENCE_ID_DEFINED */
 
 /*
 Global functions
@@ -102,7 +93,7 @@ and returned.
 ==============================================================================*/
 
 int Cmiss_time_sequence_set_value(
-	struct Cmiss_time_sequence *time_sequence, int time_index, double time);
+	Cmiss_time_sequence_id time_sequence, int time_index, double time);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2004
 

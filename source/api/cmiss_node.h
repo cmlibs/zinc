@@ -77,14 +77,6 @@ typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
 struct Cmiss_node_template;
 typedef struct Cmiss_node_template *Cmiss_node_template_id;
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-/* GRC remove */
-#define Cmiss_node FE_node
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_time_sequence FE_time_sequence
-struct Cmiss_time_sequence;
-
 #ifndef CMISS_NODE_ID_DEFINED
 	struct Cmiss_node;
 	/** Handle to a single node object */
@@ -98,51 +90,27 @@ struct Cmiss_time_sequence;
 	#define CMISS_NODE_ITERATOR_ID_DEFINED
 #endif /* CMISS_NODE_ITERATOR_ID_DEFINED */
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_nodal_value_type FE_nodal_value_type
+#ifndef CMISS_TIME_SEQUENCE_ID_DEFINED
+	struct Cmiss_time_sequence;
+	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
+	#define CMISS_TIME_SEQUENCE_ID_DEFINED
+#endif /* CMISS_TIME_SEQUENCE_ID_DEFINED */
 
-enum FE_nodal_value_type
-/*******************************************************************************
-LAST MODIFIED : 27 January 1998
-
-DESCRIPTION :
-The type of a nodal value.
-Must add new enumerators and keep values in sync with functions
-ENUMERATOR_STRING, ENUMERATOR_GET_VALID_STRINGS and STRING_TO_ENUMERATOR.
-Note these functions expect the first enumerator to be number 1, and all
-subsequent enumerators to be sequential, unlike the default behaviour which
-starts at 0.
-==============================================================================*/
+/***************************************************************************//**
+ * The type of a nodal parameter value.
+ */
+enum Cmiss_nodal_value_type
 {
-	FE_NODAL_VALUE,
-	FE_NODAL_D_DS1,
-	FE_NODAL_D_DS2,
-	FE_NODAL_D_DS3,
-	FE_NODAL_D2_DS1DS2,
-	FE_NODAL_D2_DS1DS3,
-	FE_NODAL_D2_DS2DS3,
-	FE_NODAL_D3_DS1DS2DS3,
-	FE_NODAL_UNKNOWN
-}; /* enum FE_nodal_value_type */
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_node_field_creator FE_node_field_creator
-
-struct Cmiss_node_field_creator;
-/*******************************************************************************
-LAST MODIFIED : 14 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_node_field_creator * Cmiss_node_field_creator_id;
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_time_version FE_time_version
-
-struct FE_time_version;
-
-typedef struct Cmiss_time_version * Cmiss_time_version_id;
+	CMISS_NODAL_VALUE_TYPE_INVALID = 0,
+	CMISS_NODAL_VALUE = 1,         /* literal field value */
+	CMISS_NODAL_D_DS1 = 2,         /* derivative w.r.t. arc length S1 */
+	CMISS_NODAL_D_DS2 = 3,         /* derivative w.r.t. arc length S2 */
+	CMISS_NODAL_D_DS3 = 4,         /* derivative w.r.t. arc length S3 */
+	CMISS_NODAL_D2_DS1DS2 = 5,     /* cross derivative w.r.t. arc lengths S1,S2 */
+	CMISS_NODAL_D2_DS1DS3 = 6,     /* cross derivative w.r.t. arc lengths S1,S3 */
+	CMISS_NODAL_D2_DS2DS3 = 7,     /* cross derivative w.r.t. arc lengths S2,S3 */
+	CMISS_NODAL_D3_DS1DS2DS3 = 8   /* triple cross derivative w.r.t. arc lengths S1,S2,S3 */
+};
 
 /*
 Global functions

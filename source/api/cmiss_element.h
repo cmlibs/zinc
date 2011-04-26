@@ -78,10 +78,6 @@ typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
 struct Cmiss_element_template;
 typedef struct Cmiss_element_template *Cmiss_element_template_id;
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-/* GRC remove */
-#define Cmiss_element FE_element
-
 #ifndef CMISS_ELEMENT_ID_DEFINED
 	struct Cmiss_element;
 	/** Handle to a single finite element object from a mesh */

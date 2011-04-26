@@ -368,12 +368,12 @@ struct FE_node_compare_number
 	}
 };
 
-typedef Cmiss_set<FE_node *,FE_node_compare_number> Cmiss_set_FE_node;
+typedef Cmiss_set<Cmiss_node *,FE_node_compare_number> Cmiss_set_Cmiss_node;
 
-struct Cmiss_node_iterator : public Cmiss_set_FE_node::ext_iterator
+struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 {
-	Cmiss_node_iterator(Cmiss_set_FE_node *container) :
-		Cmiss_set_FE_node::ext_iterator(container)
+	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
+		Cmiss_set_Cmiss_node::ext_iterator(container)
 	{
 	}
 };
@@ -903,12 +903,12 @@ struct FE_element_compare_identifier
 	}
 };
 
-typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_FE_element;
+typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_Cmiss_element;
 
-struct Cmiss_element_iterator : public Cmiss_set_FE_element::ext_iterator
+struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
 {
-	Cmiss_element_iterator(Cmiss_set_FE_element *container) :
-		Cmiss_set_FE_element::ext_iterator(container)
+	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
+		Cmiss_set_Cmiss_element::ext_iterator(container)
 	{
 	}
 };

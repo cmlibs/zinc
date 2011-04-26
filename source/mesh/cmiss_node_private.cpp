@@ -225,12 +225,49 @@ public:
 				"Cmiss_node_template_define_derivative.  Field is not defined yet");
 			return 0;
 		}
+		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
+		switch (derivative_type)
+		{
+			case CMISS_NODAL_VALUE_TYPE_INVALID:
+				fe_nodal_value_type = FE_NODAL_UNKNOWN;
+				break;
+			case CMISS_NODAL_VALUE:
+				fe_nodal_value_type = FE_NODAL_VALUE;
+				break;
+			case CMISS_NODAL_D_DS1:
+				fe_nodal_value_type = FE_NODAL_D_DS1;
+				break;
+			case CMISS_NODAL_D_DS2:
+				fe_nodal_value_type = FE_NODAL_D_DS2;
+				break;
+			case CMISS_NODAL_D_DS3:
+				fe_nodal_value_type = FE_NODAL_D_DS3;
+				break;
+			case CMISS_NODAL_D2_DS1DS2:
+				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
+				break;
+			case CMISS_NODAL_D2_DS1DS3:
+				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
+				break;
+			case CMISS_NODAL_D2_DS2DS3:
+				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
+				break;
+			case CMISS_NODAL_D3_DS1DS2DS3:
+				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
+				break;
+		}
+		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_define_derivative.  Invalid derivative type");
+			return 0;
+		}
 		clearTemplateNode();
-		return node_field->defineDerivative(component_number, derivative_type);
+		return node_field->defineDerivative(component_number, fe_nodal_value_type);
 	}
 
 	int defineTimeSequence(Cmiss_field_finite_element_id field,
-		struct Cmiss_time_sequence *time_sequence)
+		Cmiss_time_sequence_id time_sequence)
 	{
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(
@@ -243,7 +280,7 @@ public:
 			return 0;
 		}
 		clearTemplateNode();
-		return node_field->defineTimeSequence(time_sequence);
+		return node_field->defineTimeSequence(reinterpret_cast<struct FE_time_sequence *>(time_sequence));
 	}
 
 	int defineVersions(Cmiss_field_finite_element_id field, int component_number,
@@ -518,7 +555,7 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
 
 int Cmiss_node_template_define_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_finite_element_id field,
-	struct Cmiss_time_sequence *time_sequence)
+	Cmiss_time_sequence_id time_sequence)
 {
 	if (node_template && field && time_sequence)
 	{

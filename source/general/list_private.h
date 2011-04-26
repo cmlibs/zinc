@@ -637,14 +637,6 @@ Should only be declared with manager functions. \
 	void *dummy; \
 } /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
 
-#if ! defined (SHORT_NAMES)
-#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_begin_identifier_change_ ## object_type ## identifier
-#else
-#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
-	lbic ## object_type ## identifier
-#endif
-
 #define DECLARE_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
 	identifier ) \
 static struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
@@ -688,14 +680,6 @@ Should only be declared with manager functions. \
 \
 	return (identifier_change_data); \
 } /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
-
-#if ! defined (SHORT_NAMES)
-#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_end_identifier_change_ ## object_type ## identifier
-#else
-#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
-	leic ## object_type ## identifier
-#endif
 
 #define DECLARE_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
 	object_type , identifier ) \

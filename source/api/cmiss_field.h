@@ -80,13 +80,6 @@ Global types
 	#define CMISS_FIELD_ID_DEFINED
 #endif /* CMISS_FIELD_ID_DEFINED */
 
-/* Forward declared types */
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_time_sequence FE_time_sequence
-struct Cmiss_time_sequence;
-
-struct Cmiss_node_field_creator;
-
 /***************************************************************************//**
  * Labels of field attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -155,7 +148,7 @@ number_of_components, the function checks that <number_of_values> is
 greater than or equal to the number of components.
 ==============================================================================*/
 
-int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
+int Cmiss_field_set_values_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node, double time, int number_of_values, double *values);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005

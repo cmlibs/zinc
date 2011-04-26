@@ -60,72 +60,43 @@ Global types
 ------------
 */
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG( object_type ) Change_log_ ## object_type
-#else
-#define CHANGE_LOG( object_type ) Cl_ ## object_type
-#endif
+#define CHANGE_LOG_( object_type ) Change_log_ ## object_type
+#define CHANGE_LOG( object_type ) CHANGE_LOG_(object_type)
 
 #define DECLARE_CHANGE_LOG_TYPE( object_type ) \
 	struct CHANGE_LOG(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_UNCHANGED( object_type ) \
+#define CHANGE_LOG_OBJECT_UNCHANGED_( object_type ) \
 	change_log_object_unchanged_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_UNCHANGED( object_type ) CLOU_ ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_UNCHANGED( object_type ) CHANGE_LOG_OBJECT_UNCHANGED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_ADDED( object_type ) \
+#define CHANGE_LOG_OBJECT_ADDED_( object_type ) \
 	change_log_object_added_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_ADDED( object_type ) CLOA_ ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_ADDED( object_type ) CHANGE_LOG_OBJECT_ADDED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_REMOVED( object_type ) \
+#define CHANGE_LOG_OBJECT_REMOVED_( object_type ) \
 	change_log_object_removed_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_REMOVED( object_type ) CLOR_ ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_REMOVED( object_type ) CHANGE_LOG_OBJECT_REMOVED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) \
+#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED_( object_type ) \
 	change_log_object_identifier_changed_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) \
-	CLOIC_ ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED( object_type ) \
+#define CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED_( object_type ) \
 	change_log_object_not_identifier_changed_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED( object_type )  \
-	CLONIC ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED( object_type ) CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_OBJECT_CHANGED( object_type ) \
+#define CHANGE_LOG_OBJECT_CHANGED_( object_type ) \
 	change_log_object_changed_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_CHANGED( object_type ) CLOC_ ## object_type
-#endif
+#define CHANGE_LOG_OBJECT_CHANGED( object_type ) CHANGE_LOG_OBJECT_CHANGED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_RELATED_OBJECT_CHANGED( object_type ) \
+#define CHANGE_LOG_RELATED_OBJECT_CHANGED_( object_type ) \
 	change_log_related_object_changed_ ## object_type
-#else
-#define CHANGE_LOG_RELATED_OBJECT_CHANGED( object_type ) CLROC_ ## object_type
-#endif
+#define CHANGE_LOG_RELATED_OBJECT_CHANGED( object_type ) CHANGE_LOG_RELATED_OBJECT_CHANGED_(object_type)
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_CHANGE( object_type ) \
+#define CHANGE_LOG_CHANGE_( object_type ) \
 	change_log_change_ ## object_type
-#else
-#define CHANGE_LOG_CHANGE( object_type ) Clct_ ## object_type
-#endif
+#define CHANGE_LOG_CHANGE( object_type ) CHANGE_LOG_CHANGE_(object_type)
 
 #define DECLARE_CHANGE_LOG_CHANGE_TYPE( object_type ) \
 enum CHANGE_LOG_CHANGE(object_type) \
@@ -157,12 +128,8 @@ OBJECT_IDENTIFIER_CHANGED | OBJECT_NOT_IDENTIFIER_CHANGED, a logical OR. \
 	CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type) = 16 \
 } /* enum CHANGE_LOG_CHANGE(object_type) */
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CONDITIONAL_FUNCTION( object_type ) \
 	change_log_conditional_function_ ## object_type
-#else
-#define CHANGE_LOG_CONDITIONAL_FUNCTION( object_type ) clcf_ ## object_type
-#endif
 
 /* Note: conditional functions are passed the object change status as their
 	 second argument */
@@ -171,12 +138,8 @@ typedef int (CHANGE_LOG_CONDITIONAL_FUNCTION(object_type))( \
 	struct object_type *object, enum CHANGE_LOG_CHANGE(object_type) change, \
 	void *user_data)
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ITERATOR_FUNCTION( object_type ) \
 	change_log_iterator_function_ ## object_type
-#else
-#define CHANGE_LOG_ITERATOR_FUNCTION( object_type ) clif_ ## object_type
-#endif
 
 /* Note: iterator functions are passed the object change status as their
 	 second argument */
@@ -224,11 +187,7 @@ DESCRIPTION : \
 Destroys the <**change_log> and sets <*change_log> to NULL. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CLEAR_( object_type ) change_log_clear_ ## object_type
-#else
-#define CHANGE_LOG_CLEAR_( object_type ) clc_ ## object_type
-#endif
 #define CHANGE_LOG_CLEAR( object_type ) CHANGE_LOG_CLEAR_(object_type)
 
 #define PROTOTYPE_CHANGE_LOG_CLEAR_FUNCTION( object_type ) \
@@ -240,12 +199,8 @@ DESCRIPTION : \
 Clears all entries/flags in the change_log. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ALL_CHANGE_( object_type ) \
 	change_log_all_change_ ## object_type
-#else
-#define CHANGE_LOG_ALL_CHANGE_( object_type ) clac_ ## object_type
-#endif
 #define CHANGE_LOG_ALL_CHANGE( object_type ) \
 	CHANGE_LOG_ALL_CHANGE_(object_type)
 
@@ -261,12 +216,8 @@ Tells <change_log> that all objects it monitors have undergone the <change>. \
 Not to be used when max_changes is negative. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_CHANGE_( object_type ) \
 	change_log_object_change_ ## object_type
-#else
-#define CHANGE_LOG_OBJECT_CHANGE_( object_type ) cloc_ ## object_type
-#endif
 #define CHANGE_LOG_OBJECT_CHANGE( object_type ) \
 	CHANGE_LOG_OBJECT_CHANGE_(object_type)
 
@@ -281,12 +232,8 @@ DESCRIPTION : \
 Tells the <change_log> that <object> has undergone the <change>. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_GET_CHANGE_SUMMARY_( object_type ) \
 	change_log_get_change_summary_ ## object_type
-#else
-#define CHANGE_LOG_GET_CHANGE_SUMMARY_( object_type ) clgcs_ ## object_type
-#endif
 #define CHANGE_LOG_GET_CHANGE_SUMMARY( object_type ) \
 	CHANGE_LOG_GET_CHANGE_SUMMARY_(object_type)
 
@@ -302,12 +249,8 @@ Returns a bitwise OR of all the changes enumerators in the change_log. Check \
 against a particular change by bitwise ANDing with ADD, REMOVE etc. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_GET_NUMBER_OF_CHANGES_( object_type ) \
 	change_log_get_number_of_changes_ ## object_type
-#else
-#define CHANGE_LOG_GET_NUMBER_OF_CHANGES_( object_type ) clgnc_ ## object_type
-#endif
 #define CHANGE_LOG_GET_NUMBER_OF_CHANGES( object_type ) \
 	CHANGE_LOG_GET_NUMBER_OF_CHANGES_(object_type)
 
@@ -323,12 +266,8 @@ Note that the returned number may not exactly match the number of objects \
 changed since some objects may have been changed more than once. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_QUERY_( object_type ) \
 	change_log_query_ ## object_type
-#else
-#define CHANGE_LOG_QUERY_( object_type ) clq_ ## object_type
-#endif
 #define CHANGE_LOG_QUERY( object_type ) CHANGE_LOG_QUERY_(object_type)
 
 #define PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION( object_type ) \
@@ -348,11 +287,7 @@ The OBJECT_REMOVED bit always occurs alone. \
 Unchanged objects are returned as OBJECT_UNCHANGED. \
 ==============================================================================*/
 
-#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_MERGE_( object_type ) change_log_merge_ ## object_type
-#else
-#define CHANGE_LOG_MERGE_( object_type ) clm_ ## object_type
-#endif
 #define CHANGE_LOG_MERGE( object_type ) CHANGE_LOG_MERGE_(object_type)
 
 #define PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION( object_type ) \

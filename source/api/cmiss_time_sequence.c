@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : cmiss_time_sequence.c
-
-LAST MODIFIED : 11 November 2004
-
-DESCRIPTION :
-The public interface to the Cmiss_finite_elements.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_time_sequence.c
+ *
+ * Implementation of the public interface to Cmiss_time_sequence.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -88,11 +85,11 @@ and returned.
 	}
 	LEAVE;
 
-	return (time_sequence);
+	return ((Cmiss_time_sequence_id)time_sequence);
 } /* Cmiss_time_sequence_package_get_matching_time_sequence */
 
 int Cmiss_time_sequence_set_value(
-	struct Cmiss_time_sequence *time_sequence, int time_index, double time)
+	Cmiss_time_sequence_id time_sequence, int time_index, double time)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2004
 
@@ -104,5 +101,5 @@ If the sequence does not have as many times as the <time_index> then it will
 be expanded and the unspecified times also set to <time>.
 ==============================================================================*/
 {
-	return FE_time_sequence_set_time_and_index(time_sequence, time_index, time);
+	return FE_time_sequence_set_time_and_index((struct FE_time_sequence *)time_sequence, time_index, time);
 }

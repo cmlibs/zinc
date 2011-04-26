@@ -314,9 +314,6 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	return (object); \
 }
 
-#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_begin_identifier_change_ ## object_type ## identifier
-
 #define PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
 	identifier ) \
 int LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier)( \
@@ -349,9 +346,6 @@ PROTOTYPE_INDEXED_LIST_STL_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 	} \
 	return (0); \
 }
-
-#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_end_identifier_change_ ## object_type ## identifier
 
 #define PROTOTYPE_INDEXED_LIST_STL_END_IDENTIFIER_CHANGE_FUNCTION( \
 	object_type , identifier ) \

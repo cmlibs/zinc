@@ -171,9 +171,7 @@ Used to specify a component of a field.  If the component <number> is < 0 or
 	int number;
 }; /* struct FE_field_component */
 
-#if defined (OLD_CODE)
-Shifted to API
-
+/* API uses external type enum Cmiss_nodal_value_type */
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -197,11 +195,11 @@ starts at 0.
 	FE_NODAL_D3_DS1DS2DS3,
 	FE_NODAL_UNKNOWN
 }; /* enum FE_nodal_value_type */
-#endif /* defined (OLD_CODE) */
 
 struct FE_node_field_creator;
 
-struct FE_node;
+struct Cmiss_node;
+#define FE_node Cmiss_node
 
 DECLARE_LIST_TYPES(FE_node);
 
@@ -339,7 +337,8 @@ coordinates from face coordinates.
 
 DECLARE_LIST_TYPES(FE_element_shape);
 
-struct FE_element;
+struct Cmiss_element;
+#define FE_element Cmiss_element
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
 

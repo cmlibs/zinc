@@ -347,6 +347,48 @@ struct iterator_type *CREATE_LIST_ITERATOR(object_type)( \
  * Optional prototype for list implementations supporting iterator objects. \
  */
 
+#define LIST_BEGIN_IDENTIFIER_CHANGE_( object_type, identifier ) \
+	list_begin_identifier_change_ ## object_type ## identifier
+#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
+	LIST_BEGIN_IDENTIFIER_CHANGE_(object_type, identifier)
+
+#define PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+	*LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) ( \
+	struct object_type *object) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+MANAGER functions using indexed object lists must call this before modifying \
+the identifier of any object, and afterwards call the companion function \
+LIST_END_IDENTIFIER_CHANGE with the returned \
+identifier_change_data. These functions temporarily remove the object from \
+any list it is in, then re-add it later so it is in the correct indexed \
+position. <object> is ACCESSed between these two functions. \
+Should only be declared with manager functions. \
+============================================================================*/
+
+#define LIST_END_IDENTIFIER_CHANGE_( object_type, identifier ) \
+	list_end_identifier_change_ ## object_type ## identifier
+#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
+	LIST_END_IDENTIFIER_CHANGE_(object_type, identifier)
+
+#define PROTOTYPE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
+	object_type , identifier ) \
+int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
+	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+		**identifier_change_data_address) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
+Re-adds the changed object to all the lists it was in. \
+Should only be declared with manager functions. \
+============================================================================*/
+
 #define LIST_CLASS(object_type) list_class_ ## object_type
 /***************************************************************************** \
 LAST MODIFIED : 9 February 2007 \

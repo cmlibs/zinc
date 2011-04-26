@@ -1737,32 +1737,6 @@ Should only be declared with manager functions. \
 	int number_of_lists_containing_object; \
 } /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
 
-#if ! defined (SHORT_NAMES)
-#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_begin_identifier_change_ ## object_type ## identifier
-#else
-#define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
-	lbic ## object_type ## identifier
-#endif
-
-#define PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
-	identifier ) \
-struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
-	*LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) ( \
-	struct object_type *object) \
-/***************************************************************************** \
-LAST MODIFIED : 13 February 2003 \
-\
-DESCRIPTION : \
-MANAGER functions using indexed object lists must call this before modifying \
-the identifier of any object, and afterwards call the companion function \
-LIST_END_IDENTIFIER_CHANGE with the returned \
-identifier_change_data. These functions temporarily remove the object from \
-any list it is in, then re-add it later so it is in the correct indexed \
-position. <object> is ACCESSed between these two functions. \
-Should only be declared with manager functions. \
-============================================================================*/
-
 #define DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
 	identifier ) \
 PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
@@ -1863,28 +1837,6 @@ Should only be declared with manager functions. \
 \
 	return (identifier_change_data); \
 } /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
-
-#if ! defined (SHORT_NAMES)
-#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
-	list_end_identifier_change_ ## object_type ## identifier
-#else
-#define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
-	leic ## object_type ## identifier
-#endif
-
-#define PROTOTYPE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
-	object_type , identifier ) \
-int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
-	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
-		**identifier_change_data_address) \
-/***************************************************************************** \
-LAST MODIFIED : 13 February 2003 \
-\
-DESCRIPTION : \
-Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
-Re-adds the changed object to all the lists it was in. \
-Should only be declared with manager functions. \
-============================================================================*/
 
 #define DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type ,  \
 	identifier ) \
