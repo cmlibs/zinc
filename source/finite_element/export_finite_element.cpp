@@ -127,7 +127,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 
 	ENTER(write_element_xi_value);
 	if (output_file && element && get_FE_element_identifier(element, &cm)
-		&& (dimension = get_FE_element_dimension(element)))
+		&& (0 < (dimension = get_FE_element_dimension(element))))
 	{
 		switch (cm.type)
 		{
@@ -243,7 +243,7 @@ Examples:
 					"write_FE_field_header.  Invalid FE_field_type");
 			} break;
 		}
-		if (coordinate_system=get_FE_field_coordinate_system(field))
+		if (NULL != (coordinate_system=get_FE_field_coordinate_system(field)))
 		{
 			switch (coordinate_system->type)
 			{
@@ -733,9 +733,9 @@ Writes information describing how <field> is defined at <element>.
 	struct Write_FE_element_field_sub *write_element_field_data;
 
 	ENTER(write_FE_element_field_sub);
-	if (element && field && (write_element_field_data =
-		(struct Write_FE_element_field_sub *)write_element_field_data_void) &&
-		(output_file = write_element_field_data->output_file) &&
+	write_element_field_data = (struct Write_FE_element_field_sub *)write_element_field_data_void;
+	if (element && field && (NULL != write_element_field_data) &&
+		(NULL != (output_file = write_element_field_data->output_file)) &&
 		((0 == write_element_field_data->output_number_of_nodes) ||
 			write_element_field_data->output_node_indices) &&
 		((0 == write_element_field_data->output_number_of_scale_factors) ||
@@ -749,7 +749,7 @@ Writes information describing how <field> is defined at <element>.
 		number_of_components=get_FE_field_number_of_components(field);
 		for (i = 0; i < number_of_components; i++)
 		{
-			if (component_name = get_FE_field_component_name(field, i))
+			if (NULL != (component_name = get_FE_field_component_name(field, i)))
 			{
 				fprintf(output_file, " %s. ", component_name);
 				DEALLOCATE(component_name);
@@ -1171,6 +1171,11 @@ are passed to this function.
 														return_code=0;
 													}
 												} break;
+												case ELEMENT_GRID_MAP:
+												case FIELD_TO_ELEMENT_MAP:
+												{
+													// nothing to do: these maps do not use nodes
+												} break;
 											}
 										}
 										else
@@ -1366,7 +1371,7 @@ Writes grid-based values stored with the element.
 	int number_of_columns,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_element_field_component *component;
 
-	if (element && field && (output_file = (FILE *)output_file_void))
+	if (element && field && (NULL != (output_file = (FILE *)output_file_void)))
 	{
 		return_code = 1;
 		fe_field_type = get_FE_field_FE_field_type(field);
@@ -1859,9 +1864,10 @@ in the header.
 	struct Write_FE_region_element_data *write_elements_data;
 
 	ENTER(write_FE_region_element);
-	if (element && (write_elements_data =
-		(struct Write_FE_region_element_data *)write_elements_data_void) &&
-		(output_file = write_elements_data->output_file))
+	write_elements_data =
+		(struct Write_FE_region_element_data *)write_elements_data_void;
+	output_file = write_elements_data->output_file;
+	if (element && (NULL != write_elements_data) && (NULL != output_file))
 	{
 		return_code = 1;
 		/* only output the element if it has the specified dimension and fields
@@ -1961,7 +1967,7 @@ time this function is called - this function adds on
 		number_of_components=get_FE_field_number_of_components(field);
 		for (i=0;i<number_of_components;i++)
 		{
-			if (component_name=get_FE_field_component_name(field,i))
+			if (NULL != (component_name=get_FE_field_component_name(field,i)))
 			{
 				fprintf(output_file,"  %s.",component_name);
 				DEALLOCATE(component_name);
@@ -1980,8 +1986,8 @@ time this function is called - this function adds on
 					number_of_derivatives);
 				if (0<number_of_derivatives)
 				{
-					if (nodal_value_types=
-						get_FE_node_field_component_nodal_value_types(node,field,i))
+					if (NULL != (nodal_value_types=
+						get_FE_node_field_component_nodal_value_types(node,field,i)))
 					{
 						fprintf(output_file," (");
 						for (j=1;j<1+number_of_derivatives;j++)
@@ -1990,41 +1996,7 @@ time this function is called - this function adds on
 							{
 								fprintf(output_file,",");
 							}
-							switch (nodal_value_types[j])
-							{
-								case FE_NODAL_UNKNOWN:
-								{
-									fprintf(output_file,"unknown");
-								} break;
-								case FE_NODAL_D_DS1:
-								{
-									fprintf(output_file,"d/ds1");
-								} break;
-								case FE_NODAL_D_DS2:
-								{
-									fprintf(output_file,"d/ds2");
-								} break;
-								case FE_NODAL_D_DS3:
-								{
-									fprintf(output_file,"d/ds3");
-								} break;
-								case FE_NODAL_D2_DS1DS2:
-								{
-									fprintf(output_file,"d2/ds1ds2");
-								} break;
-								case FE_NODAL_D2_DS1DS3:
-								{
-									fprintf(output_file,"d2/ds1ds3");
-								} break;
-								case FE_NODAL_D2_DS2DS3:
-								{
-									fprintf(output_file,"d2/ds2ds3");
-								} break;
-								case FE_NODAL_D3_DS1DS2DS3:
-								{
-									fprintf(output_file,"d3/ds1ds2ds3");
-								} break;
-							}
+							fprintf(output_file, "%s", ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_types[j]));
 						}
 						fprintf(output_file,")");
 						DEALLOCATE(nodal_value_types);
@@ -2069,7 +2041,7 @@ Calls the write_FE_node_field routine for each FE_node_field
 	struct Write_FE_node_field_info_sub *write_nodes_data;
 
 	ENTER(write_FE_node_field_info_sub);
-	if (write_nodes_data=(struct Write_FE_node_field_info_sub *)write_nodes_data_void)
+	if (NULL != (write_nodes_data=(struct Write_FE_node_field_info_sub *)write_nodes_data_void))
 	{
 		return_code=write_FE_node_field(write_nodes_data->output_file,
 			write_nodes_data->field_number,node,field,&(write_nodes_data->value_index));
@@ -2101,8 +2073,9 @@ Writes out the nodal values. Each component or version starts on a new line.
 	struct Write_FE_node_field_values *values_data;
 
 	ENTER(write_FE_node_field_values);
-	if (node&&field&&(values_data=(struct Write_FE_node_field_values *)
-		values_data_void)&&(output_file=values_data->output_file))
+	values_data = (struct Write_FE_node_field_values *)values_data_void;
+	output_file = values_data->output_file;
+	if (node && field && (NULL != values_data) && (NULL != output_file))
 	{
 		fe_field_type=get_FE_field_FE_field_type(field);
 		if (GENERAL_FE_FIELD==fe_field_type)
@@ -2440,8 +2413,9 @@ has been selected for output) then the header is written out.
 	struct Write_FE_node_field_info_sub field_data;
 
 	ENTER(write_FE_region_node);
-	if (node && (write_nodes_data = (struct Write_FE_region_node_data *)write_nodes_data_void) &&
-		(output_file = write_nodes_data->output_file))
+	write_nodes_data = (struct Write_FE_region_node_data *)write_nodes_data_void;
+	output_file = write_nodes_data->output_file;
+	if (node && (NULL != write_nodes_data) && (NULL != output_file))
 	{
 		return_code = 1;
 		field_order_info = write_nodes_data->field_order_info;
@@ -2973,7 +2947,7 @@ int write_exregion_file_of_name(const char *file_name,
 	ENTER(write_exregion_file_of_name);
 	if (file_name)
 	{
-		if (output_file = fopen(file_name, "w"))
+		if (NULL != (output_file = fopen(file_name, "w")))
 		{
 			return_code = write_exregion_file(output_file, region, root_region,
 				write_elements, write_nodes, write_data,

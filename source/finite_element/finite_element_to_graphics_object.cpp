@@ -217,7 +217,7 @@ defined.
 
 		while (fields_all_defined&&(i>0))
 		{
-			if (current_field= *current_field_address)
+			if (NULL != (current_field= *current_field_address))
 			{
 				if(!Computed_field_is_defined_at_node(current_field,node))
 				{	
@@ -1182,7 +1182,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	{
 		if ((GRAPHICS_DRAW_SELECTED!=select_mode) || group_field)
 		{
-			if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
+			if (NULL != (computed_fields_of_node=CREATE(Computed_fields_of_node)()))
 			{
 				return_code = 1;
 				number_of_fields = 0;
@@ -1627,19 +1627,19 @@ int FE_element_add_line_to_vertex_array(
 
 		distance=(FE_value)number_of_segments;
 		i=0;
-		for (i=0;(i<=number_of_segments)&&return_code;i++)
+		for (i = 0; (i <= number_of_segments); i++)
 		{
 			xi=((FE_value)i)/distance;
 			/* evaluate the fields */
-			if (return_code = Computed_field_evaluate_in_element(
-				coordinate_field,element,&xi,
-				time,top_level_element,coordinates,(FE_value *)NULL)&&
-				((!data_field)||Computed_field_evaluate_in_element(
-				data_field,element,&xi,time,top_level_element,data_buffer,
-				(FE_value *)NULL))&&
-				((!texture_coordinate_field)||Computed_field_evaluate_in_element(
-				texture_coordinate_field,element,&xi,time,top_level_element,
-				texture_coordinates,(FE_value *)NULL)))
+			if (Computed_field_evaluate_in_element(
+					coordinate_field, element, &xi,
+					time, top_level_element, coordinates, (FE_value *)NULL) &&
+				((!data_field) || Computed_field_evaluate_in_element(
+					data_field,element, &xi, time, top_level_element, data_buffer,
+					(FE_value *)NULL)) &&
+				((!texture_coordinate_field) || Computed_field_evaluate_in_element(
+					texture_coordinate_field, element, &xi, time, top_level_element,
+					texture_coordinates, (FE_value *)NULL)))
 			{
 				float floatField[3];
 				CAST_TO_OTHER(floatField,coordinates,float,3);
@@ -1660,6 +1660,11 @@ int FE_element_add_line_to_vertex_array(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
 						3, 1, floatField);
 				}
+			}
+			else
+			{
+				return_code = 0;
+				break;
 			}
 		}
 		if (return_code)
@@ -2245,7 +2250,7 @@ to say which parent element they should be evaluated on as necessary.
 			ALLOCATE(tknots, double, tknotcount)&&
 			ALLOCATE(control_points, double, 4 * number_of_points))
 		{
-			if (nurbs=CREATE(GT_nurbs)())
+			if (NULL != (nurbs=CREATE(GT_nurbs)()))
 			{
 				/* for selective editing of GT_object primitives, record element ID */
 				get_FE_element_identifier(element, &cm);
@@ -4786,7 +4791,7 @@ Converts a finite element into a cylinder.
 			element_to_cylinder_data->exterior,
 			element_to_cylinder_data->face_number))
 		{
-			if (surface_element=create_cylinder_from_FE_element(element,
+			if (NULL != (surface_element = create_cylinder_from_FE_element(element,
 				element_to_cylinder_data->coordinate_field,
 				element_to_cylinder_data->data_field,
 				element_to_cylinder_data->constant_radius,
@@ -4797,7 +4802,7 @@ Converts a finite element into a cylinder.
 				element_to_cylinder_data->texture_coordinate_field,
 				/*top_level_element*/(struct FE_element *)NULL,
 					element_to_cylinder_data->render_type,
-				element_to_cylinder_data->time))
+				element_to_cylinder_data->time)))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 					element_to_cylinder_data->graphics_object,
@@ -4848,12 +4853,12 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 			element_to_polyline_data->exterior,
 			element_to_polyline_data->face_number))
 		{
-			if (polyline=create_GT_polyline_from_FE_element(element,
+			if (NULL != (polyline = create_GT_polyline_from_FE_element(element,
 				element_to_polyline_data->coordinate_field,
 				element_to_polyline_data->data_field,
 				element_to_polyline_data->number_of_segments_in_xi1,
 				/*top_level_element*/(struct FE_element *)NULL,
-				element_to_polyline_data->time, /*line_width=default*/0))
+				element_to_polyline_data->time, /*line_width=default*/0)))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 					element_to_polyline_data->graphics_object,
@@ -4908,7 +4913,7 @@ Converts a finite element into a surface.
 			{
 				case g_SURFACE:
 				{
-					if (surface=create_GT_surface_from_FE_element(element,
+					if (NULL != (surface = create_GT_surface_from_FE_element(element,
 						element_to_surface_data->coordinate_field,
 						element_to_surface_data->texture_coordinate_field,
 						element_to_surface_data->data_field,
@@ -4917,7 +4922,7 @@ Converts a finite element into a surface.
 						element_to_surface_data->reverse_normals,
 						/*top_level_element*/(struct FE_element *)NULL,
 					   element_to_surface_data->render_type,
-						element_to_surface_data->time))
+						element_to_surface_data->time)))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 							element_to_surface_data->graphics_object,
@@ -4933,11 +4938,11 @@ Converts a finite element into a surface.
 				} break;
 				case g_NURBS:
 				{
-					if (nurb=create_GT_nurb_from_FE_element(element,
+					if (NULL != (nurb = create_GT_nurb_from_FE_element(element,
 						element_to_surface_data->coordinate_field,
 						element_to_surface_data->texture_coordinate_field,
 						/*top_level_element*/(struct FE_element *)NULL,
-						element_to_surface_data->time))
+						element_to_surface_data->time)))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_nurbs)(
 							element_to_surface_data->graphics_object,
@@ -5023,7 +5028,7 @@ fields defined over it.
 					element_to_glyph_set_data->xi_point_density_field,
 					&number_of_xi_points, &xi_points, element_to_glyph_set_data->time))
 				{
-					if (glyph_set = create_GT_glyph_set_from_FE_element(
+					if (NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
 						element, top_level_element,
 						element_to_glyph_set_data->coordinate_field,
 						number_of_xi_points, xi_points,
@@ -5040,7 +5045,7 @@ fields defined over it.
 						/*element_selected*/0,
 						(struct Multi_range *)NULL,
 						/*point_numbers*/(int *)NULL,
-						element_to_glyph_set_data->time))
+						element_to_glyph_set_data->time)))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,
@@ -5105,7 +5110,7 @@ Converts a 3-D element into a volume.
 		/* determine if the element is required */
 		if (3 == get_FE_element_dimension(element))
 		{
-			if (volume_element= generate_clipped_GT_voltex_from_FE_element(
+			if (NULL != (volume_element = generate_clipped_GT_voltex_from_FE_element(
 				element_to_volume_data->clipping,
 				element,
 				element_to_volume_data->coordinate_field,
@@ -5115,18 +5120,14 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->displacement_map_field,
 				element_to_volume_data->displacement_map_xi_direction,
 				element_to_volume_data->texture_coordinate_field,
-				element_to_volume_data->time))
+				element_to_volume_data->time)))
 			{
-				if (return_code=GT_OBJECT_ADD(GT_voltex)(
+				return_code = GT_OBJECT_ADD(GT_voltex)(
 					element_to_volume_data->graphics_object,
-					element_to_volume_data->time,volume_element))
-				{
-					return_code=1;
-				}
-				else
+					element_to_volume_data->time,volume_element);
+				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,"element_to_volume.  Unable to add voltex to graphics object");
-					return_code=0;
 					DESTROY(GT_voltex)(&volume_element);
 				}
 			}
@@ -5386,7 +5387,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 				}
 			}
 			/* create the volume texture */
-			if (volume_texture=CREATE(VT_volume_texture)((char *)NULL))
+			if (NULL != (volume_texture=CREATE(VT_volume_texture)((char *)NULL)))
 			{
 				/* fill in the volume texture */
 				number_of_volume_texture_cells=
@@ -5560,22 +5561,18 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								number_in_xi3;
 							volume_texture->calculate_nodal_values=0;
 							volume_texture->disable_volume_functions=0;
-							if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
-									 clipping,element,coordinate_field,data_field,
-									 volume_texture,render_type,NULL,0,texture_coordinate_field,
-									 time))
+							if (NULL != (iso_surface_voltex = generate_clipped_GT_voltex_from_FE_element(
+									clipping,element,coordinate_field,data_field,
+									volume_texture,render_type,NULL,0,texture_coordinate_field,
+									time)))
 							{
-								if (return_code=GT_object_merge_GT_voltex(graphics_object,
-										iso_surface_voltex))
-								{
-									return_code=1;
-								}
-								else
+								return_code = GT_object_merge_GT_voltex(graphics_object,
+									iso_surface_voltex);
+								if (!return_code)
 								{
 									display_message(ERROR_MESSAGE,
 										"create_iso_surfaces_from_FE_element.  "
 										"Unable to add voltex to graphics object");
-									return_code=0;
 									DESTROY(GT_voltex)(&iso_surface_voltex);
 								}
 							}

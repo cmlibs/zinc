@@ -303,15 +303,15 @@ is in the root_region itself. The REGION_PATH must end in
 		DEALLOCATE(first_string);
 		if (return_code)
 		{
-			if (fe_region = Cmiss_region_get_FE_region(region))
+			if (NULL != (fe_region = Cmiss_region_get_FE_region(region)))
 			{
 				element = (struct FE_element *)NULL;
 				if ((1 == IO_stream_scan(input_file, " %d", &dimension)) && (0 < dimension))
 				{
 					/* get existing element and check it has the dimension, or create
 						 a dummy element with unspecified shape and the dimension */
-					if (element = FE_region_get_or_create_FE_element_with_identifier(
-						fe_region, &cm, dimension))
+					if (NULL != (element = FE_region_get_or_create_FE_element_with_identifier(
+						fe_region, &cm, dimension)))
 					{
 						*element_address = element;
 						/* now read the xi position */
@@ -934,7 +934,7 @@ the <field_order_info>.
 				get_FE_field_order_info_number_of_fields(field_order_info);
 			for (i = 0; (i < number_of_fields) && return_code; i++)
 			{
-				if (field = get_FE_field_order_info_field(field_order_info, i))
+				if (NULL != (field = get_FE_field_order_info_field(field_order_info, i)))
 				{
 					number_of_values = get_FE_field_number_of_values(field);
 					if (0 < number_of_values)
@@ -1096,7 +1096,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	}
 	if (input_file && fe_region && node && field_address)
 	{
-		if (field = read_FE_field(input_file, fe_region))
+		if (NULL != (field = read_FE_field(input_file, fe_region)))
 		{
 			ACCESS(FE_field)(field);
 			merged_fe_field = (struct FE_field *)NULL;
@@ -1404,7 +1404,7 @@ from a previous call to this function.
 			*field_order_info = (struct FE_field_order_info *)NULL;
 		}
 		/* create a node to store the field information in */
-		if (node = CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL))
+		if (NULL != (node = CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL)))
 		{
 			return_code = 1;
 			if ((1 == IO_stream_scan(input_file, "Fields=%d", &number_of_fields)) &&
@@ -1494,14 +1494,14 @@ Reads in a node from an <input_file>.
 		{
 			return_code = 1;
 			/* create node based on template node; read and fill in contents */
-			if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
-				template_node))
+			if (NULL != (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+				template_node)))
 			{
 				number_of_fields =
 					get_FE_field_order_info_number_of_fields(field_order_info);
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
-					if (field = get_FE_field_order_info_field(field_order_info, i))
+					if (NULL != (field = get_FE_field_order_info_field(field_order_info, i)))
 					{
 						/* only GENERAL_FE_FIELD can store values at nodes */
 						if (GENERAL_FE_FIELD == get_FE_field_FE_field_type(field))
@@ -1585,9 +1585,9 @@ Reads in a node from an <input_file>.
 											{
 												if (time_index)
 												{
-													if (return_code =
-														set_FE_nodal_field_FE_values_at_time(field, node,
-															values, &length, time_index->time))
+													return_code = set_FE_nodal_field_FE_values_at_time(field, node,
+														values, &length, time_index->time);
+													if (return_code)
 													{
 														if (length != number_of_values)
 														{
@@ -1604,8 +1604,9 @@ Reads in a node from an <input_file>.
 												}
 												else
 												{
-													if (return_code = set_FE_nodal_field_FE_value_values(
-														field, node, values, &length))
+													return_code = set_FE_nodal_field_FE_value_values(
+														field, node, values, &length);
+													if (return_code)
 													{
 														if (length != number_of_values)
 														{
@@ -1650,8 +1651,9 @@ Reads in a node from an <input_file>.
 											}
 											if (return_code)
 											{
-												if (return_code = set_FE_nodal_field_int_values(field,
-													node, values, &length))
+												return_code = set_FE_nodal_field_int_values(field,
+													node, values, &length);
+												if (return_code)
 												{
 													if (length != number_of_values)
 													{
@@ -1857,7 +1859,7 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 							xi_number++;
 							if (xi_number<dimension)
 							{
-								if (end_description=strchr(start_description,'*'))
+								if (NULL != (end_description=strchr(start_description,'*')))
 								{
 									*end_description='\0';
 								}
@@ -2189,7 +2191,7 @@ Some examples of basis descriptions in an input file are:
 				end_basis_name--;
 			}
 			end_basis_name[1]='\0';
-			if (basis_type=FE_basis_string_to_type_array(basis_description_string))
+			if (NULL != (basis_type=FE_basis_string_to_type_array(basis_description_string)))
 			{
 				basis=FE_region_get_FE_basis_matching_basis_type(fe_region,basis_type);
 				DEALLOCATE(basis_type);
@@ -2252,7 +2254,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 	if (input_file && fe_region && element && field_address &&
 		(0 < (dimension = get_FE_element_dimension(element))))
 	{
-		if (field = read_FE_field(input_file, fe_region))
+		if (NULL != (field = read_FE_field(input_file, fe_region)))
 		{
 			ACCESS(FE_field)(field);
 			merged_fe_field = (struct FE_field *)NULL;
@@ -2303,7 +2305,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						{
 							IO_stream_scan(input_file, ". ");
 							/* read the basis */
-							if (basis = read_FE_basis(input_file, fe_region))
+							if (NULL != (basis = read_FE_basis(input_file, fe_region)))
 							{
 								IO_stream_scan(input_file, ", ");
 								/* read the modify function name */
@@ -2365,10 +2367,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 												if ((1 == IO_stream_scan(input_file, "#Nodes=%d",
 													&number_of_nodes)) && (0 < number_of_nodes))
 												{
-													if (components[component_number] =
+													if (NULL != (components[component_number] =
 														CREATE(FE_element_field_component)(
 															STANDARD_NODE_TO_ELEMENT_MAP,
-															number_of_nodes, basis, modify))
+															number_of_nodes, basis, modify)))
 													{
 														for (i = 0; (i < number_of_nodes) && return_code;
 															i++)
@@ -2483,9 +2485,9 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 												global_to_element_map_string))
 											{
 												/* element grid based */
-												if (components[component_number] =
+												if (NULL != (components[component_number] =
 													CREATE(FE_element_field_component)(
-														ELEMENT_GRID_MAP, 1, basis, modify))
+														ELEMENT_GRID_MAP, 1, basis, modify)))
 												{
 													/* read number of divisions in each xi direction */
 													i = 0;
@@ -2762,8 +2764,8 @@ from a previous call to this function.
 		/* create the element */
 		element_identifier.number = 0;
 		element_identifier.type = CM_ELEMENT;
-		if (element = CREATE(FE_element)(&element_identifier, element_shape,
-			fe_region, (struct FE_element *)NULL))
+		if (NULL != (element = CREATE(FE_element)(&element_identifier, element_shape,
+			fe_region, (struct FE_element *)NULL)))
 		{
 			return_code = 1;
 			get_FE_element_shape_dimension(element_shape, &dimension);
@@ -2792,8 +2794,8 @@ from a previous call to this function.
 					/* read in the scale factor set information */
 					for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
 					{
-						if (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
-							input_file,fe_region))
+						if (NULL != (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
+							input_file,fe_region)))
 						{
 							if (!((1 == IO_stream_scan(input_file, ", #Scale factors=%d ",
 								&(numbers_in_scale_factor_sets[i]))) &&
@@ -2989,9 +2991,9 @@ in a grid field.
 		if (return_code)
 		{
 			/* create element based on template element; read and fill in contents */
-			if (element = CREATE(FE_element)(&element_identifier,
+			if (NULL != (element = CREATE(FE_element)(&element_identifier,
 				(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
-				template_element))
+				template_element)))
 			{
 				if (get_FE_element_number_of_faces(element, &number_of_faces))
 				{
@@ -3040,9 +3042,9 @@ in a grid field.
 									/* get existing face and check it has the dimension less 1,
 										 or create a dummy face element with unspecified shape and
 										 with dimension one less than parent element */
-									if (face_element =
+									if (NULL != (face_element =
 										FE_region_get_or_create_FE_element_with_identifier(
-											fe_region, &face_identifier, dimension - 1))
+											fe_region, &face_identifier, dimension - 1)))
 									{
 										if (!set_FE_element_face(element, i, face_element))
 										{
@@ -3242,8 +3244,8 @@ in a grid field.
 								if (1 == IO_stream_scan(input_file, "%d", &node_number))
 								{
 									/* get or create node with node_number */
-									if (node = FE_region_get_or_create_FE_node_with_identifier(
-										fe_region, node_number))
+									if (NULL != (node = FE_region_get_or_create_FE_node_with_identifier(
+										fe_region, node_number)))
 									{
 										if (!set_FE_element_node(element, i, node))
 										{
@@ -3684,8 +3686,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							if (element_shape)
 							{
 								/* read new element field information and field_order_info */
-								if (template_element = read_FE_element_field_info(input_file,
-									fe_region, element_shape, &field_order_info))
+								if (NULL != (template_element = read_FE_element_field_info(input_file,
+									fe_region, element_shape, &field_order_info)))
 								{
 									ACCESS(FE_element)(template_element);
 								}
@@ -3701,8 +3703,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							else
 							{
 								/* read new node field information and field_order_info */
-								if (template_node = read_FE_node_field_info(input_file,
-									fe_region, &field_order_info, time_index))
+								if (NULL != (template_node = read_FE_node_field_info(input_file,
+									fe_region, &field_order_info, time_index)))
 								{
 									ACCESS(FE_node)(template_node);
 								}
@@ -3734,8 +3736,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							if (template_node)
 							{	
 								/* read node */
-								if (node = read_FE_node(input_file, template_node, fe_region,
-									region, field_order_info, time_index))
+								if (NULL != (node = read_FE_node(input_file, template_node, fe_region,
+									region, field_order_info, time_index)))
 								{
 									ACCESS(FE_node)(node);
 									if (!FE_region_merge_FE_node(fe_region, node))
@@ -3778,8 +3780,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							if (template_element)
 							{	
 								/* read element */
-								if (element = read_FE_element(input_file, template_element,
-									fe_region, field_order_info))
+								if (NULL != (element = read_FE_element(input_file, template_element,
+									fe_region, field_order_info)))
 								{
 									ACCESS(FE_element)(element);
 									if (!FE_region_merge_FE_element(fe_region, element))

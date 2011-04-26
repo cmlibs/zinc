@@ -40,11 +40,6 @@ computed_field/computed_field_vector_operations.cpp
 computed_field/computed_field_window_projection.cpp
 element/element_point_tool.cpp
 element/element_tool.cpp
-finite_element/export_finite_element.cpp
-finite_element/finite_element_to_graphics_object.cpp
-finite_element/finite_element_to_iso_lines.cpp
-finite_element/finite_element_to_streamlines.cpp
-finite_element/import_finite_element.cpp
 general/geometry.cpp
 graphics/decimate_voltex.cpp
 graphics/font.cpp

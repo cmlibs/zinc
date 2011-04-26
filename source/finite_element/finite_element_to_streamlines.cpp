@@ -1485,10 +1485,10 @@ in that region.
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
 	if (element&&FE_element_is_top_level(element, NULL)&&
-		(element_dimension = get_FE_element_dimension(element))&&
+		(0 < (element_dimension = get_FE_element_dimension(element))) &&
 		((3 == element_dimension) || (2 == element_dimension))
 		&&start_xi&&coordinate_field&&
-		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+		(0 < (number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))) &&
 		stream_vector_field&&(number_of_stream_vector_components=
 		Computed_field_get_number_of_components(stream_vector_field))
 		&& (((3 == number_of_coordinate_components) &&
@@ -1548,10 +1548,10 @@ in that region.
 					ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
 					&&((g_NO_DATA==gt_data_type)||data))
 				{
-					if (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+					if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
 						g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
 						points, normalpoints, /*tangentpoints*/(Triple *)NULL,
-						/*texturepoints*/(Triple *)NULL,gt_data_type,data))
+						/*texturepoints*/(Triple *)NULL,gt_data_type,data)))
 					{
 						point = points;
 						normal = normalpoints;
@@ -1596,6 +1596,7 @@ in that region.
 							switch (type)
 							{
 								case STREAM_RIBBON:
+								default:
 								{
 									(*point)[0] = stream_point[0] + cross_width[0];
 									(*point)[1] = stream_point[1] + cross_width[1];
@@ -2105,7 +2106,7 @@ Converts a 3-D element into an array of streamlines.
 			initial_xi[2]=element_to_streamline_data->seed_xi[2];
 			if (STREAM_LINE==element_to_streamline_data->type)
 			{
-				if (polyline=create_GT_polyline_streamline_FE_element(element,
+				if (NULL != (polyline = create_GT_polyline_streamline_FE_element(element,
 					initial_xi,element_to_streamline_data->coordinate_field,
 					element_to_streamline_data->stream_vector_field,
 					element_to_streamline_data->reverse_track,
@@ -2113,7 +2114,7 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->data_type,
 					element_to_streamline_data->data_field,
 					element_to_streamline_data->time,
-					(struct FE_region *)NULL))
+					(struct FE_region *)NULL)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						element_to_streamline_data->graphics_object,
@@ -2132,7 +2133,7 @@ Converts a 3-D element into an array of streamlines.
 				(element_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE)||
 				(element_to_streamline_data->type == STREAM_EXTRUDED_CIRCLE))
 			{
-				if (surface=create_GT_surface_streamribbon_FE_element(element,
+				if (NULL != (surface = create_GT_surface_streamribbon_FE_element(element,
 					initial_xi,element_to_streamline_data->coordinate_field,
 					element_to_streamline_data->stream_vector_field,
 					element_to_streamline_data->reverse_track,
@@ -2141,7 +2142,7 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->data_type,
 					element_to_streamline_data->data_field,
 					element_to_streamline_data->time,
-					(struct FE_region *)NULL))
+					(struct FE_region *)NULL)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						element_to_streamline_data->graphics_object,
@@ -2219,7 +2220,7 @@ Converts a 3-D element into an array of streamlines.
 #endif /* defined (DEBUG) */
 			if (STREAM_LINE==node_to_streamline_data->type)
 			{
-				if (polyline=create_GT_polyline_streamline_FE_element(element,
+				if (NULL != (polyline = create_GT_polyline_streamline_FE_element(element,
 					initial_xi,node_to_streamline_data->coordinate_field,
 					node_to_streamline_data->stream_vector_field,
 					node_to_streamline_data->reverse_track,
@@ -2227,7 +2228,7 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->data_type,
 					node_to_streamline_data->data_field,
 					node_to_streamline_data->time,
-					(struct FE_region *)NULL))
+					(struct FE_region *)NULL)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						node_to_streamline_data->graphics_object,
@@ -2246,7 +2247,7 @@ Converts a 3-D element into an array of streamlines.
 				(node_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE)||
 				(node_to_streamline_data->type == STREAM_EXTRUDED_CIRCLE))
 			{
-				if (surface=create_GT_surface_streamribbon_FE_element(element,
+				if (NULL != (surface = create_GT_surface_streamribbon_FE_element(element,
 					initial_xi,node_to_streamline_data->coordinate_field,
 					node_to_streamline_data->stream_vector_field,
 					node_to_streamline_data->reverse_track,
@@ -2255,7 +2256,7 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->data_type,
 					node_to_streamline_data->data_field,
 					node_to_streamline_data->time,
-					(struct FE_region *)NULL))
+					(struct FE_region *)NULL)))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						node_to_streamline_data->graphics_object,
