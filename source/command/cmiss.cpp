@@ -4620,7 +4620,7 @@ Executes a GFX CREATE WINDOW command.
 						  return_code=0;
 						}
 #else
-					   if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
+						window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 							minimum_accumulation_buffer_depth,
 							command_data->graphics_buffer_package,
@@ -4630,7 +4630,8 @@ Executes a GFX CREATE WINDOW command.
 							command_data->scene_manager,command_data->default_scene,
 							command_data->interactive_tool_manager,
 							command_data->default_time_keeper,
-							command_data->user_interface))
+							command_data->user_interface);
+					  if (window)
 						{
 						   if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
 							   command_data->graphics_window_manager))
