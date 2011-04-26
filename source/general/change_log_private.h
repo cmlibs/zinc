@@ -428,11 +428,11 @@ Destroys the <**change_log> and sets <*change_log> to NULL. \
 	struct CHANGE_LOG(object_type) *change_log; \
 \
 	ENTER(DESTROY_CHANGE_LOG(object_type)); \
-	if (change_log_address && (change_log = *change_log_address)) \
+	if (change_log_address && (NULL != (change_log = *change_log_address))) \
 	{ \
 		return_code = 1; \
 		DESTROY_LIST(CHANGE_LOG_ENTRY(object_type))(&(change_log->entry_list)); \
-    DEALLOCATE(*change_log_address); \
+		DEALLOCATE(*change_log_address); \
 		*change_log_address = (struct CHANGE_LOG(object_type) *)NULL; \
 	} \
 	else \
@@ -556,8 +556,9 @@ Tells the <change_log> that <object> has undergone the <change>. \
 			} \
 			else \
 			{ \
-				if (entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
-					the_object)(object, change_log->entry_list)) \
+				entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
+					the_object)(object, change_log->entry_list); \
+				if (NULL != entry) \
 				{ \
 					switch (change) \
 					{ \
@@ -776,8 +777,9 @@ Unchanged objects are returned as OBJECT_UNCHANGED. \
 		} \
 		else \
 		{ \
-			if (entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
-				the_object)(object, change_log->entry_list)) \
+			entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
+				the_object)(object, change_log->entry_list); \
+			if (NULL != entry) \
 			{ \
 				*change_address = entry->change; \
 			} \
