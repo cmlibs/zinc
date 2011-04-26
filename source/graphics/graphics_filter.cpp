@@ -10,7 +10,6 @@
  * 1.1 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  * http://www.mozilla.org/MPL/
- *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  * for the specific language governing rights and limitations under the
@@ -57,7 +56,6 @@ extern "C" {
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 
-namespace {
 
 typedef std::vector<Cmiss_graphics_filter*> Graphics_filter_vector;
 
@@ -104,7 +102,7 @@ public:
 		display_message(INFORMATION_MESSAGE, "match_and");
 	}
 
-	virtual int add(Cmiss_graphics_filter *graphics_filter)
+	int add(Cmiss_graphics_filter *graphics_filter)
 	{
 		int return_code = 1;
 		if (graphics_filter != this)
@@ -121,7 +119,7 @@ public:
 		return return_code;
 	}
 
-	virtual int remove(Cmiss_graphics_filter *graphics_filter)
+	int remove(Cmiss_graphics_filter *graphics_filter)
 	{
 		int return_code = 1;
 		if (graphics_filter != this)
@@ -188,7 +186,7 @@ public:
 		display_message(INFORMATION_MESSAGE, "match_or");
 	}
 
-	virtual int add(Cmiss_graphics_filter *graphics_filter)
+	int add(Cmiss_graphics_filter *graphics_filter)
 	{
 		int return_code = 1;
 		if (graphics_filter != this)
@@ -205,7 +203,7 @@ public:
 		return return_code;
 	}
 
-	virtual int remove(Cmiss_graphics_filter *graphics_filter)
+	int remove(Cmiss_graphics_filter *graphics_filter)
 	{
 		int return_code = 1;
 		if (graphics_filter != this)
@@ -225,9 +223,10 @@ public:
 		}
 		return return_code;
 	}
-
-
 };
+
+
+namespace {
 
 class Cmiss_graphics_filter_all : public Cmiss_graphics_filter
 {
@@ -612,36 +611,6 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id graphics_filter, con
 	return (return_code);
 }
 
-int Cmiss_graphics_filter_add(Cmiss_graphics_filter_id graphics_filter, Cmiss_graphics_filter_id filter_to_add)
-{
-	int return_code = 0;
-	if (graphics_filter && filter_to_add)
-	{
-		return_code = graphics_filter->add(filter_to_add);
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
-		}
-	}
-	return return_code;
-}
-
-int Cmiss_graphics_filter_remove(Cmiss_graphics_filter_id graphics_filter, Cmiss_graphics_filter_id filter_to_remove)
-{
-	int return_code = 0;
-	if (graphics_filter && filter_to_remove)
-	{
-		return_code = graphics_filter->remove(filter_to_remove);
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
-		}
-	}
-	return return_code;
-}
-
 char *get_valid_temporary_name_for_graphics_filter(
 	Cmiss_graphics_module_id graphics_module)
 {
@@ -895,21 +864,30 @@ int gfx_define_graphics_filter_match_or(struct Parse_state *state, void *graphic
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OR )
 		{
-			if (add_filter)
+			Cmiss_graphics_filter_or_id or_filter = Cmiss_graphics_filter_cast_or(graphics_filter);
+			if (or_filter)
 			{
-				for (int i = 0; i < filter_data->number_of_filters; i++)
+				if (add_filter)
 				{
-					Cmiss_graphics_filter_add(graphics_filter, filter_data->source_filters[i]);
-					Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					for (int i = 0; i < filter_data->number_of_filters; i++)
+					{
+						Cmiss_graphics_filter_or_add(or_filter, filter_data->source_filters[i]);
+						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					}
 				}
+				else
+				{
+					for (int i = 0; i < filter_data->number_of_filters; i++)
+					{
+						Cmiss_graphics_filter_or_remove(or_filter, filter_data->source_filters[i]);
+						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					}
+				}
+				Cmiss_graphics_filter_or_destroy(&or_filter);
 			}
 			else
 			{
-				for (int i = 0; i < filter_data->number_of_filters; i++)
-				{
-					Cmiss_graphics_filter_remove(graphics_filter, filter_data->source_filters[i]);
-					Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
-				}
+				return_code = 0;
 			}
 		}
 		else
@@ -936,38 +914,43 @@ int gfx_define_graphics_filter_match_and(struct Parse_state *state, void *graphi
 	{
 		Cmiss_graphics_filter_id *graphics_filter_handle = (Cmiss_graphics_filter_id *)graphics_filter_handle_void; // can be null
 		Cmiss_graphics_filter_id graphics_filter = *graphics_filter_handle;
-		if (graphics_filter)
-		{
-			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
-		}
-		else
+		if (!graphics_filter)
 		{
 			graphics_filter = Cmiss_graphics_module_create_filter_and(
 				filter_data->graphics_module);
-			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		}
+		filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table, "FILTERS ... ", filter_data,
+		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_AND)
 		{
-			if (add_filter)
+			Cmiss_graphics_filter_and_id and_filter = Cmiss_graphics_filter_cast_and(graphics_filter);
+			if (and_filter)
 			{
-				for (int i = 0; i < filter_data->number_of_filters; i++)
+				if (add_filter)
 				{
-					Cmiss_graphics_filter_add(graphics_filter, filter_data->source_filters[i]);
-					Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					for (int i = 0; i < filter_data->number_of_filters; i++)
+					{
+						Cmiss_graphics_filter_and_add(and_filter, filter_data->source_filters[i]);
+						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					}
 				}
+				else
+				{
+					for (int i = 0; i < filter_data->number_of_filters; i++)
+					{
+						Cmiss_graphics_filter_and_remove(and_filter, filter_data->source_filters[i]);
+						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
+					}
+				}
+				Cmiss_graphics_filter_and_destroy(&and_filter);
 			}
 			else
 			{
-				for (int i = 0; i < filter_data->number_of_filters; i++)
-				{
-					Cmiss_graphics_filter_remove(graphics_filter, filter_data->source_filters[i]);
-					Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
-				}
+				return_code = 0;
 			}
 		}
 		else
@@ -1296,5 +1279,105 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphic
 		}
 	}
 	return return_code;
+}
+
+Cmiss_graphics_filter_and_id Cmiss_graphics_filter_cast_and(Cmiss_graphics_filter_id graphics_filter)
+{
+	if (dynamic_cast<Cmiss_graphics_filter_and*>(graphics_filter))
+	{
+		Cmiss_graphics_filter_access(graphics_filter);
+		return (reinterpret_cast<Cmiss_graphics_filter_and_id>(graphics_filter));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+Cmiss_graphics_filter_or_id Cmiss_graphics_filter_cast_or(Cmiss_graphics_filter_id graphics_filter)
+{
+	if (dynamic_cast<Cmiss_graphics_filter_or*>(graphics_filter))
+	{
+		Cmiss_graphics_filter_access(graphics_filter);
+		return (reinterpret_cast<Cmiss_graphics_filter_or_id>(graphics_filter));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+int Cmiss_graphics_filter_and_add(Cmiss_graphics_filter_and_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_add)
+{
+	int return_code = 0;
+	if (graphics_filter && filter_to_add)
+	{
+		return_code = graphics_filter->add(filter_to_add);
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
+				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_filter_and_remove(Cmiss_graphics_filter_and_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_remove)
+{
+	int return_code = 0;
+	if (graphics_filter && filter_to_remove)
+	{
+		return_code = graphics_filter->remove(filter_to_remove);
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
+				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_filter_or_add(Cmiss_graphics_filter_or_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_add)
+{
+	int return_code = 0;
+	if (graphics_filter && filter_to_add)
+	{
+		return_code = graphics_filter->add(filter_to_add);
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
+				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_filter_or_remove(Cmiss_graphics_filter_or_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_remove)
+{
+	int return_code = 0;
+	if (graphics_filter && filter_to_remove)
+	{
+		return_code = graphics_filter->remove(filter_to_remove);
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
+				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_filter_and_destroy(Cmiss_graphics_filter_and_id *filter_address)
+{
+	return Cmiss_graphics_filter_destroy(reinterpret_cast<Cmiss_graphics_filter_id *>(filter_address));
+}
+
+int Cmiss_graphics_filter_or_destroy(Cmiss_graphics_filter_or_id *filter_address)
+{
+	return Cmiss_graphics_filter_destroy(reinterpret_cast<Cmiss_graphics_filter_id *>(filter_address));
 }
 

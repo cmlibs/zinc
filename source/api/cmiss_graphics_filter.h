@@ -50,6 +50,18 @@ struct Cmiss_graphics_filter;
    #define CMISS_GRAPHICS_FILTER_ID_DEFINED
 #endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
 
+#ifndef CMISS_GRAPHICS_FILTER_AND_ID_DEFINED
+	struct Cmiss_graphics_filter_and;
+	typedef struct Cmiss_graphics_filter_and *Cmiss_graphics_filter_and_id;
+	#define CMISS_GRAPHICS_FILTER_AND_ID_DEFINED
+#endif /* CMISS_GRAPHICS_FILTER_AND_ID_DEFINED */
+
+#ifndef CMISS_GRAPHICS_FILTER_OR_ID_DEFINED
+	struct Cmiss_graphics_filter_or;
+	typedef struct Cmiss_graphics_filter_or *Cmiss_graphics_filter_or_id;
+	#define CMISS_GRAPHICS_FILTER_OR_ID_DEFINED
+#endif /* CMISS_GRAPHICS_FILTER_OR_ID_DEFINED */
+
 #ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
 struct Cmiss_graphics_module;
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
@@ -147,26 +159,6 @@ char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
 int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
 	const char *name);
 
-/*******************************************************************************
- * Add a filter into a collective Cmiss_graphics_filter.
- *
- * @param filter  The filter to modify.
- * @param filter_to_add  The filter to modify to be added into filter
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_graphics_filter_add(Cmiss_graphics_filter_id graphics_filter,
-	Cmiss_graphics_filter_id filter_to_add);
-
-/*******************************************************************************
- * Remove a filter from a collective Cmiss_graphics_filter.
- *
- * @param filter  The filter to modify.
- * @param filter_to_remove  The filter to modify to be added into filter
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_graphics_filter_remove(Cmiss_graphics_filter_id graphics_filter,
-	Cmiss_graphics_filter_id filter_to_remove);
-
 /***************************************************************************//**
  * Creates a Cmiss_graphics_filter which matches any graphic with visibility flag
  * set AND its owning rendition visibility flag set.
@@ -257,5 +249,86 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphic
  */
 int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
 	enum Cmiss_graphics_filter_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * If the filter is of and type, then this function returns the and specific
+ * representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived filter reference.
+ *
+ * @param filter  The generic filter to be cast.
+ * @return  And specific representation if the input filter is of this type,
+ * otherwise NULL.
+ */
+Cmiss_graphics_filter_and_id Cmiss_graphics_filter_cast_and(
+	Cmiss_graphics_filter_id graphics_filter);
+
+/*******************************************************************************
+ * Add a filter into a collective Cmiss_graphics_filter.
+ *
+ * @param filter  The and filter to be modified.
+ * @param filter_to_add  The filter to be added
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_and_add(Cmiss_graphics_filter_and_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_add);
+
+/*******************************************************************************
+ * Remove a filter from a collective Cmiss_graphics_filter.
+ *
+ * @param filter  The and filter to be modified.
+ * @param filter_to_remove  The filter to be removed
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_and_remove(Cmiss_graphics_filter_and_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_remove);
+
+/***************************************************************************//**
+ * Destroys this reference to the and filter (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param group_address  Address of handle to the and filter.
+ * @return  1 if successfully destroyed the and filter, otherwise 0.
+ */
+int Cmiss_graphics_filter_and_destroy(Cmiss_graphics_filter_and_id *filter_address);
+
+/***************************************************************************//**
+ * If the filter is of or type, then this function returns the or specific
+ * representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived filter reference.
+ *
+ * @param filter  The generic filter to be cast.
+ * @return  Or specific representation if the input filter is of this type,
+ * otherwise NULL.
+ */
+Cmiss_graphics_filter_or_id Cmiss_graphics_filter_cast_or(Cmiss_graphics_filter_id graphics_filter);
+
+/*******************************************************************************
+ * Add a filter into a collective Cmiss_graphics_filter.
+ *
+ * @param filter  The or filter to be modified.
+ * @param filter_to_add  The filter to be added
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_or_add(Cmiss_graphics_filter_or_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_add);
+
+/*******************************************************************************
+ * Remove a filter from a collective Cmiss_graphics_filter.
+ *
+ * @param filter  The or filter to be modified.
+ * @param filter_to_remove  The filter to be removed
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_or_remove(Cmiss_graphics_filter_or_id graphics_filter,
+	Cmiss_graphics_filter_id filter_to_remove);
+
+/***************************************************************************//**
+ * Destroys this reference to the or filter (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param group_address  Address of handle to the or filter.
+ * @return  1 if successfully destroyed the or filter, otherwise 0.
+ */
+int Cmiss_graphics_filter_or_destroy(Cmiss_graphics_filter_or_id *filter_address);
 
 #endif /*__CMISS_GRAPHICS_FILTER_H__*/

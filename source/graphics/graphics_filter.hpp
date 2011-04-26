@@ -190,18 +190,6 @@ public:
 
 	virtual void list_type_specific() const = 0;
 
-	virtual int add(Cmiss_graphics_filter *graphics_filter)
-	{
-		USE_PARAMETER(graphics_filter);
-		return 0;
-	}
-
-	virtual int remove(Cmiss_graphics_filter *graphics_filter)
-	{
-		USE_PARAMETER(graphics_filter);
-		return 0;
-	}
-
 	static inline int deaccess(Cmiss_graphics_filter **graphics_filter_address)
 	{
 		return DEACCESS(Cmiss_graphics_filter)(graphics_filter_address);
