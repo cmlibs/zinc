@@ -893,8 +893,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_region.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_timer.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h )
 	IF( USE_OPENCASCADE )
 		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
 			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
