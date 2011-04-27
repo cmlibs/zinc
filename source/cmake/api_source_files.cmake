@@ -10,8 +10,7 @@ SET( API_SRCS
 	source/api/cmiss_scene_viewer.cpp
 	source/api/cmiss_time.c
 	source/api/cmiss_time_keeper.c
-	source/api/cmiss_time_sequence.c
-	source/api/cmiss_timer.c )
+	source/api/cmiss_time_sequence.c )
 SET( API_HDRS
 	source/api/cmiss_context.h
 	source/api/cmiss_core.h
@@ -49,8 +48,7 @@ SET( API_HDRS
 	source/api/cmiss_tessellation.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
-	source/api/cmiss_time_sequence.h
-	source/api/cmiss_timer.h )
+	source/api/cmiss_time_sequence.h )
 	
 IF( USE_OPENCASCADE )
 	SET( API_HDRS ${API_HDRS}

@@ -19,8 +19,7 @@ SET( USER_INTERFACE_SRCS
 	source/user_interface/filedir.cpp
 	source/user_interface/message.c
 	source/user_interface/user_interface.cpp
-	source/user_interface/idle.c
-	source/user_interface/timer.c )
+	source/user_interface/idle.c )
 SET( USER_INTERFACE_HDRS
 	source/user_interface/confirmation.h
 	source/user_interface/event_dispatcher.h
@@ -35,7 +34,6 @@ SET( USER_INTERFACE_HDRS
 	source/user_interface/idle.h
 	source/user_interface/message.h
 	source/user_interface/process_list_or_write_command.hpp
-	source/user_interface/timer.h
 	source/user_interface/user_interface.h )
 
 # Most

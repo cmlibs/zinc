@@ -906,8 +906,7 @@ API_SRCS = \
 	api/cmiss_idle.c \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
-	api/cmiss_time_sequence.c \
-	api/cmiss_timer.c
+	api/cmiss_time_sequence.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
 	   api/cmiss_scene_viewer.c
@@ -1304,8 +1303,7 @@ USER_INTERFACE_SRCS = \
 	user_interface/filedir.cpp \
 	user_interface/message.c \
 	user_interface/user_interface.c \
-	user_interface/idle.c \
-	user_interface/timer.c
+	user_interface/idle.c
 USER_INTERFACE_INTERFACE_SRCS = \
 	user_interface/call_work_procedures.c \
 	user_interface/printer.c
