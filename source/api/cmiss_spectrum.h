@@ -38,7 +38,6 @@
 #define __CMISS_SPECTRUM_H__
 
 #ifndef CMISS_SPECTRUM_ID_DEFINED
-	#define Cmiss_spectrum Spectrum
 	struct Cmiss_spectrum;
 	typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
 	#define CMISS_SPECTRUM_ID_DEFINED

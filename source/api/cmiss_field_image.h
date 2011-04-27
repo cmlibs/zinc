@@ -47,12 +47,14 @@ Implements cmiss fields which wrap images, structured grid data.
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
 
+#ifndef CMISS_FIELD_IMAGE_ID_DEFINED
 /*****************************************************************************//**
  * The image field specific handle to a image Cmiss_field.
  */
-struct Cmiss_field_image;
-
-typedef struct Cmiss_field_image *Cmiss_field_image_id;
+	struct Cmiss_field_image;
+	typedef struct Cmiss_field_image *Cmiss_field_image_id;
+	#define CMISS_FIELD_IMAGE_ID_DEFINED
+#endif /* CMISS_FIELD_IMAGE_ID_DEFINED */
 
 enum Cmiss_field_image_storage_pixel_format
 /*******************************************************************************

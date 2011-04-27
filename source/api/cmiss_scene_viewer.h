@@ -69,7 +69,6 @@ scenes.
 Global types
 ------------
 */
-struct Cmiss_scene_viewer_package;
 
 #ifndef CMISS_INTERACTIVE_TOOL_ID_DEFINED
 typedef struct Interactive_tool * Cmiss_interactive_tool_id;
@@ -77,8 +76,9 @@ typedef struct Interactive_tool * Cmiss_interactive_tool_id;
 #endif
 
 #ifndef CMISS_SCENE_VIEWER_PACKAGE_DEFINED
-   typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
-   #define CMISS_SCENE_VIEWER_PACKAGE_DEFINED
+	struct Cmiss_scene_viewer_package;
+	typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
+  #define CMISS_SCENE_VIEWER_PACKAGE_DEFINED
 #endif /* CMISS_SCENE_VIEWER_PACKAGE_DEFINED */
 
 enum Cmiss_scene_viewer_buffering_mode

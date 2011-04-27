@@ -43,11 +43,11 @@
 #ifndef __CMISS_GRAPHICS_FILTER_H__
 #define __CMISS_GRAPHICS_FILTER_H__
 
-struct Cmiss_graphics_filter;
 
 #ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
-   typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
-   #define CMISS_GRAPHICS_FILTER_ID_DEFINED
+	struct Cmiss_graphics_filter;
+  typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
+  #define CMISS_GRAPHICS_FILTER_ID_DEFINED
 #endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
 
 #ifndef CMISS_GRAPHICS_FILTER_AND_ID_DEFINED

@@ -47,8 +47,6 @@
 
 #include "api/cmiss_graphics_filter.h"
 
-struct Cmiss_scene;
-
 #ifndef CMISS_SCENE_ID_DEFINED
 /***************************************************************************//**
  * A handle to cmiss scene, cmiss scene contains a top region to display 
@@ -59,21 +57,21 @@ struct Cmiss_scene;
  * This single display list, however it is up to others - ie. the Scene_viewer
  * to display.
  */
-   typedef struct Cmiss_scene * Cmiss_scene_id;
-   #define CMISS_SCENE_ID_DEFINED
+	struct Cmiss_scene;
+  typedef struct Cmiss_scene * Cmiss_scene_id;
+  #define CMISS_SCENE_ID_DEFINED
 #endif /* CMISS_SCENE_ID_DEFINED */
 
-struct Cmiss_region;
-
 #ifndef CMISS_REGION_ID_DEFINED
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
+  struct Cmiss_region;
+  typedef struct Cmiss_region * Cmiss_region_id;
+  #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */
 
 #ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
-struct Cmiss_graphics_filter;
-typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
-#define CMISS_GRAPHICS_FILTER_ID_DEFINED
+  struct Cmiss_graphics_filter;
+  typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
+  #define CMISS_GRAPHICS_FILTER_ID_DEFINED
 #endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
 
 /*******************************************************************************

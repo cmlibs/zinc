@@ -54,7 +54,6 @@
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-struct Context;
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
@@ -62,8 +61,9 @@ DESCRIPTION :
 ==============================================================================*/
 
 #ifndef CMISS_CONTEXT_ID_DEFINED
-   typedef struct Context * Cmiss_context_id;
-   #define CMISS_CONTEXT_ID_DEFINED
+	struct Cmiss_context;
+  typedef struct Cmiss_context * Cmiss_context_id;
+  #define CMISS_CONTEXT_ID_DEFINED
 #endif /* CMISS_CONTEXT_ID_DEFINED */
 
 

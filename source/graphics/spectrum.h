@@ -52,14 +52,14 @@ Spectrum structures and support code.
 #include "command/parser.h"
 #include "api/cmiss_graphics_module.h"
 
-struct Graphical_material;
+struct Cmiss_graphics_material;
 struct Spectrum_settings;
 /*
 Global types
 ------------
 */
 
-
+#define Spectrum Cmiss_spectrum
 struct Spectrum;
 /*******************************************************************************
 LAST MODIFIED : 18 October 1997
@@ -342,7 +342,7 @@ spectrum clears the material colour before applying the settings or not.
 
 #if defined (OPENGL_API)
 struct Spectrum_render_data *spectrum_start_renderGL(
-	struct Spectrum *spectrum,struct Graphical_material *material,
+	struct Spectrum *spectrum,struct Cmiss_graphics_material *material,
 	int number_of_data_components);
 /*******************************************************************************
 LAST MODIFIED : 3 June 1999
@@ -352,7 +352,7 @@ Initialises the graphics state for rendering values on the current material.
 ==============================================================================*/
 
 int spectrum_renderGL_value(struct Spectrum *spectrum,
-	struct Graphical_material *material,struct Spectrum_render_data *render_data,
+	struct Cmiss_graphics_material *material,struct Spectrum_render_data *render_data,
 	float *data);
 /*******************************************************************************
 LAST MODIFIED : 1 June 1999
@@ -373,7 +373,7 @@ Resets the graphics state after rendering values on current material.
 #endif /* defined (OPENGL_API) */
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
-	struct Graphical_material *material, int number_of_data_components,
+	struct Cmiss_graphics_material *material, int number_of_data_components,
 	float *data);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006

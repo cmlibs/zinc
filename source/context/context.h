@@ -42,6 +42,7 @@
 #if !defined (CONTEXT_H)
 #define CONTEXT_H
 
+#define Context Cmiss_context
 struct Context;
 
 #include "api/cmiss_context.h"

@@ -37,7 +37,6 @@
 #ifndef __CMISS_GRAPHICS_MATERIAL_H__
 #define __CMISS_GRAPHICS_MATERIAL_H__
 
-struct Graphical_material;
 #ifndef CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 /***************************************************************************//**
  * A handle to cmiss material. cmiss material describes the
@@ -54,10 +53,11 @@ struct Graphical_material;
  * transparent_gray50 and white. 
  *
  * Please see available Cmiss_graphics_material API functions belong for
- * configuarble properties.
+ * configurable properties.
  */
-typedef struct Graphical_material * Cmiss_graphics_material_id;
-#define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
+	struct Cmiss_graphics_material;
+	typedef struct Cmiss_graphics_material * Cmiss_graphics_material_id;
+	#define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 #endif /* CMISS_GRAPHICS_MATERIAL_ID_DEFINED */
 
 #ifndef CMISS_FIELD_ID_DEFINED

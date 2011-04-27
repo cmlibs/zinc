@@ -48,14 +48,13 @@ The public interface to the Cmiss_rendition.
 #include "api/cmiss_field.h"
 #include "api/cmiss_graphics_material.h"
 
-struct Cmiss_graphic;
-
 #ifndef CMISS_GRAPHIC_ID_DEFINED
 /***************************************************************************//**
  * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
  * such as lines, surfaces, node points and etc of a rendition. These graphics
  * can be customised through a numebr of set functions.
  */
+struct Cmiss_graphic;
 typedef struct Cmiss_graphic * Cmiss_graphic_id;
 #define CMISS_GRAPHIC_ID_DEFINED
 #endif /* CMISS_GRAPHIC_ID_DEFINED */

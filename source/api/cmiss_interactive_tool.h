@@ -37,10 +37,10 @@
 #if !defined __CMISS_INTERACTIVE_TOOL_H__
 #define __CMISS_INTERACTIVE_TOOL_H__
 
-struct Interactive_tool;
 #ifndef CMISS_INTERACTIVE_TOOL_ID_DEFINED
-typedef struct Interactive_tool * Cmiss_interactive_tool_id;
-#define CMISS_INTERACTIVE_TOOL_ID_DEFINED
+	struct Interactive_tool;
+	typedef struct Interactive_tool * Cmiss_interactive_tool_id;
+	#define CMISS_INTERACTIVE_TOOL_ID_DEFINED
 #endif
 
 /***************************************************************************//**

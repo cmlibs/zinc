@@ -60,6 +60,7 @@ Global constants
 /*???DB.  Make consistent with finite_element.h ? */
 #define MATERIAL_PRECISION float
 #define MATERIAL_PRECISION_STRING "f"
+#define Graphical_material Cmiss_graphics_material
 
 /*
 Global types

@@ -130,7 +130,7 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
  */
 int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
 		struct Cmiss_field *texture_coordinate_field,	struct Texture *texture,
-		struct Spectrum *spectrum,	struct Graphical_material *fail_material,
+		struct Cmiss_spectrum *spectrum,	struct Cmiss_graphics_material *fail_material,
 		int image_height, int image_width, int image_depth, int bytes_per_pixel,
 		int number_of_bytes_per_component, int use_pixel_location,
 		enum Texture_storage_type specify_format, int propagate_field,

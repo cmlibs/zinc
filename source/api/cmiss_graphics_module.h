@@ -39,9 +39,8 @@
 
 #include "api/cmiss_graphics_material.h"
 
-struct Cmiss_graphics_module;
-
 #ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
+struct Cmiss_graphics_module;
 typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
 #define CMISS_GRAPHICS_MODULE_ID_DEFINED
 #endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
@@ -65,7 +64,6 @@ typedef struct Cmiss_scene * Cmiss_scene_id;
 #endif
 
 #ifndef CMISS_SPECTRUM_ID_DEFINED
-#define Cmiss_spectrum Spectrum
 struct Cmiss_spectrum;
 typedef struct Cmiss_spectrum * Cmiss_spectrum_id;
 #define CMISS_SPECTRUM_ID_DEFINED

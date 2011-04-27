@@ -84,13 +84,19 @@ enum Cmiss_time_keeper_frame_mode
 	CMISS_TIME_KEEPER_PLAY_EVERY_FRAME = 2
 };
 
+
+#ifndef CMISS_TIME_KEEPER_ID_DEFINED
 /***************************************************************************//**
  * A handle to a time keeper. 
  * Time keeper maintains a current time which can be automatically advanced
  * with the system clock to drive animation. It sends callbacks to time notifiers
  * at the requested time or interval.
  */
-typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
+	struct Cmiss_time_keeper;
+	typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
+	#define CMISS_TIME_KEEPER_ID_DEFINED
+#endif
+
 
 /***************************************************************************//**
  * Create and returns a time notifier with regular update time in time keeper.
