@@ -8,7 +8,6 @@ SET( API_SRCS
 	source/api/cmiss_idle.c
 	source/api/cmiss_region.c
 	source/api/cmiss_scene_viewer.cpp
-	source/api/cmiss_texture.c
 	source/api/cmiss_time.c
 	source/api/cmiss_time_keeper.c
 	source/api/cmiss_time_sequence.c
@@ -48,7 +47,6 @@ SET( API_HDRS
 	source/api/cmiss_selection.h
 	source/api/cmiss_spectrum.h
 	source/api/cmiss_tessellation.h
-	source/api/cmiss_texture.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
 	source/api/cmiss_time_sequence.h
@@ -61,10 +59,8 @@ ENDIF( USE_OPENCASCADE )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( API_SRCS ${API_SRCS}
-		source/api/cmiss_scene_viewer.cpp
-		source/api/cmiss_texture.c )
+		source/api/cmiss_scene_viewer.cpp )
 	SET( API_HDRS ${API_HDRS}
-		source/api/cmiss_scene_viewer.h
-		source/api/cmiss_texture.h )
+		source/api/cmiss_scene_viewer.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 

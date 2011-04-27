@@ -53,7 +53,6 @@ SET( CMGUI_LIB_HDRS
 
 #IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 #	SET( CMGUI_LIB_SRCS ${CMGUI_LIB_SRCS}
-#		source/api/cmiss_scene_viewer.cpp
-#		source/api/cmiss_texture.c )
+#		source/api/cmiss_scene_viewer.cpp )
 #ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
  

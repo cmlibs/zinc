@@ -46,7 +46,6 @@ Implements cmiss fields which wrap images, structured grid data.
 
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_texture.h"
 
 /*****************************************************************************//**
  * The image field specific handle to a image Cmiss_field.

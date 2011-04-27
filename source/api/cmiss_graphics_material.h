@@ -37,8 +37,6 @@
 #ifndef __CMISS_GRAPHICS_MATERIAL_H__
 #define __CMISS_GRAPHICS_MATERIAL_H__
 
-#include "api/cmiss_texture.h"
-
 struct Graphical_material;
 #ifndef CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 /***************************************************************************//**

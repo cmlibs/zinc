@@ -258,25 +258,6 @@ Cmiss_field_evaluate_in_element
 Cmiss_field_module_create_window_projection
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
-Cmiss_texture_get_combine_mode
-Cmiss_texture_set_combine_mode
-Cmiss_texture_get_compression_mode
-Cmiss_texture_set_compression_mode
-Cmiss_texture_get_filter_mode
-Cmiss_texture_set_filter_mode
-Cmiss_texture_get_graphics_storage_size
-Cmiss_texture_get_original_texel_sizes
-Cmiss_texture_get_texture_coordinate_sizes
-Cmiss_texture_set_texture_coordinate_sizes
-Cmiss_texture_write_to_file
-Cmiss_texture_get_rendered_texel_sizes
-Cmiss_texture_get_number_of_components
-Cmiss_texture_get_number_of_bytes_per_component
-Cmiss_texture_get_pixels
-Cmiss_texture_set_pixels
-Cmiss_texture_get_property
-Cmiss_texture_set_property
-
 /* api/cmiss_region.h */
 Cmiss_region_access
 Cmiss_region_destroy

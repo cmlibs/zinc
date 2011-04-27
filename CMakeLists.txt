@@ -892,7 +892,6 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_material.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_region.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_texture.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_timer.h )

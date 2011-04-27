@@ -910,8 +910,7 @@ API_SRCS = \
 	api/cmiss_timer.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
-	   api/cmiss_scene_viewer.c \
-		api/cmiss_texture.c
+	   api/cmiss_scene_viewer.c
 endif
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c

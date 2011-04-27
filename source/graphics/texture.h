@@ -48,7 +48,6 @@ The data structures used for representing textures.
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-#include "api/cmiss_texture.h"
 #include "general/enumerator.h"
 #include "general/object.h"
 #include "graphics/colour.h"
@@ -68,6 +67,9 @@ The data structures used for representing textures.
 	Cmiss_texture_get_number_of_bytes_per_component
 #define Texture_get_property Cmiss_texture_get_property
 #define Texture_set_property Cmiss_texture_set_property
+
+typedef struct Cmiss_texture *Cmiss_texture_id;
+
 
 /*
 Global types
