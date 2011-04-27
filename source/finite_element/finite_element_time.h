@@ -267,4 +267,10 @@ DESCRIPTION :
 Returns true if <fe_time_sequence_package> contains the <fe_time_seqence>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * @return  1 if the time sequence is in use by other objects and should thus
+ * not be modified, or 0 if it is not in use.
+ */
+int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence);
+
 #endif /* !defined (FINITE_ELEMENT_TIME_H) */

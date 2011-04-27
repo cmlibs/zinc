@@ -56,6 +56,7 @@ Types used only internally to computed fields.
 */
 
 #include "general/cmiss_set.hpp"
+#include "computed_field/computed_field.h"
 #include "computed_field/field_location.hpp"
 extern "C" {
 #include "general/debug.h"
@@ -494,7 +495,7 @@ struct Computed_field_compare_name
 	}
 };
 
-typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Computed_field;
+typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Cmiss_field;
 
 /*
 Computed field functions
@@ -560,7 +561,7 @@ struct Cmiss_region *Computed_field_manager_get_region(
  * @param manager  Computed field manager.
  * @return  The set of fields in the manager.
  */
-const Cmiss_set_Computed_field &Computed_field_manager_get_fields(
+const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**

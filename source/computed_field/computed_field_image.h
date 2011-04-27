@@ -40,10 +40,11 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H)
-#define COMPUTED_FIELD_SAMPLE_TEXTURE_H
+#if !defined (COMPUTED_FIELD_IMAGE_H)
+#define COMPUTED_FIELD_IMAGE_H
 
 #include "api/cmiss_field_image.h"
+#include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 
 #define Computed_field_create_image Cmiss_field_module_create_image
@@ -136,4 +137,4 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
 		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension,
 		struct Cmiss_region *search_region);
 
-#endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */
+#endif /* !defined (COMPUTED_FIELD_IMAGE_H) */

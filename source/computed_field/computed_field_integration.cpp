@@ -1870,14 +1870,16 @@ Returns allocated command string for reproducing field. Includes type.
 		if (!xi_texture_coordinates)
 		{
 			append_string(&command_string, " integrand ", &error);
-			if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+			field_name = Cmiss_field_get_name(field->source_fields[0]);
+			if (NULL != field_name)
 			{
 				make_valid_token(&field_name);
 				append_string(&command_string, field_name, &error);
 				DEALLOCATE(field_name);
 			}
 			append_string(&command_string, " coordinate ", &error);
-			if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+			field_name = Cmiss_field_get_name(field->source_fields[1]);
+			if (NULL != field_name)
 			{
 				make_valid_token(&field_name);
 				append_string(&command_string, field_name, &error);

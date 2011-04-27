@@ -41,24 +41,16 @@
 #ifndef __CMISS_TIME_SEQUENCE_H__
 #define __CMISS_TIME_SEQUENCE_H__
 
-typedef double Scalar;
-
 /*
 Global types
 ------------
 */
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_time_sequence_package FE_time_sequence_package
-
-struct Cmiss_time_sequence_package;
-/*******************************************************************************
-LAST MODIFIED : 11 November 2004
-
-DESCRIPTION :
-==============================================================================*/
-
-typedef struct Cmiss_time_sequence_package *Cmiss_time_sequence_package_id;
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
 #ifndef CMISS_TIME_SEQUENCE_ID_DEFINED
 	struct Cmiss_time_sequence;
@@ -71,38 +63,48 @@ Global functions
 ----------------
 */
 
-Cmiss_time_sequence_package_id Cmiss_time_sequence_package_create(void);
-/*******************************************************************************
-LAST MODIFIED : 11 November 2004
+/***************************************************************************//**
+ * Finds or creates a Cmiss_time_sequence in the field module which matches the
+ * sequence of times provided.
+ * @param field_module  The field module to search or create in.
+ * @param number_of_times  The size of the times array.
+ * @param times  Array of times. Note later times must not be less than earlier
+ * times.
+ * @return  The time sequence matching the times array, or NULL if failed.
+ */
+Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
+	Cmiss_field_module_id field_module, int number_of_times, double *times);
 
-DESCRIPTION :
-Creates a Cmiss_time_sequence_package.  This object enables the actual time_sequence
-objects created with respect to it to reduce storage by sharing identical lists.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns a new reference to the time sequence with reference count
+ * incremented. Caller is responsible for destroying the new reference.
+ *
+ * @param time_sequence  The time sequence to obtain a new reference to.
+ * @return  New time sequence reference with incremented reference count.
+ */
+Cmiss_time_sequence_id Cmiss_time_sequence_access(
+	Cmiss_time_sequence_id time_sequence);
 
-Cmiss_time_sequence_id Cmiss_time_sequence_package_get_matching_time_sequence(
-	Cmiss_time_sequence_package_id time_sequence_package,
-	int number_of_times, double *times);
-/*******************************************************************************
-LAST MODIFIED : 11 November 2004
+/***************************************************************************//**
+ * Destroys reference to the time sequence and sets pointer/handle to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param time_sequence_address  Address of time sequence reference.
+ * @return  1 on success, 0 if invalid arguments.
+ */
+int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
 
-DESCRIPTION :
-Searches <cmiss_time_sequence_package> for a cmiss_time_sequence which has the time
-sequence specified.  If no equivalent cmiss_time_sequence is found one is created 
-and returned.
-==============================================================================*/
-
-int Cmiss_time_sequence_set_value(
-	Cmiss_time_sequence_id time_sequence, int time_index, double time);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2004
-
-DESCRIPTION :
-Sets the <time> for the given <time_index> in the <time_sequence>.  This 
-should only be done for unmanaged time sequences (as otherwise this sequence
-may be shared by many other objects which are not expecting changes).
-If the sequence does not have as many times as the <time_index> then it will
-be expanded and the unspecified times also set to <time>.
-==============================================================================*/
+/***************************************************************************//**
+ * Sets the time for the given time_index in the time sequence.
+ * This can only be done while the time sequence is not in use by other objects.
+ * If the sequence does not have as many times as the <time_index> then it will
+ * be expanded and the unspecified times also set to <time>.
+ * @param time_sequence  The time sequence to modify.
+ * @param time_index  The index of the time to set, starting at 0.
+ * @param time  The time to set.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+	int time_index, double time);
 
 #endif /* __CMISS_TIME_SEQUENCE_H__ */

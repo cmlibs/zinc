@@ -217,7 +217,7 @@ bool Field_parameters<ValueType>::setNotDense()
 {
 	if (!dense)
 		return true;
-	display_message(INFORMATION_MESSAGE, "In Field_parameters::setNotDense  field %s\n", field->name); // GRC test
+	//display_message(INFORMATION_MESSAGE, "In Field_parameters::setNotDense  field %s\n", field->name); // GRC test
 	dense = false;
 	if (value_exists.setAllTrue(getMaxParameterCount()))
 		return true;

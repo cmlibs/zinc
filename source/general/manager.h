@@ -601,7 +601,8 @@ DESCRIPTION : \
 Copies the <identifier_field_name> to <destination>.  Used by the manager. \
 ==============================================================================*/
 
-#define MANAGER_CLASS(object_type) manager_class_ ## object_type
+#define MANAGER_CLASS_(object_type) manager_class_ ## object_type
+#define MANAGER_CLASS(object_type) MANAGER_CLASS_(object_type)
 /***************************************************************************** \
 LAST MODIFIED : 9 February 2007 \
 \

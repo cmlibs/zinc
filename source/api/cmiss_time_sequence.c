@@ -38,10 +38,11 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdarg.h>
+
+/*#include <stdarg.h>*/
 #include "api/cmiss_time_sequence.h"
-#include "general/debug.h"
-#include "general/object.h"
+/*#include "general/debug.h"*/
+/*#include "general/object.h"*/
 #include "finite_element/finite_element.h"
 #include "user_interface/message.h"
 
@@ -50,56 +51,30 @@ Global functions
 ----------------
 */
 
-Cmiss_time_sequence_package_id Cmiss_time_sequence_package_create(void)
+Cmiss_time_sequence_id Cmiss_time_sequence_access(
+	Cmiss_time_sequence_id time_sequence)
 {
-	return CREATE(Cmiss_time_sequence_package)();
+	return (Cmiss_time_sequence_id)(ACCESS(FE_time_sequence)(
+		(struct FE_time_sequence *)time_sequence));
 }
 
-Cmiss_time_sequence_id Cmiss_time_sequence_package_get_matching_time_sequence(
-	Cmiss_time_sequence_package_id time_sequence_package,
-	int number_of_times, Scalar *times)
-/*******************************************************************************
-LAST MODIFIED : 11 November 2004
-
-DESCRIPTION :
-Searches <cmiss_time_sequence_package> for a cmiss_time_sequence which has the time
-sequence specified.  If no equivalent cmiss_time_sequence is found one is created 
-and returned.
-==============================================================================*/
+int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address)
 {
-	FE_value *time_values;
-	int i;
-	struct FE_time_sequence *time_sequence = NULL;
+	return DESTROY(FE_time_sequence)(
+		(struct FE_time_sequence **)time_sequence_address);
+}
 
-	ENTER(Cmiss_time_sequence_package_get_matching_time_sequence);
+int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+	int time_index, double time)
+{
+	struct FE_time_sequence *fe_time_sequence;
 
-	if (ALLOCATE(time_values, FE_value, number_of_times))
+	fe_time_sequence = (struct FE_time_sequence *)time_sequence;
+	if (FE_time_sequence_is_in_use(fe_time_sequence))
 	{
-		for (i = 0 ; i < number_of_times ; i++)
-		{
-			time_values[i] = times[i];
-		}
-		time_sequence = get_FE_time_sequence_matching_time_series(
-			time_sequence_package, number_of_times, time_values);
-		DEALLOCATE(time_values);
+		display_message(ERROR_MESSAGE, "Cmiss_time_sequence_set_value.  "
+			"Cannot modify time sequence while in use");
+		return 0;
 	}
-	LEAVE;
-
-	return ((Cmiss_time_sequence_id)time_sequence);
-} /* Cmiss_time_sequence_package_get_matching_time_sequence */
-
-int Cmiss_time_sequence_set_value(
-	Cmiss_time_sequence_id time_sequence, int time_index, double time)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2004
-
-DESCRIPTION :
-Sets the <time> for the given <time_index> in the <time_sequence>.  This 
-should only be done for unmanaged time sequences (as otherwise this sequence
-may be shared by many other objects which are not expecting changes).
-If the sequence does not have as many times as the <time_index> then it will
-be expanded and the unspecified times also set to <time>.
-==============================================================================*/
-{
-	return FE_time_sequence_set_time_and_index((struct FE_time_sequence *)time_sequence, time_index, time);
+	return FE_time_sequence_set_time_and_index(fe_time_sequence, time_index, time);
 }

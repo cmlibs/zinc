@@ -63,11 +63,15 @@ Local types
 -----------
 */
 
-#define MANAGER_MESSAGE_OBJECT_CHANGE( object_type ) \
+#define MANAGER_MESSAGE_OBJECT_CHANGE_( object_type ) \
 	manager_message_object_change ## object_type
+#define MANAGER_MESSAGE_OBJECT_CHANGE( object_type ) \
+	MANAGER_MESSAGE_OBJECT_CHANGE_(object_type)
 
-#define MANAGER_CALLBACK_ITEM( object_type ) \
+#define MANAGER_CALLBACK_ITEM_( object_type ) \
 	manager_callback_item_ ## object_type
+#define MANAGER_CALLBACK_ITEM( object_type ) \
+	MANAGER_CALLBACK_ITEM_(object_type)
 
 #define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type , change_detail_type ) \
 struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
@@ -130,7 +134,8 @@ Local functions
 ---------------
 */
 
-#define MANAGER_UPDATE( object_type )  manager_update_ ## object_type
+#define MANAGER_UPDATE_( object_type )  manager_update_ ## object_type
+#define MANAGER_UPDATE( object_type )  MANAGER_UPDATE_(object_type)
 
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
@@ -1318,7 +1323,8 @@ PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type) \
 	return (return_code); \
 }
 
-#define MANAGER_GET_OWNER(object_type)  manager_get_owner_ ## object_type
+#define MANAGER_GET_OWNER_(object_type)  manager_get_owner_ ## object_type
+#define MANAGER_GET_OWNER(object_type)  MANAGER_GET_OWNER_(object_type)
 
 #define PROTOTYPE_MANAGER_GET_OWNER_FUNCTION( object_type, owner_type ) \
 owner_type *MANAGER_GET_OWNER(object_type)(struct MANAGER(object_type) *manager) \
@@ -1350,7 +1356,8 @@ PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(object_type,owner_type) \
 	return (owner); \
 } /* MANAGER_GET_OWNER(object_type) */
 
-#define MANAGER_SET_OWNER(object_type)  manager_set_owner_ ## object_type
+#define MANAGER_SET_OWNER_(object_type)  manager_set_owner_ ## object_type
+#define MANAGER_SET_OWNER(object_type)  MANAGER_SET_OWNER_(object_type)
 
 #define PROTOTYPE_MANAGER_SET_OWNER_FUNCTION( object_type, owner_type ) \
 int MANAGER_SET_OWNER(object_type)(struct MANAGER(object_type) *manager, \

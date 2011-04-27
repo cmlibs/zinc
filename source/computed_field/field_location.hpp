@@ -50,6 +50,8 @@ extern "C" {
 #include "general/value.h"
 }
 
+struct Cmiss_field;
+
 class Field_location
 {
 protected:
@@ -75,19 +77,19 @@ public:
 		return number_of_derivatives;
 	}
 
-	virtual int check_cache_for_location(Computed_field * /*field*/)
+	virtual int check_cache_for_location(Cmiss_field * /*field*/)
 	{
 		/* Default is that the cache is invalid */
 		return 0;
 	}
 
-	virtual int update_cache_for_location(Computed_field * /*field*/)
+	virtual int update_cache_for_location(Cmiss_field * /*field*/)
 	{
 		/* Don't need to do anything */
 		return 1;
 	}
 
-	virtual int set_values_for_location(Computed_field * /*field*/,
+	virtual int set_values_for_location(Cmiss_field * /*field*/,
 		FE_value * /*values*/)
 	{
 		/* Default is that the location can't set the values */
@@ -130,9 +132,9 @@ public:
 		return top_level_element;
 	}
 
-	int check_cache_for_location(Computed_field *field);
+	int check_cache_for_location(Cmiss_field *field);
 
-	int update_cache_for_location(Computed_field *field);
+	int update_cache_for_location(Cmiss_field *field);
 };
 
 class Field_node_location : public Field_location
@@ -156,27 +158,27 @@ public:
 		return node;
 	}
 
-	int check_cache_for_location(Computed_field *field);
+	int check_cache_for_location(Cmiss_field *field);
 
-	int update_cache_for_location(Computed_field *field);
+	int update_cache_for_location(Cmiss_field *field);
 };
 
 class Field_coordinate_location : public Field_location
 {
 private:
-	Computed_field *reference_field;
+	Cmiss_field *reference_field;
 	int number_of_values;
 	FE_value *values;
 	FE_value *derivatives;
 
 public:
-	Field_coordinate_location(Computed_field *reference_field,
+	Field_coordinate_location(Cmiss_field *reference_field,
 		int number_of_values_in, FE_value* values_in, FE_value time = 0,
 		int number_of_derivatives = 0, FE_value* derivatives_in = NULL);
 	
    ~Field_coordinate_location();
 
-	Computed_field *get_reference_field()
+	Cmiss_field *get_reference_field()
 	{
 		return reference_field;
 	}
@@ -193,11 +195,11 @@ public:
 
 	int set_values(int number_of_values_in, FE_value* values_in);
 
-	int check_cache_for_location(Computed_field *field);
+	int check_cache_for_location(Cmiss_field *field);
 
-	int update_cache_for_location(Computed_field *field);
+	int update_cache_for_location(Cmiss_field *field);
 
-	int set_values_for_location(Computed_field *field,
+	int set_values_for_location(Cmiss_field *field,
 		FE_value *values);
 
 };

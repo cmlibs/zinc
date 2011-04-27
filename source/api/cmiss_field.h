@@ -73,8 +73,6 @@ Global types
 */
 
 #ifndef CMISS_FIELD_ID_DEFINED
-	/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-	#define Cmiss_field Computed_field
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;
 	#define CMISS_FIELD_ID_DEFINED

@@ -55,6 +55,7 @@ November 97 Created from rendering part of Drawing.
 #include <stdio.h>
 #include <math.h>
 extern "C" {
+#include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "three_d_drawing/movie_extensions.h"

@@ -5234,11 +5234,11 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 	if (field && is_standard_object_name(name))
 	{
 		return_code = 1;
-		Cmiss_set_Computed_field *manager_field_list = 0;
+		Cmiss_set_Cmiss_field *manager_field_list = 0;
 		bool restore_changed_object_to_lists = false;
 		if (field->manager)
 		{
-			manager_field_list = reinterpret_cast<Cmiss_set_Computed_field *>(field->manager->object_list);
+			manager_field_list = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
 					 const_cast<char *>(name), field->manager))
 			{
@@ -5337,11 +5337,11 @@ struct Cmiss_region *Computed_field_manager_get_region(
 	return (region);
 }
 
-const Cmiss_set_Computed_field &Computed_field_manager_get_fields(
+const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager)
 {
-	return const_cast<const Cmiss_set_Computed_field&>(
-		*(reinterpret_cast<Cmiss_set_Computed_field*>(manager->object_list)));
+	return const_cast<const Cmiss_set_Cmiss_field&>(
+		*(reinterpret_cast<Cmiss_set_Cmiss_field*>(manager->object_list)));
 }
 
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
@@ -5780,4 +5780,13 @@ Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_modul
 	LEAVE;
 
 	return (return_field);
+}
+
+Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
+	Cmiss_field_module_id field_module, int number_of_times, double *times)
+{
+	if (!field_module)
+		return NULL;
+	return (Cmiss_time_sequence_id)FE_region_get_FE_time_sequence_matching_series(
+		Cmiss_region_get_FE_region(field_module->region), number_of_times, times);
 }

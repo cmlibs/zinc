@@ -64,7 +64,6 @@ Global types
 
 #ifndef CMISS_FIELD_ID_DEFINED
 	/* Handle to a generic Cmiss_field */
-	#define Cmiss_field Computed_field
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;
 	#define CMISS_FIELD_ID_DEFINED

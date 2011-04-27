@@ -79,13 +79,17 @@ if a value is already known.
 #endif /* __cplusplus */
 
 struct Field_location;
+
 /*
 The Cmiss_computed_field which is Public is currently the same object as the
 cmgui internal Computed_field.  The Public interface is contained in
-api/cmiss_computed_field.h however most of the functions come directly from
+api/cmiss_field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 functions are given their public names.
 */
+
+/* Convert to use external field object name */
+#define Computed_field Cmiss_field
 
 /* Convert the functions that have identical interfaces */
 #define Computed_field_get_number_of_components \

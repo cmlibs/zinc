@@ -1114,20 +1114,25 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 			}
 		}
 		DESTROY(Option_table)(&option_table);
-		if (region) {
+		if (region)
+		{
 			Cmiss_region_destroy(&region);
 		}
-		if (data_group) {
+		if (data_group)
+		{
 			Cmiss_region_destroy(&data_group);
 		}
-		if (objective_field) {
-			DEACCESS(Computed_field)(&objective_field);
+		if (objective_field)
+		{
+			Cmiss_field_destroy(&objective_field);
 		}
-		if (data_field) {
-			DEACCESS(Computed_field)(&data_field);
+		if (data_field)
+		{
+			Cmiss_field_destroy(&data_field);
 		}
-		if (mesh_field) {
-			DEACCESS(Computed_field)(&mesh_field);
+		if (mesh_field)
+		{
+			Cmiss_field_destroy(&mesh_field);
 		}
 		if (field_names.strings)
 		{

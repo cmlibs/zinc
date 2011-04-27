@@ -41,10 +41,7 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
-/* Workaround to revision C6810. It would be cleaner to just #include "api/cmiss_field.h" */
 #ifndef CMISS_FIELD_ID_DEFINED
-	/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-	#define Cmiss_field Computed_field
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;
 	#define CMISS_FIELD_ID_DEFINED
@@ -54,11 +51,18 @@
  * Field module, obtained from region, which owns fields and must be passed to
  * field factory create methods.
  */
-struct Cmiss_field_module;
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
-typedef struct Cmiss_field_module *Cmiss_field_module_id;
+/*
+Global functions
+----------------
+*/
 
-/*******************************************************************************
+/***************************************************************************//**
  * Returns a new reference to the field module with reference count incremented.
  * Caller is responsible for destroying the new reference.
  * 

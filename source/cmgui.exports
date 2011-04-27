@@ -285,9 +285,10 @@ Cmiss_region_create_region
 Cmiss_region_create_child
 Cmiss_region_create_subregion
 
-create_FE_time_sequence_package
+Cmiss_field_module_get_matching_time_sequence
+Cmiss_time_sequence_access
+Cmiss_time_sequence_destroy
 Cmiss_time_sequence_set_value
-Cmiss_time_sequence_package_get_matching_time_sequence
 
 /* api/cmiss_node.h */
 Cmiss_region_get_nodeset_by_name

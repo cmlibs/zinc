@@ -1194,3 +1194,11 @@ Returns true if <fe_time> contains the <fe_time_sequence>.
 
 	return (return_code);
 } /* FE_time_has_FE_time_sequence */
+
+int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
+{
+	if (NULL == fe_time_sequence)
+		return 0;
+	/* basic implementation assumes object is accessed by region and caller */
+	return (fe_time_sequence->access_count <= 2);
+}
