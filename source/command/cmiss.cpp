@@ -17521,7 +17521,9 @@ Executes a GFX WRITE TEXTURE command.
 								}
 								else
 								{
-									texture = Computed_field_get_texture(temp_field);
+									Cmiss_field_image_id image_field = Cmiss_field_cast_image(temp_field);
+									texture = Cmiss_field_image_get_texture(image_field);
+									Cmiss_field_image_destroy(&image_field);
 									shift_Parse_state(state, 1);
 								}
 								DEACCESS(Computed_field)(&temp_field);
