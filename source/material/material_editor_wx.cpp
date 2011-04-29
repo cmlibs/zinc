@@ -470,27 +470,23 @@ void material_editor_wx_update_shininess(Material_editor *material_editor, float
 }
 
 void material_editor_wx_update_image_field(Material_editor *material_editor,
-	struct Computed_field *field, int selection)
+	Cmiss_field_image_id field, int selection)
 {
 	if (selection == 0)
 	{
-		Cmiss_graphics_material_set_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD, field);
+		Cmiss_graphics_material_set_image_field(material_editor->edit_material,	1, field);
 	}
 	else if (selection == 1)
 	{
-		Cmiss_graphics_material_set_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD, field);
+		Cmiss_graphics_material_set_image_field(material_editor->edit_material,	2, field);
 	}
 	else if (selection == 2)
 	{
-		Cmiss_graphics_material_set_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_THIRD_IMAGE_FIELD, field);
+		Cmiss_graphics_material_set_image_field(material_editor->edit_material,	3, field);
 	}
 	else if (selection == 3)
 	{
-		Cmiss_graphics_material_set_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_FOURTH_IMAGE_FIELD, field);
+		Cmiss_graphics_material_set_image_field(material_editor->edit_material,	4, field);
 	}
 	 material_editor_update_picture(material_editor);
 }
@@ -589,7 +585,9 @@ public:
 		{
 			wxChoice *texture_choice = XRCCTRL(*this, "MaterialEditorTextureChoice", wxChoice);
 			int selection = texture_choice->GetCurrentSelection();
-			material_editor_wx_update_image_field(material_editor, field, selection);
+			Cmiss_field_image_id image_field = Cmiss_field_cast_image(field);
+			material_editor_wx_update_image_field(material_editor, image_field, selection);
+			Cmiss_field_image_destroy(&image_field);
 			return 1;
 		}
 
@@ -761,22 +759,18 @@ Callback for the shininess slider.
 void OnMaterialEditorTextureChoice(wxCommandEvent& event)
 {
 	int num = event.GetSelection();
-	struct Computed_field *field = NULL;
+	Cmiss_field_image_id field = NULL;
 	if (num == 0)
-		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD);
+		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,	1);
 	else if (num == 1)
-		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD);
+		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,	2);
 	else if (num == 2)
-		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_THIRD_IMAGE_FIELD);
+		field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,	3);
 	else if (num == 3)
-		field =	Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-			CMISS_GRAPHICS_MATERIAL_FOURTH_IMAGE_FIELD);
-	Set_region_and_image_field_chooser(field);
+		field =	Cmiss_graphics_material_get_image_field(material_editor->edit_material,	4);
+	Set_region_and_image_field_chooser(Cmiss_field_image_base_cast(field));
 	if (field)
-		Cmiss_field_destroy(&field);
+		Cmiss_field_image_destroy(&field);
 }
 
 void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
@@ -897,14 +891,13 @@ void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 	bump_mapping_flag = 0;
 	if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
 	{
-		Cmiss_field_id field = Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-				CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD);
+		Cmiss_field_image_id field = Cmiss_graphics_material_get_image_field(material_editor->edit_material, 2);
 		if (field)
 		{
 			material_editor->material_editor_bump_mapping_checkbox->Enable(true);
 			bump_mapping_flag
 					= material_editor->material_editor_bump_mapping_checkbox->GetValue();
-			Cmiss_field_destroy(&field);
+			Cmiss_field_image_destroy(&field);
 		}
 		return_code = set_material_program_type(material_editor->edit_material,
 		/*bump_mapping_flag */bump_mapping_flag, 0, 0, 0, 0, 0, 0, 0, 1);
@@ -1262,7 +1255,7 @@ Sets the <material> to be edited by the <material_editor>.
 {
 	 Colour temp_colour;
 	 int return_code, per_pixel_set;
-	 struct Computed_field *field = NULL;
+	 Cmiss_field_image_id field = NULL;
 	 MATERIAL_PRECISION alpha,shininess;
 
 	ENTER(material_editor_wx_set_material);
@@ -1327,24 +1320,22 @@ Sets the <material> to be edited by the <material_editor>.
 							shininess);	 
 				}
 
-				field=Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-					CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD);
-				material_editor->wx_material_editor->Set_region_and_image_field_chooser(field);
+				field=Cmiss_graphics_material_get_image_field(material_editor->edit_material, 1);
+				material_editor->wx_material_editor->Set_region_and_image_field_chooser(Cmiss_field_image_base_cast(field));
 				if (field)
-					Cmiss_field_destroy(&field);
+					Cmiss_field_image_destroy(&field);
 
 				per_pixel_set = Graphical_material_get_per_pixel_lighting_flag(material_editor->edit_material);
 				if (per_pixel_set)
 				{
 					 material_editor->material_editor_per_pixel_checkbox->SetValue(true);
-					 field=Cmiss_graphics_material_get_image_field(material_editor->edit_material,
-							CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD);
+					 field=Cmiss_graphics_material_get_image_field(material_editor->edit_material, 2);
 					 if (field)
 					 {
 							material_editor->material_editor_bump_mapping_checkbox->Enable(true);
 							material_editor->material_editor_bump_mapping_checkbox->SetValue(
 								 Graphical_material_get_bump_mapping_flag(material_editor->edit_material));
-							Cmiss_field_destroy(&field);
+							Cmiss_field_image_destroy(&field);
 					 }
 					 else
 					 {

@@ -81,7 +81,7 @@ DESCRIPTION :
  * @return  Returns texture if successfully get a texture from the provided
  *   field, otherwise NULL.
  */
-struct Texture *Computed_field_get_texture(struct Computed_field *field);
+struct Texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
 
 int Computed_field_depends_on_texture(struct Computed_field *field,
 	struct Texture *texture);

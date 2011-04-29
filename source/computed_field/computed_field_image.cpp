@@ -434,7 +434,9 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		/* allocate the texture image */
 		if (source_field_is_image)
 		{
-			REACCESS(Texture)(&texture, Computed_field_get_texture(field->source_fields[1]));
+			Cmiss_field_image_id source_image_field = Cmiss_field_cast_image(field->source_fields[1]);
+			REACCESS(Texture)(&texture, Cmiss_field_image_get_texture(source_image_field));
+			Cmiss_field_image_destroy(&source_image_field);
 			need_evaluate_texture = false;
 		}
 		else if (Texture_allocate_image(texture, image_width, image_height,
@@ -858,8 +860,7 @@ Computed_field *Computed_field_create_image(
 
 Cmiss_texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field)
 {
-	Computed_field_image *image_core =
-		Computed_field_image_core_cast(image_field);
+	Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
 	return (image_core->get_texture());
 }
 
@@ -1123,36 +1124,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Computed_field_register_type_image */
-
-Texture *Computed_field_get_texture(struct Computed_field *field)
-{
-	struct Texture *texture;
-
-	ENTER(Computed_field_get_texture);
-	texture = (struct Texture *)NULL;
-	if (field)
-	{
-		Computed_field_image* image = dynamic_cast<Computed_field_image*>(field->core);
-		if (NULL != image)
-		{
-			texture = image->get_texture();
-		}
-		if (!texture)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_texture.  Field does not have a texture.");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_texture.  Invalid argument(s)");
-		
-	}
-	LEAVE;
-
-	return (texture);
-} /* Computed_field_get_texture */
 
 int Computed_field_depends_on_texture(struct Computed_field *field,
 	struct Texture *texture)
@@ -1450,6 +1421,11 @@ int Cmiss_field_image_storage_information_get_memory_block(
 		memory_block, memory_block_length));
 }
 
+int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(image_address));
+}
+
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	Cmiss_field_image_storage_information_id storage_information)
 {
@@ -1672,7 +1648,9 @@ int list_image_field(struct Computed_field *field,void *dummy_void)
 		return_code = 1;
 		if (Computed_field_is_image_type(field, NULL))
 		{
-			struct Texture *texture = Computed_field_get_texture(field);
+			Cmiss_field_image_id image_field = Cmiss_field_cast_image(field);
+			struct Texture *texture = Cmiss_field_image_get_texture(image_field);
+			Cmiss_field_image_destroy(&image_field);
 			if (texture)
 			{
 				return_code = list_Texture(texture,NULL);
@@ -1697,7 +1675,9 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
 		return_code = 1;
 		if (Computed_field_is_image_type(field, NULL))
 		{
-			struct Texture *texture = Computed_field_get_texture(field);
+			Cmiss_field_image_id image_field = Cmiss_field_cast_image(field);
+			struct Texture *texture = Cmiss_field_image_get_texture(image_field);
+			Cmiss_field_image_destroy(&image_field);
 			if (texture)
 			{
 				return_code = list_Texture_commands(texture,command_prefix_void);

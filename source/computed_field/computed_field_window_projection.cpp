@@ -400,10 +400,10 @@ DESCRIPTION :
 						Scene_viewer_get_background_texture_info(scene_viewer,
 							&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
 							&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
-						struct Computed_field *field=
+						Cmiss_field_image_id image_field=
 							Scene_viewer_get_background_image_field(scene_viewer);
-						texture = Computed_field_get_texture(field);
-						DEACCESS(Computed_field)(&field);
+						texture = Cmiss_field_image_get_texture(image_field);
+						Cmiss_field_image_destroy(&image_field);
 						if (texture)
 						{
 							Texture_get_distortion_info(texture, &distortion_centre_x, 

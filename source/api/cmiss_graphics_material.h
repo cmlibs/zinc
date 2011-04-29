@@ -60,27 +60,11 @@
 	#define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 #endif /* CMISS_GRAPHICS_MATERIAL_ID_DEFINED */
 
-#ifndef CMISS_FIELD_ID_DEFINED
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-/***************************************************************************//**
- * Enumerator to identify different image fields used in Cmiss_graphics_material.
- */
-enum Cmiss_graphics_material_image_field_identifier
-{
-	CMISS_GRAPHICS_MATERIAL_INVALID_FIELD = 0,
-	CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD = 1, /*!<Used as the first texture for C
-								 miss_material*/
-	CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD = 2, /*!<Used as the second texture for C
-								 miss_material*/
-	CMISS_GRAPHICS_MATERIAL_THIRD_IMAGE_FIELD = 3, /*!<Used as the third texture for C
-								 miss_material*/
-	CMISS_GRAPHICS_MATERIAL_FOURTH_IMAGE_FIELD = 4 /*!<Used as the fourth texture for C
-								 miss_material*/
-};
+#ifndef CMISS_FIELD_IMAGE_ID_DEFINED
+	struct Cmiss_field_image;
+	typedef struct Cmiss_field_image *Cmiss_field_image_id;
+	#define CMISS_FIELD_IMAGE_ID_DEFINED
+#endif /* CMISS_FIELD_IMAGE_ID_DEFINED */
 
 /***************************************************************************//**
  * Labels of material attributes which may be set or obtained using generic
@@ -93,6 +77,43 @@ enum Cmiss_graphics_material_attribute_id
 	 * longer in use, i.e. when number of external references to it drops to
 	 * zero. Set to 1 to manage material object indefinitely, or until this
 	 * attribute is reset to zero, effectively marking it as pending destruction.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA = 2,
+	/*!< Opacity of the material. Transparent or translucent objects has
+	 * lower alpha values then an opaque ones. Minimum acceptable value is 0
+	 * and maximum acceptable value is 1. Use attribute_real to get and set
+	 * its values.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT = 3,
+	/*!< Ambient colour of the material. Ambient colour simulates the colour
+	 * of the material when it does not receive direct illumination.
+	 * Composed of RGB components. Use attribute_real3 to get and set its
+	 * values. Minimum acceptable value is 0 and maximum acceptable value is 1.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE = 4,
+	/*!< Diffuse colour of the material. Diffuse colour response to light that
+	 * comes from one direction and this colour scattered equally in all directions
+	 * once the light hits it. Composed of RGB components. Use attribute_real3
+	 * to get and set its values. Minimum acceptable value is 0 and maximum acceptable
+	 * value is 1.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION = 5,
+	/*!< Emissive colour of the material. Emissive colour simulates colours
+	 * that is originating from the material itself. Composed of RGB components.
+	 * Use attribute_real3 to get and set its values. Minimum acceptable value is 0
+	 * and maximum acceptable value is 1.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS = 6,
+	/*!< Shininess determines the brightness of the highlight. Minimum acceptable
+	 * value is 0 and maximum acceptable value is 1. Use attribute_real to get and
+	 * set its values.
+	 */
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR = 7
+	/*!< Specular colour of the material. Specular colour produces highlights.
+	 * Unlike ambient and diffuse, specular colour depends on location of
+	 * the viewpoint, it is brightest along the direct angle of reflection.
+	 * Composed of RGB components. Use attribute_real3 to get and set its values.
+	 * Minimum acceptable value is 0 and maximum acceptable value is 1.
 	 */
 };
 
@@ -132,10 +153,55 @@ int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id mat
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this material object.
+ * or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute_id attribute_id, int value);
+
+/***************************************************************************//**
+ * Get a real value of an attribute of the graphics material.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  Value of the attribute.
+ */
+double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set a real value for an attribute of the graphics material.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the real attribute to set.
+ * @param value  The new value for the attribute.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this material object.
+ */
+int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double value);
+
+/***************************************************************************//**
+ * Get a 3 components vectors of an attribute of the graphics material.
+ * <values> should be allocated with enough space for 3 components.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the vectors attribute to get.
+ * @return  Values of the attribute.
+ */
+int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double *values);
+
+/***************************************************************************//**
+ * Set a 3 components vectors of an attribute for the graphics material.
+ * <values> should be a vectors with 3 components containg valid values.
+ *
+ * @param material  Handle to the cmiss material.
+ * @param attribute_id  The identifier of the vectors attribute to get.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this material object.
+ */
+int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double *values);
 
 /***************************************************************************//**
  * Return an allocated string containing material name.
@@ -154,97 +220,6 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
  */
 int Cmiss_graphics_material_set_name(
 	Cmiss_graphics_material_id material, const char *name);
-
-/***************************************************************************//**
- * Set the alpha value (opacity) of the material.
- *
- * @param material  The handle to the to be modified cmiss graphic material.
- * @param alpha  Opacity of the material. Transparent or translucent objects has
- *   lower alpha values then an opaque ones. Minimum acceptable value is 0
- *   and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_alpha(
-	Cmiss_graphics_material_id material, float alpha);
-
-/***************************************************************************//**
- * Set the size and brigtness of the highlight.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param shininess  Size and brightness of the hightlight, the higher the 
- *   value, the smaller and brighter the highlight. Minimum acceptable value is 0
- *   and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_shininess(
-	Cmiss_graphics_material_id material, float shininess);
-
-/***************************************************************************//**
- * Set the ambient colour of the material. Ambient colour simulates the colour 
- * of the material when it does not receive direct illumination.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param red  Value of the red component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param green  Value of the green component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param blue  Value of the blue component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_ambient(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
-
-/***************************************************************************//**
- * Set the diffuse color of the material. Diffuse colour response to light that 
- * comes from one direction and this colour scattered equally in all directions 
- * once the light hits it.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param red  Value of the red component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param green  Value of the green component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param blue  Value of the blue component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_diffuse(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
-
-/***************************************************************************//**
- * Set the emissive colour of the material. Emissive colour simulates colours
- * that is originating from the material itself. It is not affected by any
- * lighting.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param red  Value of the red component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param green  Value of the green component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param blue  Value of the blue component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_emission(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
-
-/***************************************************************************//**
- * Set the specular colour of the material. Specular colour produces highlights.
- * Unlike ambient and diffuse reflect, specular colour depends on location of
- * the viewpoint, it is brightest along the direct angle of reflection.
- *
- * @param material  The handle to the to be modified cmiss material.
- * @param red  Value of the red component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param green  Value of the green component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @param blue  Value of the blue component to be set.
- *   Minimum acceptable value is 0 and maximum acceptable value is 1.
- * @return  1 if successfully modify material, otherwise 0.
- */
-int Cmiss_graphics_material_set_specular(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute
@@ -269,12 +244,12 @@ int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
  *
  * @param material  handle to the cmiss material.
  * @param field  handle to a general cmiss field.
- * @param identifier  enumerator to identify which image field to be set in
+ * @param image_number  integer to identify which image field to be set in
  * 		material.
  * @return  1 if successfully set an image field, otherwise 0.
  */
 int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
-		enum Cmiss_graphics_material_image_field_identifier identifier, Cmiss_field_id field);
+	int image_number, Cmiss_field_image_id image_field);
 
 /***************************************************************************//**
  * Get the cmiss_field containing an image from a Cmiss_graphics_material which is
@@ -282,13 +257,12 @@ int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
  * identifier.
  *
  * @param material  handle to the cmiss material.
- * @param identifier  enumerator to identify which image field to be set in
- * 		material.
+ * @param image_number  integer to identify which image field to get in material.
  * @return  cmiss_field if a field has been sett for the material, otherwise NULL.
  * 		This also incremenet the access count of the cmiss_field by 1;
  */
-Cmiss_field_id  Cmiss_graphics_material_get_image_field(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_image_field_identifier identifier);
+Cmiss_field_image_id Cmiss_graphics_material_get_image_field(
+	Cmiss_graphics_material_id material, int image_number);
 
 /***************************************************************************//**
  * Deprecated function for getting generic CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED.

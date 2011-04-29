@@ -198,6 +198,31 @@ Cmiss_field_id Cmiss_field_module_create_image(Cmiss_field_module_id field_modul
  */
 Cmiss_field_image_id Cmiss_field_cast_image(Cmiss_field_id image_field);
 
+/***************************************************************************//**
+ * Cast image field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the image argument.
+ * Use this function to call base-class API, e.g.:
+ * Cmiss_field_set_name(Cmiss_field_iamge_base_cast(image_field), "bob");
+ *
+ * @param image  Handle to the image field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id image)
+{
+	return (Cmiss_field_id)(image);
+}
+
+/***************************************************************************//**
+ * Destroys this reference to the image field (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param image_address  Address of handle to the image field.
+ * @return  1 if successfully destroyed the image handle, otherwise 0.
+ */
+int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
+
 /*****************************************************************************//**
  * Reads image data into the field.
  * The storage_information may specify a filename, series of filenames or

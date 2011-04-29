@@ -1646,9 +1646,9 @@ DESCRIPTION :
 Returns a count of the number of scene viewer redraws.
 ==============================================================================*/
 
-struct Computed_field *Scene_viewer_get_background_image_field(
+Cmiss_field_image_id Scene_viewer_get_background_image_field(
 	struct Scene_viewer *scene_viewer);
 
 int Scene_viewer_set_background_image_field(
-	struct Scene_viewer *scene_viewer, struct Computed_field *field);
+	struct Scene_viewer *scene_viewer, Cmiss_field_image_id image_field);
 #endif /* !defined (SCENE_VIEWER_H) */

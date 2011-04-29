@@ -155,7 +155,7 @@ struct Scene_viewer_image_texture
 {
 	struct Texture *texture;
 	struct MANAGER(Computed_field) *manager;
-	struct Computed_field *field;
+	Cmiss_field_image_id field;
 	void *callback_id;
 	struct Scene_viewer *scene_viewer;
 };
@@ -3984,11 +3984,11 @@ static void Scene_viewer_image_field_change(
 	if (message && image_texture)
 	{
 		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(
-				message, image_texture->field);
+				message, Cmiss_field_image_base_cast(image_texture->field));
 		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
 			REACCESS(Texture)(&(image_texture->texture),
-				Computed_field_get_texture(image_texture->field));
+			Cmiss_field_image_get_texture(image_texture->field));
 			Scene_viewer_redraw(image_texture->scene_viewer);
 		}
 	}
@@ -4004,7 +4004,7 @@ static void Scene_viewer_image_field_change(
  * This will also create a callback for computed field.
  */
 int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *image_texture,
-	struct Computed_field *field)
+	Cmiss_field_image_id field)
 {
 	int return_code = 0;
 	if (image_texture)
@@ -4012,8 +4012,8 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 		return_code = 1;
 		if (image_texture->field)
 		{
-			DEACCESS(Computed_field)(&(image_texture->field));
-			image_texture->field=(struct Computed_field *)NULL;
+			Cmiss_field_image_destroy(&(image_texture->field));
+			image_texture->field=NULL;
 			if (image_texture->manager &&	image_texture->callback_id)
 			{
 				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
@@ -4025,7 +4025,7 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 		}
 		if (field)
 		{
-			struct Cmiss_region *temp_region = Computed_field_get_region(field);
+			struct Cmiss_region *temp_region = Computed_field_get_region(Cmiss_field_image_base_cast(field));
 			MANAGER(Computed_field) *field_manager =
 				Cmiss_region_get_Computed_field_manager(temp_region);
 			if (field_manager)
@@ -4034,9 +4034,10 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 					MANAGER_REGISTER(Computed_field)(Scene_viewer_image_field_change,
 						(void *)image_texture, field_manager);
 				image_texture->manager = field_manager;
-				image_texture->field = ACCESS(Computed_field)(field);
+				image_texture->field = field;
+				Cmiss_field_access(Cmiss_field_image_base_cast(field));
 				image_texture->texture = ACCESS(Texture)(
-					Computed_field_get_texture(image_texture->field));
+					Cmiss_field_image_get_texture(image_texture->field));
 				return_code = 1;
 			}
 		}
@@ -9299,16 +9300,16 @@ Returns a count of the number of scene viewer redraws.
 	return (frame_count);
 } /* Scene_viewer_get_frame_count */
 
-struct Computed_field *Scene_viewer_get_background_image_field(struct Scene_viewer *scene_viewer)
+Cmiss_field_image_id Scene_viewer_get_background_image_field(struct Scene_viewer *scene_viewer)
 {
-	struct Computed_field *image_field = NULL;
+	Cmiss_field_image_id image_field = NULL;
 
 	if (scene_viewer)
 	{
 			image_field = scene_viewer->image_texture.field;
 			if (image_field)
 			{
-				ACCESS(Computed_field)(image_field);
+				Cmiss_field_access(Cmiss_field_image_base_cast(image_field));
 			}
 	}
 	else
@@ -9321,13 +9322,13 @@ struct Computed_field *Scene_viewer_get_background_image_field(struct Scene_view
 }
 
 int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
-	struct Computed_field *field)
+	Cmiss_field_image_id image_field)
 {
 	int return_code = 0;
 	if (scene_viewer)
 	{
 		return_code = Scene_viewer_image_texture_set_field(
-			&(scene_viewer->image_texture), field);
+			&(scene_viewer->image_texture), image_field);
 		Scene_viewer_redraw(scene_viewer);
 	}
 	else

@@ -1526,7 +1526,8 @@ the changes are to be applied to all panes.
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					Scene_viewer_get_background_colour(scene_viewer,&background_colour);
-					image_field = Scene_viewer_get_background_image_field(scene_viewer);
+					image_field = Cmiss_field_image_base_cast(
+						Scene_viewer_get_background_image_field(scene_viewer));
 					Scene_viewer_get_background_texture_info(scene_viewer,
 						&(texture_placement[0]),&(texture_placement[1]),
 						&(texture_placement[2]),&(texture_placement[3]),
@@ -1606,13 +1607,14 @@ the changes are to be applied to all panes.
 							scene_viewer=window->scene_viewer_array[pane_no];
 							Scene_viewer_set_background_colour(scene_viewer,
 								&background_colour);
-							Scene_viewer_set_background_image_field(scene_viewer,	image_field);
+							Cmiss_field_image_id image = Cmiss_field_cast_image(image_field);
+							Scene_viewer_set_background_image_field(scene_viewer,	image);
 							if ((texture_placement[2] == 0.0) && (texture_placement[3] == 0.0))
 							{
 								if (image_field)
 								{
 									/* Get the default size from the texture itself */
-									Texture_get_original_size(Computed_field_get_texture(image_field),
+									Texture_get_original_size(Cmiss_field_image_get_texture(image),
 										&pixelsx, &pixelsy, &pixelsz);
 									texture_placement[2] = pixelsx;
 									texture_placement[3] = pixelsy;
@@ -1629,6 +1631,7 @@ the changes are to be applied to all panes.
 									texture_placement[2],texture_placement[3],
 									undistort_on,max_pixels_per_polygon);
 							}
+							Cmiss_field_image_destroy(&image);
 						}
 						Graphics_window_update_now(window);
 					}
@@ -7813,10 +7816,10 @@ Writes the properties of the <window> to the command window.
 			display_message(INFORMATION_MESSAGE,
 				"    background colour R G B: %g %g %g\n",
 				colour.red,colour.green,colour.blue);
-			struct Computed_field *field=
+			Cmiss_field_image_id image_field=
 				Scene_viewer_get_background_image_field(scene_viewer);
-			texture = Computed_field_get_texture(field);
-			DEACCESS(Computed_field)(&field);
+			texture = Cmiss_field_image_get_texture(image_field);
+			Cmiss_field_image_destroy(&image_field);
 			if (texture && Scene_viewer_get_background_texture_info(scene_viewer,
 					&left,&top,&texture_width,&texture_height,&undistort_on,
 					&max_pixels_per_polygon)&&
@@ -8135,10 +8138,10 @@ and establishing the views in it to the command window to a com file.
 			Scene_viewer_get_background_colour(scene_viewer,&colour);
 			process_message->process_command(INFORMATION_MESSAGE,
 				" colour %g %g %g",colour.red,colour.green,colour.blue);
-			struct Computed_field *field=
+			Cmiss_field_image_id image_field=
 				Scene_viewer_get_background_image_field(scene_viewer);
-			texture = Computed_field_get_texture(field);
-			DEACCESS(Computed_field)(&field);
+			texture = Cmiss_field_image_get_texture(image_field);
+			Cmiss_field_image_destroy(&image_field);
 			if (texture &&	Scene_viewer_get_background_texture_info(scene_viewer,
 					&left,&top,&texture_width,&texture_height,&undistort_on,
 					&max_pixels_per_polygon)&&

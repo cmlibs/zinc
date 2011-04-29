@@ -249,7 +249,7 @@ struct Material_image_texture
 {
 	struct Texture *texture;
 	struct MANAGER(Computed_field) *manager;
-	struct Computed_field *field;
+	Cmiss_field_image_id field;
 	void *callback_id;
 	struct Graphical_material *material;
 };
@@ -3883,7 +3883,7 @@ int Material_image_texture_reset(struct Material_image_texture *image_texture)
 		}
 		if (image_texture->field)
 		{
-			Cmiss_field_destroy(&(image_texture->field));
+			Cmiss_field_image_destroy(&(image_texture->field));
 		}
 	}
 	else
@@ -3976,7 +3976,7 @@ static void Material_image_field_change(
 	if (message && image_texture)
 	{
 		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(
-				message, image_texture->field);
+				message, Cmiss_field_image_base_cast(image_texture->field));
 		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
 			if (image_texture->material->compile_status != GRAPHICS_NOT_COMPILED)
@@ -3986,7 +3986,7 @@ static void Material_image_field_change(
 			if (image_texture->material->manager)
 				MANAGER_BEGIN_CACHE(Graphical_material)(image_texture->material->manager);
 			REACCESS(Texture)(&(image_texture->texture),
-				Computed_field_get_texture(image_texture->field));
+			Cmiss_field_image_get_texture(image_texture->field));
 			MANAGED_OBJECT_CHANGE(Graphical_material)(image_texture->material,
 				MANAGER_CHANGE_DEPENDENCY(Graphical_material));
 			if (image_texture->material->manager)
@@ -4005,7 +4005,7 @@ static void Material_image_field_change(
  * This will also create a callback for computed field.
  */
 int Material_image_texture_set_field(struct Material_image_texture *image_texture,
-	struct Computed_field *field)
+	Cmiss_field_image_id field)
 {
 	int return_code = 0;
 	if (image_texture)
@@ -4013,8 +4013,8 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 		return_code = 1;
 		if (image_texture->field)
 		{
-			DEACCESS(Computed_field)(&(image_texture->field));
-			image_texture->field=(struct Computed_field *)NULL;
+			Cmiss_field_image_destroy(&(image_texture->field));
+			image_texture->field=NULL;
 			if (image_texture->manager &&	image_texture->callback_id)
 			{
 				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
@@ -4026,7 +4026,7 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 		}
 		if (field)
 		{
-			struct Cmiss_region *temp_region = Computed_field_get_region(field);
+			struct Cmiss_region *temp_region = Computed_field_get_region(Cmiss_field_image_base_cast(field));
 			MANAGER(Computed_field) *field_manager =
 				Cmiss_region_get_Computed_field_manager(temp_region);
 			if (field_manager)
@@ -4035,8 +4035,9 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 					MANAGER_REGISTER(Computed_field)(Material_image_field_change,
 						(void *)image_texture, field_manager);
 				image_texture->manager = field_manager;
-				image_texture->field = ACCESS(Computed_field)(field);
-				image_texture->texture = ACCESS(Texture)(Computed_field_get_texture(image_texture->field));
+				image_texture->field = field;
+				Cmiss_field_access(Cmiss_field_image_base_cast(image_texture->field));
+				image_texture->texture = ACCESS(Texture)(Cmiss_field_image_get_texture(image_texture->field));
 				return_code = 1;
 			}
 		}
@@ -4764,139 +4765,31 @@ Returns the flag set for per_pixel_lighting.
 	return (return_code);
 }
 
-struct Computed_field *Cmiss_graphics_material_get_first_image_field(
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
-
-DESCRIPTION :
-Returns the texture member of the material.
-==============================================================================*/
+Cmiss_field_image_id  Cmiss_graphics_material_get_image_field(Cmiss_graphics_material_id material,
+	int image_number)
 {
-	struct Computed_field *image_field;
-
-	ENTER(Cmiss_graphics_material_get_first_image_field);
-	if (material)
-	{
-		image_field=material->image_texture.field;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_get_first_image_field.  Missing material");
-		image_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (image_field);
-} /* Cmiss_graphics_material_get_first_image_field */
-
-struct Computed_field *Cmiss_graphics_material_get_second_image_field(
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
-
-DESCRIPTION :
-Returns the texture member of the material.
-==============================================================================*/
-{
-	struct Computed_field *image_field;
-
-	ENTER(Cmiss_graphics_material_get_second_image_field);
-	if (material)
-	{
-		image_field=material->second_image_texture.field;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_get_second_image_field.  Missing material");
-		image_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (image_field);
-} /* Cmiss_graphics_material_get_second_image_field */
-
-struct Computed_field *Cmiss_graphics_material_get_third_image_field(
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
-
-DESCRIPTION :
-Returns the texture member of the material.
-==============================================================================*/
-{
-	struct Computed_field *image_field;
-
-	ENTER(Cmiss_graphics_material_get_third_image_field);
-	if (material)
-	{
-		image_field=material->third_image_texture.field;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_get_third_image_field.  Missing material");
-		image_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (image_field);
-} /* Cmiss_graphics_material_get_third_image_field */
-
-struct Computed_field *Cmiss_graphics_material_get_fourth_image_field(
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1998
-
-DESCRIPTION :
-Returns the texture member of the material.
-==============================================================================*/
-{
-	struct Computed_field *image_field;
-
-	ENTER(Cmiss_graphics_material_get_fourth_image_field);
-	if (material)
-	{
-		image_field=material->fourth_image_texture.field;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_get_fourth_image_field.  Missing material");
-		image_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (image_field);
-} /* Cmiss_graphics_material_get_fourth_image_field */
-
-Cmiss_field_id  Cmiss_graphics_material_get_image_field(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_image_field_identifier identifier)
-{
-	Cmiss_field_id image_field = NULL;
+	Cmiss_field_image_id image_field = NULL;
 
 	ENTER(Cmiss_graphics_material_get_image_field);
 	if (material)
 	{
-		switch(identifier)
+		switch(image_number)
 		{
-			case CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD:
+			case 1:
 			{
-				image_field = Cmiss_graphics_material_get_first_image_field(material);
+				image_field = material->image_texture.field;
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD:
+			case 2:
 			{
-				image_field = Cmiss_graphics_material_get_second_image_field(material);
+				image_field = material->second_image_texture.field;
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_THIRD_IMAGE_FIELD:
+			case 3:
 			{
-				image_field = Cmiss_graphics_material_get_third_image_field(material);
+				image_field = material->third_image_texture.field;
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_FOURTH_IMAGE_FIELD:
+			case 4:
 			{
-				image_field = Cmiss_graphics_material_get_fourth_image_field(material);
+				image_field = material->fourth_image_texture.field;
 			} break;
 			default:
 			{
@@ -4907,14 +4800,14 @@ Cmiss_field_id  Cmiss_graphics_material_get_image_field(Cmiss_graphics_material_
 		}
 		if (image_field)
 		{
-			Cmiss_field_access(image_field);
+			Cmiss_field_access(Cmiss_field_image_base_cast(image_field));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphics_material_get_image_field.  Missing material");
-		image_field=(struct Computed_field *)NULL;
+		image_field=NULL;
 	}
 	LEAVE;
 
@@ -5104,127 +4997,41 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-int Cmiss_graphics_material_set_first_image_field(Cmiss_graphics_material_id material,
-		Cmiss_field_id field)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphics_material_set_first_image_field);
-	if (material)
-	{
-		return_code = Material_image_texture_set_field(&(material->image_texture), field);
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		Graphical_material_changed(material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_set_first_image_field.  Missing material");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_graphics_material_set_second_image_field(Cmiss_graphics_material_id material,
-		Cmiss_field_id field)
-{
-	int return_code;
-
-	ENTER(Graphical_material_set_second_image_field);
-	if (material)
-	{
-		return_code = Material_image_texture_set_field(&(material->second_image_texture), field);
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		Graphical_material_changed(material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_set_second_image_field.  Missing material");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_graphics_material_set_third_image_field(Cmiss_graphics_material_id material,
-		Cmiss_field_id field)
-{
-	int return_code;
-
-	ENTER(Graphical_material_set_third_image_field);
-	if (material)
-	{
-		return_code = Material_image_texture_set_field(&(material->third_image_texture), field);
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		Graphical_material_changed(material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_set_third_image_field.  Missing material");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Cmiss_graphics_material_set_fourth_image_field(Cmiss_graphics_material_id material,
-		Cmiss_field_id field)
-{
-	int return_code;
-
-	ENTER(Graphical_material_set_fourth_image_field);
-	if (material)
-	{
-		return_code = Material_image_texture_set_field(&(material->fourth_image_texture), field);
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		Graphical_material_changed(material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_material_set_fourth_image_field.  Missing material");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
-		enum Cmiss_graphics_material_image_field_identifier identifier, Cmiss_field_id field)
+		int image_number, Cmiss_field_image_id field)
 {
-	int return_code = 0;
+	int return_code = 1;
 	ENTER(Cmiss_graphics_material_set_image_field);
 	if (material)
 	{
-		switch(identifier)
+		switch(image_number)
 		{
-			case CMISS_GRAPHICS_MATERIAL_FIRST_IMAGE_FIELD:
+			case 1:
 			{
-				return_code = Cmiss_graphics_material_set_first_image_field(material, field);
+				return_code = Material_image_texture_set_field(&(material->image_texture), field);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_SECOND_IMAGE_FIELD:
+			case 2:
 			{
-				return_code = Cmiss_graphics_material_set_second_image_field(material, field);
+				return_code = Material_image_texture_set_field(&(material->second_image_texture), field);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_THIRD_IMAGE_FIELD:
+			case 3:
 			{
-				return_code = Cmiss_graphics_material_set_third_image_field(material, field);
+				return_code = Material_image_texture_set_field(&(material->third_image_texture), field);
 			} break;
-			case CMISS_GRAPHICS_MATERIAL_FOURTH_IMAGE_FIELD:
+			case 4:
 			{
-				return_code = Cmiss_graphics_material_set_fourth_image_field(material, field);
+				return_code = Material_image_texture_set_field(&(material->fourth_image_texture), field);
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
 					"Cmiss_graphics_material_set_image_field.  Invalid image field has been specified");
 			} break;
+		}
+		if (!return_code)
+		{
+			material->compile_status = GRAPHICS_NOT_COMPILED;
+			Graphical_material_changed(material);
 		}
 	}
 	else
@@ -5869,7 +5676,9 @@ int set_Material_image_texture(struct Parse_state *state,void *material_image_te
 							DEALLOCATE(field_name);
 						if (temp_field)
 						{
-							Material_image_texture_set_field(image_texture,	temp_field);
+							Cmiss_field_image_id image_field = Cmiss_field_cast_image(temp_field);
+							Material_image_texture_set_field(image_texture,	image_field);
+							Cmiss_field_image_destroy(&image_field);
 							return_code=1;
 							DEACCESS(Computed_field)(&temp_field);
 						}
@@ -5894,7 +5703,7 @@ int set_Material_image_texture(struct Parse_state *state,void *material_image_te
 				image_texture=(struct Material_image_texture *)material_image_texture_void;
 				if (image_texture)
 				{
-					temp_field= image_texture->field;
+					temp_field = Cmiss_field_image_base_cast(image_texture->field);
 					if (temp_field)
 					{
 						char *temp_name = Cmiss_field_get_name(temp_field);
@@ -7767,113 +7576,6 @@ int Cmiss_graphics_material_execute_command(struct Graphical_material *material,
 	return return_code;
 }
 
-
-int Cmiss_graphics_material_set_alpha(
-	Cmiss_graphics_material_id material, float alpha)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_alpha);
-	if (material)
-	{
-		return_code = Graphical_material_set_alpha(material, alpha);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphics_material_set_shininess(
-	Cmiss_graphics_material_id material, float shininess)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_shininess);
-	if (material)
-	{
-		return_code = Graphical_material_set_shininess(material, shininess);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphics_material_set_ambient(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
-{
-	struct Colour colour;
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_ambient);
-	if (material)
-	{
-		colour.red = red;
-		colour.green = green;
-		colour.blue = blue;
-		return_code = Graphical_material_set_ambient(material, &colour);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphics_material_set_diffuse(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
-{
-	struct Colour colour;
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_diffuse);
-	if (material)
-	{
-		colour.red = red;
-		colour.green = green;
-		colour.blue = blue;
-		return_code = Graphical_material_set_diffuse(material, &colour);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphics_material_set_emission(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
-{
-	struct Colour colour;
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_emission);
-	if (material)
-	{
-		colour.red = red;
-		colour.green = green;
-		colour.blue = blue;
-		return_code = Graphical_material_set_emission(material, &colour);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphics_material_set_specular(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
-{
-	struct Colour colour;
-	int return_code = 0;
-
-	ENTER(Cmiss_graphics_material_set_specular);
-	if (material)
-	{
-		colour.red = red;
-		colour.green = green;
-		colour.blue = blue;
-		return_code = Graphical_material_set_specular(material, &colour);
-	}
-	LEAVE;
-
-	return return_code;
-}
-
 char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material)
 {
 	char *name = NULL;
@@ -7885,3 +7587,142 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material)
 	return name;
 }
 
+double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id)
+{
+	float value = 0.0;
+	if (material)
+	{
+		switch (attribute_id)
+		{
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			{
+				Graphical_material_get_alpha(material, &value);
+			} break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			{
+				Graphical_material_get_shininess(material, &value);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_graphics_material_get_attribute_real.  Invalid attribute");
+			} break;
+		}
+	}
+	return ((double)value);
+}
+
+int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double value)
+{
+	int return_code = 0;
+	if (material)
+	{
+		return_code = 1;
+		switch (attribute_id)
+		{
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			{
+				return_code = Graphical_material_set_alpha(material, value);
+			} break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			{
+				return_code = Graphical_material_set_shininess(material, value);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_graphics_material_set_attribute_real.  Invalid attribute");
+				return_code = 0;
+			} break;
+		}
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double *values)
+{
+	struct Colour colour;
+	int return_code = 0;
+	colour.red = 0.0;
+	colour.green = 0.0;
+	colour.blue = 0.0;
+	if (material)
+	{
+		return_code = 1;
+		switch (attribute_id)
+		{
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			{
+				return_code = Graphical_material_get_ambient(material, &colour);
+			} break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			{
+				return_code = Graphical_material_get_diffuse(material, &colour);
+			}	break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			{
+				return_code = Graphical_material_get_emission(material, &colour);
+			}	break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			{
+				return_code = Graphical_material_get_specular(material, &colour);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_graphics_material_get_attribute_real3.  Invalid attribute");
+				return_code = 0;
+			} break;
+		}
+		if (return_code)
+		{
+			values[0] = (double)colour.red;
+			values[1] = (double)colour.green;
+			values[2] = (double)colour.blue;
+		}
+	}
+	return (return_code);
+}
+
+int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
+	enum Cmiss_graphics_material_attribute_id attribute_id, double *values)
+{
+	struct Colour colour;
+	int return_code = 0;
+	colour.red = (float)values[0];
+	colour.green = (float)values[1];
+	colour.blue = (float)values[2];
+	if (material)
+	{
+		return_code = 1;
+		switch (attribute_id)
+		{
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			{
+				return_code = Graphical_material_set_ambient(material, &colour);
+			} break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			{
+				return_code = Graphical_material_set_diffuse(material, &colour);
+			}	break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			{
+				return_code = Graphical_material_set_emission(material, &colour);
+			}	break;
+			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			{
+				return_code = Graphical_material_set_specular(material, &colour);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_graphics_material_set_attribute_real3.  Invalid attribute");
+				return_code = 0;
+			} break;
+		}
+	}
+	return return_code;
+}
