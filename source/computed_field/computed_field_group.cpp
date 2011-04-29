@@ -1033,13 +1033,8 @@ Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe
 			{
 				char *temp_string = Cmiss_field_get_name(this->getField());
 				int error = 0;
-				char suffix[9];
-				if (dimension == 1)
-					sprintf(suffix, ".mesh_3d");
-				else if (dimension == 2)
-					sprintf(suffix, ".mesh_2d");
-				else if (dimension == 3)
-					sprintf(suffix, ".mesh_1d");
+				char suffix[30];
+				sprintf(suffix, ".mesh_%dd", dimension);
 				append_string(&temp_string, suffix, &error);
 				local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(field_module, temp_string);
 				if (!local_element_group[dimension - 1])
@@ -1073,13 +1068,8 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_fe_me
 			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 			char *temp_string = Cmiss_field_get_name(this->getField());
 			int error = 0;
-			char suffix[9];
-			if (dimension == 1)
-				sprintf(suffix, ".mesh_3d");
-			else if (dimension == 2)
-				sprintf(suffix, ".mesh_2d");
-			else if (dimension == 3)
-				sprintf(suffix, ".mesh_1d");
+			char suffix[30];
+			sprintf(suffix, ".mesh_%dd", dimension);
 			append_string(&temp_string, suffix, &error);
 			local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(
 				field_module, temp_string);

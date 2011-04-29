@@ -8415,7 +8415,8 @@ struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
 	{
 		FE_region *master_FE_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
-		fe_element_list = CREATE_RELATED_LIST(FE_element)(master_FE_region->fe_element_list[dimension]);
+		fe_element_list = CREATE_RELATED_LIST(FE_element)(
+			FE_region_get_element_list(master_FE_region, dimension));
 	}
 	return fe_element_list;
 }
