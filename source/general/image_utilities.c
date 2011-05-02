@@ -6410,7 +6410,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			char magick_map_ia[] = "IA";
 			char magick_map_rgb[] = "RGB";
 			char magick_map_rgba[] = "RGBA";
-			StorageType magick_storage;
+			StorageType magick_storage  = CharPixel;
 			unsigned char *pixels;
 			int y;
 
@@ -6750,7 +6750,7 @@ equal to the number_of_components.
 	ExceptionInfo magick_exception;
 	Image *magick_image;
 	int image_height_minus_1;
-	StorageType magick_storage_type;
+	StorageType magick_storage_type = CharPixel;
 #else /* defined (USE_IMAGEMAGICK) */
 	unsigned char *source;
 	int source_width_bytes;
