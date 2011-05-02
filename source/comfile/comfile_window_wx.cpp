@@ -169,19 +169,17 @@ public:
 			while ((EOF!=IO_stream_scan(comfile," "))&&!IO_stream_end_of_stream(comfile)&&
 				IO_stream_read_string(comfile,"[^\n]",&line))
 			{
-				if (command_string=trim_string(line))
+				command_string=trim_string(line);
+				if (command_string != NULL)
 				{
-					if (command_string)
-					{
-							number = comfile_listbox->GetCount();
-							if (number == 0)
-								comfile_listbox->InsertItems(1, &blank,number);
-							number = comfile_listbox->GetCount();
-							wxString string(command_string, wxConvUTF8);
-							comfile_listbox->InsertItems(1,&string, number-1);
-							number_of_commands++;
-							DEALLOCATE(command_string);
-					}
+					number = comfile_listbox->GetCount();
+					if (number == 0)
+						comfile_listbox->InsertItems(1, &blank,number);
+					number = comfile_listbox->GetCount();
+					wxString string(command_string, wxConvUTF8);
+					comfile_listbox->InsertItems(1,&string, number-1);
+					number_of_commands++;
+					DEALLOCATE(command_string);
 				}
 				DEALLOCATE(line);
 			}
@@ -270,17 +268,15 @@ public:
 		USE_PARAMETER(event);
 		int number_of_selected_commands;
 		wxArrayInt selected_commands;
-		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
+		number_of_selected_commands = comfile_listbox->GetSelections(selected_commands);
+		/* execute the selected commands */
+		if (number_of_selected_commands>0)
 		{
-			/* execute the selected commands */
-			if (number_of_selected_commands>0)
-			{
-				/* retrieve the command string */
-				selectedcommand = comfile_listbox->GetString(selected_commands[0]);
-				char *command = duplicate_string(selectedcommand.c_str());
-				Execute_command_execute_string(comfile_window->set_command, command);
-				DEALLOCATE(command);
-			}
+			/* retrieve the command string */
+			selectedcommand = comfile_listbox->GetString(selected_commands[0]);
+			char *command = duplicate_string(selectedcommand.c_str());
+			Execute_command_execute_string(comfile_window->set_command, command);
+			DEALLOCATE(command);
 		}
 	}
 
@@ -289,17 +285,15 @@ public:
 		USE_PARAMETER(event);
 		int i,number_of_selected_commands;
 		wxArrayInt selected_commands;
-		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
+		number_of_selected_commands = comfile_listbox->GetSelections(selected_commands);
+		/* execute the selected commands */
+		for (i=0;i<number_of_selected_commands;i++)
 		{
-			/* execute the selected commands */
-			for (i=0;i<number_of_selected_commands;i++)
-			{
-				/* retrieve the command string */
-				selectedcommand = comfile_listbox->GetString(selected_commands[i]);
-				char *command = duplicate_string(selectedcommand.c_str());
-				Execute_command_execute_string(comfile_window->execute_command, command);
-				DEALLOCATE(command);
-			}
+			/* retrieve the command string */
+			selectedcommand = comfile_listbox->GetString(selected_commands[i]);
+			char *command = duplicate_string(selectedcommand.c_str());
+			Execute_command_execute_string(comfile_window->execute_command, command);
+			DEALLOCATE(command);
 		}
 	}
 
@@ -308,19 +302,16 @@ public:
 		USE_PARAMETER(event);
 		int i,number_of_selected_commands;
 		/* get the number of selected commands and their positions */
-		if (number_of_selected_commands = comfile_listbox->GetCount())
+		number_of_selected_commands = comfile_listbox->GetCount();
+		/* execute the selected commands */
+		for (i=0;i<number_of_selected_commands-1;i++)
 		{
-			/* execute the selected commands */
-			for (i=0;i<number_of_selected_commands-1;i++)
-			{
-				/* retrieve the command string */
-				selectedcommand = comfile_listbox->GetString(i);
-				char *command = duplicate_string(selectedcommand.c_str());
-				Execute_command_execute_string(comfile_window->execute_command, command);
-				DEALLOCATE(command);
-			}
+			/* retrieve the command string */
+			selectedcommand = comfile_listbox->GetString(i);
+			char *command = duplicate_string(selectedcommand.c_str());
+			Execute_command_execute_string(comfile_window->execute_command, command);
+			DEALLOCATE(command);
 		}
-	// 	 wx_Display_on_command_list((char)NULL);
 	}
 
 	void SelectedClicked(wxCommandEvent &event)
@@ -329,17 +320,15 @@ public:
 		wxArrayInt selected_commands;
 		int i,number_of_selected_commands;
 		/* get the number of selected commands and their positions */
-		if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
-		{
+		number_of_selected_commands = comfile_listbox->GetSelections(selected_commands);
 			/* execute the selected commands */
-			for (i=0;i<number_of_selected_commands;i++)
-			{
-				/* retrieve the command string */
-				selectedcommand = comfile_listbox->GetString(selected_commands[i]);
-				char *command = duplicate_string(selectedcommand.c_str());
-				Execute_command_execute_string(comfile_window->execute_command, command);
-				DEALLOCATE(command);
-			}
+		for (i=0;i<number_of_selected_commands;i++)
+		{
+			/* retrieve the command string */
+			selectedcommand = comfile_listbox->GetString(selected_commands[i]);
+			char *command = duplicate_string(selectedcommand.c_str());
+			Execute_command_execute_string(comfile_window->execute_command, command);
+			DEALLOCATE(command);
 		}
 	}
 
@@ -459,7 +448,8 @@ Comfile_window_destroy_CB.
 		DEALLOCATE(comfile_window->file_name);
 		DEALLOCATE(comfile_window->name);
 		/* free the memory for the commands */
-		if (command = comfile_window->commands)
+		command = comfile_window->commands;
+		if (command != NULL)
 		{
 			 DEALLOCATE(comfile_window->commands);
 		}
@@ -517,8 +507,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Comfile_window,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name)(
-				destination,source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name)(
+				destination,source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);

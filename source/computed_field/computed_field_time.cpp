@@ -130,15 +130,16 @@ Evaluate the fields cache at the location
 		Field_node_location *node_location;
 
 		/* 1. Precalculate any source fields that this field depends on */
-		if (element_xi_location  = 
-				dynamic_cast<Field_element_xi_location*>(location))
+		if (0 != (element_xi_location  = 
+				dynamic_cast<Field_element_xi_location*>(location)))
 		{
 			Field_element_xi_location location_no_derivatives(
 				element_xi_location->get_element(), element_xi_location->get_xi(),
 				element_xi_location->get_time(), element_xi_location->get_top_level_element());
 
-			if (return_code = Computed_field_evaluate_cache_at_location(
-				field->source_fields[1], &location_no_derivatives))
+			return_code = Computed_field_evaluate_cache_at_location(
+				field->source_fields[1], &location_no_derivatives);
+			if (return_code)
 			{
 				Field_element_xi_location location_lookup_time(
 					element_xi_location->get_element(), element_xi_location->get_xi(),
@@ -150,14 +151,15 @@ Evaluate the fields cache at the location
 					field->source_fields[0], &location_lookup_time);
 			}
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (0 != (node_location = 
+			dynamic_cast<Field_node_location*>(location)))
 		{
 			Field_node_location location_no_derivatives(
 				node_location->get_node(), node_location->get_time());
 
-			if (return_code = Computed_field_evaluate_cache_at_location(
-				field->source_fields[1], &location_no_derivatives))
+			return_code = Computed_field_evaluate_cache_at_location(
+				field->source_fields[1], &location_no_derivatives);
+			if (return_code)
 			{
 				Field_node_location location_lookup_time(
 					node_location->get_node(),
@@ -179,7 +181,8 @@ Evaluate the fields cache at the location
 			{
 				field->values[i] = field->source_fields[0]->values[i];
 			}
-			if (number_of_derivatives = location->get_number_of_derivatives())
+			number_of_derivatives = location->get_number_of_derivatives();
+			if (number_of_derivatives > 0)
 			{
 				temp=field->derivatives;
 				temp1=field->source_fields[0]->derivatives;

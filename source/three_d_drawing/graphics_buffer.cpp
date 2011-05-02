@@ -1728,127 +1728,136 @@ DESCRIPTION :
 							visual_attributes);
 					 if (ALLOCATE(visual_attributes, int, number_of_visual_attributes))
 					 {
-							selection_level = 5;
-							while ((selection_level > 0) && (test_canvas->m_vi == NULL) || (selection_level == 5))
-							{
-								 attribute_ptr = visual_attributes;
-								 *attribute_ptr = WX_GL_RGBA;
-								 attribute_ptr++;
-								 *attribute_ptr = WX_GL_MIN_RED;
-								 attribute_ptr++;
-								 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								 attribute_ptr++;
-								 *attribute_ptr = WX_GL_MIN_GREEN;
-								 attribute_ptr++;
-								 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								 attribute_ptr++;
-								 *attribute_ptr = WX_GL_MIN_BLUE;
-								 attribute_ptr++;
-								 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								 attribute_ptr++;
-								 if (selection_level > 3)
-								 {
-										*attribute_ptr = WX_GL_MIN_ALPHA;
-										attribute_ptr++;
-										*attribute_ptr = 1;
-										attribute_ptr++;
-								 }
-								 if (minimum_depth_buffer_depth > 0)
-								 {
-										*attribute_ptr = WX_GL_DEPTH_SIZE;
-										attribute_ptr++;
-										*attribute_ptr = minimum_depth_buffer_depth;
-										attribute_ptr++;
-								 }
-								 else
-								 {
-										if (selection_level > 2)
-										{
-											 /* Try to get a depth buffer anyway */
-											 *attribute_ptr = WX_GL_DEPTH_SIZE;
-											 attribute_ptr++;
-											 *attribute_ptr = 16;
-											 attribute_ptr++;
-										}
-								 }
-								 if (minimum_accumulation_buffer_depth > 0)
-								 {
-										*attribute_ptr = WX_GL_MIN_ACCUM_RED;
-										attribute_ptr++;
-										*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-										attribute_ptr++;
-										*attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
-										attribute_ptr++;
-										*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-										attribute_ptr++;
-										*attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
-										attribute_ptr++;
-										*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-										attribute_ptr++;
-								 }
-								 else
-								 {
-										if (selection_level > 4)
-										{
-											 /* Try to get an accumulation buffer anyway */
-											 *attribute_ptr = WX_GL_MIN_ACCUM_RED;
-											 attribute_ptr++;
-											 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-											 attribute_ptr++;
-											 *attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
-											 attribute_ptr++;
-											 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-											 attribute_ptr++;
-											 *attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
-											 attribute_ptr++;
-											 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-											 attribute_ptr++;
-										}
-								 }
-								 switch (buffering_mode)
-								 {
-										case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-										case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-										{
-											 *attribute_ptr = WX_GL_DOUBLEBUFFER;
-											 attribute_ptr++;
-										}break;
-								 }
-								 switch (stereo_mode)
-								 {
-										case GRAPHICS_BUFFER_MONO:
-										case GRAPHICS_BUFFER_STEREO:
-										{
-											 *attribute_ptr = GL_STEREO;
-											 attribute_ptr++;
-										} break;
-										/* default GRAPHICS_BUFFER_ANY_STEREO_MODE*/
-								 }
-								 *attribute_ptr = 0;
-								 attribute_ptr++;
-								 if (test_canvas)
-								 {
-										delete test_canvas;
-								 }
-								 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
-										graphics_buffer_package->wxSharedContext,
-										visual_attributes);
-								 selection_level--;
-								 if ((selection_level == 0) && (test_canvas->m_vi == NULL))
-								 {
-										DEALLOCATE(visual_attributes);
-										visual_attributes = NULL;
-										buffer->attrib_list = visual_attributes;
-								 }
-								 else if(test_canvas->m_vi != NULL)
-								 {
-										buffer->attrib_list = visual_attributes;
-								 }
-							}
-							if (test_canvas)
-							{
-								 delete test_canvas;
-							}
+						selection_level = 5;
+						while ((selection_level > 0) && ((test_canvas->m_vi == NULL) || (selection_level == 5)))
+						{
+							 attribute_ptr = visual_attributes;
+							 *attribute_ptr = WX_GL_RGBA;
+							 attribute_ptr++;
+							 *attribute_ptr = WX_GL_MIN_RED;
+							 attribute_ptr++;
+							 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							 attribute_ptr++;
+							 *attribute_ptr = WX_GL_MIN_GREEN;
+							 attribute_ptr++;
+							 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							 attribute_ptr++;
+							 *attribute_ptr = WX_GL_MIN_BLUE;
+							 attribute_ptr++;
+							 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							 attribute_ptr++;
+							 if (selection_level > 3)
+							 {
+								*attribute_ptr = WX_GL_MIN_ALPHA;
+								attribute_ptr++;
+								*attribute_ptr = 1;
+								attribute_ptr++;
+							 }
+							 if (minimum_depth_buffer_depth > 0)
+							 {
+								*attribute_ptr = WX_GL_DEPTH_SIZE;
+								attribute_ptr++;
+								*attribute_ptr = minimum_depth_buffer_depth;
+								attribute_ptr++;
+							 }
+							 else
+							 {
+								if (selection_level > 2)
+								{
+									 /* Try to get a depth buffer anyway */
+									 *attribute_ptr = WX_GL_DEPTH_SIZE;
+									 attribute_ptr++;
+									 *attribute_ptr = 16;
+									 attribute_ptr++;
+								}
+							 }
+							 if (minimum_accumulation_buffer_depth > 0)
+							 {
+								*attribute_ptr = WX_GL_MIN_ACCUM_RED;
+								attribute_ptr++;
+								*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								attribute_ptr++;
+								*attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
+								attribute_ptr++;
+								*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								attribute_ptr++;
+								*attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
+								attribute_ptr++;
+								*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								attribute_ptr++;
+							 }
+							 else
+							 {
+								if (selection_level > 4)
+								{
+									 /* Try to get an accumulation buffer anyway */
+									 *attribute_ptr = WX_GL_MIN_ACCUM_RED;
+									 attribute_ptr++;
+									 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+									 attribute_ptr++;
+									 *attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
+									 attribute_ptr++;
+									 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+									 attribute_ptr++;
+									 *attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
+									 attribute_ptr++;
+									 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+									 attribute_ptr++;
+								}
+							 }
+							 switch (buffering_mode)
+							 {
+								case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+								case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+								{
+									 *attribute_ptr = WX_GL_DOUBLEBUFFER;
+									 attribute_ptr++;
+								}break;
+								case GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
+								case GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY:
+								case GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND:
+								{
+									/* Do nothing */
+								} break;
+							 }
+							 switch (stereo_mode)
+							 {
+								case GRAPHICS_BUFFER_MONO:
+								case GRAPHICS_BUFFER_STEREO:
+								{
+									 *attribute_ptr = GL_STEREO;
+									 attribute_ptr++;
+								} break;
+								case GRAPHICS_BUFFER_ANY_STEREO_MODE:
+								{
+									/* default GRAPHICS_BUFFER_ANY_STEREO_MODE*/
+								} break;
+							 }
+							 *attribute_ptr = 0;
+							 attribute_ptr++;
+							 if (test_canvas)
+							 {
+									delete test_canvas;
+							 }
+							 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
+									graphics_buffer_package->wxSharedContext,
+									visual_attributes);
+							 selection_level--;
+							 if ((selection_level == 0) && (test_canvas->m_vi == NULL))
+							 {
+									DEALLOCATE(visual_attributes);
+									visual_attributes = NULL;
+									buffer->attrib_list = visual_attributes;
+							 }
+							 else if(test_canvas->m_vi != NULL)
+							 {
+									buffer->attrib_list = visual_attributes;
+							 }
+						}
+						if (test_canvas)
+						{
+							 delete test_canvas;
+						}
 					 }
 				}
 				else
@@ -3529,7 +3538,8 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen);
 
-	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
+	if (buffer != NULL)
 	{
 #if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
@@ -3584,7 +3594,8 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen);
 
-	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
+	if (buffer != NULL)
 	{
 #if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
@@ -3634,7 +3645,8 @@ DESCRIPTION :
 
 	ENTER(create_Graphics_buffer_offscreen_from_buffer);
 
-	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
+	buffer = CREATE(Graphics_buffer)(buffer_to_match->package);
+	if (buffer != NULL)
 	{
 #if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
@@ -6252,7 +6264,8 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	 struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_wx);
-	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
+	if (buffer != NULL)
 	{
 		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;
 		 Graphics_buffer_create_buffer_wx(buffer, graphics_buffer_package,

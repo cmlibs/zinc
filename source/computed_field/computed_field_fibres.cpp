@@ -200,9 +200,9 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				 calculated on the top_level_element */
 			fibre_field = field->source_fields[0];
 			coordinate_field = field->source_fields[1];
-			if (return_code =
+			if ((0 != (return_code =
 				Computed_field_evaluate_cache_at_location(fibre_field,
-					&location2) &&
+					&location2))) &&
 				Computed_field_evaluate_cache_at_location(coordinate_field,
 					&top_level_location) &&
 				Computed_field_extract_rc(coordinate_field,
@@ -557,7 +557,8 @@ allows its contents to be modified.
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"fibre",
 				&fibre_field,&set_fibre_field_data,set_Computed_field_conditional);
-			if (return_code = Option_table_multi_parse(option_table,state))
+			return_code = Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_fibre_axes(

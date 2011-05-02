@@ -122,8 +122,9 @@ Generates a finite_element node at the specified location
 		node_number = FE_region_get_next_FE_node_identifier(data->fe_region, data->node_offset);
 		data->node_offset = node_number + 1;
 
-		if (node = CREATE(FE_node)(node_number,
-				(struct FE_region *)NULL, data->template_node))
+		node = CREATE(FE_node)(node_number,
+				(struct FE_region *)NULL, data->template_node);
+		if (node != 0)
 		{	
 			ACCESS(FE_node)(node);
 			if (Computed_field_set_values_at_node(data->coordinate_field,
@@ -563,6 +564,14 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 							&nodes[2*i], &nodes[2*i+1]);
 					}
 				} break;
+				case g_POLYLINE_TYPE_BEFORE_FIRST:
+				case g_NORMAL:
+				case g_NORMAL_DISCONTINUOUS:
+				case g_POLYLINE_TYPE_AFTER_LAST:
+				case g_POLYLINE_TYPE_INVALID:
+				{
+					/* Do nothing */
+				} break;
 			}
 		}
 		if (nodes)
@@ -628,6 +637,10 @@ DESCRIPTION :
 						number_of_points=(npts1*(npts1+1))/2;
 						return_code=1;
 					} break;
+					case g_GENERAL_POLYGON:
+					{
+						/* Do nothing */
+					} break;
 				}
 			} break;
 			case g_SH_DISCONTINUOUS:
@@ -635,6 +648,14 @@ DESCRIPTION :
 			{
 				number_of_points = npts1*npts2;
 				return_code = 1;
+			} break;
+			case g_SURFACE_TYPE_BEFORE_FIRST:
+			case g_SH_DISCONTINUOUS_STRIP:
+			case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+			case g_SURFACE_TYPE_AFTER_LAST:
+			case g_SURFACE_TYPE_INVALID:
+			{
+				/* Do nothing */
 			} break;
 		}
 		if (return_code)
@@ -713,6 +734,10 @@ DESCRIPTION :
 									index_2++;
 								}
 							} break;
+							case g_GENERAL_POLYGON:
+							{
+								/* Do nothing */
+							} break;
 						}
 					} break;
 					case g_SH_DISCONTINUOUS:
@@ -746,6 +771,14 @@ DESCRIPTION :
 								return_code = 0;
 							} break;
 						}
+					} break;
+					case g_SURFACE_TYPE_BEFORE_FIRST:
+					case g_SH_DISCONTINUOUS_STRIP:
+					case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+					case g_SURFACE_TYPE_AFTER_LAST:
+					case g_SURFACE_TYPE_INVALID:
+					{
+						/* Do nothing */
 					} break;
 				}
 			}
@@ -1052,15 +1085,17 @@ DESCRIPTION :
 #endif /* defined (OLD_CODE) */
 				case g_POLYLINE:
 				{
-					if (line = primitive_list1->gt_polyline.first)
+					line = primitive_list1->gt_polyline.first;
+					if (line != 0)
 					{
 						if (0<proportion)
 						{
 							line_2 = primitive_list2->gt_polyline.first;
 							while (line&&line_2)
 							{
-								if (interpolate_line=
-									morph_GT_polyline(proportion,line,line_2))
+								interpolate_line=
+									morph_GT_polyline(proportion,line,line_2);
+								if (interpolate_line)
 								{
 									render_polyline_to_finite_elements(data, time,
 										interpolate_line->pointlist,
@@ -1095,15 +1130,17 @@ DESCRIPTION :
 				} break;
 				case g_SURFACE:
 				{
-					if (surface = primitive_list1->gt_surface.first)
+					surface = primitive_list1->gt_surface.first;
+					if (surface != 0)
 					{
 						if (0<proportion)
 						{
 							surface_2 = primitive_list2->gt_surface.first;
 							while (surface&&surface_2)
 							{
-								if (interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2))
+								interpolate_surface=morph_GT_surface(proportion,
+									surface,surface_2);
+								if (interpolate_surface != 0)
 								{
 									render_surface_to_finite_elements(data, time,
 										interpolate_surface->pointlist,
@@ -1142,7 +1179,8 @@ DESCRIPTION :
 				} break;
 				case g_VOLTEX:
 				{
-					if (voltex = primitive_list1->gt_voltex.first)
+					voltex = primitive_list1->gt_voltex.first;
+					if (voltex != 0)
 					{
 						while (voltex)
 						{

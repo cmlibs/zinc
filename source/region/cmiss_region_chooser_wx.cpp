@@ -225,7 +225,8 @@ Sets <path> of chosen region in the <chooser>.
 	wxRegionChooser *region_chooser;
 
 	USE_PARAMETER(region_changes);
-	if (region_chooser = static_cast<wxRegionChooser *>(region_chooser_void))
+	region_chooser = static_cast<wxRegionChooser *>(region_chooser_void);
+	if (region_chooser != NULL)
 	{
 		 char *temp;
 		 temp = region_chooser->get_path();

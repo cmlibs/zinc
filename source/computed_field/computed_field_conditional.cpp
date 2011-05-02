@@ -118,9 +118,10 @@ Evaluate the fields cache at the location.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate only the source fields */
-		if (return_code = 
+		return_code = 
 			Computed_field_evaluate_cache_at_location(field->source_fields[0],
-				location))
+				location);
+		if (return_code)
 		{
 			/* 2. Work out whether we need to evaluate source_field_two
 			 or source_field_three or both. */

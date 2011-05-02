@@ -214,12 +214,14 @@ DESCRIPTION :
 	if (field && location)
 	{
 		return_code=1;
-		if (return_code = Computed_field_is_defined_at_location(
-			field->source_fields[0],location))
+		return_code = Computed_field_is_defined_at_location(
+			field->source_fields[0],location);
+		if (return_code)
 		{
-			if (return_code=
+			return_code=
 				Computed_field_evaluate_cache_at_location(
-				field->source_fields[0],location))
+				field->source_fields[0],location);
+			if (return_code)
 			{
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
@@ -265,8 +267,9 @@ Evaluate the fields cache at the location
 	{
 		/* 1. Precalculate any source fields that this field depends on */
 		/* only calculate the first source_field at this location */
-		if (return_code=Computed_field_evaluate_cache_at_location(
-			field->source_fields[0],location))
+		return_code=Computed_field_evaluate_cache_at_location(
+			field->source_fields[0],location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			/* The values from the first source field are inverted in the
@@ -412,7 +415,8 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " group ", &error);
-		if (group_name = duplicate_string(region_path))
+		group_name = duplicate_string(region_path);
+		if (group_name != 0)
 		{
 			make_valid_token(&group_name);
 			append_string(&command_string, group_name, &error);

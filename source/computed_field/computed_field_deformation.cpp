@@ -178,9 +178,9 @@ Source fields are coordinates, undeformed_coordinates and fibre angle.
 
 				/* 1. Precalculate any source fields that this field depends on.
 					Always need derivatives of deformed and undeformed coordinate fields */
-				if (return_code=
+				if ((0 != (return_code =
 					Computed_field_evaluate_cache_at_location(field->source_fields[0],
-						&location_with_derivatives)&&
+						&location_with_derivatives)))&&
 					Computed_field_evaluate_cache_at_location(field->source_fields[1],
 						&location_with_derivatives)&&
 					Computed_field_evaluate_cache_at_location(field->source_fields[2],
@@ -575,7 +575,8 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table,"fibre_angle",
 				&fibre_angle_field,&set_fibre_angle_field_data,
 				set_Computed_field_conditional);
-			if (return_code = Option_table_multi_parse(option_table,state))
+			return_code = Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_2d_strain(

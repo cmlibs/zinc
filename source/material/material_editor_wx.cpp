@@ -248,7 +248,8 @@ Uses gl to draw a sphere with a lighting source.
 		renderer->Material_execute(material_editor->edit_material);
 		/* draw the sphere */
 		glEnable(GL_LIGHTING);
-		if (texture=Graphical_material_get_texture(material_editor->edit_material))
+		texture=Graphical_material_get_texture(material_editor->edit_material);
+		if (texture != NULL)
 		{
 			Texture_get_physical_size(texture,&texture_width, &texture_height,
 				&texture_depth);
@@ -356,7 +357,8 @@ Forces a redraw of the picture representing the material.
 	ENTER(material_editor_expose_picture_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
-	if (material_editor=(struct Material_editor *)material_editor_void)
+	material_editor = (struct Material_editor *)material_editor_void;
+	if (material_editor != NULL)
 	{
 		material_editor_update_picture(material_editor);
 	}
@@ -415,7 +417,8 @@ Increments the background pattern.
 
 	ENTER(material_editor_change_background);
 	USE_PARAMETER(graphics_buffer);
-	if (material_editor=(struct Material_editor *)material_editor_void)
+	material_editor = (struct Material_editor *)material_editor_void;
+	if (material_editor != NULL)
 	{
 		if (GRAPHICS_BUFFER_BUTTON_PRESS == input->type)
 		{
@@ -830,7 +833,8 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 	 {
 			text = (char*)NewMaterialDialog->GetValue().mb_str(wxConvUTF8);
 
-			if (material = CREATE(Graphical_material)(text))
+			material = CREATE(Graphical_material)(text);
+			if (material != NULL)
 			{
 				 if(MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
 						(material,material_editor->edit_material))
@@ -1393,7 +1397,8 @@ Update the material colour and settings in the material editor .
 	 Material_editor *material_editor;
 	 Colour temp_colour;
 
-	 if (material_editor=(struct Material_editor *)material_editor_void)
+	 material_editor=(struct Material_editor *)material_editor_void;
+	 if (material_editor != NULL)
 	 {
 			temp_colour = material_editor->ambient_colour_editor->colour_editor_wx_get_colour();
 			Graphical_material_set_ambient(material_editor->edit_material, &temp_colour);

@@ -146,9 +146,10 @@ Evaluate the fields cache at the location
 	if (field && location)
 	{
 		/* 1. Precalculate first source fields that this field depends on */
-		if (return_code = 
+		return_code = 
 			Computed_field_evaluate_cache_at_location(field->source_fields[0],
-			location))
+			location);
+		if (return_code)
 		{
 			int number_of_derivatives;
 			if (location->get_number_of_derivatives() &&
@@ -169,8 +170,9 @@ Evaluate the fields cache at the location
 					field->source_fields[0]->number_of_components,
 					field->source_fields[0]->values, location->get_time(),
 					number_of_derivatives, field->source_fields[0]->derivatives);
-				if (return_code=Computed_field_evaluate_cache_at_location(
-						 field->source_fields[1], &coordinate_location))
+				return_code=Computed_field_evaluate_cache_at_location(
+						 field->source_fields[1], &coordinate_location);
+				if (return_code)
 				{
 					/* copy values from cache to <values> */
 					for (i=0;i<field->number_of_components;i++)
@@ -215,8 +217,9 @@ Evaluate the fields cache at the location
 				for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
 				{
 					field->derivatives_valid = 1;
-					if (return_code=Computed_field_evaluate_cache_at_location(
-						field->source_fields[1], locations[i]))
+					return_code=Computed_field_evaluate_cache_at_location(
+						field->source_fields[1], locations[i]);
+					if (return_code)
 					{
 						field->values[i]=field->source_fields[1]->values[0];
 						if (number_of_derivatives && 

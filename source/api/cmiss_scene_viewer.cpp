@@ -879,7 +879,8 @@ Returns the background_colour of the scene_viewer.
 	ENTER(Cmiss_scene_viewer_set_background_colour_rgb);
 	if (scene_viewer)
 	{
-		if (return_code = Scene_viewer_get_background_colour(scene_viewer, &colour))
+		return_code = Scene_viewer_get_background_colour(scene_viewer, &colour);
+		if (return_code)
 		{
 			*red = colour.red;
 			*green = colour.green;
@@ -1028,9 +1029,10 @@ Writes the view in the scene_viewer to the specified filename.
 	if (scene_viewer && file_name)
 	{
 		storage = TEXTURE_RGBA;
-		if (cmgui_image = Scene_viewer_get_image(scene_viewer,
+		cmgui_image = Scene_viewer_get_image(scene_viewer,
 			force_onscreen, preferred_width, preferred_height, preferred_antialias,
-			preferred_transparency_layers, storage))
+			preferred_transparency_layers, storage);
+		if (cmgui_image != 0) 
 		{
 			cmgui_image_information = CREATE(Cmgui_image_information)();
 			Cmgui_image_information_add_file_name(cmgui_image_information,
@@ -1521,8 +1523,9 @@ Cmiss_scene_viewer_blending_mode enumerator.
 	ENTER(Cmiss_scene_viewer_get_blending_mode);
 	if (scene_viewer)
 	{
-		if (return_code = Scene_viewer_get_blending_mode(scene_viewer,
-				&scene_viewer_blending_mode))
+		return_code = Scene_viewer_get_blending_mode(scene_viewer,
+				&scene_viewer_blending_mode);
+		if (return_code)
 		{
 			switch(scene_viewer_blending_mode)
 			{

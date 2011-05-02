@@ -180,8 +180,9 @@ of the type spectrum_editor->settings_type.
 	 if (settings&&(spectrum_editor=
 				 (struct Spectrum_editor *)spectrum_editor_void))
 	 {
-			if (settings_string=Spectrum_settings_string(settings,
-						SPECTRUM_SETTINGS_STRING_COMPLETE_PLUS))
+			settings_string=Spectrum_settings_string(settings,
+						SPECTRUM_SETTINGS_STRING_COMPLETE_PLUS);
+			if (settings_string != 0)
 			{
 				 if (spectrum_editor->spectrum_settings_checklist)
 				 {
@@ -296,14 +297,19 @@ current settings in spectrum_editor_settings.
 			spectrum_editor->current_settings);
 		switch (current_type)
 		{
-			 case SPECTRUM_LINEAR:
-			 {
-					spectrum_editor->spectrum_type_choice->SetStringSelection("Linear");
-			 } break;
-			 case SPECTRUM_LOG:
-			 {
-					spectrum_editor->spectrum_type_choice->SetStringSelection("Log");
-			 } break;
+			case SPECTRUM_LINEAR:
+			{
+				spectrum_editor->spectrum_type_choice->SetStringSelection("Linear");
+			} break;
+			case SPECTRUM_LOG:
+			{
+				spectrum_editor->spectrum_type_choice->SetStringSelection("Log");
+			} break;
+			case SPECTRUM_FIELD:
+			case SPECTRUM_INVALID_TYPE:
+			{
+			 /* Do nothing */
+			} break;
 		}
 	}
 	else
@@ -336,7 +342,8 @@ Changes the currently chosen settings.
 	 ENTER(spectrum_editor_wx_set_settings);	 
 	 if (spectrum_editor)
 	 {
-			if (new_settings = spectrum_editor->current_settings)
+			new_settings = spectrum_editor->current_settings;
+			if (new_settings != 0)
 			{				 
 				 spectrum_editor_wx_set_type(spectrum_editor);
 				 type = Spectrum_settings_get_type(new_settings);
@@ -625,7 +632,8 @@ Called when a modify button - add, delete, up, down - is activated.
 	 {
 			if (strcmp(flag, "Add") == 0)
 			{
-				 if (settings=CREATE(Spectrum_settings)())
+				 settings=CREATE(Spectrum_settings)();
+				 if (settings != 0)
 				 {
 						return_code=1;
 						if (spectrum_editor->current_settings)
@@ -671,8 +679,9 @@ Called when a modify button - add, delete, up, down - is activated.
 			else if (strcmp(flag, "Dn") == 0)
 			{
 				 /* decrease position of current_settings by 1 */
-				 if (position=Spectrum_get_settings_position(
-								spectrum_editor->edit_spectrum,spectrum_editor->current_settings))
+				 position=Spectrum_get_settings_position(
+								spectrum_editor->edit_spectrum,spectrum_editor->current_settings);
+				 if (position > 0)
 				 {
 						list_changed=1;
 						ACCESS(Spectrum_settings)(spectrum_editor->current_settings);
@@ -1054,62 +1063,63 @@ DESCRIPTION :
 Callback for the range text widgets.
 ==============================================================================*/
 {
-	 char *text;
-	 float new_parameter;
-	 int selection;
-	 struct Spectrum_settings *settings;
-	 
-	 ENTER(OnSpectrumSettingRangeValueEntered);
+	char *text;
+	float new_parameter;
+	int selection;
+	struct Spectrum_settings *settings;
+	
+	ENTER(OnSpectrumSettingRangeValueEntered);
 	USE_PARAMETER(event);
-	 /* check arguments */
-	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
-	 if (settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1))
-	 {
-			if (spectrum_editor->spectrum_range_min_text)
+	/* check arguments */
+	selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
+	settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1);
+	if (settings != 0)
+	{
+		if (spectrum_editor->spectrum_range_min_text)
+		{
+			text = (char*)spectrum_editor->spectrum_range_min_text->GetValue().mb_str(wxConvUTF8);
+			if (text)
 			{
-				 text = (char*)spectrum_editor->spectrum_range_min_text->GetValue().mb_str(wxConvUTF8);
-				 if (text)
-				 {
-						sscanf(text,"%f",&new_parameter);
-						if(new_parameter !=
-							 Spectrum_settings_get_range_minimum(settings))
- 						{
-							 Spectrum_settings_set_range_minimum(settings, new_parameter);
-						}
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,
-							 "OnSpectrumSettingRangeValueEntered.  Missing range minimum text");
-				 }
+				sscanf(text,"%f",&new_parameter);
+				if(new_parameter !=
+					Spectrum_settings_get_range_minimum(settings))
+				{
+					Spectrum_settings_set_range_minimum(settings, new_parameter);
+				}
 			}
-			if (spectrum_editor->spectrum_range_max_text)
+			else
 			{
-				 text = (char*)spectrum_editor->spectrum_range_max_text->GetValue().mb_str(wxConvUTF8);
-				 if (text)
-				 {
-						sscanf(text,"%f",&new_parameter);
-						if(new_parameter !=
-							 Spectrum_settings_get_range_maximum(settings))
-						{
-							 Spectrum_settings_set_range_maximum(settings,new_parameter);
-						}
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,
-							 "OnSpectrumSettingRangeValueEntered.  Missing range maximum text");
-				 }
+				display_message(ERROR_MESSAGE,
+					"OnSpectrumSettingRangeValueEntered.  Missing range minimum text");
 			}
-			spectrum_editor_wx_update_settings(spectrum_editor, settings);
-			spectrum_editor_wx_set_settings(spectrum_editor);
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "OnSpectrumSettingRangeValueEntered.  Invalid argument(s)");
-	 }
-	 LEAVE;
+		}
+		if (spectrum_editor->spectrum_range_max_text)
+		{
+			text = (char*)spectrum_editor->spectrum_range_max_text->GetValue().mb_str(wxConvUTF8);
+			if (text)
+			{
+				sscanf(text,"%f",&new_parameter);
+				if(new_parameter !=
+					Spectrum_settings_get_range_maximum(settings))
+				{
+					Spectrum_settings_set_range_maximum(settings,new_parameter);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"OnSpectrumSettingRangeValueEntered.  Missing range maximum text");
+			}
+		}
+		spectrum_editor_wx_update_settings(spectrum_editor, settings);
+		spectrum_editor_wx_set_settings(spectrum_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			 "OnSpectrumSettingRangeValueEntered.  Invalid argument(s)");
+	}
+	LEAVE;
 } /* OnSpectrumSettingRangeEntered */
 
 void OnSpectrumSettingRangeChecked(wxCommandEvent &event)
@@ -1229,55 +1239,56 @@ Callback for colour settings
 		 (settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
 	{
 		/* get the widget from the call data */
-		 if (string_selection = 
-				(char*)(spectrum_editor->spectrum_colour_mapping_choice->GetStringSelection()).mb_str(wxConvUTF8))
+		string_selection = 
+			(char*)(spectrum_editor->spectrum_colour_mapping_choice->GetStringSelection()).mb_str(wxConvUTF8);
+		if (string_selection != 0) 
 		{
-			 if (strcmp(string_selection, "Alpha") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_ALPHA;
-			 }
-			 else if (strcmp(string_selection, "Blue") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_BLUE;
-			 }
-			 else if (strcmp(string_selection, "Green") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_GREEN;
-			 }
-			 else if (strcmp(string_selection, "Monochrome") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_MONOCHROME;
-			 }
-			 else if (strcmp(string_selection, "Rainbow") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_RAINBOW;
-			 }
-			 else if (strcmp(string_selection, "Red") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_RED;
-			 }
-			 else if (strcmp(string_selection, "White to blue") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_WHITE_TO_BLUE;
-			 }
-			 else if (strcmp(string_selection, "Step") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_STEP;
-			 }
-			 else if (strcmp(string_selection, "Contour Bands") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_BANDED;
-			 }
-			 else if (strcmp(string_selection, "White to red") == 0)
-			 {
-					new_colour_mapping = SPECTRUM_WHITE_TO_RED;
-			 }
+			if (strcmp(string_selection, "Alpha") == 0)
+			{
+				new_colour_mapping = SPECTRUM_ALPHA;
+			}
+			else if (strcmp(string_selection, "Blue") == 0)
+			{
+				new_colour_mapping = SPECTRUM_BLUE;
+			}
+			else if (strcmp(string_selection, "Green") == 0)
+			{
+				new_colour_mapping = SPECTRUM_GREEN;
+			}
+			else if (strcmp(string_selection, "Monochrome") == 0)
+			{
+				new_colour_mapping = SPECTRUM_MONOCHROME;
+			}
+			else if (strcmp(string_selection, "Rainbow") == 0)
+			{
+				new_colour_mapping = SPECTRUM_RAINBOW;
+			}
+			else if (strcmp(string_selection, "Red") == 0)
+			{
+				new_colour_mapping = SPECTRUM_RED;
+			}
+			else if (strcmp(string_selection, "White to blue") == 0)
+			{
+				new_colour_mapping = SPECTRUM_WHITE_TO_BLUE;
+			}
+			else if (strcmp(string_selection, "Step") == 0)
+			{
+				new_colour_mapping = SPECTRUM_STEP;
+			}
+			else if (strcmp(string_selection, "Contour Bands") == 0)
+			{
+				new_colour_mapping = SPECTRUM_BANDED;
+			}
+			else if (strcmp(string_selection, "White to red") == 0)
+			{
+				new_colour_mapping = SPECTRUM_WHITE_TO_RED;
+			}
 			if (Spectrum_settings_get_colour_mapping(settings) != new_colour_mapping)
 			{
-				 if (Spectrum_settings_set_colour_mapping(settings, new_colour_mapping))
-				 {
-						spectrum_editor_wx_update_settings(spectrum_editor, settings);
-				 }
+				if (Spectrum_settings_set_colour_mapping(settings, new_colour_mapping))
+				{
+					spectrum_editor_wx_update_settings(spectrum_editor, settings);
+				}
 			}
 		}
 		else
@@ -1398,8 +1409,9 @@ Callback for the settings type.
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
 	 {
 			/* get the widget from the call data */
-			if (string_selection = 
-				 (char*)(spectrum_editor->spectrum_type_choice->GetStringSelection()).mb_str(wxConvUTF8))
+			string_selection = 
+				 (char*)(spectrum_editor->spectrum_type_choice->GetStringSelection()).mb_str(wxConvUTF8);
+			if (string_selection != 0) 
 			{
 				 if (strcmp(string_selection, "Linear") == 0)
 				 {
@@ -2002,7 +2014,8 @@ Callback for when input is received by the scene_viewer.
 
 	ENTER(spectrum_editor_viewer_input_CB);
 	USE_PARAMETER(scene_viewer);
-	if (spectrum_editor=(struct Spectrum_editor *)spectrum_editor_void)
+	spectrum_editor=(struct Spectrum_editor *)spectrum_editor_void;
+	if (spectrum_editor != 0)
 	{
 		if (GRAPHICS_BUFFER_BUTTON_PRESS==input->type)
 		{
@@ -2335,9 +2348,10 @@ Creates a spectrum_editor widget.
 							{
 								 GT_object_set_next_object(spectrum_editor->tick_lines_graphics_object,
 										spectrum_editor->tick_labels_graphics_object);
-								 if (tick_labels = CREATE(GT_pointset)(1,
+								 tick_labels = CREATE(GT_pointset)(1,
 											 points, strings, g_NO_MARKER, 0.0,
-											 g_NO_DATA, (GTDATA *)NULL, (int *)NULL, font))
+											 g_NO_DATA, (GTDATA *)NULL, (int *)NULL, font);
+								 if (tick_labels != 0)
 								 {
 										GT_OBJECT_ADD(GT_pointset)(
 											 spectrum_editor->tick_labels_graphics_object, 0,

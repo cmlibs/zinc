@@ -596,14 +596,14 @@ Calculates the cost of a collapse based on the quadrics.
 				case 2:
 				{
 					/* Find the middle value */
-					if (((a <= b) && (b < c)) || (c <= b) && (b < a)) 
+					if (((a <= b) && (b < c)) || ((c <= b) && (b < a)))
 					{
 						cost->cost = b;
 						cost->coordinates[0] = quadric->vertex->coordinates[0];
 						cost->coordinates[1] = quadric->vertex->coordinates[1];
 						cost->coordinates[2] = quadric->vertex->coordinates[2];
 					}
-					else if (((a <= c) && (c < b)) || (b <= c) && (c < a)) 
+					else if (((a <= c) && (c < b)) || ((b <= c) && (c < a))) 
 					{
 						cost->cost = c;
 						cost->coordinates[0] = quadric2->vertex->coordinates[0];
@@ -706,7 +706,8 @@ fastest the edge is less likely to collapse.
 	/* For each vertex calculate Q, by summing Kp for each plane */
 	for (i = 0 ; i < voltex->number_of_vertices ; i++)
 	{
-		if (quadric = CREATE(Decimation_quadric)())
+		quadric = CREATE(Decimation_quadric)();
+		if (quadric != 0)
 		{
 			vertex = voltex->vertex_list[i];
 			quadric->vertex = vertex;
@@ -769,8 +770,9 @@ fastest the edge is less likely to collapse.
 	for (i = 0 ; i < voltex->number_of_vertices ; i++)
 	{
 		vertex = voltex->vertex_list[i];
-		if (quadric = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
-			vertex)(vertex, quadric_list))
+		quadric = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
+			vertex)(vertex, quadric_list);
+		if (quadric != 0)
 		{
 			number_of_edges = vertex->number_of_triangles;
 			if (number_of_edges > allocated_edges)
@@ -836,14 +838,15 @@ fastest the edge is less likely to collapse.
 									pointer so that we don't get each edge from both ends */
 								/* Reorder the bits in the index so that we don't favour work
 									in the order they are created, but haven't swapped every bit */
-								if (cost = CREATE(Decimation_cost)(((cost_index & 0xf) << 28) +
+								if (0 != (cost = CREATE(Decimation_cost)(((cost_index & 0xf) << 28) +
 										((cost_index & 0xf0) << 20) + ((cost_index & 0xff00) << 8) 
-										+ ((cost_index & 0xff0000) >> 8) + ((cost_index & 0xff000000) >> 24)))
+										+ ((cost_index & 0xff0000) >> 8) + ((cost_index & 0xff000000) >> 24))))
 								{
 									cost_index++;
 									cost->quadric1 = ACCESS(Decimation_quadric)(quadric);
-									if (quadric2 = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
-											vertex)(vertex2, quadric_list))
+									quadric2 = FIND_BY_IDENTIFIER_IN_LIST(Decimation_quadric,
+											vertex)(vertex2, quadric_list);
+									if (quadric2 != 0)
 									{
 										cost->quadric2 = ACCESS(Decimation_quadric)(quadric2);
 
@@ -981,9 +984,9 @@ fastest the edge is less likely to collapse.
 	/* 3. For each edge compute optimal contraction target v and
 		therefore the cost of contracting that pair */
 	cost_list = CREATE(LIST(Decimation_cost))();
-	while (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+	while (0 != (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
 		(LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
-		pre_cost_list))
+		pre_cost_list)))
 	{
 		ACCESS(Decimation_cost)(cost);
 
@@ -1082,18 +1085,18 @@ fastest the edge is less likely to collapse.
 			REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, quadric2->dependent_cost_list);
 
 			/* Shuffle all the costs into the second list */
-			while (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+			while (0 != (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
 						 (LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
-						 quadric->dependent_cost_list))
+						 quadric->dependent_cost_list)))
 			{
 				ADD_OBJECT_TO_LIST(Decimation_cost)(update_cost, quadric2->dependent_cost_list);
 				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost, quadric->dependent_cost_list);
 			}
 			/* Now for each cost in the second list we remove it from the main list,
 				recalculate it's cost and then add it back in to the second list */
-			while (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+			while (0 != (update_cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
 						 (LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
-						 quadric2->dependent_cost_list))
+						 quadric2->dependent_cost_list)))
 			{
 				if (update_cost->quadric1 == cost->quadric1)
 				{
@@ -1186,9 +1189,9 @@ fastest the edge is less likely to collapse.
 
 	/* Need to undo the circular references before destroying the list to enable
 		everything to clean up */
-	while (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
+	while (0 != (cost = FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(
 		(LIST_CONDITIONAL_FUNCTION(Decimation_cost) *)NULL, (void *)NULL,
-		cost_list))
+		cost_list)))
 	{
 		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost->quadric1->dependent_cost_list);
 		REMOVE_OBJECT_FROM_LIST(Decimation_cost)(cost, cost->quadric2->dependent_cost_list);

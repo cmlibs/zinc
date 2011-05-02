@@ -183,8 +183,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_font,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name)(
-				destination,source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name)(
+				destination,source);
+			if (return_code) 
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -400,7 +401,8 @@ Defines an <alias_name> in the <font_package> which refers to the font
 	{
 		existing_font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font,name)(font_name,
 			font_package->font_manager);
-		if (font = CREATE(Graphics_font)(font_name, font_string))
+		font = CREATE(Graphics_font)(font_name, font_string);
+		if (font != 0)
 		{
 			if (existing_font)
 			{
@@ -460,7 +462,8 @@ as the user interface dependent font string.
 		if (!(font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font, name)(font_name,
 			font_package->font_manager)))
 		{
-			if (font = CREATE(Graphics_font)(font_name, font_name))
+			font = CREATE(Graphics_font)(font_name, font_name);
+			if (font != 0)
 			{
 				ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
 					font_package->font_manager);				
@@ -516,14 +519,16 @@ DESCRIPTION :
 		const char *current_token;
 		if (strcmp(font->font_string,"default"))
 		{
-			 if (state=create_Parse_state(font->font_string))
+			 state=create_Parse_state(font->font_string);
+			 if (state != 0)
 			 {
 					int size = 8;
 					
 					enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
 					enum wxFontWeight font_weight = wxFONTWEIGHT_NORMAL;
 					enum wxFontStyle font_style = wxFONTSTYLE_NORMAL;
-					if (current_token = state->current_token)
+					current_token = state->current_token;
+					if (current_token != 0)
 					{
 						 sscanf(current_token,"%u",&size);
 						 if (shift_Parse_state(state,1)&&

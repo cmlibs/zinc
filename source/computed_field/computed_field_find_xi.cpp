@@ -409,8 +409,9 @@ ultimate parent finite_element field.
 		}
 		else
 		{
-			if (field->find_element_xi_cache =
-				CREATE(Computed_field_find_element_xi_cache)(new Computed_field_find_element_xi_base_cache()))
+			field->find_element_xi_cache =
+				CREATE(Computed_field_find_element_xi_cache)(new Computed_field_find_element_xi_base_cache());
+			if (field->find_element_xi_cache != 0)
 			{
 				cache = field->find_element_xi_cache->cache_data;
 			}
@@ -548,7 +549,8 @@ ultimate parent finite_element field.
 					DEALLOCATE(find_element_xi_data.found_derivatives);
 				}
 				/* Copy the results into the cache */
-				if (cache->element = *element)
+				cache->element = *element;
+				if (cache->element != 0)
 				{
 					for (i = 0 ; i < number_of_xi ; i++)
 					{

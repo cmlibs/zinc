@@ -700,7 +700,8 @@ transformation encoded in 4x4 <transformation_matrix>.
 	text_entry = duplicate_string(Transformation_editor_wx_position_text_ctrl_scale_factor->GetValue().c_str());
 	if (text_entry)
 	{
-		if (temp_state=create_Parse_state(text_entry))
+		temp_state = create_Parse_state(text_entry);
+		if (temp_state != NULL)
 		{
 			set_special_float3(temp_state,scale_factor, const_cast<char *>("*"));
 		}

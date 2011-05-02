@@ -251,8 +251,9 @@ Evaluate the fields cache at the location
 		/* 1. Precalculate any source fields that this field depends on */
 		/* only calculate the time_field at this time and then use the
 		   results of that field for the time of the source_field */
-		if (return_code=Computed_field_evaluate_cache_at_location(
-          field->source_fields[0], &nodal_location))
+		return_code=Computed_field_evaluate_cache_at_location(
+			field->source_fields[0], &nodal_location);
+		if (return_code)
 		{
 			/* 2. Copy the results */
 			for (i=0;i<field->number_of_components;i++)

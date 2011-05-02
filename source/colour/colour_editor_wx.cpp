@@ -526,21 +526,25 @@ Foley and van Damm p592.
 									{
 										 new_data->red=0; /* dont use undefined */
 									}
-							 } break;
-							 case COLOUR_EDITOR_CMY:
-							 {
+							} break;
+							case COLOUR_EDITOR_CMY:
+							{
 									new_data->red=1.0-old_data->red;
 									new_data->green=1.0-old_data->green;
 									new_data->blue=1.0-old_data->blue;
-							 } break;
+							} break;
+							case COLOUR_EDITOR_RGB:
+							{
+								/* Do nothing */
+							} break;
 						}
-				 } break;
-				 case COLOUR_EDITOR_HSV:
-				 {
+				} break;
+				case COLOUR_EDITOR_HSV:
+				{
 						switch (new_mode)
 						{
-							 case COLOUR_EDITOR_RGB:
-							 {
+							case COLOUR_EDITOR_RGB:
+							{
 									if (old_data->green==0)
 									{
 										 new_data->red=old_data->blue;
@@ -549,178 +553,186 @@ Foley and van Damm p592.
 									}
 									else
 									{
-										 temp_old0=old_data->red;
-										 if (temp_old0==1)
-										 {
-												temp_old0=0;
-										 }
-										 temp_old0 *=6;
-										 temp_i= (int)floor(temp_old0);
-										 temp_f=temp_old0-temp_i;
-										 temp_p=old_data->blue*(1-old_data->green);
-										 temp_q=old_data->blue*(1-(old_data->green*temp_f));
-										 temp_t=old_data->blue*(1-(old_data->green*(1-temp_f)));
-										 switch (temp_i)
-										 {
-												case 0:
-												{
-													 new_data->red=old_data->blue;
-													 new_data->green=temp_t;
-													 new_data->blue=temp_p;
-												} break;
-												case 1:
-												{
-													 new_data->red=temp_q;
-													 new_data->green=old_data->blue;
-													 new_data->blue=temp_p;
-												} break;
-												case 2:
-												{
-													 new_data->red=temp_p;
-													 new_data->green=old_data->blue;
-													 new_data->blue=temp_t;
-												} break;
-												case 3:
-												{
-													 new_data->red=temp_p;
-													 new_data->green=temp_q;
-													 new_data->blue=old_data->blue;
-												} break;
-												case 4:
-												{
-													 new_data->red=temp_t;
-													 new_data->green=temp_p;
-													 new_data->blue=old_data->blue;
-												} break;
-												case 5:
-												{
-													 new_data->red=old_data->blue;
-													 new_data->green=temp_p;
-													 new_data->blue=temp_q;
-												} break;
-										 }
+										temp_old0=old_data->red;
+										if (temp_old0==1)
+										{
+											temp_old0=0;
+										}
+										temp_old0 *=6;
+										temp_i= (int)floor(temp_old0);
+										temp_f=temp_old0-temp_i;
+										temp_p=old_data->blue*(1-old_data->green);
+										temp_q=old_data->blue*(1-(old_data->green*temp_f));
+										temp_t=old_data->blue*(1-(old_data->green*(1-temp_f)));
+										switch (temp_i)
+										{
+											case 0:
+											{
+												new_data->red=old_data->blue;
+												new_data->green=temp_t;
+												new_data->blue=temp_p;
+											} break;
+											case 1:
+											{
+												new_data->red=temp_q;
+												new_data->green=old_data->blue;
+												new_data->blue=temp_p;
+											} break;
+											case 2:
+											{
+													new_data->red=temp_p;
+													new_data->green=old_data->blue;
+													new_data->blue=temp_t;
+											} break;
+											case 3:
+											{
+												new_data->red=temp_p;
+												new_data->green=temp_q;
+												new_data->blue=old_data->blue;
+											} break;
+											case 4:
+											{
+												new_data->red=temp_t;
+												new_data->green=temp_p;
+												new_data->blue=old_data->blue;
+											} break;
+											case 5:
+											{
+												new_data->red=old_data->blue;
+												new_data->green=temp_p;
+												new_data->blue=temp_q;
+											} break;
+										}
 									}
-							 } break;
-							 case COLOUR_EDITOR_CMY:
-							 {
-									if (old_data->green==0)
+							} break;
+							case COLOUR_EDITOR_CMY:
+							{
+								if (old_data->green==0)
+								{
+									new_data->red=1-old_data->blue;
+									new_data->green=1-old_data->blue;
+									new_data->blue=1-old_data->blue;
+								}
+								else
+								{
+									temp_old0=old_data->red;
+									if (temp_old0==1)
 									{
-										 new_data->red=1-old_data->blue;
-										 new_data->green=1-old_data->blue;
-										 new_data->blue=1-old_data->blue;
+										temp_old0=0;
 									}
-									else
+									temp_old0 *=6;
+									temp_i= (int)floor(temp_old0);
+									temp_f=temp_old0-temp_i;
+									temp_p=old_data->blue*(1-old_data->green);
+									temp_q=old_data->blue*(1-(old_data->green*temp_f));
+									temp_t=old_data->blue*(1-(old_data->green*(1-temp_f)));
+								}
+								switch (temp_i)
+								{
+									case 0:
 									{
-										 temp_old0=old_data->red;
-										 if (temp_old0==1)
-										 {
-												temp_old0=0;
-										 }
-										 temp_old0 *=6;
-										 temp_i= (int)floor(temp_old0);
-										 temp_f=temp_old0-temp_i;
-										 temp_p=old_data->blue*(1-old_data->green);
-										 temp_q=old_data->blue*(1-(old_data->green*temp_f));
-										 temp_t=old_data->blue*(1-(old_data->green*(1-temp_f)));
-									}
-									switch (temp_i)
+										new_data->red=1-old_data->blue;
+										new_data->green=1-temp_t;
+										new_data->blue=1-temp_p;
+									} break;
+									case 1:
 									{
-										 case 0:
-										 {
-												new_data->red=1-old_data->blue;
-												new_data->green=1-temp_t;
-												new_data->blue=1-temp_p;
-										 } break;
-										 case 1:
-										 {
-												new_data->red=1-temp_q;
-												new_data->green=1-old_data->blue;
-												new_data->blue=1-temp_p;
-										 } break;
-										 case 2:
-										 {
-												new_data->red=1-temp_p;
-												new_data->green=1-old_data->blue;
-												new_data->blue=1-temp_t;
-										 } break;
-										 case 3:
-										 {
-												new_data->red=1-temp_p;
-												new_data->green=1-temp_q;
-												new_data->blue=1-old_data->blue;
-										 } break;
-										 case 4:
-										 {
-												new_data->red=1-temp_t;
-												new_data->green=1-temp_p;
-												new_data->blue=1-old_data->blue;
-										 } break;
-										 case 5:
-										 {
-												new_data->red=1-old_data->blue;
-												new_data->green=1-temp_p;
-												new_data->blue=1-temp_q;
-										 } break;
-									}
-							 } break;
+										new_data->red=1-temp_q;
+										new_data->green=1-old_data->blue;
+										new_data->blue=1-temp_p;
+									} break;
+									case 2:
+									{
+										new_data->red=1-temp_p;
+										new_data->green=1-old_data->blue;
+										new_data->blue=1-temp_t;
+									} break;
+									case 3:
+									{
+										new_data->red=1-temp_p;
+										new_data->green=1-temp_q;
+										new_data->blue=1-old_data->blue;
+									} break;
+									case 4:
+									{
+										new_data->red=1-temp_t;
+										new_data->green=1-temp_p;
+										new_data->blue=1-old_data->blue;
+									} break;
+									case 5:
+									{
+										new_data->red=1-old_data->blue;
+										new_data->green=1-temp_p;
+										new_data->blue=1-temp_q;
+									} break;
+								}
+							} break;
+							case COLOUR_EDITOR_HSV:
+							{
+								/* Do nothing */
+							} break;
 						}
-				 } break;
-				 case COLOUR_EDITOR_CMY:
-				 {
-						switch (new_mode)
+				} break;
+				case COLOUR_EDITOR_CMY:
+				{
+					switch (new_mode)
+					{
+						case COLOUR_EDITOR_RGB:
 						{
-							 case COLOUR_EDITOR_RGB:
-							 {
-									new_data->red=1.0-old_data->red;
-									new_data->green=1.0-old_data->green;
-									new_data->blue=1.0-old_data->blue;
-							 } break;
-							 case COLOUR_EDITOR_HSV:
-							 {
-									temp_max=1-min((COLOUR_PRECISION *)old_data,3);
-									temp_min=1.0-max((COLOUR_PRECISION *)old_data,3);
-									new_data->blue=temp_max;
-									if (temp_max)
-									{
-										 new_data->green=(temp_max-temp_min)/temp_max;
-									}
-									else
-									{
-										 new_data->green=0;
-									}
-									if (new_data->green)
-									{
-										 temp_delta=temp_max-temp_min;
-										 if ((1.0-old_data->red)==temp_max)
-										 {
-												new_data->red=-(old_data->green-old_data->blue)/
-													 temp_delta;
-										 }
-										 else if ((1.0-old_data->green)==temp_max)
-										 {
-												new_data->red=2-(old_data->blue-old_data->red)/
-													 temp_delta;
-										 }
-										 else if ((1.0-old_data->blue)==temp_max)
-										 {
-												new_data->red=4-(old_data->red-old_data->green)/
-													 temp_delta;
-										 }
-										 if (new_data->red<0)
-										 {
-												new_data->red +=6;
-										 }
-										 new_data->red /=6; /* bring it down into the range 0-1 */
-									}
-									else
-									{
-										 new_data->red=0; /* dont use undefined */
-									}
-							 } break;
-						}
-				 } break;
+							new_data->red=1.0-old_data->red;
+							new_data->green=1.0-old_data->green;
+							new_data->blue=1.0-old_data->blue;
+						} break;
+						case COLOUR_EDITOR_HSV:
+						{
+							temp_max=1-min((COLOUR_PRECISION *)old_data,3);
+							temp_min=1.0-max((COLOUR_PRECISION *)old_data,3);
+							new_data->blue=temp_max;
+							if (temp_max)
+							{
+								new_data->green=(temp_max-temp_min)/temp_max;
+							}
+							else
+							{
+								new_data->green=0;
+							}
+							if (new_data->green)
+							{
+								temp_delta=temp_max-temp_min;
+								if ((1.0-old_data->red)==temp_max)
+								{
+									new_data->red=-(old_data->green-old_data->blue)/
+										 temp_delta;
+								}
+								else if ((1.0-old_data->green)==temp_max)
+								{
+									new_data->red=2-(old_data->blue-old_data->red)/
+										 temp_delta;
+								}
+								else if ((1.0-old_data->blue)==temp_max)
+								{
+									new_data->red=4-(old_data->red-old_data->green)/
+										 temp_delta;
+								}
+								if (new_data->red<0)
+								{
+									new_data->red +=6;
+								}
+								new_data->red /=6; /* bring it down into the range 0-1 */
+								}
+								else
+								{
+									new_data->red=0; /* dont use undefined */
+								}
+						} break;
+						case COLOUR_EDITOR_CMY:
+						{
+							/* Do nothing */
+						} break;
+					}
+				} break;
 			}
-	 }
+	}
 	 LEAVE;
 } /* colour_editor_conversion */
 

@@ -1089,9 +1089,10 @@ DESCRIPTION :
 
 	if (event_dispatcher)
 	{
-		if(idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
+		idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
 			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
-				(void *)NULL, event_dispatcher->idle_list))
+				(void *)NULL, event_dispatcher->idle_list);
+		if(idle_callback != NULL)
 		{
 			ACCESS(Event_dispatcher_idle_callback)(idle_callback);
 			callback_code = (*idle_callback->idle_function)(idle_callback->user_data);
@@ -1754,8 +1755,9 @@ Set a timeout on wx widgets
 
 	if (event_dispatcher && timeout_function)
 	{
-		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
-			timeout_s, timeout_ns, timeout_function, user_data))
+		timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data);
+		if (timeout_callback != NULL)
 		{
 			timeout_callback->wx_timer = new wxEventTimer(timeout_callback);
 			timeout_callback->wx_timer->Start(timeout_s * 1000 + timeout_ns / 1000000, /*OneShot*/true);
@@ -2023,8 +2025,9 @@ DESCRIPTION :
 
 	if (event_dispatcher && idle_function)
 	{
-		if (idle_callback = CREATE(Event_dispatcher_idle_callback)(
-			idle_function, user_data, priority))
+		idle_callback = CREATE(Event_dispatcher_idle_callback)(
+			idle_function, user_data, priority);
+		if (idle_callback != NULL)
 		{
 			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)(
 				idle_callback, event_dispatcher->idle_list)))
@@ -2132,8 +2135,9 @@ DESCRIPTION :
 #if defined (USE_XTAPP_CONTEXT)
 		idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
 #else /* defined (USE_XTAPP_CONTEXT) */
-		if (idle_callback = CREATE(Event_dispatcher_idle_callback)(
-			idle_function, user_data, priority))
+		idle_callback = CREATE(Event_dispatcher_idle_callback)(
+			idle_function, user_data, priority);
+		if (idle_callback != NULL) 
 		{
 			REACCESS(Event_dispatcher_idle_callback)(
 				&event_dispatcher->special_idle_callback, idle_callback);

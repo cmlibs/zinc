@@ -395,7 +395,8 @@ DESCRIPTION :
 	struct File_confirmation *confirmation;
 
 	ENTER(confirmation_get_filename_callback);
-	if (confirmation=(struct File_confirmation *)data_void)
+	confirmation=(struct File_confirmation *)data_void;
+	if (confirmation != NULL)
 	{
 		confirmation->response=1;
 		confirmation->dialog_active=0;
@@ -433,7 +434,8 @@ DESCRIPTION :
 	struct File_confirmation *confirmation;
 
 	ENTER(confirmation_cancel_filename_callback);
-	if (confirmation=(struct File_confirmation *)data_void)
+	confirmation=(struct File_confirmation *)data_void;
+	if (confirmation != NULL)
 	{
 		confirmation->response=0;
 		confirmation->dialog_active=0;

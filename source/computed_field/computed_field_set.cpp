@@ -81,7 +81,8 @@ wrapper for field and add it to the manager.
 		set_field_data->computed_field_manager)
 	{
 		selected_field = (struct Computed_field *)NULL;
-		if (current_token = state->current_token)
+		current_token = state->current_token;
+		if (current_token != 0)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -161,8 +162,9 @@ wrapper for field and add it to the manager.
 								field_component_name = strchr(current_token_copy, '.');
 								*field_component_name = '\0';
 								field_component_name++;
-								if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-										name)(current_token_copy, set_field_data->computed_field_manager))
+								selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
+										name)(current_token_copy, set_field_data->computed_field_manager);
+								if (selected_field != 0)
 								{
 									ACCESS(Computed_field)(selected_field);
 									/* get the component number */
@@ -171,8 +173,9 @@ wrapper for field and add it to the manager.
 									for (i = 0; (i < number_of_components) &&
 											  (0 > component_no) && selected_field; i++)
 									{
-										if (temp_name =
-											Computed_field_get_component_name(selected_field, i))
+										temp_name =
+											Computed_field_get_component_name(selected_field, i);
+										if (temp_name != 0)
 										{
 											if (0 == strcmp(field_component_name, temp_name))
 											{
@@ -261,7 +264,8 @@ wrapper for field and add it to the manager.
 				display_message(INFORMATION_MESSAGE,
 					" FIELD_NAME[.COMPONENT_NAME]|none");
 				/* if possible, then write the name */
-				if (selected_field = *field_address)
+				selected_field = *field_address;
+				if (selected_field != 0)
 				{
 					ACCESS(Computed_field)(selected_field);
 					GET_NAME(Computed_field)(selected_field, &temp_name);

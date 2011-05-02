@@ -329,7 +329,8 @@ A manager iterator which adds each object to the chooser.
 		Managed_object_listbox * object_listbox_object;
 
 		return_code = 1;
-		if (object_listbox_object = (Managed_object_listbox*)object_listbox_object_void)
+		object_listbox_object = (Managed_object_listbox*)object_listbox_object_void;
+		if (object_listbox_object != NULL)
 		{
 			if (!(object_listbox_object->conditional_function) || 
 				(object_listbox_object->conditional_function)(object,

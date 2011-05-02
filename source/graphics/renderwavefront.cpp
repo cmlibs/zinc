@@ -366,8 +366,9 @@ points  given by the positions in <point_list> and oriented and scaled by
 					transformation[ 7] = 0.0;
 					transformation[11] = 0.0;
 					transformation[15] = 1.0;
-					if(transformed_object = transform_GT_object(glyph,
-						transformation))
+					transformed_object = transform_GT_object(glyph,
+						transformation);
+					if(transformed_object != 0)
 					{
 						set_GT_object_default_material(transformed_object,
 							material);
@@ -443,8 +444,9 @@ DESCRIPTION :
 							position.x = surfpts[i+npts1*j][0];
 							position.y = surfpts[i+npts1*j][1];
 							position.z = surfpts[i+npts1*j][2];
-							if (vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
-								vertex_list))
+							vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
+								vertex_list);
+							if (vertex != 0)
 							{
 								*vertex_index = vertex->index;
 							}
@@ -456,9 +458,10 @@ DESCRIPTION :
 									surfpts[i+npts1*j][2]);
 								file_vertex_index++;
 								*vertex_index = file_vertex_index;
-								if (vertex = CREATE(Wavefront_vertex)(file_vertex_index,
+								vertex = CREATE(Wavefront_vertex)(file_vertex_index,
 									surfpts[i+npts1*j][0], surfpts[i+npts1*j][1],
-									surfpts[i+npts1*j][2]))
+									surfpts[i+npts1*j][2]);
+								if (vertex != 0)
 								{
 									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
 								}
@@ -557,8 +560,8 @@ DESCRIPTION :
 							position.x = (*surface_point_1)[0];
 							position.y = (*surface_point_1)[1];
 							position.z = (*surface_point_1)[2];
-							if (vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
-								vertex_list))
+							vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,vertex_list);
+							if (vertex != 0)
 							{
 								*vertex_index = vertex->index;
 							}
@@ -570,9 +573,10 @@ DESCRIPTION :
 									(*surface_point_1)[2]);
 								file_vertex_index++;
 								*vertex_index = file_vertex_index;
-								if (vertex = CREATE(Wavefront_vertex)(file_vertex_index,
+								vertex = CREATE(Wavefront_vertex)(file_vertex_index,
 									(*surface_point_1)[0], (*surface_point_1)[1],
-									(*surface_point_1)[2]))
+									(*surface_point_1)[2]);
+								if (vertex != 0)
 								{
 									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
 								}
@@ -642,6 +646,10 @@ DESCRIPTION :
 				}
 				DEALLOCATE(vertex_index_array);
 				return_code=1;
+			} break;
+			case g_GENERAL_POLYGON:
+			{
+				/* Do nothing */
 			} break;
 		}
 	}
@@ -957,15 +965,17 @@ Convert graphical object into Wavefront object file.
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set = primitive_list1->gt_glyph_set.first)
+					glyph_set = primitive_list1->gt_glyph_set.first;
+					if (glyph_set != 0)
 					{
 						if (proportion>0)
 						{
 							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
-								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2))
+								interpolate_glyph_set=morph_GT_glyph_set(proportion,
+									glyph_set,glyph_set_2);
+								if (interpolate_glyph_set != 0)
 								{
 									draw_glyph_set_wavefront(wavefront_file,
 										interpolate_glyph_set->number_of_points,
@@ -1009,7 +1019,8 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_VOLTEX:
 				{
-					if (voltex = primitive_list1->gt_voltex.first)
+					voltex = primitive_list1->gt_voltex.first;
+					if (voltex != 0)
 					{
 						while (voltex)
 						{
@@ -1030,7 +1041,8 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_SURFACE:
 				{
-					if (surface = primitive_list1->gt_surface.first)
+					surface = primitive_list1->gt_surface.first;
+					if (surface != 0)
 					{
 						if (proportion>0)
 						{
@@ -1046,8 +1058,9 @@ Convert graphical object into Wavefront object file.
 								{
 									while (surface&&surface_2)
 									{
-										if (interpolate_surface=morph_GT_surface(proportion,
-											surface,surface_2))
+										interpolate_surface=morph_GT_surface(proportion,
+											surface,surface_2);
+										if (interpolate_surface != 0)
 										{
 											draw_surface_wavefront(
 												wavefront_file,
@@ -1096,8 +1109,9 @@ Convert graphical object into Wavefront object file.
 									{
 										while (surface&&surface_2)
 										{
-											if (interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2))
+											interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2);
+											if (interpolate_surface != 0)
 											{
 /* 												draw_dc_surfaceGL(interpolate_surface->pointlist, */
 /* 													interpolate_surface->n_pts1, */
@@ -1124,8 +1138,9 @@ Convert graphical object into Wavefront object file.
 									{
 										while (surface&&surface_2)
 										{
-											if (interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2))
+											interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2);
+											if (interpolate_surface != 0)
 											{
 /* 												draw_data_dc_surfaceGL(interpolate_surface->pointlist, */
 /* 													interpolate_surface->data, */
@@ -1167,7 +1182,8 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_NURBS:
 				{
-					if (nurbs = primitive_list1->gt_nurbs.first)
+					nurbs = primitive_list1->gt_nurbs.first;
+					if (nurbs != 0)
 					{
 						return_code=1;
 						while(return_code && nurbs)
@@ -1269,7 +1285,8 @@ Write the window object to the <wavefront_file_void>.
 				}
 				append_string(&file_name, file_basename, &error);
 					
-				if ( wavefront_object_file = fopen(file_name, "w"))
+				wavefront_object_file = fopen(file_name, "w");
+				if ( wavefront_object_file != 0)
 				{
 					fprintf(wavefront_object_file,
 						"# CMGUI Wavefront Object file generator\n#%s \n",file_basename);
@@ -1342,7 +1359,8 @@ Renders the visible objects to Wavefront object files.
 		build_Scene(scene);
 		/* Write all the graphics objects in the scene */
 		/* Open file and add header */
-		if (wavefront_global_file = fopen(file_name, "w"))
+		wavefront_global_file = fopen(file_name, "w");
+		if (wavefront_global_file != 0)
 		{
 			/*???debug */
 			display_message(WARNING_MESSAGE,
@@ -1356,7 +1374,8 @@ Renders the visible objects to Wavefront object files.
 			
 			export_to_wavefront_data.wavefront_file = wavefront_global_file;
 			export_to_wavefront_data.scene = scene;
-			if ( extension = strrchr ( file_name, '.' ))
+			extension = strrchr ( file_name, '.' );
+			if (extension != 0)
 			{
 				*extension = 0;
 			}

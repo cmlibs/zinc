@@ -488,7 +488,8 @@ Resets current edit. Called on button release or when tool deactivated.
 	struct Element_tool *element_tool;
 
 	ENTER(Element_tool_reset);
-	if (element_tool = (struct Element_tool *)element_tool_void)
+	element_tool = (struct Element_tool *)element_tool_void;
+	if (element_tool != 0)
 	{
 		REACCESS(FE_element)(&(element_tool->last_picked_element),
 			(struct FE_element *)NULL);
@@ -542,7 +543,8 @@ release.
 	{
 		Cmiss_region_begin_hierarchical_change(element_tool->region);
 		interaction_volume=Interactive_event_get_interaction_volume(event);
-		if (scene=Interactive_event_get_scene(event))
+		scene=Interactive_event_get_scene(event);
+		if (scene != 0)
 		{
 			event_type=Interactive_event_get_type(event);
 			input_modifier=Interactive_event_get_input_modifier(event);
@@ -554,17 +556,18 @@ release.
 					/* interaction only works with first mouse button */
 					if (1==Interactive_event_get_button_number(event))
 					{
-						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
+						scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer);
+						if (scene_picked_object_list != 0)
 						{
 							element_tool->picked_element_was_unselected=1;
-							if (picked_element=Scene_picked_object_list_get_nearest_element(
+							if (0 != (picked_element=Scene_picked_object_list_get_nearest_element(
 								scene_picked_object_list,(struct Cmiss_region *)NULL,
 								element_tool->select_elements_enabled,
 								element_tool->select_faces_enabled,
 								element_tool->select_lines_enabled,
 								(struct Scene_picked_object **)NULL,
-								&rendition,	(struct Cmiss_graphic **)NULL))
+								&rendition,	(struct Cmiss_graphic **)NULL)))
 							{
 								/* Open command_field of picked_element in browser */
 								if (element_tool->command_field)
@@ -638,7 +641,8 @@ release.
 							/*(if ((clear_selection = !shift_pressed)
 								&&((!picked_element)||
 								(element_tool->picked_element_was_unselected)))*/
-							if (clear_selection = !shift_pressed)
+							clear_selection = !shift_pressed;
+							if (clear_selection)
 							{
 								if (element_tool->region)
 								{
@@ -728,9 +732,10 @@ release.
 						else if (element_tool->motion_detected)
 						{
 							/* rubber band select */
-							if (temp_interaction_volume=
+							temp_interaction_volume=
 								create_Interaction_volume_bounding_box(
-								element_tool->last_interaction_volume,interaction_volume))
+								element_tool->last_interaction_volume,interaction_volume);
+							if (temp_interaction_volume != 0)
 							{
 								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
@@ -759,9 +764,10 @@ release.
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
-									if (scene_picked_object_list=
+									scene_picked_object_list=
 										Scene_pick_objects(scene,temp_interaction_volume,
-										graphics_buffer))
+										graphics_buffer);
+									if (scene_picked_object_list != 0)
 									{
 										Region_element_map *element_map =
 											(Region_element_map *)Scene_picked_object_list_get_picked_region_sorted_elements(
@@ -1018,7 +1024,8 @@ Function to call DESTROY
 	int return_code;
 	return_code=0;
 
-	if (element_tool = (struct Element_tool *)*element_tool_void)
+	element_tool = (struct Element_tool *)*element_tool_void;
+	if (element_tool != 0)
 	{
 		return_code = DESTROY(Element_tool)(&element_tool);
 	}

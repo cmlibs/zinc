@@ -273,7 +273,8 @@ Resets current edit. Called on button release or when tool deactivated.
 	struct Element_point_tool *element_point_tool;
 
 	ENTER(Element_point_tool_reset);
-	if (element_point_tool = (struct Element_point_tool *)element_point_tool_void)
+	element_point_tool = (struct Element_point_tool *)element_point_tool_void;
+	if (element_point_tool != 0)
 	{
 		REACCESS(Element_point_ranges)(
 			&(element_point_tool->last_picked_element_point),
@@ -321,7 +322,8 @@ release.
 		(struct Element_point_tool *)element_point_tool_void))
 	{
 		interaction_volume=Interactive_event_get_interaction_volume(event);
-		if (scene=Interactive_event_get_scene(event))
+		scene=Interactive_event_get_scene(event);
+		if (scene != 0)
 		{
 			event_type=Interactive_event_get_type(event);
 			input_modifier=Interactive_event_get_input_modifier(event);
@@ -333,16 +335,17 @@ release.
 					/* interaction only works with first mouse button */
 					if (1==Interactive_event_get_button_number(event))
 					{
-						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
+						scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer);
+						if (scene_picked_object_list != 0)
 						{
 							element_point_tool->picked_element_point_was_unselected=0;
-							if (picked_element_point=
+							if (0 != (picked_element_point=
 								Scene_picked_object_list_get_nearest_element_point(
 									scene_picked_object_list,(struct Cmiss_region *)NULL,
 									(struct Scene_picked_object **)NULL,
 									(struct Cmiss_rendition **)NULL,
-									(struct Cmiss_graphic **)NULL))
+									(struct Cmiss_graphic **)NULL)))
 							{
 								/* Execute command_field of picked_element_point */
 								if (element_point_tool->command_field)
@@ -403,7 +406,8 @@ release.
 							REACCESS(Element_point_ranges)(
 								&(element_point_tool->last_picked_element_point),
 								picked_element_point);
-							if (clear_selection = !shift_pressed)
+							clear_selection = !shift_pressed;
+							if (clear_selection)
 #if defined (OLD_CODE)
 								&&((!picked_element_point)||
 									(element_point_tool->picked_element_point_was_unselected))))
@@ -459,10 +463,11 @@ release.
 						else if (element_point_tool->motion_detected)
 						{
 							/* rubber band select */
-							if (temp_interaction_volume=
+							temp_interaction_volume=
 								create_Interaction_volume_bounding_box(
 									element_point_tool->last_interaction_volume,
-									interaction_volume))
+									interaction_volume);
+							if (temp_interaction_volume != 0)
 							{
 								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
@@ -492,12 +497,14 @@ release.
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
-									if (scene_picked_object_list=
-										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer))
+									scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer);
+									if (scene_picked_object_list != 0)
 									{
-										if (element_point_ranges_list=
+										element_point_ranges_list=
 											Scene_picked_object_list_get_picked_element_points(
-												scene_picked_object_list))
+												scene_picked_object_list);
+										if (element_point_ranges_list != 0)
 										{
 											Element_point_ranges_selection_begin_cache(
 												element_point_tool->element_point_ranges_selection);
@@ -766,7 +773,8 @@ Function to call DESTROY
 	int return_code;
 	return_code=0;
 
-	if (element_point_tool = (struct Element_point_tool *)*element_point_tool_void)
+	element_point_tool = (struct Element_point_tool *)*element_point_tool_void;
+	if (element_point_tool != 0)
 	{
 		 return_code = DESTROY(Element_point_tool)(&element_point_tool);
 	}

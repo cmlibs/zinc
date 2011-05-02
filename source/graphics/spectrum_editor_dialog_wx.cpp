@@ -264,7 +264,8 @@ bring it to the front, otherwise create a new one.
 	ENTER(bring_up_spectrum_editor_dialog);
 	if (spectrum_editor_dialog_address)
 	{
-		if (spectrum_editor_dialog = *spectrum_editor_dialog_address)
+		spectrum_editor_dialog = *spectrum_editor_dialog_address;
+		if (spectrum_editor_dialog != 0)
 		{		
 			spectrum_editor_wx_bring_up_editor(spectrum_editor_dialog->spectrum_editor);
 			return_code = 1;

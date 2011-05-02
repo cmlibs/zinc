@@ -420,8 +420,8 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 				fe_field_list)) && (3 >= get_FE_field_number_of_components(
 				fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
 			{
-				if (node_field_creator = CREATE(FE_node_field_creator)(
-					/*number_of_components*/3))
+				node_field_creator = CREATE(FE_node_field_creator)(/*number_of_components*/3);
+				if (node_field_creator != 0)
 				{
 					if (define_FE_field_at_node(node,fe_field,
 						(struct FE_time_sequence *)NULL,
@@ -493,8 +493,9 @@ Defines element_xi_field at node if not already defined. Sets value.
 		{
 			if (!FE_field_is_defined_at_node(fe_field,node))
 			{
-				if (node_field_creator =
-					CREATE(FE_node_field_creator)(/*number_of_components*/1))
+				node_field_creator =
+					CREATE(FE_node_field_creator)(/*number_of_components*/1);
+				if (node_field_creator != 0)
 				{
 					define_FE_field_at_node(node, fe_field,
 						(struct FE_time_sequence *)NULL, node_field_creator);
@@ -1210,8 +1211,9 @@ object's coordinate field.
 		{
 			time = 0;
 		}
-		if (rc_coordinate_field=
-			Computed_field_begin_wrap_coordinate_field(coordinate_field))
+		rc_coordinate_field=
+			Computed_field_begin_wrap_coordinate_field(coordinate_field);
+		if (rc_coordinate_field != 0)
 		{
 			picked_coordinate_field = Cmiss_graphic_get_coordinate_field(
 				node_tool->graphic);
@@ -1332,7 +1334,8 @@ try to enforce that the node is created on that element.
 			{
 				graphic = first_graphic_in_Cmiss_rendition_that(
 					rendition, Cmiss_graphic_type_matches,	(void*)cmiss_graphic_type);
-				if (scene_picked_object=CREATE(Scene_picked_object)(/*hit_no*/0))
+				scene_picked_object=CREATE(Scene_picked_object)(/*hit_no*/0);
+				if (scene_picked_object != 0)
 				{
 					Scene_picked_object_add_rendition(scene_picked_object, rendition);
 					REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
@@ -1343,8 +1346,9 @@ try to enforce that the node is created on that element.
 			{
 				scene_picked_object=(struct Scene_picked_object *)NULL;
 			}
-			if (rc_coordinate_field=
-				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field))
+			rc_coordinate_field=
+				Computed_field_begin_wrap_coordinate_field(node_tool_coordinate_field);
+			if (rc_coordinate_field != 0)
 			{
 				node_number = FE_region_get_next_FE_node_identifier(
 					node_tool->fe_region, /*start*/1);
@@ -1927,10 +1931,10 @@ DESCRIPTION :
 Resets current edit. Called on button release or when tool deactivated.
 ==============================================================================*/
 {
-	struct Node_tool *node_tool;
+	struct Node_tool *node_tool = (struct Node_tool *)node_tool_void;
 
 	ENTER(Node_tool_reset);
-	if (node_tool = (struct Node_tool *)node_tool_void)
+	if (node_tool != 0)
 	{
 		REACCESS(FE_node)(&(node_tool->last_picked_node),
 			(struct FE_node *)NULL);
@@ -2049,7 +2053,8 @@ release.
 	{
 		Cmiss_region_begin_hierarchical_change(node_tool->root_region);
 		interaction_volume=Interactive_event_get_interaction_volume(event);
-		if (scene=Interactive_event_get_scene(event))
+		scene = Interactive_event_get_scene(event);
+		if (scene != 0)
 		{
 			event_type=Interactive_event_get_type(event);
 			input_modifier=Interactive_event_get_input_modifier(event);
@@ -2063,8 +2068,9 @@ release.
 					{
 						REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
 							interaction_volume);
-						if (scene_picked_object_list=
-							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
+						scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume,graphics_buffer);
+						if (scene_picked_object_list != 0)
 						{
 							picked_node=(struct FE_node *)NULL;
 							nearest_element = (struct FE_element *)NULL;
@@ -2154,9 +2160,10 @@ release.
 										don't create */
 									if (!node_tool->constrain_to_surface || nearest_element)
 									{
-										if (picked_node=Node_tool_create_node_at_interaction_volume(
+										picked_node=Node_tool_create_node_at_interaction_volume(
 											node_tool,scene,interaction_volume,nearest_element,
-											nearest_element_coordinate_field))
+											nearest_element_coordinate_field);
+										if (picked_node != 0)
 										{
 											node_tool->picked_node_was_unselected=1;
 										}
@@ -2181,7 +2188,8 @@ release.
 							 * NOTE: make selection the last step so node_tool is in good state before
 							 * receiving code gets to run: consider it capable of changing the current tool!
 							 */
-							if (clear_selection = !shift_pressed)
+							clear_selection = !shift_pressed;
+							if (clear_selection)
 							{
 								if (node_tool->root_region)
 								{
@@ -2225,14 +2233,15 @@ release.
 						{
 							if (node_tool->constrain_to_surface)
 							{
-								if (scene_picked_object_list=
-									Scene_pick_objects(scene,interaction_volume,graphics_buffer))
+								scene_picked_object_list=
+									Scene_pick_objects(scene,interaction_volume,graphics_buffer);
+								if (scene_picked_object_list != 0)
 								{
-									if (nearest_element=Scene_picked_object_list_get_nearest_element(
+									if ( 0 != (nearest_element=Scene_picked_object_list_get_nearest_element(
 										scene_picked_object_list,(struct Cmiss_region *)NULL,
 										/*select_elements_enabled*/0, /*select_faces_enabled*/1, 
 										/*select_lines_enabled*/0, &scene_picked_object2,
-										&rendition_element,&graphic_element))
+										&rendition_element,&graphic_element)))
 									{
 										if (!(nearest_element_coordinate_field = 
 												Cmiss_graphic_get_coordinate_field(graphic_element)))
@@ -2251,9 +2260,10 @@ release.
 							{
 								if (!node_tool->constrain_to_surface || nearest_element)
 								{
-									if (picked_node = Node_tool_create_node_at_interaction_volume(
+									picked_node = Node_tool_create_node_at_interaction_volume(
 											 node_tool, scene, interaction_volume, nearest_element,
-											 nearest_element_coordinate_field))
+											 nearest_element_coordinate_field);
+									if (picked_node != 0)
 									{
 										Node_tool_set_picked_node(node_tool, picked_node);
 										REACCESS(FE_node)(&(node_tool->last_picked_node),
@@ -2463,9 +2473,10 @@ release.
 						{
 							/* rubber band select - make bounding box out of initial and
 								 current interaction_volumes */
-							if (temp_interaction_volume=
+							temp_interaction_volume=
 								create_Interaction_volume_bounding_box(
-									node_tool->last_interaction_volume,interaction_volume))
+									node_tool->last_interaction_volume,interaction_volume);
+							if (temp_interaction_volume != 0)
 							{
 								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
@@ -2494,8 +2505,9 @@ release.
 								}
 								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 								{
-									if (scene_picked_object_list=
-										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer))
+									scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume,graphics_buffer);
+									if (scene_picked_object_list != 0)
 									{
 										Region_node_map *node_map = 
 											(Region_node_map *)Scene_picked_object_list_get_picked_region_sorted_nodes(
@@ -2647,11 +2659,10 @@ Function to call DESTROY
 {
 	ENTER(Node_tool_destroy_node_tool);
 
-	Node_tool *node_tool;
-	int return_code;
-	return_code=0;
+	Node_tool *node_tool = (struct Node_tool *)*node_tool_void;
+	int return_code = 0;
 
-	if (node_tool = (struct Node_tool *)*node_tool_void)
+	if (node_tool != 0)
 	{
 		 return_code = DESTROY(Node_tool)(&node_tool);
 	}
@@ -3159,7 +3170,8 @@ void OnDimensionEntered(wxCommandEvent &event)
 		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
 		if (node_tool)
 		{
-			 if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()))
+			 value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str());
+			 if (value_string != 0)
 			 {
 					if (1==sscanf(value_string,"%d",&element_dimension))
 					{
@@ -3371,8 +3383,8 @@ DESCRIPTION :
 Set the wx_interface for new settings.
 ==============================================================================*/	 
 {
-	 struct Node_tool *node_tool;
-	 if (node_tool=(struct Node_tool *)node_tool_void) 
+	 struct Node_tool *node_tool =(struct Node_tool *)node_tool_void;
+	 if (node_tool != 0) 
 	 {
 			if (node_tool->wx_node_tool != (wxNodeTool *) NULL)
 			{	
@@ -3583,9 +3595,10 @@ static void Node_tool_Computed_field_change(
 																	LINEAR_LAGRANGE, fe_field))
 																	&& ACCESS(FE_element)(node_tool->template_element)))
 									{
-										if (node_tool->element = CREATE(FE_element)(
+										node_tool->element = CREATE(FE_element)(
 												&element_identifier, (struct FE_element_shape *) NULL,
-												(struct FE_region *) NULL, node_tool->template_element))
+												(struct FE_region *) NULL, node_tool->template_element);
+										if (node_tool->element != 0) 
 										{
 											ACCESS(FE_element)(node_tool->element);
 											node_tool->number_of_clicked_nodes = 0;
@@ -5435,7 +5448,8 @@ Updates what is shown on the dimension text field.
 	if (node_tool)
 	{
 		return_code=1;
-		if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()))
+		value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str());
+		if (value_string != 0)
 		{
 			 sprintf(temp_string,"%d",node_tool->element_dimension);
 			 /* only set string if different from that shown */
@@ -5667,7 +5681,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* command_field */
 		Option_table_add_entry(option_table,"command_field", &command_field_name,
 			NULL, set_name);
-		if (return_code = Option_table_multi_parse(option_table,state))
+		return_code = Option_table_multi_parse(option_table,state);
+		if (return_code)
 		{
 			if (node_tool)
 			{

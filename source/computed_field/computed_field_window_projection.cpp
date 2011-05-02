@@ -802,8 +802,9 @@ Evaluate the fields cache at the location
 	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			return_code = evaluate_projection_matrix(

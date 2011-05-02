@@ -397,8 +397,8 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 	USE_PARAMETER(material);
 	USE_PARAMETER(spectrum);
 	bool continuous = (surface_type == g_SHADED) || (surface_type == g_SHADED_TEXMAP);
-	if (surfpts && (continuous && (1 < npts1) && (1 < npts2)) ||
-		(!continuous && (0 < npts1) && (2 < npts2)))
+	if (surfpts && ((continuous && (1 < npts1) && (1 < npts2)) ||
+		(!continuous && (0 < npts1) && (2 < npts2))))
 	{
 		point=surfpts;
 		switch (surface_type)
@@ -438,6 +438,10 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 							point++;
 						}
 						return_code=1;
+					} break;
+					case g_GENERAL_POLYGON:
+					{
+						/* Do nothing */
 					} break;
 				}
 			} break;
@@ -691,15 +695,17 @@ int makestl(Stl_context& stl_context, gtObject *object, float time)
 				{
 					struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 
-					if (glyph_set = primitive_list1->gt_glyph_set.first)
+					glyph_set = primitive_list1->gt_glyph_set.first;
+					if (glyph_set != 0)
 					{
 						if (proportion>0)
 						{
 							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
-								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2))
+								interpolate_glyph_set=morph_GT_glyph_set(proportion,
+									glyph_set,glyph_set_2);
+								if (interpolate_glyph_set != 0)
 								{
 									draw_glyph_set_stl(stl_context,
 										interpolate_glyph_set->number_of_points,
@@ -747,7 +753,8 @@ int makestl(Stl_context& stl_context, gtObject *object, float time)
 				{
 					struct GT_voltex *voltex;
 
-					if (voltex = primitive_list1->gt_voltex.first)
+					voltex = primitive_list1->gt_voltex.first;
+					if (voltex != 0)
 					{
 						while (voltex)
 						{
@@ -776,15 +783,17 @@ int makestl(Stl_context& stl_context, gtObject *object, float time)
 				{
 					struct GT_surface *interpolate_surface,*surface,*surface_2;
 
-					if (surface = primitive_list1->gt_surface.first)
+					surface = primitive_list1->gt_surface.first;
+					if (surface != 0)
 					{
 						if (proportion>0)
 						{
 							surface_2 = primitive_list2->gt_surface.first;
 							while (surface&&surface_2)
 							{
-								if (interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2))
+								interpolate_surface=morph_GT_surface(proportion,
+									surface,surface_2);
+								if (interpolate_surface != 0)
 								{
 									draw_surface_stl(stl_context,
 										interpolate_surface->pointlist,

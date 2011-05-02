@@ -666,10 +666,12 @@ Note the source field should already have been evaluated.
 	if (field)
 	{
 		source_field = field->source_fields[0];
-		if (eigenvalue_core = dynamic_cast<Computed_field_eigenvalues*>
-				(source_field->core))
+		eigenvalue_core = dynamic_cast<Computed_field_eigenvalues*>
+				(source_field->core);
+		if (eigenvalue_core != 0)
 		{
-			if (v = eigenvalue_core->v)
+			v = eigenvalue_core->v;
+			if (v != 0)
 			{
 				n = source_field->number_of_components;
 				/* return the vectors across the rows of the field values */
@@ -1471,8 +1473,9 @@ Evaluate the fields cache in the element.
 		(0 == (n % s)) && (n /= s))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			a=field->source_fields[0]->values;
@@ -1730,7 +1733,8 @@ already) and allows its contents to be modified.
 					}
 				}
 				/* try to handle help first */
-				if (current_token=state->current_token)
+				current_token=state->current_token;
+				if (current_token != 0)
 				{
 					if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
@@ -2069,8 +2073,9 @@ Evaluate the fields cache in the element.
 	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			return_code=evaluate(location->get_number_of_derivatives());
 		}
@@ -2288,8 +2293,9 @@ and allows its contents to be modified.
 		if ((NULL != field_modify->get_field()) &&
 			(NULL != (dynamic_cast<Computed_field_projection*>(field_modify->get_field()->core))))
 		{
-			if (return_code = Computed_field_get_type_projection(field_modify->get_field(),
-				&source_field, &number_of_components, &projection_matrix))
+			return_code = Computed_field_get_type_projection(field_modify->get_field(),
+				&source_field, &number_of_components, &projection_matrix);
+			if (return_code)
 			{
 				number_of_projection_values = (source_field->number_of_components + 1)
 					* (number_of_components + 1);
@@ -2529,8 +2535,9 @@ Evaluate the fields cache in the element.
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = Computed_field_evaluate_source_fields_cache_at_location(
-			field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			source_values = field->source_fields[0]->values;
@@ -2742,7 +2749,8 @@ already) and allows its contents to be modified.
 				ACCESS(Computed_field)(source_field);
 			}
 			/* try to handle help first */
-			if (current_token = state->current_token)
+			current_token = state->current_token;
+			if (current_token != 0)
 			{
 				set_source_field_data.conditional_function =
 					Computed_field_has_numerical_components;

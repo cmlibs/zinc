@@ -481,8 +481,9 @@ Evaluate the fields cache at the location
 		{
 			/* 1. Precalculate any source fields that this field depends on */
 			/* 2. Calculate the field */
-			if (return_code =
-				Computed_field_evaluate_cache_at_location(field->source_fields[0], location))
+			return_code =
+				Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
+			if (return_code)
 			{
 				texture_coordinate[0] = 0.0;
 				texture_coordinate[1] = 0.0;
@@ -632,7 +633,8 @@ DESCRIPTION :
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[0]->name);
-		if (return_code=GET_NAME(Texture)(texture,&texture_name))
+		return_code=GET_NAME(Texture)(texture,&texture_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE,
 				"    texture : %s\n",texture_name);
@@ -1441,7 +1443,8 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 		Computed_field_image *image_core =
 			Computed_field_image_core_cast(image_field);
 
-		if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+		cmgui_image = Cmgui_image_read(cmgui_image_information);
+		if (cmgui_image != 0)
 		{
 			char *property, *value;
 			Texture *texture;
@@ -1516,7 +1519,8 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 		Computed_field_image *image_core =
 			Computed_field_image_core_cast(image_field);
 
-		if (cmgui_image = Texture_get_image(image_core->get_texture()))
+		cmgui_image = Texture_get_image(image_core->get_texture());
+		if (cmgui_image != 0)
 		{
 			if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 			{

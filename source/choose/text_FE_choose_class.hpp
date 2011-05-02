@@ -87,28 +87,28 @@ DESCRIPTION :
 =============================================================================*/
 	 {
 			manager_callback_id = (void *)NULL;
-			 current_object = (FE_object *)NULL;
-			 last_updated_object = (FE_object *)NULL;
-			 update_callback = (Callback_base<FE_object*> *)NULL;
-			 Connect(wxEVT_COMMAND_TEXT_ENTER,
+			current_object = (FE_object *)NULL;
+			last_updated_object = (FE_object *)NULL;
+			update_callback = (Callback_base<FE_object*> *)NULL;
+			Connect(wxEVT_COMMAND_TEXT_ENTER,
 					wxCommandEventHandler(FE_object_text_chooser::OnTextEnter));
-			 Connect(wxEVT_KILL_FOCUS,
+			Connect(wxEVT_KILL_FOCUS,
 					wxCommandEventHandler(FE_object_text_chooser::OnTextEnter));
-			 FE_region_add_callback(fe_region,
+			FE_region_add_callback(fe_region,
 					FE_object_text_chooser::object_change,
 					(void *)this);
-			 select_object(initial_object);
-			 wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
-			 sizer->Add(this,
+			select_object(initial_object);
+			wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
+			sizer->Add(this,
 					wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
-			 parent->SetSizer(sizer);
-			 typedef int (FE_object_text_chooser::*Member_function)(FE_object *);
-			 Callback_base<FE_object*> *callback = 
+			parent->SetSizer(sizer);
+			typedef int (FE_object_text_chooser::*Member_function)(FE_object *);
+			Callback_base<FE_object*> *callback = 
 					new Callback_member_callback<FE_object*, 
 				 FE_object_text_chooser, Member_function>(
 						this, &FE_object_text_chooser::text_chooser_callback);
-			 set_callback(callback);
-			 Show();
+			set_callback(callback);
+			Show();
 	 }
 
 	~FE_object_text_chooser()
@@ -255,55 +255,55 @@ update in case it has changed, and writes the new object string in the widget.
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
 
-	if (current_string = const_cast<char *>(GetValue().c_str())) 
+	current_string = const_cast<char *>(GetValue().c_str());
+	if (current_string != NULL) 
 	{ 
 		 if (new_object && ((!(FE_region_method_class::FE_region_contains_object(
-															fe_region, new_object)) || 
+			fe_region, new_object)) || 
 				(conditional_function && 
-				!(conditional_function(new_object, 
-							conditional_function_user_data))))))
-		 { 
+				!(conditional_function(new_object, conditional_function_user_data))))))
+		{ 
 				display_message(ERROR_MESSAGE, 
 					 "TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type).  Invalid object"); 
 				new_object=(FE_object *)NULL; 
-		 } 
-		 if (new_object) 
-		 { 
+		} 
+		if (new_object) 
+		{ 
  				current_object=new_object;
-		 } 
-		 else if (!current_object) 
-		 { 
-				current_object= 
-					 FE_region_method_class::get_first_object_that(
+		} 
+		else if (!current_object) 
+		{ 
+				current_object = 
+					FE_region_method_class::get_first_object_that(
 							fe_region, 
 							conditional_function, 
 							conditional_function_user_data); 
-		 }
+		}
 
-		 /* write out the current_object */ 
-		 if (current_object) 
-		 { 
+		/* write out the current_object */ 
+		if (current_object) 
+		{ 
 				if (FE_region_method_class::FE_object_to_string
 							(current_object,&object_name)) 
 				{
-					 set_item(object_name);
-					 DEALLOCATE(object_name);
+					set_item(object_name);
+					DEALLOCATE(object_name);
 				} 
-		 } 
-		 else 
-		 { 
+		} 
+		else 
+		{ 
 				if (strcmp(null_object_name,current_string)) 
 				{ 
-					 set_item(null_object_name); 
+					set_item(null_object_name); 
 				}
-		 } 
-		 /* inform the client of any change */
-		 update();
-		 return_code=1;
+		} 
+		/* inform the client of any change */
+		update();
+		return_code=1;
 	}
 	else
 	{
-		 return_code = 0;
+		return_code = 0;
 	}
 	
 	LEAVE; 
@@ -313,7 +313,7 @@ update in case it has changed, and writes the new object string in the widget.
 
 
 static void object_change(struct FE_region *fe_region, struct FE_region_changes *changes, 
-	 void *text_choose_object_void)
+	void *text_choose_object_void)
 /***************************************************************************** 
 LAST MODIFIED : 28 March 2003 
 
@@ -321,30 +321,31 @@ DESCRIPTION :
 Updates the chosen object and text field in response to messages. 
 ============================================================================*/
 { 
- 	 typename FE_region_method_class::change_log_change_object_type change; 
-	 FE_object_text_chooser *chooser;
+	typename FE_region_method_class::change_log_change_object_type change; 
+	FE_object_text_chooser *chooser;
 
 	USE_PARAMETER(fe_region);
-	 if (chooser = static_cast<FE_object_text_chooser *>(text_choose_object_void))
-	 {
-			if (chooser->current_object)
-			{
-				 if (FE_region_method_class::change_log_query( 
-								FE_region_method_class::get_object_changes(changes), 
-								chooser->current_object, &change)) 
-				 { 
-						if (change & (FE_region_method_class::change_log_object_changed | 
-									FE_region_method_class::change_log_object_removed)) 
-						{ 
-							 chooser->select_object((FE_object *)NULL); 
-						} 
-				 } 
-			}
-	 }
+	chooser = static_cast<FE_object_text_chooser *>(text_choose_object_void);
+	if (chooser != NULL)
+	{
+		if (chooser->current_object)
+		{
+			if (FE_region_method_class::change_log_query( 
+				FE_region_method_class::get_object_changes(changes), 
+				chooser->current_object, &change)) 
+			{ 
+				if (change & (FE_region_method_class::change_log_object_changed | 
+					FE_region_method_class::change_log_object_removed)) 
+				{ 
+					chooser->select_object((FE_object *)NULL); 
+				} 
+			} 
+		}
+	}
 	 
 } /* FE_object_chooser::object_change */
 
-   int set_callback(Callback_base< FE_object > *callback_object)
+	int set_callback(Callback_base< FE_object > *callback_object)
 	{
 		update_callback = callback_object;
 		return (1);

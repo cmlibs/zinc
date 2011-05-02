@@ -100,7 +100,8 @@ specified on the command line, a file selection box is presented to the user.
 	ENTER(open_comfile);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check arguments */
-	if (open_comfile_data=(struct Open_comfile_data *)open_comfile_data_void)
+	open_comfile_data=(struct Open_comfile_data *)open_comfile_data_void;
+	if (open_comfile_data != 0)
 	{
 		if (state)
 		{
@@ -291,50 +292,53 @@ specified on the command line, a file selection box is presented to the user.
 				filename=temp_name;
 #endif /* defined (WX_USER_INTERFACE)  && (WIN32_SYSTEM)*/
 						 /* open the file */
-				if (return_code = check_suffix(&filename,
-							open_comfile_data->file_extension))
+				return_code = check_suffix(&filename,
+					open_comfile_data->file_extension);
+				if (return_code)
 				{
-					 if (0 < open_comfile_data->execute_count)
-					 {
-							for (i=open_comfile_data->execute_count;i>0;i--)
-							{
-								 execute_comfile(filename, open_comfile_data->io_stream_package,
-												open_comfile_data->execute_command);
-								 
-							}
+					if (0 < open_comfile_data->execute_count)
+					{
+						for (i=open_comfile_data->execute_count;i>0;i--)
+						{
+							 execute_comfile(filename, open_comfile_data->io_stream_package,
+								open_comfile_data->execute_command);
+						 
+						}
 #if defined (WX_USER_INTERFACE)
-							/* Change back to original dir */
-							if ((old_directory_name != NULL) && (pathname != NULL))
-							{
-								 if (strcmp (old_directory_name,pathname) != 0)
-								 {
-										make_valid_token(&old_directory_name);
-										length = strlen(old_directory_name);
-										temp_string = NULL;
-										if (ALLOCATE(temp_string,char,length+9))
-										{
-											 strcpy(temp_string, "set dir ");
-											 strcat(temp_string, old_directory_name);
-											 temp_string[length+8]='\0';
-											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
-											 DEALLOCATE(temp_string);
-										}
-								 }
+						/* Change back to original dir */
+						if ((old_directory_name != NULL) && (pathname != NULL))
+						{
+							 if (strcmp (old_directory_name,pathname) != 0)
+							 {
+								make_valid_token(&old_directory_name);
+								length = strlen(old_directory_name);
+								temp_string = NULL;
+								if (ALLOCATE(temp_string,char,length+9))
+								{
+									strcpy(temp_string, "set dir ");
+									strcat(temp_string, old_directory_name);
+									temp_string[length+8]='\0';
+									Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+									DEALLOCATE(temp_string);
+								}
 							}
+						}
 #endif /*defined (WX_USER_INTERFACE)*/
-					 }
-					 else
-					 {
+					}
+					else
+					{
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-							if (name = Comfile_window_manager_make_unique_name(
+							name = Comfile_window_manager_make_unique_name(
 										 open_comfile_data->comfile_window_manager,
-										 filename))
+										 filename);
+							if (name != 0)
 							{
-								 if (comfile_window = CREATE(Comfile_window)(name,
+								 comfile_window = CREATE(Comfile_window)(name,
 											 filename, open_comfile_data->io_stream_package,
 											 open_comfile_data->execute_command,
 											 open_comfile_data->set_command,
-											 open_comfile_data->user_interface))
+											 open_comfile_data->user_interface);
+								 if (comfile_window != 0)
 								 {
 										if (ADD_OBJECT_TO_MANAGER(Comfile_window)(comfile_window,
 													open_comfile_data->comfile_window_manager))

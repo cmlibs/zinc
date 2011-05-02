@@ -1601,7 +1601,8 @@ DESCRIPTION :
 	return_code=0;
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != NULL)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1617,7 +1618,8 @@ DESCRIPTION :
 		}
 		else
 		{
-			if (command_window=(struct Command_window *)command_window_void)
+			command_window=(struct Command_window *)command_window_void;
+			if (command_window != NULL)
 			{
 				if (command_window->out_file)
 				{

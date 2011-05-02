@@ -1143,7 +1143,7 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 			Cmiss_field_cast_cad_primitive_group_template(it->second);
 		return_code = Cmiss_field_cad_primitive_group_template_clear(cad_primitive_group);
 		Computed_field_changed(this->field);
-		Cmiss_field_id cad_primitive_group_field = reinterpret_cast<Computed_field*>(cad_primitive_group);
+		//Cmiss_field_id cad_primitive_group_field = reinterpret_cast<Computed_field*>(cad_primitive_group);
 		Cmiss_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 		Cmiss_field_destroy(&it->second);
 		domain_selection_group.erase(it++);

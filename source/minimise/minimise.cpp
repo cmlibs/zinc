@@ -378,8 +378,9 @@ int Minimisation::construct_dof_arrays(struct FE_node *node,
 	Minimisation *minimisation;
 
 	ENTER(Minimisation::construct_dof_arrays);
-	if (minimisation
-			= static_cast<Minimisation *> (minimisation_object_void)) {
+	minimisation = static_cast<Minimisation *> (minimisation_object_void);
+	if (minimisation != 0) 
+	{
 
 		if (node) {
 			// should only have one independent field
@@ -1047,7 +1048,9 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 		Option_table_add_entry(option_table, "dimension", &dimension,
 					NULL, set_int_positive);
 
-		if (return_code = Option_table_multi_parse(option_table, state)) {
+		return_code = Option_table_multi_parse(option_table, state);
+		if (return_code)
+		{
 			if ((field_names.number_of_strings > 0) && (objective_field || (data_field && mesh_field))) {
 				if (region && data_group) {
 					if (minimisation_method_string) {

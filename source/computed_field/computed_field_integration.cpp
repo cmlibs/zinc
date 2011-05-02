@@ -1244,14 +1244,15 @@ the mapping is defined for this element.
 	ENTER(Computed_field_default::is_defined_at_location);
 	if (field && location)
 	{
-		if (return_code = Computed_field_core::is_defined_at_location(
-			location))
+		return_code = Computed_field_core::is_defined_at_location(location);
+		if (return_code)
 		{
 			Field_element_xi_location *element_xi_location;
 			Field_node_location *node_location;
 			
-			if (element_xi_location = 
-				dynamic_cast<Field_element_xi_location*>(location))
+			element_xi_location = 
+				dynamic_cast<Field_element_xi_location*>(location);
+			if (element_xi_location != 0) 
 			{
 				FE_element* element = element_xi_location->get_element();
 				
@@ -1297,8 +1298,8 @@ the mapping is defined for this element.
 					}
 				}
 			}
-			else if (node_location = 
-				dynamic_cast<Field_node_location*>(location))
+			else if (0 != (node_location = 
+				dynamic_cast<Field_node_location*>(location)))
 			{
 				FE_node *node = node_location->get_node();
 
@@ -1430,8 +1431,9 @@ Evaluate the fields cache at the location
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location != 0)
 		{
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -1472,10 +1474,11 @@ Evaluate the fields cache at the location
 			else
 			{
 				/* check or get top_level element and xi coordinates for it */
-				if (top_level_element=FE_element_get_top_level_element_conversion(
+				top_level_element=FE_element_get_top_level_element_conversion(
 						 element,top_level_element,
 						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-						 -1,element_to_top_level))
+						 -1,element_to_top_level);
+				if (top_level_element != 0)
 				{
 					/* convert xi to top_level_xi */
 					top_level_element_dimension=get_FE_element_dimension(top_level_element);
@@ -1512,9 +1515,10 @@ Evaluate the fields cache at the location
 			/* 2. Calculate the field */
 			if (texture_mapping)
 			{
-				if (mapping = FIND_BY_IDENTIFIER_IN_LIST
+				mapping = FIND_BY_IDENTIFIER_IN_LIST
 					(Computed_field_element_integration_mapping,element)
-					(top_level_element, texture_mapping))
+					(top_level_element, texture_mapping);
+				if (mapping != 0)
 				{
 					/* Integrate to the specified top_level_xi location */
 					for (i = 0 ; i < top_level_element_dimension ; i++)
@@ -1587,8 +1591,8 @@ Evaluate the fields cache at the location
 				return_code=0;
 			}
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (0 != (node_location = 
+			dynamic_cast<Field_node_location*>(location)))
 		{
 			FE_node *node = node_location->get_node();
 			FE_value time = node_location->get_time();
@@ -1615,9 +1619,10 @@ Evaluate the fields cache at the location
 			/* 2. Calculate the field */
 			if (node_mapping)
 			{
-				if (mapping = FIND_BY_IDENTIFIER_IN_LIST
+				mapping = FIND_BY_IDENTIFIER_IN_LIST
 					(Computed_field_node_integration_mapping,node_ptr)
-					(node, node_mapping))
+					(node, node_mapping);
+				if (mapping != 0) 
 				{
 					for(i = 0 ; i < field->number_of_components ; i++)
 					{
@@ -1724,9 +1729,10 @@ DESCRIPTION :
 				else
 				{
 					/* Find in the list */
-					if (mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_integration_mapping)
+					mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_integration_mapping)
 						(Computed_field_element_integration_mapping_has_values, (void *)&has_values_data,
-							texture_mapping))
+							texture_mapping);
+					if (mapping != 0)
 					{
 						REACCESS(Computed_field_element_integration_mapping)(&(find_element_xi_mapping),
 							mapping);
@@ -1852,10 +1858,11 @@ Returns allocated command string for reproducing field. Includes type.
 	if (field)
 	{
 		error = 0;
-		if (xi_texture_coordinates = (
+		xi_texture_coordinates = (
 			Computed_field_is_constant_scalar(field->source_fields[0], 1.0) &&
 			Computed_field_is_type_xi_coordinates(field->source_fields[1],
-				(void *)NULL)))
+				(void *)NULL));
+		if (xi_texture_coordinates != 0)
 		{
 			append_string(&command_string,
 				computed_field_xi_texture_coordinates_type_string, &error);
@@ -2317,7 +2324,8 @@ and allows its contents to be modified.
 					/* update_time_integration */
 					Option_table_add_entry(option_table,"update_time_integration",
 						&time_update, NULL, set_float);
-					if (return_code = Option_table_multi_parse(option_table,state))
+					return_code = Option_table_multi_parse(option_table,state);
+					if (return_code)
 					{
 						if (!coordinate_field)
 						{
@@ -2503,7 +2511,8 @@ and allows its contents to be modified.
 				Option_table_add_entry(option_table,"seed_element",
 					&seed_element, Cmiss_region_get_FE_region(region),
 					set_FE_element_top_level_FE_region);
-				if (return_code = Option_table_multi_parse(option_table,state))
+				return_code = Option_table_multi_parse(option_table,state);
+				if (return_code)
 				{
 					Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_type_xi_coordinates, (void *)NULL,

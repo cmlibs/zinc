@@ -473,8 +473,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light_model,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Light_model,name)(
-				destination,source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Light_model,name)(
+				destination,source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -887,18 +888,22 @@ Modifies the properties of a light model.
 	/* check the arguments */
 	if (state)
 	{
-		if (modify_light_model_data=(struct Modify_light_model_data *)
-			modify_light_model_data_void)
+		modify_light_model_data=(struct Modify_light_model_data *)
+			modify_light_model_data_void;
+		if (modify_light_model_data != 0)
 		{
-			if (current_token=state->current_token)
+			current_token=state->current_token;
+			if (current_token != 0)
 			{
 				process=0;
-				if (light_model_to_be_modified=(struct Light_model *)light_model_void)
+				light_model_to_be_modified=(struct Light_model *)light_model_void;
+				if (light_model_to_be_modified != 0)
 				{
 					if (IS_MANAGED(Light_model)(light_model_to_be_modified,
 						modify_light_model_data->light_model_manager))
 					{
-						if (light_model_to_be_modified_copy=CREATE(Light_model)("copy"))
+						light_model_to_be_modified_copy=CREATE(Light_model)("copy");
+						if (light_model_to_be_modified_copy != 0)
 						{
 							MANAGER_COPY_WITHOUT_IDENTIFIER(Light_model,name)(
 								light_model_to_be_modified_copy,light_model_to_be_modified);
@@ -923,13 +928,16 @@ Modifies the properties of a light model.
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (light_model_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
+						light_model_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
 							Light_model,name)(current_token,
-							modify_light_model_data->light_model_manager))
+							modify_light_model_data->light_model_manager);
+						if (light_model_to_be_modified != 0)
 						{
-							if (return_code=shift_Parse_state(state,1))
+							return_code=shift_Parse_state(state,1);
+							if (return_code)
 							{
-								if (light_model_to_be_modified_copy=CREATE(Light_model)("copy"))
+								light_model_to_be_modified_copy=CREATE(Light_model)("copy");
+								if (light_model_to_be_modified_copy != 0)
 								{
 									MANAGER_COPY_WITH_IDENTIFIER(Light_model,name)(
 										light_model_to_be_modified_copy,light_model_to_be_modified);
@@ -953,7 +961,8 @@ Modifies the properties of a light model.
 					}
 					else
 					{
-						if (light_model_to_be_modified=CREATE(Light_model)("help"))
+						light_model_to_be_modified=CREATE(Light_model)("help");
+						if (light_model_to_be_modified != 0)
 						{
 							if (modify_light_model_data->default_light_model)
 							{
@@ -995,7 +1004,8 @@ Modifies the properties of a light model.
 					(sided_option_table[0]).to_be_modified=&one_sided_flag;
 					(sided_option_table[1]).to_be_modified=&two_sided_flag;
 					(option_table[3]).user_data=sided_option_table;
-					if (return_code=process_multiple_options(state,option_table))
+					return_code=process_multiple_options(state,option_table);
+					if (return_code)
 					{
 						if (disable_flag&&enable_flag)
 						{
@@ -1170,7 +1180,8 @@ Modifier function to set the light model from a command.
 	ENTER(set_Light_model);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != 0)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -1180,8 +1191,9 @@ Modifier function to set the light model from a command.
 					(light_model_manager=(struct MANAGER(Light_model) *)
 					light_model_manager_void))
 				{
-					if (temp_light_model=FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(
-						current_token,light_model_manager))
+					temp_light_model=FIND_BY_IDENTIFIER_IN_MANAGER(Light_model,name)(
+						current_token,light_model_manager);
+					if (temp_light_model != 0)
 					{
 						if (*light_model_address!=temp_light_model)
 						{
@@ -1209,10 +1221,12 @@ Modifier function to set the light model from a command.
 			{
 				display_message(INFORMATION_MESSAGE," LIGHT_MODEL_NAME");
 				/* if possible, then write the name */
-				if (light_model_address=
-					(struct Light_model **)light_model_address_void)
+				light_model_address=
+					(struct Light_model **)light_model_address_void;
+				if (light_model_address != 0)
 				{
-					if (temp_light_model= *light_model_address)
+					temp_light_model= *light_model_address;
+					if (temp_light_model != 0)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_light_model->name);
 					}

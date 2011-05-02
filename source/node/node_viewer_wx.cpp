@@ -247,31 +247,29 @@ public:
 			wxXmlInit_node_viewer_wx();
 			node_viewer->wx_node_viewer = this;
 			wxXmlResource::Get()->LoadFrame(this,
-				 (wxWindow *)NULL, _T("CmguiNodeViewer"));
+				(wxWindow *)NULL, _T("CmguiNodeViewer"));
 			this->SetIcon(cmiss_icon_xpm);
 			wxPanel *node_text_panel =
-				 XRCCTRL(*this, "NodeTextPanel",wxPanel);
+				XRCCTRL(*this, "NodeTextPanel",wxPanel);
 			node_text_chooser =
-				 new FE_object_text_chooser<FE_node, FE_region_FE_object_method_class(node) >
-				 (node_text_panel, node_viewer->initial_node, node_viewer->fe_region, 
-						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,NULL);
+				new FE_object_text_chooser< FE_node, FE_region_FE_object_method_class(node) >(node_text_panel, node_viewer->initial_node, node_viewer->fe_region, (LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL);
 			Callback_base< FE_node* > *node_text_callback = 
-				 new Callback_member_callback< FE_node*, 
-				 wxNodeViewer, int (wxNodeViewer::*)(FE_node *) >
-				 (this, &wxNodeViewer::node_text_callback);
+				(new Callback_member_callback< FE_node*, 
+				wxNodeViewer, int (wxNodeViewer::*)(FE_node *) >
+				(this, &wxNodeViewer::node_text_callback));
 			node_text_chooser->set_callback(node_text_callback);
-		  wxPanel *region_chooser_panel =
+		wxPanel *region_chooser_panel =
 			 XRCCTRL(*this, "RegionChooserPanel", wxPanel);
-		  char *initial_path;
-		  initial_path = Cmiss_region_get_root_region_path();
-		  region_chooser = new wxRegionChooser(region_chooser_panel,
-			  node_viewer->region, initial_path);
-		  DEALLOCATE(initial_path);
-		  Callback_base<Cmiss_region* > *Node_viewer_wx_region_callback =
-			  new Callback_member_callback< Cmiss_region*,
-			  wxNodeViewer, int (wxNodeViewer::*)(Cmiss_region *) >
-			  (this, &wxNodeViewer::Node_viewer_wx_region_callback);
-		  region_chooser->set_callback(Node_viewer_wx_region_callback);
+		char *initial_path;
+		initial_path = Cmiss_region_get_root_region_path();
+		region_chooser = new wxRegionChooser(region_chooser_panel,
+			node_viewer->region, initial_path);
+		DEALLOCATE(initial_path);
+		Callback_base<Cmiss_region* > *Node_viewer_wx_region_callback =
+			new Callback_member_callback< Cmiss_region*,
+			wxNodeViewer, int (wxNodeViewer::*)(Cmiss_region *) >
+			(this, &wxNodeViewer::Node_viewer_wx_region_callback);
+		region_chooser->set_callback(Node_viewer_wx_region_callback);
 			Show();
 			frame = XRCCTRL(*this, "CmguiNodeViewer",wxFrame);
 			frame->GetSize(&(node_viewer->init_width), &(node_viewer->init_height));
@@ -438,9 +436,11 @@ void Terminate(wxCloseEvent& event)
 				 (node=node_viewer->current_node))
 			{
 				 time = Time_object_get_current_time(node_viewer->time_object);			 
-				 if (node_viewer->current_field = field)
+				 node_viewer->current_field = field;
+				 if (node_viewer->current_field != NULL) 
 				 {
-						if (value_string=const_cast<char *>((textctrl->GetValue()).c_str()))
+						value_string=const_cast<char *>((textctrl->GetValue()).c_str());
+						if (value_string != NULL)
 						{
 							 if (Computed_field_is_type_finite_element(field))
 							 {
@@ -517,7 +517,8 @@ void Terminate(wxCloseEvent& event)
 							 }
 						}
 						/* refresh value shown in the text field widgets */
-						if (temp_string = node_viewer_update_value(node_viewer, field, component_number, type, version))
+						temp_string = node_viewer_update_value(node_viewer, field, component_number, type, version);
+						if (temp_string != NULL)
 						{
 							 textctrl->SetValue(temp_string);
 						}
@@ -615,7 +616,8 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 
 			// identifier is the name of the panel in the collapsible pane
 			// field_name is the name of the CollapsiblePane
-			if (node_viewer->win = panel->FindWindowByName(field_name))
+			node_viewer->win = panel->FindWindowByName(field_name);
+			if (node_viewer->win != NULL)
 			{
 				 node_viewer->win->DestroyChildren();
 			}
@@ -831,24 +833,25 @@ Since both nodes and data can depend on embedded fields, the
 #endif /* defined (WX_USER_INTERFACE) */	
 				if (!initial_node)
 				{
-					if (initial_node = FE_region_get_first_FE_node_that(
-								 node_viewer->fe_region,
-								 (LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL))
+					initial_node = FE_region_get_first_FE_node_that(
+						node_viewer->fe_region,
+						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL);
+					if (initial_node != NULL)
 					{
-						 /* select the node to be displayed in dialog; note this is ok
-								here as we are not receiving selection callbacks yet */
-						 Node_viewer_set_viewer_node(node_viewer);
-						 if (node_viewer->wx_node_viewer && node_viewer->collpane)
-						 {
-								Node_viewer_update_collpane(node_viewer);
-						 }
+						/* select the node to be displayed in dialog; note this is ok
+							here as we are not receiving selection callbacks yet */
+						Node_viewer_set_viewer_node(node_viewer);
+						if (node_viewer->wx_node_viewer && node_viewer->collpane)
+						{
+							Node_viewer_update_collpane(node_viewer);
+						}
 					}
 				}
 				node_viewer->computed_field_manager_callback_id =
 					MANAGER_REGISTER(Computed_field)(Node_viewer_Computed_field_change,
 						(void *)node_viewer,	node_viewer->computed_field_manager);
-				 FE_region_add_callback(node_viewer->fe_region,
-						Node_viewer_FE_region_change, (void *)node_viewer);
+				FE_region_add_callback(node_viewer->fe_region,
+					Node_viewer_FE_region_change, (void *)node_viewer);
 				/* make the dialog shell */
 #if defined (WX_USER_INTERFACE)
 				node_viewer->initial_node = initial_node;
@@ -1056,30 +1059,31 @@ and passes it to the node_viewer.
 	return_code = 1;
 	if (node_viewer)
 	{
-		 if (node_viewer->wx_node_viewer != NULL)
-		 {
-				if (node = node_viewer->wx_node_viewer->get_selected_node())
-				{
-					 node_copy = ACCESS(FE_node)(CREATE(FE_node)(get_FE_node_identifier(node),
-								 (struct FE_region *)NULL, node));
-				}
-		 }
-		 else
-		 {
-				node_copy = (struct FE_node *)NULL;
-		 }
-		 REACCESS(FE_node)(&(node_viewer->node_copy), node_copy);
-		 node_viewer_widget_set_node(node_viewer,	node_viewer->fe_region, node_copy);
-		 if (node_copy)
-		 {
+		if (node_viewer->wx_node_viewer != NULL)
+		{
+			node = node_viewer->wx_node_viewer->get_selected_node();
+			if (node != NULL)
+			{
+				node_copy = ACCESS(FE_node)(CREATE(FE_node)(get_FE_node_identifier(node),
+					(struct FE_region *)NULL, node));
+			}
+		}
+		else
+		{
+			node_copy = (struct FE_node *)NULL;
+		}
+		REACCESS(FE_node)(&(node_viewer->node_copy), node_copy);
+		node_viewer_widget_set_node(node_viewer, node_viewer->fe_region, node_copy);
+		if (node_copy)
+		{
 			DEACCESS(FE_node)(&node_copy);
-		 }
-		 return_code=1;
+		}
+		return_code=1;
 	}
 	else
 	{
-		 display_message(ERROR_MESSAGE,
-				"Node_viewer_set_viewer_node.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"Node_viewer_set_viewer_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1302,28 +1306,29 @@ DESCRIPTION :
 Add textctrl box onto the viewer.
 ==============================================================================*/
 {
-	 char *temp_string;
-	 wxNodeViewerTextCtrl *node_viewer_text = 
-			new wxNodeViewerTextCtrl(node_viewer, field, component_number, type, version);
-	 if (temp_string = node_viewer_update_value(
-					node_viewer, field, component_number, type, version))
-	 {
-			node_viewer_text ->Create (node_viewer->win, -1, temp_string,wxDefaultPosition,
-				 wxDefaultSize,wxTE_PROCESS_ENTER);
-			DEALLOCATE(temp_string);
-	 }
-	 else
-	 {
-			node_viewer_text->Create (node_viewer->win, -1, "ERROR",wxDefaultPosition,
-				 wxDefaultSize,wxTE_PROCESS_ENTER);	
-	 }
-	 node_viewer_text->Connect(wxEVT_COMMAND_TEXT_ENTER,
-			wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
-	 node_viewer_text->Connect(wxEVT_KILL_FOCUS,
-			wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
-	 node_viewer->grid_field->Add(node_viewer_text, 0,
-			wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0); 
-	 return (1);
+	char *temp_string;
+	wxNodeViewerTextCtrl *node_viewer_text = 
+		new wxNodeViewerTextCtrl(node_viewer, field, component_number, type, version);
+	temp_string = node_viewer_update_value(
+		node_viewer, field, component_number, type, version);
+	if (temp_string != NULL)
+	{
+		node_viewer_text ->Create (node_viewer->win, -1, temp_string,wxDefaultPosition,
+			wxDefaultSize,wxTE_PROCESS_ENTER);
+		DEALLOCATE(temp_string);
+	}
+	else
+	{
+		node_viewer_text->Create (node_viewer->win, -1, "ERROR",wxDefaultPosition,
+			wxDefaultSize,wxTE_PROCESS_ENTER);	
+	}
+	node_viewer_text->Connect(wxEVT_COMMAND_TEXT_ENTER,
+		wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
+	node_viewer_text->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
+	node_viewer->grid_field->Add(node_viewer_text, 0,
+		wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0); 
+	return (1);
 }
 
 static int node_viewer_setup_components(
@@ -1620,8 +1625,9 @@ values whose value_type was not recognized.
 		{
 			number_of_derivatives=
 				get_FE_node_field_component_number_of_derivatives(node,field,i);
-			if (component_nodal_value_types=
-				get_FE_node_field_component_nodal_value_types(node,field,i))
+			component_nodal_value_types=
+				get_FE_node_field_component_nodal_value_types(node,field,i);
+			if (component_nodal_value_types != NULL)
 			{
 				for (j=0;(j<=number_of_derivatives)&&return_code;j++)
 				{

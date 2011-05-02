@@ -291,12 +291,12 @@ calculate_derivatives set) for the same element, with the given
 		{
 			dx_dX=(FE_value *)NULL;
 		}
-		if (return_code=convert_Coordinate_system(
+		if (0 != (return_code=convert_Coordinate_system(
 			&(field->source_fields[0]->coordinate_system),
 			field->source_fields[0]->number_of_components,
 			field->source_fields[0]->values,
 			&(field->coordinate_system),field->number_of_components,field->values,
-			dx_dX))
+			dx_dX)))
 		{
 			if (calculate_derivatives)
 			{
@@ -352,8 +352,9 @@ Evaluate the fields cache at the location
 	{
 		number_of_derivatives = location->get_number_of_derivatives();
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			return_code=evaluate(number_of_derivatives,(number_of_derivatives>0));
@@ -723,14 +724,14 @@ the converted vectors are not available.
 	ENTER(Computed_field_evaluate_vector_coordinate_transformation);
 	if (field)
 	{
-		if (return_code=(convert_Coordinate_system(
+		if (0 != (return_code=(convert_Coordinate_system(
 				&(field->source_fields[1]->coordinate_system),
 				field->source_fields[1]->number_of_components,
 				field->source_fields[1]->values,
 				&(field->source_fields[0]->coordinate_system),3,cx,
 				/*jacobian*/(FE_value *)NULL)&&
 			convert_Coordinate_system(&(field->source_fields[0]->coordinate_system),
-				3,cx,&(field->coordinate_system),3,x,jacobian)))
+				3,cx,&(field->coordinate_system),3,x,jacobian))))
 		{
 			number_of_vectors=field->number_of_components/3;
 			coordinates_per_vector=
@@ -780,8 +781,9 @@ Evaluate the fields cache at the location
 	if (field && location && (0 < field->number_of_source_fields))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			return_code=Computed_field_vector_coordinate_transformation::evaluate();
@@ -821,8 +823,9 @@ Sets the <values> of the computed <field> over the <element>.
 	if (field && location && values)
 	{
 		return_code=1;
-		if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-				 field->source_fields[1]))
+		rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
+				 field->source_fields[1]);
+		if (rc_coordinate_field != 0)
 		{
 			if (ALLOCATE(source_values,FE_value,field->source_fields[0]->number_of_components))
 			{

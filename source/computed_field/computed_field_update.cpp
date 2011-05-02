@@ -337,11 +337,11 @@ DESCRIPTION :
 					element_point_ranges_identifier.xi_discretization_mode =
 						XI_DISCRETIZATION_CELL_CORNERS;
 					/* already set the number_in_xi, above */
-					if (element_point_ranges = ACCESS(Element_point_ranges)(
+					if (0 != (element_point_ranges = ACCESS(Element_point_ranges)(
 							 FIND_BY_IDENTIFIER_IN_LIST(
 							 Element_point_ranges, identifier)(&element_point_ranges_identifier,
 								 Element_point_ranges_selection_get_element_point_ranges_list(
-									 data->element_point_ranges_selection))))
+									 data->element_point_ranges_selection)))))
 					{
 						element_selected = 1;
 					}

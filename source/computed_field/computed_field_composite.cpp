@@ -245,8 +245,9 @@ Evaluate the fields cache at the location
 	{
 #endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Cache value pointers directly into source fields. */
 			if (!source_pointers)
@@ -268,7 +269,8 @@ Evaluate the fields cache at the location
 				}
 			}
 			/* 2. Calculate the field */
-			if (number_of_derivatives = location->get_number_of_derivatives())
+			number_of_derivatives = location->get_number_of_derivatives();
+			if (number_of_derivatives > 0)
 			{
 				field->derivatives_valid = 1;
 				destination=field->derivatives;
@@ -534,8 +536,9 @@ If <commands> is set, field/components are made into valid tokens.
 					}
 					else
 					{
-						if (component_name = Computed_field_get_component_name(source_field,
-							source_value_numbers[i]))
+						component_name = Computed_field_get_component_name(source_field,
+							source_value_numbers[i]);
+						if (component_name != 0)
 						{
 							append_string(&token, ".", &token_error);
 							append_string(&token, component_name, &token_error);
@@ -587,7 +590,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_composite);
 	if (field)
 	{
-		if (source_string = get_source_string(/*commands*/0))
+		source_string = get_source_string(/*commands*/0);
+		if (source_string != 0)
 		{
 			display_message(INFORMATION_MESSAGE,"    source data : %s\n",
 				source_string);
@@ -631,7 +635,8 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_composite_type_string, &error);
 		append_string(&command_string, " ", &error);
-		if (source_string = get_source_string(/*commands*/1))
+		source_string = get_source_string(/*commands*/1);
+		if (source_string != 0)
 		{
 			append_string(&command_string, source_string, &error);
 			DEALLOCATE(source_string);
@@ -906,7 +911,8 @@ ACCESSed in the initial source_data.
 			(struct MANAGER(Computed_field) *)computed_field_manager_void))
 	{
 		return_code=1;
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != 0)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -974,8 +980,9 @@ ACCESSed in the initial source_data.
 					}
 					else
 					{
-						if (field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-							current_token,computed_field_manager))
+						field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							current_token,computed_field_manager);
+						if (field != 0)
 						{
 							components_to_add = field->number_of_components;
 							/* following is the first source_value_number to add */
@@ -988,14 +995,16 @@ ACCESSed in the initial source_data.
 							field_component_name = strchr(current_token_copy,'.');
 							*field_component_name='\0';
 							field_component_name++;
-							if (field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								current_token_copy,computed_field_manager))
+							field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+								current_token_copy,computed_field_manager);
+							if (field != 0)
 							{
 								component_no = -1;
 								for (i=0;(0>component_no)&&(i<field->number_of_components)&&
 									return_code;i++)
 								{
-									if (temp_name = Computed_field_get_component_name(field,i))
+									temp_name = Computed_field_get_component_name(field,i);
+									if (temp_name != 0)
 									{
 										if (0 == strcmp(field_component_name,temp_name))
 										{
@@ -1527,7 +1536,8 @@ and allows its contents to be modified.
 		 		  "A constant field may be defined as having one or more components.  Each of the <values> listed is used to asign a constant value to the corresponding field component. Fields with more than 1 component can be used to represent vectors or matrices.  An m by n matrix requires (m*n) components and the components of the matrix are listed row by row.");
 				Option_table_add_entry(option_table, (char *)NULL, values,
 					&number_of_values, set_double_vector);
-				if (return_code = Option_table_multi_parse(option_table, state))
+				return_code = Option_table_multi_parse(option_table, state);
+				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
 						Computed_field_create_constant(field_modify->get_field_module(),
@@ -1624,16 +1634,18 @@ Returned field is ACCESSed once.
 		field_component.field = field;
 		field_component.component_no = component_number;
 		/* try to find an existing wrapper for this component */
-		if (component_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+		component_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 			Computed_field_is_component_wrapper, &field_component,
-			computed_field_manager))
+			computed_field_manager);
+		if (component_field != 0)
 		{
 			ACCESS(Computed_field)(component_field);
 		}
 		else
 		{
-			if (component_name =
-				Computed_field_get_component_name(field, component_number))
+			component_name =
+				Computed_field_get_component_name(field, component_number);
+			if (component_name != 0)
 			{
 				if (ALLOCATE(component_field_name, char,
 					strlen(field->name) + strlen(component_name) + 2))

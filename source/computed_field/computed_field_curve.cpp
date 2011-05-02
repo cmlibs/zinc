@@ -214,8 +214,9 @@ Evaluate the fields cache at the location
 	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location);
+		if (return_code)
 		{
 			/* 2. Calculate the field */
 			number_of_derivatives = location->get_number_of_derivatives();
@@ -231,8 +232,9 @@ Evaluate the fields cache at the location
 			}
 			/* only slightly dodgy - stores derivatives of curve in start
 				 of derivatives space - must be at least big enough */
-			if (return_code = Curve_get_values_at_parameter(curve,
-				field->source_fields[0]->values[0], field->values, jacobian))
+			return_code = Curve_get_values_at_parameter(curve,
+				field->source_fields[0]->values[0], field->values, jacobian);
+			if (return_code) 
 			{
 				if (jacobian)
 				{
@@ -277,7 +279,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_curve_lookup);
 	if (field)
 	{
-		if (return_code = GET_NAME(Curve)(curve, &curve_name))
+		return_code = GET_NAME(Curve)(curve, &curve_name);
+		if (return_code)
 		{
 			display_message(INFORMATION_MESSAGE, "    curve : %s\n", curve_name);
 			display_message(INFORMATION_MESSAGE, "    source field : %s\n",

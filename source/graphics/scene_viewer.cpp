@@ -834,6 +834,10 @@ modes, so push/pop them if you want them preserved.
 						scene_viewer->bottom*factor, scene_viewer->top*factor,
 						scene_viewer->near_plane, scene_viewer->far_plane);
 				} break;
+				case SCENE_VIEWER_CUSTOM:
+				{
+					/* Do nothing */
+				} break;
 			}
 			glGetDoublev(GL_PROJECTION_MATRIX,scene_viewer->projection_matrix);
 		}
@@ -2471,6 +2475,10 @@ access this function.
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 							rendering_data.render_callstack);						
 					}
+					case CMISS_SCENE_VIEWER_TRANSPARENCY_FAST:
+					{
+						/* Do nothing */
+					} break;
 				}
 
 				render_object = CREATE(Scene_viewer_render_object)(
@@ -2840,10 +2848,10 @@ Updates the scene_viewer.
 ==============================================================================*/
 {
 	int repeat_idle;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_idle_update_callback);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	if (scene_viewer != 0)
 	{
 		/* set workproc no longer pending */
 		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
@@ -2935,11 +2943,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_initialise_callback);
 	USE_PARAMETER(dummy_void);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	if (scene_viewer != 0)
 	{
 		Graphics_buffer_make_current(graphics_buffer);
 		/* initialise graphics library to load XFont */
@@ -2966,12 +2974,12 @@ callbacks interested in the scene_viewers transformations.
 ==============================================================================*/
 {
 	int return_code;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_resize_callback);
 	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	if (scene_viewer != 0)
 	{
 		scene_viewer->transform_flag = 1;
 		return_code = 1;
@@ -2999,11 +3007,11 @@ if there are no more expose events pending.
 {
 	int return_code;
 	struct Graphics_buffer_expose_data *expose_data;
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_expose_callback);
 	USE_PARAMETER(graphics_buffer);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	if (scene_viewer != 0)
 	{
 		if (!(expose_data = (struct Graphics_buffer_expose_data *)expose_data_void))
 		{
@@ -3841,11 +3849,11 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)scene_viewer_void;
 
 	ENTER(Scene_viewer_graphics_buffer_input_callback);
 	USE_PARAMETER(graphics_buffer);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	if (scene_viewer != 0)
 	{
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_input_callback)(
 			scene_viewer->input_callback_list,scene_viewer,input);
@@ -4165,10 +4173,10 @@ Destroys the scene_viewer_package.
 ==============================================================================*/
 {
 	int return_code = 0;
-	struct Cmiss_scene_viewer_package *scene_viewer_package;
+	struct Cmiss_scene_viewer_package *scene_viewer_package = *scene_viewer_package_address;
 
 	ENTER(DESTROY(Cmiss_scene_viewer_package));
-	if (scene_viewer_package = *scene_viewer_package_address)
+	if (scene_viewer_package != 0)
 	{
 		/* Call the destroy callbacks */
 		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_package_callback)(
@@ -6253,8 +6261,9 @@ Sets the Scene_viewer overlay scene from names in the scene manager.
 	ENTER(Scene_viewer_set_overlay_scene_by_name);
 	if (scene_viewer&&name)
 	{
-		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-			(char *)name, scene_viewer->scene_manager))
+		scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+			(char *)name, scene_viewer->scene_manager);
+		if (scene != 0)
 		{
 			return_code = Scene_viewer_set_overlay_scene(scene_viewer, scene);
 		}
@@ -6499,8 +6508,9 @@ Sets the Scene_viewer scene from names in the scene manager.
 	ENTER(Scene_viewer_set_scene_by_name);
 	if (scene_viewer&&name)
 	{
-		if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-			(char *)name, scene_viewer->scene_manager))
+		scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
+			(char *)name, scene_viewer->scene_manager);
+		if (scene != 0)
 		{
 			return_code = Scene_viewer_set_scene(scene_viewer, scene);
 		}
@@ -8536,9 +8546,10 @@ DESCRIPTION :
 	ENTER(Cmiss_scene_viewer_set_interactive_tool_by_name);
 	if (scene_viewer && scene_viewer->interactive_tool_manager)
 	{
-		if (interactive_tool=
+		interactive_tool=
 			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-				(char *)tool_name,scene_viewer->interactive_tool_manager))
+				(char *)tool_name,scene_viewer->interactive_tool_manager);
+		if (interactive_tool != 0)
 		{
 			if (Interactive_tool_is_Transform_tool(interactive_tool))
 			{

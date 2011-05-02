@@ -1095,8 +1095,9 @@ and destroy it once returned.
 								{
 									element_point_ranges_identifier.exact_xi[i] = xi[i];
 								}
-								if (element_point_ranges = CREATE(Element_point_ranges)(
-									&element_point_ranges_identifier))
+								element_point_ranges = CREATE(Element_point_ranges)(
+									&element_point_ranges_identifier);
+								if (element_point_ranges != 0)
 								{
 									element_point_number = Scene_picked_object_get_subobject(
 										scene_picked_object, 2);
@@ -1847,8 +1848,9 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name)(
-				destination, source))
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name)(
+				destination, source);
+			if (return_code)
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -2819,7 +2821,8 @@ Returns the list of all any_objects in the <scene_picked_object_list>.
 	ENTER(Scene_picked_object_list_get_picked_any_objects);
 	if (scene_picked_object_list)
 	{	
-		if (any_object_list=CREATE(LIST(Any_object))())
+		any_object_list=CREATE(LIST(Any_object))();
+		if (any_object_list != 0)
 		{
 			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
 				Scene_picked_object_get_picked_any_objects,(void *)any_object_list,
@@ -3387,7 +3390,8 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 	ENTER(Scene_picked_object_list_get_picked_element_points);
 	if (scene_picked_object_list)
 	{	
-		if (picked_element_points_list=CREATE(LIST(Element_point_ranges))())
+		picked_element_points_list=CREATE(LIST(Element_point_ranges))();
+		if (picked_element_points_list != 0)
 		{
 			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
 				Scene_picked_object_get_picked_element_points,
@@ -3568,13 +3572,15 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 			case SCENE_MOTION_NOTIFY:
 			case SCENE_BUTTON_RELEASE:
 			{
-				if (scene_input_data.picked_object_list=
-					CREATE(LIST(Scene_picked_object))())
+				scene_input_data.picked_object_list=
+					CREATE(LIST(Scene_picked_object))();
+				if (scene_input_data.picked_object_list != 0)
 				{
 					select_buffer_ptr=select_buffer;
 					for (hit_no=0;(hit_no<num_hits)&&return_code;hit_no++)
 					{
-						if (scene_picked_object=CREATE(Scene_picked_object)(hit_no))
+						scene_picked_object=CREATE(Scene_picked_object)(hit_no);
+						if (scene_picked_object != 0)
 						{
 							number_of_names=(int)(*select_buffer_ptr);
 							select_buffer_ptr++;
@@ -3751,7 +3757,8 @@ understood for the type of <interaction_volume> passed.
 	scene_picked_object_list=(struct LIST(Scene_picked_object) *)NULL;
 	if (scene&&interaction_volume)
 	{
-		if (scene_picked_object_list=CREATE(LIST(Scene_picked_object))())
+		scene_picked_object_list=CREATE(LIST(Scene_picked_object))();
+		if (scene_picked_object_list != 0)
 		{
 			Render_graphics_opengl *renderer = 
 				Render_graphics_opengl_create_glbeginend_renderer(graphics_buffer);
@@ -3803,7 +3810,8 @@ understood for the type of <interaction_volume> passed.
 							return_code=1;
 							for (hit_no=0;(hit_no<num_hits)&&return_code;hit_no++)
 							{
-								if (scene_picked_object=CREATE(Scene_picked_object)(hit_no))
+								scene_picked_object=CREATE(Scene_picked_object)(hit_no);
+								if (scene_picked_object != 0)
 								{
 									number_of_names=(int)(*select_buffer_ptr);
 									select_buffer_ptr++;
@@ -4280,7 +4288,8 @@ Modifier function to set the scene from a command.
 	ENTER(set_Scene);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != 0)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -4299,8 +4308,9 @@ Modifier function to set the scene from a command.
 					}
 					else
 					{
-						if (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(current_token,
-							scene_manager))
+						scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(current_token,
+							scene_manager);
+						if (scene != 0)
 						{
 							if (*scene_address != scene)
 							{
@@ -4332,9 +4342,11 @@ Modifier function to set the scene from a command.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," SCENE_NAME|none");
-				if (scene_address=(struct Scene **)scene_address_void)
+				scene_address=(struct Scene **)scene_address_void;
+				if (scene_address != 0)
 				{
-					if (scene= *scene_address)
+					scene= *scene_address;
+					if (scene != 0)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",scene->name);
 					}
@@ -4397,7 +4409,8 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 		Option_table_add_entry(option_table, "filter", &filter,
 			define_scene_data->graphics_module, set_Cmiss_graphics_filter);
 
-		if (return_code = Option_table_multi_parse(option_table,state))
+		return_code = Option_table_multi_parse(option_table,state);
+		if (return_code)
 		{
 			if (scene)
 			{
@@ -4453,7 +4466,8 @@ int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
 	if (state && (define_scene_data =
 		(struct Define_scene_data *)define_scene_data_void))
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token != 0)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
@@ -4805,7 +4819,8 @@ int Cmiss_scene_set_name(struct Scene *scene, const char *name)
 			{
 				DEALLOCATE(scene->name);
 			}
-			if (scene->name=duplicate_string(name))
+			scene->name=duplicate_string(name);
+			if (scene->name != 0)
 			{
 				return_code = 1;
 			}
@@ -4927,7 +4942,8 @@ static int Cmiss_scene_attach_to_renditions(Scene *scene)
 	if (scene && scene->region)
 	{
 		struct Cmiss_rendition *rendition;
-		if (rendition = Cmiss_region_get_rendition_internal(scene->region))
+		rendition = Cmiss_region_get_rendition_internal(scene->region);
+		if (rendition != 0)
 		{
 			Cmiss_rendition_add_scene(rendition, scene, /*hierarchical*/1);
 			Cmiss_rendition_add_callback(rendition,

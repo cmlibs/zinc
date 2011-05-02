@@ -261,9 +261,10 @@ Ensures the <field_value_index_ranges> are in <field_value_index_ranges_list>.
 		(0<(number_of_ranges=
 			Multi_range_get_number_of_ranges(field_value_index_ranges->ranges))))
 	{
-		if (existing_field_value_index_ranges=
+		existing_field_value_index_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Field_value_index_ranges,field)(
-				field_value_index_ranges->field,field_value_index_ranges_list))
+				field_value_index_ranges->field,field_value_index_ranges_list);
+		if (existing_field_value_index_ranges != 0)
 		{
 			return_code=1;
 			for (i=0;(i<number_of_ranges)&&return_code;i++)
@@ -330,9 +331,10 @@ Shortcut for ensuring <field><index> is in the <field_value_index_ranges_list>.
 	ENTER(Field_value_index_ranges_list_add_field_value_index);
 	if (field_value_index_ranges_list&&field&&(0<=index))
 	{
-		if (existing_field_value_index_ranges=
+		existing_field_value_index_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Field_value_index_ranges,field)(
-				field,field_value_index_ranges_list))
+				field,field_value_index_ranges_list);
+		if (existing_field_value_index_ranges != 0)
 		{
 			return_code=Multi_range_add_range(
 				existing_field_value_index_ranges->ranges,index,index);
@@ -395,9 +397,10 @@ Ensures the <field_value_index_ranges> is not in
 		(0<(number_of_ranges=
 			Multi_range_get_number_of_ranges(field_value_index_ranges->ranges))))
 	{
-		if (existing_field_value_index_ranges=
+		existing_field_value_index_ranges=
 			FIND_BY_IDENTIFIER_IN_LIST(Field_value_index_ranges,field)(
-				field_value_index_ranges->field,field_value_index_ranges_list))
+				field_value_index_ranges->field,field_value_index_ranges_list);
+		if (existing_field_value_index_ranges != 0)
 		{
 			return_code=1;
 			for (i=0;(i<number_of_ranges)&&return_code;i++)
