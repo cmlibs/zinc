@@ -4607,7 +4607,7 @@ static int Scene_graphics_objects_in_Cmiss_graphic_iterator(
 		if (!data->graphic_name || 
 			Cmiss_graphic_has_name(graphic, (void *)data->graphic_name))
 		{
-			if (Cmiss_scene_shows_graphic(data->scene, graphic) &&
+			if (Cmiss_graphics_filter_evaluate_graphic(data->scene->filter, graphic) &&
 				(graphics_object = Cmiss_graphic_get_graphics_object(
 					 graphic)))
 			{
@@ -5213,6 +5213,16 @@ int Scene_add_graphics_object(struct Scene *scene,
 	return (return_code);
 } /* Scene_add_graphics_object */
 
+Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene)
+{
+	Cmiss_graphics_filter_id filter = NULL;
+	if (scene && scene->filter)
+	{
+		filter = Cmiss_graphics_filter_access(scene->filter);
+	}
+	return filter;
+}
+
 int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter)
 {
 	int return_code = 1;
@@ -5236,30 +5246,6 @@ int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter
 	}
 	return return_code;
 
-}
-
-int Cmiss_scene_shows_graphic(struct Cmiss_scene *scene, struct Cmiss_graphic *graphic)
-{
-	int return_code = 0;
-	if (scene && graphic)
-	{
-		/* default for no filters = show nothing */
-		return_code = 0;
-		if (scene->filter)
-		{
-			if (scene->filter->match(graphic))
-			{
-				return_code = (Cmiss_graphics_filter_get_attribute_integer(scene->filter,
-					CMISS_GRAPHICS_FILTER_ATTRIBUTE_SHOW_MATCHING) == true);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_shows_graphic.  Invalid argument(s)");
-	}
-	return return_code;
 }
 
 int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)

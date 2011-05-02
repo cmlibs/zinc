@@ -54,15 +54,15 @@ struct Cmiss_graphic;
 
 enum Cmiss_graphics_filter_type
 {
-	CMISS_GRAPHICS_FILTER_TYPE_INVALID = 0,
-	CMISS_GRAPHICS_FILTER_TYPE_BASE = 1,
-	CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER = 2,
-	CMISS_GRAPHICS_FILTER_TYPE_ALL = 3,
-	CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME = 4,
-	CMISS_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS = 5,
-	CMISS_GRAPHICS_FILTER_TYPE_REGION = 6,
-	CMISS_GRAPHICS_FILTER_TYPE_AND = 7,
-	CMISS_GRAPHICS_FILTER_TYPE_OR = 8
+	CMISS_GRAPHICS_FILTER_TYPE_INVALID,
+	CMISS_GRAPHICS_FILTER_TYPE_BASE,
+	CMISS_GRAPHICS_FILTER_TYPE_IDENTIFIER ,
+	CMISS_GRAPHICS_FILTER_TYPE_GRAPHIC_NAME,
+	CMISS_GRAPHICS_FILTER_TYPE_VISIBILITY_FLAGS ,
+	CMISS_GRAPHICS_FILTER_TYPE_REGION,
+	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR,
+	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND,
+	CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR
 };
 
 DECLARE_LIST_TYPES(Cmiss_graphics_filter);
@@ -82,9 +82,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_graphics_filter,name,const char *);
 class Cmiss_graphics_filter
 {
 private:
-	bool active;
 	bool inverse;
-	bool show_matching;
 
 public:
 	enum Cmiss_graphics_filter_type filter_type;
@@ -96,9 +94,7 @@ public:
 
 
 	Cmiss_graphics_filter() :
-		active(true),
 		inverse(false),
-		show_matching(true),
 		filter_type(CMISS_GRAPHICS_FILTER_TYPE_BASE),
 		name(NULL),
 		access_count(1),
@@ -114,28 +110,12 @@ public:
 	}
 
 	virtual bool match(struct Cmiss_graphic *graphic) = 0;
-	
-	bool isActive() const
-	{
-		return active;
-	}
 
 	bool setName(const char *name_in)
 	{
 		if (name)
 			DEALLOCATE(name);
 		name = duplicate_string(name_in);
-		return true;
-	}
-
-	bool getShowMatching()
-	{
-		return show_matching;
-	}
-
-	bool setShowMatching(bool show_matching_in)
-	{
-		show_matching = show_matching_in;
 		return true;
 	}
 
@@ -150,13 +130,6 @@ public:
 		return name_out;
 	}
 
-	/** eventually: may fail if filter is only intermediary of an expression */
-	bool setActive(bool newActive)
-	{
-		active = newActive;
-		return true;
-	}
-	
 	bool isInverse() const
 	{
 		return inverse;
@@ -181,8 +154,6 @@ public:
 
 	void list() const
 	{
-		display_message(INFORMATION_MESSAGE, "%s", active ? "active " : "inactive ");
-		display_message(INFORMATION_MESSAGE, "%s", (show_matching == true) ? "show " : "hide ");
 		display_message(INFORMATION_MESSAGE, "%s", inverse ? "inverse_match " : "normal_match ");
 		list_type_specific();
 		display_message(INFORMATION_MESSAGE, "\n");

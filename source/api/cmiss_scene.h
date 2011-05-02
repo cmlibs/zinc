@@ -108,10 +108,19 @@ char *Cmiss_scene_get_name(Cmiss_scene_id scene);
 int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
 
 /***************************************************************************//**
- * Removes all filters from the scene. No graphics will be shown until a filter
- * showing graphics is created for the scene.
+ * Get the filter currently used in <scene>.
  *
- * @param scene  Scene to clear filters from.
+ * @param scene  Scene to get the filters from.
+ * @return  filter if successful, otherwise NULL.
+ */
+Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
+
+/***************************************************************************//**
+ * Set the filter to be used in <scene>. No graphics will be shown until a filter
+ * showing graphic is set for a scene.
+ *
+ * @param scene  Scene to set filter for.
+ * @param filter  Filter to be set for scene.
  * @return  1 if filters successfully cleared, otherwise 0.
  */
 int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);

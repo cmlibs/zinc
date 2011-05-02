@@ -3278,11 +3278,12 @@ int Cmiss_graphic_to_graphics_object(
 		time = 0.0;
 		return_code = 1;
 		/* build only if visible... */
-		if (Cmiss_scene_shows_graphic(graphic_to_object_data->scene, graphic))
+		Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(graphic_to_object_data->scene);
+		if (filter)
 		{
 			/* build only if changed... and complete */
-			if (graphic->graphics_changed &&
-				Cmiss_graphic_has_all_compulsory_attributes(graphic))
+			if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic) &&
+				graphic->graphics_changed && Cmiss_graphic_has_all_compulsory_attributes(graphic))
 			{
 				Computed_field *coordinate_field = graphic->coordinate_field;
  				if (coordinate_field)
@@ -3937,6 +3938,7 @@ int Cmiss_graphic_to_graphics_object(
 				}
 				graphic->selected_graphics_changed = 0;
 			}
+			Cmiss_graphics_filter_destroy(&filter);
 		}
 	}
 	else
@@ -3961,19 +3963,26 @@ int Cmiss_graphic_execute_non_distorted_ndc_objects(
 	if (graphic && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
 	{
 		return_code = 1;
-		if (graphic->graphics_object &&
-			Cmiss_scene_shows_graphic(renderer->get_scene(), graphic))
+		if (graphic->graphics_object)
 		{
-#if defined (OPENGL_API)
-			glLoadName((GLuint)graphic->position);
-#endif
-			if (graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
-					graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
-					graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
-					graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
-					graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM)
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
+			if (filter)
 			{
-				return_code = renderer->Non_distorted_ndc_graphics_object_execute(graphic->graphics_object);
+				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
+				{
+#if defined (OPENGL_API)
+					glLoadName((GLuint)graphic->position);
+#endif
+					if (graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
+						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
+						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
+						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
+						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM)
+					{
+						return_code = renderer->Non_distorted_ndc_graphics_object_execute(graphic->graphics_object);
+					}
+				}
+				Cmiss_graphics_filter_destroy(&filter);
 			}
 		}
 	}
@@ -3999,16 +4008,23 @@ int Cmiss_graphic_compile_visible_graphic(
 	if (graphic && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
 	{
 		return_code = 1;
-		if (graphic->graphics_object &&
-			Cmiss_scene_shows_graphic(renderer->get_scene(), graphic))
+		if (graphic->graphics_object)
 		{
-#if defined (OPENGL_API)
-			glLoadName((GLuint)graphic->position);
-#endif
-			return_code = renderer->Graphics_object_compile(graphic->graphics_object);
-			if (graphic->overlay_flag)
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
+			if (filter)
 			{
-				return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
+				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
+				{
+#if defined (OPENGL_API)
+					glLoadName((GLuint)graphic->position);
+#endif
+					return_code = renderer->Graphics_object_compile(graphic->graphics_object);
+					if (graphic->overlay_flag)
+					{
+						return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
+					}
+				}
+				Cmiss_graphics_filter_destroy(&filter);
 			}
 		}
 	}
@@ -4059,17 +4075,24 @@ int Cmiss_graphic_execute_visible_graphic(
 			(renderer_void)))
 	{
 		return_code = 1;
-		if (graphic->graphics_object &&
-			Cmiss_scene_shows_graphic(renderer->get_scene(), graphic))
+		if (graphic->graphics_object)
 		{
-			if (!graphic->overlay_flag)
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
+			if (filter)
 			{
-				//printf("     %i\n", graphic->position);
+				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
+				{
+					if (!graphic->overlay_flag)
+					{
+						//printf("     %i\n", graphic->position);
 #if defined (OPENGL_API)
-				/* use position in list as name for GL picking */
-				glLoadName((GLuint)graphic->position);
+						/* use position in list as name for GL picking */
+						glLoadName((GLuint)graphic->position);
 #endif /* defined (OPENGL_API) */
-				return_code = renderer->Graphics_object_execute(graphic->graphics_object);
+						return_code = renderer->Graphics_object_execute(graphic->graphics_object);
+					}
+				}
+				Cmiss_graphics_filter_destroy(&filter);
 			}
 		}
 	}
@@ -4352,7 +4375,7 @@ int Cmiss_graphic_Computed_field_change(
 int Cmiss_graphic_get_visible_graphics_object_range(
 	struct Cmiss_graphic *graphic,void *graphics_object_range_void)
 {
-	int return_code;
+	int return_code = 1;
 	struct Graphics_object_range_struct *graphics_object_range =
 		(struct Graphics_object_range_struct *)graphics_object_range_void;
 	
@@ -4360,15 +4383,18 @@ int Cmiss_graphic_get_visible_graphics_object_range(
 
 	if (graphic && graphics_object_range)
 	{
-		if (graphic->graphics_object &&
-				Cmiss_scene_shows_graphic(graphics_object_range->scene, graphic))
+		if (graphic->graphics_object)
 		{
-			return_code=get_graphics_object_range(graphic->graphics_object,
-				graphics_object_range_void);
-		}
-		else
-		{
-			return_code=1;
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(graphics_object_range->scene);
+			if (filter)
+			{
+				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
+				{
+					return_code=get_graphics_object_range(graphic->graphics_object,
+						graphics_object_range_void);
+				}
+				Cmiss_graphics_filter_destroy(&filter);
+			}
 		}
 	}
 	else

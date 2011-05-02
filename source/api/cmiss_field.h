@@ -49,10 +49,13 @@ The public interface to the Cmiss fields.
 #include "api/cmiss_element.h"
 #include "api/cmiss_field_module.h"
 
+#ifndef CMISS_C_INLINE_DEFINED
 #if defined (_MSC_VER)
 	#define CMISS_C_INLINE __inline
 #else 
 	#define CMISS_C_INLINE static inline
+#endif
+#define CMISS_C_INLINE_DEFINED
 #endif
 
 /*******************************************************************************
