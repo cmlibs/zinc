@@ -241,13 +241,13 @@ int Computed_field_histogram_image_filter::evaluate_histogram(
 		Field_coordinate_location* coordinate_location = NULL;
 		FE_value* xi = NULL;
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		if (NULL != (element_xi_location =
+			dynamic_cast<Field_element_xi_location*>(location)))
 		{
 			xi = element_xi_location->get_xi();
 		}
-		else if (coordinate_location = 
-			dynamic_cast<Field_coordinate_location*>(location))
+		else if (NULL != (coordinate_location =
+			dynamic_cast<Field_coordinate_location*>(location)))
 		{
 			xi = coordinate_location->get_values();
 		}
@@ -454,7 +454,8 @@ location.
 		int return_code;
 		if (!histogram)
 		{
-			if (return_code = set_filter(location))
+			return_code = set_filter(location);
+			if (return_code )
 			{
 				return_code = histogram_image_filter->evaluate_histogram
 					(location, histogram,

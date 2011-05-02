@@ -1354,13 +1354,12 @@ DESCRIPTION :
 Called when a command is entered in the command entry area.
 ==============================================================================*/
 {
-	char *command;
-	struct Command_window *command_window;
-
 	ENTER(command_entered_gtk);
-	if (command_window=(struct Command_window *)command_window_void)
+	struct Command_window *command_window=(struct Command_window *)command_window_void;
+	if (command_window)
 	{
-		if (command = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1))
+		char *command = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1);
+		if (command)
 		{
 			if (command_window->out_file &&
 				(command_window->out_file_mode & OUTFILE_INPUT))
@@ -1406,7 +1405,8 @@ Called when a command is entered in the command entry area.
 
 	ENTER(Command_window_gtk_button_press);
 	USE_PARAMETER(widget);
-	if (command_window=(struct Command_window *)command_window_void)
+	command_window=(struct Command_window *)command_window_void;
+	if (command_window)
 	{
 		switch(event->type)
 		{
@@ -1483,7 +1483,7 @@ Called when the Close function is selected from the window manager menu.
 
 	ENTER(command_window_close_gtk);
 	USE_PARAMETER(object);
-	if (command_window=(struct Command_window *)command_window_void)
+	if (NULL != (command_window=(struct Command_window *)command_window_void))
 	{
 		Execute_command_execute_string(command_window->execute_command, "QUIT");
 	}
@@ -2616,7 +2616,8 @@ Create the structures and retrieve the command window from the uil file.
 			if (ALLOCATE(command_window->command_prompt, char , 1))
 			{
 				*command_window->command_prompt = 0;
-				if (command_window->shell = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+				command_window->shell = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+				if (command_window->shell)
 				{
 					gtk_window_set_title(GTK_WINDOW(command_window->shell), "CMISS Command Window");
 					gtk_widget_set_name(command_window->shell, "command_window");

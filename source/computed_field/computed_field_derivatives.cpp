@@ -444,11 +444,11 @@ Evaluate the fields cache at the location
 	if (field && Computed_field_has_numerical_components(field, NULL) && 
 		location)
 	{
-		Field_element_xi_location* element_xi_location;
 		return_code = 0;
 		/* Only works for element_xi locations */
-		if (element_xi_location  = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		Field_element_xi_location *element_xi_location  =
+			dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
 			int element_dimension=get_FE_element_dimension(element);
@@ -836,8 +836,9 @@ Note currently requires vector_field to be RC.
 			if (RECTANGULAR_CARTESIAN==
 				field->source_fields[0]->coordinate_system.type)
 			{
-				if (return_code=Computed_field_extract_rc(field->source_fields[1],
-					element_dimension,x,dx_dxi))
+				return_code=Computed_field_extract_rc(field->source_fields[1],
+					element_dimension,x,dx_dxi);
+				if (return_code)
 				{
 					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
 					{
@@ -938,9 +939,9 @@ Evaluate the fields cache at the location
 			Field_element_xi_location top_level_location(top_level_element,
 				top_level_xi, element_xi_location->get_time(), top_level_element,
 				get_FE_element_dimension(top_level_element));
-			if (return_code = 
-				Computed_field_evaluate_source_fields_cache_at_location(field,
-					&top_level_location))
+			return_code = Computed_field_evaluate_source_fields_cache_at_location(field,
+				&top_level_location);
+			if (return_code)
 			{
 				/* 2. Calculate the field */
 				return_code=evaluate(top_level_element_dimension);
@@ -1280,8 +1281,9 @@ Note currently requires vector_field to be RC.
 			if (RECTANGULAR_CARTESIAN==
 				field->source_fields[0]->coordinate_system.type)
 			{
-				if (return_code=Computed_field_extract_rc(field->source_fields[1],
-					element_dimension,x,dx_dxi))
+				return_code = Computed_field_extract_rc(field->source_fields[1],
+					element_dimension,x,dx_dxi);
+				if (return_code)
 				{
 					/* if the element_dimension is less than 3, put ones on the main
 						 diagonal to allow inversion of dx_dxi */
@@ -1379,9 +1381,9 @@ Evaluate the fields cache at the location
 			Field_element_xi_location top_level_location(top_level_element,
 				top_level_xi, element_xi_location->get_time(), top_level_element,
 				get_FE_element_dimension(top_level_element));
-			if (return_code = 
-				Computed_field_evaluate_source_fields_cache_at_location(field,
-					&top_level_location))
+			return_code = Computed_field_evaluate_source_fields_cache_at_location(field,
+				&top_level_location);
+			if (return_code)
 			{
 				/* 2. Calculate the field */
 				return_code=evaluate(top_level_element_dimension);
@@ -1765,9 +1767,9 @@ int Computed_field_gradient::evaluate_cache_at_location(
 
 	if (field && location)
 	{
-		Field_element_xi_location* element_xi_location;
+		Field_element_xi_location* element_xi_location  = dynamic_cast<Field_element_xi_location*>(location);
 		Field_node_location* node_location;
-		if (element_xi_location = dynamic_cast<Field_element_xi_location*>(location))
+		if (element_xi_location)
 		{
 			/* cannot calculate derivatives for gradient yet */
 			field->derivatives_valid = 0;
@@ -1868,7 +1870,7 @@ int Computed_field_gradient::evaluate_cache_at_location(
 					"Derivatives not available for gradient field");
 			}
 		}
-		else if (node_location = dynamic_cast<Field_node_location*>(location))
+		else if (NULL != (node_location = dynamic_cast<Field_node_location*>(location)))
 		{
 			/* Do a finite difference calculation varying the coordinate field*/
 			int k;

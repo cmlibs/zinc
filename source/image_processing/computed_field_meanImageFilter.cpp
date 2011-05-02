@@ -391,8 +391,9 @@ already) and allows its contents to be modified.
 			return_code =
 				Cmiss_field_get_type_mean_image_filter(field_modify->get_field(), &source_field,
 					&radius_sizes);
-			if (return_code = Computed_field_get_native_resolution(source_field,
-					&old_dimension, &sizes, &texture_coordinate_field))
+			return_code = Computed_field_get_native_resolution(source_field,
+				&old_dimension, &sizes, &texture_coordinate_field);
+			if (return_code)
 			{
 				DEALLOCATE(sizes);
 			}
@@ -440,8 +441,9 @@ already) and allows its contents to be modified.
 				}
 				if (return_code)
 				{
-					if (return_code = Computed_field_get_native_resolution(source_field,
-							&dimension, &sizes, &texture_coordinate_field))
+					return_code = Computed_field_get_native_resolution(source_field,
+						&dimension, &sizes, &texture_coordinate_field);
+					if (return_code)
 					{
 						DEALLOCATE(sizes);
 						

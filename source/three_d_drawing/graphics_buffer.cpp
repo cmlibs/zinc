@@ -4306,9 +4306,11 @@ DESCRIPTION :
 	{
 		if (parent)
 		{
-			if (glarea = gtk_drawing_area_new())
+			glarea = gtk_drawing_area_new();
+			if (glarea)
 			{
-				if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+				buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
+				if (buffer)
 				{
 					glconfig = (GdkGLConfig *)NULL;
 					selection_level = 2;

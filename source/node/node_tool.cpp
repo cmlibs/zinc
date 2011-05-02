@@ -4901,8 +4901,9 @@ Sets the <path> to the region/FE_region where nodes created by
 		}
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
 #else /* defined (MOTIF_USER_INTERFACE) */
-		if (return_code = Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
-					path, &region))
+		return_code = Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
+			path, &region);
+		if (return_code)
 		{
 			 if (node_tool->current_region_path)
 			 {

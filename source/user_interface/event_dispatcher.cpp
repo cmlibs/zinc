@@ -972,7 +972,8 @@ DESCRIPTION :
 	struct Event_dispatcher_idle_callback *idle_callback;
 
 	ENTER(Event_dispatcher_gtk_idle_callback);
-	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
+	idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void;
+	if (idle_callback)
 	{
 		if ((*idle_callback->idle_function)(idle_callback->user_data))
 		{
@@ -1824,8 +1825,9 @@ Set a timeout on Gtk main loop
 
 	if (event_dispatcher && timeout_function)
 	{
-		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
-			timeout_s, timeout_ns, timeout_function, user_data))
+		timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+			timeout_s, timeout_ns, timeout_function, user_data);
+		if (timeout_callback)
 		{
 			interval = timeout_s * 1000 + timeout_ns / 1000000;
 			timeout_callback->gtk_timeout_id = gtk_timeout_add(interval,
