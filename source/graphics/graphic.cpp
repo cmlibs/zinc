@@ -2091,14 +2091,16 @@ int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graph
 	return (return_code);
 }
 
-int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_region *region)
+int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, struct Cmiss_region *region)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphic_is_from_region);
+	ENTER(Cmiss_graphic_is_from_region_hierarchical);
 	if (graphic && region)
 	{
-		if ((Cmiss_rendition_get_region(graphic->rendition) == region))
+		struct Cmiss_region *rendition_region = Cmiss_rendition_get_region(graphic->rendition);
+		if ((rendition_region == region) ||
+			(Cmiss_region_contains_subregion(region, rendition_region)))
 		{
 			return_code = 1;
 		}
@@ -2106,7 +2108,7 @@ int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_reg
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_is_from_region.  Invalid argument(s)");
+			"Cmiss_graphic_is_from_region_hierarchical.  Invalid argument(s)");
 	}
 
 	return (return_code);

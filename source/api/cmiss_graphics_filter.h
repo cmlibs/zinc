@@ -170,10 +170,11 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
 	Cmiss_graphics_module_id graphics_module, const char *match_name);
 
 /***************************************************************************//**
- * Creates a Cmiss_graphics_filter which matches any graphic in region.
+ * Creates a Cmiss_graphics_filter which matches any graphic in region or its
+ * subregion.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
- * @param match_region  The region must have to be matched by this filter.
+ * @param match_region  The region to be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
 Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_region(

@@ -279,7 +279,7 @@ int Cmiss_graphic_and_rendition_visibility_flags_set(struct Cmiss_graphic *graph
  * @return  1 if graphic is one of the graphical representations of region,
  * otherwise 0.
  */
-int Cmiss_graphic_is_from_region(struct Cmiss_graphic *graphic, struct Cmiss_region *region);
+int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, struct Cmiss_region *region);
 
 /***************************************************************************//**
  * Returns true if the graphics are output with names that identify

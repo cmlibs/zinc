@@ -311,7 +311,7 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
-		return (!isInverse() == Cmiss_graphic_is_from_region(graphic, matchRegion));
+		return (!isInverse() == Cmiss_graphic_is_from_region_hierarchical(graphic, matchRegion));
 	}
 
 	virtual void list_type_specific() const
@@ -966,7 +966,7 @@ int gfx_define_graphics_filter_contents(struct Parse_state *state, void *graphic
 				"flag will invert the filter's match criterion. The behaviour is to show matching graphic "
 				"with the matching criteria. <match_graphic_name> filters graphic with the matching name. "
 				"<match_visibility_flags> filters graphic with the setting on the visibility flag. "
-				"<match_region_path> filters graphic in the specified region. "
+				"<match_region_path> filters graphic in the specified region or its subregion. "
 				"<operator_or> filters the scene using the logical operation 'or' on a collective of filters. "
 				"<operator_and> filters the scene using the logical operation 'and' on a collective of filters. "
 				"Filters created earlier can be added or removed from the <operator_or> and <operator_and> filter.");
