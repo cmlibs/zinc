@@ -8256,33 +8256,27 @@ Executes a GFX EXPORT IGES command.
 	char *file_name, *region_path;
 	int return_code;
 	struct Computed_field *coordinate_field;
-	struct Cmiss_command_data *command_data;
+	struct Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
 	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_export_iges);
 	USE_PARAMETER(dummy_to_be_modified);
 	return_code = 0;
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data != 0))
 	{
 		return_code=1;
 		/* initialize defaults */
 		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field = (struct Computed_field *)NULL;
+		char *coordinate_field_name = 0;
 		file_name = (char *)NULL;
 
 		option_table = CREATE(Option_table)();
 		/* coordinate_field */
-		set_coordinate_field_data.computed_field_manager=
-			Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package);
-		set_coordinate_field_data.conditional_function=
-			Computed_field_has_3_components;
-		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field,
-			&set_coordinate_field_data,set_Computed_field_conditional);
+		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field_name,
+			(void *)1,set_name);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
@@ -8294,12 +8288,31 @@ Executes a GFX EXPORT IGES command.
 		{
 			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
-				(fe_region = Cmiss_region_get_FE_region(region)))
+				(0 != (fe_region = Cmiss_region_get_FE_region(region))))
 			{
-				if (!coordinate_field)
+				if (region && coordinate_field_name &&
+					(0 != (coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							coordinate_field_name, Cmiss_region_get_Computed_field_manager(region)))))
 				{
-					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
-					return_code = 0;
+					if (Computed_field_has_3_components(coordinate_field, NULL))
+					{
+						Cmiss_field_access(coordinate_field);
+					}
+					else
+					{
+						coordinate_field = NULL;
+						display_message(ERROR_MESSAGE,
+							"gfx_export_iges.  "
+							"Field specified is not a coordinate field.");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_export_iges.  "
+						"Field %s does not exist.", coordinate_field_name);
+						return_code = 0;
 				}
 				if (return_code)
 				{
@@ -8314,7 +8327,8 @@ Executes a GFX EXPORT IGES command.
 					}
 					if (file_name)
 					{
-						if (0 != (return_code = check_suffix(&file_name, ".igs")))
+						return_code = check_suffix(&file_name, ".igs");
+						if (return_code)
 						{
 							return_code = export_to_iges(file_name, fe_region, region_path,
 								coordinate_field);
@@ -8332,6 +8346,7 @@ Executes a GFX EXPORT IGES command.
 			DEACCESS(Computed_field)(&coordinate_field);
 		}
 		DESTROY(Option_table)(&option_table);
+		DEALLOCATE(coordinate_field_name);
 		DEALLOCATE(region_path);
 		DEALLOCATE(file_name);
 	}
