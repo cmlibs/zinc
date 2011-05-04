@@ -733,7 +733,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	struct Spectrum *spectrum, struct Graphics_font *font,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
-	Render_graphics_opengl *renderer)
+	Render_graphics_opengl *renderer, int object_name)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -820,10 +820,17 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					/* disable lighting so rendered in flat diffuse colour */
 					glPushAttrib(GL_ENABLE_BIT);
 					glDisable(GL_LIGHTING);
+					if ((object_name > 0) && highlight_functor)
+					{
+						name_selected=highlight_functor->call(object_name);
+					}
 					for (i=0;i<number_of_points;i++)
 					{
-						if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
-							((!name_selected)&&(!draw_selected)))
+						if ((object_name < 1) && highlight_functor)
+						{
+							name_selected = highlight_functor->call(*name);
+						}
+						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 						{
 							/* set the spectrum for this datum, if any */
 							if (data)
@@ -869,10 +876,17 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					if (names||labels||highlight_functor)
 					{
 						/* cannot put glLoadName between glBegin and glEnd */
+						if ((object_name > 0) && highlight_functor)
+						{
+								name_selected=highlight_functor->call(object_name);
+						}
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
-								((!name_selected)&&(!draw_selected)))
+							if ((object_name < 1) && highlight_functor)
+							{
+									name_selected = highlight_functor->call(*name);
+							}
+							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
 								if (data)
@@ -945,11 +959,18 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					glDisable(GL_LIGHTING);
 					if (names||labels||highlight_functor)
 					{
+						if ((object_name > 0) && highlight_functor)
+						{
+								name_selected=highlight_functor->call(object_name);
+						}
 						/* cannot put glLoadName between glBegin and glEnd */
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
-								((!name_selected)&&(!draw_selected)))
+							if ((object_name < 1) && highlight_functor)
+							{
+								name_selected = highlight_functor->call(*name);
+							}
+							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
 								if (data)
@@ -1047,11 +1068,18 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					glDisable(GL_LIGHTING);
 					if (names||labels||highlight_functor)
 					{
+						if ((object_name > 0) && highlight_functor)
+						{
+								name_selected=highlight_functor->call(object_name);
+						}
 						/* cannot put glLoadName between glBegin and glEnd */
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
-								((!name_selected)&&(!draw_selected)))
+							if ((object_name < 1) && highlight_functor)
+							{
+								name_selected = highlight_functor->call(*name);
+							}
+							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
 								/* set the spectrum for this datum, if any */
 								if (data)
@@ -1183,10 +1211,17 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					const int number_of_glyphs = (mirror_mode) ? 2 : 1;
 					/* must push and pop the modelview matrix */
 					glMatrixMode(GL_MODELVIEW);
+					if ((object_name > 0) && highlight_functor)
+					{
+							name_selected=highlight_functor->call(object_name);
+					}
 					for (i = 0; i < number_of_points; i++)
 					{
-						if (draw_all||((name_selected=highlight_functor->call(*name))&&draw_selected)||
-							((!name_selected)&&(!draw_selected)))
+						if ((object_name < 1) && highlight_functor)
+						{
+							name_selected = highlight_functor->call(*name);
+						}
+						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 						{
 							if (names)
 							{
@@ -1278,10 +1313,17 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						glDisable(GL_LIGHTING);
 						point=point_list;
 						datum=data;
+						if ((object_name > 0) && highlight_functor)
+						{
+								name_selected=highlight_functor->call(object_name);
+						}
 						for (i=0;i<number_of_points;i++)
 						{
-							if ((*label) && (draw_all
-								|| ((name_selected=highlight_functor->call(*name)) && draw_selected)
+							if ((object_name < 1) && highlight_functor)
+							{
+								name_selected = highlight_functor->call(*name);
+							}
+							if ((*label) && (draw_all	|| ((name_selected) && draw_selected)
 								|| ((!name_selected)&&(!draw_selected))))
 							{
 								if (names)
@@ -3365,7 +3407,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										interpolate_glyph_set->font,
 										//draw_selected,name_selected,selected_name_ranges,
 										draw_selected, object->highlight_functor,
-										renderer);
+										renderer, glyph_set->object_name);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -3397,7 +3439,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									spectrum, glyph_set->font, 
 									//draw_selected,name_selected,selected_name_ranges,
 									draw_selected, object->highlight_functor,
-									renderer);
+									renderer, glyph_set->object_name);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}

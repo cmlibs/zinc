@@ -3887,12 +3887,27 @@ int Cmiss_graphic_to_graphics_object(
 							{
 								select_data.fe_region=fe_region;
 								select_data.graphic=graphic;
-
+								int highest_dimension = FE_region_get_highest_dimension(fe_region);
+								int use_element_type = (int)graphic->use_element_type;
+								if (use_element_type == 1)
+								{
+									use_element_type = 3;
+								}
+								else if (use_element_type == 3)
+								{
+									use_element_type = 1;
+								}
+								if (use_element_type > highest_dimension)
+								{
+									use_element_type = highest_dimension;
+								}
+								char mesh_name[40];
+								sprintf(mesh_name, "cmiss_mesh_%dd", use_element_type);
 								if (graphic_to_object_data->group_field)
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
 									Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(
-										graphic_to_object_data->field_module, "cmiss_mesh_3d");
+										graphic_to_object_data->field_module, mesh_name);
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -3921,7 +3936,7 @@ int Cmiss_graphic_to_graphics_object(
 									(void *)&select_data,
 									graphic_to_object_data->selected_element_point_ranges_list);
 								Cmiss_fe_mesh_id temp_mesh =
-								   Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module, "cmiss_mesh_3d");
+								   Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module, mesh_name);
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -4329,12 +4344,8 @@ int Cmiss_graphic_Computed_field_change(
 		if(change_data->selection_changed)
 		{
 	  	if (graphic->graphics_object&&
-	  			((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
-	  				(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
-	  				(CMISS_GRAPHIC_LINES==graphic->graphic_type) ||
-	  				(CMISS_GRAPHIC_CYLINDERS==graphic->graphic_type) ||
-	  				(CMISS_GRAPHIC_SURFACES==graphic->graphic_type) ||
-	  				(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)))
+	  			((CMISS_GRAPHIC_POINT!=graphic->graphic_type) &&
+	  			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type)))
 	  	{
 	  		switch (graphic->select_mode)
 	  		{

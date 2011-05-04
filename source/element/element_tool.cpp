@@ -688,7 +688,6 @@ release.
 										Cmiss_field_module_destroy(&field_module);
 									}
 								}
-
 								if (sub_region && sub_group && element_group)
 								{
 									Cmiss_field_element_group_add_element(element_group,
@@ -786,7 +785,12 @@ release.
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
 											Cmiss_rendition *region_rendition = NULL;
-											Cmiss_field_element_group_id mesh_group_1d = NULL, mesh_group_2d = NULL, mesh_group_3d = NULL;
+											Cmiss_field_element_group_id mesh_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+											int iter = 0;
+											for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)
+											{
+												mesh_group[iter] = NULL;
+											}
 											Region_element_map::iterator pos;
 											for (pos = element_map->begin(); pos != element_map->end(); ++pos)
 											{
@@ -797,17 +801,12 @@ release.
 														Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 														Cmiss_field_group_destroy(&sub_group);
 													}
-													if (mesh_group_1d)
+													for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)
 													{
-														Cmiss_field_element_group_destroy(&mesh_group_1d);
-													}
-													if (mesh_group_2d)
-													{
-														Cmiss_field_element_group_destroy(&mesh_group_2d);
-													}
-													if (mesh_group_3d)
-													{
-														Cmiss_field_element_group_destroy(&mesh_group_3d);
+														if (mesh_group[iter])
+														{
+															Cmiss_field_element_group_destroy(&(mesh_group[iter]));
+														}
 													}
 													if (region_rendition)
 													{
@@ -824,47 +823,19 @@ release.
 												{
 													Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
 													int dimension = Cmiss_element_get_dimension(pos->second);
-													if (dimension == 1)
+													if (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 													{
-														if (!mesh_group_1d)
+														if (!mesh_group[dimension - 1])
 														{
-															Cmiss_fe_mesh_id temp_mesh =
-																Cmiss_field_module_get_fe_mesh_by_name(field_module, "cmiss_mesh_1d");
-															mesh_group_1d = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-															if (!mesh_group_1d)
-																mesh_group_1d = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+															char suffix[40];
+															sprintf(suffix, "cmiss_mesh_%dd", dimension);
+															Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module, suffix);
+															mesh_group[dimension - 1] = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+															if (!mesh_group[dimension - 1])
+																mesh_group[dimension - 1] = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
 															Cmiss_fe_mesh_destroy(&temp_mesh);
 														}
-														Cmiss_field_element_group_add_element(mesh_group_1d,
-															pos->second);
-													}
-													else if (dimension == 2)
-													{
-														if (!mesh_group_2d)
-														{
-															Cmiss_fe_mesh_id temp_mesh =
-																Cmiss_field_module_get_fe_mesh_by_name(field_module, "cmiss_mesh_2d");
-															mesh_group_2d = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-															if (!mesh_group_2d)
-																mesh_group_2d = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
-															Cmiss_fe_mesh_destroy(&temp_mesh);
-														}
-														Cmiss_field_element_group_add_element(mesh_group_2d,
-															pos->second);
-													}
-													else if (dimension == 3)
-													{
-														if (!mesh_group_3d)
-														{
-															Cmiss_fe_mesh_id temp_mesh =
-																Cmiss_field_module_get_fe_mesh_by_name(field_module, "cmiss_mesh_3d");
-															mesh_group_3d = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-															if (!mesh_group_3d)
-																mesh_group_3d = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
-															Cmiss_fe_mesh_destroy(&temp_mesh);
-														}
-														Cmiss_field_element_group_add_element(mesh_group_3d,
-															pos->second);
+														Cmiss_field_element_group_add_element(mesh_group[dimension - 1], pos->second);
 													}
 													Cmiss_field_module_destroy(&field_module);
 												}
@@ -874,17 +845,12 @@ release.
 												Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 												Cmiss_field_group_destroy(&sub_group);
 											}
-											if (mesh_group_1d)
+											for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)
 											{
-												Cmiss_field_element_group_destroy(&mesh_group_1d);
-											}
-											if (mesh_group_2d)
-											{
-												Cmiss_field_element_group_destroy(&mesh_group_1d);
-											}
-											if (mesh_group_3d)
-											{
-												Cmiss_field_element_group_destroy(&mesh_group_1d);
+												if (mesh_group[iter])
+												{
+													Cmiss_field_element_group_destroy(&(mesh_group[iter]));
+												}
 											}
 											if (region_rendition)
 											{
