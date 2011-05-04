@@ -505,10 +505,7 @@ class wxRegionTreeViewer : public wxFrame
 		*linewidthtext, *streamlinedatatypetext, *spectrumtext, *rendertypetext, *fonttext;
 	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton, *tessellationbutton;
 	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,
-		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
-		*labelcheckbox,*visibility_field_checkbox,*nativediscretizationfieldcheckbox,
-		*reversecheckbox,*datacheckbox,*texturecoordinatescheckbox,*exteriorcheckbox,
-		*facecheckbox, *seedelementcheckbox;	
+	 *reversecheckbox,*exteriorcheckbox,	*facecheckbox, *seedelementcheckbox;
 	wxRadioButton *isovaluelistradiobutton, *isovaluesequenceradiobutton;
 	wxPanel *isovalueoptionspane;
 	wxTextCtrl *nametextfield,
@@ -1081,9 +1078,17 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 	constant_radius=(float)temp;
 	scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
 	(scalefactorstextctrl->GetValue()).ToDouble(&temp);
-	scale_factor=(float)temp;	
+	scale_factor=(float)temp;
 	Cmiss_graphic_set_radius_parameters(region_tree_viewer->current_graphic,constant_radius,
 		scale_factor,radius_scalar_field);
+	if (radius_scalar_field)
+	{
+		scalefactorstextctrl->Enable();
+	}
+	else
+	{
+		scalefactorstextctrl->Disable();
+	}
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
@@ -1179,6 +1184,18 @@ Callback from wxChooser<Orientation Scale> when choice is made.
 	if (region_tree_viewer->current_graphic)
 	{
 		enum Graphic_glyph_scaling_mode glyph_scaling_mode;
+		glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
+		glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
+		if (orientation_scale_field)
+		{
+			glyphscalefactorstext->Enable();
+			glyphscalefactorstextctrl->Enable();
+		}
+		else
+		{
+			glyphscalefactorstext->Disable();
+			glyphscalefactorstextctrl->Disable();
+		}
 		if (Cmiss_graphic_get_glyph_parameters(
 		    region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode,
 		    glyph_centre, glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
@@ -1287,8 +1304,6 @@ Callback from wxChooser<font> when choice is made.
 	return 1;
 }
 
-
-
 int use_element_type_callback(enum Use_element_type use_element_type)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2007
@@ -1363,7 +1378,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 
 	discretizationtext=XRCCTRL(*this,"DiscretizationText",wxStaticText);
 	discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
-	nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
+	wxStaticText *nativediscretizationfieldtext=XRCCTRL(*this,"NativeDiscretizationFieldText",wxStaticText);
 	native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
 	densityfieldtext=XRCCTRL(*this, "DensityFieldText",wxStaticText);
 	density_field_chooser_panel=XRCCTRL(*this,"DensityFieldChooserPanel",wxPanel);
@@ -1408,7 +1423,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 				Cmiss_graphic_get_native_discretization_field(region_tree_viewer->current_graphic);
 				discretizationtextctrl->Enable();	
 				discretizationtext->Enable();
-				nativediscretizationfieldcheckbox->Enable();
+				nativediscretizationfieldtext->Enable();
 				native_discretization_field_chooser_panel->Enable();
 				xitext->Disable();
 				xitextctrl->Disable();
@@ -1425,7 +1440,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 			{	
 				discretizationtextctrl->Disable();	
 				discretizationtext->Disable();
-				nativediscretizationfieldcheckbox->Disable();
+				nativediscretizationfieldtext->Disable();
 				native_discretization_field_chooser_panel->Disable();
 				xitext->Enable();
 				xitextctrl->Enable();
@@ -1455,22 +1470,18 @@ DESCRIPTION :
 Callback from wxChooser<Native discretization> when choice is made.
 ==============================================================================*/
 {
-	FE_field *temp_native_discretization_field;
+	FE_field *temp_native_discretization_field = NULL;
 
-	if (Computed_field_get_type_finite_element(native_discretization_field,
-			&temp_native_discretization_field))
+	if (native_discretization_field)
 	{
-	 Cmiss_graphic_set_native_discretization_field(
-	   region_tree_viewer->current_graphic, temp_native_discretization_field);
-	 Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	   region_tree_viewer->edit_rendition);
-	 Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		Computed_field_get_type_finite_element(native_discretization_field,
+			&temp_native_discretization_field);
 	}
-	else
-	{
-	 display_message(ERROR_MESSAGE, "wxRegionTreeViewer::native_discretization_callback.  "
-	   "Could not modify native discretization field");
-	}
+	Cmiss_graphic_set_native_discretization_field(
+		region_tree_viewer->current_graphic, temp_native_discretization_field);
+	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
+		region_tree_viewer->edit_rendition);
+	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1583,7 +1594,6 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 	enum Streamline_data_type old_streamline_data_type;
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
-	datacheckbox=XRCCTRL(*this, "DataCheckBox", wxCheckBox);
 	data_chooser_panel=XRCCTRL(*this,"DataChooserPanel",wxPanel);
 	spectrumtext=XRCCTRL(*this, "SpectrumText", wxStaticText);
 	spectrum_chooser_panel=XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
@@ -1603,10 +1613,6 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 				{
 					/* get data_field from widget */
 					data_field=data_field_chooser->get_object();
-					if (!data_field)
-					{
-						streamline_data_type=STREAM_NO_DATA;
-					}
 				}
 				if ((STREAM_NO_DATA != streamline_data_type)&&!spectrum)
 				{
@@ -1621,18 +1627,6 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 					/* update the choose_enumerator for streamline_data_type */
 					streamline_data_type_chooser->set_value(streamline_data_type);
 				}
-				/* set grayed status of data_field/spectrum widgets */
-				if ((struct Computed_field *)NULL != data_field)
-				{
-					datacheckbox->SetValue(1);
-					data_chooser_panel->Enable();	
-				}
-				else
-				{
-					datacheckbox->SetValue(0);
-					data_chooser_panel->Disable();	
-				}
-
 				if (STREAM_NO_DATA != streamline_data_type)
 				{
 					spectrumtext->Enable();
@@ -1642,6 +1636,14 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 				{
 					spectrumtext->Disable();
 					spectrum_chooser_panel->Disable();
+				}
+				if (STREAM_FIELD_SCALAR==streamline_data_type)
+				{
+					data_chooser_panel->Enable();
+				}
+				else
+				{
+					data_chooser_panel->Disable();
 				}
 				/* inform the client of the change */
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -1663,6 +1665,8 @@ Callback from wxChooser<Data Field> when choice is made.
 	enum Streamline_data_type streamline_data_type;
 	struct Computed_field *temp_data_field;
 	struct Spectrum *spectrum;
+	spectrumtext=XRCCTRL(*this, "SpectrumText", wxStaticText);
+	spectrum_chooser_panel=XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
 
 	if (CMISS_GRAPHIC_STREAMLINES==Cmiss_graphic_get_graphic_type
 			(region_tree_viewer->current_graphic))
@@ -1678,9 +1682,21 @@ Callback from wxChooser<Data Field> when choice is made.
 		{
 			Cmiss_graphic_get_data_spectrum_parameters(
 				region_tree_viewer->current_graphic,&temp_data_field,&spectrum);
+			spectrum = spectrum_chooser->get_object();
 			Cmiss_graphic_set_data_spectrum_parameters(
 				region_tree_viewer->current_graphic,data_field,spectrum);
 		}
+	if (data_field)
+	{
+		spectrumtext->Enable();
+		spectrum_chooser_panel->Enable();
+	}
+	else
+	{
+		spectrumtext->Disable();
+		spectrum_chooser_panel->Disable();
+	}
+
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
@@ -2092,62 +2108,6 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 //			}
 			Cmiss_rendition_set_graphic_defaults(region_tree_viewer->edit_rendition, graphic);
 			/* set iso_scalar_field for iso_surfaces */
-			if (CMISS_GRAPHIC_ISO_SURFACES==graphic_type)
-			{
-				MANAGER(Computed_field) *computed_field_manager = 
-					Cmiss_region_get_Computed_field_manager(
-						Cmiss_rendition_get_region(region_tree_viewer->edit_rendition));
-				Computed_field *iso_scalar_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_scalar,(void *)NULL,computed_field_manager);
-				if (iso_scalar_field)
-				{
-					double iso_value_default = 0;
-					if (!Cmiss_graphic_set_iso_surface_parameters(graphic,
-							iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default,
-							/*first_iso_value*/0.0, /*last_iso_value*/0.0,
-							/*decimation_threshold*/0.0))
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"No scalar fields defined");
-					return_code=0;
-				}
-			}
-			/* set stream_vector_field for STREAMLINES */
-			if (CMISS_GRAPHIC_STREAMLINES==graphic_type)
-			{
-				Streamline_type streamline_type;
-				float streamline_length,streamline_width;
-				int reverse_track;
-				MANAGER(Computed_field) *computed_field_manager = 
-					Cmiss_region_get_Computed_field_manager(
-						Cmiss_rendition_get_region(region_tree_viewer->edit_rendition));
-				Computed_field *stream_vector_field;
-				Cmiss_graphic_get_streamline_parameters(
-					graphic,&streamline_type,&stream_vector_field,&reverse_track,
-					&streamline_length,&streamline_width);
-				stream_vector_field =
-					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_stream_vector_capable,(void *)NULL,
-						computed_field_manager);
-				if (stream_vector_field)
-				{
-					if (!Cmiss_graphic_set_streamline_parameters(
-								graphic,streamline_type,stream_vector_field,reverse_track,
-								streamline_length,streamline_width))
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"No vector fields defined");
-					return_code=0;
-				}
-			}
 		}
 		if (return_code && Cmiss_rendition_add_graphic(
 					region_tree_viewer->edit_rendition, graphic, 0))
@@ -2442,23 +2402,17 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
 		(scalefactorstextctrl->GetValue()).ToDouble(&temp);
 		scale_factor=(float)temp;	
-		radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
 		radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
 		scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
-		if (radiusscalarcheckbox->IsChecked())
-			{
-				scalefactorstextctrl->Enable();
-				radius_scalar_chooser_panel->Enable();
-				scalefactor ->Enable();
-		 	   radius_scalar_field=radius_scalar_chooser->get_object();
-			}
+		radius_scalar_field=radius_scalar_chooser->get_object();
+		if (radius_scalar_field)
+		{
+			scalefactorstextctrl->Enable();
+		}
 		else	
-			{
-				radius_scalar_field=(Computed_field *)NULL;
-				radius_scalar_chooser_panel->Disable();
-				scalefactorstextctrl->Disable();	
-				scalefactor ->Disable();
-			}
+		{
+			scalefactorstextctrl->Disable();
+		}
 		Cmiss_graphic_set_radius_parameters(region_tree_viewer->current_graphic,constant_radius,
 																							scale_factor,radius_scalar_field);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -2780,7 +2734,6 @@ void EnterGlyphSize(wxCommandEvent &event)
 	orientation_scale_field_chooser_panel=XRCCTRL(*this,	"OrientationScaleChooserPanel",wxPanel);
 	glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
 	glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
-	orientationscalecheckbox=XRCCTRL(*this,"OrientationScaleCheckBox",wxCheckBox);
 
 		if (region_tree_viewer->current_graphic)
 		{
@@ -2799,19 +2752,16 @@ void EnterGlyphSize(wxCommandEvent &event)
 					if (temp_state)
 					{
 						set_special_float3(temp_state,glyph_scale_factors,const_cast<char *>("*"));
-						if (orientationscalecheckbox->IsChecked())
+						orientation_scale_field=orientation_scale_field_chooser->get_object();
+						if (orientation_scale_field)
 						{
-							orientation_scale_field_chooser_panel->Enable();
 							glyphscalefactorstext->Enable();
 							glyphscalefactorstextctrl->Enable();					
-							orientation_scale_field=orientation_scale_field_chooser->get_object();
 						}
 						else
 						{
-							orientation_scale_field_chooser_panel->Disable();
 							glyphscalefactorstext->Disable();
 							glyphscalefactorstextctrl->Disable();					
-							orientation_scale_field=(Computed_field *)NULL;
 						}
 						Cmiss_graphic_set_glyph_parameters(
 							region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
@@ -2873,93 +2823,6 @@ void EnterGlyphSize(wxCommandEvent &event)
 			region_tree_viewer->edit_rendition);
 	}
 */
-
-   void VariableScaleChecked(wxCommandEvent &event)
-{
-	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-	struct Computed_field *orientation_scale_field, *variable_scale_field;
-	struct GT_object *glyph;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
-
-	USE_PARAMETER(event);
-
-	Cmiss_graphic_get_glyph_parameters(
-		region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
-		glyph_size, &orientation_scale_field, glyph_scale_factors,
-		&variable_scale_field);
-	variable_scale_field_chooser_panel=XRCCTRL(*this,"VariableScaleChooserPanel",wxPanel);
-	variablescalecheckbox=XRCCTRL(*this,"VariableScaleCheckBox",wxCheckBox);
-	if (variablescalecheckbox->IsChecked())
-	{
-		variable_scale_field_chooser_panel->Enable();				
-		variable_scale_field=variable_scale_field_chooser->get_object();
-	}
-	else
-	{
-		variable_scale_field_chooser_panel->Disable();		
-		variable_scale_field=(Computed_field *)NULL;
-	}
-        Cmiss_graphic_set_glyph_parameters(
-	 region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-	 glyph_centre, glyph_size, orientation_scale_field,
-	 glyph_scale_factors, variable_scale_field);
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-	 region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-}
-
-void LabelChecked(wxCommandEvent &event)
-{
-	struct Computed_field *label_field;
-	struct Graphics_font *font;
-
-	USE_PARAMETER(event);
-	labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
-	label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
-	Cmiss_graphic_get_label_field(region_tree_viewer->current_graphic,
-		&label_field, &font);
-	if (labelcheckbox->IsChecked())
-	{
-		label_chooser_panel->Enable();				
-		label_field=label_field_chooser->get_object();
-	}
-	else
-	{
-		label_chooser_panel->Disable();		
-		label_field=(Computed_field *)NULL;
-	}
-	Cmiss_graphic_set_label_field(region_tree_viewer->current_graphic,
-		label_field, font);
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-}
-
-	void VisibilityFieldChecked(wxCommandEvent &event)
-{
-	struct Computed_field *visibility_field;
-
-	USE_PARAMETER(event);
-	visibility_field_checkbox=XRCCTRL(*this,"VisibilityFieldCheckBox",wxCheckBox);
-	visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
-	if (visibility_field_checkbox->IsChecked())
-	{
-		Cmiss_graphic_get_visibility_field(region_tree_viewer->current_graphic,
-			&visibility_field);
-		visibility_field_chooser_panel->Enable();				
-		visibility_field=visibility_field_chooser->get_object();
-	}
-	else
-	{
-		visibility_field_chooser_panel->Disable();		
-		visibility_field=(Computed_field *)NULL;
-	}
-	Cmiss_graphic_set_visibility_field(region_tree_viewer->current_graphic,
-		visibility_field);
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-}
 
 void EnterElementDiscretization(wxCommandEvent &event)
 {
@@ -3046,35 +2909,6 @@ void EnterCircleDiscretization(wxCommandEvent &event)
 	sprintf(temp_string,"%d", 
 		Cmiss_graphic_get_circle_discretization(region_tree_viewer->current_graphic));
 	circlediscretizationtextctrl->ChangeValue(temp_string);
-}
-
-void NativeDiscretizationChecked(wxCommandEvent &event)
-{
-	nativediscretizationfieldcheckbox=XRCCTRL(
-		*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
-	native_discretization_field_chooser_panel=XRCCTRL(
-		*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
-	FE_field *temp_native_discretization_field;
-
-	USE_PARAMETER(event);
-
-	if (nativediscretizationfieldcheckbox->IsChecked())
-	{	
-		native_discretization_field_chooser_panel->Enable();
-		Computed_field_get_type_finite_element(
-			native_discretization_field_chooser->get_object(),
-			&temp_native_discretization_field);
-	}
-	else
-	{
-		native_discretization_field_chooser_panel->Disable();
-		temp_native_discretization_field=(FE_field *)NULL;
-	}
-	Cmiss_graphic_set_native_discretization_field(
-		region_tree_viewer->current_graphic, temp_native_discretization_field);
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 }
 
 void SeedElementChecked(wxCommandEvent &event)
@@ -3274,65 +3108,6 @@ void EnterLineWidth(wxCommandEvent &event)
 	linewidthtextctrl->SetValue(temp_string);
 }
 
-void DataFieldChecked(wxCommandEvent &event)
-{
-	struct Computed_field *data_field;
-	struct Spectrum *spectrum;
-	USE_PARAMETER(event);
-	datacheckbox=XRCCTRL(*this, "DataCheckBox", wxCheckBox);
-	data_chooser_panel=XRCCTRL(*this,"DataChooserPanel",wxPanel);
-	spectrumtext=XRCCTRL(*this, "SpectrumText", wxStaticText);
-	spectrum_chooser_panel=XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
-	Cmiss_graphic_get_data_spectrum_parameters(
-		region_tree_viewer->current_graphic,&data_field,&spectrum);
-	if (datacheckbox->IsChecked())
-	{
-		data_chooser_panel->Enable();
-		spectrumtext->Enable();
-		spectrum_chooser_panel->Enable();
-		data_field = data_field_chooser->get_object();
-		spectrum = spectrum_chooser->get_object();
-	}
-	else
-	{
-		data_chooser_panel->Disable();
-		spectrumtext->Disable();
-		spectrum_chooser_panel->Disable();
-		data_field=(Computed_field *)NULL;
-		spectrum = (Spectrum*)NULL;
-	}
-	Cmiss_graphic_set_data_spectrum_parameters(
-		region_tree_viewer->current_graphic,data_field,spectrum);
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-}
-
-void TextureCoordFieldChecked(wxCommandEvent &event)
-{
-	USE_PARAMETER(event);
-	struct Computed_field *texture_coord_field;
-	texturecoordinatescheckbox=XRCCTRL(*this, "TextureCoordinatesCheckBox", wxCheckBox);
-	texture_coordinates_chooser_panel =XRCCTRL(*this, "TextrueCoordinatesChooserPanel", wxPanel);
-
-	if (texturecoordinatescheckbox->IsChecked())
-	{
-		texture_coordinates_chooser_panel->Enable();
-		texture_coord_field= texture_coord_field_chooser->get_object();
-	}
-	else
-	{
-		texture_coordinates_chooser_panel->Disable();
-		texture_coord_field= (Computed_field *)NULL;
-	}
-	Cmiss_graphic_set_texture_coordinate_field(
-		region_tree_viewer->current_graphic, texture_coord_field);
-	/* inform the client of the change */
-	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
-		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
-}
-
 void ExteriorChecked(wxCommandEvent &event)
 {
 	USE_PARAMETER(event);
@@ -3458,7 +3233,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 
 
 	constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
-	radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
+	wxStaticText *radiusscalartext=XRCCTRL(*this, "RadiusScalarText",wxStaticText);
 	scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
 	radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
 	constantradius = XRCCTRL(*this,"ConstantRadiusText",wxStaticText);
@@ -3468,7 +3243,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		&constant_radius,&scale_factor,&radius_scalar_field))
 	{
 		constantradiustextctrl->Show();
-		radiusscalarcheckbox->Show();
+		radiusscalartext->Show();
 		scalefactorstextctrl->Show();
 		constantradius->Show();
 		radius_scalar_chooser_panel->Show();
@@ -3490,27 +3265,22 @@ void SetGraphic(Cmiss_graphic *graphic)
 				(this, &wxRegionTreeViewer::radius_scalar_callback);
 			radius_scalar_chooser->set_callback(radius_scalar_callback);
 			radius_scalar_chooser_panel->Fit();
+			radius_scalar_chooser->include_null_item(true);
 		}
+		radius_scalar_chooser->set_object(radius_scalar_field);
 		if ((struct Computed_field *)NULL!=radius_scalar_field)
 		{
-			radius_scalar_chooser->set_object(radius_scalar_field);
 			scalefactorstextctrl->Enable();
-			radiusscalarcheckbox->SetValue(1);
-			radius_scalar_chooser_panel->Enable();
-			scalefactor->Enable();
 		}
 		else
 		{
 			scalefactorstextctrl->Disable();
-			radiusscalarcheckbox->SetValue(0);
-			radius_scalar_chooser_panel->Disable();
-			scalefactor->Disable();
 		}
 	}
 	else
 	{
 		constantradiustextctrl->Hide();
-		radiusscalarcheckbox->Hide();
+		radiusscalartext->Hide();
 		scalefactorstextctrl->Hide();
 		radius_scalar_chooser_panel->Hide();
 		scalefactor->Hide();
@@ -3535,7 +3305,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				Cmiss_graphic_get_iso_surface_parameters(graphic,
 					&iso_scalar_field,&number_of_iso_values,&iso_values,
 					&first_iso_value,&last_iso_value,
-					&decimation_threshold)&&iso_scalar_field)
+					&decimation_threshold))
 			{
 				iso_scalar_chooser_panel->Show();
 				isoscalartextctrl->Show();
@@ -3553,6 +3323,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 							(this, &wxRegionTreeViewer::iso_scalar_callback);
 					iso_scalar_chooser->set_callback(iso_scalar_callback);
 					iso_scalar_chooser_panel->Fit();
+					iso_scalar_chooser->include_null_item(true);
 				}
 				if (iso_values)
 				{
@@ -3609,10 +3380,10 @@ void SetGraphic(Cmiss_graphic *graphic)
 		centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
 		baseglyphsizetext=XRCCTRL(*this,"BaseGlyphSizeText",wxStaticText);
 		baseglyphsizetextctrl=XRCCTRL(*this,"BaseGlyphSizeTextCtrl",wxTextCtrl);
-		orientationscalecheckbox=XRCCTRL(*this,"OrientationScaleCheckBox",wxCheckBox);
+		wxStaticText *orientationscaletext=XRCCTRL(*this,"OrientationScaleText",wxStaticText);
 		glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
 		glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
-		variablescalecheckbox=XRCCTRL(*this,"VariableScaleCheckBox",wxCheckBox);
+		wxStaticText *variablescaletext=XRCCTRL(*this,"VariableScaleText",wxStaticText);
 		glyphbox=XRCCTRL(*this,"GlyphBox",wxWindow);
 		glyphline=XRCCTRL(*this,"GlyphLine",wxWindow);
 
@@ -3659,20 +3430,20 @@ void SetGraphic(Cmiss_graphic *graphic)
 				centretextctrl->Show();
 				baseglyphsizetext->Show();
 				baseglyphsizetextctrl->Show();
-				orientationscalecheckbox->Show();
+				orientationscaletext->Show();
 				glyphscalefactorstext->Show();
 				glyphscalefactorstextctrl->Show();
-				variablescalecheckbox->Show();
+				variablescaletext->Show();
 				glyphbox->Show();
 				glyphline->Show();
 				if (CMISS_GRAPHIC_POINT == region_tree_viewer->current_graphic_type)
 				{
 					orientation_scale_field_chooser_panel->Hide();
-					orientationscalecheckbox->Hide();
+					orientationscaletext->Hide();
 					glyphscalefactorstext->Hide();
 					glyphscalefactorstextctrl->Hide();
 					variable_scale_field_chooser_panel->Hide();
-					variablescalecheckbox->Hide();
+					variablescaletext->Hide();
 				}
 				if (glyph_chooser == NULL)
 				{
@@ -3703,6 +3474,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 							(this, &wxRegionTreeViewer::orientation_scale_callback);
 					orientation_scale_field_chooser->set_callback(orientation_scale_callback);
 					orientation_scale_field_chooser_panel->Fit();
+					orientation_scale_field_chooser->include_null_item(true);
 				}
 				if (variable_scale_field_chooser  ==NULL)
 				{
@@ -3717,6 +3489,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 							(this, &wxRegionTreeViewer::variable_scale_callback);
 					variable_scale_field_chooser->set_callback(variable_scale_callback);
 					variable_scale_field_chooser_panel->Fit();
+					variable_scale_field_chooser->include_null_item(true);
 				}
 
 				if (glyph != NULL)
@@ -3734,32 +3507,18 @@ void SetGraphic(Cmiss_graphic *graphic)
 					glyph_scale_factors[1],glyph_scale_factors[2]);
 				glyphscalefactorstextctrl->SetValue(temp_string);
 			
+				 orientation_scale_field_chooser->set_object(orientation_scale_field);
 				if ((struct Computed_field *)NULL!=orientation_scale_field)
 				{
-				 orientation_scale_field_chooser->set_object(orientation_scale_field);
 				 glyphscalefactorstextctrl->Enable();
-				 orientationscalecheckbox->SetValue(1);
-				 orientation_scale_field_chooser_panel->Enable();
 				 glyphscalefactorstext->Enable();
 				}
 				else
 				{
 				 glyphscalefactorstextctrl->Disable();
-				 orientationscalecheckbox->SetValue(0);
-				 orientation_scale_field_chooser_panel->Disable();
 				 glyphscalefactorstext->Disable();
 				}
-				if ((struct Computed_field *)NULL!=variable_scale_field)
-				{
-				 variable_scale_field_chooser->set_object(variable_scale_field);
-				 variablescalecheckbox->SetValue(1);
-				 variable_scale_field_chooser_panel->Enable();
-				}
-				else
-				{
-				 variablescalecheckbox->SetValue(0);
-				 variable_scale_field_chooser_panel->Disable();
-				}
+				variable_scale_field_chooser->set_object(variable_scale_field);
 			}
 		else
 			{
@@ -3771,20 +3530,19 @@ void SetGraphic(Cmiss_graphic *graphic)
 				centretextctrl->Hide();
 				baseglyphsizetext->Hide();
 				baseglyphsizetextctrl->Hide();
-				orientationscalecheckbox->Hide();
+				orientationscaletext->Hide();
 				glyphscalefactorstext->Hide();
 				glyphscalefactorstextctrl->Hide();
-				variablescalecheckbox->Hide();
+				variablescaletext->Hide();
 				glyphbox->Hide();
 				glyphline->Hide();
 			}
 
 		/* label field */
-		labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
 		label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
 		fonttext=XRCCTRL(*this,"FontText",wxStaticText);
 		font_chooser_panel = XRCCTRL(*this,"FontChooserPanel",wxPanel);	
-
+		wxStaticText *labeltext = XRCCTRL(*this,"LabelText",wxStaticText);
 		if (((CMISS_GRAPHIC_NODE_POINTS==region_tree_viewer->current_graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==region_tree_viewer->current_graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==region_tree_viewer->current_graphic_type)||
@@ -3804,6 +3562,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 							(this, &wxRegionTreeViewer::label_callback);
 						label_field_chooser->set_callback(label_callback);
 						label_chooser_panel->Fit();
+						label_field_chooser->include_null_item(true);
 				}
 				if (font_chooser == NULL)
 				{
@@ -3819,21 +3578,12 @@ void SetGraphic(Cmiss_graphic *graphic)
 						font_chooser->set_callback(font_callback);
 						font_chooser_panel->Fit();
 				}
-				labelcheckbox->Show();
+				label_field_chooser->set_object(label_field);
 				label_chooser_panel->Show();
+				labeltext->Show();
 				fonttext->Show();
 				font_chooser_panel->Show();
-				if ((struct Computed_field *)NULL!=label_field)
-				{
-						label_field_chooser->set_object(label_field);
-						labelcheckbox->SetValue(1);
-						label_chooser_panel->Enable();
-				}
-				else
-				{
-						labelcheckbox->SetValue(0);
-						label_chooser_panel->Disable();
-				}
+
 				if ((struct Graphics_font *)NULL!=font)
 				{
 						font_chooser->set_object(font);
@@ -3847,14 +3597,14 @@ void SetGraphic(Cmiss_graphic *graphic)
 			}
 		else
 		{
-			labelcheckbox->Hide();
 			label_chooser_panel->Hide();
 			font_chooser_panel->Hide();
 			fonttext->Hide();
+			labeltext->Hide();
 		}
 		
 		/* Visibility field */
-		visibility_field_checkbox=XRCCTRL(*this,"VisibilityFieldCheckBox",wxCheckBox);
+		wxStaticText *visibility_field_text=XRCCTRL(*this,"VisibilityFieldText",wxStaticText);
 		visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
 
 		if (((CMISS_GRAPHIC_NODE_POINTS==region_tree_viewer->current_graphic_type)||
@@ -3874,24 +3624,15 @@ void SetGraphic(Cmiss_graphic *graphic)
 					(this, &wxRegionTreeViewer::visibility_field_callback);
 				visibility_field_chooser->set_callback(visibility_field_callback);
 				visibility_field_chooser_panel->Fit();
+				visibility_field_chooser->include_null_item(true);
 			}
-			visibility_field_checkbox->Show();
+			visibility_field_text->Show();
+			visibility_field_chooser->set_object(visibility_field);
 			visibility_field_chooser_panel->Show();
-			if ((struct Computed_field *)NULL!=visibility_field)
-			{
-				visibility_field_chooser->set_object(visibility_field);
-				visibility_field_checkbox->SetValue(1);
-				visibility_field_chooser_panel->Enable();
-			}
-			else
-			{
-				visibility_field_checkbox->SetValue(0);
-				visibility_field_chooser_panel->Disable();
-			}
 		}
 		else
 		{
-			visibility_field_checkbox->Hide();
+			visibility_field_text->Hide();
 			visibility_field_chooser_panel->Hide();
 		}
 		
@@ -3962,7 +3703,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
 		circlediscretizationtext=XRCCTRL(*this,"CircleDiscretizationText",wxStaticText);
 		circlediscretizationtextctrl=XRCCTRL(*this,"CircleDiscretizationTextCtrl",wxTextCtrl);
-		nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
+		wxStaticText *nativediscretizationfieldtext=XRCCTRL(*this,"NativeDiscretizationFieldText",wxStaticText);
 		native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
 
 		if (Cmiss_graphic_type_uses_attribute(region_tree_viewer->current_graphic_type,
@@ -4042,8 +3783,9 @@ void SetGraphic(Cmiss_graphic *graphic)
 					(this, &wxRegionTreeViewer::native_discretization_callback);
 				native_discretization_field_chooser->set_callback(native_discretization_callback);
 				native_discretization_field_chooser_panel->Fit();
+				native_discretization_field_chooser->include_null_item(true);
 			}
-			nativediscretizationfieldcheckbox->Show();
+			nativediscretizationfieldtext->Show();
 			native_discretization_field_chooser_panel->Show();
 			if (native_discretization_field != NULL)
 			{
@@ -4051,18 +3793,16 @@ void SetGraphic(Cmiss_graphic *graphic)
 					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_wraps_fe_field, native_discretization_field,
 						region_tree_viewer->field_manager));
-				nativediscretizationfieldcheckbox->SetValue(1);
 				native_discretization_field_chooser_panel->Enable();
 			}
 			else
 			{
-				nativediscretizationfieldcheckbox->SetValue(0);
-				native_discretization_field_chooser_panel->Disable();
+				native_discretization_field_chooser->set_object(NULL);
 			}
 		}
 		else
 		{
-			nativediscretizationfieldcheckbox->Hide();
+			nativediscretizationfieldtext->Hide();
 			native_discretization_field_chooser_panel->Hide();
 		}
 
@@ -4112,23 +3852,17 @@ void SetGraphic(Cmiss_graphic *graphic)
 			{
 				discretizationtextctrl->Enable();	
 				discretizationtext->Enable();
-				nativediscretizationfieldcheckbox->Enable();
 				struct FE_field *native_discretization_field =
 					Cmiss_graphic_get_native_discretization_field(graphic);
 				if ((struct FE_field *)NULL != native_discretization_field)
 				{
 					native_discretization_field_chooser_panel->Enable();
 				}
-				else
-				{
-					native_discretization_field_chooser_panel->Disable();
-				}
 			}
 			else
 			{	
 				discretizationtextctrl->Disable();	
 				discretizationtext->Disable();
-				nativediscretizationfieldcheckbox->Disable();
 				native_discretization_field_chooser_panel->Disable();
 			}
 			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)||
@@ -4276,8 +4010,9 @@ void SetGraphic(Cmiss_graphic *graphic)
 							(this, &wxRegionTreeViewer::stream_vector_callback);
 					stream_vector_chooser->set_callback(stream_vector_callback);
 					stream_vector_chooser_panel->Fit();
+					stream_vector_chooser->include_null_item(true);
 				}
-				stream_vector_chooser ->set_object(stream_vector_field);
+				stream_vector_chooser->set_object(stream_vector_field);
 				reversecheckbox->SetValue(reverse_track);
 			}
 			else
@@ -4320,7 +4055,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 		streamline_data_type_chooser_panel = XRCCTRL(*this,"StreamlineDataTypeChooserPanel",wxPanel);
 		spectrumtext=XRCCTRL(*this, "SpectrumText", wxStaticText);
 		spectrum_chooser_panel=XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
-		datacheckbox=XRCCTRL(*this, "DataCheckBox", wxCheckBox);
+		wxStaticText *datatext=XRCCTRL(*this, "DataText", wxStaticText);
 		data_chooser_panel=XRCCTRL(*this,"DataChooserPanel",wxPanel);
 
 		if (CMISS_GRAPHIC_POINT!=region_tree_viewer->current_graphic_type)
@@ -4344,17 +4079,17 @@ void SetGraphic(Cmiss_graphic *graphic)
 					(this, &wxRegionTreeViewer::data_field_callback);
 				data_field_chooser->set_callback(data_field_callback);
 				data_chooser_panel->Fit();
+				data_field_chooser->include_null_item(true);
 			}
-			datacheckbox->Show();
+			datatext->Show();
 			data_chooser_panel->Show();
 		}
 		else
 		{
-			datacheckbox->Hide();
+			datatext->Hide();
 			data_chooser_panel->Hide();
 		}
 		
-
 		if (CMISS_GRAPHIC_STREAMLINES==region_tree_viewer->current_graphic_type)
 		{
 			streamlinedatatypetext->Show();
@@ -4375,7 +4110,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				streamline_data_type_chooser->set_callback(streamline_data_type_callback);
 				streamline_data_type_chooser_panel->Fit();
 			}
-			if ((struct Computed_field *)NULL != data_field)
+			if (data_field)
 			{
 				data_chooser_panel->Enable();
 				spectrumtext->Enable();
@@ -4383,11 +4118,9 @@ void SetGraphic(Cmiss_graphic *graphic)
 			}
 			else
 			{
-				data_chooser_panel->Disable();
 				spectrumtext->Disable();
 				spectrum_chooser_panel->Disable();
 			}
-			datacheckbox->Disable();
 			streamline_data_type_chooser->set_value(streamline_data_type);
 		}
 		else
@@ -4399,10 +4132,9 @@ void SetGraphic(Cmiss_graphic *graphic)
 			{
 				Cmiss_graphic_get_data_spectrum_parameters(graphic,
 					&data_field,&spectrum);
-				if	((struct Computed_field *)NULL != data_field)
+				data_field_chooser->set_object(data_field);
+				if(data_field)
 				{
-					datacheckbox->SetValue(1);
-					data_field_chooser->set_object(data_field);
 					spectrum_chooser->set_object(spectrum);
 					data_chooser_panel->Enable();
 					spectrumtext->Enable();
@@ -4410,24 +4142,21 @@ void SetGraphic(Cmiss_graphic *graphic)
 				}
 				else
 				{
-					datacheckbox->SetValue(0);
-					data_chooser_panel->Disable();
 					spectrumtext->Disable();
 					spectrum_chooser_panel->Disable();
 				}
-				datacheckbox->Enable();
 			}
 		}
 		
-		texturecoordinatescheckbox=XRCCTRL(*this, "TextureCoordinatesCheckBox", wxCheckBox);
-		texture_coordinates_chooser_panel =XRCCTRL(*this, "TextrueCoordinatesChooserPanel", wxPanel);
+		wxStaticText *texturecoordinatestext = XRCCTRL(*this, "TextureCoordinatesText", wxStaticText);
+		texture_coordinates_chooser_panel = XRCCTRL(*this, "TextrueCoordinatesChooserPanel", wxPanel);
 		if ((CMISS_GRAPHIC_CYLINDERS == region_tree_viewer->current_graphic_type) ||
 			(CMISS_GRAPHIC_SURFACES == region_tree_viewer->current_graphic_type) ||
 			(CMISS_GRAPHIC_ISO_SURFACES == region_tree_viewer->current_graphic_type))
 		{
 			/* set texture_coordinate field */
 			texture_coordinates_chooser_panel->Show();
-			texturecoordinatescheckbox->Show();
+			texturecoordinatestext->Show();
 			texture_coord_field = Cmiss_graphic_get_texture_coordinate_field(graphic);
 			if (texture_coord_field_chooser == NULL)
 			{
@@ -4442,23 +4171,14 @@ void SetGraphic(Cmiss_graphic *graphic)
 						(this, &wxRegionTreeViewer::texture_coord_field_callback);
 				texture_coord_field_chooser->set_callback(texture_coord_field_callback);
 				texture_coordinates_chooser_panel->Fit();
+				texture_coord_field_chooser->include_null_item(true);
 			}
-			if ((struct Computed_field *)NULL != texture_coord_field)
-			{
-				texturecoordinatescheckbox->SetValue(1);
-				texture_coord_field_chooser->set_object(texture_coord_field);
-				texture_coordinates_chooser_panel->Enable();
-			}
-			else
-			{
-				texturecoordinatescheckbox->SetValue(0);
-				texture_coordinates_chooser_panel->Disable();
-			}
+			texture_coord_field_chooser->set_object(texture_coord_field);
 		}
 		else
 		{
 			texture_coordinates_chooser_panel->Hide();
-			texturecoordinatescheckbox->Hide();
+			texturecoordinatestext->Hide();
 		}
 
 		/* render_type */		
@@ -4824,7 +4544,6 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_BUTTON(XRCID("DownButton"),wxRegionTreeViewer::MoveDownInGraphicList)
 	EVT_TEXT_ENTER(XRCID("ConstantRadiusTextCtrl"), wxRegionTreeViewer::EnterRadius)
 	EVT_TEXT_ENTER(XRCID("ScaleFactorsTextCtrl"), wxRegionTreeViewer::EnterRadius)
-	EVT_CHECKBOX(XRCID("RadiusScalarCheckBox"), wxRegionTreeViewer::EnterRadius)
 	EVT_RADIOBUTTON(XRCID("IsoValueListRadioButton"), wxRegionTreeViewer::EnterIsoScalar)
 	EVT_RADIOBUTTON(XRCID("IsoValueSequenceRadioButton"), wxRegionTreeViewer::EnterIsoScalar)
 	EVT_TEXT_ENTER(XRCID("IsoScalarTextCtrl"),wxRegionTreeViewer::EnterIsoScalar)
@@ -4839,20 +4558,14 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_CHECKBOX(XRCID("OverlayCheckBox"),wxRegionTreeViewer::OverlayChecked)
 	EVT_TEXT_ENTER(XRCID("OverlayTextCtrl"),wxRegionTreeViewer::OverlayEntered)
 	*/
-	EVT_CHECKBOX(XRCID("VariableScaleCheckBox"),wxRegionTreeViewer::VariableScaleChecked)
-	EVT_CHECKBOX(XRCID("LabelCheckBox"),wxRegionTreeViewer::LabelChecked)
-	EVT_CHECKBOX(XRCID("VisibilityFieldCheckBox"),wxRegionTreeViewer::VisibilityFieldChecked)
 	EVT_TEXT_ENTER(XRCID("DiscretizationTextCtrl"),wxRegionTreeViewer::EnterElementDiscretization)
 	EVT_TEXT_ENTER(XRCID("CircleDiscretizationTextCtrl"),wxRegionTreeViewer::EnterCircleDiscretization)
-	EVT_CHECKBOX(XRCID("NativeDiscretizationFieldCheckBox"),wxRegionTreeViewer::NativeDiscretizationChecked)
 	EVT_CHECKBOX(XRCID("SeedElementCheckBox"),wxRegionTreeViewer::SeedElementChecked)
 	EVT_TEXT_ENTER(XRCID("XiTextCtrl"),wxRegionTreeViewer::EnterSeedXi)
 	EVT_TEXT_ENTER(XRCID("LengthTextCtrl"),wxRegionTreeViewer::EnterLength)
 	EVT_TEXT_ENTER(XRCID("WidthTextCtrl"),wxRegionTreeViewer::EnterWidth)
 	EVT_CHECKBOX(XRCID("ReverseCheckBox"),wxRegionTreeViewer::ReverseChecked)
 	EVT_TEXT_ENTER(XRCID("LineWidthTextCtrl"),wxRegionTreeViewer::EnterLineWidth)
-	EVT_CHECKBOX(XRCID("DataCheckBox"),wxRegionTreeViewer::DataFieldChecked)
-	EVT_CHECKBOX(XRCID("TextureCoordinatesCheckBox"),wxRegionTreeViewer::TextureCoordFieldChecked)
 	EVT_CHECKBOX(XRCID("ExteriorCheckBox"),wxRegionTreeViewer::ExteriorChecked)
 	EVT_CHECKBOX(XRCID("FaceCheckBox"),wxRegionTreeViewer::FaceChecked)
 	EVT_CHOICE(XRCID("FaceChoice"),wxRegionTreeViewer::FaceChosen)

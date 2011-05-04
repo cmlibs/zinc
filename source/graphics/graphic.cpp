@@ -2653,18 +2653,21 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		/* for iso_surfaces only */
 		if (CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type)
 		{
-			if (GET_NAME(Computed_field)(graphic->iso_scalar_field,&name))
+			if (graphic->iso_scalar_field)
 			{
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				append_string(&graphic_string," iso_scalar ",&error);
-				append_string(&graphic_string,name,&error);
-				DEALLOCATE(name);
-			}
-			else
-			{
-				DEALLOCATE(graphic_string);
-				error=1;
+				if (GET_NAME(Computed_field)(graphic->iso_scalar_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&graphic_string," iso_scalar ",&error);
+					append_string(&graphic_string,name,&error);
+					DEALLOCATE(name);
+				}
+				else
+				{
+					DEALLOCATE(graphic_string);
+					error=1;
+				}
 			}
 			if (graphic->iso_values)
 			{
@@ -2903,18 +2906,21 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			append_string(&graphic_string," ",&error);
 			append_string(&graphic_string,
 				ENUMERATOR_STRING(Streamline_type)(graphic->streamline_type),&error);
-			if (GET_NAME(Computed_field)(graphic->stream_vector_field,&name))
+			if (graphic->stream_vector_field)
 			{
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				append_string(&graphic_string," vector ",&error);
-				append_string(&graphic_string,name,&error);
-				DEALLOCATE(name);
-			}
-			else
-			{
-				DEALLOCATE(graphic_string);
-				error=1;
+				if (GET_NAME(Computed_field)(graphic->stream_vector_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&graphic_string," vector ",&error);
+					append_string(&graphic_string,name,&error);
+					DEALLOCATE(name);
+				}
+				else
+				{
+					DEALLOCATE(graphic_string);
+					error=1;
+				}
 			}
 			if (graphic->reverse_track)
 			{
@@ -4739,6 +4745,9 @@ int Cmiss_graphic_get_iso_surface_parameters(
 	{
 		*iso_scalar_field=graphic->iso_scalar_field;
 		*decimation_threshold=graphic->decimation_threshold;
+		*number_of_iso_values = graphic->number_of_iso_values;
+		*first_iso_value = graphic->first_iso_value;
+		*last_iso_value = graphic->last_iso_value;
 		if (0 < graphic->number_of_iso_values)
 		{
 			if (graphic->iso_values)
@@ -4749,7 +4758,6 @@ int Cmiss_graphic_get_iso_surface_parameters(
 					{
 						(*iso_values)[i] = graphic->iso_values[i];
 					}
-					*number_of_iso_values = graphic->number_of_iso_values;
 					return_code = 1;
 				}
 				else
@@ -4763,9 +4771,6 @@ int Cmiss_graphic_get_iso_surface_parameters(
 			else
 			{
 				*iso_values = (double *)NULL;
-				*number_of_iso_values = graphic->number_of_iso_values;
-				*first_iso_value = graphic->first_iso_value;
-				*last_iso_value = graphic->last_iso_value;
 				return_code = 1;
 			}
 		}
@@ -4796,8 +4801,8 @@ int Cmiss_graphic_set_iso_surface_parameters(
 	int i, return_code;
 
 	ENTER(Cmiss_graphic_set_iso_surface_parameters);
-	if (graphic&&iso_scalar_field&&
-		(1==Computed_field_get_number_of_components(iso_scalar_field))&&
+	if (graphic&& (!iso_scalar_field || (iso_scalar_field &&
+		(1==Computed_field_get_number_of_components(iso_scalar_field))))&&
 		(CMISS_GRAPHIC_ISO_SURFACES==graphic->graphic_type))
 	{
 		return_code=1;
@@ -4926,8 +4931,7 @@ int Cmiss_graphic_set_streamline_parameters(
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_streamline_parameters);
-	if (graphic&&stream_vector_field&&
-		(CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
+	if (graphic && (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type))
 	{
 		graphic->streamline_type=streamline_type;
 		REACCESS(Computed_field)(&(graphic->stream_vector_field),
@@ -8116,8 +8120,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				}
 				if (!(graphic->stream_vector_field))
 				{
-					display_message(ERROR_MESSAGE,"Must specify a vector");
-					return_code=0;
+					display_message(INFORMATION_MESSAGE,"Must specify a vector before any streamlines can be created");
 				}
 				if (graphic->seed_node_region_path)
 				{

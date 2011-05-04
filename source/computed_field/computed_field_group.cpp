@@ -1871,6 +1871,3 @@ int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id reg
 	}
 	return 0;
 }
-
-
-

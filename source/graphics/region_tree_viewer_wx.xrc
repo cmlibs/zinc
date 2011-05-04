@@ -259,7 +259,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxCheckBox" name="RadiusScalarCheckBox">
+														<object class	="wxStaticText" name="RadiusScalarText">
 															<label>Scalar radius:</label> 
 														</object>
 													</object>	
@@ -549,7 +549,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxCheckBox" name="NativeDiscretizationFieldCheckBox"> 
+														<object class	="wxStaticText" name="NativeDiscretizationFieldText"> 
 															<label>Native discretization field:</label>				  			
 	 													</object>
 													</object>
@@ -673,7 +673,7 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<flag>wxALIGN_CENTER</flag>
-																<object class	="wxCheckBox" name="OrientationScaleCheckBox">
+																<object class	="wxStaticText" name="OrientationScaleText">
 																	<label>Orientation/Scale:</label> 
 																</object>
 															</object>	
@@ -707,7 +707,7 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<flag>wxALIGN_CENTRE_VERTICAL</flag>
-																<object class	="wxCheckBox" name="VariableScaleCheckBox">
+																<object class	="wxStaticText" name="VariableScaleText">
 																	<label>Variable Scale:</label> 
 																</object>
 															</object>	
@@ -726,8 +726,8 @@
 													<orient>wxHORIZONTAL</orient>
 													<flag>wxALIGN_CENTRE_VERTICAL</flag>
 													<object class="sizeritem">
-														<flag>wxALIGN_CENTER</flag>
-														<object class	="wxCheckBox" name="LabelCheckBox"> 
+														<flag>wxALIGN_CENTER_VERTICAL</flag>
+														<object class	="wxStaticText" name="LabelText"> 
 															<label>Label:</label>				  			
 	 													</object>
 													</object>
@@ -779,7 +779,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxCheckBox" name="VisibilityFieldCheckBox"> 
+														<object class	="wxStaticText" name="VisibilityFieldText"> 
 															<label>Visibility field:</label>				  			
 	 													</object>
 													</object>
@@ -854,7 +854,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxCheckBox"  name="TextureCoordinatesCheckBox"> 
+														<object class	="wxStaticText"  name="TextureCoordinatesText"> 
 															<label>Texture coordinates:</label>				  			
 
 	 													</object>
@@ -889,7 +889,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxCheckBox" name="DataCheckBox"> 
+														<object class	="wxStaticText" name="DataText"> 
 															<label>Data:</label>				  			
 	 													</object>
 													</object>

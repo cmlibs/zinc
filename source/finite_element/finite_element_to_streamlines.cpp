@@ -1383,70 +1383,76 @@ in that region.
 	Triple *stream_points,*stream_normals,*stream_vectors;
 
 	ENTER(create_GT_polyline_streamline_FE_element);
-	if (element&&FE_element_is_top_level(element, NULL)&&
-		(element_dimension = get_FE_element_dimension(element))&&
-		((3 == element_dimension) || (2 == element_dimension))
-		&&start_xi&&coordinate_field&&
-		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
-		stream_vector_field&&(number_of_stream_vector_components=
-		Computed_field_get_number_of_components(stream_vector_field))
-		&& (((3 == number_of_coordinate_components) &&
-		((3==number_of_stream_vector_components)||
-		(6==number_of_stream_vector_components)||
-		(9==number_of_stream_vector_components)))
-		|| ((2 == number_of_coordinate_components) &&
-		(2==number_of_stream_vector_components)))&&
-		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
+	if (stream_vector_field)
 	{
-		/* track points and normals on streamline, and data if requested */
-		if (track_streamline_from_FE_element(&element,start_xi,
-			coordinate_field,stream_vector_field,reverse_track,length,
-			data_type,data_field,&number_of_stream_points,&stream_points,
-				&stream_vectors,&stream_normals,&stream_data,time,fe_region))
+		if (element&&FE_element_is_top_level(element, NULL)&&
+			(element_dimension = get_FE_element_dimension(element))&&
+			((3 == element_dimension) || (2 == element_dimension))
+			&&start_xi&&coordinate_field&&
+			(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+			(number_of_stream_vector_components=Computed_field_get_number_of_components(stream_vector_field))
+			&& (((3 == number_of_coordinate_components) &&
+			((3==number_of_stream_vector_components)||
+			(6==number_of_stream_vector_components)||
+			(9==number_of_stream_vector_components)))
+			|| ((2 == number_of_coordinate_components) &&
+			(2==number_of_stream_vector_components)))&&
+			(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 		{
-			if (0<number_of_stream_points)
+			/* track points and normals on streamline, and data if requested */
+			if (track_streamline_from_FE_element(&element,start_xi,
+				coordinate_field,stream_vector_field,reverse_track,length,
+				data_type,data_field,&number_of_stream_points,&stream_points,
+					&stream_vectors,&stream_normals,&stream_data,time,fe_region))
 			{
-				/* now create a polyline from the points */
-				if (STREAM_NO_DATA != data_type)
+				if (0<number_of_stream_points)
 				{
-					gt_data_type=g_SCALAR;
+					/* now create a polyline from the points */
+					if (STREAM_NO_DATA != data_type)
+					{
+						gt_data_type=g_SCALAR;
+					}
+					else
+					{
+						gt_data_type=g_NO_DATA;
+					}
+					if (!(polyline=CREATE(GT_polyline)(g_PLAIN,/*line_width=default*/0,
+						number_of_stream_points,stream_points,/* normals */(Triple *)NULL,
+						gt_data_type,stream_data)))
+					{
+						display_message(ERROR_MESSAGE,
+							"create_GT_polyline_streamline_FE_element.  "
+							"Could not create polyline");
+						DEALLOCATE(stream_points);
+						DEALLOCATE(stream_data);
+					}
+					/* didn't want vectors and normals anyway */
+					DEALLOCATE(stream_vectors);
+					DEALLOCATE(stream_normals);
 				}
 				else
 				{
-					gt_data_type=g_NO_DATA;
+					/* no error: streamline empty */
+					polyline = (struct GT_polyline *)NULL;
 				}
-				if (!(polyline=CREATE(GT_polyline)(g_PLAIN,/*line_width=default*/0,
-					number_of_stream_points,stream_points,/* normals */(Triple *)NULL,
-					gt_data_type,stream_data)))
-				{
-					display_message(ERROR_MESSAGE,
-						"create_GT_polyline_streamline_FE_element.  "
-						"Could not create polyline");
-					DEALLOCATE(stream_points);
-					DEALLOCATE(stream_data);
-				}
-				/* didn't want vectors and normals anyway */
-				DEALLOCATE(stream_vectors);
-				DEALLOCATE(stream_normals);
 			}
 			else
 			{
-				/* no error: streamline empty */
+				display_message(ERROR_MESSAGE,
+					"create_GT_polyline_streamline_FE_element.  "
+					"failed to track streamline");
 				polyline = (struct GT_polyline *)NULL;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_GT_polyline_streamline_FE_element.  "
-				"failed to track streamline");
-			polyline = (struct GT_polyline *)NULL;
+				"create_GT_polyline_streamline_FE_element.  Invalid argument(s)");
+			polyline=(struct GT_polyline *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"create_GT_polyline_streamline_FE_element.  Invalid argument(s)");
 		polyline=(struct GT_polyline *)NULL;
 	}
 	LEAVE;
@@ -1484,365 +1490,372 @@ in that region.
 		stream_unit_vector = {1.0, 0.0, 0.0},stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
-	if (element&&FE_element_is_top_level(element, NULL)&&
-		(0 < (element_dimension = get_FE_element_dimension(element))) &&
-		((3 == element_dimension) || (2 == element_dimension))
-		&&start_xi&&coordinate_field&&
-		(0 < (number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))) &&
-		stream_vector_field&&(number_of_stream_vector_components=
-		Computed_field_get_number_of_components(stream_vector_field))
-		&& (((3 == number_of_coordinate_components) &&
-		((3==number_of_stream_vector_components)||
-		(6==number_of_stream_vector_components)||
-		(9==number_of_stream_vector_components)))
-		|| ((2 == number_of_coordinate_components) &&
-		(2==number_of_stream_vector_components)))&&
-		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
+	if (stream_vector_field)
 	{
-		if (type == STREAM_EXTRUDED_CIRCLE)
+		if (element&&FE_element_is_top_level(element, NULL)&&
+			(0 < (element_dimension = get_FE_element_dimension(element))) &&
+			((3 == element_dimension) || (2 == element_dimension))
+			&&start_xi&&coordinate_field&&
+			(0 < (number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))) &&
+			(number_of_stream_vector_components=
+				Computed_field_get_number_of_components(stream_vector_field))
+				&& (((3 == number_of_coordinate_components) &&
+					((3==number_of_stream_vector_components)||
+						(6==number_of_stream_vector_components)||
+						(9==number_of_stream_vector_components)))
+						|| ((2 == number_of_coordinate_components) &&
+							(2==number_of_stream_vector_components)))&&
+							(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 		{
-			thickness = width;
-		}
-		else
-		{
-			thickness = 0.2 * width;
-		}
-		/* track points and normals on streamline, and data if requested */
-		if (track_streamline_from_FE_element(&element,start_xi,
-			coordinate_field,stream_vector_field,reverse_track,length,
-			data_type,data_field,&number_of_stream_points,&stream_points,
-				&stream_vectors,&stream_normals,&stream_data,time,fe_region))
-		{
-			if (0<number_of_stream_points)
+			if (type == STREAM_EXTRUDED_CIRCLE)
 			{
-				switch (type)
+				thickness = width;
+			}
+			else
+			{
+				thickness = 0.2 * width;
+			}
+			/* track points and normals on streamline, and data if requested */
+			if (track_streamline_from_FE_element(&element,start_xi,
+				coordinate_field,stream_vector_field,reverse_track,length,
+				data_type,data_field,&number_of_stream_points,&stream_points,
+				&stream_vectors,&stream_normals,&stream_data,time,fe_region))
+			{
+				if (0<number_of_stream_points)
 				{
-					case STREAM_EXTRUDED_RECTANGLE:
+					switch (type)
 					{
-						surface_points_per_step = 8;
-					} break;
-					case STREAM_EXTRUDED_ELLIPSE:
-					case STREAM_EXTRUDED_CIRCLE:
-					{
-						surface_points_per_step = 20;
-					} break;
-					case STREAM_RIBBON:
-					default:
-					{
-						surface_points_per_step = 2;
-					} break;
-				}
-				/* now create a surface from the points */
-				points=(Triple *)NULL;
-				data=(GTDATA *)NULL;
-				if (STREAM_NO_DATA != data_type)
-				{
-					gt_data_type=g_SCALAR;
-					ALLOCATE(data,GTDATA,surface_points_per_step*number_of_stream_points);
-				}
-				else
-				{
-					gt_data_type=g_NO_DATA;
-				}
-				if (ALLOCATE(points,Triple,surface_points_per_step*number_of_stream_points)&&
-					ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
-					&&((g_NO_DATA==gt_data_type)||data))
-				{
-					if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
-						g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
-						points, normalpoints, /*tangentpoints*/(Triple *)NULL,
-						/*texturepoints*/(Triple *)NULL,gt_data_type,data)))
-					{
-						point = points;
-						normal = normalpoints;
-						datum = data;
-						/* now fill in the points and data from the streamline */
-						for (i=0;i<number_of_stream_points;i++)
+						case STREAM_EXTRUDED_RECTANGLE:
 						{
-							stream_point[0]=stream_points[i][0];
-							stream_point[1]=stream_points[i][1];
-							stream_point[2]=stream_points[i][2];
-							stream_vector[0]=stream_vectors[i][0];
-							stream_vector[1]=stream_vectors[i][1];
-							stream_vector[2]=stream_vectors[i][2];
-							stream_normal[0]=stream_normals[i][0];
-							stream_normal[1]=stream_normals[i][1];
-							stream_normal[2]=stream_normals[i][2];
-							if (stream_data)
+							surface_points_per_step = 8;
+						} break;
+						case STREAM_EXTRUDED_ELLIPSE:
+						case STREAM_EXTRUDED_CIRCLE:
+						{
+							surface_points_per_step = 20;
+						} break;
+						case STREAM_RIBBON:
+						default:
+						{
+							surface_points_per_step = 2;
+						} break;
+					}
+					/* now create a surface from the points */
+					points=(Triple *)NULL;
+					data=(GTDATA *)NULL;
+					if (STREAM_NO_DATA != data_type)
+					{
+						gt_data_type=g_SCALAR;
+						ALLOCATE(data,GTDATA,surface_points_per_step*number_of_stream_points);
+					}
+					else
+					{
+						gt_data_type=g_NO_DATA;
+					}
+					if (ALLOCATE(points,Triple,surface_points_per_step*number_of_stream_points)&&
+						ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
+						&&((g_NO_DATA==gt_data_type)||data))
+					{
+						if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+							g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
+							points, normalpoints, /*tangentpoints*/(Triple *)NULL,
+							/*texturepoints*/(Triple *)NULL,gt_data_type,data)))
+						{
+							point = points;
+							normal = normalpoints;
+							datum = data;
+							/* now fill in the points and data from the streamline */
+							for (i=0;i<number_of_stream_points;i++)
 							{
-								stream_datum=stream_data[i];
-							}
-							if (0.0 < (magnitude = sqrt(stream_vector[0]*stream_vector[0]+
-								stream_vector[1]*stream_vector[1]+
-								stream_vector[2]*stream_vector[2])))
-							{
-								stream_unit_vector[0] = stream_vector[0] / magnitude;
-								stream_unit_vector[1] = stream_vector[1] / magnitude;
-								stream_unit_vector[2] = stream_vector[2] / magnitude;
-							}
-							/* get stream_cross = stream_normal (x) stream_unit_vector */
-							stream_cross[0]=stream_normal[1]*stream_unit_vector[2]-
-								stream_normal[2]*stream_unit_vector[1];
-							stream_cross[1]=stream_normal[2]*stream_unit_vector[0]-
-								stream_normal[0]*stream_unit_vector[2];
-							stream_cross[2]=stream_normal[0]*stream_unit_vector[1]-
-								stream_normal[1]*stream_unit_vector[0];
-							cross_width[0] = stream_cross[0] * 0.5 * width;
-							cross_width[1] = stream_cross[1] * 0.5 * width;
-							cross_width[2] = stream_cross[2] * 0.5 * width;
-							cross_thickness[0] = stream_normal[0] * 0.5 * thickness;
-							cross_thickness[1] = stream_normal[1] * 0.5 * thickness;
-							cross_thickness[2] = stream_normal[2] * 0.5 * thickness;
-							switch (type)
-							{
-								case STREAM_RIBBON:
-								default:
+								stream_point[0]=stream_points[i][0];
+								stream_point[1]=stream_points[i][1];
+								stream_point[2]=stream_points[i][2];
+								stream_vector[0]=stream_vectors[i][0];
+								stream_vector[1]=stream_vectors[i][1];
+								stream_vector[2]=stream_vectors[i][2];
+								stream_normal[0]=stream_normals[i][0];
+								stream_normal[1]=stream_normals[i][1];
+								stream_normal[2]=stream_normals[i][2];
+								if (stream_data)
 								{
-									(*point)[0] = stream_point[0] + cross_width[0];
-									(*point)[1] = stream_point[1] + cross_width[1];
-									(*point)[2] = stream_point[2] + cross_width[2];
-									point++;
-									(*normal)[0] = stream_normal[0];
-									(*normal)[1] = stream_normal[1];
-									(*normal)[2] = stream_normal[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									(*point)[0] = stream_point[0] - cross_width[0];
-									(*point)[1] = stream_point[1] - cross_width[1];
-									(*point)[2] = stream_point[2] - cross_width[2];
-									point++;
-									(*normal)[0] = stream_normal[0];
-									(*normal)[1] = stream_normal[1];
-									(*normal)[2] = stream_normal[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-								} break;
-								case STREAM_EXTRUDED_ELLIPSE:
-								case STREAM_EXTRUDED_CIRCLE:
+									stream_datum=stream_data[i];
+								}
+								if (0.0 < (magnitude = sqrt(stream_vector[0]*stream_vector[0]+
+									stream_vector[1]*stream_vector[1]+
+									stream_vector[2]*stream_vector[2])))
 								{
-									for (d = 0 ; d < surface_points_per_step ; d++)
+									stream_unit_vector[0] = stream_vector[0] / magnitude;
+									stream_unit_vector[1] = stream_vector[1] / magnitude;
+									stream_unit_vector[2] = stream_vector[2] / magnitude;
+								}
+								/* get stream_cross = stream_normal (x) stream_unit_vector */
+								stream_cross[0]=stream_normal[1]*stream_unit_vector[2]-
+									stream_normal[2]*stream_unit_vector[1];
+								stream_cross[1]=stream_normal[2]*stream_unit_vector[0]-
+									stream_normal[0]*stream_unit_vector[2];
+								stream_cross[2]=stream_normal[0]*stream_unit_vector[1]-
+									stream_normal[1]*stream_unit_vector[0];
+								cross_width[0] = stream_cross[0] * 0.5 * width;
+								cross_width[1] = stream_cross[1] * 0.5 * width;
+								cross_width[2] = stream_cross[2] * 0.5 * width;
+								cross_thickness[0] = stream_normal[0] * 0.5 * thickness;
+								cross_thickness[1] = stream_normal[1] * 0.5 * thickness;
+								cross_thickness[2] = stream_normal[2] * 0.5 * thickness;
+								switch (type)
+								{
+									case STREAM_RIBBON:
+									default:
 									{
-										sinw = sin( 2 * PI * (double)d /
-											(double)(surface_points_per_step - 1));
-										cosw = cos( 2 * PI * (double)d /
-											(double)(surface_points_per_step - 1));
-										(*point)[0] = stream_point[0] + sinw * cross_width[0]
-											+ cosw * cross_thickness[0];
-										(*point)[1] = stream_point[1] + sinw * cross_width[1]
-											+ cosw * cross_thickness[1];
-										(*point)[2] = stream_point[2] + sinw * cross_width[2]
-											+ cosw * cross_thickness[2];
+										(*point)[0] = stream_point[0] + cross_width[0];
+										(*point)[1] = stream_point[1] + cross_width[1];
+										(*point)[2] = stream_point[2] + cross_width[2];
 										point++;
-										(*normal)[0] = -sinw * stream_cross[0] * 0.5 * thickness -
-											cosw * stream_normal[0] * 0.5 * width;
-										(*normal)[1] = -sinw * stream_cross[1] * 0.5 * thickness -
-											cosw * stream_normal[1] * 0.5 * thickness;
-										(*normal)[2] = -sinw * stream_cross[2] * 0.5 * thickness -
-											cosw * stream_normal[2] * 0.5 * thickness;
-										magnitude = sqrt((*normal)[0] * (*normal)[0]
-											+ (*normal)[1] * (*normal)[1]
-											+ (*normal)[2] * (*normal)[2]);
-										if (0.0<magnitude)
-										{
-											(*normal)[0] /= magnitude;
-											(*normal)[1] /= magnitude;
-											(*normal)[2] /= magnitude;
-										}
+										(*normal)[0] = stream_normal[0];
+										(*normal)[1] = stream_normal[1];
+										(*normal)[2] = stream_normal[2];
 										normal++;
 										if (datum)
 										{
 											*datum = stream_datum;
 											datum++;
 										}
-									}
-								} break;
-								case STREAM_EXTRUDED_RECTANGLE:
-								{
-									(*point)[0] = stream_point[0] + cross_width[0]
-										+ cross_thickness[0];
-									(*point)[1] = stream_point[1] + cross_width[1]
-										+ cross_thickness[1];
-									(*point)[2] = stream_point[2] + cross_width[2]
-										+ cross_thickness[2];
-									point++;
-									(*normal)[0] = stream_normal[0];
-									(*normal)[1] = stream_normal[1];
-									(*normal)[2] = stream_normal[2];
-									normal++;
-									if (datum)
+										(*point)[0] = stream_point[0] - cross_width[0];
+										(*point)[1] = stream_point[1] - cross_width[1];
+										(*point)[2] = stream_point[2] - cross_width[2];
+										point++;
+										(*normal)[0] = stream_normal[0];
+										(*normal)[1] = stream_normal[1];
+										(*normal)[2] = stream_normal[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+									} break;
+									case STREAM_EXTRUDED_ELLIPSE:
+									case STREAM_EXTRUDED_CIRCLE:
 									{
-										*datum = stream_datum;
-										datum++;
-									}
-									(*point)[0] = stream_point[0] - cross_width[0]
-										+ cross_thickness[0];
-									(*point)[1] = stream_point[1] - cross_width[1]
-										+ cross_thickness[1];
-									(*point)[2] = stream_point[2] - cross_width[2]
-										+ cross_thickness[2];
-									point++;
-									(*normal)[0] = stream_normal[0];
-									(*normal)[1] = stream_normal[1];
-									(*normal)[2] = stream_normal[2];
-									normal++;
-									if (datum)
+										for (d = 0 ; d < surface_points_per_step ; d++)
+										{
+											sinw = sin( 2 * PI * (double)d /
+												(double)(surface_points_per_step - 1));
+											cosw = cos( 2 * PI * (double)d /
+												(double)(surface_points_per_step - 1));
+											(*point)[0] = stream_point[0] + sinw * cross_width[0]
+											                                                   + cosw * cross_thickness[0];
+											(*point)[1] = stream_point[1] + sinw * cross_width[1]
+											                                                   + cosw * cross_thickness[1];
+											(*point)[2] = stream_point[2] + sinw * cross_width[2]
+											                                                   + cosw * cross_thickness[2];
+											point++;
+											(*normal)[0] = -sinw * stream_cross[0] * 0.5 * thickness -
+												cosw * stream_normal[0] * 0.5 * width;
+											(*normal)[1] = -sinw * stream_cross[1] * 0.5 * thickness -
+												cosw * stream_normal[1] * 0.5 * thickness;
+											(*normal)[2] = -sinw * stream_cross[2] * 0.5 * thickness -
+												cosw * stream_normal[2] * 0.5 * thickness;
+											magnitude = sqrt((*normal)[0] * (*normal)[0]
+											                                          + (*normal)[1] * (*normal)[1]
+											                                                                     + (*normal)[2] * (*normal)[2]);
+											if (0.0<magnitude)
+											{
+												(*normal)[0] /= magnitude;
+												(*normal)[1] /= magnitude;
+												(*normal)[2] /= magnitude;
+											}
+											normal++;
+											if (datum)
+											{
+												*datum = stream_datum;
+												datum++;
+											}
+										}
+									} break;
+									case STREAM_EXTRUDED_RECTANGLE:
 									{
-										*datum = stream_datum;
-										datum++;
-									}
-									
-									(*point)[0] = stream_point[0] - cross_width[0]
-										+ cross_thickness[0];
-									(*point)[1] = stream_point[1] - cross_width[1]
-										+ cross_thickness[1];
-									(*point)[2] = stream_point[2] - cross_width[2]
-										+ cross_thickness[2];
-									point++;
-									(*normal)[0] = -stream_cross[0];
-									(*normal)[1] = -stream_cross[1];
-									(*normal)[2] = -stream_cross[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									(*point)[0] = stream_point[0] - cross_width[0]
-										- cross_thickness[0];
-									(*point)[1] = stream_point[1] - cross_width[1]
-										- cross_thickness[1];
-									(*point)[2] = stream_point[2] - cross_width[2]
-										- cross_thickness[2];
-									point++;
-									(*normal)[0] = -stream_cross[0];
-									(*normal)[1] = -stream_cross[1];
-									(*normal)[2] = -stream_cross[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									
-									(*point)[0] = stream_point[0] - cross_width[0]
-										- cross_thickness[0];
-									(*point)[1] = stream_point[1] - cross_width[1]
-										- cross_thickness[1];
-									(*point)[2] = stream_point[2] - cross_width[2]
-										- cross_thickness[2];
-									point++;
-									(*normal)[0] = -stream_normal[0];
-									(*normal)[1] = -stream_normal[1];
-									(*normal)[2] = -stream_normal[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									(*point)[0] = stream_point[0] + cross_width[0]
-										- cross_thickness[0];
-									(*point)[1] = stream_point[1] + cross_width[1]
-										- cross_thickness[1];
-									(*point)[2] = stream_point[2] + cross_width[2]
-										- cross_thickness[2];
-									point++;
-									(*normal)[0] = -stream_normal[0];
-									(*normal)[1] = -stream_normal[1];
-									(*normal)[2] = -stream_normal[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									
-									(*point)[0] = stream_point[0] + cross_width[0]
-										- cross_thickness[0];
-									(*point)[1] = stream_point[1] + cross_width[1]
-										- cross_thickness[1];
-									(*point)[2] = stream_point[2] + cross_width[2]
-										- cross_thickness[2];
-									point++;
-									(*normal)[0] = stream_cross[0];
-									(*normal)[1] = stream_cross[1];
-									(*normal)[2] = stream_cross[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-									(*point)[0] = stream_point[0] + cross_width[0]
-										+ cross_thickness[0];
-									(*point)[1] = stream_point[1] + cross_width[1]
-										+ cross_thickness[1];
-									(*point)[2] = stream_point[2] + cross_width[2]
-										+ cross_thickness[2];
-									point++;
-									(*normal)[0] = stream_cross[0];
-									(*normal)[1] = stream_cross[1];
-									(*normal)[2] = stream_cross[2];
-									normal++;
-									if (datum)
-									{
-										*datum = stream_datum;
-										datum++;
-									}
-								} break;
+										(*point)[0] = stream_point[0] + cross_width[0]
+										                                            + cross_thickness[0];
+										(*point)[1] = stream_point[1] + cross_width[1]
+										                                            + cross_thickness[1];
+										(*point)[2] = stream_point[2] + cross_width[2]
+										                                            + cross_thickness[2];
+										point++;
+										(*normal)[0] = stream_normal[0];
+										(*normal)[1] = stream_normal[1];
+										(*normal)[2] = stream_normal[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+										(*point)[0] = stream_point[0] - cross_width[0]
+										                                            + cross_thickness[0];
+										(*point)[1] = stream_point[1] - cross_width[1]
+										                                            + cross_thickness[1];
+										(*point)[2] = stream_point[2] - cross_width[2]
+										                                            + cross_thickness[2];
+										point++;
+										(*normal)[0] = stream_normal[0];
+										(*normal)[1] = stream_normal[1];
+										(*normal)[2] = stream_normal[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+
+										(*point)[0] = stream_point[0] - cross_width[0]
+										                                            + cross_thickness[0];
+										(*point)[1] = stream_point[1] - cross_width[1]
+										                                            + cross_thickness[1];
+										(*point)[2] = stream_point[2] - cross_width[2]
+										                                            + cross_thickness[2];
+										point++;
+										(*normal)[0] = -stream_cross[0];
+										(*normal)[1] = -stream_cross[1];
+										(*normal)[2] = -stream_cross[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+										(*point)[0] = stream_point[0] - cross_width[0]
+										                                            - cross_thickness[0];
+										(*point)[1] = stream_point[1] - cross_width[1]
+										                                            - cross_thickness[1];
+										(*point)[2] = stream_point[2] - cross_width[2]
+										                                            - cross_thickness[2];
+										point++;
+										(*normal)[0] = -stream_cross[0];
+										(*normal)[1] = -stream_cross[1];
+										(*normal)[2] = -stream_cross[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+
+										(*point)[0] = stream_point[0] - cross_width[0]
+										                                            - cross_thickness[0];
+										(*point)[1] = stream_point[1] - cross_width[1]
+										                                            - cross_thickness[1];
+										(*point)[2] = stream_point[2] - cross_width[2]
+										                                            - cross_thickness[2];
+										point++;
+										(*normal)[0] = -stream_normal[0];
+										(*normal)[1] = -stream_normal[1];
+										(*normal)[2] = -stream_normal[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+										(*point)[0] = stream_point[0] + cross_width[0]
+										                                            - cross_thickness[0];
+										(*point)[1] = stream_point[1] + cross_width[1]
+										                                            - cross_thickness[1];
+										(*point)[2] = stream_point[2] + cross_width[2]
+										                                            - cross_thickness[2];
+										point++;
+										(*normal)[0] = -stream_normal[0];
+										(*normal)[1] = -stream_normal[1];
+										(*normal)[2] = -stream_normal[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+
+										(*point)[0] = stream_point[0] + cross_width[0]
+										                                            - cross_thickness[0];
+										(*point)[1] = stream_point[1] + cross_width[1]
+										                                            - cross_thickness[1];
+										(*point)[2] = stream_point[2] + cross_width[2]
+										                                            - cross_thickness[2];
+										point++;
+										(*normal)[0] = stream_cross[0];
+										(*normal)[1] = stream_cross[1];
+										(*normal)[2] = stream_cross[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+										(*point)[0] = stream_point[0] + cross_width[0]
+										                                            + cross_thickness[0];
+										(*point)[1] = stream_point[1] + cross_width[1]
+										                                            + cross_thickness[1];
+										(*point)[2] = stream_point[2] + cross_width[2]
+										                                            + cross_thickness[2];
+										point++;
+										(*normal)[0] = stream_cross[0];
+										(*normal)[1] = stream_cross[1];
+										(*normal)[2] = stream_cross[2];
+										normal++;
+										if (datum)
+										{
+											*datum = stream_datum;
+											datum++;
+										}
+									} break;
+								}
 							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"create_GT_surface_streamribbon_FE_element. "
+								"Could not create surface");
+							DEALLOCATE(data);
+							DEALLOCATE(points);
+							DEALLOCATE(normalpoints);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"create_GT_surface_streamribbon_FE_element. "
-							"Could not create surface");
+							"Could not allocate memory for points");
 						DEALLOCATE(data);
-						DEALLOCATE(points);
-						DEALLOCATE(normalpoints);
+						surface=(struct GT_surface *)NULL;
 					}
+					/* no longer need original streamline */
+					DEALLOCATE(stream_points);
+					DEALLOCATE(stream_vectors);
+					DEALLOCATE(stream_normals);
+					DEALLOCATE(stream_data);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"create_GT_surface_streamribbon_FE_element. "
-						"Could not allocate memory for points");
-					DEALLOCATE(data);
+					/* no error: streamline empty */
 					surface=(struct GT_surface *)NULL;
 				}
-				/* no longer need original streamline */
-				DEALLOCATE(stream_points);
-				DEALLOCATE(stream_vectors);
-				DEALLOCATE(stream_normals);
-				DEALLOCATE(stream_data);
 			}
 			else
 			{
-				/* no error: streamline empty */
+				display_message(ERROR_MESSAGE,
+					"create_GT_surface_streamline_FE_element.  "
+					"failed to track streamline");
 				surface=(struct GT_surface *)NULL;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_GT_surface_streamline_FE_element.  "
-				"failed to track streamline");
+				"create_GT_surface_streamline_FE_element.  Invalid argument(s)");
 			surface=(struct GT_surface *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"create_GT_surface_streamline_FE_element.  Invalid argument(s)");
 		surface=(struct GT_surface *)NULL;
 	}
 	LEAVE;

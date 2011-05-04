@@ -1209,6 +1209,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 			graphic_to_object_data.wrapper_orientation_scale_field
 				= (struct Computed_field *) NULL;
+			graphic_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
 			graphic_to_object_data.region = rendition->region;
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
