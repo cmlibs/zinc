@@ -41,6 +41,23 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
+/*******************************************************************************
+ * Automatic scalar broadcast
+ *
+ * For field constructors (Cmiss_field_module_create~ functions) which specify
+ * the they apply automatic scalar broadcast for their source fields arguments,
+ * if the one of the source fields has multiple components and the
+ * other is a scalar, then the scalar will be automatically replicated so that
+ * it matches the number of components in the multiple component field.
+ * For example the result of
+ * ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14].
+ */
+
+/*
+Global types
+------------
+*/
+
 #ifndef CMISS_FIELD_ID_DEFINED
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;

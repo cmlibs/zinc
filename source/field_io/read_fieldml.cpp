@@ -103,6 +103,8 @@ const BasisType libraryBases[] =
 {
 	{ 2, "library.fem.bilinear_lagrange",     "library.parameters.bilinear_lagrange.variable",     "library.local_nodes.square.2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_TYPE_INVALID } },
 	{ 2, "library.fem.biquadratic_lagrange",  "library.parameters.biquadratic_lagrange.variable",  "library.local_nodes.square.3x3", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	// simplex not supported in FieldML 0.3: testing only.
+	{ 2, "library.fem.bilinear_simplex",      "library.parameters.bilinear_simplex.variable",    "library.local_nodes.triangle.2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX,     CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX,     CMISS_BASIS_FUNCTION_TYPE_INVALID } },
 	{ 3, "library.fem.trilinear_lagrange",    "library.parameters.trilinear_lagrange.variable",    "library.local_nodes.cube.2x2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
 	{ 3, "library.fem.triquadratic_lagrange", "library.parameters.triquadratic_lagrange.variable", "library.local_nodes.cube.3x3x3", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
 };
@@ -177,7 +179,7 @@ public:
 		nameBufferLength(50),
 		nameBuffer(new char[nameBufferLength])
 	{
-		Fieldml_SetDebug(fmlHandle, /*debug*/0);
+		Fieldml_SetDebug(fmlHandle, /*debug*/verbose);
 	}
 	
 	~FieldMLReader()
@@ -313,6 +315,12 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&ensemble));
 			break;
 		}
+#if 0 // GRC debug
+		if (verbose)
+		{
+			display_message(INFORMATION_MESSAGE, "Reading member identifier %d\n", identifier);
+		}
+#endif
 		Cmiss_ensemble_iterator_destroy(&iterator);
 	}
 	if (ensemble)
@@ -401,7 +409,8 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 		int result = Fieldml_ReadIndexSet(fmlHandle, fmlReader, indexBuffer);
 		if (result != FML_ERR_NO_ERROR)
 		{
-			if (result != FML_ERR_IO_NO_DATA)
+			if ((result != FML_ERR_IO_NO_DATA) &&
+				(result != FML_ERR_IO_UNEXPECTED_EOF)) // Temporary workaround
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Error %d when reading sparse indexes for parameters %s", result, name);
 				return_code = 0;
@@ -410,7 +419,10 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 		}
 		for (int i = 0; i < sparseIndexCount; i++)
 		{
-			// GRC should make convenience function for these three calls
+#if 0 // GRC debug
+			display_message(INFORMATION_MESSAGE, "Index %d = ", indexBuffer[0]);
+#endif
+			// should make convenience function for these three calls
 			Cmiss_ensemble_iterator_id entry =
 				Cmiss_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], indexBuffer[i]);
 			Cmiss_ensemble_index_set_entry(index, entry);
@@ -429,6 +441,9 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 				return_code = 0;
 				break;
 			}
+#if 0 // GRC debug
+			display_message(INFORMATION_MESSAGE, "%d [%d]\n", valuesRead, integerValueBuffer[0]);
+#endif
 			moreDenseData = false;
 			for (int i = firstDenseIteratorIndex; i < denseIndexCount; i++)
 			{
@@ -641,7 +656,7 @@ int FieldMLReader::readMeshes()
 
 		if (verbose)
 		{
-			display_message(INFORMATION_MESSAGE, "Reading mesh %s dimension %d\n", name.c_str(), meshDimension);
+			display_message(INFORMATION_MESSAGE, "Reading mesh '%s' dimension %d\n", name.c_str(), meshDimension);
 		}
 
 		// define elements and shapes
@@ -654,7 +669,7 @@ int FieldMLReader::readMeshes()
 		}
 		Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 
-		Cmiss_fe_mesh_id mesh = Cmiss_region_get_fe_mesh_by_name(region,
+		Cmiss_fe_mesh_id mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
 			(meshDimension == 3 ? "cmiss_mesh_3d" :
 				(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
 		Cmiss_element_template_id element_template = Cmiss_fe_mesh_create_element_template(mesh);
@@ -675,7 +690,10 @@ int FieldMLReader::readMeshes()
 			while (true)
 			{
 				int length = Fieldml_CopyMeshElementShape(fmlHandle, fmlMeshType, elementNumber, /*allowDefault*/1, shapeName, shapeNameLength);
-				if (length < shapeNameLength)
+#if 0 // GRC debug
+				display_message(INFORMATION_MESSAGE, "Element %d shape '%s'\n", elementNumber, shapeName);
+#endif
+				if (length < (shapeNameLength - 1))
 					break;
 				shapeNameLength *= 2;
 				delete[] shapeName;
@@ -937,7 +955,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			fieldName.c_str(), componentCount);
 	}
 
-	Cmiss_field_id field = Cmiss_field_module_create_finite_element(field_module, fieldName.c_str(), componentCount);
+	Cmiss_field_id field = Cmiss_field_module_create_finite_element(field_module, componentCount);
+	Cmiss_field_set_name(field, fieldName.c_str());
 	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
 	{
@@ -949,7 +968,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// create nodes and set node parameters
 
-	Cmiss_nodeset_id nodes = Cmiss_region_get_nodeset_by_name(region, "cmiss_nodes");
+	Cmiss_nodeset_id nodes = Cmiss_field_module_get_nodeset_by_name(field_module, "cmiss_nodes");
 	Cmiss_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
@@ -1033,7 +1052,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// define element fields
 
-	Cmiss_fe_mesh_id mesh = Cmiss_region_get_fe_mesh_by_name(region,
+	Cmiss_fe_mesh_id mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
 		(meshDimension == 3 ? "cmiss_mesh_3d" :
 			(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
 	Cmiss_element_template_id element_template = 0;

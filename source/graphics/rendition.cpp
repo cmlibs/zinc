@@ -45,6 +45,7 @@ extern "C" {
 #include <math.h>
 #include "api/cmiss_core.h"
 #include "api/cmiss_graphics_module.h"
+#include "api/cmiss_node.h"
 #include "api/cmiss_rendition.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -1211,6 +1212,7 @@ static int Cmiss_rendition_build_graphics_objects(
 				= (struct Computed_field *) NULL;
 			graphic_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
 			graphic_to_object_data.region = rendition->region;
+			graphic_to_object_data.field_module = Cmiss_region_get_field_module(rendition->region);
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
 			graphic_to_object_data.scene = scene;
@@ -1230,6 +1232,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			{
 				Cmiss_field_destroy(&graphic_to_object_data.group_field);
 			}
+			Cmiss_field_module_destroy(&graphic_to_object_data.field_module);
 		}
 	}
 	else
@@ -3777,16 +3780,14 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 	if (rendition && node_list && (NUMBER_IN_LIST(FE_node)(node_list) > 0))
 	{
 		Cmiss_region_begin_change(rendition->region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_group_id sub_group =
 			Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group)
 		{
 			Cmiss_field_node_group_id node_group = NULL;
-			Cmiss_nodeset_id nodeset = NULL;
-			if (!use_data)
-				nodeset = Cmiss_region_get_nodeset_by_name(rendition->region, "cmiss_nodes");
-			else
-				nodeset = Cmiss_region_get_nodeset_by_name(rendition->region, "cmiss_data");
+			Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+				field_module, use_data ? "cmiss_data" : "cmiss_nodes");
 			if (nodeset)
 			{
 				node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
@@ -3814,6 +3815,7 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 			}
 			Cmiss_field_group_destroy(&sub_group);
 		}
+		Cmiss_field_module_destroy(&field_module);
 		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;
@@ -3908,12 +3910,13 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 	if (rendition && element_list && (NUMBER_IN_LIST(FE_element)(element_list) > 0))
 	{
 		Cmiss_region_begin_change(rendition->region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_group_id sub_group =
 			Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group)
 		{
 			Cmiss_fe_mesh_id temp_mesh =
-				Cmiss_region_get_fe_mesh_by_name(rendition->region,
+				Cmiss_field_module_get_fe_mesh_by_name(field_module,
 					((1 == dimension) ? "cmiss_mesh_1d" :
 					((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
@@ -3938,6 +3941,7 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 			}
 			Cmiss_field_group_destroy(&sub_group);
 		}
+		Cmiss_field_module_destroy(&field_module);
 		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;

@@ -88,16 +88,18 @@ Cmiss_scene_viewer_win32_set_window_size
 
 Cmiss_field_access
 Cmiss_field_destroy
-Cmiss_field_get_field_module
-Cmiss_field_get_number_of_components
-Cmiss_field_evaluate_at_node
-Cmiss_field_evaluate_as_string_at_node
-Cmiss_field_is_defined_at_node
-Cmiss_field_evaluate_at_field_coordinates
 Cmiss_field_get_attribute_integer
 Cmiss_field_set_attribute_integer
 Cmiss_field_get_name
 Cmiss_field_set_name
+Cmiss_field_get_number_of_components
+Cmiss_field_get_field_module
+Cmiss_field_evaluate_at_node
+Cmiss_field_evaluate_as_string_at_node
+Cmiss_field_evaluate_at_field_coordinates
+Cmiss_field_is_defined_at_node
+Cmiss_field_set_values_at_node
+Cmiss_field_set_string_at_node
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy
@@ -130,8 +132,8 @@ Cmiss_field_module_create_if
 /* api/cmiss_field_finite_element.h */
 Cmiss_field_module_create_finite_element
 Cmiss_field_cast_finite_element
+/* inline Cmiss_field_finite_element_base_cast */
 Cmiss_field_finite_element_destroy
-Cmiss_field_finite_element_set_string_at_node
 
 /* api/cmiss_field_group.h */
 Cmiss_field_module_create_group
@@ -292,7 +294,7 @@ Cmiss_time_sequence_destroy
 Cmiss_time_sequence_set_value
 
 /* api/cmiss_node.h */
-Cmiss_region_get_nodeset_by_name
+Cmiss_field_module_get_nodeset_by_name
 Cmiss_nodeset_access
 Cmiss_nodeset_destroy
 Cmiss_nodeset_contains_node
@@ -317,7 +319,7 @@ Cmiss_node_get_identifier
 Cmiss_node_merge
 
 /* api/cmiss_element.h */
-Cmiss_region_get_fe_mesh_by_name
+Cmiss_field_module_get_fe_mesh_by_name
 Cmiss_fe_mesh_access
 Cmiss_fe_mesh_destroy
 Cmiss_fe_mesh_contains_element
@@ -350,7 +352,6 @@ Cmiss_element_access
 Cmiss_element_destroy
 Cmiss_element_get_dimension
 Cmiss_element_get_identifier
-Cmiss_element_get_region
 Cmiss_element_get_shape_type
 Cmiss_element_merge
 

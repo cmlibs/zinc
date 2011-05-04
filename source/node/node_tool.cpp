@@ -309,17 +309,15 @@ static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use
 	{
 		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
 		Cmiss_region_id region = Computed_field_get_region(field);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 		FE_region *fe_region = Cmiss_region_get_FE_region(region);
 		if (use_data)
 			fe_region = FE_region_get_data_FE_region(fe_region);
 		if (group && fe_region)
 		{
 			Cmiss_field_node_group_id node_group = NULL;
-			Cmiss_nodeset_id nodeset = NULL;
-			if (!use_data)
-				nodeset = Cmiss_region_get_nodeset_by_name(region, "cmiss_nodes");
-			else
-				nodeset = Cmiss_region_get_nodeset_by_name(region, "cmiss_data");
+			Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+				field_module, use_data ? "cmiss_data" : "cmiss_nodes");
 			if (nodeset)
 			{
 				node_group = Cmiss_field_group_get_node_group(group, nodeset);
@@ -331,12 +329,11 @@ static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use
 				if (iterator)
 				{
 					FE_region_begin_change(fe_region);
-					Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
-					while (node)
+					Cmiss_node_id node = 0;
+					while (0 != (node = Cmiss_node_iterator_next(iterator)))
 					{
 						FE_region_remove_FE_node(fe_region, node);
 						Cmiss_node_destroy(&node);
-						node = Cmiss_node_iterator_next(iterator);
 					}
 					FE_region_end_change(fe_region);
 					Cmiss_node_iterator_destroy(&iterator);
@@ -345,6 +342,7 @@ static int Node_tool_remove_region_selected_object(Cmiss_field_id field, int use
 			}
 			Cmiss_field_destroy(&field);
 		}
+		Cmiss_field_module_destroy(&field_module);
 		return_code = 1;
 	}
 
@@ -1971,14 +1969,12 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 		if (node_tool->rendition)
 		{
 			sub_region = Cmiss_rendition_get_region(node_tool->rendition);
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
 			sub_group = Cmiss_rendition_get_or_create_selection_group(node_tool->rendition);
 			if (sub_group)
 			{
-				Cmiss_nodeset_id nodeset = NULL;
-				if (!node_tool->use_data)
-					nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_nodes");
-				else
-					nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_data");
+				Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+					field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
 				if (nodeset)
 				{
 					node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
@@ -1989,6 +1985,7 @@ int Node_tool_set_picked_node(struct Node_tool *node_tool, struct FE_node *picke
 					Cmiss_nodeset_destroy(&nodeset);
 				}
 			}
+			Cmiss_field_module_destroy(&field_module);
 		}
 
 		if (sub_region && sub_group && node_group)
@@ -2106,11 +2103,9 @@ release.
 								{
 									Cmiss_field_node_group_id node_group = NULL;
 									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
-									Cmiss_nodeset_id nodeset = NULL;
-									if (!node_tool->use_data)
-										nodeset = Cmiss_region_get_nodeset_by_name(temp_region, "cmiss_nodes");
-									else
-										nodeset = Cmiss_region_get_nodeset_by_name(temp_region, "cmiss_data");
+									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
+									Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+										field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
 									if (nodeset)
 									{
 										node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);
@@ -2123,6 +2118,7 @@ release.
 										Cmiss_field_node_group_destroy(&node_group);
 									}
 									Cmiss_field_group_destroy(&selection_group);
+									Cmiss_field_module_destroy(&field_module);
 								}
 								REACCESS(Scene_picked_object)(
 									&(node_tool->scene_picked_object),scene_picked_object);
@@ -2366,13 +2362,12 @@ release.
 									Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(node_tool->rendition);
 									if (node_tool->rendition && selection_group)
 									{
-										Cmiss_field_node_group_id node_group = NULL;
-										Cmiss_nodeset_id nodeset = NULL;
-										if (!node_tool->use_data)
-											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_nodes");
-										else
-											nodeset = Cmiss_region_get_nodeset_by_name(Cmiss_rendition_get_region(node_tool->rendition), "cmiss_data");
 										Cmiss_region_id temp_region = Cmiss_rendition_get_region(node_tool->rendition);
+										Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
+										Cmiss_field_node_group_id node_group = NULL;
+										Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+											field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
+										Cmiss_field_module_destroy(&field_module);
 										edit_info.fe_region=Cmiss_region_get_FE_region(temp_region);
 										if (nodeset)
 										{
@@ -2544,11 +2539,9 @@ release.
 													}
 													if (sub_group)
 													{
-														Cmiss_nodeset_id nodeset = NULL;
-														if (!node_tool->use_data)
-															nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_nodes");
-														else
-															nodeset = Cmiss_region_get_nodeset_by_name(sub_region, "cmiss_data");
+														Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
+														Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+															field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
 														if (nodeset)
 														{
 															node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
@@ -2558,6 +2551,7 @@ release.
 															}
 															Cmiss_nodeset_destroy(&nodeset);
 														}
+														Cmiss_field_module_destroy(&field_module);
 													}
 												}
 												if (sub_region && sub_group && node_group)
@@ -3540,12 +3534,11 @@ static void Node_tool_Computed_field_change(
 			if (selection_group && changed_field_list && Computed_field_or_ancestor_satisfies_condition(
 				Cmiss_field_group_base_cast(selection_group), Computed_field_is_in_list, (void *)changed_field_list))
 			{
+				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_tool->region);
 				Cmiss_field_node_group_id node_group = NULL;
-				Cmiss_nodeset_id nodeset = NULL;
-				if (!node_tool->use_data)
-					nodeset = Cmiss_region_get_nodeset_by_name(node_tool->region, "cmiss_nodes");
-				else
-					nodeset = Cmiss_region_get_nodeset_by_name(node_tool->region, "cmiss_data");
+				Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+					field_module, node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
+				Cmiss_field_module_destroy(&field_module);
 				if (nodeset)
 				{
 					node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);

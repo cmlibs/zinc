@@ -538,12 +538,14 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 				Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 				if (sub_group)
 				{
-					Cmiss_fe_mesh_id temp_mesh = Cmiss_region_get_fe_mesh_by_name(region,
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+					Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
 						((1 == dimension) ? "cmiss_mesh_1d" :
 							((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 					element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 					Cmiss_fe_mesh_destroy(&temp_mesh);
 					Cmiss_field_group_destroy(&sub_group);
+					Cmiss_field_module_destroy(&field_module);
 				}
 			}
 			if ((!group_field) || (element_group))

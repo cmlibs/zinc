@@ -54,9 +54,8 @@ Global types
 ------------
 */
 
-struct Cmiss_region;
-
 #ifndef CMISS_REGION_ID_DEFINED
+	struct Cmiss_region;
    typedef struct Cmiss_region * Cmiss_region_id;
    #define CMISS_REGION_ID_DEFINED
 #endif /* CMISS_REGION_ID_DEFINED */

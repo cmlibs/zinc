@@ -60,20 +60,25 @@ Global types
 	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
 #endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
 
-#ifndef CMISS_REGION_ID_DEFINED
-	struct Cmiss_region;
-	/** Handle to a region object */
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
 /** Handle to a nodeset, the container for nodes in a region. */
-struct Cmiss_nodeset;
-typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
+#ifndef CMISS_NODESET_ID_DEFINED
+	struct Cmiss_nodeset;
+	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
+	#define CMISS_NODESET_ID_DEFINED
+#endif /* CMISS_NODESET_ID_DEFINED */
 
 /** Handle to a template for creating or defining fields at a node. */
-struct Cmiss_node_template;
-typedef struct Cmiss_node_template *Cmiss_node_template_id;
+#ifndef CMISS_NODE_TEMPLATE_ID_DEFINED
+	struct Cmiss_node_template;
+	typedef struct Cmiss_node_template *Cmiss_node_template_id;
+	#define CMISS_NODE_TEMPLATE_ID_DEFINED
+#endif /* CMISS_NODE_TEMPLATE_ID_DEFINED */
 
 #ifndef CMISS_NODE_ID_DEFINED
 	struct Cmiss_node;
@@ -116,20 +121,20 @@ Global functions
 */
 
 /***************************************************************************//**
- * Get a handle to a nodeset from its name in the region. A nodeset is the
- * container of nodes - i.e. Cmiss_node objects - in the region.
+ * Get a handle to a nodeset from its name in the field module. A nodeset is the
+ * container of nodes - i.e. Cmiss_node objects.
  * Valid names are currently limited to:
  * "cmiss_nodes" = the primary set of nodes for a region, able to be indexed by
  * Cmiss_elements for storing or mapping to finite element field parameters.
  * "cmiss_data" = an additional set of nodes generally used to represent data
  * points, not for finite element field parameters.
  *
- * @param region  The region the nodeset belongs to.
+ * @param field_module  The field module the nodeset belongs to.
  * @param name  The name of the nodeset: "cmiss_nodes" or "cmiss_data".
  * @return  Handle to the nodeset, or NULL if error.
  */
-Cmiss_nodeset_id Cmiss_region_get_nodeset_by_name(Cmiss_region_id region,
-	const char *nodeset_name);
+Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
+	Cmiss_field_module_id field_module, const char *nodeset_name);
 
 /*******************************************************************************
  * Returns a new handle to the nodeset with reference count incremented.

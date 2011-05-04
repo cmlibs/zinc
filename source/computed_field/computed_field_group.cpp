@@ -197,11 +197,11 @@ class Computed_field_group : public Computed_field_group_base
 {
 private:
 	Cmiss_field_hierarchical_group_change_detail change_detail;
-
-public:
 	Cmiss_region *region;
 	int contains_all;
-	Computed_field *local_node_group, *local_data_group, *local_element_group[3];
+	Computed_field *local_node_group, *local_data_group, *local_element_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+
+public:
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
 	Region_field_map subregion_group_map;
 	Region_field_map_iterator child_group_pos;
@@ -215,9 +215,8 @@ public:
 		, subregion_group_map()
 	{		//ACCESS(Cmiss_region)(region);
 		child_group_pos = subregion_group_map.begin();
-		local_element_group[0] = NULL;
-		local_element_group[1] = NULL;
-		local_element_group[2] = NULL;
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+			local_element_group[i] = NULL;
 	}
 
 	~Computed_field_group()
@@ -330,6 +329,13 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	Cmiss_field_element_group_id get_element_group_private(int dimension)
+	{
+		if ((dimension > 0) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+			return Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
+		return 0;
+	}
 
 	int getSubgroupLocal();
 
@@ -454,38 +460,15 @@ int Computed_field_group::evaluate_cache_at_location(
  				reinterpret_cast<Field_element_xi_location *>(location);
  			Cmiss_element_id element = element_xi_location->get_element();
  			int dimension = Cmiss_element_get_dimension(element);
- 			Cmiss_region_id element_region = Cmiss_element_get_region(element);
- 			Cmiss_field_id temporary_handle = NULL;
- 			if (element_region != region)
+ 			Cmiss_field_element_group_id element_group = get_element_group_private(dimension);
+ 			if (element_group)
  			{
- 				Region_field_map_iterator pos = subregion_group_map.find(element_region);
- 				if (pos == subregion_group_map.end())
- 				{
- 					field->values[0] = 0;
- 				}
- 				else
- 				{
- 					Cmiss_field_group *temporary_group_field_handle = pos->second;
- 					Computed_field_group *group_core = static_cast<Computed_field_group*>(
- 						reinterpret_cast<Computed_field*>(temporary_group_field_handle)->core);
- 					if (group_core)
- 					{
- 						temporary_handle = group_core->local_element_group[dimension - 1];
- 					}
- 					Cmiss_field_group_destroy(&temporary_group_field_handle);
- 				}
+ 				field->values[0] = Cmiss_field_element_group_contains_element(element_group, element);
+				Cmiss_field_element_group_destroy(&element_group);
  			}
  			else
  			{
- 				temporary_handle = local_element_group[dimension - 1];
- 			}
- 			if (temporary_handle)
- 			{
- 				Cmiss_field_element_group_id element_group_id =
- 					Cmiss_field_cast_element_group(temporary_handle);
- 				field->values[0] = Cmiss_field_element_group_contains_element(
- 					element_group_id, element);
- 				Cmiss_field_destroy(&temporary_handle);
+ 				field->values[0] = 0;
  			}
  		}
 		else
@@ -539,12 +522,11 @@ int Computed_field_group::isEmptyLocal() const
 		return 0;
 	if (local_data_group && !isSubGroupEmpty(local_data_group->core))
 		return 0;
-	if (local_element_group[0] && !isSubGroupEmpty(local_element_group[0]->core))
-		return 0;
-	if (local_element_group[1] && !isSubGroupEmpty(local_element_group[1]->core))
-		return 0;
-	if (local_element_group[2] && !isSubGroupEmpty(local_element_group[2]->core))
-		return 0;
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+	{
+		if (local_element_group[i] && !isSubGroupEmpty(local_element_group[i]->core))
+			return 0;
+	}
 	std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 	while (it != domain_selection_group.end())
 	{
@@ -588,7 +570,7 @@ int Computed_field_group::clearLocal()
 		return_code = group_base->clear();
 		Cmiss_field_destroy(&local_data_group);
 	}
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
 		if (local_element_group[i])
 		{
@@ -651,7 +633,7 @@ int Computed_field_group::check_dependency()
 			check_subobject_group_dependency(local_node_group->core);
 		if (local_data_group)
 			check_subobject_group_dependency(local_data_group->core);
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 		{
 			if (local_element_group[i])
 			{
@@ -1284,7 +1266,7 @@ int Computed_field_group::clear_region_tree_element()
 {
 	Region_field_map_iterator pos;
 	int return_code = 1;
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
 		if (local_element_group[i])
 		{

@@ -41,26 +41,16 @@
 #ifndef __CMISS_ELEMENT_H__
 #define __CMISS_ELEMENT_H__
 
-#include "api/cmiss_node.h"
-
 /*
 Global types
 ------------
 */
 
-#ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-	/** Handle to a finite_element type Cmiss_field */
-	struct Cmiss_field_finite_element;
-	typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
-	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-#endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
-
-#ifndef CMISS_REGION_ID_DEFINED
-	struct Cmiss_region;
-	/** Handle to a region object */
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
 #ifndef CMISS_FIELD_ID_DEFINED
 	/* Handle to a generic Cmiss_field */
@@ -69,13 +59,33 @@ Global types
 	#define CMISS_FIELD_ID_DEFINED
 #endif /* CMISS_FIELD_ID_DEFINED */
 
+#ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
+	/** Handle to a finite_element type Cmiss_field */
+	struct Cmiss_field_finite_element;
+	typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
+	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
+#endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
+
+#ifndef CMISS_NODE_ID_DEFINED
+	struct Cmiss_node;
+	/** Handle to a single node object */
+	typedef struct Cmiss_node *Cmiss_node_id;
+	#define CMISS_NODE_ID_DEFINED
+#endif /* CMISS_NODE_ID_DEFINED */
+
 /** Handle to a finite element mesh. */
-struct Cmiss_fe_mesh;
-typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
+#ifndef CMISS_FE_MESH_ID_DEFINED
+	struct Cmiss_fe_mesh;
+	typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
+	#define CMISS_FE_MESH_ID_DEFINED
+#endif /* CMISS_FE_MESH_ID_DEFINED */
 
 /** Handle to a template for creating or defining fields over an element. */
-struct Cmiss_element_template;
-typedef struct Cmiss_element_template *Cmiss_element_template_id;
+#ifndef CMISS_ELEMENT_TEMPLATE_ID_DEFINED
+	struct Cmiss_element_template;
+	typedef struct Cmiss_element_template *Cmiss_element_template_id;
+	#define CMISS_ELEMENT_TEMPLATE_ID_DEFINED
+#endif /* CMISS_ELEMENT_TEMPLATE_ID_DEFINED */
 
 #ifndef CMISS_ELEMENT_ID_DEFINED
 	struct Cmiss_element;
@@ -140,13 +150,13 @@ Global functions
  * "cmiss_mesh_2d" = 2-D elements including faces of 3-D elements.
  * "cmiss_mesh_1d" = 1-D elements including faces (lines) of 2-D elements.
  *
- * @param region  The region the mesh belongs to.
+ * @param field_module  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh, currently "cmiss_mesh_3d",
  * "cmiss_mesh_2d" or "cmiss_mesh_1d".
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_fe_mesh_id Cmiss_region_get_fe_mesh_by_name(Cmiss_region_id region,
-	const char *mesh_name);
+Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
+	Cmiss_field_module_id field_module, const char *mesh_name);
 
 /*******************************************************************************
  * Returns a new handle to the fe_mesh with reference count incremented.
@@ -507,14 +517,6 @@ int Cmiss_element_get_dimension(Cmiss_element_id element);
  * @return  The integer identifier of the element.
  */
 int Cmiss_element_get_identifier(Cmiss_element_id element);
-
-/***************************************************************************//**
- * Returns the region the element belongs to.
- *
- * @param element  The element to query.
- * @return  Handle to the owning region.
- */
-Cmiss_region_id Cmiss_element_get_region(Cmiss_element_id element);
 
 /***************************************************************************//**
  * Gets the shape type of the element. Note that legacy meshes may return an

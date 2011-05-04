@@ -45,7 +45,14 @@
 #define CMISS_FIELD_SUBOBJECT_GROUP_H
 
 #include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
+#include "api/cmiss_element.h"
+#include "api/cmiss_node.h"
+
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
 #ifndef CMISS_FIELD_NODE_GROUP_ID_DEFINED
 	struct Cmiss_field_node_group;

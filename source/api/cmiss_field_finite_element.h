@@ -54,22 +54,19 @@
 #endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
 
 /***************************************************************************//**
- * Creates or finds existing real-valued finite_element field which can be
- * interpolated over a finite element mesh with parameters indexed by nodes.
+ * Creates a real-valued finite_element field which can be interpolated over a
+ * finite element mesh with parameters indexed by nodes.
  *
  * @param field_module  Region field module which will own new field.
- * @param name  The name for the field. Must be unique in the field module or
- * identify an existing finite_element field with identical definition.
  * @param number_of_components  The number of components for the new field.
  * @return  Handle to the found or newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_finite_element(
-	Cmiss_field_module_id field_module, const char *name,
-	int number_of_components);
+	Cmiss_field_module_id field_module, int number_of_components);
 
 /*****************************************************************************//**
- * If the field is of type finite_element then this function returns the
- * finite_element specific representation, otherwise returns NULL.
+ * If the field is real-valued interpolated finite element then this function
+ * returns the finite_element specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The field to be cast.
@@ -78,20 +75,28 @@ Cmiss_field_id Cmiss_field_module_create_finite_element(
  */
 Cmiss_field_finite_element_id Cmiss_field_cast_finite_element(Cmiss_field_id field);
 
+/***************************************************************************//**
+ * Cast finite element field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param finite_element_field  Handle to the finite element field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_finite_element_base_cast(
+	Cmiss_field_finite_element_id finite_element_field)
+{
+	return (Cmiss_field_id)(finite_element_field);
+}
+
 /*******************************************************************************
  * Destroys this reference to the finite_element field (and sets it to NULL).
  * Internally this just decrements the reference count.
  */
 int Cmiss_field_finite_element_destroy(
 	Cmiss_field_finite_element_id *finite_element_field_address);
-
-/***************************************************************************//**
- * Allows the setting of a string if that is the type of field represented.
- * @param component_number  Component number starting at 1.
- * @param time  The time value to store the string at. Currently unused.
- */
-int Cmiss_field_finite_element_set_string_at_node(
-	Cmiss_field_finite_element_id finite_element_field, int component_number,
-	Cmiss_node_id node, double time, const char *string);
 
 #endif /* !defined (CMISS_FIELD_FINITE_ELEMENT_H) */

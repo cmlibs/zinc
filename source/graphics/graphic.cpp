@@ -848,7 +848,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	struct FE_element *top_level_element,*use_element;
 	struct FE_field *native_discretization_field;
 	struct Cmiss_graphic *graphic;
-	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data;
 	struct GT_glyph_set *glyph_set;
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
@@ -857,10 +856,10 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
-	if (element && (graphic_to_object_data =
-		(struct Cmiss_graphic_to_graphics_object_data *)
-			graphic_to_object_data_void) &&
-		(graphic = graphic_to_object_data->graphic) &&
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
+		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
+	if (element && graphic_to_object_data &&
+		(NULL != (graphic = graphic_to_object_data->graphic)) &&
 		graphic->graphics_object)
 	{
 		element_dimension = get_FE_element_dimension(element);
@@ -882,7 +881,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					if (group_id)
 					{
 						Cmiss_fe_mesh_id temp_mesh =
-						   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region,
+						   Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module,
 						   	((1 == element_dimension) ? "cmiss_mesh_1d" :
 						   		((2 == element_dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group_id, temp_mesh);
@@ -1316,7 +1315,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
 									Cmiss_fe_mesh_id temp_mesh =
-									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region,
+									   Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module,
 									   	((1 == element_dimension) ? "cmiss_mesh_1d" :
 									   		((2 == element_dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
@@ -1500,16 +1499,14 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 	int element_dimension, number_of_components, return_code = 1;
 	struct FE_element *element;
 	struct Cmiss_graphic *graphic;
-	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data;
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
 
 	ENTER(node_to_streamline);
-
-	if (node&&(graphic_to_object_data =
-		(struct Cmiss_graphic_to_graphics_object_data *)
-		graphic_to_object_data_void) &&
-		(graphic = graphic_to_object_data->graphic) &&
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
+		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
+	if (node && graphic_to_object_data &&
+		(NULL != (graphic = graphic_to_object_data->graphic)) &&
 		graphic->graphics_object)
 	{
 		element_dimension = 3;
@@ -3269,14 +3266,13 @@ int Cmiss_graphic_to_graphics_object(
 	int return_code;
 	struct Coordinate_system *coordinate_system;
 	struct FE_region *fe_region;
-	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data;
 	struct GT_glyph_set *glyph_set = NULL;
 	struct Cmiss_graphic_select_graphics_data select_data;
 
 	ENTER(Cmiss_graphic_to_graphics_object);
-	if (graphic && (graphic_to_object_data =
-		(struct Cmiss_graphic_to_graphics_object_data *)
-			graphic_to_object_data_void) &&
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
+		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
+	if (graphic && graphic_to_object_data &&
 		(((CMISS_GRAPHIC_DATA_POINTS == graphic->graphic_type) &&
 			(fe_region = graphic_to_object_data->data_fe_region)) ||
 			(fe_region = graphic_to_object_data->fe_region)))
@@ -3821,16 +3817,16 @@ int Cmiss_graphic_to_graphics_object(
 						{
 							case CMISS_GRAPHIC_DATA_POINTS:
 							{
-								Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(
-									graphic_to_object_data->region, "cmiss_data");
+								Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+									graphic_to_object_data->field_module, "cmiss_data");
 								GT_object_set_node_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, nodeset);
 								Cmiss_nodeset_destroy(&nodeset);
 							} break;
 							case CMISS_GRAPHIC_NODE_POINTS:
 							{
-								Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(
-									graphic_to_object_data->region, "cmiss_nodes");
+								Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+									graphic_to_object_data->field_module, "cmiss_nodes");
 								GT_object_set_node_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, nodeset);
 								Cmiss_nodeset_destroy(&nodeset);
@@ -3839,7 +3835,7 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_LINES:
 							{
 								Cmiss_fe_mesh_id temp_mesh =
-									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_1d");
+									Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module, "cmiss_mesh_1d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -3872,8 +3868,8 @@ int Cmiss_graphic_to_graphics_object(
 							}
 #else
 							{
-								Cmiss_fe_mesh_id temp_mesh =
-									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_2d");
+								Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(
+									graphic_to_object_data->field_module, "cmiss_mesh_2d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -3881,8 +3877,8 @@ int Cmiss_graphic_to_graphics_object(
 #endif /* defined(USE_OPENCASCADE) */
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
-								Cmiss_fe_mesh_id temp_mesh =
-									Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
+								Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(
+									graphic_to_object_data->field_module, "cmiss_mesh_3d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);
@@ -3895,8 +3891,8 @@ int Cmiss_graphic_to_graphics_object(
 								if (graphic_to_object_data->group_field)
 								{
 									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
-									Cmiss_fe_mesh_id temp_mesh =
-									   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
+									Cmiss_fe_mesh_id temp_mesh = Cmiss_field_module_get_fe_mesh_by_name(
+										graphic_to_object_data->field_module, "cmiss_mesh_3d");
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									Cmiss_fe_mesh_destroy(&temp_mesh);
 									if (element_group)
@@ -3925,7 +3921,7 @@ int Cmiss_graphic_to_graphics_object(
 									(void *)&select_data,
 									graphic_to_object_data->selected_element_point_ranges_list);
 								Cmiss_fe_mesh_id temp_mesh =
-								   Cmiss_region_get_fe_mesh_by_name(graphic_to_object_data->region, "cmiss_mesh_3d");
+								   Cmiss_field_module_get_fe_mesh_by_name(graphic_to_object_data->field_module, "cmiss_mesh_3d");
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
 								Cmiss_fe_mesh_destroy(&temp_mesh);

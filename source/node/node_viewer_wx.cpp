@@ -713,7 +713,10 @@ static void Node_viewer_Computed_field_change(
 				Cmiss_field_group_base_cast(selection_group), Computed_field_is_in_list, (void *)changed_field_list))
 			{
 				Cmiss_field_node_group_id node_group = NULL;
-				Cmiss_nodeset_id nodeset = Cmiss_region_get_nodeset_by_name(node_viewer->region, "cmiss_nodes");
+				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_viewer->region);
+				Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+					field_module, node_viewer->use_data ? "cmiss_data" : "cmiss_nodes");
+				Cmiss_field_module_destroy(&field_module);
 				if (nodeset)
 				{
 					node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);

@@ -51,6 +51,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include <vector>
+#include "computed_field/computed_field_private.hpp"
 
 /*
 Global types
@@ -386,12 +387,13 @@ Global functions
 ----------------
 */
 
-Cmiss_nodeset_id Cmiss_region_get_nodeset_by_name(Cmiss_region_id region,
-	const char *nodeset_name)
+Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
+	Cmiss_field_module_id field_module, const char *nodeset_name)
 {
 	FE_region *fe_region = NULL;
-	if (region && nodeset_name)
+	if (field_module && nodeset_name)
 	{
+		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);
 		fe_region = Cmiss_region_get_FE_region(region);
 		if (0 == strcmp(nodeset_name, "cmiss_nodes"))
 		{
@@ -404,9 +406,10 @@ Cmiss_nodeset_id Cmiss_region_get_nodeset_by_name(Cmiss_region_id region,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_region_get_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
+				"Cmiss_field_module_get_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
 			fe_region = NULL;
 		}
+		Cmiss_region_destroy(&region);
 	}
 	return reinterpret_cast<Cmiss_nodeset_id>(fe_region);
 }

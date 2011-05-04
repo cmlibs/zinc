@@ -1272,55 +1272,42 @@ static struct Computed_field *Computed_field_create_finite_element_internal(
 }
 
 Cmiss_field_id Cmiss_field_module_create_finite_element(
-	Cmiss_field_module_id field_module, const char *name,
-	int number_of_components)
+	Cmiss_field_module_id field_module, int number_of_components)
 {
 	Computed_field *field = NULL;
-	if (field_module && name && (0 < number_of_components))
+	if (field_module && (0 < number_of_components))
 	{
-		field = Cmiss_field_module_find_field_by_name(field_module, name);
-		if (field)
+		Cmiss_region *region = Cmiss_field_module_get_region(field_module);
+		// cache changes to ensure FE_field not automatically wrapped already
+		Cmiss_region_begin_change(region);
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		// ensure FE_field and Computed_field have same name
+		char *field_name = Cmiss_field_module_get_field_name(field_module);
+		bool no_default_name = (0 == field_name);
+		if (no_default_name)
 		{
-			Computed_field_finite_element* core =
-				dynamic_cast<Computed_field_finite_element*>(field->core);
-			if ((!core)
-				|| (get_FE_field_number_of_components(core->fe_field) != number_of_components)
-				|| (get_FE_field_FE_field_type(core->fe_field) != GENERAL_FE_FIELD)
-				|| (get_FE_field_value_type(core->fe_field) != FE_VALUE_VALUE))
-			{
-				display_message(ERROR_MESSAGE, "Cmiss_field_module_create_finite_element.  "
-					"Name '%s' already used by field of different type or definition", name);
-				Cmiss_field_destroy(&field);
-			}
+			field_name = Cmiss_field_module_get_unique_field_name(field_module);
+			Cmiss_field_module_set_field_name(field_module, field_name);
 		}
-		else
+		FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
+			fe_region, field_name, FE_VALUE_VALUE, number_of_components);
+		if (fe_field)
 		{
-			Cmiss_region *region = Cmiss_field_module_get_region(field_module);
-			// cache changes to ensure FE_field not automatically wrapped already
-			Cmiss_region_begin_change(region);
-			FE_region *fe_region = Cmiss_region_get_FE_region(region);
-			FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-				fe_region, name, FE_VALUE_VALUE, number_of_components);
-			if (fe_field)
-			{
-				Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
-				set_FE_field_coordinate_system(fe_field, &coordinate_system);
-				char *old_default_name = Cmiss_field_module_get_field_name(field_module);
-				Cmiss_field_module_set_field_name(field_module, name);
-				field = Computed_field_create_generic(field_module,
-					/*check_source_field_regions*/false, number_of_components,
-					/*number_of_source_fields*/0, NULL,
-					/*number_of_source_values*/0, NULL,
-					new Computed_field_finite_element(fe_field));
-				Cmiss_field_module_set_field_name(field_module, old_default_name);
-				if (old_default_name)
-				{
-					DEALLOCATE(old_default_name);
-				}
-			}
-			Cmiss_region_end_change(region);
-			Cmiss_region_destroy(&region);
+			Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
+			set_FE_field_coordinate_system(fe_field, &coordinate_system);
+			field = Computed_field_create_generic(field_module,
+				/*check_source_field_regions*/false, number_of_components,
+				/*number_of_source_fields*/0, NULL,
+				/*number_of_source_values*/0, NULL,
+				new Computed_field_finite_element(fe_field));
 		}
+		DEALLOCATE(field_name);
+		if (no_default_name)
+		{
+			Cmiss_field_module_set_field_name(field_module, /*field_name*/0);
+		}
+		Cmiss_region_end_change(region);
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{
@@ -1332,15 +1319,19 @@ Cmiss_field_id Cmiss_field_module_create_finite_element(
 
 Cmiss_field_finite_element_id Cmiss_field_cast_finite_element(Cmiss_field_id field)
 {
-	if (field && (dynamic_cast<Computed_field_finite_element*>(field->core)))
+	if (field)
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_finite_element_id>(field));
+		Computed_field_finite_element* core =
+			dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core &&
+			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(get_FE_field_value_type(core->fe_field) == FE_VALUE_VALUE))
+		{
+			Cmiss_field_access(field);
+			return (reinterpret_cast<Cmiss_field_finite_element_id>(field));
+		}
 	}
-	else
-	{
-		return (NULL);
-	}
+	return 0;
 }
 
 int Cmiss_field_finite_element_destroy(
@@ -1349,43 +1340,26 @@ int Cmiss_field_finite_element_destroy(
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(finite_element_field_address));
 }
 
-int Cmiss_field_finite_element_set_string_at_node(
-	Cmiss_field_finite_element *finite_element_field, int component_number,
-	struct FE_node *node, double time, const char *string)
+/* here because only finite element type support at present */
+int Cmiss_field_set_string_at_node(Cmiss_field_id field, Cmiss_node_id node,
+	const char *string)
 {
-	int return_code;
-
-	ENTER(Cmiss_field_finite_element_set_string_at_node);
-	USE_PARAMETER(time);
-	return_code = 0;
-	if (finite_element_field && node && string)
+	int return_code = 0;
+	ENTER(Cmiss_field_set_string_at_node);
+	if (field && node && string)
 	{
 		Computed_field_finite_element* core =
-			Computed_field_finite_element_core_cast(finite_element_field);
-		if (STRING_VALUE == get_FE_field_value_type(core->fe_field))
+			dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core &&
+			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(get_FE_field_value_type(core->fe_field) == STRING_VALUE))
 		{
 			return_code = set_FE_nodal_string_value(node,
-				core->fe_field, component_number - 1, /*version*/0,
+				core->fe_field, /*component_number*/0, /*version*/0,
 				FE_NODAL_VALUE, const_cast<char *>(string));
 		}
-		else
-		{
-			Computed_field *field = Computed_field_cast(finite_element_field);
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_finite_element_set_string_at_node.  "
-				"Field %s does not store string values.", field->name);
-			return_code =0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_finite_element_set_string_at_node.  "
-			"Invalid argument(s).");
-		return_code =0;
 	}
 	LEAVE;
-
 	return (return_code);
 }
 

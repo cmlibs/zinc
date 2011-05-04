@@ -129,6 +129,7 @@ struct Cmiss_graphic_to_graphics_object_data
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field,
 		*group_field;
 	struct Cmiss_region *region;
+	Cmiss_field_module_id field_module;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region;
 	FE_value time;

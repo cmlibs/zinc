@@ -45,10 +45,6 @@ The public interface to the Cmiss fields.
 #ifndef __CMISS_FIELD_H__
 #define __CMISS_FIELD_H__
 
-#include "api/cmiss_node.h"
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_module.h"
-
 #ifndef CMISS_C_INLINE_DEFINED
 #if defined (_MSC_VER)
 	#define CMISS_C_INLINE __inline
@@ -58,22 +54,30 @@ The public interface to the Cmiss fields.
 #define CMISS_C_INLINE_DEFINED
 #endif
 
-/*******************************************************************************
- Automatic scalar broadcast
-
-For Field_constructor_create functions which specify that they apply
-automatic scalar broadcast for their source fields arguments,
-if the one of the source fields has multiple components and the
-other is a scalar, then the scalar will be automatically replicated so that
-it matches the number of components in the multiple component field.
-For example the result of
-ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14].
-==============================================================================*/
-
 /*
 Global types
 ------------
 */
+
+#ifndef CMISS_FIELD_MODULE_ID_DEFINED
+	struct Cmiss_field_module;
+	typedef struct Cmiss_field_module *Cmiss_field_module_id;
+	#define CMISS_FIELD_MODULE_ID_DEFINED
+#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
+
+#ifndef CMISS_NODE_ID_DEFINED
+	struct Cmiss_node;
+	/** Handle to a single node object */
+	typedef struct Cmiss_node *Cmiss_node_id;
+	#define CMISS_NODE_ID_DEFINED
+#endif /* CMISS_NODE_ID_DEFINED */
+
+#ifndef CMISS_ELEMENT_ID_DEFINED
+	struct Cmiss_element;
+	/** Handle to a single finite element object from a mesh */
+	typedef struct Cmiss_element *Cmiss_element_id;
+	#define CMISS_ELEMENT_ID_DEFINED
+#endif /* CMISS_ELEMENT_ID_DEFINED */
 
 #ifndef CMISS_FIELD_ID_DEFINED
 	struct Cmiss_field;
@@ -104,7 +108,10 @@ enum Cmiss_field_attribute_id
 	 */
 };
 
-/* Global Functions */
+/*
+Global functions
+----------------
+*/
 
 int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 /*******************************************************************************
@@ -128,6 +135,68 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
  */
 int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
+/***************************************************************************//**
+ * Get an integer or Boolean attribute of the field.
+ *
+ * @param field  The field to query.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the field.
+ *
+ * @param field  The field to set the attribute for.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true in case more options are added in future.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * for this field.
+ */
+int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
+	enum Cmiss_field_attribute_id attribute_id, int value);
+
+/***************************************************************************//**
+ * Return the name of the field.
+ *
+ * @param field  The field whose name is requested.
+ * @return  On success: allocated string containing field name.
+ */
+char *Cmiss_field_get_name(Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Set the name of the field.
+ * Fails if the new name is in use by any other field in the same field module.
+ *
+ * @param field  The field to be named.
+ * @param name  The new name for the field.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
+
+/***************************************************************************//**
+ * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_field_get_attribute_integer
+ *
+ * @param field  The field to query.
+ * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
+ */
+#define Cmiss_field_get_persistent(field) \
+	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED)
+
+/***************************************************************************//**
+ * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
+ * @see Cmiss_field_set_attribute_integer
+ *
+ * @param field  The field to modify.
+ * @param value  Non-zero for managed, 0 for not managed.
+ * @return  1 on success, 0 on failure.
+ */
+#define Cmiss_field_set_persistent(field, value) \
+	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, value)
+
 /*******************************************************************************
  * Returns a reference to the field module which owns this field.
  * 
@@ -147,24 +216,6 @@ Returns the <values> of <field> at <node> and <time> if it is defined there.
 The <values> array must be large enough to store as many floats as there are
 number_of_components, the function checks that <number_of_values> is
 greater than or equal to the number of components.
-==============================================================================*/
-
-int Cmiss_field_set_values_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, double time, int number_of_values, double *values);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>. Only certain computed field
-types allow their values to be set. Fields that deal directly with FE_fields eg.
-FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the same
-function for it. If a field has more than one source field, eg. RC_VECTOR, it
-can in many cases still choose which one is actually being changed, for example,
-the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
-is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
 int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
@@ -211,16 +262,6 @@ Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
-int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node);
-/*******************************************************************************
-LAST MODIFIED : 17 January 2007
-
-DESCRIPTION :
-Returns true if <field> can be calculated at <node>. If the field depends on
-any other fields, this function is recursively called for them.
-==============================================================================*/
-
 int Cmiss_field_evaluate_at_field_coordinates(
 	Cmiss_field_id field,
 	Cmiss_field_id reference_field, int number_of_input_values,
@@ -236,66 +277,38 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
-/***************************************************************************//**
- * Get an integer or Boolean attribute of the field.
- *
- * @param field  The field to query.
- * @param attribute_id  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
- */
-int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id);
+int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
+	struct Cmiss_node *node);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2007
+
+DESCRIPTION :
+Returns true if <field> can be calculated at <node>. If the field depends on
+any other fields, this function is recursively called for them.
+==============================================================================*/
+
+int Cmiss_field_set_values_at_node(Cmiss_field_id field,
+	struct Cmiss_node *node, double time, int number_of_values, double *values);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2005
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>. Only certain computed field
+types allow their values to be set. Fields that deal directly with FE_fields eg.
+FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the same
+function for it. If a field has more than one source field, eg. RC_VECTOR, it
+can in many cases still choose which one is actually being changed, for example,
+the 'vector' field in this case - coordinates should not change. This process
+continues until the actual FE_field values at the node are changed or a field
+is reached for which its calculation is not reversible, or is not supported yet.
+==============================================================================*/
 
 /***************************************************************************//**
- * Set an integer or Boolean attribute of the field.
- *
- * @param field  The field to set the attribute for.
- * @param attribute_id  The identifier of the integer attribute to set.
- * @param value  The new value for the attribute. For Boolean values use 1 for
- * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * for this field.
+ * Allows the setting of a string if that is the type of field represented.
  */
-int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id, int value);
-
-/***************************************************************************//**
- * Return the name of the field. 
- * 
- * @param field  The field whose name is requested.
- * @return  On success: allocated string containing field name.
- */
-char *Cmiss_field_get_name(Cmiss_field_id field);
-
-/***************************************************************************//**
- * Set the name of the field.
- * Fails if the new name is in use by any other field in the same field module.
- * 
- * @param field  The field to be named.
- * @param name  The new name for the field.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
-
-/***************************************************************************//**
- * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_field_get_attribute_integer
- *
- * @param field  The field to query.
- * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- */
-#define Cmiss_field_get_persistent(field) \
-	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED)
-
-/***************************************************************************//**
- * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_field_set_attribute_integer
- * 
- * @param field  The field to modify.
- * @param value  Non-zero for managed, 0 for not managed.
- * @return  1 on success, 0 on failure.
- */
-#define Cmiss_field_set_persistent(field, value) \
-	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, value)
+int Cmiss_field_set_string_at_node(Cmiss_field_id field, Cmiss_node_id node,
+	const char *string);
 
 #endif /* __CMISS_FIELD_H__ */

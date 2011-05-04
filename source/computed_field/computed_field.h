@@ -79,6 +79,7 @@ if a value is already known.
 #endif /* __cplusplus */
 
 struct Field_location;
+struct Cmiss_region;
 
 /*
 The Cmiss_computed_field which is Public is currently the same object as the

@@ -51,6 +51,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include <vector>
+#include "computed_field/computed_field_private.hpp"
 
 namespace {
 
@@ -823,12 +824,13 @@ Global functions
 ----------------
 */
 
-Cmiss_fe_mesh_id Cmiss_region_get_fe_mesh_by_name(Cmiss_region_id region,
-	const char *mesh_name)
+Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
+	Cmiss_field_module_id field_module, const char *mesh_name)
 {
 	Cmiss_fe_mesh_id mesh = NULL;
-	if (region && mesh_name)
+	if (field_module && mesh_name)
 	{
+		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);
 		int mesh_dimension = 0;
 		if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
 			mesh_dimension = 3;
@@ -843,6 +845,7 @@ Cmiss_fe_mesh_id Cmiss_region_get_fe_mesh_by_name(Cmiss_region_id region,
 			return NULL;
 		}
 		mesh = new Cmiss_fe_mesh(region, mesh_dimension);
+		Cmiss_region_destroy(&region);
 	}
 	return (mesh);
 }
@@ -1144,18 +1147,6 @@ int Cmiss_element_get_identifier(struct Cmiss_element *element)
 		return_code = cm.number;
 	}
 	return (return_code);
-}
-
-Cmiss_region_id Cmiss_element_get_region(Cmiss_element_id element)
-{
-	Cmiss_region *cmiss_region = NULL;
-	FE_region *fe_region = FE_element_get_FE_region(element);
-	if (fe_region)
-	{
-		 FE_region_get_Cmiss_region(fe_region, &cmiss_region);
-		 Cmiss_region_access(cmiss_region);
-	}
-	return (cmiss_region);
 }
 
 enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
