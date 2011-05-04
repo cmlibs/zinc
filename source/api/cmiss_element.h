@@ -213,8 +213,9 @@ Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
  * @see Cmiss_fe_mesh_define_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
- * @param identifier  Positive integer identifier of new element, or 0 to
- * automatically generate. Fails if already used by an existing element.
+ * @param identifier  Non-negative integer identifier of new element, or
+ * negative to automatically generate, starting from 1. Fails if supplied
+ * identifier already used by an existing element.
  * @param element_template  Template for element shape and fields.
  * @return  Handle to newly created element, or NULL if error.
  */
@@ -241,10 +242,11 @@ Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
  * @see Cmiss_fe_mesh_create_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
- * @param identifier  Positive integer identifier of new element, or 0 to
- * automatically generate. Fails if already used by an existing element.
+ * @param identifier  Non-negative integer identifier of new element, or
+ * negative to automatically generate, starting from 1. Fails if supplied
+ * identifier already used by an existing element.
  * @param element_template  Template for element shape and fields.
- * @return  Identifier of new element or 0 if error.
+ * @return  Identifier of new element or -1 if error.
  */
 int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
@@ -253,7 +255,7 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
  * Return a handle to the element in the mesh with this identifier.
  *
  * @param mesh  Handle to the mesh to find the element in.
- * @param identifier  Positive integer identifier of element.
+ * @param identifier  Non-negative integer identifier of element.
  * @return  Handle to the element, or NULL if not found.
  */
 Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
@@ -511,7 +513,8 @@ int Cmiss_element_destroy(Cmiss_element_id *element_address);
 int Cmiss_element_get_dimension(Cmiss_element_id element);
 
 /***************************************************************************//**
- * Returns the positive integer uniquely identifying the element in its mesh.
+ * Returns the non-negative integer uniquely identifying the element in its
+ * mesh.
  *
  * @param element  The element to query.
  * @return  The integer identifier of the element.

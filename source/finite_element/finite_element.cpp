@@ -16655,7 +16655,7 @@ Returns the integer identifier of the <node>.
 	else
 	{
 		display_message(ERROR_MESSAGE, "get_FE_node_identifier.  Invalid node");
-		identifier = 0;
+		identifier = -1;
 	}
 	LEAVE;
 

@@ -178,8 +178,9 @@ Cmiss_node_template_id Cmiss_nodeset_create_node_template(
  * node_template. Returns handle to new element.
  *
  * @param nodeset  Handle to the nodeset to create the new node in.
- * @param identifier  Positive integer identifier of new node, or 0 to
- * automatically generate. Fails if already used by an existing node.
+ * @param identifier  Non-negative integer identifier of new node, or negative
+ * to automatically generate, starting from 1. Fails if supplied identifier
+ * already used by an existing node.
  * @param node_template  Template for defining node fields.
  * @return  Handle to newly created node, or NULL if error.
  */
@@ -202,7 +203,7 @@ Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
  * Return a handle to the node in the nodeset with this identifier.
  *
  * @param nodeset  Handle to the nodeset to find the node in.
- * @param identifier  Positive integer identifier of node.
+ * @param identifier  Non-negative integer identifier of node.
  * @return  Handle to the node, or NULL if not found.
  */
 Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
@@ -362,10 +363,11 @@ Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
 int Cmiss_node_destroy(Cmiss_node_id *node_address);
 
 /***************************************************************************//**
- * Returns the positive integer uniquely identifying the node in its nodeset.
+ * Returns the non-negative integer uniquely identifying the node in its
+ * nodeset.
  *
  * @param node  The node to query.
- * @return  The integer identifier of the node.
+ * @return  The integer identifier of the node, or -1 if node is invalid.
  */
 int Cmiss_node_get_identifier(Cmiss_node_id node);
 

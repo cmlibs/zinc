@@ -922,7 +922,7 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
 		Cmiss_element_destroy(&element);
 		return cm.number;
 	}
-	return 0;
+	return -1;
 }
 
 Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,

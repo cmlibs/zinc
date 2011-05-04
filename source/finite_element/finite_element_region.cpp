@@ -3662,7 +3662,7 @@ struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 		else if (FE_node_get_FE_region(source) == fe_region)
 		{
 			number = identifier;
-			if (identifier <= 0)
+			if (identifier < 0)
 			{
 				number = FE_region_get_next_FE_node_identifier(fe_region, 0);
 			}
@@ -4603,8 +4603,7 @@ struct FE_element *FE_region_get_FE_element_from_identifier(
 	struct FE_element *element;
 
 	ENTER(FE_region_get_FE_element_from_identifier);
-	if (fe_region && identifier &&
-		(1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier };
 		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm,
@@ -5028,7 +5027,7 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 		{
 			struct CM_element_information cm =
 				{ DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier };
-			if (cm.number <= 0)
+			if (cm.number < 0)
 			{
 				cm.number = FE_region_get_next_FE_element_identifier(
 					fe_region, dimension, 0);
