@@ -7004,7 +7004,7 @@ DESCRIPTION :
 Executes a GFX DRAW command.
 ==============================================================================*/
 {
-	const char *graphic_name, *time_object_name;
+	const char *graphic_name;
 	struct GT_object *graphics_object;
 	int return_code;
 	struct Cmiss_command_data *command_data;
@@ -7018,7 +7018,6 @@ Executes a GFX DRAW command.
 	{
 		/* initialize defaults */
 		graphics_object = (struct GT_object *)NULL;
-		time_object_name = (char *)NULL;
 		scene = ACCESS(Scene)(command_data->default_scene);
 		graphic_name = NULL;
 		option_table=CREATE(Option_table)();
@@ -7034,9 +7033,6 @@ Executes a GFX DRAW command.
 		/* scene */
 		Option_table_add_entry(option_table,"scene",&scene,
 			command_data->scene_manager,set_Scene);
-		/* time_object */
-		Option_table_add_entry(option_table,"time_object",&time_object_name,
-			(void *)1,set_name);
 		/* default when token omitted (graphics_object) */
 		Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
 			command_data->glyph_manager,set_Graphics_object);
@@ -7050,21 +7046,6 @@ Executes a GFX DRAW command.
 				{
 					return_code = Scene_add_graphics_object(scene, graphics_object,
 						graphic_name);
-					if (time_object_name)
-					{
-						/* SAB A new time_object is created and associated with the named
-							 scene_object, the time_keeper is supplied so that the
-							 default could be overridden */
-// 						Scene_set_time_behaviour(scene,scene_object_name, time_object_name,
-// 							command_data->default_time_keeper);
-					}
-					if (1<GT_object_get_number_of_times(graphics_object))
-					{
-						/* any scene_objects referring to this graphics_object which do
-							 not already have a time_object all are associated with a
-						 	 single common time_object */
-// 						Scene_update_time_behaviour(scene,graphics_object);
-					}
 				}
 			}
 			else if (region_path)
@@ -7086,10 +7067,6 @@ Executes a GFX DRAW command.
 		if (graphics_object)
 		{
 			DEACCESS(GT_object)(&graphics_object);
-		}
-		if (time_object_name)
-		{
-			DEALLOCATE(time_object_name);
 		}
 		if (graphic_name)
 		{
@@ -7864,96 +7841,6 @@ Executes a GFX ELEMENT_TOOL command.
 	return (return_code);
 } /* execute_command_gfx_element_tool */
 #endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */ 
-
-static int execute_command_gfx_erase(struct Parse_state *state,
-	void *dummy_to_be_modified, void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2001
-
-DESCRIPTION :
-Executes a GFX ERASE command.
-==============================================================================*/
-{
-	char *graphic_name;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Option_table *option_table;
-	struct Scene *scene;
-	ENTER(execute_command_gfx_erase);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		graphic_name = (char *)NULL;
-		scene = ACCESS(Scene)(command_data->default_scene);
-		option_table = CREATE(Option_table)();
-		/* scene */
-		Option_table_add_entry(option_table, "scene", &scene,
-			command_data->scene_manager, set_Scene);
-		/* default option: scene object name */
-		Option_table_add_entry(option_table, (char *)NULL, &graphic_name,
-			NULL, set_name);
-		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
-		{
-			if (scene && graphic_name)
-			{
-#if defined (USE_SCENE_OBJECT)
-				if (graphic =
-					Scene_find_static_graphic_from_root_region_by_name(scene, graphic_name))
-				{
-					if (Scene_remove_Scene_object(scene, scene_object))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						GET_NAME(Scene)(scene, &scene_name);
-						display_message(ERROR_MESSAGE, "execute_command_gfx_erase.  "
-							"Could not erase '%s' from scene '%s'",
-							scene_object_name, scene_name);
-						DEALLOCATE(scene_name);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					GET_NAME(Scene)(scene, &scene_name);
-					display_message(ERROR_MESSAGE,
-						"gfx erase:  No object named '%s' in scene '%s'",
-						scene_object_name, scene_name);
-					DEALLOCATE(scene_name);
-					return_code = 0;
-				}
-#else
-				return_code = 1;
-#endif
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx erase:  Must specify an object and a scene to erase it from");
-				return_code = 0;
-			}
-		}
-		DESTROY(Option_table)(&option_table);
-		if (scene)
-		{
-			DEACCESS(Scene)(&scene);
-		}
-		if (graphic_name)
-		{
-			DEALLOCATE(graphic_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_erase.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_gfx_erase */
 
 static int gfx_export_alias(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -17833,8 +17720,6 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-			Option_table_add_entry(option_table, "erase", NULL,
-				command_data_void, execute_command_gfx_erase);
 			Option_table_add_entry(option_table, "evaluate", NULL,
 				command_data_void, gfx_evaluate);
 			Option_table_add_entry(option_table, "export", NULL,
