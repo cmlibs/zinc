@@ -98,6 +98,31 @@ Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_modu
 int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
 
 /***************************************************************************//**
+ * Begin caching or increment cache level for this field module. Call this
+ * function before making multiple changes to fields, nodes, elements etc. from
+ * this field module to minimise number of change messages sent to clients.
+ * Must call Cmiss_field_module_end_change after making changes.
+ * Note that field module changes are always cached when the region changes are
+ * being cached.
+ *
+ * @see Cmiss_region_begin_change
+ * @param field_module  The field_module to begin change cache on.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
+
+/***************************************************************************//**
+ * Decrement cache level or end caching of changes for this field module.
+ * Call Cmiss_field_module_begin_change before making multiple changes
+ * and call this afterwards. When change level is restored to zero,
+ * cached change messages are sent out to clients.
+ *
+ * @param field_module  The field_module to end change cache on.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
+
+/***************************************************************************//**
  * Returns the field of the specified name from the field module.
  *
  * @param field_module  Region field module in which to find the field.

@@ -864,9 +864,18 @@ cache.
 struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region);
 
 /***************************************************************************//**
+ * Internal, non-accessing version of Cmiss_field_module_get_region.
+ *
+ * @param field_module  The field module to query.
+ * @return  Non-accessed handle to owning region for field_module.
+ */
+struct Cmiss_region *Cmiss_field_module_get_region_internal(
+	struct Cmiss_field_module *field_module);
+
+/***************************************************************************//**
  * Gets the region this field module can create fields for.
  *
- * @param field_module  The field module to create fields in.
+ * @param field_module  The field module to query.
  * @return  Accessed handle to owning region for field_module.
  */
 struct Cmiss_region *Cmiss_field_module_get_region(

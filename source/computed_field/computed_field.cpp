@@ -5483,6 +5483,16 @@ struct Computed_field *Cmiss_field_module_find_field_by_name(
 	return (field);
 }
 
+struct Cmiss_region *Cmiss_field_module_get_region_internal(
+	struct Cmiss_field_module *field_module)
+{
+	if (field_module)
+	{
+		return field_module->region;
+	}
+	return NULL;
+}
+
 struct Cmiss_region *Cmiss_field_module_get_region(
 	struct Cmiss_field_module *field_module)
 {

@@ -1102,6 +1102,16 @@ region path in <path_address> relative to the <root_region>.
 	return (return_code);
 } /* Option_table_add_set_Cmiss_region_path */
 
+int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module)
+{
+	return Cmiss_region_fields_begin_change(Cmiss_field_module_get_region_internal(field_module));
+}
+
+int Cmiss_field_module_end_change(Cmiss_field_module_id field_module)
+{
+	return Cmiss_region_fields_end_change(Cmiss_field_module_get_region_internal(field_module));
+}
+
 int Cmiss_region_begin_change(struct Cmiss_region *region)
 {
 	int return_code;
@@ -1110,10 +1120,7 @@ int Cmiss_region_begin_change(struct Cmiss_region *region)
 	if (region)
 	{
 		region->change_level++;
-		if (region->fields)
-		{
-			Cmiss_region_fields_begin_change(region);
-		}
+		Cmiss_region_fields_begin_change(region);
 		return_code = 1;
 	}
 	else
@@ -1136,10 +1143,7 @@ int Cmiss_region_end_change(struct Cmiss_region *region)
 	{
 		if (0 < region->change_level)
 		{
-			if (region->fields)
-			{
-				Cmiss_region_fields_end_change(region);
-			}
+			Cmiss_region_fields_end_change(region);
 			region->change_level--;
 			if (0 == region->change_level)
 			{

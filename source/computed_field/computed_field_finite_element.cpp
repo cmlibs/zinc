@@ -1277,10 +1277,9 @@ Cmiss_field_id Cmiss_field_module_create_finite_element(
 	Computed_field *field = NULL;
 	if (field_module && (0 < number_of_components))
 	{
-		Cmiss_region *region = Cmiss_field_module_get_region(field_module);
 		// cache changes to ensure FE_field not automatically wrapped already
-		Cmiss_region_begin_change(region);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		Cmiss_field_module_begin_change(field_module);
+		FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
 		// ensure FE_field and Computed_field have same name
 		char *field_name = Cmiss_field_module_get_field_name(field_module);
 		bool no_default_name = (0 == field_name);
@@ -1306,8 +1305,7 @@ Cmiss_field_id Cmiss_field_module_create_finite_element(
 		{
 			Cmiss_field_module_set_field_name(field_module, /*field_name*/0);
 		}
-		Cmiss_region_end_change(region);
-		Cmiss_region_destroy(&region);
+		Cmiss_field_module_end_change(field_module);
 	}
 	else
 	{
@@ -1611,12 +1609,12 @@ FE_field being made and/or modified.
 				value_type = Value_type_from_string(value_type_string);
 				STRING_TO_ENUMERATOR(CM_field_type)(cm_field_type_string, &cm_field_type);
 				Cmiss_field_module *field_module = field_modify->get_field_module();
-				Cmiss_region *region = Cmiss_field_module_get_region(field_module);
 				// cache changes to ensure FE_field not automatically wrapped already
-				Cmiss_region_begin_change(region);
+				Cmiss_field_module_begin_change(field_module);
 				char *field_name = Cmiss_field_module_get_field_name(field_modify->get_field_module());
 				FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-					Cmiss_region_get_FE_region(region), field_name, value_type, number_of_components);
+					Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module)),
+					field_name, value_type, number_of_components);
 				Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
 				if (fe_field &&
 					set_FE_field_CM_field_type(fe_field, cm_field_type) &&
@@ -1642,8 +1640,7 @@ FE_field being made and/or modified.
 					return_code = 0;
 				}
 				DEALLOCATE(field_name);
-				Cmiss_region_end_change(region);
-				Cmiss_region_destroy(&region);
+				Cmiss_field_module_end_change(field_module);
 			}
 			/* clean up the component_names array */
 			if (component_names)
@@ -4813,7 +4810,6 @@ struct FE_field_to_Computed_field_change_data
 	Cmiss_region *cmiss_region;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct FE_region_changes *changes;
-	struct FE_region *fe_region;
 };
 
 /***************************************************************************//**
@@ -4869,7 +4865,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 				Computed_field *field =
 					Computed_field_create_finite_element_internal(field_module, fe_field);
 				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
-				DEACCESS(Computed_field)(&field);
+				Cmiss_field_destroy(&field);
 				Cmiss_field_module_destroy(&field_module);
 			}
 		}
@@ -4897,67 +4893,59 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void)
 {
-	Cmiss_region *cmiss_region;
-	int field_change_summary;
-	int add_cmiss_number_field, add_xi_field, check_field_wrappers;
-	struct FE_field_to_Computed_field_change_data field_change_data;
-	struct MANAGER(Computed_field) *computed_field_manager;
-
 	ENTER(Cmiss_region_FE_region_change);
-	if (fe_region && changes && (cmiss_region = (Cmiss_region *)cmiss_region_void))
+	Cmiss_region *cmiss_region = reinterpret_cast<Cmiss_region *>(cmiss_region_void);
+	if (fe_region && changes && cmiss_region)
 	{
-		computed_field_manager = Cmiss_region_get_Computed_field_manager(cmiss_region);
+		int field_change_summary;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
 			&field_change_summary);
-		check_field_wrappers = 
+		int check_field_wrappers =
 			(field_change_summary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)) || 
 			(field_change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
 			(field_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field));
-		add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
-		add_xi_field = FE_region_need_add_xi_field(fe_region);
+		int add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
+		int add_xi_field = FE_region_need_add_xi_field(fe_region);
 		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
 		{
-			Cmiss_region_begin_change(cmiss_region);
-			field_change_data.cmiss_region = cmiss_region;
-			field_change_data.computed_field_manager = computed_field_manager;
-			field_change_data.changes = changes;
-			field_change_data.fe_region = fe_region;
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(cmiss_region);
+			Cmiss_field_module_begin_change(field_module);
+
 			if (check_field_wrappers)
 			{
-				FE_region_for_each_FE_field(field_change_data.fe_region,
+				struct FE_field_to_Computed_field_change_data field_change_data;
+				field_change_data.cmiss_region = cmiss_region;
+				field_change_data.computed_field_manager = Cmiss_region_get_Computed_field_manager(cmiss_region);
+				field_change_data.changes = changes;
+				FE_region_for_each_FE_field(fe_region,
 					FE_field_to_Computed_field_change, (void *)&field_change_data);
 			}
 			if (add_cmiss_number_field)
 			{
-				Computed_field *field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-					"cmiss_number", computed_field_manager);
+				const char *cmiss_number_field_name = "cmiss_number";
+				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, cmiss_number_field_name);
 				if (!field)
 				{
-					Cmiss_field_module *field_module =
-						Cmiss_field_module_create(cmiss_region);
-					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
 					field = Computed_field_create_cmiss_number(field_module);
+					Cmiss_field_set_name(field, cmiss_number_field_name);
 					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
-					DEACCESS(Computed_field)(&field);
-					Cmiss_field_module_destroy(&field_module);
 				}
+				Cmiss_field_destroy(&field);
 			}
 			if (add_xi_field)
 			{
-				Computed_field *field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-					"xi", computed_field_manager);
+				const char *xi_field_name = "xi";
+				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, xi_field_name);
 				if (!field)
 				{
-					Cmiss_field_module *field_module =
-						Cmiss_field_module_create(cmiss_region);
-					Cmiss_field_module_set_field_name(field_module, "xi");
 					field = Computed_field_create_xi_coordinates(field_module);
+					Cmiss_field_set_name(field, xi_field_name);
 					Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
-					DEACCESS(Computed_field)(&field);
-					Cmiss_field_module_destroy(&field_module);
 				}
+				Cmiss_field_destroy(&field);
 			}
-			Cmiss_region_end_change(cmiss_region);
+			Cmiss_field_module_end_change(field_module);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{

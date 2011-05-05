@@ -103,6 +103,8 @@ Cmiss_field_set_string_at_node
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy
+Cmiss_field_module_begin_change
+Cmiss_field_module_end_change
 Cmiss_field_module_find_field_by_name
 Cmiss_field_module_define_field
 Cmiss_field_module_create_field

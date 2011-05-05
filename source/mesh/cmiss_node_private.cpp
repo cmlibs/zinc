@@ -393,8 +393,7 @@ Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
 	FE_region *fe_region = NULL;
 	if (field_module && nodeset_name)
 	{
-		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);
-		fe_region = Cmiss_region_get_FE_region(region);
+		fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
 		if (0 == strcmp(nodeset_name, "cmiss_nodes"))
 		{
 			ACCESS(FE_region)(fe_region);
@@ -409,7 +408,6 @@ Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
 				"Cmiss_field_module_get_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
 			fe_region = NULL;
 		}
-		Cmiss_region_destroy(&region);
 	}
 	return reinterpret_cast<Cmiss_nodeset_id>(fe_region);
 }

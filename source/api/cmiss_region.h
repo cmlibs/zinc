@@ -82,12 +82,14 @@ int Cmiss_region_destroy(Cmiss_region_id *region);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for this region only. Call this
- * function before making multiple changes to the region or its fields to
- * minimise number of change messages sent to clients.
- * Must call Cmiss_region_end_change after making changes.
+ * function before making multiple changes to the region or its fields and
+ * objects via its field_module to minimise number of change messages sent to
+ * clients. Must call Cmiss_region_end_change after making changes.
  * Important: Do not pair with Cmiss_region_end_hierarchical_change.
+ * Note: region change caching encompasses field_module change caching so there
+ * is no need to call Cmiss_field_module_begin_change/end_change as well.
  *
- * @param region  The region tree to begin change cache on.
+ * @param region  The region to begin change cache on.
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_begin_change(Cmiss_region_id region);
@@ -99,7 +101,7 @@ int Cmiss_region_begin_change(Cmiss_region_id region);
  * cached change messages are sent out to clients.
  * Important: Do not pair with Cmiss_region_begin_hierarchical_change.
  *
- * @param region  The region tree to end change cache on.
+ * @param region  The region to end change cache on.
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_end_change(Cmiss_region_id region);

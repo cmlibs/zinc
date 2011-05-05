@@ -556,7 +556,8 @@ int Computed_field_group::isEmptyNonLocal() const
 int Computed_field_group::clearLocal()
 {
 	int return_code = 1;
-	Cmiss_region_begin_change(region);
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_module_begin_change(field_module);
 	contains_all = 0;
 	if (local_node_group)
 	{
@@ -580,14 +581,16 @@ int Computed_field_group::clearLocal()
 		}
 	}
 	Computed_field_changed(this->field);
-	Cmiss_region_end_change(region);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
 	return return_code;
 };
 
 int Computed_field_group::clear()
 {
 	int return_code = 0;
-	Cmiss_region_begin_change(region);
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_module_begin_change(field_module);
 	for (Region_field_map_iterator iter = subregion_group_map.begin();
 		iter != subregion_group_map.end(); iter++)
 	{
@@ -596,7 +599,8 @@ int Computed_field_group::clear()
 	}
 	return_code = clearLocal();
 	Computed_field_changed(this->field);
-	Cmiss_region_end_change(region);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
 	return return_code;
 };
 
@@ -767,7 +771,8 @@ char *Computed_field_group::get_command_string()
 int Computed_field_group::removeRegion(Cmiss_region_id region)
 {
 	int return_code = 0;
-	Cmiss_region_begin_change(region);
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_module_begin_change(field_module);
 	Cmiss_field_group_id subgroup = getSubRegionGroup(region);
 	if (subgroup)
 	{
@@ -776,7 +781,8 @@ int Computed_field_group::removeRegion(Cmiss_region_id region)
 		Cmiss_field_group_destroy(&subgroup);
 	}
 	Computed_field_changed(this->field);
-	Cmiss_region_end_change(region);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
 	return return_code;
 }
 
@@ -1150,7 +1156,8 @@ int Computed_field_group::addRegion(struct Cmiss_region *child_region)
 	int return_code = 0;
 	if (Cmiss_region_contains_subregion(region, child_region))
 	{
-		Cmiss_region_begin_change(child_region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(child_region);
+		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_group_id subregion_group = getSubRegionGroup(child_region);
 		if (!subregion_group)
 			subregion_group = createSubRegionGroup(child_region);
@@ -1159,7 +1166,8 @@ int Computed_field_group::addRegion(struct Cmiss_region *child_region)
 		group_core->addLocalRegion();
 		Cmiss_field_group_destroy(&subregion_group);
 		Computed_field_changed(this->field);
-		Cmiss_region_end_change(child_region);
+		Cmiss_field_module_end_change(field_module);
+		Cmiss_field_module_destroy(&field_module);
 	}
 	else
 	{
@@ -1249,11 +1257,13 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 
 int Computed_field_group::addLocalRegion()
 {
-	Cmiss_region_begin_change(region);
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_module_begin_change(field_module);
 	clearLocal();
 	contains_all = 1;
 	Computed_field_changed(this->field);
-	Cmiss_region_end_change(region);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
 	return 1;
 }
 

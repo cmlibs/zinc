@@ -3779,8 +3779,8 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 	ENTER(Cmiss_rendition_add_selection_from_node_list);
 	if (rendition && node_list && (NUMBER_IN_LIST(FE_node)(node_list) > 0))
 	{
-		Cmiss_region_begin_change(rendition->region);
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
+		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_group_id sub_group =
 			Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group)
@@ -3815,8 +3815,8 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 			}
 			Cmiss_field_group_destroy(&sub_group);
 		}
+		Cmiss_field_module_end_change(field_module);
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;
 
@@ -3909,8 +3909,8 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 	ENTER(Cmiss_rendition_change_selection_from_element_list_of_dimension);
 	if (rendition && element_list && (NUMBER_IN_LIST(FE_element)(element_list) > 0))
 	{
-		Cmiss_region_begin_change(rendition->region);
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
+		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_group_id sub_group =
 			Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group)
@@ -3941,8 +3941,8 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 			}
 			Cmiss_field_group_destroy(&sub_group);
 		}
+		Cmiss_field_module_end_change(field_module);
 		Cmiss_field_module_destroy(&field_module);
-		Cmiss_region_end_change(rendition->region);
 	}
 	LEAVE;
 

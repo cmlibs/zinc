@@ -830,7 +830,6 @@ Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
 	Cmiss_fe_mesh_id mesh = NULL;
 	if (field_module && mesh_name)
 	{
-		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);
 		int mesh_dimension = 0;
 		if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
 			mesh_dimension = 3;
@@ -838,14 +837,15 @@ Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
 			mesh_dimension = 2;
 		else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
 			mesh_dimension = 1;
-		if (0 == mesh_dimension)
+		if (0 < mesh_dimension)
+		{
+			mesh = new Cmiss_fe_mesh(Cmiss_field_module_get_region_internal(field_module), mesh_dimension);
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_region_get_fe_mesh_by_name.  Unknown mesh name '%s'", mesh_name);
-			return NULL;
 		}
-		mesh = new Cmiss_fe_mesh(region, mesh_dimension);
-		Cmiss_region_destroy(&region);
 	}
 	return (mesh);
 }
