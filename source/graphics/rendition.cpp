@@ -4316,3 +4316,76 @@ Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(Cmiss_rendit
 	}
 	return selection_handler;
 }
+
+Cmiss_graphic_id Cmiss_rendition_get_first_graphic(Cmiss_rendition_id rendition)
+{
+	struct Cmiss_graphic *graphic = NULL;
+	if (rendition)
+	{
+		graphic=FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic, position)(
+			1, rendition->list_of_graphics);
+		if (graphic)
+		{
+			ACCESS(Cmiss_graphic)(graphic);
+		}
+	}
+	return graphic;
+}
+
+Cmiss_graphic_id Cmiss_rendition_get_next_graphic(Cmiss_rendition_id rendition,
+	Cmiss_graphic_id ref_graphic)
+{
+	struct Cmiss_graphic *graphic = NULL;
+	if (rendition)
+	{
+		int ref_pos = Cmiss_rendition_get_graphic_position(rendition, ref_graphic);
+		if (ref_pos > 0)
+		{
+			graphic=FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic,position)(
+				ref_pos+1, rendition->list_of_graphics);
+			if (graphic)
+			{
+				ACCESS(Cmiss_graphic)(graphic);
+			}
+		}
+	}
+	return graphic;
+}
+
+Cmiss_graphic_id Cmiss_rendition_get_previous_graphic(Cmiss_rendition_id rendition,
+	Cmiss_graphic_id ref_graphic)
+{
+	struct Cmiss_graphic *graphic = NULL;
+	if (rendition)
+	{
+		int ref_pos = Cmiss_rendition_get_graphic_position(rendition, ref_graphic);
+		if (ref_pos > 1)
+		{
+			graphic=FIND_BY_IDENTIFIER_IN_LIST(Cmiss_graphic,position)(
+				ref_pos-1, rendition->list_of_graphics);
+			if (graphic)
+			{
+				ACCESS(Cmiss_graphic)(graphic);
+			}
+		}
+	}
+	return graphic;
+}
+
+int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
+	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic)
+{
+	int return_code = 0;
+	if (rendition && graphic && ref_graphic &&
+		(Cmiss_graphic_get_rendition_private(graphic) ==
+			Cmiss_graphic_get_rendition_private(ref_graphic)) &&
+			(Cmiss_graphic_get_rendition_private(graphic) == rendition))
+	{
+		Cmiss_graphic_id current_graphic = ACCESS(Cmiss_graphic)(graphic);
+		int position = Cmiss_rendition_get_graphic_position(rendition, ref_graphic);
+		if (Cmiss_rendition_remove_graphic(rendition, current_graphic))
+			return_code = Cmiss_rendition_add_graphic(rendition, current_graphic, position);
+		DEACCESS(Cmiss_graphic)(&current_graphic);
+	}
+	return return_code;
+}

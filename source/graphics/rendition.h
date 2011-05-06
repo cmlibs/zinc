@@ -265,9 +265,6 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 struct GT_element_group *Cmiss_rendition_get_gt_element_group(
 	struct Cmiss_rendition *rendition); 
 
-int Cmiss_rendition_set_visibility_flag(
-	struct Cmiss_rendition *rendition, int visibility_flag);
-
 int Cmiss_rendition_get_visibility_flag(
 	struct Cmiss_rendition *rendition);
 
@@ -402,5 +399,23 @@ int Cmiss_rendition_remove_selection_from_element_list_of_dimension(Cmiss_rendit
  * @return  1 if rendition and all its parent are visible, otherwise 0.
  */
 int Cmiss_rendition_is_visible_hierarchical(Cmiss_rendition_id rendition);
+
+/***************************************************************************//**
+ * Get graphic at position <pos> in the internal graphics list of rendition.
+ *
+ * @param rendition  The handle to the rendition of which the graphic is located.
+ * @param pos  The position of the graphic, starting from 0.
+ * @return  returns the found graphic if found at pos, otherwise returns NULL.
+ */
+Cmiss_graphic_id Cmiss_rendition_get_graphic_at_position(
+	Cmiss_rendition_id rendition, int pos);
+
+/***************************************************************************//**
+ * Check either region has rendition or not.
+ *
+ * @param region  The handle to cmiss_region.
+ * @return  Returns 1 if rendition is found in region, otherwise 0.
+ */
+int Cmiss_region_has_rendition(Cmiss_region_id cmiss_region);
 #endif /* !defined (RENDITION_H) */
 
