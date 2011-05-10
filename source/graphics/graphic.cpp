@@ -9741,6 +9741,11 @@ int Cmiss_graphic_set_rendition_for_list_private(struct Cmiss_graphic *graphic, 
 	return return_code;
 }
 
+Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic)
+{
+	return (ACCESS(Cmiss_graphic)(graphic));
+}
+
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
 {
 	return DEACCESS(Cmiss_graphic)(graphic);

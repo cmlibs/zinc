@@ -141,6 +141,24 @@ enum Cmiss_graphic_coordinate_system
 #endif /* CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED */
 
 
+/*******************************************************************************
+ * Returns a new reference to the graphic with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ *
+ * @param graphic  The graphic to obtain a new reference to.
+ * @return  New graphic reference with incremented reference count.
+ */
+Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
+
+/***************************************************************************//**
+ * Destroys the graphic and sets the pointer to NULL.
+ *
+ * @param graphic  The pointer to the handle of the graphic
+ * @return  If successfully destroy graphic returns 1,
+ *   otherwise 0
+ */
+int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
+
 /***************************************************************************//**
  * Sets the field supplying coordinates for the graphic.
  *
@@ -217,15 +235,6 @@ int Cmiss_graphic_set_tessellation(
  */
 int Cmiss_graphic_set_render_type(
 	Cmiss_graphic_id graphic, enum Render_type render_type);
-
-/***************************************************************************//**
- * Destroys the graphic and sets the pointer to NULL.
- *
- * @param graphic  The pointer to the handle of the graphic
- * @return  If successfully destroy graphic returns 1, 
- *   otherwise 0
- */
-int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 
 /***************************************************************************//**
  * Return status of graphic visibility flag attribute.

@@ -513,6 +513,8 @@ Cmiss_rendition_set_visibility_flag
 Cmiss_rendition_move_graphic_before
 Cmiss_rendition_remove_graphic
 
+Cmiss_graphic_access
+Cmiss_graphic_destroy
 Cmiss_graphic_set_material
 Cmiss_graphic_set_selected_material
 Cmiss_graphic_get_tessellation
@@ -522,7 +524,6 @@ Cmiss_graphic_set_texture_coordinate_field
 Cmiss_graphic_set_render_type
 Cmiss_graphic_get_visibility_flag
 Cmiss_graphic_set_visibility_flag
-Cmiss_graphic_destroy
 
 /* cmiss_selection.h */
 Cmiss_selection_handler_set_callback
