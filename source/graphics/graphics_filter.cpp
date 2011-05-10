@@ -697,7 +697,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_and(
 	return graphics_filter;
 }
 
-Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_or(
+Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
 	Cmiss_graphics_module_id graphics_module)
 {
 	Cmiss_graphics_filter_id graphics_filter = NULL;
@@ -816,7 +816,7 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 		}
 		else
 		{
-			graphics_filter = Cmiss_graphics_module_create_filter_or(
+			graphics_filter = Cmiss_graphics_module_create_filter_operator_or(
 				filter_data->graphics_module);
 			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		}
