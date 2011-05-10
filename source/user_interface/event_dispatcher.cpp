@@ -1385,8 +1385,9 @@ DESCRIPTION :
 
 	if (event_dispatcher && query_function && check_function && dispatch_function)
 	{
-		if (callback = CREATE(Event_dispatcher_descriptor_callback)(
-			query_function, check_function, dispatch_function, user_data))
+		callback = CREATE(Event_dispatcher_descriptor_callback)(
+			query_function, check_function, dispatch_function, user_data);
+		if (callback)
 		{
 			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_descriptor_callback)(
 						callback, event_dispatcher->descriptor_list)))
@@ -1870,8 +1871,9 @@ DESCRIPTION :
 
 	if (event_dispatcher && timeout_function)
 	{
-		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
-			timeout_s, timeout_ns, timeout_function, user_data))
+		timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
+					timeout_s, timeout_ns, timeout_function, user_data);
+		if (timeout_callback)
 		{
 			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_timeout_callback)(
 				timeout_callback, event_dispatcher->timeout_list)))
@@ -2263,9 +2265,10 @@ DESCRIPTION :
 		}
 		else
 		{
-			if (idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
+			idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
 				((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
-					(void *)NULL, event_dispatcher->idle_list))
+					(void *)NULL, event_dispatcher->idle_list);
+			if (idle_callback)
 			{
 				timeout.tv_sec = 0;
 				timeout.tv_usec = 0;
