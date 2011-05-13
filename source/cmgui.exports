@@ -88,18 +88,24 @@ Cmiss_scene_viewer_win32_set_window_size
 
 Cmiss_field_access
 Cmiss_field_destroy
+Cmiss_field_assign_real
+Cmiss_field_assign_string
+Cmiss_field_evaluate_real
+Cmiss_field_evaluate_string
 Cmiss_field_get_attribute_integer
 Cmiss_field_set_attribute_integer
 Cmiss_field_get_name
 Cmiss_field_set_name
 Cmiss_field_get_number_of_components
 Cmiss_field_get_field_module
-Cmiss_field_evaluate_at_node
-Cmiss_field_evaluate_as_string_at_node
-Cmiss_field_evaluate_at_field_coordinates
 Cmiss_field_is_defined_at_node
-Cmiss_field_set_values_at_node
-Cmiss_field_set_string_at_node
+Cmiss_field_module_create_cache
+Cmiss_field_cache_access
+Cmiss_field_cache_destroy
+Cmiss_field_cache_set_element_location
+Cmiss_field_cache_set_field_real
+Cmiss_field_cache_set_node
+Cmiss_field_cache_set_time
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy
@@ -257,8 +263,6 @@ Cmiss_field_module_create_acos
 Cmiss_field_module_create_atan
 Cmiss_field_module_create_atan2
 
-Cmiss_field_set_values_at_node
-Cmiss_field_evaluate_in_element
 #if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Cmiss_field_module_create_window_projection
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */

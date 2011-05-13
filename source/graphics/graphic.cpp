@@ -1001,7 +1001,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						if (draw_element)
 						{
 							if (surface ||
-								(surface = create_GT_surface_from_FE_element(element,
+								(surface = create_GT_surface_from_FE_element(
+									graphic_to_object_data->field_cache, element,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->texture_coordinate_field, graphic->data_field,
 									number_in_xi[0], number_in_xi[1],
@@ -3058,29 +3059,26 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 } /* Cmiss_graphic_string */
 
 int Cmiss_graphic_to_point_object_at_time(
-	struct Cmiss_graphic *graphic, float time)
+	struct Cmiss_graphic *graphic, Cmiss_field_cache_id field_cache, FE_value time,
+	float graphics_object_primitive_time)
 {
 	FE_value base_size[3], centre[3], scale_factors[3];
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
 	char **labels = NULL;
 	ENTER(Cmiss_graphic_to_point_object_at_time);
-	if (graphic)
+	if (graphic && field_cache)
 	{
+		Cmiss_field_cache_set_time(field_cache, time);
 		if (!graphic->customised_graphics_object)
 		{
 			if (graphic->label_field)
 			{
 				ALLOCATE(labels, char *, 1);
-				/* evaluate the string for static graphic.
-				   Current check cache at location will always pass, to get
-				   around this, I set the time to -0.1*/
-				*labels = Computed_field_evaluate_as_string_without_node(
-					graphic->label_field, -1, -0.1);
-				//*labels = NULL;
+				*labels = Cmiss_field_evaluate_string(graphic->label_field, field_cache);
 			}
 			GT_object_remove_primitives_at_time(
-				graphic->graphics_object, time,
+				graphic->graphics_object, graphics_object_primitive_time,
 				(GT_object_primitive_object_name_conditional_function *)NULL,
 				(void *)NULL);
 			base_size[0] = (FE_value)(graphic->glyph_size[0]);
@@ -3124,7 +3122,7 @@ int Cmiss_graphic_to_point_object_at_time(
 			if (glyph_set)
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
-						time,glyph_set))
+					graphics_object_primitive_time,glyph_set))
 				{
 					DESTROY(GT_glyph_set)(&glyph_set);
 					return_code=0;
@@ -3515,7 +3513,8 @@ int Cmiss_graphic_to_graphics_object(
 								case CMISS_GRAPHIC_POINT:
 								{
 									Cmiss_graphic_to_point_object_at_time(
-										graphic, time);
+										graphic, graphic_to_object_data->field_cache,
+										graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
 								} break;
 								case CMISS_GRAPHIC_LINES:
 								{
@@ -3791,7 +3790,8 @@ int Cmiss_graphic_to_graphics_object(
 							ACCESS(GT_object)(graphic->graphics_object);
 						}
 						if (Cmiss_graphic_to_point_object_at_time(
-									graphic, time))
+							graphic, graphic_to_object_data->field_cache,
+							graphic_to_object_data->time, /*graphics_object_primitive_time*/time))
 						{
 							graphic->graphics_changed = 0;
 							GT_object_changed(graphic->graphics_object);
@@ -4255,9 +4255,12 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		{
 			return_code = 1;
 		}
-		else if (CMISS_GRAPHIC_POINT == graphic->graphic_type)
+		else if ((CMISS_GRAPHIC_POINT == graphic->graphic_type) &&
+			graphic->label_field &&
+			Computed_field_or_ancestor_satisfies_condition(
+				graphic->label_field, conditional_function, user_data))
 		{
-			return_code = 0;
+			return_code = 1;
 		}
 		/* appearance graphic for all graphic types */
 		else if (graphic->data_field &&

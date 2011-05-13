@@ -505,7 +505,7 @@ DESCRIPTION :
 } /* sort_basis_functions */
 
 int monomial_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values)
+	const FE_value *xi_coordinates, FE_value *function_values)
 /*******************************************************************************
 LAST MODIFIED : 29 January 1994
 
@@ -517,14 +517,15 @@ monomials for each xi coordinate.
 NB.  xi_1 is varying slowest (xi_n fastest)
 ==============================================================================*/
 {
-	FE_value *temp_value,*value,xi,*xi_coordinate,xi_power;
-	int *argument,i,j,k,order,number_of_values,number_of_xi_coordinates,
+	FE_value *temp_value, *value, xi, xi_power;
+	int i,j,k,order,number_of_values,number_of_xi_coordinates,
 		return_code;
 
 	ENTER(monomial_basis_functions);
-	if (NULL != (argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
-		function_values)
+	const int *argument = reinterpret_cast<int *>(type_arguments);
+	if (argument && xi_coordinates && function_values)
 	{
+		const FE_value *xi_coordinate = xi_coordinates;
 		number_of_xi_coordinates= *argument;
 		value=function_values;
 		*value=1;
@@ -563,7 +564,7 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 } /* monomial_basis_functions */
 
 int polygon_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values)
+	const FE_value *xi_coordinates, FE_value *function_values)
 /*******************************************************************************
 LAST MODIFIED : 23 November 2001
 
@@ -614,15 +615,16 @@ d) the blending matrix is
 ==============================================================================*/
 {
 	FE_value basis_function10, basis_function11, save_value, *temp_value, *value,
-		xi, xi_circumferential, *xi_coordinate, xi_power, xi_radial;
-	int *argument, i, j, k, number_of_polygon_verticies,
+		xi, xi_circumferential, xi_power, xi_radial;
+	int i, j, k, number_of_polygon_verticies,
 		number_of_values, number_of_xi_coordinates, offset00, offset01, offset10,
 		offset11, order, polygon_offset, polygon_vertex, return_code;
 
 	ENTER(polygon_basis_functions);
-	if (NULL != (argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
-		function_values)
+	const int *argument = reinterpret_cast<int *>(type_arguments);
+	if (argument && xi_coordinates && function_values)
 	{
+		const FE_value *xi_coordinate = xi_coordinates;
 		number_of_xi_coordinates= *argument;
 		value=function_values;
 		*value=1;

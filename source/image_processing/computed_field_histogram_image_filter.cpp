@@ -239,7 +239,7 @@ int Computed_field_histogram_image_filter::evaluate_histogram(
 	{
 		Field_element_xi_location* element_xi_location;
 		Field_coordinate_location* coordinate_location = NULL;
-		FE_value* xi = NULL;
+		const FE_value* xi = NULL;
 
 		if (NULL != (element_xi_location =
 			dynamic_cast<Field_element_xi_location*>(location)))

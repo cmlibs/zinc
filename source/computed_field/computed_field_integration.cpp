@@ -474,6 +474,8 @@ specified.
 				xi[k] = initial_xi[k] * initial_position
 					+ final_xi[k] * final_position;
 			}
+			location.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
+			location_with_derivatives.set_element_xi(element, element_dimension, xi, /*top_level_element*/(FE_element *)NULL);
 			/* Integrand elements should always be top level */
 			Computed_field_evaluate_cache_at_location(integrand,
 				&location);
@@ -1438,7 +1440,7 @@ Evaluate the fields cache at the location
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
 			FE_value time = element_xi_location->get_time();
-			FE_value* xi = element_xi_location->get_xi();
+			const FE_value* xi = element_xi_location->get_xi();
 			int number_of_derivatives = location->get_number_of_derivatives();
 
 			Computed_field_element_integration_mapping *mapping;

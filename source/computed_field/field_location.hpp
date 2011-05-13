@@ -47,6 +47,7 @@
 #define __FIELD_LOCATION_HPP__
 
 extern "C" {
+#include "computed_field/computed_field.h"
 #include "general/value.h"
 }
 
@@ -62,14 +63,20 @@ protected:
 		time(time), number_of_derivatives(number_of_derivatives)
 	{};
 
-	/* Abstract virtual destructor declaration as we will not make objects of this
+public:
+
+   /* Abstract virtual destructor declaration as we will not make objects of this
 		parent class */
 	virtual ~Field_location() = 0;
 
-public:
 	FE_value get_time()
 	{
 		return time;
+	}
+
+	void set_time(FE_value new_time)
+	{
+		time = new_time;
 	}
 
 	int get_number_of_derivatives()
@@ -101,20 +108,54 @@ class Field_element_xi_location : public Field_location
 {
 private:
 	struct FE_element *element;
-	FE_value *xi;
+	int dimension;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_element *top_level_element;
 
 public:
-	Field_element_xi_location(struct FE_element *element, 
-		FE_value *xi = NULL, FE_value time = 0.0, 
-		struct FE_element *top_level_element = NULL, int number_of_derivatives = 0):
-		Field_location(time, number_of_derivatives),
-		element(element), xi(xi), top_level_element(top_level_element)
+	Field_element_xi_location(struct FE_element *element_in,
+			const FE_value *xi_in = NULL, FE_value time_in = 0.0,
+			struct FE_element *top_level_element_in = NULL, int number_of_derivatives_in = 0) :
+		Field_location(time_in, number_of_derivatives_in),
+		element(element_in ? ACCESS(FE_element)(element_in) : 0),
+		dimension(element_in ? get_FE_element_dimension(element_in) : 0),
+		top_level_element(top_level_element_in ? ACCESS(FE_element)(top_level_element_in) : 0)
+	{
+		if (xi_in)
+		{
+			for (int i = 0; i < dimension; i++)
+			{
+				xi[i] = xi_in[i];
+			}
+		}
+		else
+		{
+			for (int i = 0; i < dimension; i++)
+			{
+				xi[i] = 0.0;
+			}
+		}
+	}
+
+	// blank constructor - caller should call set_element_xi & check valid return
+	Field_element_xi_location(FE_value time_in = 0.0, int number_of_derivatives_in = 0) :
+		Field_location(time_in, number_of_derivatives_in),
+		element(0),
+		dimension(0),
+		top_level_element(0)
 	{
 	}
 	
    ~Field_element_xi_location()
 	{
+		DEACCESS(FE_element)(&element);
+		if (top_level_element)
+			DEACCESS(FE_element)(&top_level_element);
+	}
+
+	int get_dimension() const
+	{
+		return dimension;
 	}
 
 	struct FE_element *get_element()
@@ -122,7 +163,7 @@ public:
 		return element;
 	}
 
-	FE_value *get_xi()
+	const FE_value *get_xi() const
 	{
 		return xi;
 	}
@@ -130,6 +171,16 @@ public:
 	FE_element *get_top_level_element()
 	{
 		return top_level_element;
+	}
+
+	int set_element_xi(struct FE_element *element_in,
+		int number_of_xi_in, const FE_value *xi_in,
+		struct FE_element *top_level_element_in = NULL);
+
+	/** use with care in field evaluation & restore after evaluating with */
+	void set_number_of_derivatives(int number_of_derivatives_in)
+	{
+		number_of_derivatives = number_of_derivatives_in;
 	}
 
 	int check_cache_for_location(Cmiss_field *field);
@@ -145,17 +196,41 @@ private:
 public:
 	Field_node_location(struct FE_node *node,
 		FE_value time = 0, int number_of_derivatives = 0):
-		Field_location(time, number_of_derivatives), node(node)
+		Field_location(time, number_of_derivatives),
+		node(ACCESS(FE_node)(node))
 	{
 	}
 	
    ~Field_node_location()
 	{
+   	DEACCESS(FE_node)(&node);
 	}
 
 	FE_node *get_node()
 	{
 		return node;
+	}
+
+	void set_node(FE_node *node_in)
+	{
+		REACCESS(FE_node)(&node, node_in);
+	}
+
+	int check_cache_for_location(Cmiss_field *field);
+
+	int update_cache_for_location(Cmiss_field *field);
+};
+
+class Field_time_location : public Field_location
+{
+public:
+	Field_time_location(FE_value time = 0, int number_of_derivatives = 0):
+		Field_location(time, number_of_derivatives)
+	{
+	}
+
+   ~Field_time_location()
+	{
 	}
 
 	int check_cache_for_location(Cmiss_field *field);
@@ -172,11 +247,21 @@ private:
 	FE_value *derivatives;
 
 public:
-	Field_coordinate_location(Cmiss_field *reference_field,
-		int number_of_values_in, FE_value* values_in, FE_value time = 0,
-		int number_of_derivatives = 0, FE_value* derivatives_in = NULL);
+	Field_coordinate_location(Cmiss_field *reference_field_in,
+		int number_of_values_in, const FE_value* values_in, FE_value time = 0,
+		int number_of_derivatives_in = 0, const FE_value* derivatives_in = NULL);
 	
-   ~Field_coordinate_location();
+	// blank constructor - caller should call set_field_values & check valid return
+	Field_coordinate_location(FE_value time = 0) :
+		Field_location(time),
+		reference_field(0),
+		number_of_values(0),
+		values(0),
+		derivatives(0)
+	{
+	}
+
+	~Field_coordinate_location();
 
 	Cmiss_field *get_reference_field()
 	{
@@ -193,7 +278,8 @@ public:
 		return values;
 	}
 
-	int set_values(int number_of_values_in, FE_value* values_in);
+	int set_field_values(Cmiss_field_id reference_field_in,
+		int number_of_values_in, FE_value *values_in);
 
 	int check_cache_for_location(Cmiss_field *field);
 

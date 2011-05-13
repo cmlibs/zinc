@@ -141,6 +141,8 @@ private:
 
 	int set_values_at_location(Field_location* location, FE_value *values);
 
+	int set_string_at_location(Field_location* location, const char *string_value);
+
 	int get_native_discretization_in_element(
 		struct FE_element *element,int *number_in_xi);
 
@@ -589,7 +591,7 @@ Evaluate the fields cache at the location
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
 			FE_value time = element_xi_location->get_time();
-			FE_value* xi = element_xi_location->get_xi();
+			const FE_value* xi = element_xi_location->get_xi();
 			int number_of_derivatives = location->get_number_of_derivatives();
 
 			/* 1. Precalculate any source fields that this field depends on.
@@ -828,7 +830,7 @@ Sets the <values> of the computed <field> over the <element>.
 		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
-			FE_value* xi = element_xi_location->get_xi();
+			const FE_value* xi = element_xi_location->get_xi();
 
 			element_dimension = get_FE_element_dimension(element);
 			if (FE_element_field_is_grid_based(element,fe_field))
@@ -1019,7 +1021,27 @@ Sets the <values> of the computed <field> over the <element>.
 
 	return (return_code);
 } /* Computed_field_finite_element::set_values_at_location */
-	
+
+int Computed_field_finite_element::set_string_at_location(
+	Field_location* location, const char *string_value)
+{
+	int return_code;
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+	if (node_location &&
+		(get_FE_field_value_type(fe_field) == STRING_VALUE) &&
+		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
+	{
+		return_code = set_FE_nodal_string_value(node_location->get_node(),
+			fe_field, /*component_number*/0, /*version*/0,
+			FE_NODAL_VALUE, const_cast<char *>(string_value));
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int Computed_field_finite_element::get_native_discretization_in_element(
 	struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
@@ -1336,29 +1358,6 @@ int Cmiss_field_finite_element_destroy(
 	Cmiss_field_finite_element_id *finite_element_field_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(finite_element_field_address));
-}
-
-/* here because only finite element type support at present */
-int Cmiss_field_set_string_at_node(Cmiss_field_id field, Cmiss_node_id node,
-	const char *string)
-{
-	int return_code = 0;
-	ENTER(Cmiss_field_set_string_at_node);
-	if (field && node && string)
-	{
-		Computed_field_finite_element* core =
-			dynamic_cast<Computed_field_finite_element*>(field->core);
-		if (core &&
-			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
-			(get_FE_field_value_type(core->fe_field) == STRING_VALUE))
-		{
-			return_code = set_FE_nodal_string_value(node,
-				core->fe_field, /*component_number*/0, /*version*/0,
-				FE_NODAL_VALUE, const_cast<char *>(string));
-		}
-	}
-	LEAVE;
-	return (return_code);
 }
 
 int Computed_field_is_type_finite_element(struct Computed_field *field)
@@ -3670,7 +3669,7 @@ Evaluate the fields cache at the location
 		if (element_xi_location)
 		{
 			FE_element* element = element_xi_location->get_element();
-			FE_value* xi = element_xi_location->get_xi();
+			const FE_value* xi = element_xi_location->get_xi();
 			
 			/* returns the values in xi, up to the element_dimension and padded
 				with zeroes */
@@ -4279,7 +4278,7 @@ Evaluate the fields cache at the location
 			FE_element* element = element_xi_location->get_element();
  			FE_element* top_level_element = element_xi_location->get_top_level_element();
 			FE_value time = element_xi_location->get_time();
-			FE_value* xi = element_xi_location->get_xi();
+			const FE_value* xi = element_xi_location->get_xi();
 			int number_of_derivatives = location->get_number_of_derivatives();
 
 			/* 1. Precalculate any source fields that this field depends on.

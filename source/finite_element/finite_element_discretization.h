@@ -82,7 +82,7 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_shape_get_indices_for_xi_location_in_cell_corners(
 	struct FE_element_shape *element_shape, int *number_in_xi,
-	FE_value *xi, int *indices);
+	const FE_value *xi, int *indices);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2005
 

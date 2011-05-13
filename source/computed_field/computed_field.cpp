@@ -171,6 +171,9 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_trigonometry.h"
+}
+#include "computed_field/field_cache.hpp"
+extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
@@ -1470,67 +1473,62 @@ int Computed_field_dependency_change_private(struct Computed_field *field)
 	return (return_code);
 }
 
-int Computed_field_clear_cache(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Clears any caching of elements/values of <field> and any fields it refers to.
-Must call this function for each field after you have used functions
-Computed_field_evaluate_in_element or Computed_field_evaluate_at_location and they
-are possibly not going to be called again for some time.
-==============================================================================*/
+void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field)
 {
-	int i,return_code;
+	if (field->element)
+	{
+		DEACCESS(FE_element)(&field->element);
+	}
+	if (field->find_element_xi_cache)
+	{
+		DESTROY(Computed_field_find_element_xi_cache)
+			(&field->find_element_xi_cache);
+	}
+	if (field->node)
+	{
+		DEACCESS(FE_node)(&field->node);
+	}
+	if (field->coordinate_reference_field)
+	{
+		DEACCESS(Computed_field)(&field->coordinate_reference_field);
+	}
+	field->field_does_not_depend_on_cached_location = 0;
+	if (field->core)
+	{
+		field->core->clear_cache();
+	}
+	if (field->string_cache)
+	{
+		DEALLOCATE(field->string_cache);
+	}
+	field->string_component = -1;
+	field->derivatives_valid = 0;
+	field->values_valid = 0;
+}
+
+int Computed_field_clear_cache(struct Computed_field *field)
+{
+	int return_code = 1;
 
 	ENTER(Computed_field_clear_cache);
 	if (field)
 	{
-		if (field->element)
-		{
-			DEACCESS(FE_element)(&field->element);
-		}
-		if (field->find_element_xi_cache)
-		{
-			DESTROY(Computed_field_find_element_xi_cache)
-				(&field->find_element_xi_cache);
-		}
-		if (field->node)
-		{
-			DEACCESS(FE_node)(&field->node);
-		}
-		if (field->coordinate_reference_field)
-		{
-			DEACCESS(Computed_field)(&field->coordinate_reference_field);
-		}
-		field->field_does_not_depend_on_cached_location = 0;
-		if (field->core)
-		{
-			field->core->clear_cache();
-		}
-		if (field->string_cache)
-		{
-			DEALLOCATE(field->string_cache);
-		}
-		field->string_component = -1;
-		field->derivatives_valid=0;
-		field->values_valid=0;
-		for (i=0;i<field->number_of_source_fields;i++)
+		Cmiss_field_clear_cache_non_recursive(field);
+		for (int i = 0; i < field->number_of_source_fields; i++)
 		{
 			Computed_field_clear_cache(field->source_fields[i]);
 		}
-		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clear_cache.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_clear_cache */
+}
 
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
@@ -2116,6 +2114,178 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 	return (return_code);
 } /* Computed_field_for_each_ancestor */
 
+// External API
+int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	int number_of_values, double *values)
+{
+	int return_code;
+	if (field && cache && (number_of_values >= field->number_of_components) && values)
+	{
+		return_code = field->core->set_values_at_location(cache->get_location(), values);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_values_at_location.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+// External API
+int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	const char *string_value)
+{
+	int return_code;
+	if (field && cache && string_value)
+	{
+		return_code = field->core->set_string_at_location(cache->get_location(), string_value);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_values_at_location.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+// External API
+// Note: no warnings if not evaluated so can be used for is_defined
+int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	int number_of_values, double *values)
+{
+	int return_code;
+	if (field && cache && (number_of_values >= field->number_of_components) && values)
+	{
+		return_code = Computed_field_evaluate_cache_at_location(field, cache->get_location());
+		if (return_code)
+		{
+			if (field->values_valid)
+			{
+				for (int i = 0; i < field->number_of_components; i++)
+				{
+					values[i] = field->values[i];
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_real.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+// External API
+// Note: no warnings if not evaluated so can be used for is_defined
+char *Cmiss_field_evaluate_string(Cmiss_field_id field,
+	Cmiss_field_cache_id cache)
+{
+	char *return_string = 0;
+	if (field && cache)
+	{
+		if (Computed_field_evaluate_cache_at_location(field, cache->get_location()))
+		{
+			if (field->string_cache)
+			{
+				return_string = duplicate_string(field->string_cache);
+			}
+			else if (field->values_valid)
+			{
+				char tmp_string[50];
+				int error = 0;
+				for (int i = 0; i < field->number_of_components; i++)
+				{
+					if (0 < i)
+					{
+						sprintf(tmp_string,", %g",field->values[i]);
+					}
+					else
+					{
+						sprintf(tmp_string,"%g",field->values[i]);
+					}
+					append_string(&return_string, tmp_string, &error);
+				}
+				field->string_component = -1;
+				field->string_cache = duplicate_string(return_string);
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE, "Cmiss_field_evaluate_string.  Cache invalid for field %s\n", field->name);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_string.  Invalid argument(s)");
+	}
+	return (return_string);
+}
+
+/* Temporary until derivatives implemented: requires element_xi location */
+int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	double *values, double *derivatives)
+{
+	int return_code = 0;
+	if (field && cache && values && derivatives)
+	{
+		Field_element_xi_location *element_xi_location =
+			dynamic_cast<Field_element_xi_location *>(cache->get_location());
+		if (element_xi_location)
+		{
+			int old_number_of_derivatives = element_xi_location->get_number_of_derivatives();
+			int number_of_derivatives = element_xi_location->get_dimension();
+			element_xi_location->set_number_of_derivatives(number_of_derivatives);
+			return_code = Computed_field_evaluate_cache_at_location(field, element_xi_location);
+			element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
+			if (return_code)
+			{
+				if (field->values_valid)
+				{
+					int i;
+					for (i = 0; i < field->number_of_components; i++)
+					{
+						values[i] = field->values[i];
+					}
+					int total_derivatives = field->number_of_components*number_of_derivatives;
+					for (i = 0; i < total_derivatives; ++i)
+					{
+						derivatives[i] = field->derivatives[i];
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_evaluate_with_derivatives_internal.  Not an element_xi location" );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_real.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
@@ -2481,35 +2651,6 @@ number_of_components
 	return (return_code);
 } /* Computed_field_evaluate_in_element */
 
-/* public API implementation - clears cache */
-int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
-	struct Cmiss_element *element, double *xi, double time,
-	struct Cmiss_element *top_level_element, int number_of_values,
-	double *values, int number_of_derivatives, double *derivatives)
-{
-	int return_code;
-
-	ENTER(Cmiss_field_evaluate_in_element);
-	if (field && element && xi && values &&
-		(number_of_values >= Computed_field_get_number_of_components(field))
-		&& (!derivatives || (number_of_derivatives >=
-		Computed_field_get_number_of_components(field) * get_FE_element_dimension(element))))
-	{
-		return_code = Computed_field_evaluate_in_element(field, element, xi,
-			time, top_level_element, values, derivatives);
-		Computed_field_clear_cache(field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_evaluate_in_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
@@ -2548,30 +2689,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	return (return_string);
 } /* Computed_field_evaluate_as_string_at_location */
-
-/* public API implementation - clears cache */
-char *Cmiss_field_evaluate_as_string_at_node(
-	struct Cmiss_field *field, struct Cmiss_node *node, double time)
-{
-	char *return_code;
-
-	ENTER(Cmiss_field_evaluate_as_string_at_node);
-	if (field && node)
-	{
-		return_code = Computed_field_evaluate_as_string_at_node(field,
-			/*component_number*/-1, node, time);
-		Computed_field_clear_cache(field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_evaluate_as_string_at_node.  Invalid argument(s)");
-		return_code=NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
@@ -2627,106 +2744,6 @@ number_of_components.
 
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
-
-/* public API implementation - clears cache */
-int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, double time, int number_of_values, double *values)
-/*******************************************************************************
-LAST MODIFIED : 29 March 2004
-
-DESCRIPTION :
-Returns the <values> of <field> at <node> and <time> if it is defined there.
-
-The <values> array must be large enough to store as many floats as there are
-number_of_components, the function checks that <number_of_values> is
-greater than or equal to the number of components.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_field_evaluate_at_node);
-	if (field && node && values &&
-		(number_of_values >= Computed_field_get_number_of_components(field)))
-	{
-		return_code = Computed_field_evaluate_at_node(field, node, time, values);
-		Computed_field_clear_cache(field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_evaluate_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-char *Computed_field_evaluate_as_string_without_node(struct Computed_field *field,
-		int component_number, FE_value time)
-{
-	char *return_string;
-
-	ENTER(Computed_field_evaluate_as_string_without_node);
-	return_string=(char *)NULL;
-	 Field_node_location location(NULL, time);
-	if (field)
-	{
-		return_string = Computed_field_evaluate_as_string_at_location(
-			field, component_number, &location);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_as_string_in_element.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-}
-
-int Computed_field_evaluate_without_node(struct Computed_field *field,
-	 FE_value time, FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns the <values> of <field> for nodal_lookup field if it is defined there. Can verify
-this in advance by calling function Computed_field_defined_at_location. Each <field>
-has a cache for storing its values and derivatives, which is allocated and the
-field->values array filled by a call to Computed_field_evaluate_cache_at_location,
-which is then copied to <values> by this function. 
-
-The <values> array must be large enough to store as many FE_values as there are
-number_of_components.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_evaluate_without_node);
-	return_code=0;
-	if (field)
-	{
-		 Field_node_location location(NULL, time);
-		 if (0 != (return_code=Computed_field_evaluate_cache_at_location(field, &location)))
-		 {
-				/* copy values from cache to <values> */
-				for (i=0;i<field->number_of_components;i++)
-				{
-					 values[i]=field->values[i];
-				}
-		 }
-	}
-	else
-	{
-		 display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_without_location.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_evaluate_without_node */
 
 int Computed_field_evaluate_at_location(struct Computed_field *field,
 	Field_location& loc, FE_value *values, FE_value *derivatives)
@@ -2871,29 +2888,6 @@ is reached for which its calculation is not reversible, or is not supported yet.
 
 	return (return_code);
 } /* Computed_field_set_values_at_node */
-
-/* public API implementation */
-int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, double time, int number_of_values, double *values)
-{
-	int return_code;
-
-	ENTER(Cmiss_field_set_values_at_node);
-	if (field && node && values &&
-		(number_of_values >= Computed_field_get_number_of_components(field)))
-	{
-		return_code = Computed_field_set_values_at_node(field, node, time, values);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 
 int Cmiss_field_evaluate_at_field_coordinates(struct Computed_field *field,
 	struct Computed_field *reference_field, int number_of_input_values,

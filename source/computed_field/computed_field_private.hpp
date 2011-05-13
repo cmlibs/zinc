@@ -267,6 +267,11 @@ public:
 		return 0;
 	};
 
+	virtual int set_string_at_location(Field_location* /*location*/, const char * /*string_value*/)
+	{
+		return 0;
+	};
+
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
@@ -853,6 +858,13 @@ cache.
 
 	return (return_code);
 } /* Computed_field_evaluate_source_fields_cache_at_location */
+
+/***************************************************************************//**
+ * Variant of Computed_field_clear_cache which does not recurse over source
+ * fields.
+ * Caller's responsibility to ensure field argument is valid.
+ */
+void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field);
 
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.

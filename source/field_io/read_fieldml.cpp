@@ -964,7 +964,6 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
 	}
 	Cmiss_field_finite_element_id fe_field = Cmiss_field_cast_finite_element(field);
-	Cmiss_field_destroy(&field);
 
 	// create nodes and set node parameters
 
@@ -1009,6 +1008,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		Cmiss_ensemble_iterator_id nodesIterator = Cmiss_field_ensemble_get_first_entry(nodesEnsemble);
 		double *values = new double[componentCount];
 		int *valueExists = new int[componentCount];
+		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 		while (return_code)
 		{
 			Cmiss_ensemble_identifier nodeIdentifier = Cmiss_ensemble_iterator_get_identifier(nodesIterator);
@@ -1031,7 +1031,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						}
 					}
 					Cmiss_node_merge(node, node_template);
-					Cmiss_field_set_values_at_node(reinterpret_cast<Cmiss_field_id>(fe_field), node, /*time*/0.0, componentCount, values);
+					Cmiss_field_cache_set_node(field_cache, node);
+					Cmiss_field_assign_real(field, field_cache, componentCount, values);
 				}
 			}
 			else
@@ -1042,6 +1043,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			if (!Cmiss_ensemble_iterator_increment(nodesIterator))
 				break;
 		}
+		Cmiss_field_cache_destroy(&field_cache);
 		delete[] valueExists;
 		delete[] values;
 		Cmiss_ensemble_iterator_destroy(&nodesIterator);
@@ -1196,6 +1198,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	Cmiss_fe_mesh_destroy(&mesh);
 	Cmiss_nodeset_destroy(&nodes);
 	Cmiss_field_finite_element_destroy(&fe_field);
+	Cmiss_field_destroy(&field);
 
 	return return_code;
 }

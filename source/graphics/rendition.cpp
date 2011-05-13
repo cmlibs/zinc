@@ -1213,6 +1213,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
 			graphic_to_object_data.region = rendition->region;
 			graphic_to_object_data.field_module = Cmiss_region_get_field_module(rendition->region);
+			graphic_to_object_data.field_cache = Cmiss_field_module_create_cache(graphic_to_object_data.field_module);
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
 			graphic_to_object_data.scene = scene;
@@ -1232,6 +1233,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			{
 				Cmiss_field_destroy(&graphic_to_object_data.group_field);
 			}
+			Cmiss_field_cache_destroy(&graphic_to_object_data.field_cache);
 			Cmiss_field_module_destroy(&graphic_to_object_data.field_module);
 		}
 	}
@@ -2948,61 +2950,73 @@ int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 static int Cmiss_rendition_set_time_dependent_transformation(struct Time_object *time_object,
 	double current_time, void *rendition_void)
 {
-	 int return_code, i, j, k;
-	 struct Cmiss_rendition *rendition;
-	 FE_value *values;
-	 gtMatrix transformation_matrix;
+	int return_code;
+	struct Cmiss_rendition *rendition;
+	FE_value *values;
+	gtMatrix transformation_matrix;
 
-	 ENTER(Cmiss_rendition_set_time_dependent_transformation);
-	 USE_PARAMETER(time_object);
+	ENTER(Cmiss_rendition_set_time_dependent_transformation);
+	USE_PARAMETER(time_object);
 
-	 if (NULL != (rendition = (struct Cmiss_rendition *)rendition_void))
-	 {
-			if (rendition->transformation_field)
+	if (NULL != (rendition = (struct Cmiss_rendition *)rendition_void))
+	{
+		if (rendition->transformation_field)
+		{
+			if (ALLOCATE(values, FE_value, 16))
 			{
-				 if (ALLOCATE(values, FE_value, 16))
-				 {
-						Computed_field_evaluate_without_node(rendition->transformation_field, 
-							 current_time, values);
-						k = 0;
-						for (i = 0;i < 4; i++)
+				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
+				Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+				Cmiss_field_cache_set_time(field_cache, current_time);
+				if (Cmiss_field_evaluate_real(rendition->transformation_field,
+					field_cache, /*number_of_values*/16, values))
+				{
+					int i, j, k;
+					k = 0;
+					for (i = 0; i < 4; i++)
+					{
+						for (j = 0; j < 4; j++)
 						{
-							 for (j = 0; j < 4; j++)
-							 {
-									transformation_matrix[i][j] = values[k];
-									k++;
-							 }
+							transformation_matrix[i][j] = values[k];
+							k++;
 						}
-						return_code = Cmiss_rendition_set_transformation(rendition,
-							 &transformation_matrix);
-						DEALLOCATE(values);
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,
-							 "Cmiss_rendition_set_time_dependent_transformation.  "
-							 "Unable to allocate values.");
-						return_code=0;
-				 }
+					}
+					return_code = Cmiss_rendition_set_transformation(rendition,
+						&transformation_matrix);
+				}
+				else
+				{
+					return_code = 0;
+				}
+				Cmiss_field_cache_destroy(&field_cache);
+				Cmiss_field_module_destroy(&field_module);
+				DEALLOCATE(values);
 			}
 			else
 			{
-				 display_message(ERROR_MESSAGE,
-						"Cmiss_rendition_set_time_dependent_transformation.  "
-						"Missing transformation field.");
-				 return_code=0;
+				display_message(ERROR_MESSAGE,
+					"Cmiss_rendition_set_time_dependent_transformation.  "
+					"Unable to allocate values.");
+				return_code=0;
 			}
-	 }
-	 else
-	 {
+		}
+		else
+		{
 			display_message(ERROR_MESSAGE,
-				 "Cmiss_rendition_set_time_dependent_transformation.  "
-				 "invalid argument.");
+				"Cmiss_rendition_set_time_dependent_transformation.  "
+				"Missing transformation field.");
 			return_code=0;
-	 }
-	 LEAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_set_time_dependent_transformation.  "
+			"invalid argument.");
+		return_code=0;
+	}
+	LEAVE;
 
-	 return (return_code);
+	return (return_code);
 }
 
 void Cmiss_rendition_remove_time_dependent_transformation(struct Cmiss_rendition *rendition)

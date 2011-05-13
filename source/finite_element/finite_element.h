@@ -2004,8 +2004,8 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 ==============================================================================*/
 
 int calculate_FE_element_field(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	FE_value *values,FE_value *jacobian);
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, FE_value *values, FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 2 October 1998
 
@@ -2020,8 +2020,8 @@ the derivatives will start at the first position of <jacobian>.
 ==============================================================================*/
 
 int calculate_FE_element_field_as_string(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	char **string);
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, char **string);
 /*******************************************************************************
 LAST MODIFIED : 17 October 1999
 
@@ -2036,8 +2036,8 @@ It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
 int calculate_FE_element_field_int_values(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	int *values);
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, int *values);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1999
 
@@ -2050,8 +2050,8 @@ single component, the value will be put in the first position of <values>.
 ==============================================================================*/
 
 int calculate_FE_element_field_string_values(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	char **values);
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, char **values);
 /*******************************************************************************
 LAST MODIFIED : 19 October 1999
 
@@ -3620,8 +3620,9 @@ NOTE: recursive to handle 1-D to 3-D case.
 ==============================================================================*/
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
-	FE_value *top_level_xi, int *top_level_element_dimension);
+	const FE_value *xi, int element_dimension,
+	struct FE_element **top_level_element, FE_value *top_level_xi,
+	int *top_level_element_dimension);
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 

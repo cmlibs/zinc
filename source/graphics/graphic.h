@@ -122,6 +122,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode);
 
 struct Cmiss_graphic_to_graphics_object_data
 {
+	Cmiss_field_cache_id field_cache;
 	/* graphics object names are preceded by this */
 	const char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */

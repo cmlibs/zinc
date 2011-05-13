@@ -60,31 +60,19 @@ char computed_field_string_constant_type_string[] = "string_constant";
 class Computed_field_string_constant : public Computed_field_core
 {
 public:
-	int number_of_strings;
-	char **string_constant_array;
+	char *string_value;
 
-	Computed_field_string_constant(int number_of_strings,
-		char** string_constant_array_in) :
+	Computed_field_string_constant(const char *string_value_in) :
 		Computed_field_core(),
-		number_of_strings(number_of_strings),
-		string_constant_array(NULL)
+		string_value(duplicate_string(string_value_in))
 	{
-		int i;
-		string_constant_array = new char*[number_of_strings];
-		for (i = 0 ; i < number_of_strings ; i++)
-		{
-			string_constant_array[i] = 
-				duplicate_string(string_constant_array_in[i]);
-		}
-
 	};
 
 	virtual bool attach_to_field(Computed_field *parent)
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (string_constant_array &&
-				(number_of_strings == field->number_of_components))
+			if (string_value)
 			{
 				return true;
 			}
@@ -92,13 +80,15 @@ public:
 		return false;
 	}
 
-	~Computed_field_string_constant();
+	~Computed_field_string_constant()
+	{
+		DEALLOCATE(string_value);
+	}
 
 private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_string_constant(number_of_strings,
-			string_constant_array);
+		return new Computed_field_string_constant(string_value);
 	}
 
 	const char *get_type_string()
@@ -114,202 +104,72 @@ private:
 
 	char* get_command_string();
 
-	int is_defined_at_location(Field_location* location);
+	int is_defined_at_location(Field_location* location)
+	{
+		USE_PARAMETER(location);
+		return 1;
+	}
 
-	int has_numerical_components();
+	int has_numerical_components()
+	{
+		return 0;
+	}
+
+	int set_string_at_location(Field_location* location, const char *string_value_in);
+
 };
 
-Computed_field_string_constant::~Computed_field_string_constant()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-	int i;
-
-	ENTER(Computed_field_string_constant::~Computed_field_string_constant);
-	if (field)
-	{
-		for (i = 0 ; i < field->number_of_components ; i++)
-		{
-			DEALLOCATE(string_constant_array[i]);
-		}
-		delete[] string_constant_array;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::~Computed_field_string_constant.  Invalid argument(s)");
-	}
-	LEAVE;
-
-} /* Computed_field_string_constant::~Computed_field_string_constant */
-
 int Computed_field_string_constant::compare(Computed_field_core* other_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-String constant does not have numerical components.
-==============================================================================*/
 {
 	Computed_field_string_constant* other;
-	int i, return_code;
+	int return_code;
 
-	ENTER(Computed_field_string_constant::is_defined_at_location);
+	ENTER(Computed_field_string_constant::compare);
 	if (field && (other = dynamic_cast<Computed_field_string_constant*>(other_field)))
 	{
-		return_code = 1;
-		for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
-		{
-			return_code = (!strcmp(string_constant_array[i],
-					other->string_constant_array[i]));
-		}
+		return_code = (0 == strcmp(string_value, other->string_value));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::is_defined_at_location. Missing field.");
+			"Computed_field_string_constant::compare.  Invalid argument(s)");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Computed_field_string_constant::is_defined_at_location */
-
-int Computed_field_string_constant::is_defined_at_location(
-	Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-String constant does not have numerical components.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_string_constant::is_defined_at_location);
-	if (field&&location)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::is_defined_at_location. Missing field.");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_string_constant::is_defined_at_location */
-
-int Computed_field_string_constant::has_numerical_components()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-String constant does not have numerical components.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_string_constant::has_numerical_components);
-	if (field)
-	{
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::has_numerical_components. Missing field.");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* Computed_field_string_constant::has_numerical_components */
+}
 
 int Computed_field_string_constant::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Print the constant values.
-==============================================================================*/
+	Field_location* location)
 {
-	int error,i, return_code;
-
-	ENTER(Computed_field_evaluate_cache_at_location);
-	if (field && location)
+	USE_PARAMETER(location);
+	int return_code = 1;
+	if (field)
 	{
-		error = 0;
-		/* write the component values space separated,
-			the string cache should store the separate components. */
-		append_string(&field->string_cache,string_constant_array[0],&error);
-		for (i=1;i<field->number_of_components;i++)
+		if (field->string_cache)
 		{
-			append_string(&field->string_cache," ",&error);
-			append_string(&field->string_cache,string_constant_array[i],&error);
+			DEALLOCATE(field->string_cache);
 		}
-		return_code = 1;
+		field->string_cache = duplicate_string(string_value);
+		field->values_valid = 0;
+		field->derivatives_valid = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant_evaluate_as_string_at_node.  "
+			"Computed_field_string_constant::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_string_constant_evaluate_as_string_at_node */
+}
 
 int Computed_field_string_constant::list()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	int i, return_code;
-
-	ENTER(List_Computed_field_string_constant);
-	if (field)
-	{
-		display_message(INFORMATION_MESSAGE,
-			"    string_constants :");
-		for (i=0;i<field->number_of_components;i++)
-		{
-			display_message(INFORMATION_MESSAGE, " ");
-			if (strchr(string_constant_array[i], ' '))
-			{
-				display_message(INFORMATION_MESSAGE, "\"");
-				display_message(INFORMATION_MESSAGE,
-					string_constant_array[i]);
-				display_message(INFORMATION_MESSAGE, "\"");				
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,
-					string_constant_array[i]);
-			}
-		}
-		display_message(INFORMATION_MESSAGE,
-			"\n");
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_string_constant.  Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_string_constant */
+	display_message(INFORMATION_MESSAGE,
+		"    string constant : %s\n", string_value);
+	return 1;
+}
 
 char *Computed_field_string_constant::get_command_string()
 /*******************************************************************************
@@ -319,109 +179,53 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string;
-	int error, i;
+	char *command_string = 0;
+	int error = 0;
+	append_string(&command_string,
+		computed_field_string_constant_type_string, &error);
+	append_string(&command_string, " ", &error);
+	char *string_token = duplicate_string(string_value);
+	make_valid_token(&string_token);
+	append_string(&command_string, string_token, &error);
+	DEALLOCATE(string_token);
+	return (command_string);
+}
 
-	ENTER(Computed_field_string_constant::get_command_string);
-	command_string = (char *)NULL;
-	if (field)
+int Computed_field_string_constant::set_string_at_location(
+	Field_location* location, const char *string_value_in)
+{
+	USE_PARAMETER(location);
+	int return_code = 1;
+	char *new_string_value = duplicate_string(string_value_in);
+	if (new_string_value)
 	{
-		error = 0;
-		append_string(&command_string,
-			computed_field_string_constant_type_string, &error);
-		for (i=0;i<field->number_of_components;i++)
-		{
-			append_string(&command_string, " ", &error);
-			if (strchr(string_constant_array[i], ' '))
-			{
-				append_string(&command_string, "\"", &error);
-				append_string(&command_string,
-					string_constant_array[i], &error);
-				append_string(&command_string, "\"", &error);
-			}
-			else
-			{
-				append_string(&command_string,
-					string_constant_array[i], &error);
-			}
-		}
+		DEALLOCATE(string_value);
+		string_value = new_string_value;
+		Computed_field_changed(field);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_string_constant::get_command_string.  Invalid field");
+		return_code = 0;
 	}
-	LEAVE;
-
-	return (command_string);
-} /* Computed_field_string_constant::get_command_string */
+	return (return_code);
+}
 
 } //namespace
 
 struct Computed_field *Computed_field_create_string_constant(
-	struct Cmiss_field_module *field_module,
-	int number_of_components, char **string_constant_array)
+	struct Cmiss_field_module *field_module, const char *string_value_in)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true, number_of_components,
-		/*number_of_source_fields*/0, NULL,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_string_constant(number_of_components,
-			string_constant_array));
-
+	Computed_field *field = NULL;
+	if (string_value_in)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/false, /*number_of_components*/1,
+			/*number_of_source_fields*/0, NULL,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_string_constant(string_value_in));
+	}
 	return (field);
-} /* Computed_field_set_type_string_constant */
-
-int Computed_field_get_type_string_constant(struct Computed_field *field,
-	int *number_of_components, char ***string_constant_array_address)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_STRING_CONSTANT, the 
-<number_of_components> and <string_constant_array> used by it are returned.
-==============================================================================*/
-{
-	char **string_constant_array;
-	int i, return_code;
-
-	ENTER(Computed_field_get_type_string_constant);
-	if (field&&(dynamic_cast<Computed_field_string_constant*>(field->core)))
-	{
-		*number_of_components = field->number_of_components;
-		return_code=1;
-		if (ALLOCATE(string_constant_array, char *, *number_of_components))
-		{
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				if (!(string_constant_array[i] = duplicate_string(string_constant_array[i])))
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_get_type_string_constant.  "
-						"Unable to duplicate string.");
-					return_code = 0;
-				}
-			}
-			*string_constant_array_address = string_constant_array;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_string_constant.  "
-				"Unable to allocate array space.");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_string_constant.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_string_constant */
+}
 
 int define_Computed_field_type_string_constant(struct Parse_state *state,
 	void *field_modify_void, void *dummy_void)
@@ -433,37 +237,35 @@ Converts <field> into type COMPUTED_FIELD_STRING_CONSTANT (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	int return_code;
-	Computed_field_modify_data *field_modify;
-
-	ENTER(define_Computed_field_type_string_constant);
+	int return_code = 1;
 	USE_PARAMETER(dummy_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
+	Computed_field_modify_data *field_modify =
+		reinterpret_cast<Computed_field_modify_data *>(field_modify_void);
+	if (state && field_modify)
 	{
-		return_code=1;
-		if (state->current_token)
+		return_code = 1;
+		char *new_string_value = 0;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_default_string_entry(option_table, &new_string_value,
+			/*description_string*/"STRING");
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
 		{
-			if (!(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-			{
-				/* error */
-				display_message(INFORMATION_MESSAGE,
-					" <STRINGS>");
-			}
-			else
+			if (new_string_value)
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_string_constant(field_modify->get_field_module(),
-						/*number_of_components*/state->number_of_tokens - state->current_index,
-						/*string_constant_array*/state->tokens + state->current_index));	
+						new_string_value));
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx define field NAME string_constant.  Missing string");
+				return_code = 0;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx define field NAME string_constant.  Missing string(s)");
-			return_code = 0;
-		}
+		DEALLOCATE(new_string_value);
 	}
 	else
 	{

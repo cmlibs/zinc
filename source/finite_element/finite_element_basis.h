@@ -82,7 +82,8 @@ NOTE: External API uses different enum Cmiss_element_basis_type
 	TRANSITION
 }; /* enum FE_basis_type */
 
-typedef int (Standard_basis_function)(void *,FE_value *,FE_value *);
+typedef int (Standard_basis_function)(/*type_arguments*/void *,
+	/*xi_coordinates*/const FE_value *, /*function_values*/FE_value *);
 
 struct FE_basis;
 /*******************************************************************************
@@ -234,11 +235,11 @@ int FE_basis_is_non_linear(struct FE_basis *basis);
 
 /* exposed only for comparing function pointers */
 int monomial_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values);
+	const FE_value *xi_coordinates, FE_value *function_values);
 
 /* exposed only for comparing function pointers */
 int polygon_basis_functions(void *type_arguments,
-	FE_value *xi_coordinates,FE_value *function_values);
+	const FE_value *xi_coordinates, FE_value *function_values);
 
 int standard_basis_function_is_monomial(Standard_basis_function *function,
 	void *arguments_void);

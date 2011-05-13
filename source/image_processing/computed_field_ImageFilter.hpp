@@ -857,7 +857,7 @@ Evaluate the templated version of this filter
 	{
 		Field_element_xi_location* element_xi_location;
 		Field_coordinate_location* coordinate_location = NULL;
-		FE_value* xi = NULL;
+		const FE_value* xi = NULL;
 
 		if ( (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location)) )
@@ -1113,7 +1113,7 @@ for subsequent operations.
 						{
 							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
 						}
-						pixel_location.set_values(dimension, pixel_xi);
+						pixel_location.set_field_values(reference_field, dimension, pixel_xi);
 
 						Computed_field_evaluate_cache_at_location(
 							field->source_fields[0], &pixel_location);

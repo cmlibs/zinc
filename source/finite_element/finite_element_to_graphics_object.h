@@ -109,25 +109,6 @@ Data for converting a 1-D element into a polyline.
 	struct GT_object *graphics_object;
 }; /* struct Element_to_line_data */
 
-struct Element_to_surface_data
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Data for converts a 2-D element into a surface.
-==============================================================================*/
-{
-	char exterior,reverse_normals;
-	/* Can be either g_SURFACE or g_NURBS */
-	enum GT_object_type object_type;
-	enum Render_type render_type;
-	float time;
-	int face_number,number_of_segments_in_xi1,number_of_segments_in_xi2;
-	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
-	struct FE_region *fe_region;
-	struct GT_object *graphics_object;
-}; /* struct Element_to_surface_data */
-
 struct Displacement_map
 /*******************************************************************************
 LAST MODIFIED : 27 April 1998
@@ -480,6 +461,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 	enum FE_element_shape_type *shape_type_address);
 
 struct GT_surface *create_GT_surface_from_FE_element(
+	Cmiss_field_cache_id field_cache,
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
@@ -585,15 +567,6 @@ LAST MODIFIED : 12 March 1999
 
 DESCRIPTION :
 Converts a finite element into a nurbs surface.
-==============================================================================*/
-
-int element_to_surface(struct FE_element *element,
-	void *void_element_to_surface_data);
-/*******************************************************************************
-LAST MODIFIED : 12 March 1999
-
-DESCRIPTION :
-Converts a finite element into a surface.
 ==============================================================================*/
 
 int element_to_glyph_set(struct FE_element *element,

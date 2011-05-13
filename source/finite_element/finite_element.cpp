@@ -26602,8 +26602,8 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 } /* calculate_FE_element_field_nodes */
 
 int calculate_FE_element_field(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	FE_value *values,FE_value *jacobian)
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, FE_value *values, FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 5 August 2001
 
@@ -27019,8 +27019,8 @@ the derivatives will start at the first position of <jacobian>.
 } /* calculate_FE_element_field */
 
 int calculate_FE_element_field_as_string(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	char **string)
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, char **string)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1999
 
@@ -27178,8 +27178,8 @@ It is up to the calling function to DEALLOCATE the returned string.
 } /* calculate_FE_element_field_as_string */
 
 int calculate_FE_element_field_int_values(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	int *values)
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, int *values)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1999
 
@@ -27330,8 +27330,8 @@ single component, the value will be put in the first position of <values>.
 } /* calculate_FE_element_field_int_values */
 
 int calculate_FE_element_field_string_values(int component_number,
-	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
-	char **values)
+	struct FE_element_field_values *element_field_values,
+	const FE_value *xi_coordinates, char **values)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1999
 
@@ -31719,8 +31719,9 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 } /* FE_element_get_top_level_element_conversion */
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
-	FE_value *top_level_xi, int *top_level_element_dimension)
+	const FE_value *xi, int element_dimension,
+	struct FE_element **top_level_element, FE_value *top_level_xi,
+	int *top_level_element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 7 May 2003
 

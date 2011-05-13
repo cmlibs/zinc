@@ -310,6 +310,33 @@ For <field> and all of its source Computed_fields, calls <iterator_function>
 with <user_data>. Iteration stops if a single iterator_function call returns 0.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Prescribes a location in an element for field evaluation or assignment with
+ * the cache. Variant with optional prescribed parent element.
+ * Note: replaces any other spatial location in cache (e.g. node.) but time
+ * is unchanged.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param element  The element the location is in. Must belong to same region
+ * as cache.
+ * @param number_of_chart_coordinates  The size of the chart_coordinates array,
+ * checked to be not less than the element dimension.
+ * @param chart_coordinates  Location in element chart. Value is not checked;
+ * caller is responsible for supplying locations within the bounds of the
+ * element shape.
+ * @param top_level_element  Optional highest dimensional parent element to
+ * inherit fields from.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_element_location_with_parent(
+	Cmiss_field_cache_id cache, Cmiss_element_id element,
+	int number_of_chart_coordinates, double *chart_coordinates,
+	Cmiss_element_id top_level_element);
+
+/* GRC document if keeping */
+int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, double *values, double *derivatives);
+
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,FE_value time,
@@ -401,29 +428,16 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
-/***************************************************************************//**
- * Returns a string describing the value/s of the <field> without a node.
- * This function expects the field to be a string constand or constant field.
- *
- * @param field  The field.
- * @param component_number  Number to indicate which component to show.
- * @param time  At which time the value is evaluate.
- * @return  allocated string if field has valid value without node otherwise NULL.
- */
-char *Computed_field_evaluate_as_string_without_node(struct Computed_field *field,
-		int component_number, FE_value time);
-
-int Computed_field_evaluate_without_node(struct Computed_field *field,
-	FE_value time, FE_value *values);
+int Cmiss_field_evaluate_at_field_coordinates(
+	Cmiss_field_id field,
+	Cmiss_field_id reference_field, int number_of_input_values,
+	double *input_values, double time, double *values);
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 25 March 2008
 
 DESCRIPTION :
-Returns the <values> of <field> for nodal_lookup field if it is defined there. Can verify
-this in advance by calling function Computed_field_defined_at_location. Each <field>
-has a cache for storing its values and derivatives, which is allocated and the
-field->values array filled by a call to Computed_field_evaluate_cache_at_location,
-which is then copied to <values> by this function. 
+Returns the <values> of <field> at the location of <input_values>
+with respect to the <reference_field> if it is defined there.
 
 The <values> array must be large enough to store as many FE_values as there are
 number_of_components.

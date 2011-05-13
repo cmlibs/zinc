@@ -2615,6 +2615,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 } /* get_surface_element_segmentation */
 
 struct GT_surface *create_GT_surface_from_FE_element(
+	Cmiss_field_cache_id field_cache,
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
@@ -2841,24 +2842,31 @@ normals are used.
 			i=0;
 			return_code = 1;
 			FE_value *xi = xi_points;
+			Cmiss_field_cache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
+				return_code = Cmiss_field_cache_set_element_location_with_parent(
+					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
-				if (!(Computed_field_evaluate_in_element(coordinate_field,element,xi,
-					time,top_level_element,coordinates,derivative_xi)&&
-					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,xi,time,top_level_element,feData,
-					(FE_value *)NULL))))
+				if (!Cmiss_field_evaluate_with_derivatives_internal(
+					coordinate_field, field_cache, coordinates, derivative_xi))
 				{
 					return_code = 0;
+				}
+				if (data_field)
+				{
+					if (!Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, feData))
+					{
+						return_code = 0;
+					}
 				}
 				if (texture_coordinate_field)
 				{
 					if (calculate_tangent_points)
 					{
-						if (!Computed_field_evaluate_in_element(texture_coordinate_field,
-							element,xi,time,top_level_element,texture_values,
-								texture_derivative))
+						if (!Cmiss_field_evaluate_with_derivatives_internal(
+							texture_coordinate_field, field_cache, texture_values,
+							texture_derivative))
 						{
 							calculate_tangent_points = 0;
 							display_message(WARNING_MESSAGE,
@@ -2868,9 +2876,8 @@ normals are used.
 					}
 					if (!calculate_tangent_points)  /* Do this if just unset above as well as else */
 					{
-						return_code = Computed_field_evaluate_in_element(texture_coordinate_field,
-							element,xi,time,top_level_element,texture_values,
-							(FE_value *)NULL);
+						return_code = Cmiss_field_evaluate_real(texture_coordinate_field,
+							field_cache, /*number_of_values*/3, texture_values);
 					}
 				}
 				if (return_code)
@@ -2990,12 +2997,6 @@ normals are used.
 				}
 				xi += 2;
 				i++;
-			}
-			/* clear Computed_field caches so elements not accessed */
-			Computed_field_clear_cache(coordinate_field);
-			if (data_field)
-			{
-				Computed_field_clear_cache(data_field);
 			}
 			if (surface)
 			{
@@ -4886,98 +4887,6 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 
 	return (return_code);
 } /* element_to_polyline */
-
-int element_to_surface(struct FE_element *element,
-	void *void_element_to_surface_data)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Converts a finite element into a surface.
-==============================================================================*/
-{
-	struct GT_nurbs *nurb;
-	struct GT_surface *surface;
-	int return_code;
-	struct Element_to_surface_data *element_to_surface_data;
-
-	ENTER(element_to_surface);
-	if (element&&(element_to_surface_data=
-		(struct Element_to_surface_data *)void_element_to_surface_data))
-	{
-		if (FE_region_FE_element_meets_topological_criteria(
-			element_to_surface_data->fe_region, element, 2,
-			element_to_surface_data->exterior, element_to_surface_data->face_number))
-		{
-			switch(element_to_surface_data->object_type)
-			{
-				case g_SURFACE:
-				{
-					if (NULL != (surface = create_GT_surface_from_FE_element(element,
-						element_to_surface_data->coordinate_field,
-						element_to_surface_data->texture_coordinate_field,
-						element_to_surface_data->data_field,
-						element_to_surface_data->number_of_segments_in_xi1,
-						element_to_surface_data->number_of_segments_in_xi2,
-						element_to_surface_data->reverse_normals,
-						/*top_level_element*/(struct FE_element *)NULL,
-					   element_to_surface_data->render_type,
-						element_to_surface_data->time)))
-					{
-						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
-							element_to_surface_data->graphics_object,
-							element_to_surface_data->time,surface)))
-						{
-							DESTROY(GT_surface)(&surface);
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case g_NURBS:
-				{
-					if (NULL != (nurb = create_GT_nurb_from_FE_element(element,
-						element_to_surface_data->coordinate_field,
-						element_to_surface_data->texture_coordinate_field,
-						/*top_level_element*/(struct FE_element *)NULL,
-						element_to_surface_data->time)))
-					{
-						if (!(return_code=GT_OBJECT_ADD(GT_nurbs)(
-							element_to_surface_data->graphics_object,
-							element_to_surface_data->time,nurb)))
-						{
-							DESTROY(GT_nurbs)(&nurb);
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"element_to_surface.  Unknown object type");
-					return_code=0;
-				}
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"element_to_surface.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_to_surface */
 
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)

@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : cmiss_field.h
-
-LAST MODIFIED : 8 May 2008
-
-DESCRIPTION :
-The public interface to the Cmiss fields.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_field.h
+ *
+ * The public interface to the Cmiss field base object.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -85,6 +82,12 @@ Global types
 	#define CMISS_FIELD_ID_DEFINED
 #endif /* CMISS_FIELD_ID_DEFINED */
 
+#ifndef CMISS_FIELD_CACHE_ID_DEFINED
+	struct Cmiss_field_cache;
+	typedef struct Cmiss_field_cache *Cmiss_field_cache_id;
+	#define CMISS_FIELD_CACHE_ID_DEFINED
+#endif /* CMISS_FIELD_CACHE_ID_DEFINED */
+
 /***************************************************************************//**
  * Labels of field attributes which may be set or obtained using generic
  * get/set_attribute functions.
@@ -113,14 +116,15 @@ Global functions
 ----------------
 */
 
+/***************************************************************************//**
+ * Get the number of components of the field.
+ *
+ * @param field  The field to query.
+ * @return  The number of components of the field.
+ */
 int Cmiss_field_get_number_of_components(Cmiss_field_id field);
-/*******************************************************************************
-LAST MODIFIED : 23 December 1998
 
-DESCRIPTION :
-==============================================================================*/
-
-/*******************************************************************************
+/***************************************************************************//**
  * Returns a new reference to the field with reference count incremented.
  * Caller is responsible for destroying the new reference.
  * 
@@ -129,11 +133,68 @@ DESCRIPTION :
  */
 Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
 
-/*******************************************************************************
+/***************************************************************************//**
  * Destroys this reference to the field (and sets it to NULL).
  * Internally this just decrements the reference count.
  */
 int Cmiss_field_destroy(Cmiss_field_id *field_address);
+
+/***************************************************************************//**
+ * Assign real values to field at location specified in cache.
+ * Only supported for some field types, notably finite_element, node_value, and
+ * field operators where only one operand is assignable: these back-calculate
+ * value of that operand and assign to it (includes types: offset, scale,
+ * coordinate_transformation, vector_coordinate_transformation; latter assumes
+ * coordinate field is not assignable.)
+ * Only supported for some cache locations: node, or anywhere for constants.
+ *
+ * @param field  The field to assign a string value to.
+ * @param cache  Store of location to assign at and intermediate field values.
+ * @param number_of_values  Size of values array. Checked that it equals or
+ * exceeds the number of components of field.
+ * @param values  Array of real values to assign to field.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	int number_of_values, double *values);
+
+/***************************************************************************//**
+ * Assign a string value to a field at location specified in cache.
+ * Only supported for legacy stored 'finite element' string at node locations,
+ * and string_constant at any cache location.
+ *
+ * @param field  The field to assign a string value to.
+ * @param cache  Store of location to assign at and intermediate field values.
+ * @param string_value  The string value to assign to field.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	const char *string_value);
+
+/***************************************************************************//**
+ * Evaluate real field values at location specified in cache.
+ *
+ * @param field  The field to evaluate.
+ * @param cache  Store of location to evaluate at and intermediate field values.
+ * @param number_of_values  Size of values array. Checked that it equals or
+ * exceeds the number of components of field.
+ * @param values  Array of real values to evaluate into.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
+	int number_of_values, double *values);
+
+/***************************************************************************//**
+ * Evaluate field as string at location specified in cache. Numerical valued
+ * fields are written to a string with comma separated components.
+ * Caller must free returned string with Cmiss_deallocate().
+ *
+ * @param field  The field to evaluate.
+ * @param cache  Store of location to evaluate at and intermediate field values.
+ * @return  Allocated string value, or NULL if failed.
+ */
+char *Cmiss_field_evaluate_string(Cmiss_field_id field,
+	Cmiss_field_cache_id cache);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field.
@@ -197,7 +258,7 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 #define Cmiss_field_set_persistent(field, value) \
 	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, value)
 
-/*******************************************************************************
+/***************************************************************************//**
  * Returns a reference to the field module which owns this field.
  * 
  * @param field  The field to obtain field module for.
@@ -205,81 +266,9 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
  */
 Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field);
 
-int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, double time, int number_of_values, double *values);
-/*******************************************************************************
-LAST MODIFIED : 29 March 2004
-
-DESCRIPTION :
-Returns the <values> of <field> at <node> and <time> if it is defined there.
-
-The <values> array must be large enough to store as many floats as there are
-number_of_components, the function checks that <number_of_values> is
-greater than or equal to the number of components.
-==============================================================================*/
-
-int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
-	struct Cmiss_element *element, double *xi, double time,
-	struct Cmiss_element *top_level_element, int number_of_values,
-	double *values, int number_of_derivatives, double *derivatives);
-/*******************************************************************************
-LAST MODIFIED : 29 March 2004
-
-DESCRIPTION :
-Returns the values and derivatives (if <derivatives> != NULL) of <field> at
-<element>:<xi>, if it is defined over the element.
-
-The optional <top_level_element> may be supplied for the benefit of this or
-any source fields that may require calculation on it instead of a face or line.
-FIBRE_AXES and GRADIENT are examples of such fields, since they require
-top-level coordinate derivatives. The term "top_level" refers to an ultimate
-parent element for the face or line, eg. the 3-D element parent to 2-D faces.
-If no such top level element is supplied and one is required, then the first
-available parent element will be chosen - if the user requires a top-level
-element in the same group as the face or with the face on the correct side,
-then they should supply the top_level_element here.
-
-The <values> and <derivatives> arrays must be large enough to store all the
-values and derivatives for this field in the given element, ie. values is
-number_of_components in size, derivatives has the element dimension times the
-number_of_components
-==============================================================================*/
-
-char *Cmiss_field_evaluate_as_string_at_node(
-	struct Cmiss_field *field, struct Cmiss_node *node, double time);
-/*******************************************************************************
-LAST MODIFIED : 17 January 2007
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at the <node>. If the
-field is based on an FE_field but not returning FE_values, it is asked to supply
-the string. Otherwise, a string built up of comma separated values evaluated
-for the field in field_evaluate_cache_at_node. The FE_value exception
-is used since it is likely the values are already in the cache in most cases,
-or can be used by other fields again if calculated now.
-Creates a string which represents all the components.
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-
-int Cmiss_field_evaluate_at_field_coordinates(
-	Cmiss_field_id field,
-	Cmiss_field_id reference_field, int number_of_input_values,
-	double *input_values, double time, double *values);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2008
-
-DESCRIPTION :
-Returns the <values> of <field> at the location of <input_values>
-with respect to the <reference_field> if it is defined there.
-
-The <values> array must be large enough to store as many FE_values as there are
-number_of_components.
-==============================================================================*/
-
 int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node);
-/*******************************************************************************
+/***************************************************************************//**
 LAST MODIFIED : 17 January 2007
 
 DESCRIPTION :
@@ -287,28 +276,86 @@ Returns true if <field> can be calculated at <node>. If the field depends on
 any other fields, this function is recursively called for them.
 ==============================================================================*/
 
-int Cmiss_field_set_values_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, double time, int number_of_values, double *values);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>. Only certain computed field
-types allow their values to be set. Fields that deal directly with FE_fields eg.
-FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the same
-function for it. If a field has more than one source field, eg. RC_VECTOR, it
-can in many cases still choose which one is actually being changed, for example,
-the 'vector' field in this case - coordinates should not change. This process
-continues until the actual FE_field values at the node are changed or a field
-is reached for which its calculation is not reversible, or is not supported yet.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a field cache for storing a known location and field values and
+ * derivatives at that location. Required to evaluate and assign field values.
+ *
+ * @param field_module  The field module to create a field cache for.
+ * @return  New field cache, or NULL if failed.
+ */
+Cmiss_field_cache_id Cmiss_field_module_create_cache(
+	Cmiss_field_module_id field_module);
 
 /***************************************************************************//**
- * Allows the setting of a string if that is the type of field represented.
+ * Returns a new reference to the field cache with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ *
+ * @param cache  The field cache to obtain a new reference to.
+ * @return  New field cache reference with incremented reference count.
  */
-int Cmiss_field_set_string_at_node(Cmiss_field_id field, Cmiss_node_id node,
-	const char *string);
+Cmiss_field_cache_id Cmiss_field_cache_access(Cmiss_field_cache_id cache);
+
+/*******************************************************************************
+ * Destroys this reference to the field cache, and sets it to NULL.
+ * Internally this just decrements the reference count.
+ */
+int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
+
+/***************************************************************************//**
+ * Prescribes a location in an element for field evaluation or assignment with
+ * the cache.
+ * Note: replaces any other spatial location in cache (e.g. node.) but time
+ * is unchanged.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param element  The element the location is in. Must belong to same region
+ * as cache.
+ * @param number_of_chart_coordinates  The size of the chart_coordinates array,
+ * checked to be not less than the element dimension.
+ * @param chart_coordinates  Location in element chart. Value is not checked;
+ * caller is responsible for supplying locations within the bounds of the
+ * element shape.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_element_location(Cmiss_field_cache_id cache,
+	Cmiss_element_id element, int number_of_chart_coordinates,
+	double *chart_coordinates);
+
+/***************************************************************************//**
+ * Prescribes a value of a field for subsequent evaluation and assignment with
+ * the cache.
+ * Note: currently treated as a spatial location, replacing any other spatial
+ * location in cache (e.g. element, node) but time is unchanged.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param reference_field  The field whose values are to be prescribed.
+ * @param number_of_values  The size of the values array: number of field
+ * components.
+ * @param values  The field values to set.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
+	Cmiss_field_id reference_field, int number_of_values, double *values);
+
+/***************************************************************************//**
+ * Prescribes a node location for field evaluation or assignment with the cache.
+ * Note: replaces any other spatial location in cache (e.g. element) but time
+ * is unchanged.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param node  The node to set as spatial location. Must belong to same region
+ * as cache.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node);
+
+/***************************************************************************//**
+ * Prescribes the time for field evaluation or assignment with the cache.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param time  The time value to be set.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time);
 
 #endif /* __CMISS_FIELD_H__ */
