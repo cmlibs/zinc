@@ -313,7 +313,7 @@ void TessellationManagerCallback(struct MANAGER_MESSAGE(Cmiss_tessellation) *mes
 
 TessellationDialog::TessellationDialog(Cmiss_graphics_module *graphics_module_in, wxWindow* parent,
 		int id, const wxPoint& pos, const wxSize& size):
-    wxDialog(parent, id, "Tessellation Editor", pos, size, wxCAPTION|wxRESIZE_BORDER|wxCLOSE_BOX|wxDIALOG_NO_PARENT)
+    wxDialog(parent, id, "Tessellation Editor", pos, size, wxDEFAULT_FRAME_STYLE|wxDIALOG_NO_PARENT)
 {
 		graphics_module = graphics_module_in;
 		tessellation_manager = Cmiss_graphics_module_get_tessellation_manager(graphics_module);
@@ -332,14 +332,14 @@ TessellationDialog::TessellationDialog(Cmiss_graphics_module *graphics_module_in
 		this->SetIcon(cmiss_icon_xpm);
     set_properties();
     do_layout();
-		itemMap.clear();
-		create_managed_objects_table();
-		tessellation_manager_callback_id =
-			MANAGER_REGISTER(Cmiss_tessellation)(TessellationManagerCallback,
-				(void *)this, tessellation_manager);
-		addNewButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(TessellationDialog::OnTessellationDialogAddNewPressed),
-				NULL, this);
+    itemMap.clear();
+    create_managed_objects_table();
+    tessellation_manager_callback_id =
+   	MANAGER_REGISTER(Cmiss_tessellation)(TessellationManagerCallback,
+   	(void *)this, tessellation_manager);
+    addNewButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+   	wxCommandEventHandler(TessellationDialog::OnTessellationDialogAddNewPressed),
+   	NULL, this);
 }
 
 int TessellationDialog::add_managed_object(Cmiss_tessellation *tessellation)

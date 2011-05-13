@@ -4519,6 +4519,7 @@ void EditTessellation(wxCommandEvent &event)
 	}
 	else
 	{
+		window->Show();
 		window->Raise();
 	}
 }
