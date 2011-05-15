@@ -877,6 +877,9 @@ Evaluate the fields cache at the location
 						DEALLOCATE(xi);
 						DEALLOCATE(upper_time);
 						DEALLOCATE(lower_time);
+						delete from;
+						delete to;
+						delete current;
 				 }
 				 else
 				 {
