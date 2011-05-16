@@ -852,12 +852,12 @@ Evaluate the fields cache at the location
 						y = (double)(field->source_fields[0]->values[2]);
 						z = (double)(field->source_fields[0]->values[3]);
 						
-						Quaternion *from= new Quaternion(old_w, old_x, old_y, old_z);
-						Quaternion *to = new Quaternion(w, x, y, z);
-						Quaternion *current = new Quaternion();
-						from->normalise();
-						to->normalise();
-						current->interpolated_with_SLERP(*from, *to, normalised_t);
+						Quaternion from(old_w, old_x, old_y, old_z);
+						Quaternion to(w, x, y, z);
+						Quaternion current;
+						from.normalise();
+						to.normalise();
+						current.interpolated_with_SLERP(from, to, normalised_t);
 						
 						if (!quaternion_component)
 						{
@@ -865,7 +865,7 @@ Evaluate the fields cache at the location
 						}
 						if(quaternion_component)
 						{
-							 current->get(quaternion_component);
+							 current.get(quaternion_component);
 						}
 						for (i=0; i<4;i++)
 						{
@@ -877,9 +877,6 @@ Evaluate the fields cache at the location
 						DEALLOCATE(xi);
 						DEALLOCATE(upper_time);
 						DEALLOCATE(lower_time);
-						delete from;
-						delete to;
-						delete current;
 				 }
 				 else
 				 {
