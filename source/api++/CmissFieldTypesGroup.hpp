@@ -61,13 +61,13 @@ public:
 		Field(reinterpret_cast<Cmiss_field_id>(Cmiss_field_cast_group(field.getId())))
 	{	}
 
-	FieldGroup createSubgroup(Region region)
+	FieldGroup createSubregionGroup(Region region)
 	{
 		return FieldGroup(Cmiss_field_group_create_subregion_group(
 			reinterpret_cast<Cmiss_field_group_id>(id), region.getId()));
 	}
 
-	FieldGroup getSubgroup(Region region)
+	FieldGroup getSubregionGroup(Region region)
 	{
 		return FieldGroup(Cmiss_field_group_get_subregion_group(
 			reinterpret_cast<Cmiss_field_group_id>(id), region.getId()));
