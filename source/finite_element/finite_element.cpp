@@ -2720,7 +2720,7 @@ DESCRIPTION
 A debug function to print a node's value storage (to stdout)
 =======================================================================*/
 {
-	int return_code,limit,i;
+	int return_code = 0,limit,i;
 	FE_value *values;
 	ENTER(show_FE_nodal_FE_values);
 	if (node)
@@ -2745,7 +2745,6 @@ A debug function to print a node's value storage (to stdout)
 	{
 		display_message(ERROR_MESSAGE,"show_FE_nodal_values."
 			"Invalid arguments");
-		return_code = 0;
 	}
 	LEAVE;
 	return (return_code);

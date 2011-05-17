@@ -2252,11 +2252,12 @@ int Cmiss_rendition_process_list_or_write_window_commands(struct Cmiss_rendition
 int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
 	 char *command_prefix,char *command_suffix)
 {
-	 int return_code;
+	 int return_code = 0;
 
 	 ENTER(Cmiss_rendition_list_commands);
-	 if (Process_list_command_class *list_message =
-			new Process_list_command_class())
+	 Process_list_command_class *list_message =
+			new Process_list_command_class();
+	 if (list_message)
 	 {
 			return_code = Cmiss_rendition_process_list_or_write_window_commands(
 				rendition, command_prefix, command_suffix, list_message);

@@ -4414,11 +4414,12 @@ DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window.
 ==============================================================================*/
 {
-	 int return_code;
+	 int return_code = 0;
 
 	 ENTER(list_Computed_field_commands);
-	 if (Process_list_command_class *list_message =
-			new Process_list_command_class())
+	 Process_list_command_class *list_message =
+			new Process_list_command_class();
+	 if (list_message != 0)
 	 {
 			return_code = process_list_or_write_Computed_field_commands(
 				 field, command_prefix_void, list_message);
@@ -4500,11 +4501,12 @@ DESCRIPTION :
 Writes the commands needed to reproduce <field> to the com file.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(write_Computed_field_commands_to_comfile);
-	if (Process_write_command_class *write_message =
-		 new Process_write_command_class())
+	Process_write_command_class *write_message =
+		 new Process_write_command_class();
+	if (write_message)
 	{
 		 return_code = process_list_or_write_Computed_field_commands(
 				field,  command_prefix_void, write_message);
