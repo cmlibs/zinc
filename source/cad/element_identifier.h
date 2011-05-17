@@ -11,8 +11,8 @@
 
 struct Cmiss_cad_identifier
 {
-	Cad_primitive_identifier identifier;
 	Cmiss_field_cad_topology_id cad_topology;
+	Cad_primitive_identifier identifier;
 
 	Cmiss_cad_identifier(Cmiss_field_cad_topology_id cad_topology, Cad_primitive_identifier identifier);
 	~Cmiss_cad_identifier();

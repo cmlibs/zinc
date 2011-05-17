@@ -853,7 +853,7 @@ bool OpenCascadeImporter::convertDocToRegionsAndFields( Handle_TDocStd_Document 
 		{
 			TCollection_AsciiString entry;
 			TDF_Tool::Entry( aLabel, entry );
-			Standard_CString cString = entry.ToCString();
+			//Standard_CString cString = entry.ToCString();
 			//DEBUG_PRINT("%d. %5.3f %5.3f %5.3f (%s)\n",i , aColor._CSFDB_GetQuantity_ColorMyRed(),
 			//	aColor._CSFDB_GetQuantity_ColorMyGreen(), aColor._CSFDB_GetQuantity_ColorMyBlue(), cString);
 			//std::cout << "(" << cString << ")" << std::endl;

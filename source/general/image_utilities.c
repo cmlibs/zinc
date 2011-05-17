@@ -801,7 +801,8 @@ functions, ie. at the start of the program.
 			on IRIX when checking for floating point exceptions.
 			Not doing this could mean that imagemagick does not close itself down correctly,
 			especially if it has made temporary files. */
-		InitializeMagick(program_name);
+		/* InitializeMagick(program_name); */
+		MagickCoreGenesis(program_name, MagickFalse);
 #endif /* ! defined (SGI) */
 #endif /* defined (USE_IMAGEMAGICK) */
 		return_code = 1;
@@ -831,7 +832,8 @@ Called to finialise the use of the image environment
 
 #if defined (USE_IMAGEMAGICK)
 #if ! defined (SGI)
-	DestroyMagick();
+	/* DestroyMagick(); */
+	MagickCoreTerminus();
 #endif /* ! defined (SGI) */
 #endif /* defined (USE_IMAGEMAGICK) */
 	return_code = 1;
@@ -1151,7 +1153,8 @@ Writes an image in SGI rgb file format.
 		if (number_of_bytes_per_component == 1)
 		{
 			/* open the output file */
-			if (output_file=fopen(file_name,"wb"))
+			output_file=fopen(file_name,"wb");
+			if (output_file != NULL)
 			{
 				/* write the output file header */
 				/* found in /etc/magic */
@@ -1375,7 +1378,8 @@ since textures are required to be in powers of two.
 		if (number_of_bytes_per_component == 1)
 		{
 			/* open the output file */
-			if (output_file=fopen(file_name,"wt"))
+			output_file=fopen(file_name,"wt");
+			if (output_file != NULL)
 			{
 				/* write the output file header */
 				switch (image_orientation)
@@ -1619,7 +1623,7 @@ Uses LZW compression to compress a stream of bytes to a file.
 	/* limited to 12-bit codes */
 	size_t written=0;
 	unsigned char high_byte,low_byte,*matched_string,*next_byte,
-		**next_string_table_entry,out_byte,*search_string,*string_table[4096];
+		**next_string_table_entry,out_byte,*search_string = NULL,*string_table[4096];
 	unsigned short clear_code,end_of_information_code,matched_code,
 		*next_string_table_length_entry,number_of_compressed_bytes,number_of_codes,
 		search_code,string_table_length[4096];
@@ -1992,21 +1996,21 @@ int write_png_image_file(char *file_name,
 	png_infop info_ptr = NULL;
 	png_bytep row = NULL;
 	png_text title_text;
-	unsigned char pixel_char[4];
-	unsigned long *long_pixel;
-	int x, y, return_code = 0;
+	unsigned char pixel_component;
+	int x, y, w, return_code = 0;
 
-	if (file_name && (4 == number_of_components) && (0 < number_of_columns) &&
-		(0 < number_of_rows) && image)
+	if (file_name && (4 == number_of_components) && (1 == number_of_bytes_per_component) && 
+		(0 < number_of_columns) && (0 < number_of_rows) && image)
 	{
-		if (output_file = fopen(file_name, "wb"))
+		output_file = fopen(file_name, "wb");
+		if (output_file != NULL)
 		{
 			png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 			info_ptr = png_create_info_struct(png_ptr);
 			if (png_ptr != NULL && info_ptr != NULL )
 			{
 				/* set error handling */
-				if (setjmp(png_ptr->jmpbuf))
+				if (0 != setjmp(png_ptr->jmpbuf))
 				{
 					display_message(ERROR_MESSAGE, "Error during png creation in write_png_image_file." );
 				}
@@ -2038,16 +2042,11 @@ int write_png_image_file(char *file_name,
 					{
 						for (x = 0; x < number_of_columns; x++)
 						{
-							long_pixel=((unsigned long *)image)+y*(number_of_columns+row_padding)+x;
-
-							pixel_char[3] = (unsigned char)(((0xff000000 & *long_pixel)) >> 24);
-							pixel_char[2] = (unsigned char)(((0x00ff0000 & *long_pixel)) >> 16);
-							pixel_char[1] = (unsigned char)(((0x0000ff00 & *long_pixel)) >> 8);
-							pixel_char[0] = (unsigned char)(((0x000000ff & *long_pixel)) >> 0);
-							row[x*number_of_components+0] = pixel_char[0];
-							row[x*number_of_components+1] = pixel_char[1];
-							row[x*number_of_components+2] = pixel_char[2];
-							row[x*number_of_components+3] = pixel_char[3];
+							for(w=0; w < number_of_components; w++)
+							{
+								pixel_component = *(((unsigned char *)image)+(y*(number_of_columns+row_padding)+x)*number_of_components+w);
+								row[x*number_of_components+w] = pixel_component;
+							}
 						}
 						png_write_row(png_ptr, row);
 					}
@@ -2058,6 +2057,10 @@ int write_png_image_file(char *file_name,
 					DEALLOCATE(row);
 					return_code = 1;
 				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "write_png_image_file.  png_ptr or info_prt is NULL.");
 			}
 
 			fclose(output_file);
@@ -2100,10 +2103,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 	FILE *output_file;
 	int i,j,k,number_in_colour_map,return_code,row_number,samples_per_pixel;
 	size_t strips_written, written;
-	struct Colour_map_entry *colour_map_entry,*colour_map_index;
+	struct Colour_map_entry *colour_map_entry = NULL,*colour_map_index = NULL;
 	struct LIST(Colour_map_entry) *colour_map_list;
 	unsigned char byte,*palette_image,*palette_image_pixel,*pixel,
-		*uncompressed_byte,*uncompressed_bytes;
+		*uncompressed_byte = NULL,*uncompressed_bytes = NULL;
 	unsigned long compression_value,image_file_directory_offset,
 		next_image_file_directory_offset,photometric_interpretation_value,
 		planar_configuration_value,strip_byte_counts_start,*strip_offset,
@@ -2131,7 +2134,8 @@ Not working for 64 bit as assumes a long is 4 bytes!
 				pixel=(unsigned char *)image;
 				palette_image_pixel=palette_image;
 				number_in_colour_map=0;
-				if (colour_map_list=CREATE(LIST(Colour_map_entry))())
+				colour_map_list=CREATE(LIST(Colour_map_entry))();
+				if (colour_map_list != NULL)
 				{
 					if (ALLOCATE(colour_map_entry,struct Colour_map_entry,1))
 					{
@@ -2194,8 +2198,9 @@ Not working for 64 bit as assumes a long is 4 bytes!
 								pixel++;
 							} break;
 						}
-						if (colour_map_index=FIND_BY_IDENTIFIER_IN_LIST(Colour_map_entry,
-							identifier)(colour_map_entry,colour_map_list))
+						colour_map_index=FIND_BY_IDENTIFIER_IN_LIST(Colour_map_entry,
+							identifier)(colour_map_entry,colour_map_list);
+						if (colour_map_index != NULL)
 						{
 							*palette_image_pixel=(unsigned char)(colour_map_index->index);
 						}
@@ -2313,7 +2318,8 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					strip_offsets[i]=0;
 				}
 				/* open the output file */
-				if (output_file=fopen(file_name,"wb"))
+				output_file=fopen(file_name,"wb");
+				if (output_file != NULL)
 				{
 					/* write the image file header */
 #if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
@@ -2331,8 +2337,8 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						output_file);
 #if defined (DEBUG)
 					/*???debug */
-					printf("location %d %d\n",ftell(output_file),
-						(int)image_file_directory_offset);
+					printf("location %ld %ld\n",ftell(output_file),
+						image_file_directory_offset);
 #endif /* defined (DEBUG) */
 					/* write the image file directory */
 					if (palette_image)
@@ -2451,7 +2457,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 #if defined (DEBUG)
 					/*???debug */
 					printf("written image_function_definitions\n");
-					printf("location %d %d\n",ftell(output_file),
+					printf("location %ld %ld\n",ftell(output_file),
 						(int)image_file_directory_offset+sizeof(unsigned short)+
 						sizeof(unsigned long)+image_file_directory_entry_count*12);
 #endif /* defined (DEBUG) */
@@ -2464,7 +2470,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 #if defined (DEBUG)
 					/*???debug */
 					printf("written bits_per_sample\n");
-					printf("strip offsets start %d %d\n",ftell(output_file),
+					printf("strip offsets start %ld %ld\n",ftell(output_file),
 						(int)image_file_directory_offset+sizeof(unsigned short)+
 						image_file_directory_entry_count*12+sizeof(unsigned long)+
 						3*sizeof(unsigned short));
@@ -2499,7 +2505,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					strip_offset[0]=value_offset;
 #if defined (DEBUG)
 					/*???debug */
-					printf("strip_offset[0] %d %d\n",strip_offset[0],ftell(output_file));
+					printf("strip_offset[0] %ld %ld\n",strip_offset[0],ftell(output_file));
 #endif /* defined (DEBUG) */
 					if (palette_image)
 					{
@@ -2648,7 +2654,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						}
 #if defined (DEBUG)
 						/*???debug */
-						printf("strip_offset[%d] %d %d\n",number_of_strips-k+1,
+						printf("strip_offset[%d] %ld %ld\n",number_of_strips-k+1,
 							strip_offset[0]+strip_byte_count[0],ftell(output_file));
 #endif /* defined (DEBUG) */
 						if (k>1)
@@ -2684,13 +2690,13 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					printf("written strips\n");
 					for (k=0;k<number_of_strips;k++)
 					{
-						printf("%d %d %d\n",k,strip_offsets[k],strip_byte_counts[k]);
+						printf("%d %ld %d\n",k,strip_offsets[k],strip_byte_counts[k]);
 					}
 #endif /* defined (DEBUG) */
 					/* write the strip offsets */
 					fseek(output_file,(long int)strip_offsets_start,SEEK_SET);
 #if defined (DEBUG)
-					printf("strip offsets start %d %d\n",ftell(output_file),
+					printf("strip offsets start %ld %ld\n",ftell(output_file),
 						strip_offsets_start);
 #endif /* defined (DEBUG) */
 					strips_written=fwrite(strip_offsets,sizeof(unsigned long),
@@ -2706,13 +2712,13 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					else
 					{
 #if defined (DEBUG)
-						printf("strip byte counts start %d %d\n",ftell(output_file),
+						printf("strip byte counts start %ld %ld\n",ftell(output_file),
 							strip_byte_counts_start);
 #endif /* defined (DEBUG) */
 						/* write the strip byte counts */
 						fseek(output_file,(long int)strip_byte_counts_start,SEEK_SET);
 #if defined (DEBUG)
-						printf("strip byte counts start %d %d\n",ftell(output_file),
+						printf("strip byte counts start %ld %ld\n",ftell(output_file),
 							strip_byte_counts_start);
 #endif /* defined (DEBUG) */
 						strips_written=fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
@@ -2796,7 +2802,8 @@ from the file size. Note indexed RAW files are not supported.
 		if (0 < (width = *width_address))
 		{
 			return_code = 1;
-			if (image_file = fopen(file_name,"rb"))
+			image_file = fopen(file_name,"rb");
+			if (image_file != NULL)
 			{
 				/* use stat to get size of file to determine format from */
 				if ((0 == stat(file_name, &buf)) &&
@@ -2959,7 +2966,8 @@ number_of_components=4, RGBA
 		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
 	{
-		if (image_file=fopen(file_name,"rb"))
+		image_file=fopen(file_name,"rb");
+		if (image_file != NULL)
 		{
 			if ((1==read_and_byte_swap((unsigned char *)&magic_number,2,1,
 				least_to_most,image_file))&&
@@ -3394,7 +3402,7 @@ the second the denominator.
 	int i,least_to_most,return_code;
 	long image_length,image_width,*strip_offset,*strip_offsets;
 	unsigned char bit,byte,byte_array[4],*pbyte_array,colour_0,colour_1,*image,*image_ptr,
-		*new_strip,*strip,*temp_unsigned_char_ptr, *field_values;
+		*new_strip,*strip,*temp_unsigned_char_ptr, *field_values = NULL;
 	unsigned long byte_count,column_number,field_count,ifd_offset,
 		number_of_fields,number_of_strips,rows_per_strip,
 		*strip_byte_count,*strip_byte_counts;
@@ -3414,7 +3422,8 @@ the second the denominator.
 		image_address)
 	{
 		*number_of_bytes_per_component_address = 1;
-		if (tiff_file=fopen(file_name,"rb"))
+		tiff_file=fopen(file_name,"rb");
+		if (tiff_file != NULL)
 		{
 			return_code=1;
 #if defined (DEBUG)
@@ -3518,7 +3527,7 @@ the second the denominator.
 #if defined (DEBUG)
 								/*???debug */
 								printf("D) Image file directory\n");
-								printf("     Number of Fields = %d\n",number_of_fields);
+								printf("     Number of Fields = %ld\n",number_of_fields);
 #endif /* defined (DEBUG) */
 								if (0>=number_of_fields)
 								{
@@ -3554,8 +3563,9 @@ the second the denominator.
 								while (return_code&&(number_of_fields>0))
 								{
 									/* read field information */
-									if (return_code = read_tiff_field(&field_tag, &field_type,
-										&field_count, &field_values, tiff_file, least_to_most))
+									return_code = read_tiff_field(&field_tag, &field_type,
+										&field_count, &field_values, tiff_file, least_to_most);
+									if (return_code)
 									{
 										/* allocate values specific to tag numbers */
 										switch (field_tag)
@@ -4074,9 +4084,9 @@ the second the denominator.
 								{
 #if defined (DEBUG)
 									/*???debug */
-									for (i=0;i<number_of_strips;i++)
+									for (i=0;i<(int)number_of_strips;i++)
 									{
-										printf("strip offset %d: %d %d\n",i,strip_offsets[i],
+										printf("strip offset %d: %ld %ld\n",i,strip_offsets[i],
 											strip_byte_counts[i]);
 									}
 /*
@@ -4571,7 +4581,8 @@ If just the width is specified, the height is computed from the file size.
 		image_address)
 	{
 		return_code=1;
-		if (image_file=fopen(file_name,"rb"))
+		image_file = fopen(file_name,"rb");
+		if (image_file != NULL)
 		{
 			/* use stat to get size of file to determine format from */
 			if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
@@ -6243,7 +6254,8 @@ Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
 		if (cmgui_image->magick_image)
 		{
 			/* destroy linked-list of images */
-			DestroyImages(cmgui_image->magick_image);
+			/* DestroyImages(cmgui_image->magick_image); */
+			DestroyImageList(cmgui_image->magick_image);
 		}
 #else /* defined (USE_IMAGEMAGICK) */
 		if (cmgui_image->image_arrays)
@@ -6460,8 +6472,9 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			}
 			if (return_code)
 			{
-				magick_image = AllocateImage((ImageInfo *) NULL);
-				if (NULL != magick_image)
+				/*if (magick_image = AllocateImage((ImageInfo *) NULL)) */
+				magick_image = AcquireImage((ImageInfo *) NULL);
+				if (magick_image != NULL)
 				{
 					magick_image->columns = width;
 					magick_image->rows = height;
@@ -6742,7 +6755,7 @@ equal to the number_of_components.
 - different colour spaces output;
 ==============================================================================*/
 {
-	int bytes_per_pixel, fill_byte_number, i, number_of_components,
+	int bytes_per_pixel, fill_byte_number, i, number_of_components = 0,
 		padding_bytes, return_code, width_bytes, y, y_limit;
 	unsigned char *destination;
 #if defined (USE_IMAGEMAGICK)
@@ -6869,7 +6882,10 @@ equal to the number_of_components.
 			{
 #if defined (USE_IMAGEMAGICK)
 				/* y is 0 in the top scanline of ImageMagick images, hence reverse */
-				DispatchImage(magick_image, left, image_height_minus_1 - y,
+				/* DispatchImage(magick_image, left, image_height_minus_1 - y,
+					width, 1, magick_image_storage, magick_storage_type,
+					(void *)destination, &magick_exception); */
+				ExportImagePixels(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
 					(void *)destination, &magick_exception);
 #else /* defined (USE_IMAGEMAGICK) */

@@ -1982,14 +1982,15 @@ Evaluate the fields cache at the location
 		Field_element_xi_location *element_xi_location;
 		Field_node_location *node_location;
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location);
+		if (element_xi_location != 0)
 		{
 			FE_element* element = element_xi_location->get_element();			
 			field->values[0] = (FE_value)FE_element_get_access_count(element);
 		}
-		else if (node_location = 
-			dynamic_cast<Field_node_location*>(location))
+		else if (0 != (node_location = 
+			dynamic_cast<Field_node_location*>(location)))
 		{
 			FE_node *node = node_location->get_node();
 			field->values[0] = (FE_value)FE_node_get_access_count(node);

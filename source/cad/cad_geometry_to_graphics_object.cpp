@@ -92,13 +92,13 @@ struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad
 		GT_surface_set_integer_identifier(surface, surface_index);
 		int points_index = 0;
 		int return_code = 1;
-		DEBUG_PRINT("creating %d surfaces\n", surface_index);
+		//DEBUG_PRINT("creating %d surfaces\n", surface_index);
 		//for ( int i = 0; i < surface_count && return_code; i++ )
 		//{
 			//Cmiss_cad_surface_identifier identifier = i;
 			int point_count = Cmiss_field_cad_topology_get_surface_point_count(cad_topology, surface_index);
-			DEBUG_PRINT("  setting id: %d (surface point count %d)\n", surface_index, point_count);
-			DEBUG_PRINT( "  surface %d has %d points\n", surface_index+1, point_count );
+			//DEBUG_PRINT("  setting id: %d (surface point count %d)\n", surface_index, point_count);
+			//DEBUG_PRINT( "  surface %d has %d points\n", surface_index+1, point_count );
 			for ( int j = 0; j < point_count && return_code; j++ )
 			{
 				double u = 0.0, v = 0.0;

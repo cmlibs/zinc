@@ -802,8 +802,8 @@ occurred.
 						fe_region->fe_field_changes, &number_of_fe_field_changes);
 					CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(
 						fe_region->fe_node_changes, &number_of_fe_node_changes);
-					CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(
-						fe_region->fe_element_changes, &number_of_fe_element_changes);
+					/*CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(
+						fe_region->fe_element_changes, &number_of_fe_element_changes);*/
 					/*???debug*/printf("------ UPDATE %p:  fields %d  nodes %d  elements %d   (M %p)",
 						fe_region, number_of_fe_field_changes, number_of_fe_node_changes,
 						number_of_fe_element_changes,fe_region->master_fe_region);

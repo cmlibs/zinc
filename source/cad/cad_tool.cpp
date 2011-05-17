@@ -339,7 +339,7 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 											Cmiss_rendition *region_rendition = NULL;
 											Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 											Region_cad_primitive_map::iterator pos;
-											int count = 0;
+											//int count = 0;
 											for (pos = cad_primitive_map->begin(); pos != cad_primitive_map->end(); ++pos)
 											{
 												//DEBUG_PRINT("\tprimitive %d\n", ++count);

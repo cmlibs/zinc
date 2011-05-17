@@ -2314,7 +2314,7 @@ DESCRIPTION :
 						i++;
 					
 #if defined (DEBUG)
-						while (error=glGetError())
+						while (0 != (error=glGetError()))
 						{
 							printf("GL ERROR 0: %s\n",gluErrorString(error));
 						}
@@ -2348,7 +2348,7 @@ DESCRIPTION :
 						glEnable(GL_TEXTURE_1D);
 #endif /* defined (OLD_CODE) */				
 #if defined (DEBUG)
-						while (error=glGetError())
+						while (0 != (error=glGetError()))
 						{
 							printf("GL ERROR 1: %s\n",gluErrorString(error));
 						}
@@ -2382,7 +2382,7 @@ DESCRIPTION :
 					pixels[5]=0;
 					/* set up a texture */
 #if defined (DEBUG)
-					while (error=glGetError())
+					while (0 != (error=glGetError()))
 					{
 						printf("GL ERROR 0: %s\n",gluErrorString(error));
 					}
@@ -2414,7 +2414,7 @@ DESCRIPTION :
 					glEnable(GL_TEXTURE_1D);
 #endif /* defined (OLD_CODE) */				
 #if defined (DEBUG)
-					while (error=glGetError())
+					while (0 != (error=glGetError()))
 					{
 						printf("GL ERROR 1: %s\n",gluErrorString(error));
 					}

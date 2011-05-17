@@ -430,7 +430,6 @@ void Computed_field_cad_topology::shape_information() const
 void Computed_field_cad_topology::information(Cad_primitive_identifier id) const
 {
 	//String info;
-	int count = 0;
 	TopoDS_Edge edge;
 	TopoDS_Face face;
 	display_message(INFORMATION_MESSAGE,
@@ -904,22 +903,23 @@ void Cad_topology_information( Cmiss_field_cad_topology_id cad_topology_field, C
 int gfx_list_cad_entity(struct Parse_state *state,
 	void *cad_element_type_void, void *root_region_void)
 {
-	int return_code = 0, cad_element_type = 0;
+	int return_code = 0, path_length;//, cad_element_type = 0;
 	int identifier_number = -1;
-	struct Cmiss_region *root_region = NULL, *region = NULL;
+	struct Cmiss_region *root_region = NULL;//, *region = NULL;
 	char selected_flag, shape_flag = 0x00, surface_flag = 0x00,
 		curve_flag = 0x00, point_flag = 0x00;
 	struct Cmiss_region_path_and_name region_path_and_name;
 	struct Computed_field *field = NULL;
-	struct LIST(Computed_field) *list_of_fields = NULL;
+	//struct LIST(Computed_field) *list_of_fields = NULL;
 	struct Option_table *option_table, *identifier_type_option_table;
 
 	ENTER(execute_command_gfx_import);
+	USE_PARAMETER(cad_element_type_void);
 
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
 		selected_flag = 0;
-		cad_element_type = (int)cad_element_type_void;
+		//cad_element_type = *((int *)cad_element_type_void);
 		region_path_and_name.region = (struct Cmiss_region *)NULL;
 		region_path_and_name.region_path = (char *)NULL;
 		region_path_and_name.name = (char *)NULL;
@@ -945,12 +945,38 @@ int gfx_list_cad_entity(struct Parse_state *state,
 			NULL, set_char_flag);
 		/* default option: region_path and/or field_name */
 		Option_table_add_region_path_and_or_field_name_entry(
-			option_table, (char *)NULL, &region_path_and_name, root_region);
-		if (return_code = Option_table_multi_parse(option_table,state))
+			option_table, NULL, &region_path_and_name, root_region);
+		if ((return_code = Option_table_multi_parse(option_table,state)))
 		{
 			field = (struct Computed_field *)NULL;
 			if (region_path_and_name.name)
 			{
+				/* following accesses the field, if any */
+				field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+					region_path_and_name.name);
+				if (!field)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx list field:  There is no field or child region called %s in region %s",
+						region_path_and_name.name, region_path_and_name.region_path);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				path_length = 0;
+				if (region_path_and_name.region_path)
+				{
+					path_length = strlen(region_path_and_name.region_path);
+					if (path_length > 0)
+					{
+						path_length += strlen(CMISS_REGION_PATH_SEPARATOR_STRING);
+					}
+				}
+				else
+				{
+					region_path_and_name.region = ACCESS(Cmiss_region)(root_region);
+				}
 				Cad_primitive_identifier cad_identifier;
 				cad_identifier.number = identifier_number;
 				if (shape_flag)
@@ -973,8 +999,8 @@ int gfx_list_cad_entity(struct Parse_state *state,
 
 					struct MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(
 						region_path_and_name.region);
-					const Cmiss_set_Computed_field& field_set = Computed_field_manager_get_fields(manager);
-					Cmiss_set_Computed_field::const_iterator it = field_set.begin();
+					const Cmiss_set_Cmiss_field& field_set = Computed_field_manager_get_fields(manager);
+					Cmiss_set_Cmiss_field::const_iterator it = field_set.begin();
 					for (;it != field_set.end(); it++)
 					{
 						struct Computed_field *field = *it;
@@ -982,7 +1008,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 						if (cad_topology)
 						{
 							char *name = Cmiss_field_get_name(field);
-							display_message(INFORMATION_MESSAGE, "cad topology field: %s\n", name);
+							//display_message(INFORMATION_MESSAGE, "cad topology field: %s\n", name);
 							free(name);
 							Cmiss_field_cad_primitive_group_template_id cad_primitive_group = 
 								Cmiss_field_group_get_cad_primitive_group(selection_group, cad_topology);
@@ -991,7 +1017,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 								Cmiss_cad_identifier_id cad_identifier = Cmiss_field_cad_primitive_group_template_get_first_cad_primitive(cad_primitive_group);
 								while (cad_identifier != NULL)
 								{
-									display_message(INFORMATION_MESSAGE, "cad id %p %d %d\n", cad_identifier->cad_topology, cad_identifier->identifier.type, cad_identifier->identifier.number);
+									//display_message(INFORMATION_MESSAGE, "cad id %p %d %d\n", cad_identifier->cad_topology, cad_identifier->identifier.type, cad_identifier->identifier.number);
 									Cad_topology_information(cad_identifier->cad_topology, cad_identifier->identifier);
 									delete cad_identifier;
 									cad_identifier = Cmiss_field_cad_primitive_group_template_get_next_cad_primitive(cad_primitive_group);

@@ -327,10 +327,10 @@ DESCRIPTION : \
 	{ \
 		valid_strings = ENUMERATOR_GET_VALID_STRINGS(enumerator_type)( \
 			&number_of_valid_strings, \
-         (ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) *)NULL, \
+			(ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) *)NULL, \
 			(void *)NULL); \
 		return_code = Option_table_add_enumerator_macro(enumerator_type)(option_table, number_of_valid_strings, \
-			valid_strings, enumerator);																\
+			valid_strings, enumerator); \
 		DEALLOCATE(valid_strings); \
 	} \
 	else \

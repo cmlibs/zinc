@@ -257,7 +257,7 @@ bool OpenCascadeFormatReader::importSTEP( const std::string& file )
 			// lost at this point
 			m_doc.Nullify();
 			m_sequenceOfShapes = new TopTools_HSequenceOfShape();
-			Standard_Integer count = reader.Reader().TransferRoots();
+			Standard_Integer count = reader.ChangeReader().TransferRoots();
 			if (count)
 			{
 				TopoDS_Shape shape = reader.Reader().OneShape();

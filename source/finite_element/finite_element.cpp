@@ -25314,7 +25314,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 #if defined (DEBUG)
 			/*???debug */
 			printf("coordinate_transformation: %p\n",coordinate_transformation);
-			if (value=coordinate_transformation)
+			value=coordinate_transformation;
+			if (value != 0)
 			{
 				for (i=field_element_dimension;i>0;i--)
 				{
