@@ -46,6 +46,10 @@
 #include <list>
 #include <set>
 
+extern "C" {
+#include "general/octree.h"
+}
+
 class Triangle_vertex
 {
 private:
@@ -136,12 +140,16 @@ private:
 	Triangle_vertex_compare compare;
 	Triangle_vertex_set vertex_set;
 	Mesh_triangle_list triangle_list;
+	struct Octree *octree;
+	struct LIST(Octree_object) *nearby_vertex;
 	
 public:
 	Triangle_mesh(float tolerance) :
 		compare(tolerance),
 		vertex_set(compare),
-		triangle_list()
+		triangle_list(),
+		octree(CREATE(Octree)()),
+		nearby_vertex(CREATE(LIST(Octree_object))())
 	{
 	}
 

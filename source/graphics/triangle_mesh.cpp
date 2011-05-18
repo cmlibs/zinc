@@ -121,18 +121,36 @@ Triangle_mesh::~Triangle_mesh()
 		Triangle_vertex *vertex = (*vertex_iter);
 		delete vertex;
 	}
+	DESTROY(LIST(Octree_object))(&nearby_vertex);
+	DESTROY(Octree)(&octree);
 }
 
 const Triangle_vertex *Triangle_mesh::add_vertex(const float *coordinates)
 {
-	Triangle_vertex *vertex = new Triangle_vertex(coordinates);
-	vertex->set_identifier(vertex_set.size()+1);
-	std::pair<Triangle_vertex_set_iterator,bool> insert_result = vertex_set.insert(vertex);
-	Triangle_vertex *vertex_in_set = *insert_result.first; 
-	if (!insert_result.second)
+	Triangle_vertex *vertex_in_set = NULL;
+	FE_value coordiantes_FEValue[3];
+	coordiantes_FEValue[0] = (FE_value)coordinates[0];
+	coordiantes_FEValue[1] = (FE_value)coordinates[1];
+	coordiantes_FEValue[2] = (FE_value)coordinates[2];
+	Octree_add_objects_near_coordinate_to_list(octree,
+		/*dimension*/3, coordiantes_FEValue, /*tolerance*/ 0.000001, nearby_vertex);
+	if (0 == NUMBER_IN_LIST(Octree_object)(nearby_vertex))
 	{
-		delete vertex;
+		vertex_in_set = new Triangle_vertex(coordinates);
+		vertex_in_set->set_identifier(vertex_set.size()+1);
+		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordiantes_FEValue);
+		Octree_object_set_user_data(octree_vertex, (void *)vertex_in_set);
+		Octree_add_object(octree, octree_vertex);
+		std::pair<Triangle_vertex_set_iterator,bool> insert_result = vertex_set.insert(vertex_in_set);
 	}
+	else
+	{
+		struct Octree_object *nearest_octree_object =
+			Octree_object_list_get_nearest(nearby_vertex, coordiantes_FEValue);
+		REMOVE_ALL_OBJECTS_FROM_LIST(Octree_object)(nearby_vertex);
+		vertex_in_set = (Triangle_vertex *)Octree_object_get_user_data(nearest_octree_object);
+	}
+
 	return vertex_in_set;
 }
 
