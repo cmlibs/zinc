@@ -930,7 +930,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 						glBitmap (char_width, char_height, 0, 0,
 							char_leading + char_width, 0, xbitmap_data);
 
-						delete xbitmap_data;
+						delete [] xbitmap_data;
 
 						glEndList ();
 					}
