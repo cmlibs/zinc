@@ -8335,19 +8335,20 @@ to the command window. Or writes the commadns for creating the window
 and establishing the views in it to the command window to a com file.
 ==============================================================================*/
 {
-	 int return_code;
+	int return_code = 0;
 
-	 ENTER(list_Graphics_window_commands);
+	ENTER(list_Graphics_window_commands);
 	USE_PARAMETER(dummy_void);
-	 if (Process_list_command_class *list_message =
-			new Process_list_command_class())
-	 {
-			return_code = process_list_or_write_Graphics_window_commands(window, list_message);
-			delete list_message;
-	 }
-	 LEAVE;
+	Process_list_command_class *list_message =
+		new Process_list_command_class();
+	if (list_message)
+	{
+		return_code = process_list_or_write_Graphics_window_commands(window, list_message);
+		delete list_message;
+	}
+	LEAVE;
 
-	 return (return_code);
+	return (return_code);
 }
 
 int write_Graphics_window_commands_to_comfile(struct Graphics_window *window,
@@ -8360,19 +8361,20 @@ Writes the commadns for creating the window
 and establishing the views in it to the command window to a com file.
 ==============================================================================*/
 {
-	 int return_code;
+	int return_code = 0;
 
-	 ENTER(write_Graphics_window_commands_to_comfile);
+	ENTER(write_Graphics_window_commands_to_comfile);
 	USE_PARAMETER(dummy_void);
-	 if (Process_write_command_class *write_message =
-			new Process_write_command_class())
-	 {
-			return_code = process_list_or_write_Graphics_window_commands(window, write_message);
-			delete write_message;
-	 }
-	 LEAVE;
-	 
-	 return (return_code);
+	Process_write_command_class *write_message =
+		new Process_write_command_class();
+	if (write_message)
+	{
+		return_code = process_list_or_write_Graphics_window_commands(window, write_message);
+		delete write_message;
+	}
+	LEAVE;
+	
+	return (return_code);
 }
 
 #if defined (WX_USER_INTERFACE)
