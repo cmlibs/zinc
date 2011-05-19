@@ -238,7 +238,7 @@ Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
 
 /***************************************************************************//**
  * Create a new element in this mesh with shape and fields described by the
- * element_template. Returns identifier of new element.
+ * element_template. Returns 0 on failure, 1 on success.
  * @see Cmiss_fe_mesh_create_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
@@ -246,7 +246,7 @@ Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
  * negative to automatically generate, starting from 1. Fails if supplied
  * identifier already used by an existing element.
  * @param element_template  Template for element shape and fields.
- * @return  Identifier of new element or -1 if error.
+ * @return  0 on failure, 1 on success.
  */
 int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);

@@ -917,12 +917,10 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
 		Cmiss_fe_mesh_create_element(mesh, identifier, element_template);
 	if (element)
 	{
-		CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
 		Cmiss_element_destroy(&element);
-		return cm.number;
+		return 1;
 	}
-	return -1;
+	return 0;
 }
 
 Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
@@ -1139,7 +1137,7 @@ int Cmiss_element_get_dimension(Cmiss_element_id element)
 
 int Cmiss_element_get_identifier(struct Cmiss_element *element)
 {
-	int return_code = 0;
+	int return_code = -1;
 	struct CM_element_information cm;
 	if (get_FE_element_identifier(element, &cm))
 	{
