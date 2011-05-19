@@ -3644,7 +3644,7 @@ struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 
 	ENTER(FE_region_create_FE_node_copy);
 	new_node = (struct FE_node *)NULL;
-	if (fe_region && source)
+	if (fe_region && source && (-1 <= identifier))
 	{
 		if (fe_region->master_fe_region)
 		{
@@ -5006,7 +5006,7 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 
 	ENTER(FE_region_create_FE_element_copy);
 	new_element = (struct FE_element *)NULL;
-	if (fe_region && source)
+	if (fe_region && source && (-1 <= identifier))
 	{
 		int dimension = get_FE_element_dimension(source);
 		struct LIST(FE_element) *element_list =

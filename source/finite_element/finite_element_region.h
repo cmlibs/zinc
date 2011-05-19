@@ -917,9 +917,9 @@ Should place multiple calls to this function between begin_change/end_change.
  * identifier as a copy of source and adds it to the fe_region.
  *
  * @param fe_region  The region to create the element copy in.
- * @param identifier  Non-negative integer identifier of new element, or
- * negative to automatically generate (starting at 1). Fails if supplied
- * identifier already used by an existing element.
+ * @param identifier  Non-negative integer identifier of new element, or -1 to
+ * automatically generate (starting at 1). Fails if supplied identifier already
+ * used by an existing element.
  * @return  New element (non-accessed), or NULL if failed.
  */
 struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,

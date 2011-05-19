@@ -178,7 +178,7 @@ Cmiss_node_template_id Cmiss_nodeset_create_node_template(
  * node_template. Returns handle to new element.
  *
  * @param nodeset  Handle to the nodeset to create the new node in.
- * @param identifier  Non-negative integer identifier of new node, or negative
+ * @param identifier  Non-negative integer identifier of new node, or -1
  * to automatically generate, starting from 1. Fails if supplied identifier
  * already used by an existing node.
  * @param node_template  Template for defining node fields.
@@ -290,7 +290,7 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
  * @param node_template  Node template to modify.
  * @param field  The field to define derivatives for.
  * @param component_number  The component from 1 to the number of field
- * components, or 0 to define the derivative for all components.
+ * components, or -1 to define the derivative for all components.
  * @param derivative_type  The type of nodal derivative to define.
  * @return  1 on success, 0 on error.
  */
@@ -325,7 +325,7 @@ int Cmiss_node_template_define_time_sequence(
  * @param node_template  Node template to modify.
  * @param field  The field to define versions for.
  * @param component_number  The component from 1 to the number of field
- * components, or 0 to define the number of versions for all components.
+ * components, or -1 to define the number of versions for all components.
  * @param number_of_versions  The number of versions of each value & derivative
  * stored for the component/s, at least 1 (the default).
  * @return  1 on success, 0 on error.

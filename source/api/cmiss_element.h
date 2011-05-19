@@ -213,9 +213,9 @@ Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
  * @see Cmiss_fe_mesh_define_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
- * @param identifier  Non-negative integer identifier of new element, or
- * negative to automatically generate, starting from 1. Fails if supplied
- * identifier already used by an existing element.
+ * @param identifier  Non-negative integer identifier of new element, or -1 to
+ * automatically generate, starting from 1. Fails if supplied identifier already
+ * used by an existing element.
  * @param element_template  Template for element shape and fields.
  * @return  Handle to newly created element, or NULL if error.
  */
@@ -242,9 +242,9 @@ Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
  * @see Cmiss_fe_mesh_create_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
- * @param identifier  Non-negative integer identifier of new element, or
- * negative to automatically generate, starting from 1. Fails if supplied
- * identifier already used by an existing element.
+ * @param identifier  Non-negative integer identifier of new element, or -1 to
+ * automatically generate, starting from 1. Fails if supplied identifier already
+ * used by an existing element.
  * @param element_template  Template for element shape and fields.
  * @return  0 on failure, 1 on success.
  */
@@ -294,7 +294,7 @@ int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
- * Returns the dimension of the mesh.
+ * Returns the number of dimensions of the mesh.
  *
  * @param mesh  Handle to the mesh to query.
  * @return  dimension of mesh.
@@ -315,8 +315,7 @@ int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
  * @param element_basis  Element basis to query.
  * @return  The number of dimensions.
  */
-int Cmiss_element_basis_get_number_of_dimensions(
-	Cmiss_element_basis_id element_basis);
+int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis);
 
 /***************************************************************************//**
  * Gets the basis function type for a dimension of the basis.
@@ -436,7 +435,7 @@ int Cmiss_element_template_set_number_of_nodes(
  * @param element_template  Element template to modify.
  * @param field  The field to define.
  * @param component_number  The component to define from 1 to the number of
- * field components, or 0 to define all components with identical basis and
+ * field components, or -1 to define all components with identical basis and
  * nodal mappings.
  * @param basis  The element basis to use for all field components.
  * @param basis_number_of_nodes  The number of nodes indexed by the basis,
@@ -470,7 +469,7 @@ int Cmiss_element_template_finalise(Cmiss_element_template_id element_template);
  *
  * @param element_template  Element template to query.
  * @param local_node_index  The index from 1 to number of nodes in template.
- * @return  Handle to the global node, or NULL if none or erro.
+ * @return  Handle to the global node, or NULL if none or error.
  */
 Cmiss_node_id Cmiss_element_template_get_node(
 	Cmiss_element_template_id element_template, int local_node_index);
@@ -505,7 +504,7 @@ Cmiss_element_id Cmiss_element_access(Cmiss_element_id element);
 int Cmiss_element_destroy(Cmiss_element_id *element_address);
 
 /***************************************************************************//**
- * Returns the dimension of the element's chart.
+ * Returns the number of dimensions of the element's chart.
  *
  * @param element  The element to query.
  * @return  The dimension.
@@ -517,7 +516,7 @@ int Cmiss_element_get_dimension(Cmiss_element_id element);
  * mesh.
  *
  * @param element  The element to query.
- * @return  The integer identifier of the element.
+ * @return  The integer identifier of the element, or -1 if element is invalid.
  */
 int Cmiss_element_get_identifier(Cmiss_element_id element);
 

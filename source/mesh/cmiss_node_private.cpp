@@ -91,7 +91,9 @@ public:
 	{
 		int first = 0;
 		int limit = get_FE_field_number_of_components(fe_field);
-		if (component_number)
+		if ((component_number < -1) || (component_number == 0) || (component_number > limit))
+			return 0;
+		if (component_number > 0)
 		{
 			first = component_number - 1;
 			limit = component_number;
@@ -114,7 +116,9 @@ public:
 	{
 		int first = 0;
 		int limit = get_FE_field_number_of_components(fe_field);
-		if (component_number)
+		if ((component_number < -1) || (component_number == 0) || (component_number > limit))
+			return 0;
+		if (component_number > 0)
 		{
 			first = component_number - 1;
 			limit = component_number;

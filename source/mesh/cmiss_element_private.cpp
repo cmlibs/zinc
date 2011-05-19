@@ -349,11 +349,11 @@ public:
 		delete[] components;
 	}
 
-	/** @param component_number  0 for all components, or positive for single component */
+	/** @param component_number  -1 for all components, or positive for single component */
 	int buildComponent(int component_number, FE_basis *fe_basis, int number_of_nodes,
 		const int *local_node_indexes)
 	{
-		if ((component_number < 0) || (component_number > number_of_components))
+		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
 			return 0;
 		FE_element_field_component *component =
 			CREATE(FE_element_field_component)(STANDARD_NODE_TO_ELEMENT_MAP,
@@ -381,7 +381,7 @@ public:
 		{
 			int first = 0;
 			int limit = number_of_components;
-			if (component_number)
+			if (component_number > 0)
 			{
 				first = component_number - 1;
 				limit = component_number;
@@ -1009,8 +1009,7 @@ int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)
 	return 0;
 }
 
-int Cmiss_element_basis_get_number_of_dimensions(
-	Cmiss_element_basis_id element_basis)
+int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getDimensions();
