@@ -58,9 +58,11 @@ static void  Cmiss_selection_handler_callback(
 struct Cmiss_selection_event
 {
 	enum Cmiss_selection_change_type change_type;
+	int owning_rendition_destroyed;
 
 	Cmiss_selection_event() :
-		change_type(CMISS_SELECTION_NO_CHANGE)
+		change_type(CMISS_SELECTION_NO_CHANGE),
+		owning_rendition_destroyed(0)
 	{
 	}
 };
@@ -72,7 +74,7 @@ struct Cmiss_selection_handler
 	Cmiss_selection_handler_callback_function function;
 	void *user_data;
 	void *callback_id;
-	int access_count;
+	int owning_rendition_destroyed, access_count;
 
 	Cmiss_selection_handler() :
 		hierarchical_flag(0),
@@ -80,6 +82,7 @@ struct Cmiss_selection_handler
 		function(NULL),
 		user_data(NULL),
 		callback_id(NULL),
+		owning_rendition_destroyed(0),
 		access_count(1)
 	{
 	}
@@ -100,7 +103,7 @@ struct Cmiss_selection_handler
 		function = function_in;
 		user_data = user_data_in;
 		int return_code = 0;
-		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+		Cmiss_region_id region = Cmiss_rendition_get_region(rendition);
 		if (region)
 		{
 			struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
@@ -124,12 +127,11 @@ struct Cmiss_selection_handler
 		 return hierarchical_flag;
 	}
 
-	int clear()
+	void remove_manager_callback()
 	{
-		int return_code = 0;
 		if (rendition)
 		{
-			struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+			Cmiss_region_id region = Cmiss_rendition_get_region(rendition);
 			if (region)
 			{
 				struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
@@ -137,13 +139,17 @@ struct Cmiss_selection_handler
 				{
 					MANAGER_DEREGISTER(Computed_field)(callback_id, field_manager);
 					callback_id = NULL;
-					return_code = 1;
 				}
 			}
 		}
+	}
+
+	int clear()
+	{
+		remove_manager_callback();
 		function = NULL;
 		user_data = NULL;
-		return return_code;
+		return 1;
 	}
 
 };
@@ -185,7 +191,7 @@ static void Cmiss_selection_handler_callback(
 		int selection_changed = 0;
 		struct Cmiss_selection_handler *selection_handler = (struct Cmiss_selection_handler *)selection_handler_void;
 		const Cmiss_field_change_detail *source_change_detail = NULL;
-		if (selection_handler)
+		if (selection_handler && selection_handler->rendition)
 		{
 			Cmiss_field_group_id group_field = Cmiss_rendition_get_internal_selection_group(selection_handler->rendition);
 			if (group_field)
@@ -243,6 +249,7 @@ static void Cmiss_selection_handler_callback(
 							} break;
 						}
 					}
+					event->owning_rendition_destroyed = selection_handler->owning_rendition_destroyed;
 					if (event->change_type != CMISS_SELECTION_NO_CHANGE)
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
@@ -313,6 +320,12 @@ int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
 
+Cmiss_selection_handler_id Cmiss_selection_handler_access(
+	Cmiss_selection_handler_id selection_handler)
+{
+	return ACCESS(Cmiss_selection_handler)(selection_handler);
+}
+
 int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler_address)
 {
 	return DEACCESS(Cmiss_selection_handler)(selection_handler_address);
@@ -324,8 +337,34 @@ enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
 	return selection_event->change_type;
 }
 
+int Cmiss_selection_event_owning_rendition_is_destroyed(
+		Cmiss_selection_event_id selection_event)
+	{
+		return selection_event->owning_rendition_destroyed;
+	}
+
 Cmiss_selection_handler_id Cmiss_selection_handler_create_private()
 {
 	Cmiss_selection_handler_id handler = new Cmiss_selection_handler();
 	return handler;
+}
+
+int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selection_handler)
+{
+	if (selection_handler && selection_handler->function)
+	{
+		selection_handler->owning_rendition_destroyed = 1;
+		selection_handler->rendition = NULL;
+		if (selection_handler->function)
+		{
+			Cmiss_selection_event_id event = new Cmiss_selection_event();
+			event->change_type = CMISS_SELECTION_NO_CHANGE;
+			event->owning_rendition_destroyed = 1;
+			(selection_handler->function)(event, selection_handler->user_data);
+			delete event;
+		}
+		selection_handler->remove_manager_callback();
+	}
+
+	return 0;
 }

@@ -61,26 +61,90 @@ enum Cmiss_selection_change_type
 	CMISS_SELECTION_REPLACE = 4   /*!< contents replaced: clear+add, add+remove */
 };
 
-enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
-	Cmiss_selection_event_id selection_event);
+/***************************************************************************//**
+* Returns a new reference to the selection_handler with reference count incremented.
+* Caller is responsible for destroying the new reference.
+*
+* @param selection_handler  The selection_handler to obtain a new reference to.
+* @return  New selection_handler reference with incremented reference count.
+*/
+Cmiss_selection_handler_id Cmiss_selection_handler_access(
+	Cmiss_selection_handler_id selection_handler);
+
+/***************************************************************************//**
+ * Destroys this reference to the tessellation (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param selection_handler  Handle to the cmiss selection_handler.
+ * @return  0 on failure, 1 on success.
+ */
+int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler);
+
+/***************************************************************************//**
+ * Stop and clear selection callback. This will stop the callback and also
+ * remove the callback function from the seleciton handler.
+ *
+ * @param selection_handler  Handle to the cmiss selection_handler.
+ * @return  0 on failure, 1 on success.
+ */
+int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_handler);
 
 /***************************************************************************//**
  * Assign the callback function and user_data for the selection handler.
- * This function does not start the callback.
+ * This function also starts the callback.
+ *
+ * @see Cmiss_selection_handler_callback_function
+ * @param selection_event  Handle to the cmiss_selection_event.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to an user object. User is responsible for
+ *   the life time of such object.
+ * @return  1 on success, 0 on failure.
  */
 int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id selection_handler,
 		Cmiss_selection_handler_callback_function function, void *user_data_in);
 
+/***************************************************************************//**
+ * Get the change type of the correct selection. This provides detail of the
+ * selection changes.
+ * @see Cmiss_selection_change_type
+ *
+ * @param selection_event  Handle to the cmiss_selection_event.
+ * @return  Cmiss_selection_change_type  The type of recent changes.
+ */
+enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
+	Cmiss_selection_event_id selection_event);
+
+/***************************************************************************//**
+ * Inquire either the selection handler will trigger event when selection
+ * of the local regions and its childrens rendition has changed or only trigger
+ * event with selection changes of the local region rendition.
+ *
+ * @param selection_event  Handle to the cmiss_selection_event.
+ * @return  1 if selection handler triggers hierarchical changes, 0 otherwise.
+ */
 int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id selection_handler);
 
+/***************************************************************************//**
+ * Set either the selection handler will trigger event when selection
+ * of the local regions and its childrens rendition has changed or only trigger
+ * event with selection changes of the local region rendition.
+ *
+ * @param selection_event  Handle to the cmiss_selection_event.
+ * @param hierarchical_flag  flag to be set.
+ * @return  0 on failure, 1 on success.
+ */
 int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selection_handler,
 	int hierarchical_flag);
 
 /***************************************************************************//**
- * Stop and clear selection callback.
+ * User can use this function to inquire either the rendition owning the
+ * selection handler triggering this event has been destroyed. If it is destroyed,
+ * no more event callback will be triggered after the current one.
+ *
+ * @param selection_event  Handle to the cmiss_selection_event.
+ * @return  1 if rendition is destroyed, 0 if not.
  */
-int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_handler);
-
-int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler);
+int Cmiss_selection_event_owning_rendition_is_destroyed(
+	Cmiss_selection_event_id selection_event);
 
 #endif /* __CMISS_SELECTION_H__ */

@@ -50,5 +50,7 @@ struct Cmiss_selection_handler *Cmiss_selection_handler_create_private();
 int Cmiss_selection_handler_set_rendition(Cmiss_selection_handler_id selection_handler,
 	struct Cmiss_rendition *rendition_in);
 
+int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selection_handler);
+
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
 #endif /* (SELECTION_HPP) */

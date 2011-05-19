@@ -93,6 +93,12 @@ struct Cmiss_rendition_callback_data
 	Cmiss_rendition_callback_data *next;
 }; /* struct Cmiss_rendition_callback_data */
 
+static int UNIQUE_RENDITION_NAME = 1000;
+int GET_UNIQUE_RENDITION_NAME()
+{
+	return UNIQUE_RENDITION_NAME++;
+}
+
 static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 	struct Cmiss_region_changes *region_changes, void *rendition_void);
 
@@ -835,7 +841,6 @@ void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition,
 	{
 		int child_region_number = 1;
 
-		unsigned int parent_position = rendition->position;
 		struct Cmiss_region *temp_region = Cmiss_region_get_first_child(rendition->region);
 		while (temp_region)
 		{
@@ -843,10 +848,7 @@ void Cmiss_rendition_add_child_region(struct Cmiss_rendition *rendition,
 			child_region_number = child_region_number +1;
 		}
 
-		char position_string[100];
- 		sprintf(position_string,"%u0%u", parent_position, child_region_number);
-		Cmiss_rendition_set_position(child_rendition,
- 			atoi((const char *)position_string));
+		Cmiss_rendition_set_position(child_rendition,	GET_UNIQUE_RENDITION_NAME());
 		Cmiss_rendition_add_callback(child_rendition, Cmiss_rendition_update_callback,
 			(void *)NULL);
 		if (rendition->list_of_scene &&
@@ -3351,6 +3353,7 @@ int DESTROY(Cmiss_rendition)(
 				iter != cmiss_rendition->selection_handler_list->end(); ++iter)
 			{
 				Cmiss_selection_handler_id selection_handler = *iter;
+				Cmiss_selection_handler_rendition_destroyed(selection_handler);
 				Cmiss_selection_handler_destroy(&selection_handler);
 			}
 			delete cmiss_rendition->selection_handler_list;
