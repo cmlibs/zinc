@@ -808,100 +808,85 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	 int i, return_code = 0, *time_index_one, *time_index_two;
-	 double time;
-	 FE_time_sequence *time_sequence;
-	 FE_value *xi, *lower_time, *upper_time; 
+	int i, return_code = 0;
+	double time;
+	FE_time_sequence *time_sequence;
 
-	 ENTER(Computed_field_quaternion_SLERP::evaluate_cache_at_location);
-	 if (field && location && field->number_of_components == 4 &&
-			field->source_fields[0]->number_of_components == 4)
-	 {
-			time = location->get_time();
-			//t is the normalised time scaled from 0 to 1
-			if ((ALLOCATE(time_index_one, int, 1)) &&
-				 (ALLOCATE(time_index_two, int, 1)) &&
-				 (ALLOCATE(xi, FE_value, 1)) &&
-				 (ALLOCATE(upper_time, FE_value, 1)) &&
-				 (ALLOCATE(lower_time, FE_value, 1)))
+
+	ENTER(Computed_field_quaternion_SLERP::evaluate_cache_at_location);
+	if (field && location && field->number_of_components == 4 &&
+		field->source_fields[0]->number_of_components == 4)
+	{
+		time = location->get_time();
+		//t is the normalised time scaled from 0 to 1
+
+		int time_index_one, time_index_two;
+		FE_value xi, lower_time, upper_time;
+		time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(field->source_fields[0],
+			nodal_lookup_node);
+		if (time_sequence)
+		{
+			FE_time_sequence_get_interpolation_for_time(
+				time_sequence, time, &time_index_one,
+				&time_index_two, &xi);
+			FE_time_sequence_get_time_for_index(
+				time_sequence, time_index_one, &lower_time);
+			FE_time_sequence_get_time_for_index(
+				time_sequence, time_index_two, &upper_time);
+			normalised_t = xi;
+			// get the starting quaternion
+			Field_node_location old_location(nodal_lookup_node, lower_time);
+			Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
+			old_w = (double)(field->source_fields[0]->values[0]);
+			old_x = (double)(field->source_fields[0]->values[1]);
+			old_y = (double)(field->source_fields[0]->values[2]);
+			old_z = (double)(field->source_fields[0]->values[3]);
+			// get the last quaternion
+			Field_node_location new_location(nodal_lookup_node, upper_time);
+			Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
+			w = (double)(field->source_fields[0]->values[0]);
+			x = (double)(field->source_fields[0]->values[1]);
+			y = (double)(field->source_fields[0]->values[2]);
+			z = (double)(field->source_fields[0]->values[3]);
+
+			Quaternion from(old_w, old_x, old_y, old_z);
+			Quaternion to(w, x, y, z);
+			Quaternion current;
+			from.normalise();
+			to.normalise();
+			current.interpolated_with_SLERP(from, to, normalised_t);
+
+			if (!quaternion_component)
 			{
-				 time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(field->source_fields[0],
-						nodal_lookup_node);
-				 if (time_sequence)
-				 {
-						FE_time_sequence_get_interpolation_for_time(
-							 time_sequence, time, time_index_one,
-							 time_index_two, xi);
-						FE_time_sequence_get_time_for_index(
-							 time_sequence, *time_index_one, lower_time);
-						FE_time_sequence_get_time_for_index(
-							 time_sequence, *time_index_two, upper_time);
-						normalised_t = *xi;
-						// get the starting quaternion
-						Field_node_location old_location(nodal_lookup_node, *lower_time);
-						Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
-						old_w = (double)(field->source_fields[0]->values[0]);
-						old_x = (double)(field->source_fields[0]->values[1]);
-						old_y = (double)(field->source_fields[0]->values[2]);
-						old_z = (double)(field->source_fields[0]->values[3]);
-						// get the last quaternion
-						Field_node_location new_location(nodal_lookup_node, *upper_time);
-						Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
-						w = (double)(field->source_fields[0]->values[0]);
-						x = (double)(field->source_fields[0]->values[1]);
-						y = (double)(field->source_fields[0]->values[2]);
-						z = (double)(field->source_fields[0]->values[3]);
-						
-						Quaternion from(old_w, old_x, old_y, old_z);
-						Quaternion to(w, x, y, z);
-						Quaternion current;
-						from.normalise();
-						to.normalise();
-						current.interpolated_with_SLERP(from, to, normalised_t);
-						
-						if (!quaternion_component)
-						{
-							 ALLOCATE(quaternion_component, double, 4); 
-						}
-						if(quaternion_component)
-						{
-							 current.get(quaternion_component);
-						}
-						for (i=0; i<4;i++)
-						{
-							 field->values[i] =quaternion_component [i];
-						}
-						return_code = 1;
-						DEALLOCATE(time_index_one);
-						DEALLOCATE(time_index_two);
-						DEALLOCATE(xi);
-						DEALLOCATE(upper_time);
-						DEALLOCATE(lower_time);
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,
-							 "Computed_field_quaternion::evaluate_cache_at_location.  "
-							 "time sequence is missing.");
-				 }
+				ALLOCATE(quaternion_component, double, 4);
 			}
-			else
+			if(quaternion_component)
 			{
-				 display_message(ERROR_MESSAGE,
-						"Computed_field_quaternion::evaluate_cache_at_location.  "
-						"not enough memory.");
+				current.get(quaternion_component);
 			}
-	 }
-	 else
-	 {
+			for (i=0; i<4;i++)
+			{
+				field->values[i] =quaternion_component [i];
+			}
+			return_code = 1;
+		}
+		else
+		{
 			display_message(ERROR_MESSAGE,
-				 "Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
-				 "Invalid argument(s)");
-			return_code = 0;
-	 }
-	 LEAVE;
-	 
-	 return (return_code);
+				"Computed_field_quaternion::evaluate_cache_at_location.  "
+				"time sequence is missing.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
 } /* Computed_field_quaternion_SLERP::evaluate_cache_at_location */
 
 int Computed_field_quaternion_SLERP::list()
