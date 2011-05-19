@@ -305,19 +305,18 @@ Source fields are coordinates, undeformed_coordinates and fibre angle.
 					}
 				}
 			}
+			else
+			{
+#if 0
+				display_message(ERROR_MESSAGE,
+					"Computed_field_2d_strain::evaluate_cache_at_location.  "
+					"Cannot calculate derivatives of strains");
+#endif
+				return_code = 0;
+			}
+		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_2d_strain::evaluate_cache_at_location.  "
-				"Cannot calculate derivatives of strains");
-			return_code = 0;
-		}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_2d_strain::evaluate_cache_at_location.  "
-				"Only implemented in elements.");
 			return_code = 0;
 		}
 	}

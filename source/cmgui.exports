@@ -98,7 +98,7 @@ Cmiss_field_get_name
 Cmiss_field_set_name
 Cmiss_field_get_number_of_components
 Cmiss_field_get_field_module
-Cmiss_field_is_defined_at_node
+Cmiss_field_is_defined_at_location
 Cmiss_field_module_create_cache
 Cmiss_field_cache_access
 Cmiss_field_cache_destroy

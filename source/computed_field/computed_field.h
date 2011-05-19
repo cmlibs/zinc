@@ -96,7 +96,6 @@ functions are given their public names.
 #define Computed_field_get_number_of_components \
 	Cmiss_field_get_number_of_components
 #define Computed_field_set_type Cmiss_field_set_type
-#define Computed_field_is_defined_at_node Cmiss_field_is_defined_at_node
 
 /*
 Global types
@@ -332,6 +331,46 @@ int Cmiss_field_cache_set_element_location_with_parent(
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
 	int number_of_chart_coordinates, double *chart_coordinates,
 	Cmiss_element_id top_level_element);
+
+/***************************************************************************//**
+ * Clears only values cache for field and its sources, not deeper type-specific
+ * cache. Useful for doing quick evaluations at different locations.
+ * Internal function.
+ *
+ * @param cache  The field cache to modify.
+ * @param field  The field whose values cache is to be cleared, along with all
+ * its source fields, recursively.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
+	Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Internal function similar to Cmiss_field_assign_real but which only assigns
+ * the value in the field_cache, propagating it back to its source fields. This
+ * means subsequent evaluations at the same cache location will return the
+ * values if set. Changing the cache location clears these temporary cached
+ * values.
+ *
+ * @param cache  Store of location to assign at and intermediate field values.
+ * @param field  The field to assign real values to in the cache.
+ * @param number_of_values  Size of values array. Checked that it equals or
+ * exceeds the number of components of field.
+ * @param values  Array of real values to assign to field.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
+	Cmiss_field_id field, int number_of_values, double *values);
+
+/***************************************************************************//**
+ * Internal function.
+ * Note: no warnings if not evaluated so can be used for is_defined
+ *
+ * @return  1 if any field component value is non zero with a small tolerance,
+ * otherwise 0.
+ */
+int Cmiss_field_evaluate_boolean(Cmiss_field_id field,
+	Cmiss_field_cache_id cache);
 
 /* GRC document if keeping */
 int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field,

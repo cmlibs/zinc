@@ -354,7 +354,7 @@ LAST MODIFIED : 17 June 1994
 
 DESCRIPTION :
 This function returns the tensor product (memory allocated within the function)
-of <matrix_1> and <matrix_2>.  All matricies are assumed to be stored row-wise.
+of <matrix_1> and <matrix_2>.  All matrices are assumed to be stored row-wise.
 ==============================================================================*/
 {
 	FE_value *product,*row_start_1,*row_start_2,*value,*value_1 = NULL, *value_2 = NULL;
@@ -514,7 +514,7 @@ Calculates the monomial basis function values.  Expects the memory to already be
 allocated for the <function_values>.  The first entry of the <type_arguments> is
 the number of xi coordinates and the other entries are the orders of the
 monomials for each xi coordinate.
-NB.  xi_1 is varying slowest (xi_n fastest)
+NB.  xi_1 is varying fastest (xi_n slowest)
 ==============================================================================*/
 {
 	FE_value *temp_value, *value, xi, xi_power;

@@ -329,8 +329,8 @@ Note:
 - the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
-	struct FE_region *fe_region,
+struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
+	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,

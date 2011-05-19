@@ -148,7 +148,7 @@ int Cmiss_field_destroy(Cmiss_field_id *field_address);
  * coordinate field is not assignable.)
  * Only supported for some cache locations: node, or anywhere for constants.
  *
- * @param field  The field to assign a string value to.
+ * @param field  The field to assign real values to.
  * @param cache  Store of location to assign at and intermediate field values.
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
@@ -266,15 +266,16 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
  */
 Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field);
 
-int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node);
 /***************************************************************************//**
-LAST MODIFIED : 17 January 2007
-
-DESCRIPTION :
-Returns true if <field> can be calculated at <node>. If the field depends on
-any other fields, this function is recursively called for them.
-==============================================================================*/
+ * Determines if the field is defined at the location specified in the field
+ * cache.
+ *
+ * @param field  The field to query.
+ * @param cache  Store of location to check and intermediate field values.
+ * @return  1 if defined, 0 if not or failed.
+ */
+int Cmiss_field_is_defined_at_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache);
 
 /***************************************************************************//**
  * Creates a field cache for storing a known location and field values and

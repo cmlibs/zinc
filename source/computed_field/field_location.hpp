@@ -58,9 +58,11 @@ class Field_location
 protected:
 	FE_value time;
 	int number_of_derivatives;
+	int assign_to_cache; // if set, assignment is to cache only, not to field
 
    Field_location(FE_value time = 0.0, int number_of_derivatives = 0) : 
-		time(time), number_of_derivatives(number_of_derivatives)
+		time(time), number_of_derivatives(number_of_derivatives),
+		assign_to_cache(0)
 	{};
 
 public:
@@ -82,6 +84,16 @@ public:
 	int get_number_of_derivatives()
 	{
 		return number_of_derivatives;
+	}
+
+	int get_assign_to_cache() const
+	{
+		return assign_to_cache;
+	}
+
+	void set_assign_to_cache(int assign_to_cache_in)
+	{
+		assign_to_cache = (assign_to_cache_in != 0);
 	}
 
 	virtual int check_cache_for_location(Cmiss_field * /*field*/)

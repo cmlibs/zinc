@@ -1650,9 +1650,7 @@ Evaluate the fields cache at the location
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_integration::evaluate_cache_at_location.  "
-				"Location type unknown or not implemented.");
+			// Location type unknown or not implemented
 			return_code = 0;
 		}
 		

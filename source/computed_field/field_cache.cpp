@@ -85,6 +85,15 @@ int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address)
 	return Cmiss_field_cache::deaccess(*cache_address);
 }
 
+int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
+	Cmiss_field_id field)
+{
+	if ((!cache) || (!field))
+		return 0;
+	Cmiss_field_clear_values_cache_recursive(field);
+	return 1;
+}
+
 int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
 {
 	if (!cache)
@@ -178,4 +187,25 @@ int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
 		delete field_location;
 	}
 	return 0;
+}
+
+// Internal function
+int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
+	Cmiss_field_id field, int number_of_values, double *values)
+{
+	int return_code;
+	if (cache)
+	{
+		Field_location *location = cache->get_location();
+		location->set_assign_to_cache(1);
+		return_code = Cmiss_field_assign_real(field, cache, number_of_values, values);
+		location->set_assign_to_cache(0);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_cache_assign_field_real.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
 }

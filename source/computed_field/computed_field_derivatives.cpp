@@ -950,9 +950,7 @@ Evaluate the fields cache at the location
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_curl::evaluate_cache_at_location.  "
-				"Only calculable in elements.");
+			// Only calculable in elements
 			return_code = 0;
 		}
 	}
@@ -1392,9 +1390,7 @@ Evaluate the fields cache at the location
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_divergence::evaluate_cache_at_location.  "
-				"Only calculable in elements.");
+			// Only calculable in elements
 			return_code = 0;
 		}
 	}
@@ -1764,7 +1760,6 @@ int Computed_field_gradient::evaluate_cache_at_location(
 
 	ENTER(Computed_field_gradient::evaluate_cache_at_location);
 	return_code = 0;
-
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location  = dynamic_cast<Field_element_xi_location*>(location);
@@ -1954,12 +1949,6 @@ int Computed_field_gradient::evaluate_cache_at_location(
 				}
 			}
 			DEACCESS(FE_node)(&temporary_node);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_gradient::evaluate_cache_at_location.  "
-				"Not defined at specified location");			
 		}
 	}
 	else

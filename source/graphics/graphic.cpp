@@ -3490,8 +3490,11 @@ int Cmiss_graphic_to_graphics_object(
 									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-									glyph_set = create_GT_glyph_set_from_FE_region_nodes(
-										fe_region, graphic_to_object_data->rc_coordinate_field,
+									Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(graphic_to_object_data->field_module,
+										(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
+									glyph_set = create_GT_glyph_set_from_nodeset(
+										nodeset, graphic_to_object_data->field_cache,
+										graphic_to_object_data->rc_coordinate_field,
 										graphic->glyph, base_size, centre, scale_factors,
 										graphic_to_object_data->time,
 										graphic_to_object_data->wrapper_orientation_scale_field,
@@ -3499,6 +3502,7 @@ int Cmiss_graphic_to_graphics_object(
 										graphic->font, graphic->label_field,
 										graphic->label_density_field, graphic->visibility_field,
 										graphic->select_mode,graphic_to_object_data->group_field);
+									Cmiss_nodeset_destroy(&nodeset);
 									/* NOT an error if no glyph_set produced == empty group */
 									if (glyph_set)
 									{

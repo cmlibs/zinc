@@ -84,7 +84,7 @@ int Field_element_xi_location::check_cache_for_location(Computed_field *field)
 	/* clear the cache if values already cached for a node */
 	if (field->node || field->coordinate_reference_field)
 	{
-		Computed_field_clear_cache(field);
+		Cmiss_field_clear_values_cache_non_recursive(field);
 	}
 	/* Are the values and derivatives in the cache not already calculated? */
 	if ((element == field->element) && (time == field->time) &&
@@ -134,7 +134,7 @@ int Field_node_location::check_cache_for_location(Computed_field *field)
 	/* clear the cache if values already cached for an element */
 	if (field->element || field->coordinate_reference_field)
 	{
-		Computed_field_clear_cache(field);
+		Cmiss_field_clear_values_cache_non_recursive(field);
 	}
 	/* allocate cache */
 	if ((node == field->node) && (time == field->time))
@@ -166,7 +166,7 @@ int Field_time_location::check_cache_for_location(Computed_field *field)
 	/* clear the cache if values already cached for other location type */
 	if (field->element || field->node || field->coordinate_reference_field)
 	{
-		Computed_field_clear_cache(field);
+		Cmiss_field_clear_values_cache_non_recursive(field);
 	}
 	else if ((time == field->time) && (field->values_valid || field->string_cache))
 	{
@@ -263,7 +263,7 @@ int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 	/* clear the cache if values already cached for an element or node */
 	if (field->element || field->node)
 	{
-		Computed_field_clear_cache(field);
+		Cmiss_field_clear_values_cache_non_recursive(field);
 	}
 	if (field->field_does_not_depend_on_cached_location &&
 		(field->coordinate_reference_field == reference_field) &&

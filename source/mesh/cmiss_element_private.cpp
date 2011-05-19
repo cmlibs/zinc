@@ -47,9 +47,9 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "mesh/cmiss_element_private.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_element_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
 
@@ -993,7 +993,7 @@ int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
 	return return_code;
 }
 
-FE_region *Cmiss_fe_mesh_get_fe_region(Cmiss_fe_mesh_id mesh)
+FE_region *Cmiss_fe_mesh_get_FE_region(Cmiss_fe_mesh_id mesh)
 {
 	if (mesh)
 	{

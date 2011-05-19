@@ -397,10 +397,22 @@ Sets the <values> of the computed <field> over the <element>.
 				return_code = 0;
 			}
 		}
-		if (!return_code)
+		// don't assign values to constants if assigning to cache
+		if (return_code && (!location->get_assign_to_cache()))
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_composite::set_values_at_location.  Failed");
+			bool changed = false;
+			for (i = 0; i < field->number_of_components; i++)
+			{
+				if (-1 == source_field_numbers[i])
+				{
+					field->source_values[source_value_numbers[i]] = values[i];
+					changed = true;
+				}
+			}
+			if (changed)
+			{
+				Computed_field_changed(field);
+			}
 		}
 	}
 	else

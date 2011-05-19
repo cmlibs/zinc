@@ -2899,12 +2899,6 @@ Evaluate the fields cache at the location
 					/*z*/field->source_fields[0]->values[3]);
 				return_code = quat.quaternion_to_matrix(field->values);
 			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"Computed_field_quaternion_to_matrix::evaluate_cache_at_location.  "
-						"Cannot evaluate source fields cache at location.");
-			}
 	 }
 	 else
 	 {
@@ -3202,12 +3196,6 @@ Evaluate the fields cache at the location
 				return_code = Quaternion::matrix_to_quaternion(
 					/*source*/field->source_fields[0]->values, /*destination*/field->values);
 			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"Computed_field_matrix_to_quaternion::evaluate_cache_at_location.  "
-						"Cannot evaluate source fields cache at location");
-			}			
 	 }
 	 else
 	 {

@@ -705,6 +705,25 @@ nothing is done, although other shape broadcast operations could be proposed
 for matrix operations.
 ==============================================================================*/
 
+// caller must ensure valid field is passed and field->values is zero
+inline int Computed_field_allocate_values_cache(Computed_field *field)
+{
+	/* get enough space for derivatives in highest dimension element */
+	if (!(ALLOCATE(field->values, FE_value, field->number_of_components) &&
+		ALLOCATE(field->derivatives, FE_value,
+			MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+	{
+		// make sure we have allocated values AND derivatives, or nothing
+		DEALLOCATE(field->values);
+		return 0;
+	}
+	for (int i = 0; i < field->number_of_components; i++)
+	{
+		field->values[i] = 0.0;
+	}
+	return 1;
+}
+
 inline int Computed_field_evaluate_cache_at_location(
 	Computed_field *field, Field_location* location)
 /*******************************************************************************
@@ -715,7 +734,7 @@ Calculates the values of <field> at <location>.
 Upon successful return the node values of the <field> are stored in its cache.
 ==============================================================================*/
 {
-	 int i, return_code;
+	 int return_code;
 
 	ENTER(Computed_field_evaluate_cache_at_location);
 #if ! defined (OPTIMISED)
@@ -723,27 +742,9 @@ Upon successful return the node values of the <field> are stored in its cache.
 	{
 #endif /* ! defined (OPTIMISED) */
 		return_code=1;
-		/* make sure we have allocated values AND derivatives, or nothing */
 		if (!field->values)
 		{
-			/* get enough space for derivatives in highest dimension element */
-			if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
-					ALLOCATE(field->derivatives,FE_value,
-						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
-			{
-				if (field->values)
-				{
-					DEALLOCATE(field->values);
-				}
-				return_code=0;
-			}
-			if (field->values && return_code)
-			{
-				for (i=0;i<(field->number_of_components);i++)
-					{
-						field->values[i]=0;
-					}
-			}
+			return_code = Computed_field_allocate_values_cache(field);
 		}
 		if (!location->check_cache_for_location(field))
 		{
@@ -858,6 +859,20 @@ cache.
 
 	return (return_code);
 } /* Computed_field_evaluate_source_fields_cache_at_location */
+
+/***************************************************************************//**
+ * Clears values cache of field but not deeper type-specific cache.
+ * Does not recurse through all source fields.
+ * Caller's responsibility to ensure field argument is valid.
+ */
+void Cmiss_field_clear_values_cache_non_recursive(Cmiss_field *field);
+
+/***************************************************************************//**
+ * Clears values cache of field but not deeper type-specific cache.
+ * Does same for all source fields.
+ * Caller's responsibility to ensure field argument is valid.
+ */
+void Cmiss_field_clear_values_cache_recursive(Cmiss_field *field);
 
 /***************************************************************************//**
  * Variant of Computed_field_clear_cache which does not recurse over source

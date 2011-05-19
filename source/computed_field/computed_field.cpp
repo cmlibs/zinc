@@ -1473,7 +1473,7 @@ int Computed_field_dependency_change_private(struct Computed_field *field)
 	return (return_code);
 }
 
-void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field)
+void Cmiss_field_clear_values_cache_non_recursive(Cmiss_field *field)
 {
 	if (field->element)
 	{
@@ -1493,10 +1493,6 @@ void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field)
 		DEACCESS(Computed_field)(&field->coordinate_reference_field);
 	}
 	field->field_does_not_depend_on_cached_location = 0;
-	if (field->core)
-	{
-		field->core->clear_cache();
-	}
 	if (field->string_cache)
 	{
 		DEALLOCATE(field->string_cache);
@@ -1504,6 +1500,15 @@ void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field)
 	field->string_component = -1;
 	field->derivatives_valid = 0;
 	field->values_valid = 0;
+}
+
+void Cmiss_field_clear_cache_non_recursive(Cmiss_field *field)
+{
+	Cmiss_field_clear_values_cache_non_recursive(field);
+	if (field->core)
+	{
+		field->core->clear_cache();
+	}
 }
 
 int Computed_field_clear_cache(struct Computed_field *field)
@@ -1528,6 +1533,25 @@ int Computed_field_clear_cache(struct Computed_field *field)
 	LEAVE;
 
 	return (return_code);
+}
+
+void Cmiss_field_clear_values_cache_recursive(Cmiss_field *field)
+{
+	int return_code = 1;
+	if (field)
+	{
+		Cmiss_field_clear_values_cache_non_recursive(field);
+		for (int i = 0; i < field->number_of_source_fields; i++)
+		{
+			Cmiss_field_clear_values_cache_recursive(field->source_fields[i]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_clear_values_cache_recursive.  Invalid argument(s)");
+		return_code = 0;
+	}
 }
 
 int Computed_field_is_defined_in_element(struct Computed_field *field,
@@ -2126,7 +2150,7 @@ int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_at_location.  Invalid argument(s)");
+			"Cmiss_field_assign_real.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2146,12 +2170,44 @@ int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_at_location.  Invalid argument(s)");
+			"Cmiss_field_assign_string.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
+}
+
+// Internal function
+// Note this returns 0 for undefined as well as false. Not ready to expose in
+// external API until this is deemed reasonable.
+// Follow older functions and change name to 'evaluates_as_true'?
+int Cmiss_field_evaluate_boolean(Cmiss_field_id field, Cmiss_field_cache_id cache)
+{
+	const FE_value zero_tolerance = 1e-6;
+	if (field && cache)
+	{
+		if (Computed_field_evaluate_cache_at_location(field, cache->get_location()))
+		{
+			if (field->values_valid)
+			{
+				for (int i = 0; i < field->number_of_components; i++)
+				{
+					if ((field->values[i] < -zero_tolerance) ||
+						(field->values[i] > zero_tolerance))
+					{
+						return 1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_boolean.  Invalid argument(s)");
+	}
+	return 0;
 }
 
 // External API
@@ -2284,6 +2340,15 @@ int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field, Cmiss_f
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+int Cmiss_field_is_defined_at_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache)
+{
+	// GRC search and remove is defined at node function uses
+	if ((!field) || (!cache))
+		return 0;
+	return field->core->is_defined_at_location(cache->get_location());
 }
 
 int Computed_field_evaluate_cache_in_element(
@@ -2827,13 +2892,49 @@ is reached for which its calculation is not reversible, or is not supported yet.
 		else
 		{
 			/* Normally propagate the set_values call */
-			if (!(return_code = field->core->set_values_at_location(location, values)))
+			if (field->core->set_values_at_location(location, values))
+			{
+				if (location->get_assign_to_cache())
+				{
+					int k;
+					if (!field->values)
+					{
+						return_code = Computed_field_allocate_values_cache(field);
+					}
+					// put assigned values into cache
+					// ???GRC they should be put there anyway rather than in separate allocated
+					// arrays in each implementation of set_values_at_location.
+					for (k = 0; k < field->number_of_components; k++)
+					{
+						field->values[k] = values[k];
+					}
+					field->values_valid = 1;
+					// zero derivatives
+					const int nDerivatives = field->number_of_components*MAXIMUM_ELEMENT_XI_DIMENSIONS;
+					for (k = 0; k < nDerivatives; k++)
+					{
+						field->derivatives[k] = 0.0;
+					}
+					field->derivatives_valid = 1;
+					if (field->string_cache)
+					{
+						DEALLOCATE(field->string_cache);
+					}
+					location->update_cache_for_location(field);
+				}
+				return_code = 1;
+			}
+			else
 			{
 				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_location.  "
 					"Failed for field %s of type %s", field->name, field->core->get_type_string());
+				return_code = 0;
 			}
 		}
-		Computed_field_clear_cache(field);
+		if (!location->get_assign_to_cache())
+		{
+			Computed_field_clear_cache(field);
+		}
 	}
 	else
 	{

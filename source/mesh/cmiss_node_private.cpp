@@ -50,6 +50,7 @@ extern "C" {
 #include "node/node_operations.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_node_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
 
@@ -524,6 +525,11 @@ int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
 	}
 
 	return return_code;
+}
+
+FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset)
+{
+	return reinterpret_cast<FE_region *>(nodeset);
 }
 
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)

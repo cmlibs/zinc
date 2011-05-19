@@ -56,10 +56,10 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "mesh/cmiss_element_private.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_element_private.hpp"
 #if defined (USE_OPENCASCADE)
 #include "cad/computed_field_cad_topology.h"
 #include "cad/element_identifier.h"
@@ -354,7 +354,7 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 	field = (Computed_field *)NULL;
 	if (field_module && mesh)
 	{
-		FE_region *fe_region = Cmiss_fe_mesh_get_fe_region(mesh);
+		FE_region *fe_region = Cmiss_fe_mesh_get_FE_region(mesh);
 		struct LIST(FE_element) *fe_element_list = FE_region_create_related_element_list_for_dimension(fe_region,
 			Cmiss_fe_mesh_get_dimension(mesh));
 		field = Computed_field_create_generic(field_module,

@@ -12985,10 +12985,6 @@ It is up to the calling function to DEALLOCATE the returned string.
 					Value_type_string(field->value_type));
 			} break;
 		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,"get_FE_nodal_value_as_string.  Failed");
-		}
 	}
 	else
 	{
@@ -13050,11 +13046,6 @@ and <component_number> at the <node> and <time>. \
 					} \
 					return_code=1; \
 				} \
-				else \
-				{	 \
-					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
-						"find_FE_nodal_values_storage_dest failed"); \
-				} \
 			} break; \
 			case INDEXED_FE_FIELD: \
 			{ \
@@ -13078,13 +13069,6 @@ and <component_number> at the <node> and <time>. \
 							field->indexer_field->name,index,field->name); \
 					} \
 				} \
-				else \
-				{	 \
-					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
-						"Field %s, indexed by %s not defined at node %", \
-						field->name,field->indexer_field->name,node->cm_node_identifier); \
-					return_code=0;	 \
-				} \
 			} break; \
 			default: \
 			{ \
@@ -13092,7 +13076,7 @@ and <component_number> at the <node> and <time>. \
 					"get_FE_nodal_" #value_type "_value.  Unknown FE_field_type"); \
 			} break; \
 		} \
-	}		 \
+	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
@@ -13167,8 +13151,6 @@ and <component_number> at the <node>. \
 		} \
 		else \
 		{	 \
-			display_message(ERROR_MESSAGE,"set_FE_nodal_" #value_type "_value.  " \
-				"find_FE_nodal_values_storage_dest failed"); \
 			return_code=0; \
 		} \
 	} \
@@ -13251,8 +13233,6 @@ it should only be used temporarily. \
 		} \
 		else \
 		{	 \
-			display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_storage.  " \
-				"find_FE_nodal_values_storage_dest failed"); \
 			return_code=0; \
 		} \
 	} \

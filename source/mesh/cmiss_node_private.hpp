@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_element_private.h
+ * FILE : cmiss_node_private.hpp
  *
- * Private header file of Cmiss_element, finite element meshes.
+ * Private header file of Cmiss_node, Cmiss_nodeset.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -21,7 +21,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005-2011
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -39,7 +39,16 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if !defined (CMISS_NODE_PRIVATE_HPP)
+#define CMISS_NODE_PRIVATE_HPP
 
-#include "api/cmiss_element.h"
+extern "C" {
+#include "api/cmiss_node.h"
+}
 
-FE_region *Cmiss_fe_mesh_get_fe_region(Cmiss_fe_mesh_id mesh);
+struct FE_region;
+
+// Internal use only
+FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset);
+
+#endif /* !defined (CMISS_NODE_PRIVATE_HPP) */

@@ -768,12 +768,6 @@ Evaluate the fields cache at the location
 				/* No derivatives at node (at least at the moment!) */
 				field->derivatives_valid = 0;
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_finite_element::evaluate_cache_at_location.  "
-					"Error evaluating finite_element field at node");
-			}
 		}
 		else
 		{
@@ -816,6 +810,12 @@ Sets the <values> of the computed <field> over the <element>.
 	ENTER(Computed_field_finite_element::set_values_at_location);
 	if (field && location && values)
 	{
+		// avoid setting values in field if only assigning to cache
+		if (location->get_assign_to_cache())
+		{
+			return 1;
+		}
+
 		if (location->get_time() != 0)
 		{
 			display_message(WARNING_MESSAGE,
@@ -1759,12 +1759,9 @@ Evaluate the fields cache in the element.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_cmiss_number::evaluate_cache_at_location.  "
-				"Location type unknown or not implemented.");
+			// Location type unknown or not implemented
 			return_code = 0;
 		}
-		
 	}
 	else
 	{
@@ -2416,18 +2413,10 @@ Evaluate the fields cache at the node.
 					field->values[i]=0.0;
 				}
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_node_value::evaluate_cache_at_location.  "
-					"Error evaluating node_value field at node");
-			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_node_value::evaluate_cache_at_location.  "
-				"Only valid for Field_node_location type.");
+			// Only valid for Field_node_location type
 			return_code = 0;
 		}
 	}
@@ -2460,6 +2449,12 @@ Sets the <values> of the computed <field> at <node>.
 	ENTER(Computed_field_node_value_set_values_at_node);
 	if (field&&location&&values)
 	{
+		// avoid setting values in field if only assigning to cache
+		if (location->get_assign_to_cache())
+		{
+			return 1;
+		}
+
 		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
 
 		if (node_location)
@@ -3241,9 +3236,7 @@ Evaluate the fields cache at the node.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_embedded::evaluate_cache_at_location.  "
-				"Only valid for Field_node_location type.");
+			// Only valid for Field_node_location type
 			return_code = 0;
 		}
 	}
@@ -3703,12 +3696,6 @@ Evaluate the fields cache at the location
 				the identity matrix */
 			field->derivatives_valid=1;
 			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_xi_coordinates::evaluate_cache_at_location.  "
-				"Only calculable within elements.");
 		}
 	}
 	else
@@ -4322,6 +4309,7 @@ Evaluate the fields cache at the location
 				}
 			}
 		}
+#if 0
 		else 
 		{
 			 //if (node_location = dynamic_cast<Field_node_location*>(location))
@@ -4336,9 +4324,9 @@ Evaluate the fields cache at the location
 					display_message(ERROR_MESSAGE,
 						 "Computed_field_basis_derivative::evaluate_cache_at_location.  "
 						 "Location type unknown or not implemented.");
-					return_code = 0;
 			 }
 		}
+#endif
 	}
 	else
 	{

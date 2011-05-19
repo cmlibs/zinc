@@ -70,6 +70,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "graphics/graphics_object.hpp"
+#include "mesh/cmiss_node_private.hpp"
 
 /* following used for encoding a CM_element_information as an integer */
 #define HALF_INT_MAX (INT_MAX/2)
@@ -79,24 +80,7 @@ Module types
 ------------
 */
 
-struct Computed_fields_of_node
-/*******************************************************************************
-LAST MODIFIED : 14 May 1999
-
-DESCRIPTION :
-For checking fields of a node.
-???GMH. To generalise, we should add general component checking.
-==============================================================================*/
-{
-	int num_required_fields,number_of_nodes,num_coordinate,num_field;
-	struct Computed_field **required_fields;
-	struct Computed_field *visibility_field, *group_field;
-	enum Graphics_select_mode select_mode;
-	struct FE_node *field_node;
-	FE_value time;
-}; /* struct Computed_fields_of_node */
-
-struct Node_to_glyph_set_data
+struct Glyph_set_data
 /*******************************************************************************
 LAST MODIFIED : 16 November 2000
 
@@ -104,458 +88,149 @@ DESCRIPTION :
 Used with iterators for building glyph sets from nodes.
 ==============================================================================*/
 {
+	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
 	float *label_bounds;
-	FE_value base_size[3], centre[3], *label_bounds_vector, scale_factors[3], time;
+	FE_value base_size[3], centre[3], *data_values, *label_bounds_vector, scale_factors[3], time;
 	GTDATA *data;
-	int *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
+	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field, 
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
 		*visibility_field, *group_field;
-	struct FE_node *label_bounds_node;
 	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
 	enum Graphics_select_mode select_mode;
-}; /* struct Node_to_glyph_set_data */
+};
 
 /*
 Module functions
 ----------------
 */
 
-struct Computed_fields_of_node *CREATE(Computed_fields_of_node)(void)
-/*******************************************************************************
-LAST MODIFIED : 14 May 1999
-
-DESCRIPTION :
-Initialises the fields.  Does not allocate memory for components of the
-structure - assumes they will be statically allocated by the calling procedure.
-==============================================================================*/
+/***************************************************************************//**
+ * Adds the coordinates, orientation, data etc. of the fields at the field cache
+ * location to the glyph_set_data.
+ */
+static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
+	Glyph_set_data *glyph_set_data)
 {
-	struct Computed_fields_of_node *computed_fields_of_node;
-
-	ENTER(CREATE(Computed_fields_of_node));
-	if (ALLOCATE(computed_fields_of_node,struct Computed_fields_of_node,1))
-	{
-		computed_fields_of_node->num_required_fields=0;
-		computed_fields_of_node->number_of_nodes=0;	
-		computed_fields_of_node->num_field=0;
-		computed_fields_of_node->num_coordinate=0;
-		computed_fields_of_node->time = 0;
-		computed_fields_of_node->required_fields=(struct Computed_field **)NULL;
-		computed_fields_of_node->visibility_field=(struct Computed_field *)NULL;
-		computed_fields_of_node->group_field=(struct Computed_field *)NULL;
-		computed_fields_of_node->field_node=(struct FE_node *)NULL;
-		computed_fields_of_node->select_mode=GRAPHICS_SELECT_ON;
-	}
-	else
+	ENTER(field_cache_location_to_glyph_point);
+	if (!(field_cache && glyph_set_data))
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_fields_of_node).  Could not allocate structure");
-		computed_fields_of_node=(struct Computed_fields_of_node *)NULL;
+			"field_cache_location_to_glyph_point.  Invalid argument(s)");
+		return 0;
 	}
-	LEAVE;
-
-	return (computed_fields_of_node);
-} /* CREATE(Computed_fields_of_node) */
-
-int DESTROY(Computed_fields_of_node)(struct Computed_fields_of_node **computed_fields_of_node)
-/*******************************************************************************
-LAST MODIFIED : 14 May 1999
-
-DESCRIPTION :
-Destroys the structure.  DOES NOT DESTROY THE FIELDS!!!
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Computed_fields_of_node));
-	/* check the arguments */
-	if (computed_fields_of_node)
+	int return_code = 1;
+	int show_point = 1;
+	if (glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED ||
+		glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED)
 	{
-		if ((*computed_fields_of_node)->visibility_field)
+		if (glyph_set_data->group_field &&
+			Cmiss_field_evaluate_boolean(glyph_set_data->group_field, field_cache))
 		{
-			DEACCESS(Computed_field)(&(*computed_fields_of_node)->visibility_field);
-		}
-		if ((*computed_fields_of_node)->group_field)
-		{
-			DEACCESS(Computed_field)(&(*computed_fields_of_node)->group_field);
-		}
-		DEALLOCATE(*computed_fields_of_node);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_fields_of_node).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Computed_fields_of_node) */
-
-static int FE_node_computed_fields_defined(struct FE_node *node,int num_of_fields,
-	struct Computed_field **current_field_address)
-/*******************************************************************************
-LAST MODIFIED : 17 May 1999
-
-DESCRIPTION :
-function for checking that a node has the computed fields in current_field_address 
-defined.
-==============================================================================*/
-{
-	int fields_all_defined,i;
-	struct Computed_field *current_field;
-
-	ENTER(FE_node_computed_fields_defined);
-	/* check arguments */	
-	if(node&&current_field_address)
-	{
-		fields_all_defined=1;
-		i=num_of_fields;
-
-		while (fields_all_defined&&(i>0))
-		{
-			if (NULL != (current_field= *current_field_address))
+			if (glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED)
 			{
-				if(!Computed_field_is_defined_at_node(current_field,node))
-				{	
-					fields_all_defined=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"FE_node_computed_fields_defined"
-					" Current_field is NULL  ");
-				fields_all_defined=0;
-			}		
-			i--;
-			current_field_address++;
-		}
-	}
-	else
-	{		
-		display_message(ERROR_MESSAGE,"FE_node_computed_fields_defined."
-			" Invalid arguments");
-		fields_all_defined=0;
-	}
-	LEAVE;
-	return (fields_all_defined);
-} /* FE_node_computed_fields_defined*/
-
-static int FE_node_count_if_computed_fields_defined(struct FE_node *node,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 17 May 1999
-
-DESCRIPTION :
-Iterator function for counting how many of the supplied computed fields are defined 
-and can be evaluated at a node. Count returned in 
-computed_fields_of_node->number_of_nodes++.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field **current_field_address;
-	struct Computed_fields_of_node *computed_fields_of_node;
-	FE_value visibility;
-
-	ENTER(FE_node_count_if_computed_fields_defined);
-	/* check arguments */
-	if (node&&(computed_fields_of_node=(struct Computed_fields_of_node *)user_data))
-	{
-		return_code=1;
-		/* check for specific fields.  The old efficiency assumption that 
-			the only thing that can affect this condition is the defined list
-			of FE_fields is a bad one. An alternative way to do this would be to 
-			allocate for all the nodes in the region and then reallocate to the
-			actual size after adding each node, thereby only visiting and 
-			checking each node once. */
-		current_field_address=computed_fields_of_node->required_fields;
-
-		if ((computed_fields_of_node->select_mode == GRAPHICS_DRAW_UNSELECTED) &&
-			!computed_fields_of_node->group_field)
-		{
-			visibility = 1;
-		}
-		else if (computed_fields_of_node->select_mode == GRAPHICS_DRAW_SELECTED ||
-			computed_fields_of_node->select_mode == GRAPHICS_DRAW_UNSELECTED)
-		{
-			if (computed_fields_of_node->group_field &&
-				(Computed_field_is_defined_at_node(computed_fields_of_node->group_field,node)) &&
-				(1 == Computed_field_get_number_of_components(
-				computed_fields_of_node->group_field)))
-			{
-				Computed_field_evaluate_at_node(computed_fields_of_node->group_field,
-					node, computed_fields_of_node->time, &visibility);
-				if (visibility >= 1)
-				{
-					switch (computed_fields_of_node->select_mode)
-					{
-						case GRAPHICS_DRAW_SELECTED:
-						{
-							visibility = 1;
-						} break;
-						case GRAPHICS_DRAW_UNSELECTED:
-						{
-							visibility = 0;
-						} break;
-						default:
-						{
-						} break;
-					}
-				}
-				else
-				{
-					switch (computed_fields_of_node->select_mode)
-					{
-						case GRAPHICS_DRAW_SELECTED:
-						{
-							visibility = 0;
-						} break;
-						case GRAPHICS_DRAW_UNSELECTED:
-						{
-							visibility = 1;
-						} break;
-						default:
-						{
-						} break;
-					}
-				}
+				show_point = 0;
 			}
 		}
-		else
+		else if (glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED)
 		{
-			visibility = 1;
-		}
-		if (visibility && FE_node_computed_fields_defined(node,
-				computed_fields_of_node->num_required_fields,current_field_address))
-		{
-			if (computed_fields_of_node->visibility_field && 
-				(Computed_field_is_defined_at_node(
-					 computed_fields_of_node->visibility_field,node)) && 
-				(1 == Computed_field_get_number_of_components(computed_fields_of_node->visibility_field)))
-			{
-
-				Computed_field_evaluate_at_node(computed_fields_of_node->visibility_field,
-					node, computed_fields_of_node->time, &visibility);
-				if (visibility >= 1)
-				{
-					computed_fields_of_node->number_of_nodes++;
-				}
-			}
-			else
-			{
-				computed_fields_of_node->number_of_nodes++;
-			}
+			show_point = 0;
 		}
 	}
-	else
+	if (show_point && glyph_set_data->visibility_field)
 	{
-		return_code=0;
+		show_point = Cmiss_field_evaluate_boolean(glyph_set_data->visibility_field, field_cache);
 	}
-	LEAVE;
+	if (show_point)
+	{
+		FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
+			variable_scale[3], *vector;
+		struct Computed_field *coordinate_field, *data_field,
+			*label_field, *label_density_field, *orientation_scale_field, *variable_scale_field;
+		int dimension, i, j, k, values;
+		Triple *axis1, *axis2, *axis3, *point, *scale;
+		int number_of_orientation_scale_components = 0;
+		int number_of_variable_scale_components = 0;
 
-	return (return_code);
-} /* FE_node_count_if_computed_fields_defined */
-
-static int node_to_glyph_set(struct FE_node *node,
-	void *node_to_glyph_set_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :node_to_glyph_set_data
-Iterator function for adding a glyph showing a node and fields to a glyph_set.
-Up to calling function to call Computed_field_clear_cache for any computed
-fields used here.
-==============================================================================*/
-{
-	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
-		time, variable_scale[3], *vector, visibility_value;
-	struct Computed_field **current_field_address, *coordinate_field, *data_field,
-		*label_field, *label_density_field, *orientation_scale_field, *required_fields[5],
-		*variable_scale_field;
-	int dimension, i, j, k, label_defined, number_of_fields,
-		number_of_orientation_scale_components, number_of_variable_scale_components,
-		return_code, values;
-	struct Node_to_glyph_set_data *node_to_glyph_set_data;
-	Triple *axis1, *axis2, *axis3, *point, *scale;
-	FE_value *data_values = NULL;
-
-	ENTER(node_to_glyph_set);
-	/* must set following to 0 = valid if no orientation_scale_field */
-	number_of_orientation_scale_components = 0;
-	number_of_variable_scale_components = 0;
-	node_to_glyph_set_data =
-		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void;
-	if ((node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED) &&
-			!node_to_glyph_set_data->group_field)
-	{
-		visibility_value = 1;
-	}
-	else if (node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_SELECTED ||
-		node_to_glyph_set_data->select_mode == GRAPHICS_DRAW_UNSELECTED)
-	{
-		if (node_to_glyph_set_data->group_field &&
-			(Computed_field_is_defined_at_node(node_to_glyph_set_data->group_field,node)) &&
-			(1 == Computed_field_get_number_of_components(
-					node_to_glyph_set_data->group_field)))
-		{
-			Computed_field_evaluate_at_node(node_to_glyph_set_data->group_field,
-				node, node_to_glyph_set_data->time, &visibility_value);
-			if (visibility_value >= 1)
-			{
-				switch (node_to_glyph_set_data->select_mode)
-				{
-					case GRAPHICS_DRAW_SELECTED:
-					{
-						visibility_value = 1;
-					} break;
-					case GRAPHICS_DRAW_UNSELECTED:
-					{
-						visibility_value = 0;
-					} break;
-					default:
-					{
-					} break;
-				}
-			}
-			else
-			{
-				switch (node_to_glyph_set_data->select_mode)
-				{
-					case GRAPHICS_DRAW_SELECTED:
-					{
-						visibility_value = 0;
-					} break;
-					case GRAPHICS_DRAW_UNSELECTED:
-					{
-						visibility_value = 1;
-					} break;
-					default:
-					{
-					} break;
-				}
-			}
-		}
-	}
-	else
-	{
-		visibility_value = 1;
-	}
-	if ((visibility_value >= 1) && node_to_glyph_set_data &&
-		node_to_glyph_set_data->visibility_field &&
-		Computed_field_is_defined_at_node(
-			node_to_glyph_set_data->visibility_field,node) &&
-		(1 == Computed_field_get_number_of_components(node_to_glyph_set_data->visibility_field)))
-	{
-		Computed_field_evaluate_at_node(node_to_glyph_set_data->visibility_field,
-			node, node_to_glyph_set_data->time, &visibility_value);
-	}
-	if (visibility_value >= 1)
-	{
-		if (node && node_to_glyph_set_data && 
-			(coordinate_field=node_to_glyph_set_data->coordinate_field) &&
+		if ((coordinate_field=glyph_set_data->coordinate_field) &&
 			(3 >= Computed_field_get_number_of_components(coordinate_field)) && 
 			((!(orientation_scale_field =
-					node_to_glyph_set_data->orientation_scale_field)) ||
+					glyph_set_data->orientation_scale_field)) ||
 				(9 >= (number_of_orientation_scale_components =
 					Computed_field_get_number_of_components(orientation_scale_field)))) &&
-			((!(data_field = node_to_glyph_set_data->data_field)) ||
-				node_to_glyph_set_data->data) &&
-			((!(label_field = node_to_glyph_set_data->label_field)) ||
-				node_to_glyph_set_data->label) &&
-			((!(label_density_field = node_to_glyph_set_data->label_density_field)) ||
-				node_to_glyph_set_data->label_density) &&
-			((!(variable_scale_field = node_to_glyph_set_data->variable_scale_field)) ||
+			((!(data_field = glyph_set_data->data_field)) ||
+				glyph_set_data->data) &&
+			((!(label_field = glyph_set_data->label_field)) ||
+				glyph_set_data->label) &&
+			((!(label_density_field = glyph_set_data->label_density_field)) ||
+				glyph_set_data->label_density) &&
+			((!(variable_scale_field = glyph_set_data->variable_scale_field)) ||
 				(3 >= (number_of_variable_scale_components =
 					Computed_field_get_number_of_components(variable_scale_field)))) &&
-			(point = node_to_glyph_set_data->point) &&
-			(axis1 = node_to_glyph_set_data->axis1) &&
-			(axis2 = node_to_glyph_set_data->axis2) &&
-			(axis3 = node_to_glyph_set_data->axis3) &&
-			(scale = node_to_glyph_set_data->scale))
+			(point = glyph_set_data->point) &&
+			(axis1 = glyph_set_data->axis1) &&
+			(axis2 = glyph_set_data->axis2) &&
+			(axis3 = glyph_set_data->axis3) &&
+			(scale = glyph_set_data->scale))
 		{
-			return_code=1;
-			/* prepare fields for check with FE_node_computed_fields_defined */
-			number_of_fields = 0;	
-			if (coordinate_field)
-			{ 
-				required_fields[number_of_fields]=coordinate_field;
-				number_of_fields++;			
-			}	
-			if (data_field)
-			{ 
-				required_fields[number_of_fields]=data_field;
-				number_of_fields++;
-			}
-			if (orientation_scale_field)
-			{ 
-				required_fields[number_of_fields]=orientation_scale_field;
-				number_of_fields++;			
-			}	
-			if (variable_scale_field)
-			{ 
-				required_fields[number_of_fields]=variable_scale_field;
-				number_of_fields++;			
-			}
-			if (node_to_glyph_set_data->label_bounds_field &&
-				(node_to_glyph_set_data->label_bounds_field != coordinate_field))
-			{ 
-				required_fields[number_of_fields]=node_to_glyph_set_data->label_bounds_field;
-				number_of_fields++;
-			}
-			if (label_density_field && (label_density_field != coordinate_field))
-			{ 
-				required_fields[number_of_fields]=node_to_glyph_set_data->label_density_field;
-				number_of_fields++;
-			}
-			time = node_to_glyph_set_data->time;
-			current_field_address = required_fields;		
-			/* if there's no node coordinate field, do nothing, but no error */
-			if (FE_node_computed_fields_defined(node,number_of_fields,
-					current_field_address)) 
+			/* clear coordinates in case coordinate field is not 3 component */
+			coordinates[0] = 0.0;
+			coordinates[1] = 0.0;
+			coordinates[2] = 0.0;
+			/* label_field allowed to be undefined at individual nodes, so default to NULL label */
+			if (glyph_set_data->label)
 			{
-				/* clear coordinates in case coordinate field is not 3 component */
-				coordinates[0] = 0.0;
-				coordinates[1] = 0.0;
-				coordinates[2] = 0.0;
-				label_defined = label_field && Computed_field_is_defined_at_node(label_field,node);
-				/* label_field allowed to be undefined at individual nodes, so default to NULL label */
-				if (node_to_glyph_set_data->label)
+				*(glyph_set_data->label) = NULL;
+			}
+			FE_value_triple fe_value_label_density;
+
+			/* evaluate the fields at the cache location */
+			int all_fields_defined = Cmiss_field_evaluate_real(coordinate_field,
+				field_cache, /*number_of_values*/3, coordinates);
+			if (all_fields_defined && orientation_scale_field)
+			{
+				all_fields_defined = Cmiss_field_evaluate_real(orientation_scale_field,
+					field_cache, /*number_of_values*/9, orientation_scale);
+			}
+			if (all_fields_defined && variable_scale_field)
+			{
+				all_fields_defined = Cmiss_field_evaluate_real(variable_scale_field,
+					field_cache, /*number_of_values*/3, variable_scale);
+			}
+			if (all_fields_defined && data_field)
+			{
+				all_fields_defined = Cmiss_field_evaluate_real(data_field,
+					field_cache, glyph_set_data->n_data_components,
+					glyph_set_data->data_values);
+			}
+			int label_defined = 0;
+			if (all_fields_defined && label_field)
+			{
+				*(glyph_set_data->label) = Cmiss_field_evaluate_string(label_field,
+					field_cache);
+				if (*(glyph_set_data->label))
 				{
-					*(node_to_glyph_set_data->label) = NULL;
+					label_defined = 1;
 				}
-				if (data_field)
+				if (label_density_field)
 				{
-					ALLOCATE(data_values,FE_value,
-						node_to_glyph_set_data->n_data_components);
+					all_fields_defined = Cmiss_field_evaluate_real(label_density_field,
+						field_cache, /*number_of_values*/3, fe_value_label_density);
 				}
-				/* evaluate the fields at the node */
-				FE_value_triple fe_value_label_density;
-				if (Computed_field_evaluate_at_node(coordinate_field,node,time,
-						coordinates)&&
-					((!orientation_scale_field) || Computed_field_evaluate_at_node(
-						 orientation_scale_field,node,time,orientation_scale))&&
-					((!variable_scale_field) || Computed_field_evaluate_at_node(
-						 variable_scale_field, node, time, variable_scale)) &&
-					((!data_field)||Computed_field_evaluate_at_node(data_field,node,
-						time, data_values))&&
-					((!label_defined) ||
-						((*(node_to_glyph_set_data->label) =
-							Computed_field_evaluate_as_string_at_node(label_field,
-							/*component_number*/-1, node, time)) &&
-							((!label_density_field) ||
-								Computed_field_evaluate_at_node(label_density_field,
-									node, time, fe_value_label_density))))&&
-					make_glyph_orientation_scale_axes(
-						number_of_orientation_scale_components, orientation_scale,
-						a, b, c, size))
+			}
+			if (all_fields_defined)
+			{
+				if (make_glyph_orientation_scale_axes(
+					number_of_orientation_scale_components, orientation_scale,
+					a, b, c, size))
 				{
+					++(glyph_set_data->number_of_points);
 					for (j = 0; j < 3; j++)
 					{
-						(*scale)[j] = node_to_glyph_set_data->base_size[j] +
-							size[j]*node_to_glyph_set_data->scale_factors[j];
+						(*scale)[j] = glyph_set_data->base_size[j] +
+							size[j]*glyph_set_data->scale_factors[j];
 					}
 					for (j = 0; j < number_of_variable_scale_components; j++)
 					{
@@ -564,59 +239,56 @@ fields used here.
 					for (j = 0; j < 3; j++)
 					{
 						(*point)[j] = coordinates[j] -
-							node_to_glyph_set_data->centre[0]*(*scale)[0]*a[j] -
-							node_to_glyph_set_data->centre[1]*(*scale)[1]*b[j] -
-							node_to_glyph_set_data->centre[2]*(*scale)[2]*c[j];
+							glyph_set_data->centre[0]*(*scale)[0]*a[j] -
+							glyph_set_data->centre[1]*(*scale)[1]*b[j] -
+							glyph_set_data->centre[2]*(*scale)[2]*c[j];
 						(*axis1)[j] = a[j];
 						(*axis2)[j] = b[j];
 						(*axis3)[j] = c[j];
 					}
-					(node_to_glyph_set_data->point)++;
-					(node_to_glyph_set_data->axis1)++;
-					(node_to_glyph_set_data->axis2)++;
-					(node_to_glyph_set_data->axis3)++;
-					(node_to_glyph_set_data->scale)++;
+					(glyph_set_data->point)++;
+					(glyph_set_data->axis1)++;
+					(glyph_set_data->axis2)++;
+					(glyph_set_data->axis3)++;
+					(glyph_set_data->scale)++;
 					
-					if (node_to_glyph_set_data->data_field)
+					if (glyph_set_data->data_field)
 					{
-						CAST_TO_OTHER(node_to_glyph_set_data->data,data_values,
-							GTDATA,node_to_glyph_set_data->n_data_components);
-						node_to_glyph_set_data->data +=
-							node_to_glyph_set_data->n_data_components;
+						CAST_TO_OTHER(glyph_set_data->data, glyph_set_data->data_values,
+							GTDATA,glyph_set_data->n_data_components);
+						glyph_set_data->data +=
+							glyph_set_data->n_data_components;
 					}
-					if (node_to_glyph_set_data->name)
+					if (glyph_set_data->name)
 					{
-						*(node_to_glyph_set_data->name) = get_FE_node_identifier(node);
-						(node_to_glyph_set_data->name)++;
+						*(glyph_set_data->name) = glyph_set_data->graphics_name;
+						(glyph_set_data->name)++;
 					}
-					if (node_to_glyph_set_data->label_field)
+					if (glyph_set_data->label_field)
 					{
-						(node_to_glyph_set_data->label)++;
+						(glyph_set_data->label)++;
 						if (label_density_field)
 						{
-							(*(node_to_glyph_set_data->label_density))[0] = 
+							(*(glyph_set_data->label_density))[0] =
 								(float)fe_value_label_density[0];
-							(*(node_to_glyph_set_data->label_density))[1] = 
+							(*(glyph_set_data->label_density))[1] =
 								(float)fe_value_label_density[1];
-							(*(node_to_glyph_set_data->label_density))[2] = 
+							(*(glyph_set_data->label_density))[2] =
 								(float)fe_value_label_density[2];
-							(node_to_glyph_set_data->label_density)++;
+							(glyph_set_data->label_density)++;
 						}
 					}
 					/* Record the value of the label field at the bounds of the glyph size
-						 into a tensor so that they can be used for adding grids and axes to the glyph */
-					if (node_to_glyph_set_data->label_bounds)
+						into a tensor so that they can be used for adding grids and axes to the glyph */
+					// ???GRC This evaluation should be done with a separate field_cache object in future
+					if (glyph_set_data->label_bounds)
 					{
-						int nComponents = node_to_glyph_set_data->label_bounds_components;
+						int nComponents = glyph_set_data->label_bounds_components;
 						FE_value *fieldValues;
 						ALLOCATE(fieldValues,FE_value,nComponents);
-						dimension = node_to_glyph_set_data->label_bounds_dimension;
-						values = node_to_glyph_set_data->label_bounds_values;
-						vector = node_to_glyph_set_data->label_bounds_vector;
-						/* Need to set the node number correctly in case this is used
-							 by the computed fields */
-						set_FE_node_identifier(node_to_glyph_set_data->label_bounds_node,
-							get_FE_node_identifier(node));
+						dimension = glyph_set_data->label_bounds_dimension;
+						values = glyph_set_data->label_bounds_values;
+						vector = glyph_set_data->label_bounds_vector;
 						for (i = 0 ; i < values ; i++)
 						{
 							for (k = 0 ; k < dimension ; k++)
@@ -625,7 +297,7 @@ fields used here.
 							}
 							for (j = 0 ; j < dimension; j++)
 							{
-								if (i & node_to_glyph_set_data->label_bounds_bit_pattern[j])
+								if (i & glyph_set_data->label_bounds_bit_pattern[j])
 								{
 									switch (j)
 									{
@@ -653,67 +325,56 @@ fields used here.
 									}
 								}
 							}
-							/* Set the coordinate field and evaluate the label field */
-							if (Computed_field_set_values_at_node(coordinate_field,
-									node_to_glyph_set_data->label_bounds_node, time,
-									vector))
+							/* clear the label_bounds_field cache to force recalculation at the offset coordinates */
+							Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->label_bounds_field);
+							/* Set the offset coordinates in the field cache field and evaluate the label field there */
+							if (!Cmiss_field_cache_assign_field_real(field_cache,
+								coordinate_field, /*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
 							{
-								/* We need to explicitly clear the label_field cache as if
-									 we are caching computed_field manager messages then the 
-									 changes to the coordinate field will not be notified to
-									 the label field yet. */
-								Computed_field_clear_cache(node_to_glyph_set_data->label_bounds_field);
-								if (!(Computed_field_evaluate_at_node(
-												node_to_glyph_set_data->label_bounds_field,
-												node_to_glyph_set_data->label_bounds_node, time,
-												fieldValues)))
-								{
-									display_message(WARNING_MESSAGE,
-										"node_to_glyph_set.  Unable to evaluate label field when evaluating label bounds.");
-								}
-								else
-								{
-									CAST_TO_OTHER(node_to_glyph_set_data->label_bounds,
-										fieldValues,float,nComponents);
-								}
+								return_code = 0;
+							}
+							if (!Cmiss_field_evaluate_real(glyph_set_data->label_bounds_field,
+								field_cache, nComponents, fieldValues))
+							{
+								return_code = 0;
+							}
+							if (return_code)
+							{
+								CAST_TO_OTHER(glyph_set_data->label_bounds,
+									fieldValues, float, nComponents);
 							}
 							else
 							{
 								display_message(WARNING_MESSAGE,
-									"node_to_glyph_set.  Unable to set coordinate field when evaluating label bounds.");
+									"field_cache_location_to_glyph_point.  Unable to evaluate label bounds.");
 							}
-							node_to_glyph_set_data->label_bounds += node_to_glyph_set_data->label_bounds_components;
+							glyph_set_data->label_bounds += glyph_set_data->label_bounds_components;
 						}
+						/* Must clear caches to ensure invalid values not used again */
+						Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->label_bounds_field);
+						Cmiss_field_cache_clear_field_values(field_cache, glyph_set_data->coordinate_field);
 						DEALLOCATE(fieldValues);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"node_to_glyph_set.  Error calculating node fields");
-					return_code=0;
-				}
-				if (data_field)
-				{
-					DEALLOCATE(data_values);
+						"field_cache_location_to_glyph_point.  Failed to make glyph orientation scale axes");
+					return_code = 0;
 				}
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"node_to_glyph_set.  Invalid argument(s)");
-			return_code=0;
+				"field_cache_location_to_glyph_point.  Invalid glyph_set_data");
+			return_code = 0;
 		}
-	}
-	else
-	{
-		return_code=1;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* node_to_glyph_set */
+}
 
 static int fill_table(struct FE_element **element_block,int *adjacency_table,
 	struct FE_element *element,int i,int j,int k,int n_xi[3])
@@ -1141,8 +802,8 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 	return (dimension);
 } /* Use_element_type_dimension */
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
-	struct FE_region *fe_region,
+struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
+	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
@@ -1158,18 +819,11 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	FE_value *label_bounds_vector = NULL;
 	GTDATA *data;
 	int coordinate_dimension, i, *label_bounds_bit_pattern = NULL, label_bounds_components = 0,
-		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names,
-		number_of_fields, number_of_points, return_code;
-	struct GT_glyph_set *glyph_set;
-	struct Node_to_glyph_set_data node_to_glyph_set_data;
-	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
-	struct Computed_field *label_bounds_field, *required_fields[6];
-	struct Computed_fields_of_node *computed_fields_of_node;
-	struct FE_node *label_bounds_node;
+		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names;
 
-	ENTER(create_GT_glyph_set_from_FE_region_nodes);
-	glyph_set = (struct GT_glyph_set *)NULL;
-	if (fe_region && coordinate_field&&
+	ENTER(create_GT_glyph_set_from_nodeset);
+	struct GT_glyph_set *glyph_set = (struct GT_glyph_set *)NULL;
+	if (field_cache && nodeset && coordinate_field &&
 		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
@@ -1180,291 +834,224 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 		((!label_density_field) ||
 			(3 >=	Computed_field_get_number_of_components(label_density_field))))
 	{
-		if ((GRAPHICS_DRAW_SELECTED!=select_mode) || group_field)
+		int return_code = 1;
+		/* label_field is not a required field (if undefined, label is empty) EXCEPT
+		 * where glyph bases its glyph_labels_function bounds on it */
+		struct Computed_field *label_bounds_field = NULL;
+		if (glyph && Graphics_object_get_glyph_labels_function(glyph))
 		{
-			if (NULL != (computed_fields_of_node=CREATE(Computed_fields_of_node)()))
+			if (label_field)
 			{
-				return_code = 1;
-				number_of_fields = 0;
-				computed_fields_of_node->num_coordinate=1;
-				computed_fields_of_node->required_fields=required_fields;
-				computed_fields_of_node->time = time;
-				computed_fields_of_node->select_mode = select_mode;
-				if (visibility_field)
-				{
-					computed_fields_of_node->visibility_field =
-						ACCESS(Computed_field)(visibility_field);
-				}
-				if (group_field)
-				{
-					computed_fields_of_node->group_field =
-						ACCESS(Computed_field)(group_field);
-				}
-				if (coordinate_field)
-				{
-					required_fields[number_of_fields]=coordinate_field;
-					number_of_fields++;
-				}
-				if (data_field)
-				{
-					required_fields[number_of_fields]=data_field;
-					number_of_fields++;
-				}
-				if (orientation_scale_field)
-				{
-					required_fields[number_of_fields]=orientation_scale_field;
-					number_of_fields++;
-				}
-				if (variable_scale_field)
-				{
-					required_fields[number_of_fields]=variable_scale_field;
-					number_of_fields++;
-				}
-				/* label_field is not a required field (if undefined, label is empty) EXCEPT
-				 * where glyph bases its glyph_labels_function bounds on it */
-				label_bounds_field = NULL;
-				if (glyph && Graphics_object_get_glyph_labels_function(glyph))
-				{
-					if (label_field)
+					if (Computed_field_has_numerical_components(label_field,NULL))
 					{
-							if (Computed_field_has_numerical_components(label_field,NULL))
-							{
-								label_bounds_field = label_field;
-								required_fields[number_of_fields]=label_field;
-								number_of_fields++;
-							}
-							else
-							{
-								if (GET_NAME(GT_object)(glyph,&glyph_name))
-								{
-									display_message(ERROR_MESSAGE,
-										"create_GT_glyph_set_from_FE_region_nodes.  "
-										"Label field must be numeric for use with glyph '%s'",
-										glyph_name);
-									DEALLOCATE(glyph_name);
-								}
-								return_code = 0;
-							}
+						label_bounds_field = label_field;
 					}
 					else
 					{
-						label_bounds_field = coordinate_field;
-					}
-					if (label_density_field)
-					{
-						required_fields[number_of_fields]=label_density_field;
-						number_of_fields++;
-					}
-				}
-				if (return_code)
-				{
-					computed_fields_of_node->num_required_fields=number_of_fields;
-
-					return_code = FE_region_for_each_FE_node(fe_region,
-						FE_node_count_if_computed_fields_defined,
-						(void *)computed_fields_of_node);
-
-					if (!return_code)
-					{
-						display_message(ERROR_MESSAGE,
-							"create_GT_glyph_set_from_FE_region_nodes.  "
-							"Error counting nodes with all fields defined");
-					}
-				}
-				if (return_code)
-				{
-					number_of_points = computed_fields_of_node->number_of_nodes;
-					if (0<number_of_points)
-					{
-						point_list = (Triple *)NULL;
-						axis1_list = (Triple *)NULL;
-						axis2_list = (Triple *)NULL;
-						axis3_list = (Triple *)NULL;
-						scale_list = (Triple *)NULL;
-						label_density_list = (Triple *)NULL;
-						labels = (char **)NULL;
-						n_data_components = 0;
-						data = (GTDATA *)NULL;
-						names = (int *)NULL;
-						label_bounds_dimension = 0;
-						label_bounds = (float *)NULL;
-						if (data_field)
-						{
-							n_data_components =
-								Computed_field_get_number_of_components(data_field);
-							ALLOCATE(data, GTDATA, number_of_points*n_data_components);
-						}
-						if (label_field)
-						{
-							ALLOCATE(labels, char *, number_of_points);
-						}
-						if (label_bounds_field)
-						{
-							label_bounds_dimension = coordinate_dimension;
-							label_bounds_values = 1 << label_bounds_dimension;
-							label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
-							ALLOCATE(label_bounds, float, number_of_points * label_bounds_values *
-								label_bounds_components);
-							/* Duplicate the first node in the list to use to evaluate label field */
-							label_bounds_node = ACCESS(FE_node)(CREATE(FE_node)(1,
-								(struct FE_region *)NULL, FE_region_get_first_FE_node_that(fe_region,
-									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL)));
-							/* Temporary space for evaluating the label field */
-							ALLOCATE(label_bounds_vector, FE_value, coordinate_dimension);
-							/* Prcompute bit pattern for label values */
-							ALLOCATE(label_bounds_bit_pattern, int, label_bounds_dimension);
-							label_bounds_bit_pattern[0] = 1;
-							for (i = 1 ; i < label_bounds_dimension ; i++)
-							{
-								label_bounds_bit_pattern[i] = 2 * label_bounds_bit_pattern[i - 1];
-							}
-						}
-						if (GRAPHICS_NO_SELECT != select_mode)
-						{
-							ALLOCATE(names,int,number_of_points);
-						}
-						if (label_density_field)
-						{
-							ALLOCATE(label_density_list, Triple, number_of_points);
-						}
-						if (((!n_data_components)||data)&&((!label_field)||labels)&&
-							((GRAPHICS_NO_SELECT==select_mode)||names) &&
-							ALLOCATE(point_list, Triple, number_of_points) &&
-							ALLOCATE(axis1_list, Triple, number_of_points) &&
-							ALLOCATE(axis2_list, Triple, number_of_points) &&
-							ALLOCATE(axis3_list, Triple, number_of_points) &&
-							ALLOCATE(scale_list, Triple, number_of_points) &&
-							(glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
-								axis1_list,axis2_list,axis3_list,scale_list,glyph,font,labels,
-								n_data_components,data,
-								label_bounds_dimension,label_bounds_components,label_bounds,
-								label_density_list,
-								/*object_name*/0,names)))
-						{
-							/* set up information for the iterator */
-							for (i = 0; i < 3; i++)
-							{
-								node_to_glyph_set_data.base_size[i] = base_size[i];
-								node_to_glyph_set_data.centre[i] = centre[i];
-								node_to_glyph_set_data.scale_factors[i] = scale_factors[i];
-							}
-							node_to_glyph_set_data.point = point_list;
-							node_to_glyph_set_data.axis1 = axis1_list;
-							node_to_glyph_set_data.axis2 = axis2_list;
-							node_to_glyph_set_data.axis3 = axis3_list;
-							node_to_glyph_set_data.scale = scale_list;
-							node_to_glyph_set_data.data = data;
-							node_to_glyph_set_data.label = labels;
-							node_to_glyph_set_data.label_density = label_density_list;
-							node_to_glyph_set_data.coordinate_field = coordinate_field;
-							node_to_glyph_set_data.orientation_scale_field =
-								orientation_scale_field;
-							node_to_glyph_set_data.variable_scale_field = variable_scale_field;
-							node_to_glyph_set_data.data_field = data_field;
-							node_to_glyph_set_data.n_data_components = n_data_components;
-							node_to_glyph_set_data.label_field = label_field;
-							node_to_glyph_set_data.label_density_field = label_density_field;
-							node_to_glyph_set_data.visibility_field = visibility_field;
-							node_to_glyph_set_data.name = names;
-							node_to_glyph_set_data.time = time;
-							node_to_glyph_set_data.label_bounds_bit_pattern = label_bounds_bit_pattern;
-							node_to_glyph_set_data.label_bounds_components = label_bounds_components;
-							node_to_glyph_set_data.label_bounds_dimension = label_bounds_dimension;
-							node_to_glyph_set_data.label_bounds_field = label_bounds_field;
-							node_to_glyph_set_data.label_bounds_node = label_bounds_node;
-							node_to_glyph_set_data.label_bounds_values = label_bounds_values;
-							node_to_glyph_set_data.label_bounds_vector = label_bounds_vector;
-							node_to_glyph_set_data.label_bounds = label_bounds;
-							node_to_glyph_set_data.group_field = group_field;
-							node_to_glyph_set_data.select_mode = select_mode;
-							return_code = FE_region_for_each_FE_node(fe_region,
-								node_to_glyph_set, (void *)(&node_to_glyph_set_data));
-							/* clear Computed_field caches so nodes not accessed */
-							Computed_field_clear_cache(coordinate_field);
-							if (orientation_scale_field)
-							{
-								Computed_field_clear_cache(orientation_scale_field);
-							}
-							if (variable_scale_field)
-							{
-								Computed_field_clear_cache(variable_scale_field);
-							}
-							if (data_field)
-							{
-								Computed_field_clear_cache(data_field);
-							}
-							if (label_field)
-							{
-								Computed_field_clear_cache(label_field);
-							}
-							if (label_density_field)
-							{
-								Computed_field_clear_cache(label_density_field);
-							}
-							if (label_bounds)
-							{
-								DEALLOCATE(label_bounds_vector);
-								DEALLOCATE(label_bounds_bit_pattern);
-								DEACCESS(FE_node)(&label_bounds_node);
-							}
-							if (visibility_field)
-							{
-								Computed_field_clear_cache(visibility_field);
-							}
-							if (group_field)
-							{
-								Computed_field_clear_cache(group_field);
-							}
-							if (!return_code)
-							{
-								/* This glyph set is only partially complete, so
-									it is preferable to leak than to try and deallocate
-									invalid memory.  Instead the glyph_set should grow as
-									each point is added to it, rather than trying to precount
-									the number of items (which can be as expensive as calculating
-									them) as is done currently. */
-								glyph_set = (struct GT_glyph_set *)NULL;
-								/* DESTROY(GT_glyph_set)(&glyph_set); */
-							}
-						}
-						else
-						{
-							DEALLOCATE(point_list);
-							DEALLOCATE(axis1_list);
-							DEALLOCATE(axis2_list);
-							DEALLOCATE(axis3_list);
-							DEALLOCATE(scale_list);
-							DEALLOCATE(label_density_list);
-							DEALLOCATE(data);
-							DEALLOCATE(labels);
-							DEALLOCATE(names);
-						}
-						if (!glyph_set)
+						if (GET_NAME(GT_object)(glyph,&glyph_name))
 						{
 							display_message(ERROR_MESSAGE,
-								"create_GT_glyph_set_from_FE_region_nodes.  Failed");
+								"create_GT_glyph_set_from_nodeset.  "
+								"Label field must be numeric for use with glyph '%s'",
+								glyph_name);
+							DEALLOCATE(glyph_name);
 						}
-					} /* no points, hence no glyph_set */
-				}
-				DESTROY(Computed_fields_of_node)(&computed_fields_of_node);
+						return_code = 0;
+					}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_glyph_set_from_FE_region_nodes.  "
-					"Could not create fields_of_node");
+				label_bounds_field = coordinate_field;
 			}
+		}
+		if (return_code && ((GRAPHICS_DRAW_SELECTED!=select_mode) || group_field))
+		{
+			// allocate for all nodes, trim arrays for fields not defined
+			int number_of_points = Cmiss_nodeset_get_size(nodeset);
+			if (0 < number_of_points)
+			{
+				int final_number_of_points = 0; // will include only points with all mandatory fields defined
+				Triple *point_list = (Triple *)NULL;
+				Triple *axis1_list = (Triple *)NULL;
+				Triple *axis2_list = (Triple *)NULL;
+				Triple *axis3_list = (Triple *)NULL;
+				Triple *scale_list = (Triple *)NULL;
+				Triple *label_density_list = (Triple *)NULL;
+				labels = (char **)NULL;
+				n_data_components = 0;
+				data = (GTDATA *)NULL;
+				FE_value *data_values = 0;
+				names = (int *)NULL;
+				label_bounds_dimension = 0;
+				label_bounds = (float *)NULL;
+				if (data_field)
+				{
+					n_data_components =
+						Computed_field_get_number_of_components(data_field);
+					ALLOCATE(data, GTDATA, number_of_points*n_data_components);
+					data_values = new FE_value[n_data_components];
+				}
+				if (label_field)
+				{
+					ALLOCATE(labels, char *, number_of_points);
+				}
+				if (label_bounds_field)
+				{
+					label_bounds_dimension = coordinate_dimension;
+					label_bounds_values = 1 << label_bounds_dimension;
+					label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
+					ALLOCATE(label_bounds, float, number_of_points * label_bounds_values *
+						label_bounds_components);
+					/* Temporary space for evaluating the label field */
+					ALLOCATE(label_bounds_vector, FE_value, label_bounds_dimension);
+					/* Prcompute bit pattern for label values */
+					ALLOCATE(label_bounds_bit_pattern, int, label_bounds_dimension);
+					label_bounds_bit_pattern[0] = 1;
+					for (i = 1 ; i < label_bounds_dimension ; i++)
+					{
+						label_bounds_bit_pattern[i] = 2 * label_bounds_bit_pattern[i - 1];
+					}
+				}
+				if (GRAPHICS_NO_SELECT != select_mode)
+				{
+					ALLOCATE(names,int,number_of_points);
+				}
+				if (label_density_field)
+				{
+					ALLOCATE(label_density_list, Triple, number_of_points);
+				}
+				ALLOCATE(point_list, Triple, number_of_points);
+				ALLOCATE(axis1_list, Triple, number_of_points);
+				ALLOCATE(axis2_list, Triple, number_of_points);
+				ALLOCATE(axis3_list, Triple, number_of_points);
+				ALLOCATE(scale_list, Triple, number_of_points);
+				if (point_list && axis1_list && axis2_list && axis3_list && scale_list &&
+					((!n_data_components) || (data && data_values)) &&
+					((!label_field) || labels) &&
+					((GRAPHICS_NO_SELECT==select_mode)||names))
+				{
+					Glyph_set_data glyph_set_data;
+					glyph_set_data.number_of_points = 0;
+					/* set up information for the iterator */
+					for (i = 0; i < 3; i++)
+					{
+						glyph_set_data.base_size[i] = base_size[i];
+						glyph_set_data.centre[i] = centre[i];
+						glyph_set_data.scale_factors[i] = scale_factors[i];
+					}
+					glyph_set_data.point = point_list;
+					glyph_set_data.axis1 = axis1_list;
+					glyph_set_data.axis2 = axis2_list;
+					glyph_set_data.axis3 = axis3_list;
+					glyph_set_data.scale = scale_list;
+					glyph_set_data.data = data;
+					glyph_set_data.label = labels;
+					glyph_set_data.label_density = label_density_list;
+					glyph_set_data.coordinate_field = coordinate_field;
+					glyph_set_data.orientation_scale_field =
+						orientation_scale_field;
+					glyph_set_data.variable_scale_field = variable_scale_field;
+					glyph_set_data.data_field = data_field;
+					glyph_set_data.n_data_components = n_data_components;
+					glyph_set_data.data_values = data_values;
+					glyph_set_data.label_field = label_field;
+					glyph_set_data.label_density_field = label_density_field;
+					glyph_set_data.visibility_field = visibility_field;
+					glyph_set_data.name = names;
+					glyph_set_data.time = time;
+					glyph_set_data.label_bounds_bit_pattern = label_bounds_bit_pattern;
+					glyph_set_data.label_bounds_components = label_bounds_components;
+					glyph_set_data.label_bounds_dimension = label_bounds_dimension;
+					glyph_set_data.label_bounds_field = label_bounds_field;
+					glyph_set_data.label_bounds_values = label_bounds_values;
+					glyph_set_data.label_bounds_vector = label_bounds_vector;
+					glyph_set_data.label_bounds = label_bounds;
+					glyph_set_data.group_field = group_field;
+					glyph_set_data.select_mode = select_mode;
+
+					// all fields evaluated at same time so set once
+					Cmiss_field_cache_set_time(field_cache, time);
+					Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+					Cmiss_node_id node = 0;
+					while (return_code && (0 != (node = Cmiss_node_iterator_next(iterator))))
+					{
+						Cmiss_field_cache_set_node(field_cache, node);
+						glyph_set_data.graphics_name = get_FE_node_identifier(node);
+						return_code = field_cache_location_to_glyph_point(field_cache, &glyph_set_data);
+						Cmiss_node_destroy(&node);
+					}
+					Cmiss_node_iterator_destroy(&iterator);
+					final_number_of_points = glyph_set_data.number_of_points;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				if (return_code && (0 < final_number_of_points))
+				{
+					if (final_number_of_points < number_of_points)
+					{
+						// assuming reallocating to smaller size always succeeds
+						REALLOCATE(point_list, point_list, Triple, final_number_of_points);
+						REALLOCATE(axis1_list, axis1_list, Triple, final_number_of_points);
+						REALLOCATE(axis2_list, axis2_list, Triple, final_number_of_points);
+						REALLOCATE(axis3_list, axis3_list, Triple, final_number_of_points);
+						REALLOCATE(scale_list, scale_list, Triple, final_number_of_points);
+						if (label_density_field)
+						{
+							REALLOCATE(label_density_list, label_density_list, Triple, number_of_points);
+						}
+						if (data)
+						{
+							REALLOCATE(data, data, GTDATA, number_of_points*n_data_components);
+						}
+						if (labels)
+						{
+							REALLOCATE(labels, labels, char *, number_of_points);
+						}
+						if (names)
+						{
+							REALLOCATE(names, names, int, number_of_points);
+						}
+					}
+					glyph_set = CREATE(GT_glyph_set)(final_number_of_points,point_list,
+						axis1_list,axis2_list,axis3_list,scale_list,glyph,font,labels,
+						n_data_components,data,
+						label_bounds_dimension,label_bounds_components,label_bounds,
+						label_density_list,
+						/*object_name*/0,names);
+				}
+				else
+				{
+					DEALLOCATE(label_bounds);
+					DEALLOCATE(point_list);
+					DEALLOCATE(axis1_list);
+					DEALLOCATE(axis2_list);
+					DEALLOCATE(axis3_list);
+					DEALLOCATE(scale_list);
+					DEALLOCATE(label_density_list);
+					DEALLOCATE(data);
+					DEALLOCATE(labels);
+					DEALLOCATE(names);
+				}
+				if (label_bounds)
+				{
+					DEALLOCATE(label_bounds_vector);
+					DEALLOCATE(label_bounds_bit_pattern);
+				}
+				delete[] data_values;
+			} /* no points, hence no glyph_set */
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_GT_glyph_set_from_FE_region_nodes.  Invalid argument(s)");
+			"create_GT_glyph_set_from_nodeset.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph_set);
-} /* create_GT_glyph_set_from_FE_region_nodes */
+} /* create_GT_glyph_set_from_nodeset */
 
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
