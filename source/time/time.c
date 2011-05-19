@@ -716,3 +716,22 @@ Removes a callback which was added previously
 
 	return (return_code);
 } /* Time_object_remove_callback */
+
+
+int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address)
+{
+	int return_code;
+
+	ENTER(Cmiss_time_notifier_destroy);
+	if (time_notifier_address && *time_notifier_address)
+	{
+		return_code = DEACCESS(Time_object)(time_notifier_address);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}

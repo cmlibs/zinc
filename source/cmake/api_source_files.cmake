@@ -2,14 +2,11 @@
 # Defines API_SRCS
 
 SET( API_SRCS 
-	source/api/cmiss_context.c
 	source/api/cmiss_core.c
 	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c
 	source/api/cmiss_region.c
 	source/api/cmiss_scene_viewer.cpp
-	source/api/cmiss_time.c
-	source/api/cmiss_time_keeper.c
 	source/api/cmiss_time_sequence.c )
 SET( API_HDRS
 	source/api/cmiss_context.h

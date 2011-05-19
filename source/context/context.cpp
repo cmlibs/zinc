@@ -557,3 +557,31 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
 	}
 	return curve_manager;
 }
+
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+int Cmiss_context_enable_user_interface(Cmiss_context_id context,
+	int in_argc, const char *in_argv[])
+#else
+int Cmiss_context_enable_user_interface(
+	struct Context *context, int in_argc, const char *in_argv[],
+	HINSTANCE current_instance, HINSTANCE previous_instance,
+	LPSTR command_line,int initial_main_window_state)
+#endif
+{
+	int return_code = 0;
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
+		context, in_argc, in_argv);
+#else
+	struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
+		context, in_argc, in_argv, current_instance, previous_instance,
+		command_line, initial_main_window_state);
+#endif
+	if (UI_module)
+	{
+		return_code = 1;
+		User_interface_module_destroy(&UI_module);
+	}
+
+	return return_code;
+}

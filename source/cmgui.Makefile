@@ -901,11 +901,8 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(SYSTEM_LIB) $(NETGEN_LIB) $(MINIMISE_LIB)
 
 API_SRCS = \
-	api/cmiss_context.c \
 	api/cmiss_core.c \
 	api/cmiss_idle.c \
-	api/cmiss_time.c \
-	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
