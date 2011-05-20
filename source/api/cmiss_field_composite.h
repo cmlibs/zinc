@@ -49,12 +49,6 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #include "api/cmiss_field_module.h"
 
 /*****************************************************************************//**
- * The constant field specific handle to a constant Cmiss_field.
- */
-struct Cmiss_field_constant;
-typedef struct Cmiss_field_constant *Cmiss_field_constant_id;
-
-/*****************************************************************************//**
  * Creates a field with the components specified in the array values.
  * Internally this a composite field.
  * 
@@ -104,16 +98,5 @@ Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_m
  */
 Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
 	int number_of_source_fields, Cmiss_field_id *source_fields);
-
-/*****************************************************************************//**
- * Sets the value of the specified component of a constant field.
- *
- * @param constant_field The constant field.
- * @param index The component index to be set.
- * @param value The value to set as the index'th component of the constant field.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_constant_set_value(Cmiss_field_constant_id constant_field,
-		int index, double value);
 
 #endif /* __CMISS_FIELD_COMPOSITE_H__ */

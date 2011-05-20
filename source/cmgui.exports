@@ -132,7 +132,6 @@ Cmiss_field_module_create_constant
 Cmiss_field_module_create_identity
 Cmiss_field_module_create_component
 Cmiss_field_module_create_concatenate
-Cmiss_field_constant_set_value
 
 /* api/cmiss_field_conditional.h */
 Cmiss_field_module_create_if

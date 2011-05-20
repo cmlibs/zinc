@@ -47,26 +47,6 @@ extern "C" {
 namespace Cmiss
 {
 
-class FieldConstant : public Field
-{
-public:
-	// takes ownership of C-style field reference
-	FieldConstant(Cmiss_field_constant_id field_constant_id) :
-		Field(reinterpret_cast<Cmiss_field_id>(field_constant_id))
-	{ }
-
-	FieldConstant(Field& field) :
-		Field(Cmiss_field_access(field.getId()))
-	{	}
-
-	int setValue(const int index,double value)
-	{
-		return Cmiss_field_constant_set_value(
-			reinterpret_cast<Cmiss_field_constant_id>(id), index, value);
-	}
-
-};
-
 } // namespace Cmiss
 
 #endif /* __CMISS_FIELD_TYPES_COMPOSITE_HPP__ */

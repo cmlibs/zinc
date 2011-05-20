@@ -214,6 +214,8 @@ public:
 	FE_region *fe_region;
 	Cmiss_region *region;
 	Cmiss_region* data_group;
+	Cmiss_field_module_id field_module;
+	Cmiss_field_cache_id field_cache;
 	FE_value current_time;
 	int maximum_iterations;
 	int dimension;
@@ -230,6 +232,8 @@ public:
 				objective_field(objective_field),
 				data_field(data_field), mesh_field(mesh_field),
 				fe_region(fe_region), region(region), data_group(data_group),
+				field_module(Cmiss_region_get_field_module(region)),
+				field_cache(Cmiss_field_module_create_cache(field_module)),
 				maximum_iterations(maximum_iterations), dimension(dimension)
 	{
 		current_time = 0.0;
@@ -240,6 +244,7 @@ public:
 		independent_fields = static_cast<Computed_field**> (NULL);
 		dof_storage_array = static_cast<FE_value**> (NULL);
 		dof_initial_values = static_cast<FE_value*> (NULL);
+		Cmiss_field_module_begin_change(field_module);
 	};
 
 	~Minimisation();
@@ -258,7 +263,10 @@ public:
 	static int calculate_projection(struct FE_node *node,
 			void *minimisation_object_void);
 
-	void set_dof_value(int dof_index, FE_value new_value);
+	inline void set_dof_value(int dof_index, FE_value new_value)
+	{
+		*dof_storage_array[dof_index] = new_value;
+	}
 
 	void list_dof_values();
 
@@ -275,7 +283,7 @@ public:
 	// FIXME: should allow for different types of projection calculations?
 	void calculate_data_projections();
 
-	int add_independent_field(Cmiss_field_module_id module,const char* name);
+	int add_independent_field(const char* name);
 };
 
 Minimisation::~Minimisation()
@@ -299,26 +307,33 @@ Minimisation::~Minimisation()
 		Cmiss_field_destroy(independent_fields+i);
 	}
 	DEALLOCATE(independent_fields);
+	Cmiss_field_cache_destroy(&field_cache);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
 	LEAVE;
 } /* Minimisation::~Minimisation */
 
-int Minimisation::add_independent_field(Cmiss_field_module_id module,const char* name)
+int Minimisation::add_independent_field(const char* name)
 {
 	int return_code = 1;
 	// FIXME: need to check if adding the same field more than once.
-	Cmiss_field_id field = Cmiss_field_module_find_field_by_name(module,name);
-	if (independent_fields_are_constant && !Computed_field_is_constant(field)) {
+	Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module,name);
+	if (independent_fields_are_constant && !Computed_field_is_constant(field))
+	{
 		display_message(ERROR_MESSAGE, "Minimisation::add_independent_field.  "
 				"All independent fields must be constant if any are.");
 		Cmiss_field_destroy(&field);
 		return_code = 0;
-	} else if (Computed_field_is_type_finite_element(field) && (number_of_independent_fields > 0)) {
+	}
+	else if (Computed_field_is_type_finite_element(field) && (number_of_independent_fields > 0))
+	{
 		display_message(ERROR_MESSAGE, "Minimisation::add_independent_field.  "
 				"Can only have one finite element type independent field.");
 		Cmiss_field_destroy(&field);
 		return_code = 0;
 	}
-	if (return_code) {
+	if (return_code)
+	{
 		number_of_independent_fields++;
 		REALLOCATE(independent_fields, independent_fields, Computed_field *, number_of_independent_fields);
 		independent_fields[number_of_independent_fields - 1] = field;
@@ -438,36 +453,49 @@ int Minimisation::construct_dof_arrays(struct FE_node *node,
 				DEALLOCATE(nodal_value_types);
 
 			}
-		} else {
+		}
+		else
+		{
 			// constant field(s) - could have many
-			for (i=0;i<minimisation->number_of_independent_fields;i++) {
-				//Get number of components
-				number_of_components = Computed_field_get_number_of_components(minimisation->independent_fields[i]);
-				//for each component in field
-				for (component_number = 0; component_number < number_of_components; component_number++) {
-					// increment total_dof
-					minimisation->total_dof++;
+			for (i=0;i<minimisation->number_of_independent_fields;i++)
+			{
+				number_of_components = Cmiss_field_get_number_of_components(minimisation->independent_fields[i]);
+				FE_value *constant_values_storage =
+					Computed_field_constant_get_values_storage(minimisation->independent_fields[i]);
+				if (constant_values_storage)
+				{
 					// reallocate arrays
 					REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
-							FE_value *, minimisation->total_dof);
+						FE_value *, minimisation->total_dof + number_of_components);
 					REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
-							FE_value, minimisation->total_dof);
-					// get value storage pointer
-					minimisation->dof_storage_array[minimisation->total_dof - 1] =
-							Computed_field_constant_get_value_storage(minimisation->independent_fields[i],component_number);
-					// get initial value from value storage pointer
-					minimisation->dof_initial_values[minimisation->total_dof - 1]
-							= *minimisation->dof_storage_array[minimisation->total_dof - 1];
-					/*cout << minimisation->dof_storage_array[minimisation->total_dof
-							- 1] << "   "
-							<< minimisation->dof_initial_values[minimisation->total_dof
-									- 1] << endl;*/
+						FE_value, minimisation->total_dof + number_of_components);
+					for (component_number = 0; component_number < number_of_components; component_number++)
+					{
+						// get value storage pointer
+						minimisation->dof_storage_array[minimisation->total_dof] =
+							constant_values_storage + component_number;
+						// get initial value from value storage pointer
+						minimisation->dof_initial_values[minimisation->total_dof] =
+							*minimisation->dof_storage_array[minimisation->total_dof];
+						/*cout << minimisation->dof_storage_array[minimisation->total_dof] << "   "
+								<< minimisation->dof_initial_values[minimisation->total_dof] << endl;*/
+						minimisation->total_dof++;
+					}
+				}
+				else
+				{
+					char *field_name = Cmiss_field_get_name(minimisation->independent_fields[i]);
+					display_message(WARNING_MESSAGE, "Minimisation::construct_dof_arrays.  "
+						"Independent field '%s' is not a constant. Skipping.", field_name);
+					DEALLOCATE(field_name);
 				}
 			}
 		}
 		return_code = 1;
-	} else {
-		display_message(ERROR_MESSAGE, "Minimisation::count_dof.  "
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Minimisation::construct_dof_arrays.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
@@ -475,23 +503,6 @@ int Minimisation::construct_dof_arrays(struct FE_node *node,
 
 	return (return_code);
 } /* Minimisation::construct_dof_arrays */
-
-void Minimisation::set_dof_value(int dof_index, FE_value new_value)
-/*******************************************************************************
- LAST MODIFIED : 8 May 2007
-
- DESCRIPTION :
- Sets the dof value to <new_value>
- ==============================================================================*/
-{
-
-	ENTER(Minimisation::set_dof_value);
-
-	*dof_storage_array[dof_index] = new_value;
-
-	LEAVE;
-
-} /* Minimisation::set_dof_value */
 
 void Minimisation::list_dof_values()
 /*******************************************************************************
@@ -514,31 +525,18 @@ void Minimisation::list_dof_values()
 
 } /* Minimisation::list_dof_values */
 
+/***************************************************************************//**
+ * Evaluates the objective function value given the currents dof values.
+ */
 FE_value Minimisation::evaluate_objective_function()
-/*******************************************************************************
- LAST MODIFIED : 8 May 2007
-
- DESCRIPTION :
- Evalulates the objective function value given the currents dof values.
- ==============================================================================*/
 {
 	FE_value objective_value[3];
-	FE_node *node;
-
-	ENTER(Minimisation::evaluate_objective_function);
-
-	node = FE_region_get_first_FE_node_that(fe_region, NULL, NULL);
-
 	Computed_field_clear_cache(objective_field);
-
-	Computed_field_evaluate_at_node(objective_field, node, current_time,
-			objective_value);
-
-	LEAVE;
-
+	Cmiss_field_evaluate_real(objective_field, field_cache,
+		/*number_of_values*/3, objective_value);
+	// GRC why do we need sqrt and / 3.0 in following ?
 	return (sqrt(objective_value[0] / 3.0));
-
-} /* Minimisation::evaluate_objective_function */
+}
 
 void Minimisation::minimise_NSDGSL()
 /*******************************************************************************
@@ -694,7 +692,7 @@ void Minimisation::minimise_NSDGSL()
 
 	LEAVE;
 
-} /* Minimisation::minimise */
+}
 
 void init_QN(int ndim, ColumnVector& x)
 /**
@@ -763,16 +761,20 @@ void Minimisation::minimise_QN()
 	objfcn.cleanup();
 
 	ColumnVector solution = nlp.getXc();
-	int i,j;
-	for (i = 0; i < total_dof; i++) this->set_dof_value(i, solution(i + 1));
-	if (independent_fields_are_constant) {
+	int i;
+	for (i = 0; i < total_dof; i++)
+		this->set_dof_value(i, solution(i + 1));
+	if (independent_fields_are_constant)
+	{
 		// FIXME: need to "set values" in order to get the manager change message queued up.
+		// GRC this just ensures field is marked as changed after minimisation, so graphics update
 		int c = 0;
-		for (i=0;i<number_of_independent_fields;i++) {
+		for (i=0;i<number_of_independent_fields;i++)
+		{
 			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
-			for (j = 0; j < number_of_components; j++) {
-				Computed_field_constant_set_value(independent_fields[i],j,*dof_storage_array[c++]);
-			}
+			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independent_fields[i]);
+			Cmiss_field_assign_real(independent_fields[i], field_cache, number_of_components, constant_values_storage);
+			c += number_of_components;
 		}
 	}
 
@@ -898,10 +900,8 @@ void Minimisation::minimise_LSQN()
 	// need a handle on this object...
 	UserData = static_cast<void*> (this);
 	// FIXME: using objective field as the data field...
-	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(this->data_group);
 	// GRC: should allow alternative nodeset "cmiss_data" to be used:
 	Cmiss_nodeset_id datapointset = Cmiss_field_module_get_nodeset_by_name(field_module, "cmiss_nodes");
-	Cmiss_field_module_destroy(&field_module);
 	this->number_of_data_points = Cmiss_nodeset_get_size(datapointset);
 	Cmiss_nodeset_destroy(&datapointset);
 	this->number_of_data_components = Computed_field_get_number_of_components(
@@ -924,16 +924,20 @@ void Minimisation::minimise_LSQN()
 	objfcn.optimize();
 	objfcn.printStatus(message);
 	ColumnVector solution = nlp.getXc();
-	int i,j;
-	for (i = 0; i < total_dof; i++) this->set_dof_value(i, solution(i + 1));
-	if (independent_fields_are_constant) {
+	int i;
+	for (i = 0; i < total_dof; i++)
+		this->set_dof_value(i, solution(i + 1));
+	if (independent_fields_are_constant)
+	{
 		// FIXME: need to "set values" in order to get the manager change message queued up.
+		// GRC this just ensures field is marked as changed after minimisation, so graphics update
 		int c = 0;
-		for (i=0;i<number_of_independent_fields;i++) {
+		for (i=0;i<number_of_independent_fields;i++)
+		{
 			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
-			for (j = 0; j < number_of_components; j++) {
-				Computed_field_constant_set_value(independent_fields[i],j,*dof_storage_array[c++]);
-			}
+			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independent_fields[i]);
+			Cmiss_field_assign_real(independent_fields[i], field_cache, number_of_components, constant_values_storage);
+			c += number_of_components;
 		}
 	}
 	//list_dof_values();
@@ -970,7 +974,8 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 
 	ENTER(gfx_minimise);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (package = (struct Minimisation_package *) package_void)) {
+	if (state && (package = (struct Minimisation_package *) package_void))
+	{
 		struct Cmiss_region *region = NULL;
 		struct Cmiss_region *data_group = NULL;
 		objective_field = (struct Computed_field *) NULL;
@@ -1054,30 +1059,25 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 		if (return_code)
 		{
 			if ((field_names.number_of_strings > 0) && (objective_field || (data_field && mesh_field))) {
-				if (region && data_group) {
-					if (minimisation_method_string) {
+				if (region && data_group)
+				{
+					if (minimisation_method_string)
+					{
 						STRING_TO_ENUMERATOR(MinimisationMethod)(
-								minimisation_method_string,
-								&(package->method));
+							minimisation_method_string, &(package->method));
 					}
 
 					FE_region *fe_region = Cmiss_region_get_FE_region(
 							region);
-
-					FE_region_begin_change(fe_region);
 
 					// Create minimisation object
 					Minimisation minimisation(objective_field,
 							data_field, mesh_field, fe_region, region,
 							data_group, maxIters, dimension);
 
-					// Need the field module
-					// FIXME: is this the best way to get it?
-					Cmiss_field_module_id field_module = Cmiss_field_get_field_module(objective_field ? objective_field : mesh_field);
 					for (i=0;i<field_names.number_of_strings;i++) {
-						minimisation.add_independent_field(field_module,field_names.strings[i]);
+						minimisation.add_independent_field(field_names.strings[i]);
 					}
-					Cmiss_field_module_destroy(&field_module);
 
 					// Populate the dof pointers and initial values for each node
 					if (Computed_field_is_type_finite_element(minimisation.independent_fields[0])) {
@@ -1105,8 +1105,6 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 						return_code = 0;
 						break;
 					}
-
-					FE_region_end_change(fe_region);
 				} else {
 					display_message(ERROR_MESSAGE,
 							"gfx_minimise.  Must specify a region and data group");
