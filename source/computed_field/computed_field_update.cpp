@@ -53,6 +53,7 @@ extern "C" {
 #include "general/debug.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_node_private.hpp"
 
 int Computed_field_copy_values_at_node(struct FE_node *node,
 	struct Computed_field *destination_field,
@@ -112,134 +113,63 @@ this function are finished.
 	return (return_code);
 } /* Computed_field_copy_values_at_node */
 
-struct Computed_field_update_nodal_values_from_source_data
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Cmiss_nodeset_assign_field_from_source(
+	Cmiss_nodeset_id nodeset, Cmiss_field_id destination_field,
+	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+	FE_value time)
 {
-	int selected_count, success_count;
-	FE_value *values;
-	FE_value time;
-	struct Computed_field *source_field;
-	struct Computed_field *destination_field;
-	struct Computed_field *group_field;
-};
-
-int Computed_field_update_nodal_values_from_source_sub(
-	struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_update_nodal_values_from_source_data *data;
-
-	ENTER(Computed_field_update_nodal_values_from_source_sub);
-	if (node && (data=
-		(struct Computed_field_update_nodal_values_from_source_data *)data_void))
+	int return_code = 1;
+	if (nodeset && destination_field && source_field)
 	{
-		return_code = 1;
-		if ((data->group_field == NULL) || Computed_field_is_true_at_node(data->group_field, node, data->time))
-		{
-			if (Computed_field_is_defined_at_node(data->source_field, node) &&
-				Computed_field_is_defined_at_node(data->destination_field, node))
-			{
-				if (Computed_field_evaluate_at_node(data->source_field, node,
-					data->time, data->values))
-				{
-					if (Computed_field_set_values_at_node(data->destination_field,
-							node, data->time, data->values))
-					{
-						data->success_count++;
-					}
-				}
-			}
-			data->selected_count++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_update_nodal_values_from_source_sub.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_update_nodal_values_from_source_sub */
-
-int Computed_field_update_nodal_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region, int use_data,
-	struct Computed_field *group_field,	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Set <destination_field> in all the nodes in <node_group> or <node_manager> if
-not supplied to the values from <source_field>.
-Restricts update to nodes in <node_selection>, if supplied.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_update_nodal_values_from_source_data data;
-	struct FE_region *fe_region;
-
-	ENTER(Computed_field_update_nodal_values_from_source);
-	return_code = 0;
-	if (destination_field && source_field && region && 
-		(fe_region = Cmiss_region_get_FE_region(region)) &&
-		(!use_data || (fe_region = FE_region_get_data_FE_region(fe_region))))
-	{
+		const int number_of_components =
+			Computed_field_get_number_of_components(destination_field);
 		if (Computed_field_get_number_of_components(source_field) ==
-			Computed_field_get_number_of_components(destination_field))
+			number_of_components)
 		{
-			if (ALLOCATE(data.values, FE_value, 
-				Computed_field_get_number_of_components(source_field)))
+			Cmiss_field_module_id field_module = Cmiss_nodeset_get_field_module(nodeset);
+			Cmiss_field_module_begin_change(field_module);
+			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+			FE_value *values = new FE_value[number_of_components];
+			// all fields evaluated at same time so set once
+			Cmiss_field_cache_set_time(field_cache, time);
+			Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+			Cmiss_node_id node = 0;
+			int selected_count = 0;
+			int success_count = 0;
+			while (0 != (node = Cmiss_node_iterator_next(iterator)))
 			{
-				data.source_field = source_field;
-				data.destination_field = destination_field;
-				data.group_field = group_field;
-				data.selected_count = 0;
-				data.success_count = 0;
-				data.time = time;
-
-				FE_region_begin_change(fe_region);
-				FE_region_for_each_FE_node(fe_region,
-					Computed_field_update_nodal_values_from_source_sub,
-						(void *)&data);
-				if (data.success_count != data.selected_count)
+				Cmiss_field_cache_set_node(field_cache, node);
+				if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, field_cache))
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_update_nodal_values_from_source.  "
-						"Only able to set values for %d nodes out of %d\n"
-						"  Either source field isn't defined at node "
-						"or destination field could not be set.",
-						data.success_count, data.selected_count);
+					if (Cmiss_field_is_defined_at_location(destination_field, field_cache) &&
+						Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values) &&
+						Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values))
+					{
+						++success_count;
+					}
+					++selected_count;
 				}
-				/* to be safe, clear cache of source and destination fields */
-				Computed_field_clear_cache(source_field);
-				Computed_field_clear_cache(destination_field);
-				FE_region_end_change(fe_region);				
-				DEALLOCATE(data.values);
+				Cmiss_node_destroy(&node);
 			}
-			else
+			Cmiss_node_iterator_destroy(&iterator);
+			if (success_count != selected_count)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_update_nodal_values_from_source.  "
-					"Unable to allocate value storage.");
-				return_code = 0;
+				display_message(WARNING_MESSAGE,
+					"Cmiss_nodeset_assign_field_from_source.  "
+					"Only able to set values for %d nodes out of %d\n"
+					"  Either source field isn't defined at node "
+					"or destination field could not be set.",
+					success_count, selected_count);
 			}
+			delete[] values;
+			Cmiss_field_cache_destroy(&field_cache);
+			Cmiss_field_module_end_change(field_module);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_update_nodal_values_from_source.  "
+				"Cmiss_nodeset_assign_field_from_source.  "
 				"Number of components in source and destination fields must match.");
 			return_code = 0;
 		}
@@ -247,14 +177,11 @@ Restricts update to nodes in <node_selection>, if supplied.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_update_nodal_values_from_source.  "
-			"Invalid argument(s)");
+			"Cmiss_nodeset_assign_field_from_source.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_update_nodal_values_from_source */
+}
 
 struct Computed_field_update_element_values_from_source_data
 /*******************************************************************************

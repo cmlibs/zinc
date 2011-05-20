@@ -530,6 +530,13 @@ int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
 
 	return return_code;
 }
+// @return  Accessed reference to field_module
+Cmiss_field_module_id Cmiss_nodeset_get_field_module(Cmiss_nodeset_id nodeset)
+{
+	Cmiss_region_id region = 0;
+	FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset), &region);
+	return Cmiss_region_get_field_module(region);
+}
 
 FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset)
 {

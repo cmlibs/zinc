@@ -2345,7 +2345,6 @@ int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field, Cmiss_f
 int Cmiss_field_is_defined_at_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache)
 {
-	// GRC search and remove is defined at node function uses
 	if ((!field) || (!cache))
 		return 0;
 	return field->core->is_defined_at_location(cache->get_location());

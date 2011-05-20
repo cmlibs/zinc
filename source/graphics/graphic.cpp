@@ -1517,8 +1517,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			graphic_to_object_data->rc_coordinate_field)))
 		{
 			/* determine if the element is required */
-			if (Computed_field_is_defined_at_node(graphic->seed_node_coordinate_field, node)
-				&& Computed_field_evaluate_at_node(graphic->seed_node_coordinate_field, node,
+			if (Computed_field_evaluate_at_node(graphic->seed_node_coordinate_field, node,
 					graphic_to_object_data->time, coordinates)
 				&& Computed_field_find_element_xi(graphic_to_object_data->rc_coordinate_field,
 					coordinates, number_of_components, /*time*/0, &element, xi,

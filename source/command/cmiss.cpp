@@ -9244,14 +9244,7 @@ DESCRIPTION :
 		source_field = (struct Computed_field *)NULL;
 		source_field_name = NULL;
 		destination_field_name = NULL;
-		if (command_data->default_time_keeper)
-		{
-			time = Time_keeper_get_time(command_data->default_time_keeper);
-		}
-		else
-		{
-			time = 0;
-		}
+		time = 0;
 		
 		option_table = CREATE(Option_table)();
 		/* destination */
@@ -9317,7 +9310,6 @@ DESCRIPTION :
 							destination_field_name);
 						source_field = Cmiss_field_module_find_field_by_name(field_module,
 							source_field_name);
-						Cmiss_field_module_destroy(&field_module);
 						Cmiss_field_group_id group_field = NULL;
 						if (selected_flag)
 						{
@@ -9329,11 +9321,13 @@ DESCRIPTION :
 								Cmiss_rendition_destroy(&rendition);
 							}
 						}
-						if (data_region_path)
+						if (node_region_path || data_region_path)
 						{
-							Computed_field_update_nodal_values_from_source(
-								destination_field, source_field, region, /*use_data*/1,
-								Cmiss_field_group_base_cast(group_field), time);
+							Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+								field_module, node_region_path ? "cmiss_nodes" : "cmiss_data");
+							Cmiss_nodeset_assign_field_from_source(nodeset, destination_field, source_field,
+								/*conditional_field*/Cmiss_field_group_base_cast(group_field), time);
+							Cmiss_nodeset_destroy(&nodeset);
 						}
 						else if (element_region_path)
 						{
@@ -9341,16 +9335,11 @@ DESCRIPTION :
 								destination_field, source_field, region,
 								element_point_ranges_selection, Cmiss_field_group_base_cast(group_field), time);
 						}
-						else if (node_region_path)
-						{
-							Computed_field_update_nodal_values_from_source(
-								destination_field, source_field, region, /*use_data*/0,
-								Cmiss_field_group_base_cast(group_field), time);
-						}
 						if (group_field)
 						{
 							Cmiss_field_group_destroy(&group_field);
 						}
+						Cmiss_field_module_destroy(&field_module);
 					}
 				}
 			}

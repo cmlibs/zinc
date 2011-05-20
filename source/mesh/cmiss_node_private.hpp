@@ -51,4 +51,8 @@ struct FE_region;
 // Internal use only
 FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset);
 
+// Internal use only
+// @return  Accessed reference to field_module
+Cmiss_field_module_id Cmiss_nodeset_get_field_module(Cmiss_nodeset_id nodeset);
+
 #endif /* !defined (CMISS_NODE_PRIVATE_HPP) */

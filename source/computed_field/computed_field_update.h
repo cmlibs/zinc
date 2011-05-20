@@ -73,17 +73,23 @@ Up to user to call Computed_field_clear_cache for each field after calls to
 this function are finished.
 ==============================================================================*/
 
-int Computed_field_update_nodal_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region, int use_data,
-	struct Computed_field *group_field,	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Set <destination_field> in all the nodes in <region> to the values from
-<source_field>. Restricts update to nodes in <node_selection>, if supplied.
-==============================================================================*/
+ * Assign values of source field to destination field for nodes in nodeset at
+ * the given time. Ignores nodes where either source or destination field is
+ * undefined. Optional conditional field allows conditional assignment.
+ *
+ * @param nodeset  The nodeset to assign in.
+ * @param destination_field  The field to assign values to.
+ * @param source_field  The field to evaluate values from.
+ * @param conditional_field  If supplied, only assigns to nodes for which this
+ * field evaluates to true. If NULL, assigns to all nodes in nodeset.
+ * @param time  The time to assign values at
+ * @return  1 on success, 0 on error.
+ */
+int Cmiss_nodeset_assign_field_from_source(
+	Cmiss_nodeset_id nodeset, Cmiss_field_id destination_field,
+	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+	FE_value time);
 
 int Computed_field_update_element_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
