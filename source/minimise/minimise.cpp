@@ -276,6 +276,8 @@ public:
 	 void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 	 int& result);*/
 
+	void touch_constant_independent_fields();
+
 	void minimise_NSDGSL();
 	void minimise_QN();
 	void minimise_LSQN();
@@ -729,6 +731,24 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 	result = NLPFunction;
 }
 
+/** ensures constant independent fields are marked as changed, so graphics update
+ * FIXME: Should only need to do this once, after optimisation.
+ */
+void Minimisation::touch_constant_independent_fields()
+{
+	if (independent_fields_are_constant)
+	{
+		for (int i = 0; i < number_of_independent_fields; i++)
+		{
+			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
+			FE_value *values = new FE_value[number_of_components];
+			Cmiss_field_evaluate_real(independent_fields[i], field_cache, number_of_components, values);
+			Cmiss_field_assign_real(independent_fields[i], field_cache, number_of_components, values);
+			delete [] values;
+		}
+	}
+}
+
 void Minimisation::minimise_QN()
 /**
  * Naive wrapper around a quasi-Newton minimisation.
@@ -764,20 +784,7 @@ void Minimisation::minimise_QN()
 	int i;
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
-	if (independent_fields_are_constant)
-	{
-		// FIXME: need to "set values" in order to get the manager change message queued up.
-		// GRC this just ensures field is marked as changed after minimisation, so graphics update
-		int c = 0;
-		for (i=0;i<number_of_independent_fields;i++)
-		{
-			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
-			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independent_fields[i]);
-			Cmiss_field_assign_real(independent_fields[i], field_cache, number_of_components, constant_values_storage);
-			c += number_of_components;
-		}
-	}
-
+	touch_constant_independent_fields();
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
@@ -901,9 +908,12 @@ void Minimisation::minimise_LSQN()
 	UserData = static_cast<void*> (this);
 	// FIXME: using objective field as the data field...
 	// GRC: should allow alternative nodeset "cmiss_data" to be used:
-	Cmiss_nodeset_id datapointset = Cmiss_field_module_get_nodeset_by_name(field_module, "cmiss_nodes");
+	// Need to get the field_module for the data_group to get the nodeset for the group region
+	Cmiss_field_module_id data_group_field_module = Cmiss_region_get_field_module(this->data_group);
+	Cmiss_nodeset_id datapointset = Cmiss_field_module_get_nodeset_by_name(data_group_field_module, "cmiss_nodes");
 	this->number_of_data_points = Cmiss_nodeset_get_size(datapointset);
 	Cmiss_nodeset_destroy(&datapointset);
+	Cmiss_field_module_destroy(&data_group_field_module);
 	this->number_of_data_components = Computed_field_get_number_of_components(
 			this->data_field);
 	LSQNLF nlp(total_dof, this->number_of_data_points * this->number_of_data_components,
@@ -927,19 +937,7 @@ void Minimisation::minimise_LSQN()
 	int i;
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
-	if (independent_fields_are_constant)
-	{
-		// FIXME: need to "set values" in order to get the manager change message queued up.
-		// GRC this just ensures field is marked as changed after minimisation, so graphics update
-		int c = 0;
-		for (i=0;i<number_of_independent_fields;i++)
-		{
-			int number_of_components = Computed_field_get_number_of_components(independent_fields[i]);
-			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independent_fields[i]);
-			Cmiss_field_assign_real(independent_fields[i], field_cache, number_of_components, constant_values_storage);
-			c += number_of_components;
-		}
-	}
+	touch_constant_independent_fields();
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
