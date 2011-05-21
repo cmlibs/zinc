@@ -2290,53 +2290,59 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 	return (return_string);
 }
 
-/* Temporary until derivatives implemented: requires element_xi location */
-int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field, Cmiss_field_cache_id cache,
-	double *values, double *derivatives)
+// External API
+int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, Cmiss_field_id chart_field, int order, int term,
+	int number_of_values, double *values)
 {
 	int return_code = 0;
-	if (field && cache && values && derivatives)
+	if (field && cache && (NULL == chart_field) && (1 == order) &&
+		(number_of_values >= field->number_of_components) && values)
 	{
 		Field_element_xi_location *element_xi_location =
 			dynamic_cast<Field_element_xi_location *>(cache->get_location());
 		if (element_xi_location)
 		{
-			int old_number_of_derivatives = element_xi_location->get_number_of_derivatives();
-			int number_of_derivatives = element_xi_location->get_dimension();
-			element_xi_location->set_number_of_derivatives(number_of_derivatives);
-			return_code = Computed_field_evaluate_cache_at_location(field, element_xi_location);
-			element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
-			if (return_code)
+			int element_dimension = element_xi_location->get_dimension();
+			if ((0 < term) && (term <= element_dimension))
 			{
-				if (field->values_valid)
+				int old_number_of_derivatives = element_xi_location->get_number_of_derivatives();
+				element_xi_location->set_number_of_derivatives(element_dimension);
+				return_code = Computed_field_evaluate_cache_at_location(field, element_xi_location);
+				element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
+				if (return_code)
 				{
-					int i;
-					for (i = 0; i < field->number_of_components; i++)
+					if (field->derivatives_valid)
 					{
-						values[i] = field->values[i];
+						int term_offset = term - 1;
+						int i;
+						for (i = 0; i < field->number_of_components; i++)
+						{
+							values[i] = field->derivatives[i*element_dimension + term_offset];
+						}
 					}
-					int total_derivatives = field->number_of_components*number_of_derivatives;
-					for (i = 0; i < total_derivatives; ++i)
+					else
 					{
-						derivatives[i] = field->derivatives[i];
+						return_code = 0;
 					}
 				}
-				else
-				{
-					return_code = 0;
-				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_field_evaluate_chart_derivative.  Invalid term argument %d %d", term, element_dimension);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_evaluate_with_derivatives_internal.  Not an element_xi location" );
+				"Cmiss_field_evaluate_chart_derivative.  Not an element location" );
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_evaluate_real.  Invalid argument(s)");
+			"Cmiss_field_evaluate_chart_derivative.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return (return_code);
@@ -2346,7 +2352,11 @@ int Cmiss_field_is_defined_at_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache)
 {
 	if ((!field) || (!cache))
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_is_defined_at_location.  Invalid argument(s)");
 		return 0;
+	}
 	return field->core->is_defined_at_location(cache->get_location());
 }
 

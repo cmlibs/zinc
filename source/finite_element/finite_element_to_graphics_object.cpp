@@ -2202,8 +2202,8 @@ int get_surface_element_segmentation(struct FE_element *element,
 } /* get_surface_element_segmentation */
 
 struct GT_surface *create_GT_surface_from_FE_element(
-	Cmiss_field_cache_id field_cache,
-	struct FE_element *element,struct Computed_field *coordinate_field,
+	Cmiss_field_cache_id field_cache, struct FE_element *element,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
@@ -2239,8 +2239,9 @@ normals are used.
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type;
-	FE_value coordinates[3], derivative_xi[6], texture_values[3],
-		texture_derivative[6], texture_determinant;
+	FE_value coordinates[3], derivative_xi1[3], derivative_xi2[3],
+		texture_values[3], texture_derivative_xi1[3], texture_derivative_xi2[3],
+		texture_determinant;
 	float distance;
 	GTDATA *data;
 	gtPolygonType polygon_type;
@@ -2253,12 +2254,14 @@ normals are used.
 		temp_normal, *texturepoints, *texture_coordinate = NULL;
 
 	ENTER(create_GT_surface_from_FE_element);
-	if (element && (2 == get_FE_element_dimension(element)) &&
+	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int texture_coordinate_dimension = texture_coordinate_field ?
+		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+	if (field_cache && element && (2 == get_FE_element_dimension(element)) &&
 		(0<number_of_segments_in_xi1_requested)&&
-		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		((!texture_coordinate_field)||
-		(3>=Computed_field_get_number_of_components(texture_coordinate_field))))
+		(0<number_of_segments_in_xi2_requested)&&
+		(0 < coordinate_dimension) && (3 >= coordinate_dimension) &&
+		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
 		modified_reverse_normals = reverse_normals;
 		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
@@ -2270,14 +2273,18 @@ normals are used.
 			 3 component */
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
-		derivative_xi[2]=0.0;
-		derivative_xi[3]=0.0;
-		derivative_xi[4]=0.0;
-		derivative_xi[5]=0.0;
+		derivative_xi1[1]=0.0;
+		derivative_xi1[2]=0.0;
+		derivative_xi2[1]=0.0;
+		derivative_xi2[2]=0.0;
 		/* clear texture_values not set if texture_coordinate field is not
 			 3 component */
 		texture_values[1]=0.0;
 		texture_values[2]=0.0;
+		texture_derivative_xi1[1]=0.0;
+		texture_derivative_xi1[2]=0.0;
+		texture_derivative_xi2[1]=0.0;
+		texture_derivative_xi2[2]=0.0;
 		get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			&number_of_points_in_xi1,&number_of_points_in_xi2,
@@ -2435,8 +2442,12 @@ normals are used.
 				return_code = Cmiss_field_cache_set_element_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
-				if (!Cmiss_field_evaluate_with_derivatives_internal(
-					coordinate_field, field_cache, coordinates, derivative_xi))
+				if (!(Cmiss_field_evaluate_chart_derivative(coordinate_field, field_cache,
+						/*chart_field*/NULL, /*order*/1, /*term*/1, coordinate_dimension, derivative_xi1) &&
+					Cmiss_field_evaluate_chart_derivative(coordinate_field, field_cache,
+						/*chart_field*/NULL, /*order*/1, /*term*/2, coordinate_dimension, derivative_xi2) &&
+					Cmiss_field_evaluate_real(coordinate_field, field_cache,
+						coordinate_dimension, coordinates)))
 				{
 					return_code = 0;
 				}
@@ -2451,9 +2462,12 @@ normals are used.
 				{
 					if (calculate_tangent_points)
 					{
-						if (!Cmiss_field_evaluate_with_derivatives_internal(
-							texture_coordinate_field, field_cache, texture_values,
-							texture_derivative))
+						if (!(Cmiss_field_evaluate_chart_derivative(texture_coordinate_field, field_cache,
+								/*chart_field*/NULL, /*order*/1, /*term*/1, texture_coordinate_dimension, texture_derivative_xi1) &&
+							Cmiss_field_evaluate_chart_derivative(texture_coordinate_field, field_cache,
+								/*chart_field*/NULL, /*order*/1, /*term*/2, texture_coordinate_dimension, texture_derivative_xi2) &&
+							Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
+								texture_coordinate_dimension, texture_values)))
 						{
 							calculate_tangent_points = 0;
 							display_message(WARNING_MESSAGE,
@@ -2464,7 +2478,7 @@ normals are used.
 					if (!calculate_tangent_points)  /* Do this if just unset above as well as else */
 					{
 						return_code = Cmiss_field_evaluate_real(texture_coordinate_field,
-							field_cache, /*number_of_values*/3, texture_values);
+							field_cache, texture_coordinate_dimension, texture_values);
 					}
 				}
 				if (return_code)
@@ -2475,35 +2489,32 @@ normals are used.
 					point++;
 					/* calculate the normals */
 					/* calculate the normal=d/d_xi1 x d/d_xi2 */
-					(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-						derivative_xi[3]*derivative_xi[4];
-					(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-						derivative_xi[5]*derivative_xi[0];
-					(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-						derivative_xi[1]*derivative_xi[2];
+					(*normal)[0] = derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2];
+					(*normal)[1] = derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0];
+					(*normal)[2] = derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1];
 					if (texture_coordinate_field)
 					{
 						if (calculate_tangent_points)
 						{
 							/* tangent is dX/d_xi * inv(dT/dxi) */
-							texture_determinant = texture_derivative[0] * texture_derivative[3]
-								- texture_derivative[1] * texture_derivative[2];
+							texture_determinant = texture_derivative_xi1[0] * texture_derivative_xi2[1]
+								- texture_derivative_xi2[0] * texture_derivative_xi1[1];
 							if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) && 
 								(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
 							{
 								/* Cannot invert the texture derivative so just use the first xi derivative */
-								(*tangent)[0] = derivative_xi[0];
-								(*tangent)[1] = derivative_xi[2];
-								(*tangent)[2] = derivative_xi[4];
+								(*tangent)[0] = derivative_xi1[0];
+								(*tangent)[1] = derivative_xi1[1];
+								(*tangent)[2] = derivative_xi1[2];
 							}
 							else
 							{
-								(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
-									- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
-								(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
-									- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
-								(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
-									- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+								(*tangent)[0] = (derivative_xi1[0] * texture_derivative_xi1[0]
+									- derivative_xi2[0] * texture_derivative_xi1[1]) / texture_determinant;
+								(*tangent)[1] = (derivative_xi1[1] * texture_derivative_xi1[0]
+									- derivative_xi2[1] * texture_derivative_xi1[1]) / texture_determinant;
+								(*tangent)[2] = (derivative_xi1[2] * texture_derivative_xi1[0]
+									- derivative_xi2[2] * texture_derivative_xi1[1]) / texture_determinant;
 							}
 						}
 						else
@@ -2523,9 +2534,9 @@ normals are used.
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi[0];
-								(*normal)[1]=derivative_xi[2];
-								(*normal)[2]=derivative_xi[4];
+								(*normal)[0]=derivative_xi1[0];
+								(*normal)[1]=derivative_xi1[1];
+								(*normal)[2]=derivative_xi1[2];
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_0==collapsed_element)
@@ -2534,9 +2545,9 @@ normals are used.
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi[1];
-								(*normal)[1]=derivative_xi[3];
-								(*normal)[2]=derivative_xi[5];
+								(*normal)[0]=derivative_xi2[0];
+								(*normal)[1]=derivative_xi2[1];
+								(*normal)[2]=derivative_xi2[2];
 							}
 						}
 						else if (((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && (!reverse_winding)) ||
@@ -2546,9 +2557,9 @@ normals are used.
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi[0];
-								(*normal)[1]=derivative_xi[2];
-								(*normal)[2]=derivative_xi[4];
+								(*normal)[0]=derivative_xi1[0];
+								(*normal)[1]=derivative_xi1[1];
+								(*normal)[2]=derivative_xi1[2];
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_1==collapsed_element)
@@ -2557,9 +2568,9 @@ normals are used.
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=derivative_xi[1];
-								(*normal)[1]=derivative_xi[3];
-								(*normal)[2]=derivative_xi[5];
+								(*normal)[0]=derivative_xi2[0];
+								(*normal)[1]=derivative_xi2[1];
+								(*normal)[2]=derivative_xi2[2];
 							}
 						}
 					}
@@ -2592,24 +2603,24 @@ normals are used.
 					if (number_of_polygon_vertices>0)
 					{
 						normal=normalpoints+number_of_points_in_xi1-2;
-						derivative_xi[1]=(*normal)[0];
-						derivative_xi[3]=(*normal)[1];
-						derivative_xi[5]=(*normal)[2];
+						derivative_xi2[0]=(*normal)[0];
+						derivative_xi2[1]=(*normal)[1];
+						derivative_xi2[2]=(*normal)[2];
 						normal=normalpoints;
 						for (i=number_of_points_in_xi1;i>0;i--)
 						{
-							derivative_xi[0]=(*normal)[0];
-							derivative_xi[2]=(*normal)[1];
-							derivative_xi[4]=(*normal)[2];
-							(*normal)[0] = special_normal_sign*(derivative_xi[2]*derivative_xi[5] -
-								derivative_xi[3]*derivative_xi[4]);
-							(*normal)[1] = special_normal_sign*(derivative_xi[4]*derivative_xi[1] -
-								derivative_xi[5]*derivative_xi[0]);
-							(*normal)[2] = special_normal_sign*(derivative_xi[0]*derivative_xi[3] -
-								derivative_xi[1]*derivative_xi[2]);
-							derivative_xi[1]=derivative_xi[0];
-							derivative_xi[3]=derivative_xi[2];
-							derivative_xi[5]=derivative_xi[4];
+							derivative_xi1[0]=(*normal)[0];
+							derivative_xi1[1]=(*normal)[1];
+							derivative_xi1[2]=(*normal)[2];
+							(*normal)[0] = special_normal_sign*(derivative_xi1[1]*derivative_xi2[2] -
+								derivative_xi2[1]*derivative_xi1[2]);
+							(*normal)[1] = special_normal_sign*(derivative_xi1[2]*derivative_xi2[0] -
+								derivative_xi2[2]*derivative_xi1[0]);
+							(*normal)[2] = special_normal_sign*(derivative_xi1[0]*derivative_xi2[1] -
+								derivative_xi2[0]*derivative_xi1[1]);
+							derivative_xi2[0]=derivative_xi1[0];
+							derivative_xi2[1]=derivative_xi1[1];
+							derivative_xi2[2]=derivative_xi1[2];
 							normal++;
 						}
 					}
@@ -2619,19 +2630,19 @@ normals are used.
 						/* calculate the normals for the xi1=0 edge */
 						normal=normalpoints+((number_of_points_in_xi2-1)*
 							number_of_points_in_xi1);
-						derivative_xi[0]=(*normal)[0];
-						derivative_xi[2]=(*normal)[1];
-						derivative_xi[4]=(*normal)[2];
+						derivative_xi1[0]=(*normal)[0];
+						derivative_xi1[1]=(*normal)[1];
+						derivative_xi1[2]=(*normal)[2];
 						normal=normalpoints;
-						derivative_xi[1]=(*normal)[0];
-						derivative_xi[3]=(*normal)[1];
-						derivative_xi[5]=(*normal)[2];
+						derivative_xi2[0]=(*normal)[0];
+						derivative_xi2[1]=(*normal)[1];
+						derivative_xi2[2]=(*normal)[2];
 						temp_normal[0] = (float)(special_normal_sign*
-							(derivative_xi[3]*derivative_xi[4] - derivative_xi[2]*derivative_xi[5]));
+							(derivative_xi2[1]*derivative_xi1[2] - derivative_xi1[1]*derivative_xi2[2]));
 						temp_normal[1] = (float)(special_normal_sign*
-							(derivative_xi[5]*derivative_xi[0] - derivative_xi[4]*derivative_xi[1]));
+							(derivative_xi2[2]*derivative_xi1[0] - derivative_xi1[2]*derivative_xi2[0]));
 						temp_normal[2] = (float)(special_normal_sign*
-							(derivative_xi[1]*derivative_xi[2] - derivative_xi[0]*derivative_xi[3]));
+							(derivative_xi2[0]*derivative_xi1[1] - derivative_xi1[0]*derivative_xi2[1]));
 						for (i=number_of_points_in_xi2;i>0;i--)
 						{
 							(*normal)[0]=temp_normal[0];
@@ -2644,19 +2655,19 @@ normals are used.
 					{
 						/* calculate the normals for the xi2=0 edge */
 						normal=normalpoints+(number_of_points_in_xi1-1);
-						derivative_xi[0]=(*normal)[0];
-						derivative_xi[2]=(*normal)[1];
-						derivative_xi[4]=(*normal)[2];
+						derivative_xi1[0]=(*normal)[0];
+						derivative_xi1[1]=(*normal)[1];
+						derivative_xi1[2]=(*normal)[2];
 						normal=normalpoints;
-						derivative_xi[1]=(*normal)[0];
-						derivative_xi[3]=(*normal)[1];
-						derivative_xi[5]=(*normal)[2];
+						derivative_xi2[0]=(*normal)[0];
+						derivative_xi2[1]=(*normal)[1];
+						derivative_xi2[2]=(*normal)[2];
 						temp_normal[0] = (float)(special_normal_sign*
-							(derivative_xi[2]*derivative_xi[5] - derivative_xi[3]*derivative_xi[4]));
+							(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]));
 						temp_normal[1] = (float)(special_normal_sign*
-							(derivative_xi[4]*derivative_xi[1] - derivative_xi[5]*derivative_xi[0]));
+							(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]));
 						temp_normal[2] = (float)(special_normal_sign*
-							(derivative_xi[0]*derivative_xi[3] - derivative_xi[1]*derivative_xi[2]));
+							(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]));
 						for (i=number_of_points_in_xi1;i>0;i--)
 						{
 							(*normal)[0]=temp_normal[0];
@@ -2671,19 +2682,19 @@ normals are used.
 						/* calculate the normals for the xi1=1 edge */
 						normal = normalpoints +
 							(number_of_points_in_xi1*number_of_points_in_xi2 - 1);
-						derivative_xi[1]=(*normal)[0];
-						derivative_xi[3]=(*normal)[1];
-						derivative_xi[5]=(*normal)[2];
+						derivative_xi2[0]=(*normal)[0];
+						derivative_xi2[1]=(*normal)[1];
+						derivative_xi2[2]=(*normal)[2];
 						normal = normalpoints + (number_of_points_in_xi1 - 1);
-						derivative_xi[0]=(*normal)[0];
-						derivative_xi[2]=(*normal)[1];
-						derivative_xi[4]=(*normal)[2];
+						derivative_xi1[0]=(*normal)[0];
+						derivative_xi1[1]=(*normal)[1];
+						derivative_xi1[2]=(*normal)[2];
 						temp_normal[0] = (float)(special_normal_sign*
-							(derivative_xi[3]*derivative_xi[4] - derivative_xi[2]*derivative_xi[5]));
+							(derivative_xi2[1]*derivative_xi1[2] - derivative_xi1[1]*derivative_xi2[2]));
 						temp_normal[1] = (float)(special_normal_sign*
-							(derivative_xi[5]*derivative_xi[0] - derivative_xi[4]*derivative_xi[1]));
+							(derivative_xi2[2]*derivative_xi1[0] - derivative_xi1[2]*derivative_xi2[0]));
 						temp_normal[2] = (float)(special_normal_sign*
-							(derivative_xi[1]*derivative_xi[2] - derivative_xi[0]*derivative_xi[3]));
+							(derivative_xi2[0]*derivative_xi1[1] - derivative_xi1[0]*derivative_xi2[1]));
 						for (i=number_of_points_in_xi2;i>0;i--)
 						{
 							(*normal)[0]=temp_normal[0];
@@ -2697,20 +2708,20 @@ normals are used.
 						/* calculate the normals for the xi2=1 edge */
 						normal=normalpoints+(number_of_points_in_xi1*
 							number_of_points_in_xi2-1);
-						derivative_xi[1]=(*normal)[0];
-						derivative_xi[3]=(*normal)[1];
-						derivative_xi[5]=(*normal)[2];
+						derivative_xi2[0]=(*normal)[0];
+						derivative_xi2[1]=(*normal)[1];
+						derivative_xi2[2]=(*normal)[2];
 						normal=normalpoints+(number_of_points_in_xi1*
 							(number_of_points_in_xi2-1));
-						derivative_xi[0]=(*normal)[0];
-						derivative_xi[2]=(*normal)[1];
-						derivative_xi[4]=(*normal)[2];
+						derivative_xi1[0]=(*normal)[0];
+						derivative_xi1[1]=(*normal)[1];
+						derivative_xi1[2]=(*normal)[2];
 						temp_normal[0] = (float)(special_normal_sign*
-							(derivative_xi[2]*derivative_xi[5] - derivative_xi[3]*derivative_xi[4]));
+							(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]));
 						temp_normal[1] = (float)(special_normal_sign*
-							(derivative_xi[4]*derivative_xi[1] - derivative_xi[5]*derivative_xi[0]));
+							(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]));
 						temp_normal[2] = (float)(special_normal_sign*
-							(derivative_xi[0]*derivative_xi[3] - derivative_xi[1]*derivative_xi[2]));
+							(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]));
 						for (i=number_of_points_in_xi1;i>0;i--)
 						{
 							(*normal)[0]=temp_normal[0];

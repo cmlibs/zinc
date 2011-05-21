@@ -92,6 +92,7 @@ Cmiss_field_assign_real
 Cmiss_field_assign_string
 Cmiss_field_evaluate_real
 Cmiss_field_evaluate_string
+Cmiss_field_evaluate_chart_derivative
 Cmiss_field_get_attribute_integer
 Cmiss_field_set_attribute_integer
 Cmiss_field_get_name

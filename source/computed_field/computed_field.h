@@ -372,10 +372,6 @@ int Cmiss_field_cache_assign_field_real(Cmiss_field_cache_id cache,
 int Cmiss_field_evaluate_boolean(Cmiss_field_id field,
 	Cmiss_field_cache_id cache);
 
-/* GRC document if keeping */
-int Cmiss_field_evaluate_with_derivatives_internal(Cmiss_field_id field,
-	Cmiss_field_cache_id cache, double *values, double *derivatives);
-
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,FE_value time,

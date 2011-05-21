@@ -461,12 +461,12 @@ int get_surface_element_segmentation(struct FE_element *element,
 	enum FE_element_shape_type *shape_type_address);
 
 struct GT_surface *create_GT_surface_from_FE_element(
-	Cmiss_field_cache_id field_cache,
-	struct FE_element *element,struct Computed_field *coordinate_field,
+	Cmiss_field_cache_id field_cache, struct FE_element *element,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element, enum Render_type render_type,
+	struct FE_element *top_level_element,enum Render_type render_type,
 	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 2 May 2000
