@@ -6830,8 +6830,13 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 	ENTER(FE_region_get_Cmiss_region);
 	if (fe_region && cmiss_region_address)
 	{
-		*cmiss_region_address = fe_region->cmiss_region;
-		return_code = 1;
+		FE_region *master_fe_region = fe_region;
+		while (master_fe_region->master_fe_region)
+		{
+			master_fe_region = master_fe_region->master_fe_region;
+		}
+		*cmiss_region_address = master_fe_region->cmiss_region;
+		return_code = (*cmiss_region_address != 0);
 	}
 	else
 	{

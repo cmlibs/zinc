@@ -70,7 +70,16 @@ Global functions
 
 Cmiss_field_cache_id Cmiss_field_module_create_cache(Cmiss_field_module_id field_module)
 {
-	return Cmiss_field_cache::create(field_module);
+	if (field_module)
+	{
+		return Cmiss_field_cache::create(field_module);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_create_cache.  Missing field module");
+	}
+	return 0;
 }
 
 Cmiss_field_cache_id Cmiss_field_cache_access(Cmiss_field_cache_id cache)
