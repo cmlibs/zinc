@@ -80,7 +80,7 @@ SET( MESH_SRCS
 	source/mesh/cmiss_element_private.cpp
 	source/mesh/cmiss_node_private.cpp )
 SET( MESH_HDRS 
-	source/mesh/cmiss_element_private.h )
+	source/mesh/cmiss_element_private.hpp )
 
 SET( NODE_SRCS source/node/node_operations.c
 	source/node/node_tool.cpp )
