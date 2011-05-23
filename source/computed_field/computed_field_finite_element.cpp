@@ -3942,7 +3942,7 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_basis_derivative::~Computed_field_basis_derivative);
 	if (field)
 	{
-		delete xi_indices;
+		delete [] xi_indices;
 		if (fe_field)
 		{
 			DEACCESS(FE_field)(&(fe_field));

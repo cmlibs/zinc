@@ -1,3 +1,4 @@
+-+
 /*******************************************************************************
 FILE : computed_field_connected_threshold_image_filter.c
 
@@ -82,7 +83,7 @@ public:
 	~Computed_field_connected_threshold_image_filter()
 	{
 		if (seed_points) {
-			delete seed_points;
+			delete [] seed_points;
 		}				
 	}
 
