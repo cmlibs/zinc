@@ -1,4 +1,3 @@
--+
 /*******************************************************************************
 FILE : computed_field_connected_threshold_image_filter.c
 
