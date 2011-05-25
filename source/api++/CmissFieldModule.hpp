@@ -117,10 +117,9 @@ public:
 			Cmiss_field_module_create_add(id, operand1.id, operand2.id)));
 	}
 
-	FieldConstant createConstant(int numValues, const double *values)
+	Field createConstant(int numValues, const double *values)
 	{
-		return FieldConstant(reinterpret_cast<Cmiss_field_constant_id>(
-			Cmiss_field_module_create_constant(id, numValues, values)));
+		return Cmiss_field_module_create_constant(id, numValues, values);
 	}
 
 	// factory methods for creating new fields
