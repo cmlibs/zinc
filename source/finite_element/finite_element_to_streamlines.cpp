@@ -212,13 +212,13 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
 	int element_dimension,face_number,i,initial_face_number,j,
-		number_of_permutations, permutation, return_code,vector_dimension;
+		number_of_permutations, permutation, return_code,vector_dimension, face_numberB = 0;
 	FE_value coordinate_length, coordinate_point_error, coordinate_point_vector, coordinate_tolerance,
 		deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		deltaxiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		dxdxi[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], error, fraction,
-		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size,
+		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size, local_step_size_A,
 		point1[3], point2[3], point3[3], tolerance, 
 		vector[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], 
 		xiA[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiB[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
@@ -287,7 +287,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			 magnitude of deltaxi 0.01 */
 			local_step_size=1.0e-2/sqrt(deltaxi[0]*deltaxi[0]+deltaxi[1]*deltaxi[1]
 				+deltaxi[2]*deltaxi[2]);
-			
+			local_step_size_A = local_step_size;
 		}
 		/* whole step */
 		for (i = 0 ; i < element_dimension ; i++)
@@ -328,10 +328,20 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			}
 			return_code = FE_element_xi_increment_within_element(*element, xiB,
 				increment_xi, &fraction, &face_number, xi_face);
+			face_numberB = face_number;
 		}
 		if (face_number != -1)
 		{
-			if (0.0 >= fraction)
+			int onBoundary = 0;
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				if (xiB[i] == xi[i] && (xiB[i] == 0.0 || xiB[i] == 1.0))
+				{
+					onBoundary = 1;
+					break;
+				}
+			}
+			if (0.0 >= fraction && !onBoundary)
 			{
 				/* Don't go into the loop, so set error, coordinate_error and xiF */
 				error = 0.0;
@@ -390,6 +400,28 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			return_code = FE_element_xi_increment_within_element(*element, xiD,
 				increment_xi, &fraction, &face_number, xi_face);
 		}
+
+		/* On boundary but check either it is already on boundary from the beginning */
+		/* if a larger step has moved it out of the boundary than use it*/
+		if (face_number != -1)
+		{
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				if (xiD[i] == xi[i] && (xiD[i] == 0.0 || xiD[i] == 1.0))
+				{
+					if (face_numberB == -1)
+					{
+						for (i = 0 ; i < element_dimension ; i++)
+						{
+							face_number = -1;
+							xiD[i] = xiB[i];
+						}
+					}
+					break;
+				}
+			}
+		}
+
 		/* If we are really close to the boundary then the extra bit added on
 			above may push us to the boundary in this half step so we should check
 			here.  Steps xi->xiD and xiD->xiF are our final steps so check these */
@@ -504,53 +536,28 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	}
 	if (return_code)
 	{
-		*total_stepped += local_step_size;
-		if (face_number != -1)
-		{
-			initial_element = *element;
-			initial_face_number = face_number;
-			xiD[0]=xiF[0];
-			xiD[1]=xiF[1];
-			xiD[2]=xiF[2];
-			/* The last increment should have been the most accurate, if
+			*total_stepped += local_step_size;
+			if (face_number != -1)
+			{
+				initial_element = *element;
+				initial_face_number = face_number;
+				xiD[0]=xiF[0];
+				xiD[1]=xiF[1];
+				xiD[2]=xiF[2];
+				/* The last increment should have been the most accurate, if
 				it wants to change then change element if we can */
-			return_code = FE_element_change_to_adjacent_element(element,
-				xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
-				/*permutation*/0);
-			if (face_number == -1)
-			{
-				/* There is no adjacent element */
-				*keep_tracking = 0;
-			}
-			else
-			{
-				/* Check the new xi coordinates are correct for our 
-					coordinate field and if not try rotating them */
-				return_code=Computed_field_evaluate_in_element(coordinate_field,
-					*element,xiF,time,(struct FE_element *)NULL,point1,(FE_value *)NULL);
-				coordinate_point_error = 0.0;
-				for (i = 0 ; i < vector_dimension ; i++)
+				return_code = FE_element_change_to_adjacent_element(element,
+					xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
+					/*permutation*/0);
+				if (face_number == -1)
 				{
-					coordinate_point_error += (point1[i] - point3[i]) * 
-						(point1[i] - point3[i]);
+					/* There is no adjacent element */
+					*keep_tracking = 0;
 				}
-				coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
-				number_of_permutations = 
-					FE_element_get_number_of_change_to_adjacent_element_permutations(
-						*element, xiF, face_number);
-				/* We have already tried permutation 0 */
-				permutation = 1;
-				while ((permutation < number_of_permutations) &&
-					(coordinate_point_error > coordinate_tolerance))
+				else
 				{
-					*element = initial_element;
-					face_number = initial_face_number;
-					xiF[0]=xiD[0];
-					xiF[1]=xiD[1];
-					xiF[2]=xiD[2];
-					return_code = FE_element_change_to_adjacent_element(element,
-						xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
-						permutation);
+					/* Check the new xi coordinates are correct for our
+					coordinate field and if not try rotating them */
 					return_code=Computed_field_evaluate_in_element(coordinate_field,
 						*element,xiF,time,(struct FE_element *)NULL,point1,(FE_value *)NULL);
 					coordinate_point_error = 0.0;
@@ -560,29 +567,54 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 							(point1[i] - point3[i]);
 					}
 					coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
-					permutation++;
-				}
-				if (coordinate_point_error > coordinate_tolerance)
-				{
-					display_message(ERROR_MESSAGE,"track_streamline_from_FE_element.  "
-						"Coordinates don't match after changing elements.");
-					*keep_tracking = 0;
-					*element = initial_element;
-					xiF[0]=xiD[0];
-					xiF[1]=xiD[1];
-					xiF[2]=xiD[2];
+					number_of_permutations =
+						FE_element_get_number_of_change_to_adjacent_element_permutations(
+							*element, xiF, face_number);
+					/* We have already tried permutation 0 */
+					permutation = 1;
+					while ((permutation < number_of_permutations) &&
+						(coordinate_point_error > coordinate_tolerance))
+					{
+						*element = initial_element;
+						face_number = initial_face_number;
+						xiF[0]=xiD[0];
+						xiF[1]=xiD[1];
+						xiF[2]=xiD[2];
+						return_code = FE_element_change_to_adjacent_element(element,
+							xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
+							permutation);
+						return_code=Computed_field_evaluate_in_element(coordinate_field,
+							*element,xiF,time,(struct FE_element *)NULL,point1,(FE_value *)NULL);
+						coordinate_point_error = 0.0;
+						for (i = 0 ; i < vector_dimension ; i++)
+						{
+							coordinate_point_error += (point1[i] - point3[i]) *
+								(point1[i] - point3[i]);
+						}
+						coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
+						permutation++;
+					}
+					if (coordinate_point_error > coordinate_tolerance)
+					{
+						display_message(ERROR_MESSAGE,"track_streamline_from_FE_element.  "
+							"Coordinates don't match after changing elements.");
+						*keep_tracking = 0;
+						*element = initial_element;
+						xiF[0]=xiD[0];
+						xiF[1]=xiD[1];
+						xiF[2]=xiD[2];
+					}
 				}
 			}
-		}
-		else
-		{
-			/* Update the global step_size */
-			if (error<tolerance/10.0)
+			else
 			{
-				local_step_size *= 2.0;
+				/* Update the global step_size */
+				if (error<tolerance/10.0)
+				{
+					local_step_size *= 2.0;
+				}
+				*step_size = local_step_size;
 			}
-			*step_size = local_step_size;
-		}
 	}
 	if (return_code)
 	{
@@ -1213,16 +1245,18 @@ in that region.
 								element then we are stuck */
 							if (total_stepped == previous_total_stepped_B)
 							{
-								add_point = 0;
-								keep_tracking = 0;
 								if ((*element == previous_element_B) &&
 									(*element != previous_element_A))
 								{
+									add_point = 0;
+									keep_tracking = 0;
 									printf("track_streamline_from_FE_element.  "
 										"trapped between two elements with opposing directions\n");
 								}
-								else
+								else if (previous_element_B)
 								{
+									add_point = 0;
+									keep_tracking = 0;
 									printf("track_streamline_from_FE_element.  "
 										"streamline has stopped progressing.\n");
 								}
