@@ -319,6 +319,11 @@ LAST MODIFIED : 4 March 2002
 DESCRIPTION :
 ==============================================================================*/
 
+#if defined (WX_USER_INTERFACE)
+int Event_dispatcher_set_wx_instance(struct Event_dispatcher *event_dispatcher,
+	void *user_instance);
+#endif
+
 #if defined (USE_XTAPP_CONTEXT)
 int Event_dispatcher_set_application_context(struct Event_dispatcher *event_dispatcher,
 	XtAppContext application_context);
@@ -328,5 +333,7 @@ LAST MODIFIED : 4 June 2002
 DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (USE_XTAPP_CONTEXT) */
+
+int Event_dispatcher_process_idle_event(struct Event_dispatcher *event_dispatcher);
 
 #endif /* !defined (EVENT_DISPATCHER_H) */

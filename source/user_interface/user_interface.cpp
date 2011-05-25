@@ -171,7 +171,7 @@ DESCRIPTION :
 	gint max_priority;
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
-
+	int external_entry;
 	struct Event_dispatcher *event_dispatcher;
 	struct Machine_information *local_machine_info;
 	struct Shell_list_item *shell_list;
@@ -1521,11 +1521,11 @@ Visual *default_visual;
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
-	const char *application_name)
+	const char *application_name, int external_entry)
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
-	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher)
+	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher, int external_entry)
 #endif /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 /*******************************************************************************
 LAST MODIFIED : 10 October 2003
@@ -1534,6 +1534,7 @@ DESCRIPTION :
 Open the <user_interface>.
 ==============================================================================*/
 {
+	USE_PARAMETER(external_entry);
 #if defined (MOTIF_USER_INTERFACE)
 	char bitmap_data;
 	int screen_number;
@@ -1689,6 +1690,7 @@ Open the <user_interface>.
 		user_interface->argv=argv;
 		user_interface->application_name=application_name;
 		user_interface->class_name=class_name;
+		user_interface->external_entry = external_entry;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (GTK_USER_INTERFACE)
 		user_interface->main_window = (GtkWidget *)NULL;
@@ -1930,7 +1932,7 @@ Open the <user_interface>.
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (WX_USER_INTERFACE)
-		if (wxEntryStart(*argc_address, argv))
+		if (user_interface->external_entry || wxEntryStart(*argc_address, argv))
 		{
 			wxXmlResource::Get()->InitAllHandlers();
 			/* Should do this as soon after wxEntry as possible */
@@ -2090,7 +2092,8 @@ DESCRIPTION :
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-		wxEntryCleanup();
+		if (!user_interface->external_entry)
+			wxEntryCleanup();
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		if (user_interface->main_window)

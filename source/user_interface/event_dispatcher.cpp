@@ -1341,18 +1341,22 @@ DESCRIPTION :
 
 	if (event_dispatcher)
 	{
-		 wxCmguiApp &app = wxGetApp();
-		 if (&app)
-		 {
-				app.SetEventDispatcher(event_dispatcher);
-				return_code = 1;
-		 }
-		 else
-		 {
-				display_message(ERROR_MESSAGE,
-					 "Event_dispatcher_initialise_wx_app.  wxCmguiApp not initialised.");
-				return_code = 0;
-		 }
+		if (wxTheApp)
+		{
+			wxCmguiApp *cmguiApp = dynamic_cast<wxCmguiApp *>(wxTheApp);
+			if (cmguiApp)
+			{
+				cmguiApp->SetEventDispatcher(event_dispatcher);
+			}
+			return_code = 1;
+		}
+		else
+		{
+
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_initialise_wx_app.  wxCmguiApp not initialised.");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -2466,8 +2470,8 @@ DESCRIPTION :
 #  endif /* ! defined (CARBON_USER_INTERFACE) */
 #else /* ! defined (WX_USER_INTERFACE) */
 
-		wxCmguiApp &app = wxGetApp();
-		app.OnRun();
+		if (wxTheApp)
+			wxTheApp->OnRun();
 		return_code = 1;
 
 #endif /* ! defined (WX_USER_INTERFACE) */
@@ -2500,8 +2504,8 @@ DESCRIPTION :
 #if ! defined (WX_USER_INTERFACE)
 		event_dispatcher->continue_flag = 0;
 #else /* ! defined (WX_USER_INTERFACE) */
-		wxCmguiApp &app = wxGetApp();
-		app.ExitMainLoop();
+		if (wxTheApp)
+			wxTheApp->ExitMainLoop();
 		return_code = 1;
 #endif /* ! defined (WX_USER_INTERFACE) */
 	}
@@ -2515,6 +2519,36 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Event_dispatcher_end_main_loop */
+
+
+#if defined (WX_USER_INTERFACE)
+int Event_dispatcher_set_wx_instance(struct Event_dispatcher *event_dispatcher,
+	void *user_instance)
+{
+	ENTER(Event_dispatcher_initialise_wx_app);
+	wxApp *external_app = (wxApp *)user_instance;
+	if (event_dispatcher && external_app)
+	{
+		if (wxTheApp)
+		{
+			wxTheApp->SetInstance(external_app);
+			return 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_set_wx_instance.  wx instance is not initialised.");
+			return 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_set_wx_instance.  Invalid arguments.");
+		return 0;
+	}
+}
+#endif
 
 #if defined (USE_XTAPP_CONTEXT)
 int Event_dispatcher_set_application_context(
@@ -3920,3 +3954,12 @@ previously set will be cancelled.
 #else
 #error You are not using GENERIC_EVENT_DISPATCHER, WIN32_USER_INTERFACE, or USE_GTK_MAIN_STEP. Implement your platform in event_dispatcher.c
 #endif /* defined(USE_GENERIC_EVENT_DISPATCHER) elif (WIN32_USER_INTERFACE|USE_GTK_MAIN_STEP) */
+
+int Event_dispatcher_process_idle_event(struct Event_dispatcher *event_dispatcher)
+{
+	USE_PARAMETER(event_dispatcher);
+#if defined (WX_USER_INTERFACE)
+	return Event_dispatcher_do_idle_event(event_dispatcher);
+#endif
+	return 0;
+}

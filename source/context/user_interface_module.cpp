@@ -83,12 +83,14 @@ DESCRIPTION :
 
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface_module *User_interface_module_create(
-	struct Context *context, int in_argc, const char *in_argv[])
+	struct Context *context, int in_argc, const char *in_argv[],
+	int external_entry)
 #else
 struct User_interface_module *User_interface_module_create(
 	struct Context *context, int in_argc, const char *in_argv[],
 	HINSTANCE current_instance, HINSTANCE previous_instance, 
-	LPSTR command_line,int initial_main_window_state)
+	LPSTR command_line,int initial_main_window_state,
+	int external_entry)
 #endif
 {
 	struct User_interface_module  *UI_module = NULL;
@@ -249,7 +251,7 @@ struct User_interface_module *User_interface_module_create(
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
 							(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
-								"cmgui")))
+								"cmgui", external_entry)))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;
@@ -257,7 +259,7 @@ struct User_interface_module *User_interface_module_create(
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
 							(current_instance, previous_instance, command_line,
-								initial_main_window_state, &(UI_module->argc), UI_module->argv, UI_module->event_dispatcher)))
+								initial_main_window_state, &(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, external_entry)))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;

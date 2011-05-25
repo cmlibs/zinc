@@ -135,16 +135,25 @@ Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  * Enable the internal user interface in cmgui.
  *
  * @param context  Handle to a cmiss_context object.
+ * @param in_argc  Number of arguments.
+ * @param in_argv  Arguments.
+ * @param user_interface_instance  a void pointer to user provided interface
+ *   instance. Only wx_user_interface is supported at this moment.
+ *   For wx_user_interface, this void pointer should point to a wxApp.
+ *   Only use this if you want to provide your own main loop to cmgui, if not
+ *   set this to NULL. If a valid instance is provided, cmgui will use it
+ *   as the main instance and create time event with it.
+ *  @see Cmiss_context_process_idle_event
  * @return  1 if successfully initialized user interface, otherwise 0.
  */
 #if !defined (WIN32_USER_INTERFACE)
-int Cmiss_context_enable_user_interface(Cmiss_context_id context, 
-	int in_argc, const char *in_argv[]);
+int Cmiss_context_enable_user_interface(Cmiss_context_id context,
+	int in_argc, const char *in_argv[], void *user_interface_instance);
 #else
 int Cmiss_context_enable_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance, 
-	LPSTR command_line,int initial_main_window_state);
+	HINSTANCE current_instance, HINSTANCE previous_instance,
+	LPSTR command_line,int initial_main_window_state, void *user_interface_instance);
 #endif
 
 /***************************************************************************//**
@@ -199,4 +208,14 @@ Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
  */
 Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context);
+
+/***************************************************************************//**
+ * Process idle event in cmgui. Use this function to update idle event in cmgui
+ * (such as redrawing the scene viewer) if a main loop is provided for cmgui.
+ * This function does not trigger any time event.
+ *
+ * @param context  Handle to a cmiss_context object.
+ * @return  1 if successfully initialized user interface, otherwise 0.
+ */
+int Cmiss_context_process_idle_event(Cmiss_context_id context);
 #endif /* __CMISS_CONTEXT_H__ */

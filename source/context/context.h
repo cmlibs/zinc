@@ -112,11 +112,11 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
  */
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface_module *Cmiss_context_create_user_interface(
-	struct Context *context, int in_argc, const char *in_argv[]);
+	struct Context *context, int in_argc, const char *in_argv[], void *user_interface_instance);
 #else
 struct User_interface_module *Cmiss_context_create_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance, 
-	LPSTR command_line,int initial_main_window_state);
+	HINSTANCE current_instance, HINSTANCE previous_instance,
+	LPSTR command_line,int initial_main_window_state, void *user_interface_instance);
 #endif
 #endif /* !defined (CONTEXT_H) */

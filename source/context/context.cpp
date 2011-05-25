@@ -296,30 +296,37 @@ struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct 
 
 	return command_data;
 }
-
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface_module *Cmiss_context_create_user_interface(
-	struct Context *context, int in_argc, const char *in_argv[])
+	struct Context *context, int in_argc, const char *in_argv[],
+	void *user_interface_instance)
 #else
 struct User_interface_module *Cmiss_context_create_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance, 
-	LPSTR command_line,int initial_main_window_state)
+	HINSTANCE current_instance, HINSTANCE previous_instance,
+	LPSTR command_line,int initial_main_window_state,
+	void *user_interface_instance)
 #endif
 {
+	USE_PARAMETER(user_interface_instance);
 	struct User_interface_module *UI_module = NULL;
 
 	if (context)
 	{
 		if (!context->UI_module)
 		{
+#if defined (WX_USER_INTERFACE)
+			if (user_interface_instance)
+				Event_dispatcher_set_wx_instance(Cmiss_context_get_default_event_dispatcher(context), user_interface_instance);
+#endif
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 			context->UI_module = User_interface_module_create(
-				context, in_argc, in_argv);
+				context, in_argc, in_argv, (NULL!=user_interface_instance));
 #else
 			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv, current_instance,
-				previous_instance, command_line, initial_main_window_state);
+				previous_instance, command_line, initial_main_window_state,
+				(NULL!= user_interface_instance));
 #endif
 			if (context->UI_module && context->UI_module->default_time_keeper &&
 				context->graphics_module)
@@ -560,22 +567,22 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
 
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 int Cmiss_context_enable_user_interface(Cmiss_context_id context,
-	int in_argc, const char *in_argv[])
+	int in_argc, const char *in_argv[], void *user_interface_instance)
 #else
 int Cmiss_context_enable_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[],
 	HINSTANCE current_instance, HINSTANCE previous_instance,
-	LPSTR command_line,int initial_main_window_state)
+	LPSTR command_line,int initial_main_window_state, void *user_interface_instance)
 #endif
 {
 	int return_code = 0;
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
-		context, in_argc, in_argv);
+		context, in_argc, in_argv, user_interface_instance);
 #else
 	struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
 		context, in_argc, in_argv, current_instance, previous_instance,
-		command_line, initial_main_window_state);
+		command_line, initial_main_window_state, user_interface_instance);
 #endif
 	if (UI_module)
 	{
@@ -584,4 +591,18 @@ int Cmiss_context_enable_user_interface(
 	}
 
 	return return_code;
+}
+
+int Cmiss_context_process_idle_event(Cmiss_context_id context)
+{
+	if (context && context->event_dispatcher)
+	{
+		return Event_dispatcher_process_idle_event(context->event_dispatcher);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_context_do_idle_event.  Missing context or event dispatcher.");
+		return 0;
+	}
 }
