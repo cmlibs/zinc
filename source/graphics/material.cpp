@@ -5028,7 +5028,7 @@ int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
 					"Cmiss_graphics_material_set_image_field.  Invalid image field has been specified");
 			} break;
 		}
-		if (!return_code)
+		if (return_code)
 		{
 			material->compile_status = GRAPHICS_NOT_COMPILED;
 			Graphical_material_changed(material);
