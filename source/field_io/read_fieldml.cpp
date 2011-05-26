@@ -525,6 +525,12 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 		denseIterators[i] = Cmiss_field_ensemble_get_first_entry(denseIndexEnsembles[i]);
 		if (!denseIndexEnsembles[i])
 			validIndexes = false;
+		FmlObjectHandle fmlOrderDataSource = Fieldml_GetSemidenseIndexOrder(fmlSession, fmlParameters, i + 1);
+		if (fmlOrderDataSource != FML_INVALID_HANDLE)
+		{
+			display_message(WARNING_MESSAGE, "Read FieldML:  Parameters %s dense index %s specifies order. This is not yet supported; results will be incorrect.",
+				name, getName(fmlDenseIndexEvaluator).c_str());
+		}
 	}
 
 	if (!validIndexes)
