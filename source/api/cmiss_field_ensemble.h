@@ -64,7 +64,7 @@ typedef struct Cmiss_field_ensemble_group *Cmiss_field_ensemble_group_id;
 /***************************************************************************//**
  * The numeric type of the unique identifier for each entry in an ensemble.
  */
-typedef unsigned int Cmiss_ensemble_identifier;
+typedef int Cmiss_ensemble_identifier;
 
 
 /***************************************************************************//**
@@ -86,6 +86,13 @@ typedef struct Cmiss_ensemble_index *Cmiss_ensemble_index_id;
 Cmiss_field_id Cmiss_field_module_create_ensemble(Cmiss_field_module_id field_module);
 
 Cmiss_field_ensemble_id Cmiss_field_cast_ensemble(Cmiss_field_id field);
+
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_ensemble_base_cast(Cmiss_field_ensemble_id ensemble)
+{
+	return (Cmiss_field_id)(ensemble);
+}
+
+int Cmiss_field_ensemble_destroy(Cmiss_field_ensemble_id *ensemble_address);
 
 /***************************************************************************//**
  * Create new entry in ensemble, unique identifier automatically generated

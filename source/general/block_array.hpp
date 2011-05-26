@@ -234,9 +234,9 @@ public:
 		// GRC this can be made much more efficient
 		while (!getBool(lastTrueIndex))
 		{
-			if (0 == lastTrueIndex)
+			--lastTrueIndex;
+			if (lastTrueIndex < 0)
 				return false;
-			lastTrueIndex--;
 		}
 		return true;
 	}
@@ -262,11 +262,10 @@ public:
 	bool setAllTrue(IndexType indexCount)
 	{
 		IndexType intIndexCount = indexCount >> 5;
-		if (intIndexCount > 0)
-		{
-			if (!setValues(0, intIndexCount-1, 0xFFFF))
-				return false;
-		}
+		// bulk set the flags in lots of 32 bits
+		if (!setValues(0, intIndexCount-1, 0xFFFFFFFF))
+			return false;
+		// individually set remaining bits
 		for (IndexType index = intIndexCount*32; index < indexCount; index++)
 		{
 			bool oldValue;

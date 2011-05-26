@@ -67,6 +67,15 @@ Cmiss_field *Cmiss_field_module_create_real_parameters(Cmiss_field_module_id fie
 
 Cmiss_field_real_parameters_id Cmiss_field_cast_real_parameters(Cmiss_field_id field);
 
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_real_parameters_base_cast(
+	Cmiss_field_real_parameters_id real_parameters_field)
+{
+	return (Cmiss_field_id)(real_parameters_field);
+}
+
+int Cmiss_field_real_parameters_destroy(
+	Cmiss_field_real_parameters_id *real_parameters_field_address);
+
 Cmiss_ensemble_index_id Cmiss_field_real_parameters_create_index(
 	Cmiss_field_real_parameters_id real_parameters_field);
 
@@ -112,6 +121,15 @@ Cmiss_field *Cmiss_field_module_create_integer_parameters(Cmiss_field_module_id 
 	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
 
 Cmiss_field_integer_parameters_id Cmiss_field_cast_integer_parameters(Cmiss_field_id field);
+
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_integer_parameters_base_cast(
+	Cmiss_field_integer_parameters_id integer_parameters_field)
+{
+	return (Cmiss_field_id)(integer_parameters_field);
+}
+
+int Cmiss_field_integer_parameters_destroy(
+	Cmiss_field_integer_parameters_id *integer_parameters_field_address);
 
 Cmiss_ensemble_index_id Cmiss_field_integer_parameters_create_index(
 	Cmiss_field_integer_parameters_id integer_parameters_field);

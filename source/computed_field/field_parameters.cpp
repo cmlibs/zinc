@@ -217,7 +217,7 @@ bool Field_parameters<ValueType>::setNotDense()
 {
 	if (!dense)
 		return true;
-	//display_message(INFORMATION_MESSAGE, "In Field_parameters::setNotDense  field %s\n", field->name); // GRC test
+	//display_message(INFORMATION_MESSAGE, "In Field_parameters::setNotDense  field %s %d\n", field->name, getMaxParameterCount()); // GRC test
 	dense = false;
 	if (value_exists.setAllTrue(getMaxParameterCount()))
 		return true;
@@ -398,17 +398,41 @@ int Field_parameters<ValueType>::getValues(
 		for (i = 0; i < number_of_ensembles; i++)
 		{
 			ref = index->iterationRef(i);
-			if (ref > refSize[i])
+			if (ref >= refSize[i])
 			{
 				return_code = 0;
 				break;
 			}
-			valueIndex += (index->iterationRef(i) - 1)*offsets[i];
+			valueIndex += ref*offsets[i];
 		}
 		if (!return_code)
 			break;
 		if (!dense && !value_exists.getBool(valueIndex))
 		{
+#if 0 // GRC DEBUG
+			display_message(ERROR_MESSAGE,
+				"Field_parameters::getValues  Value doesn't exist at index %d", valueIndex);
+			for (int i = 0; i < number_of_ensembles; i++)
+			{
+				ref = index->iterationRef(i);
+				display_message(INFORMATION_MESSAGE, "Ensemble %d %s : ref %d refSize = %d (#values %d)\n",
+					i, this->ensembles[i]->getField()->name, ref, refSize[i], number_of_values);
+			}
+			if (number_of_ensembles == 2)
+			{
+				for (int i = 0; i < refSize[0]; i++)
+				{
+					display_message(INFORMATION_MESSAGE, "%3d :", i);
+					int ix = i*offsets[0];
+					for (int j = 0; j < refSize[1]; j++)
+					{
+						ix += offsets[1];
+						display_message(INFORMATION_MESSAGE, " %d", (int)value_exists.getBool(ix));
+					}
+					display_message(INFORMATION_MESSAGE, "\n");
+				}
+			}
+#endif
 			return_code = 0;
 			break;
 		}
@@ -466,12 +490,12 @@ int Field_parameters<ValueType>::getValuesSparse(Cmiss_ensemble_index *index,
 		for (i = 0; i < number_of_ensembles; i++)
 		{
 			ref = index->iterationRef(i);
-			if (ref > refSize[i])
+			if (ref >= refSize[i])
 			{
 				return_code = 0;
 				break;
 			}
-			valueIndex += (index->iterationRef(i) - 1)*offsets[i];
+			valueIndex += index->iterationRef(i)*offsets[i];
 		}
 		if (!return_code)
 			break;
@@ -518,12 +542,12 @@ int Field_parameters<ValueType>::setValues(
 		return 0;
 
 	int i, j;
-	index->calculateMaxIndexRefs();
+	index->calculateIndexRefLimits();
 	bool resizeInnerEnsemble = false;
 	bool clearDense = false;
 	for (i = 0; i < number_of_ensembles; i++)
 	{
-		if (index->maxIndexRef(i) > refSize[i])
+		if (index->indexRefLimit(i) > refSize[i])
 		{
 			if (i > 0)
 			{
@@ -535,7 +559,7 @@ int Field_parameters<ValueType>::setValues(
 				{
 					for (j = 0; j < number_of_ensembles; j++)
 					{
-						if ((i != j) && ((index->maxIndexRef(j) < refSize[j]) ||
+						if ((i != j) && ((index->indexRefLimit(j) < refSize[j]) ||
 							(!index->isDenseOnEnsemble(j))))
 						{
 							clearDense = true;
@@ -543,11 +567,11 @@ int Field_parameters<ValueType>::setValues(
 						}
 					}
 				}
-				else if (index->isDenseOnEnsembleAbove(i, refSize[i]))
+				else if (index->isDenseOnEnsembleAbove(i, refSize[i] - 1))
 				{
 					for (j = 0; j < number_of_ensembles; j++)
 					{
-						if ((i != j) && ((index->maxIndexRef(j) != refSize[j]) ||
+						if ((i != j) && ((index->indexRefLimit(j) != refSize[j]) ||
 							(!index->isDenseOnEnsemble(j))))
 						{
 							clearDense = true;
@@ -578,10 +602,10 @@ int Field_parameters<ValueType>::setValues(
 		{
 			newRefSize[i] = refSize[i];
 			// first ensemble: never resize since it can freely grow
-			// inner ensembles: resize to MAX(refSize, maxIndexRef)
+			// inner ensembles: resize to MAX(refSize, indexRefLimit)
 			// GRC in some cases it may be better to go straight to ensemble->maxRef
-			if ((i > 0) && (index->maxIndexRef(i) > newRefSize[i]))
-				newRefSize[i] = index->maxIndexRef(i);
+			if ((i > 0) && (index->indexRefLimit(i) > newRefSize[i]))
+				newRefSize[i] = index->indexRefLimit(i);
 		}
 		if (!resize(newRefSize))
 			return 0;
@@ -589,7 +613,7 @@ int Field_parameters<ValueType>::setValues(
 	}
 	if (0 < number_of_ensembles)
 	{
-		EnsembleEntryRef newRefSize0 = index->maxIndexRef(0);
+		EnsembleEntryRef newRefSize0 = index->indexRefLimit(0);
 		if (newRefSize0 > refSize[0])
 			refSize[0] = newRefSize0;
 	}
@@ -613,7 +637,7 @@ int Field_parameters<ValueType>::setValues(
 		valueIndex = 0;
 		for (i = 0; i < number_of_ensembles; i++)
 		{
-			valueIndex += (index->iterationRef(i) - 1)*offsets[i];
+			valueIndex += index->iterationRef(i)*offsets[i];
 		}
 		if (!values.setValue(valueIndex, inValues[value_number]))
 		{
@@ -762,6 +786,12 @@ Cmiss_field_real_parameters *Cmiss_field_cast_real_parameters(Cmiss_field* field
 	}
 }
 
+int Cmiss_field_real_parameters_destroy(
+	Cmiss_field_real_parameters_id *real_parameters_field_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(real_parameters_field_address));
+}
+
 Cmiss_ensemble_index *Cmiss_field_real_parameters_create_index(
 	Cmiss_field_real_parameters *real_parameters_field)
 {
@@ -873,6 +903,12 @@ Cmiss_field_integer_parameters *Cmiss_field_cast_integer_parameters(Cmiss_field*
 	{
 		return (NULL);
 	}
+}
+
+int Cmiss_field_integer_parameters_destroy(
+	Cmiss_field_integer_parameters_id *integer_parameters_field_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(integer_parameters_field_address));
 }
 
 Cmiss_ensemble_index *Cmiss_field_integer_parameters_create_index(

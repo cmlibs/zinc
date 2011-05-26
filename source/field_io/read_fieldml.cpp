@@ -70,44 +70,52 @@ struct ShapeType
 
 const ShapeType libraryShapes[] =
 {
-	{ "library.shape.line",        1, CMISS_ELEMENT_SHAPE_LINE },
-	{ "library.shape.square",      2, CMISS_ELEMENT_SHAPE_SQUARE },
-	{ "library.shape.triangle",    2, CMISS_ELEMENT_SHAPE_TRIANGLE },
-	{ "library.shape.cube",        3, CMISS_ELEMENT_SHAPE_CUBE },
-	{ "library.shape.tetrahedron", 3, CMISS_ELEMENT_SHAPE_TETRAHEDRON },
-	{ "library.shape.wedge12",     3, CMISS_ELEMENT_SHAPE_WEDGE12 },
-	{ "library.shape.wedge13",     3, CMISS_ELEMENT_SHAPE_WEDGE13 },
-	{ "library.shape.wedge23",     3, CMISS_ELEMENT_SHAPE_WEDGE23 }
+	{ "shape.line",        1, CMISS_ELEMENT_SHAPE_LINE },
+	{ "shape.square",      2, CMISS_ELEMENT_SHAPE_SQUARE },
+	{ "shape.triangle",    2, CMISS_ELEMENT_SHAPE_TRIANGLE },
+	{ "shape.cube",        3, CMISS_ELEMENT_SHAPE_CUBE },
+	{ "shape.tetrahedron", 3, CMISS_ELEMENT_SHAPE_TETRAHEDRON },
+	{ "shape.wedge12",     3, CMISS_ELEMENT_SHAPE_WEDGE12 },
+	{ "shape.wedge13",     3, CMISS_ELEMENT_SHAPE_WEDGE13 },
+	{ "shape.wedge23",     3, CMISS_ELEMENT_SHAPE_WEDGE23 }
 };
 const int numLibraryShapes = sizeof(libraryShapes) / sizeof(ShapeType);
 
-const char *libraryXiVariableNames[] =
+const char *libraryChartArgumentNames[] =
 {
 	0,
-	"library.xi.1d.variable",
-	"library.xi.2d.variable",
-	"library.xi.3d.variable"
+	"chart.1d.argument",
+	"chart.2d.argument",
+	"chart.3d.argument"
 };
 
 struct BasisType
 {
 	int dimension;
 	const char *fieldmlBasisEvaluatorName;
-	const char *fieldmlParametersVariableName;
-	const char *fieldmlLocalPointsTypeName;
 	bool homogeneous;
 	enum Cmiss_basis_function_type functionType[3];
 };
 
 const BasisType libraryBases[] =
 {
-	{ 2, "library.fem.bilinear_lagrange",     "library.parameters.bilinear_lagrange.variable",     "library.local_nodes.square.2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 2, "library.fem.biquadratic_lagrange",  "library.parameters.biquadratic_lagrange.variable",  "library.local_nodes.square.3x3", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	// simplex not supported in FieldML 0.3: testing only.
-	{ 2, "library.fem.bilinear_simplex",      "library.parameters.bilinear_simplex.variable",    "library.local_nodes.triangle.2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX,     CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX,     CMISS_BASIS_FUNCTION_TYPE_INVALID } },
-	{ 3, "library.fem.trilinear_lagrange",    "library.parameters.trilinear_lagrange.variable",    "library.local_nodes.cube.2x2x2", true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE,    CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
-	{ 3, "library.fem.triquadratic_lagrange", "library.parameters.triquadratic_lagrange.variable", "library.local_nodes.cube.3x3x3", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
+	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_TYPE_INVALID } },
+	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
+	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
+	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE } },
+	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX } },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX } }
+	// GRC add Hermite!
+	// GRC add zienkiewicz ordering, swizzle
 };
+
 const int numLibraryBases = sizeof(libraryBases) / sizeof(BasisType);
 
 struct ConnectivityData
@@ -142,7 +150,7 @@ struct ElementFieldComponent
 	~ElementFieldComponent()
 	{
 		Cmiss_element_basis_destroy(&element_basis);
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&local_point_to_node));
+		Cmiss_field_integer_parameters_destroy(&local_point_to_node);
 		Cmiss_ensemble_index_destroy(&index);
 		delete[] local_point_indexes;
 		delete[] node_identifiers;
@@ -156,7 +164,7 @@ class FieldMLReader
 	Cmiss_region *region;
 	Cmiss_field_module_id field_module;
 	const char *filename;
-	FmlHandle fmlHandle;
+	FmlSessionHandle fmlSession;
 	int meshDimension;
 	FmlObjectHandle fmlNodesType;
 	FmlObjectHandle fmlElementsType;
@@ -171,7 +179,7 @@ public:
 		region(Cmiss_region_access(region)),
 		field_module(Cmiss_region_get_field_module(region)),
 		filename(filename),
-		fmlHandle(Fieldml_CreateFromFile(filename)),
+		fmlSession(Fieldml_CreateFromFile(filename)),
 		meshDimension(0),
 		fmlNodesType(FML_INVALID_OBJECT_HANDLE),
 		fmlElementsType(FML_INVALID_OBJECT_HANDLE),
@@ -179,16 +187,16 @@ public:
 		nameBufferLength(50),
 		nameBuffer(new char[nameBufferLength])
 	{
-		Fieldml_SetDebug(fmlHandle, /*debug*/verbose);
+		Fieldml_SetDebug(fmlSession, /*debug*/verbose);
 	}
-	
+
 	~FieldMLReader()
 	{
 		for (EvaluatorElementFieldComponentMap::iterator iter = componentMap.begin(); iter != componentMap.end(); iter++)
 		{
 			delete (iter->second);
 		}
-		Fieldml_Destroy(fmlHandle);
+		Fieldml_Destroy(fmlSession);
 		Cmiss_field_module_destroy(&field_module);
 		Cmiss_region_destroy(&region);
 		delete[] nameBuffer;
@@ -199,12 +207,12 @@ public:
 
 private:
 
-	std::string getObjectName(FmlObjectHandle fmlObjectHandle)
+	std::string getName(FmlObjectHandle fmlObjectHandle)
 	{
 		nameBuffer[0] = 0;
 		while (true)
 		{
-			int length = Fieldml_CopyObjectName(fmlHandle, fmlObjectHandle, nameBuffer, nameBufferLength);
+			int length = Fieldml_CopyObjectName(fmlSession, fmlObjectHandle, nameBuffer, nameBufferLength);
 			if (length < nameBufferLength - 1)
 				break;
 			nameBufferLength *= 2;
@@ -214,6 +222,20 @@ private:
 		return std::string(nameBuffer);
 	}
 
+	std::string getDeclaredName(FmlObjectHandle fmlObjectHandle)
+	{
+		nameBuffer[0] = 0;
+		while (true)
+		{
+			int length = Fieldml_CopyObjectDeclaredName(fmlSession, fmlObjectHandle, nameBuffer, nameBufferLength);
+			if (length < nameBufferLength - 1)
+				break;
+			nameBufferLength *= 2;
+			delete[] nameBuffer;
+			nameBuffer = new char[nameBufferLength];
+		}
+		return std::string(nameBuffer);
+	}
 	Cmiss_field_ensemble_id getEnsemble(FmlObjectHandle fmlEnsemble);
 
 	int readSemiDenseParameters(FmlObjectHandle fmlParameters,
@@ -226,14 +248,14 @@ private:
 	int readMeshes();
 
 	ElementFieldComponent *getElementFieldComponent(Cmiss_fe_mesh_id mesh,
-		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersVariable,
-		FmlObjectHandle fmlNodeVariable, FmlObjectHandle fmlElementVariable);
+		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
+		FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument);
 
 	int readField(FmlObjectHandle fmlFieldEvaluator,
 		std::vector<FmlObjectHandle> &fmlComponentEvaluators,
 		FmlObjectHandle fmlNodeEnsembleType, FmlObjectHandle fmlNodeParameters,
-		FmlObjectHandle fmlNodeParametersVariable, FmlObjectHandle fmlNodeVariable,
-		FmlObjectHandle fmlElementVariable);
+		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
+		FmlObjectHandle fmlElementArgument);
 
 	int readAggregateFields();
 
@@ -251,16 +273,64 @@ private:
 
 };
 
+// GRC This should be in ensemble class & made more efficient
+int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
+	int min, int max, int stride)
+{
+#if 0 // GRC
+	{
+		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+		display_message(INFORMATION_MESSAGE, "Cmiss_field_ensemble_add_identifier_range: Ensemble %s min %d max %d (stride %d)\n", name, min, max, stride);
+		DEALLOCATE(name);
+	}
+#endif
+	if ((!ensemble) || (max < min) || (stride < 1))
+	{
+		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid range min=%d max=%d stride=%d for ensemble type %s",
+			min, max, stride, name);
+		DEALLOCATE(name);
+		return 0;
+	}
+	for (FmlEnsembleValue identifier = min; identifier <= max; identifier += stride)
+	{
+#if 0 // GRC
+		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+		display_message(INFORMATION_MESSAGE, "Read FieldML:  Ensemble %s identifier %d (%d:%d)\n", name, identifier, min, max);
+		DEALLOCATE(name);
+#endif
+		Cmiss_ensemble_iterator_id iterator =
+			Cmiss_field_ensemble_find_or_create_entry(ensemble, identifier);
+		if (!iterator)
+		{
+			char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
+			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to create member %d for ensemble type %s",
+				identifier, name);
+			DEALLOCATE(name);
+			return 0;
+		}
+		Cmiss_ensemble_iterator_destroy(&iterator);
+	}
+	return 1;
+}
+
 /***************************************************************************//**
- * Gets ensemble field/domain matching fmlEnsembleType. Definition is read from
- * FieldML only when first requested.
+ * Gets ensemble type matching fmlEnsembleType. Definition is read from
+ * FieldML document only when first requested.
+ * ???GRC technically, this should make ensembles from the argument, not the type
  *
  * @param fmlEnsembleType  Handle of type FHT_ENSEMBLE_TYPE.
  * @return  Accessed handle to ensemble field, or 0 on failure */
 Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleType)
 {
-	std::string name = getObjectName(fmlEnsembleType);
-	if (Fieldml_GetObjectType(fmlHandle, fmlEnsembleType) != FHT_ENSEMBLE_TYPE)
+	std::string name = getName(fmlEnsembleType);
+	if (name.length()==0)
+	{
+		// GRC workaround for ensemble types that have not been imported
+		name = "NONIMPORTED_";
+		name.append(getDeclaredName(fmlEnsembleType));
+	}
+	if (Fieldml_GetObjectType(fmlSession, fmlEnsembleType) != FHT_ENSEMBLE_TYPE)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Argument %s is not ensemble type", name.c_str());
 		return 0;
@@ -281,18 +351,32 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 		return 0;
 	}
 
-	TypeBoundsType fmlBounds = Fieldml_GetBoundsType(fmlHandle, fmlEnsembleType);
-	if (fmlBounds != BOUNDS_DISCRETE_CONTIGUOUS)
+	EnsembleMembersType fmlEnsembleMembersType = Fieldml_GetEnsembleMembersType(fmlSession, fmlEnsembleType);
+	int recordSize = 0;
+	switch (fmlEnsembleMembersType)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Unsupported bounds type %d for ensemble type %s", fmlBounds, name.c_str());
+	case MEMBER_RANGE:
+		break;
+	case MEMBER_LIST_DATA:
+		recordSize = 1;
+		break;
+	case MEMBER_RANGE_DATA:
+		recordSize = 2;
+		break;
+	case MEMBER_STRIDE_RANGE_DATA:
+		recordSize = 3;
+		break;
+	case MEMBER_UNKNOWN:
+	default:
+		display_message(ERROR_MESSAGE, "Read FieldML:  Unsupported members type %d for ensemble type %s",
+			fmlEnsembleMembersType, name.c_str());
 		return 0;
+		break;
 	}
-
 	if (verbose)
 	{
 		display_message(INFORMATION_MESSAGE, "Reading ensemble type %s\n", name.c_str());
 	}
-
 	ensemble_field = Cmiss_field_module_create_ensemble(field_module);
 	Cmiss_field_set_name(ensemble_field, name.c_str());
 	Cmiss_field_set_attribute_integer(ensemble_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
@@ -302,38 +386,108 @@ Cmiss_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTy
 	{
 		return 0;
 	}
-
-	// GRC Note contiguous bounds 1..Count only!
-	// GRC There should be convenience functions for adding identifier ranges to ensemble
-	unsigned int entryCount = Fieldml_GetEnsembleTypeElementCount(fmlHandle, fmlEnsembleType);
-	for (Cmiss_ensemble_identifier identifier = 1; identifier <= entryCount; identifier++)
+	int return_code = 1;
+	if (MEMBER_RANGE == fmlEnsembleMembersType)
 	{
-		Cmiss_ensemble_iterator_id iterator =
-			Cmiss_field_ensemble_find_or_create_entry(ensemble, identifier);
-		if (!iterator)
-		{
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&ensemble));
-			break;
-		}
-#if 0 // GRC debug
-		if (verbose)
-		{
-			display_message(INFORMATION_MESSAGE, "Reading member identifier %d\n", identifier);
-		}
-#endif
-		Cmiss_ensemble_iterator_destroy(&iterator);
+		FmlEnsembleValue min = Fieldml_GetEnsembleMembersMin(fmlSession, fmlEnsembleType);
+		FmlEnsembleValue max = Fieldml_GetEnsembleMembersMax(fmlSession, fmlEnsembleType);
+		int stride = Fieldml_GetEnsembleMembersStride(fmlSession, fmlEnsembleType);
+		return_code = Cmiss_field_ensemble_add_identifier_range(ensemble, min, max, stride);
 	}
-	if (ensemble)
+	else
+	{
+		FmlObjectHandle fmlDataSource = Fieldml_GetDataSource(fmlSession, fmlEnsembleType);
+		if (fmlDataSource == FML_INVALID_HANDLE)
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Could not get data source for ensemble type %s", name.c_str());
+			return_code = 0;
+		}
+		else if (DATA_SOURCE_TEXT != Fieldml_GetDataSourceType(fmlSession, fmlDataSource))
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Can only define ensemble types from TextDataSource; processing %s", name.c_str());
+			return_code = 0;
+		}
+		else
+		{
+			FmlReaderHandle fmlReader = Fieldml_OpenReader(fmlSession, fmlDataSource);
+			if (fmlReader == FML_INVALID_HANDLE)
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Could not open reader for ensemble type %s", name.c_str());
+				return_code = 0;
+			}
+			else
+			{
+				const int memberCount = Fieldml_GetMemberCount(fmlSession, fmlEnsembleType);
+				const int recordCount = Fieldml_GetTextDataSourceCount(fmlSession, fmlDataSource);
+				int values[3];
+				FmlErrorNumber valuesRead;
+				for (int i = 0; i < recordCount; i++)
+				{
+					valuesRead = Fieldml_ReadIntValues(fmlSession, fmlReader, values, recordSize);
+					if (valuesRead == recordSize)
+					{
+						int return_code = 1;
+						switch (fmlEnsembleMembersType)
+						{
+						case MEMBER_LIST_DATA:
+							return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+								/*min*/values[0], /*max*/values[0], /*stride*/1);
+							break;
+						case MEMBER_RANGE_DATA:
+							return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+								/*min*/values[0], /*max*/values[1], /*stride*/1);
+							break;
+						case MEMBER_STRIDE_RANGE_DATA:
+							return_code = Cmiss_field_ensemble_add_identifier_range(ensemble,
+								/*min*/values[0], /*max*/values[1], /*stride*/values[2]);
+							break;
+						default:
+							// should never happen - see switch above
+							display_message(ERROR_MESSAGE, "Read FieldML:  Unexpected ensemble members type");
+							return_code = 0;
+							break;
+						}
+						if (!return_code)
+						{
+							break;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Read FieldML:  Read %d of %d values in record %d for ensemble type %s",
+							valuesRead, recordSize, i + 1, name.c_str());
+						return_code = 0;
+						break;
+					}
+				}
+				Fieldml_CloseReader(fmlSession, fmlReader);
+				int ensembleSize = Cmiss_field_ensemble_get_size(ensemble);
+				if (return_code && (ensembleSize != memberCount))
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Ensemble type %s lists member count %d, actual number in data source is %d",
+						name.c_str(), memberCount, ensembleSize);
+					return_code = 0;
+				}
+			}
+		}
+	}
+	if (return_code)
 	{
 		setProcessed(fmlEnsembleType);
+	}
+	else
+	{
+		Cmiss_field_ensemble_destroy(&ensemble);
 	}
 	return ensemble;
 }
 
+// TODO : Support order
+// ???GRC can order cover subset of ensemble?
 int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 	Cmiss_field_id parameters, const char *name)
 {
-	DataDescriptionType dataDescription = Fieldml_GetParameterDataDescription(fmlHandle, fmlParameters);
+	DataDescriptionType dataDescription = Fieldml_GetParameterDataDescription(fmlSession, fmlParameters);
 	if (dataDescription != DESCRIPTION_SEMIDENSE)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Unknown data description type %d for parameters %s", dataDescription, name);
@@ -346,111 +500,180 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid parameters field type", dataDescription, name);
 		return 0;
 	}
-	int return_code = 1;
 
-	const int sparseIndexCount = Fieldml_GetSemidenseIndexCount(fmlHandle, fmlParameters, /*isSparse*/1);
-	const int denseIndexCount = Fieldml_GetSemidenseIndexCount(fmlHandle, fmlParameters, /*isSparse*/0);
+	const int denseIndexCount = Fieldml_GetSemidenseIndexCount(fmlSession, fmlParameters, /*isSparse*/0);
+	const int sparseIndexCount = Fieldml_GetSemidenseIndexCount(fmlSession, fmlParameters, /*isSparse*/1);
 
-	// FieldML reader reads all values indexed by innermost dense ensemble if it is marked as 'ComponentType'
-	// Other dense indexes must be iterated over
-	int valueBufferSize = 1;
-	int firstDenseIteratorIndex = 0;
-	if (0 < denseIndexCount)
-	{
-		FmlObjectHandle fmlInnerDenseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlHandle, fmlParameters, 1, /*isSparse*/0);
-		FmlObjectHandle fmlInnerDenseIndexType = Fieldml_GetValueType(fmlHandle, fmlInnerDenseIndexEvaluator);
-		if (Fieldml_IsEnsembleComponentType(fmlHandle, fmlInnerDenseIndexType))
-		{
-			firstDenseIteratorIndex = 1;
-			valueBufferSize = Fieldml_GetEnsembleTypeElementCount(fmlHandle, fmlInnerDenseIndexType);
-		}
-	}
-	if (valueBufferSize == 0)
-	{
-		return_code = 0;
-	}
-
-	FmlReaderHandle fmlReader = Fieldml_OpenReader(fmlHandle, fmlParameters);
-	if (fmlReader == FML_INVALID_HANDLE)
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Could not open reader for parameters %s", name);
-		return_code = 0;
-	}
-
+	bool validIndexes = true;
 	Cmiss_field_ensemble_id *sparseIndexEnsembles = new Cmiss_field_ensemble_id[sparseIndexCount];
 	for (int i = 0; i < sparseIndexCount; i++)
 	{
-		FmlObjectHandle fmlSparseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlHandle, fmlParameters, i + 1, /*isSparse*/1);
-		FmlObjectHandle fmlSparseIndexType = Fieldml_GetValueType(fmlHandle, fmlSparseIndexEvaluator);
+		FmlObjectHandle fmlSparseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlSession, fmlParameters, i + 1, /*isSparse*/1);
+		FmlObjectHandle fmlSparseIndexType = Fieldml_GetValueType(fmlSession, fmlSparseIndexEvaluator);
 		sparseIndexEnsembles[i] = getEnsemble(fmlSparseIndexType);
+		if (!sparseIndexEnsembles[i])
+			validIndexes = false;
 	}
 
 	Cmiss_field_ensemble_id *denseIndexEnsembles = new Cmiss_field_ensemble_id[denseIndexCount];
 	Cmiss_ensemble_iterator_id *denseIterators = new Cmiss_ensemble_iterator_id[denseIndexCount];
 	for (int i = 0; i < denseIndexCount; i++)
 	{
-		FmlObjectHandle fmlDenseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlHandle, fmlParameters, i + 1, /*isSparse*/0);
-		FmlObjectHandle fmlDenseIndexType = Fieldml_GetValueType(fmlHandle, fmlDenseIndexEvaluator);
+		FmlObjectHandle fmlDenseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlSession, fmlParameters, i + 1, /*isSparse*/0);
+		FmlObjectHandle fmlDenseIndexType = Fieldml_GetValueType(fmlSession, fmlDenseIndexEvaluator);
 		denseIndexEnsembles[i] = getEnsemble(fmlDenseIndexType);
 		denseIterators[i] = Cmiss_field_ensemble_get_first_entry(denseIndexEnsembles[i]);
+		if (!denseIndexEnsembles[i])
+			validIndexes = false;
+	}
+
+	if (!validIndexes)
+	{
+		return 0;
+	}
+
+	FmlObjectHandle fmlDataSource = Fieldml_GetDataSource(fmlSession, fmlParameters);
+	if (fmlDataSource == FML_INVALID_HANDLE)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Could not get data source for parameters %s", name);
+		return 0;
+	}
+	if (DATA_SOURCE_TEXT != Fieldml_GetDataSourceType(fmlSession, fmlDataSource))
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Can only read parameters from TextDataSource; processing %s", name);
+		return 0;
+	}
+
+	FmlReaderHandle fmlReader = Fieldml_OpenReader(fmlSession, fmlDataSource);
+	if (fmlReader == FML_INVALID_HANDLE)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Could not open reader for parameters %s data source %s",
+			name, getName(fmlDataSource).c_str());
+		return 0;
 	}
 
 	Cmiss_ensemble_index_id index = realParameters ?
 		Cmiss_field_real_parameters_create_index(realParameters) :
 		Cmiss_field_integer_parameters_create_index(integerParameters);
 
+	const int recordCount = Fieldml_GetTextDataSourceCount(fmlSession, fmlDataSource);
+	const int recordLength = Fieldml_GetTextDataSourceLength(fmlSession, fmlDataSource);
+	const int denseLength = recordLength - sparseIndexCount;
+
+	// bulk read multiples of inner dense ensemble sizes up to set maximum or record length
+	// Other dense indexes are iterated over
+	int valueBufferSize = 1;
+	int firstDenseIteratorIndex = 0;
+	int maxBufferSize = 10000;
+	if (maxBufferSize > denseLength)
+	{
+		maxBufferSize = denseLength;
+	}
+	int totalDenseSize = 1;
+	for (int i = 1; i <= denseIndexCount; ++i)
+	{
+		FmlObjectHandle fmlDenseIndexEvaluator = Fieldml_GetSemidenseIndexEvaluator(fmlSession, fmlParameters, i, /*isSparse*/0);
+		FmlObjectHandle fmlDenseIndexType = Fieldml_GetValueType(fmlSession, fmlDenseIndexEvaluator);
+		int count = Fieldml_GetMemberCount(fmlSession, fmlDenseIndexType);
+		totalDenseSize *= count;
+		if (totalDenseSize <= maxBufferSize)
+		{
+			valueBufferSize = totalDenseSize;
+			firstDenseIteratorIndex = i;
+		}
+	}
+	if (valueBufferSize == 0)
+	{
+		return 0;
+	}
+
 	int *indexBuffer = new int[sparseIndexCount];
 	double *realValueBuffer = new double[valueBufferSize];
 	int *integerValueBuffer = new int[valueBufferSize];
+	int indexValuesRead = 0;
+	int valuesRead = 0;
+	int return_code = 1;
 
-	while (return_code)
+	int innerCount = denseLength / valueBufferSize;
+	if (innerCount*valueBufferSize != denseLength)
 	{
-		// read the next set of sparse indexes
-		int result = Fieldml_ReadIndexSet(fmlHandle, fmlReader, indexBuffer);
-		if (result != FML_ERR_NO_ERROR)
-		{
-			if ((result != FML_ERR_IO_NO_DATA) &&
-				(result != FML_ERR_IO_UNEXPECTED_EOF)) // Temporary workaround
-			{
-				display_message(ERROR_MESSAGE, "Read FieldML:  Error %d when reading sparse indexes for parameters %s", result, name);
-				return_code = 0;
-			}
-			break;
-		}
-		for (int i = 0; i < sparseIndexCount; i++)
-		{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Record length %d does not fit %d sparse indexes and a multiple of %d dense values for parameters %s data source %s",
+			recordLength, sparseIndexCount, denseLength, totalDenseSize, name, getName(fmlDataSource).c_str());
+		return_code = 0;
+	}
+	else if ((0 == sparseIndexCount) && (totalDenseSize != recordCount*denseLength))
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Record count %d * length %d in data source %s is not equal to the %d permutations of dense indexes for parameters %s",
+			recordCount, recordLength, getName(fmlDataSource).c_str(), totalDenseSize, name);
+		return_code = 0;
+	}
+	else if ((0 < sparseIndexCount) && (totalDenseSize != denseLength))
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Record length %d in data source %s (less %d sparse indexes) is not equal to the %d permutations of dense indexes for parameters %s",
+			recordLength, getName(fmlDataSource).c_str(), sparseIndexCount, totalDenseSize, name);
+		return_code = 0;
+	}
+	else if (verbose)
+	{
+		display_message(INFORMATION_MESSAGE, "Reading %d records with %d sparse indexes, %d dense values in blocks of %d\n",
+			recordCount, sparseIndexCount, denseLength, valueBufferSize);
+	}
+	for (int record = 0; (record < recordCount) && return_code; ++record)
+	{
 #if 0 // GRC debug
-			display_message(INFORMATION_MESSAGE, "Index %d = ", indexBuffer[0]);
+			display_message(INFORMATION_MESSAGE, "Record %d\n", record+1);
 #endif
-			// should make convenience function for these three calls
-			Cmiss_ensemble_iterator_id entry =
-				Cmiss_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], indexBuffer[i]);
-			Cmiss_ensemble_index_set_entry(index, entry);
-			Cmiss_ensemble_iterator_destroy(&entry);
-		}
-		bool moreDenseData = true;
-		while (moreDenseData)
+		if (0 < sparseIndexCount)
 		{
-			int valuesRead = realParameters ?
-				Fieldml_ReadDoubleValues(fmlHandle, fmlReader, realValueBuffer, valueBufferSize) :
-				Fieldml_ReadIntValues(fmlHandle, fmlReader, integerValueBuffer, valueBufferSize);
+			// read the next set of sparse indexes
+			indexValuesRead = Fieldml_ReadIntValues(fmlSession, fmlReader, indexBuffer, sparseIndexCount);
+			if (indexValuesRead != sparseIndexCount)
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Read %d of %d sparse indexes for parameters %s data source %s",
+					indexValuesRead, sparseIndexCount, name, getName(fmlDataSource).c_str());
+				return_code = 0;
+				break;
+			}
+			for (int i = 0; i < sparseIndexCount; i++)
+			{
+#if 0 // GRC debug
+				display_message(INFORMATION_MESSAGE, "Index %d = ", indexBuffer[0]);
+#endif
+				// should make convenience function for these three calls
+				Cmiss_ensemble_iterator_id entry =
+					Cmiss_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], indexBuffer[i]);
+				Cmiss_ensemble_index_set_entry(index, entry);
+				Cmiss_ensemble_iterator_destroy(&entry);
+			}
+		}
+		for (int inner = 0; inner < innerCount; ++inner)
+		{
+			valuesRead = realParameters ?
+				Fieldml_ReadDoubleValues(fmlSession, fmlReader, realValueBuffer, valueBufferSize) :
+				Fieldml_ReadIntValues(fmlSession, fmlReader, integerValueBuffer, valueBufferSize);
 			if (valuesRead != valueBufferSize)
 			{
-				display_message(WARNING_MESSAGE, "Read FieldML:  Values read %d, required %d",
-					valuesRead, valueBufferSize);
+				display_message(WARNING_MESSAGE, "Read FieldML:  Read %d of %d values for parameters %s data source %s",
+					valuesRead, valueBufferSize, name, getName(fmlDataSource).c_str());
 				return_code = 0;
 				break;
 			}
 #if 0 // GRC debug
-			display_message(INFORMATION_MESSAGE, "%d [%d]\n", valuesRead, integerValueBuffer[0]);
+			display_message(INFORMATION_MESSAGE, "  Inner %d:", inner+1);
+			for (int j = 0; j < valueBufferSize; j++)
+			{
+				if (realParameters)
+					display_message(INFORMATION_MESSAGE, " %g", realValueBuffer[j]);
+				else
+					display_message(INFORMATION_MESSAGE, " %d", integerValueBuffer[j]);
+			}
+			display_message(INFORMATION_MESSAGE, "\n");
 #endif
-			moreDenseData = false;
 			for (int i = firstDenseIteratorIndex; i < denseIndexCount; i++)
 			{
 				Cmiss_ensemble_index_set_entry(index, denseIterators[i]);
 				if (Cmiss_ensemble_iterator_increment(denseIterators[i]))
 				{
-					moreDenseData = true;
 					break;
 				}
 				else
@@ -470,16 +693,18 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 		}
 	}
 
+	Fieldml_CloseReader(fmlSession, fmlReader);
+
 	for (int i = 0; i < sparseIndexCount; i++)
 	{
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&(sparseIndexEnsembles[i])));
+		Cmiss_field_ensemble_destroy(&(sparseIndexEnsembles[i]));
 	}
 	delete[] sparseIndexEnsembles;
 
 	for (int i = 0; i < denseIndexCount; i++)
 	{
 		Cmiss_ensemble_iterator_destroy(&(denseIterators[i]));
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&(denseIndexEnsembles[i])));
+		Cmiss_field_ensemble_destroy(&(denseIndexEnsembles[i]));
 	}
 	delete[] denseIterators;
 	delete[] denseIndexEnsembles;
@@ -490,10 +715,10 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 	delete[] integerValueBuffer;
 	delete[] indexBuffer;
 
-	Fieldml_CloseReader(fmlHandle, fmlReader);
-
-	Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&realParameters));
-	Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&integerParameters));
+	if (realParameters)
+		Cmiss_field_real_parameters_destroy(&realParameters);
+	if (integerParameters)
+		Cmiss_field_integer_parameters_destroy(&integerParameters);
 
 	return return_code;
 }
@@ -507,26 +732,29 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
  * @return  Accessed handle to parameters field, or 0 on failure */
 Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 {
-	if (Fieldml_GetObjectType(fmlHandle, fmlParameters) != FHT_PARAMETER_EVALUATOR)
+	if (Fieldml_GetObjectType(fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
 	{
 		display_message(ERROR_MESSAGE, "FieldMLReader::getParameters.  Invalid argument");
 		return 0;
 	}
-	std::string name = getObjectName(fmlParameters);
+	std::string name = getName(fmlParameters);
 
-	FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlHandle, fmlParameters);
-	FieldmlHandleType value_class = Fieldml_GetObjectType(fmlHandle, fmlValueType);
+	FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlParameters);
+	FieldmlHandleType value_class = Fieldml_GetObjectType(fmlSession, fmlValueType);
 	if ((value_class != FHT_CONTINUOUS_TYPE) && ((value_class != FHT_ENSEMBLE_TYPE)))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML.  Cannot read parameters %s since not continuous or ensemble type", name.c_str());
 		return 0;
 	}
 	bool isReal = (value_class == FHT_CONTINUOUS_TYPE);
-	FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlHandle, fmlValueType);
-	if (fmlValueTypeComponentEnsembleType != FML_INVALID_OBJECT_HANDLE)
+	if (isReal)
 	{
-		display_message(WARNING_MESSAGE, "Read FieldML:  Cannot read non-scalar parameters %s", name.c_str());
-		return 0;
+		FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlSession, fmlValueType);
+		if (fmlValueTypeComponentEnsembleType != FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(WARNING_MESSAGE, "Read FieldML:  Cannot read non-scalar parameters %s", name.c_str());
+			return 0;
+		}
 	}
 
 	Cmiss_field_id parameters = Cmiss_field_module_find_field_by_name(field_module, name.c_str());
@@ -541,13 +769,13 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		{
 			Cmiss_field_real_parameters_id realParameters = Cmiss_field_cast_real_parameters(parameters);
 			invalidType = (realParameters == 0);
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&realParameters));
+			Cmiss_field_real_parameters_destroy(&realParameters);
 		}
 		else
 		{
 			Cmiss_field_integer_parameters_id integerParameters = Cmiss_field_cast_integer_parameters(parameters);
 			invalidType = (integerParameters == 0);
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&integerParameters));
+			Cmiss_field_integer_parameters_destroy(&integerParameters);
 		}
 		if (invalidType)
 		{
@@ -563,7 +791,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		display_message(INFORMATION_MESSAGE, "Reading %s parameters %s\n", (isReal ? "real" : "integer"), name.c_str());
 	}
 
-	int indexEnsembleCount = Fieldml_GetIndexCount(fmlHandle, fmlParameters);
+	int indexEnsembleCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlParameters);
 	Cmiss_field_ensemble_id *indexEnsembles = new Cmiss_field_ensemble_id[indexEnsembleCount];
 	for (int i = 0; i < indexEnsembleCount; i++)
 	{
@@ -573,19 +801,19 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 	int return_code = 1;
 	for (int indexEnsembleIndex = 1; indexEnsembleIndex <= indexEnsembleCount; indexEnsembleIndex++)
 	{
-		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlParameters, indexEnsembleIndex);
-		if ((FHT_ABSTRACT_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator)) ||
-			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlIndexEvaluator))))
+		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlParameters, indexEnsembleIndex);
+		if ((FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator)) ||
+			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlIndexEvaluator))))
 		{
 			display_message(WARNING_MESSAGE, "Read FieldML:  Index %d (%s) of parameters %s is not an ensemble-valued abstract evaluator",
-				indexEnsembleIndex, getObjectName(fmlIndexEvaluator).c_str(), name.c_str());
+				indexEnsembleIndex, getName(fmlIndexEvaluator).c_str(), name.c_str());
 			return_code = 0;
 		}
-		indexEnsembles[indexEnsembleIndex - 1] = getEnsemble(Fieldml_GetValueType(fmlHandle, fmlIndexEvaluator));
+		indexEnsembles[indexEnsembleIndex - 1] = getEnsemble(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator));
 		if (verbose)
 		{
-			display_message(INFORMATION_MESSAGE, "  Index ensemble %d = %s (%d %p)\n", indexEnsembleIndex,
-				getObjectName(fmlIndexEvaluator).c_str(), fmlIndexEvaluator, indexEnsembles[indexEnsembleIndex - 1]);
+			display_message(INFORMATION_MESSAGE, "  Index ensemble %d = %s\n", indexEnsembleIndex,
+				getName(fmlIndexEvaluator).c_str());
 		}
 	}
 
@@ -603,7 +831,7 @@ Cmiss_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 	}
 	for (int i = 0; i < indexEnsembleCount; i++)
 	{
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&indexEnsembles[i]));
+		Cmiss_field_ensemble_destroy(&indexEnsembles[i]);
 	}
 	delete[] indexEnsembles;
 	if (return_code)
@@ -632,7 +860,7 @@ enum Cmiss_element_shape_type FieldMLReader::getElementShapeFromName(const char 
 
 int FieldMLReader::readMeshes()
 {
-	const int meshCount = Fieldml_GetObjectCount(fmlHandle, FHT_MESH_TYPE);
+	const int meshCount = Fieldml_GetObjectCount(fmlSession, FHT_MESH_TYPE);
 	if (meshCount != 1)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Require 1 mesh type, %d found", meshCount);
@@ -641,12 +869,12 @@ int FieldMLReader::readMeshes()
 	int return_code = 1;
 	for (int meshIndex = 1; (meshIndex <= meshCount) && return_code; meshIndex++)
 	{
-		FmlObjectHandle fmlMeshType = Fieldml_GetObject(fmlHandle, FHT_MESH_TYPE, meshIndex);
-		std::string name = getObjectName(fmlMeshType);
+		FmlObjectHandle fmlMeshType = Fieldml_GetObject(fmlSession, FHT_MESH_TYPE, meshIndex);
+		std::string name = getName(fmlMeshType);
 
-		FmlObjectHandle fmlMeshXiType = Fieldml_GetMeshXiType(fmlHandle, fmlMeshType);
-		FmlObjectHandle fmlMeshXiComponentType = Fieldml_GetTypeComponentEnsemble(fmlHandle, fmlMeshXiType);
-		meshDimension = Fieldml_GetEnsembleTypeElementCount(fmlHandle, fmlMeshXiComponentType);
+		FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(fmlSession, fmlMeshType);
+		FmlObjectHandle fmlMeshChartComponentType = Fieldml_GetTypeComponentEnsemble(fmlSession, fmlMeshChartType);
+		meshDimension = Fieldml_GetMemberCount(fmlSession, fmlMeshChartComponentType);
 		if ((meshDimension < 1) || (meshDimension > 3))
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Invalid dimension %d for mesh type %s", meshDimension, name.c_str());
@@ -661,13 +889,13 @@ int FieldMLReader::readMeshes()
 
 		// define elements and shapes
 
-		fmlElementsType = Fieldml_GetMeshElementType(fmlHandle, fmlMeshType);
+		fmlElementsType = Fieldml_GetMeshElementsType(fmlSession, fmlMeshType);
+		Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 		if (verbose)
 		{
-			display_message(INFORMATION_MESSAGE, "Reading elements from %s\n",
-				getObjectName(fmlElementsType).c_str());
+			display_message(INFORMATION_MESSAGE, "Defining %d elements from %s\n",
+				Cmiss_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
 		}
-		Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 
 		Cmiss_fe_mesh_id mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
 			(meshDimension == 3 ? "cmiss_mesh_3d" :
@@ -689,7 +917,7 @@ int FieldMLReader::readMeshes()
 			int elementNumber = static_cast<int>(elementIdentifier);
 			while (true)
 			{
-				int length = Fieldml_CopyMeshElementShape(fmlHandle, fmlMeshType, elementNumber, /*allowDefault*/1, shapeName, shapeNameLength);
+				int length = Fieldml_CopyMeshElementShape(fmlSession, fmlMeshType, elementNumber, /*allowDefault*/1, shapeName, shapeNameLength);
 #if 0 // GRC debug
 				display_message(INFORMATION_MESSAGE, "Element %d shape '%s'\n", elementNumber, shapeName);
 #endif
@@ -725,7 +953,7 @@ int FieldMLReader::readMeshes()
 		}
 		delete[] shapeName;
 		Cmiss_ensemble_iterator_destroy(&elementsIterator);
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&elementsEnsemble));
+		Cmiss_field_ensemble_destroy(&elementsEnsemble);
 
 		Cmiss_element_template_destroy(&element_template);
 		Cmiss_fe_mesh_destroy(&mesh);
@@ -734,8 +962,8 @@ int FieldMLReader::readMeshes()
 }
 
 ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id mesh,
-	FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersVariable,
-	FmlObjectHandle fmlNodeVariable, FmlObjectHandle fmlElementVariable)
+	FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
+	FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument)
 {
 	EvaluatorElementFieldComponentMap::iterator iter = componentMap.find(fmlEvaluator);
 	if (iter != componentMap.end())
@@ -743,116 +971,135 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 		return iter->second;
 	}
 
-	std::string evaluatorName = getObjectName(fmlEvaluator);
-	if ((FHT_REFERENCE_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlEvaluator)) ||
-		(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlEvaluator))))
+	std::string evaluatorName = getName(fmlEvaluator);
+	FmlObjectHandle fmlEvaluatorType = Fieldml_GetValueType(fmlSession, fmlEvaluator);
+	if ((FHT_REFERENCE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlEvaluator)) ||
+		(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, fmlEvaluatorType)))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  getElementFieldComponent argument %s is not a real-valued reference evaluator.",
 			evaluatorName.c_str());
 		return 0;
 	}
-
-	FmlObjectHandle fmlBasisEvaluator = Fieldml_GetReferenceRemoteEvaluator(fmlHandle, fmlEvaluator);
-	std::string basisName = getObjectName(fmlBasisEvaluator);
-	const char *basis_name = basisName.c_str();
-	FmlObjectHandle fmlRemoteXiVariable = Fieldml_GetObjectByName(fmlHandle, libraryXiVariableNames[meshDimension]);
-	FmlObjectHandle fmlRemoteParametersVariable = FML_INVALID_OBJECT_HANDLE;
-	FmlObjectHandle fmlLocalPointsType = FML_INVALID_OBJECT_HANDLE;
+	FmlObjectHandle fmlInterpolator = Fieldml_GetReferenceSourceEvaluator(fmlSession, fmlEvaluator);
+	std::string interpolatorName = getDeclaredName(fmlInterpolator);
+	std::string interpolatorLocalName = getName(fmlInterpolator);
+	const char *interpolator_name = interpolatorName.c_str();
 	int basis_index = -1;
 	for (int i = 0; i < numLibraryBases; i++)
 	{
-		if ((libraryBases[i].dimension == meshDimension) &&
-			(0 == strcmp(basis_name, libraryBases[i].fieldmlBasisEvaluatorName)))
+		if (0 == strcmp(interpolator_name, libraryBases[i].fieldmlBasisEvaluatorName))
 		{
 			basis_index = i;
-			fmlRemoteParametersVariable = Fieldml_GetObjectByName(fmlHandle, libraryBases[i].fieldmlParametersVariableName);
-			fmlLocalPointsType = Fieldml_GetObjectByName(fmlHandle, libraryBases[i].fieldmlLocalPointsTypeName);
 			break;
 		}
 	}
 	if (basis_index < 0)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Reference evaluator %s references unsupported basis %s for mesh dimension %d.",
-			evaluatorName.c_str(), basis_name, meshDimension);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Reference evaluator %s references unknown basis interpolator %s (local name %s).",
+			evaluatorName.c_str(), interpolator_name, interpolatorLocalName.c_str());
+		return 0;
+	}
+
+	int interpolatorArgumentCount = Fieldml_GetArgumentCount(fmlSession, fmlInterpolator);
+	if (interpolatorArgumentCount != 2)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Reference evaluator %s source %s (local name %s) has %d argument(s); 2 are expected.",
+			evaluatorName.c_str(), interpolator_name, interpolatorLocalName.c_str(), interpolatorArgumentCount);
+		return 0;
+	}
+
+	FmlObjectHandle chartArgument = FML_INVALID_OBJECT_HANDLE;
+	FmlObjectHandle parametersArgument = FML_INVALID_OBJECT_HANDLE;
+	for (int i = 1; i <= interpolatorArgumentCount; i++)
+	{
+		FmlObjectHandle arg = Fieldml_GetArgument(fmlSession, fmlInterpolator, i);
+		std::string argName = getDeclaredName(arg);
+		if (0 == argName.compare(libraryChartArgumentNames[meshDimension]))
+		{
+			if (chartArgument != FML_INVALID_OBJECT_HANDLE)
+			{
+				chartArgument = FML_INVALID_OBJECT_HANDLE;
+				break;
+			}
+			chartArgument = arg;
+		}
+		else
+		{
+			// GRC more logic needed here for Hermite
+			parametersArgument = arg;
+		}
+	}
+	if ((FML_INVALID_OBJECT_HANDLE == chartArgument) ||
+		(FML_INVALID_OBJECT_HANDLE == parametersArgument))
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Reference evaluator %s source %s (local name %s) is not a regular basis interpolator over %s.",
+			evaluatorName.c_str(), interpolator_name, interpolatorLocalName.c_str(), libraryChartArgumentNames[meshDimension]);
+		return 0;
+	}
+
+	FmlObjectHandle fmlLocalChartEvaluator = Fieldml_GetBindByArgument(fmlSession, fmlEvaluator, chartArgument);
+	FmlObjectHandle fmlElementParametersEvaluator = Fieldml_GetBindByArgument(fmlSession, fmlEvaluator, parametersArgument);
+	// exactly one mesh expected
+	if (1 != Fieldml_GetObjectCount(fmlSession, FHT_MESH_TYPE))
+	{
+		display_message(ERROR_MESSAGE, "FieldMLReader::getElementFieldComponent:  Only supports 1 mesh type");
 		return 0;
 	}
 	int return_code = 1;
-	if (fmlRemoteXiVariable == FML_INVALID_OBJECT_HANDLE)
+	FmlObjectHandle fmlMeshType = Fieldml_GetObject(fmlSession, FHT_MESH_TYPE, /*meshIndex*/1);
+	FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(fmlSession, fmlMeshType);
+	if ((fmlLocalChartEvaluator == FML_INVALID_OBJECT_HANDLE) ||
+		(Fieldml_GetObjectType(fmlSession, fmlLocalChartEvaluator) != FHT_ARGUMENT_EVALUATOR) ||
+		(Fieldml_GetValueType(fmlSession, fmlLocalChartEvaluator) != fmlMeshChartType))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Missing remote xi variable %s for basis %s.",
-			libraryXiVariableNames[meshDimension], basis_name);
-		return_code = 0;
-	}
-	if (fmlRemoteParametersVariable == FML_INVALID_OBJECT_HANDLE)
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Missing remote parameters variable %s for basis %s.",
-			libraryBases[basis_index].fieldmlParametersVariableName, basis_name);
-		return_code = 0;
-	}
-	if (fmlLocalPointsType == FML_INVALID_OBJECT_HANDLE)
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Missing point layout type %s expected for basis %s.",
-			libraryBases[basis_index].fieldmlLocalPointsTypeName, basis_name);
-		return_code = 0;
-	}
-	FmlObjectHandle fmlLocalXiEvaluator = Fieldml_GetBindByVariable(fmlHandle, fmlEvaluator, fmlRemoteXiVariable);
-	FmlObjectHandle fmlElementParametersEvaluator = Fieldml_GetBindByVariable(fmlHandle, fmlEvaluator, fmlRemoteParametersVariable);
-
-	// exactly one mesh expected
-	if (1 != Fieldml_GetObjectCount(fmlHandle, FHT_MESH_TYPE))
-	{
-		display_message(ERROR_MESSAGE, "FieldMLReader::getElementFieldComponent:  Only supports 1 mesh type");
-		return_code = 0;
-	}
-	FmlObjectHandle fmlMeshType = Fieldml_GetObject(fmlHandle, FHT_MESH_TYPE, /*meshIndex*/1);
-	FmlObjectHandle fmlMeshXiType = Fieldml_GetMeshXiType(fmlHandle, fmlMeshType);
-	if ((fmlLocalXiEvaluator == FML_INVALID_OBJECT_HANDLE) ||
-		(Fieldml_GetObjectType(fmlHandle, fmlLocalXiEvaluator) != FHT_ABSTRACT_EVALUATOR) ||
-		(Fieldml_GetValueType(fmlHandle, fmlLocalXiEvaluator) != fmlMeshXiType))
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s does not bind local mesh xi variable to generic xi variable %s.",
-			evaluatorName.c_str(), libraryXiVariableNames[meshDimension]);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s does not bind local mesh chart argument to generic chart argument %s.",
+			evaluatorName.c_str(), libraryChartArgumentNames[meshDimension]);
 		return_code = 0;
 	}
 	if (fmlElementParametersEvaluator == FML_INVALID_OBJECT_HANDLE)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s does not bind to parameters variable %s for basis %s.",
-			evaluatorName.c_str(), libraryBases[basis_index].fieldmlParametersVariableName, basis_name);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s does not bind to parameters argument %s for basis interpolator %s.",
+			evaluatorName.c_str(), getDeclaredName(parametersArgument).c_str(), interpolator_name);
 		return_code = 0;
 	}
-	int evaluatorBindCount = Fieldml_GetBindCount(fmlHandle, fmlEvaluator);
+	int evaluatorBindCount = Fieldml_GetBindCount(fmlSession, fmlEvaluator);
+	// GRC update for scaled Hermite
 	if (2 != evaluatorBindCount)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s has %d bindings. Basis evaluator must bind xi and parameters.",
-			evaluatorName.c_str(), evaluatorBindCount);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s has %d bindings; interpolator %s requires 2 bindings to chart and parameters.",
+			evaluatorName.c_str(), evaluatorBindCount, interpolator_name);
 		return_code = 0;
 	}
-
 	if (!return_code)
 		return 0;
 
-	std::string elementParametersName = getObjectName(fmlElementParametersEvaluator);
-	FmlObjectHandle fmlLocalPointVariable = FML_INVALID_OBJECT_HANDLE;
-	if ((Fieldml_GetObjectType(fmlHandle, fmlElementParametersEvaluator) != FHT_AGGREGATE_EVALUATOR) ||
-		(1 != Fieldml_GetIndexCount(fmlHandle, fmlElementParametersEvaluator)) ||
-		((fmlLocalPointVariable = Fieldml_GetIndexEvaluator(fmlHandle, fmlElementParametersEvaluator, 1)) == FML_INVALID_OBJECT_HANDLE) ||
-		(Fieldml_GetValueType(fmlHandle, fmlLocalPointVariable) != fmlLocalPointsType))
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s is not an aggregate over ensemble type %s.",
-			evaluatorName.c_str(), elementParametersName.c_str(), libraryBases[basis_index].fieldmlLocalPointsTypeName);
-		return 0;
-	}
+	std::string elementParametersName = getName(fmlElementParametersEvaluator);
 
-	FmlObjectHandle fmlTempNodeParameters = Fieldml_GetDefaultEvaluator(fmlHandle, fmlElementParametersEvaluator);
-	if ((fmlTempNodeParameters == FML_INVALID_OBJECT_HANDLE) ||
-		(0 != Fieldml_GetEvaluatorCount(fmlHandle, fmlElementParametersEvaluator)))
+	//FmlObjectHandle fmlParametersType = Fieldml_GetValueType(fmlSession, parametersArgument);
+	//int parametersComponentCount = Fieldml_GetTypeComponentCount(fmlSession, fmlParametersType);
+	if ((Fieldml_GetObjectType(fmlSession, fmlElementParametersEvaluator) != FHT_AGGREGATE_EVALUATOR) ||
+		(1 != Fieldml_GetIndexEvaluatorCount(fmlSession, fmlElementParametersEvaluator)))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML (Limitation):  Evaluator %s element parameter source %s must use only default component evaluator",
+		display_message(ERROR_MESSAGE, "Read FieldML:  Expect evaluator %s parameter source %s to be an AggregateEvaluator with 1 index",
 			evaluatorName.c_str(), elementParametersName.c_str());
 		return 0;
 	}
-
-	int localParametersBindCount = Fieldml_GetBindCount(fmlHandle, fmlElementParametersEvaluator);
+	FmlObjectHandle fmlLocalPointArgument = Fieldml_GetIndexEvaluator(fmlSession, fmlElementParametersEvaluator, 1);
+	if (Fieldml_GetObjectType(fmlSession, fmlLocalPointArgument) != FHT_ARGUMENT_EVALUATOR)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s index %s must be an ArgumentEvaluator",
+			elementParametersName.c_str(), getName(fmlLocalPointArgument).c_str());
+		return 0;
+	}
+	FmlObjectHandle fmlTempNodeParameters = Fieldml_GetDefaultEvaluator(fmlSession, fmlElementParametersEvaluator);
+	if ((fmlTempNodeParameters == FML_INVALID_OBJECT_HANDLE) ||
+		(0 != Fieldml_GetEvaluatorCount(fmlSession, fmlElementParametersEvaluator)))
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML (Current Limitation):  Evaluator %s element parameter source %s must use only default component evaluator",
+			evaluatorName.c_str(), elementParametersName.c_str());
+		return 0;
+	}
+	int localParametersBindCount = Fieldml_GetBindCount(fmlSession, fmlElementParametersEvaluator);
 	if (1 != localParametersBindCount)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s has %d bindings, expect 1 for local-to-global map.",
@@ -860,37 +1107,38 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 		return 0;
 	}
 
-	FmlObjectHandle fmlTempNodeVariable = Fieldml_GetBindVariable(fmlHandle, fmlElementParametersEvaluator, 1);
-	FmlObjectHandle fmlLocalPointToNode = Fieldml_GetBindEvaluator(fmlHandle, fmlElementParametersEvaluator, 1);
+	FmlObjectHandle fmlTempNodeArgument = Fieldml_GetBindArgument(fmlSession, fmlElementParametersEvaluator, 1);
+	FmlObjectHandle fmlLocalPointToNode = Fieldml_GetBindEvaluator(fmlSession, fmlElementParametersEvaluator, 1);
 
-	if (fmlTempNodeParameters != fmlNodeParametersVariable)
+	if (fmlTempNodeParameters != fmlNodeParametersArgument)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s default evaluator %s does not match nodal parameters variable %s",
-			evaluatorName.c_str(), elementParametersName.c_str(), getObjectName(fmlTempNodeParameters).c_str(), getObjectName(fmlNodeParametersVariable).c_str());
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s default evaluator %s does not match nodal parameters argument %s",
+			evaluatorName.c_str(), elementParametersName.c_str(), getName(fmlTempNodeParameters).c_str(), getName(fmlNodeParametersArgument).c_str());
 		return_code = 0;
 	}
-	if (fmlTempNodeVariable != fmlNodeVariable)
+	if (fmlTempNodeArgument != fmlNodeArgument)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s should bind to node variable %s",
-			evaluatorName.c_str(), elementParametersName.c_str(), getObjectName(fmlNodeVariable).c_str());
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s should bind to node argument %s",
+			evaluatorName.c_str(), elementParametersName.c_str(), getName(fmlNodeArgument).c_str());
 		return_code = 0;
 	}
-	if ((fmlLocalPointToNode == FML_INVALID_OBJECT_HANDLE) ||
-		(Fieldml_GetValueType(fmlHandle, fmlLocalPointToNode) != Fieldml_GetValueType(fmlHandle, fmlNodeVariable)))
+	if (2 != Fieldml_GetIndexEvaluatorCount(fmlSession, fmlLocalPointToNode))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s binds incompatibly-typed evaluator %s to variable %s",
-			elementParametersName.c_str(), getObjectName(fmlLocalPointToNode).c_str(), getObjectName(fmlNodeVariable).c_str());
+		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s evaluator %s needs to indexes to be a local point to node map.",
+			elementParametersName.c_str(), getName(fmlLocalPointToNode).c_str());
 		return_code = 0;
 	}
-	FmlObjectHandle fmlLocalPointToNodeIndex1 = Fieldml_GetIndexEvaluator(fmlHandle, fmlLocalPointToNode, 1);
-	FmlObjectHandle fmlLocalPointToNodeIndex2 = Fieldml_GetIndexEvaluator(fmlHandle, fmlLocalPointToNode, 2);
-	if ((2 != Fieldml_GetIndexCount(fmlHandle, fmlLocalPointToNode)) ||
-		!(((fmlLocalPointToNodeIndex1 == fmlElementVariable) && (fmlLocalPointToNodeIndex2 == fmlLocalPointVariable)) ||
-			((fmlLocalPointToNodeIndex2 == fmlElementVariable) && (fmlLocalPointToNodeIndex1 == fmlLocalPointVariable))))
+	else
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s evaluator %s cannot be interpreted as an element, local point to node map.",
-			elementParametersName.c_str(), getObjectName(fmlLocalPointToNode).c_str());
-		return_code = 0;
+		FmlObjectHandle fmlLocalPointToNodeIndex1 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalPointToNode, 1);
+		FmlObjectHandle fmlLocalPointToNodeIndex2 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalPointToNode, 2);
+		if (!(((fmlLocalPointToNodeIndex1 == fmlElementArgument) && (fmlLocalPointToNodeIndex2 == fmlLocalPointArgument)) ||
+			((fmlLocalPointToNodeIndex2 == fmlElementArgument) && (fmlLocalPointToNodeIndex1 == fmlLocalPointArgument))))
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s evaluator %s cannot be interpreted as an element, local point to node map.",
+				elementParametersName.c_str(), getName(fmlLocalPointToNode).c_str());
+			return_code = 0;
+		}
 	}
 
 	if (!return_code)
@@ -901,14 +1149,16 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 	if (verbose)
 	{
 		display_message(INFORMATION_MESSAGE, "Read FieldML:  Interpreting evaluator %s as nodal/element interpolator using basis %s.\n",
-			evaluatorName.c_str(), basis_name);
+			evaluatorName.c_str(), interpolator_name);
 	}
 
 	Cmiss_field_id local_point_to_node_field = getParameters(fmlLocalPointToNode);
 	Cmiss_field_integer_parameters_id local_point_to_node = Cmiss_field_cast_integer_parameters(local_point_to_node_field);
 	Cmiss_field_destroy(&local_point_to_node_field);
 	Cmiss_ensemble_index_id index = Cmiss_field_integer_parameters_create_index(local_point_to_node);
-	int local_point_count = Fieldml_GetEnsembleTypeElementCount(fmlHandle, fmlLocalPointsType);
+
+	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
+	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
 
 	Cmiss_element_basis_id element_basis = Cmiss_fe_mesh_create_element_basis(mesh, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
@@ -930,7 +1180,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 		if (local_point_count != basis_number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s basis %s requires %d DOFs which does not match number of local points (%d)",
-				evaluatorName.c_str(), basis_name, basis_number_of_nodes, local_point_count);
+				evaluatorName.c_str(), interpolator_name, basis_number_of_nodes, local_point_count);
 		}
 		delete component;
 		component = 0;
@@ -941,17 +1191,17 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	std::vector<FmlObjectHandle> &fmlComponentEvaluators,
 	FmlObjectHandle fmlNodeEnsembleType, FmlObjectHandle fmlNodeParameters,
-	FmlObjectHandle fmlNodeParametersVariable, FmlObjectHandle fmlNodeVariable,
-	FmlObjectHandle fmlElementVariable)
+	FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
+	FmlObjectHandle fmlElementArgument)
 {
 	int return_code = 1;
 	const int componentCount = fmlComponentEvaluators.size();
 
-	std::string fieldName = getObjectName(fmlFieldEvaluator);
+	std::string fieldName = getName(fmlFieldEvaluator);
 
 	if (verbose)
 	{
-		display_message(INFORMATION_MESSAGE, "Defining field from evaluator %s, components = %d\n",
+		display_message(INFORMATION_MESSAGE, "\n==> Defining field from evaluator %s, components = %d\n",
 			fieldName.c_str(), componentCount);
 	}
 
@@ -995,7 +1245,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	{
 		display_message(ERROR_MESSAGE,
 			"Read FieldML:  Field %s nodal parameters %s unable to be read.",
-			fieldName.c_str(), getObjectName(fmlNodeParameters).c_str());
+			fieldName.c_str(), getName(fmlNodeParameters).c_str());
 		return_code = 0;
 	}
 	else
@@ -1047,7 +1297,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		delete[] valueExists;
 		delete[] values;
 		Cmiss_ensemble_iterator_destroy(&nodesIterator);
-		Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&node_parameters));
+		Cmiss_field_real_parameters_destroy(&node_parameters);
 		Cmiss_ensemble_index_destroy(&index);
 		Cmiss_node_template_destroy(&node_template);
 	}
@@ -1073,7 +1323,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		bool definedOnAllComponents = true;
 		for (int ic = 0; ic < componentCount; ic++)
 		{
-			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlHandle, fmlComponentEvaluators[ic],
+			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession, fmlComponentEvaluators[ic],
 				static_cast<int>(elementIdentifier), /*allowDefault*/1);
 			if (fmlElementEvaluator != fmlElementEvaluators[ic])
 			{
@@ -1103,11 +1353,11 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			for (int ic = 0; ic < componentCount; ic++)
 			{
 				components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
-					fmlNodeParametersVariable, fmlNodeVariable, fmlElementVariable);
+					fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
 				if (!components[ic])
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
-						fieldName.c_str(), ic + 1, elementIdentifier, getObjectName(fmlElementEvaluators[ic]).c_str());
+						fieldName.c_str(), ic + 1, elementIdentifier, getName(fmlElementEvaluators[ic]).c_str());
 					return_code = 0;
 					break;
 				}
@@ -1165,7 +1415,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 					Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
 					if (!node)
 					{
-						char *local_point_to_node_name = Cmiss_field_get_name(reinterpret_cast<Cmiss_field_id>(component->local_point_to_node));
+						char *local_point_to_node_name = Cmiss_field_get_name(
+							Cmiss_field_integer_parameters_base_cast(component->local_point_to_node));
 						display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
 							component->node_identifiers[i], elementIdentifier, i + 1, local_point_to_node_name);
 						DEALLOCATE(local_point_to_node_name);
@@ -1191,8 +1442,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			break;
 	}
 	Cmiss_ensemble_iterator_destroy(&elementsIterator);
-	Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&elementsEnsemble));
-	Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id*>(&nodesEnsemble));
+	Cmiss_field_ensemble_destroy(&elementsEnsemble);
+	Cmiss_field_ensemble_destroy(&nodesEnsemble);
 	if (element_template)
 		Cmiss_element_template_destroy(&element_template);
 	Cmiss_fe_mesh_destroy(&mesh);
@@ -1207,37 +1458,35 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
  * interpreted as vector-valued finite element fields */
 int FieldMLReader::readAggregateFields()
 {
-	const int aggregateCount = Fieldml_GetObjectCount(fmlHandle, FHT_AGGREGATE_EVALUATOR);
+	const int aggregateCount = Fieldml_GetObjectCount(fmlSession, FHT_AGGREGATE_EVALUATOR);
 	int return_code = 1;
 	for (int aggregateIndex = 1; (aggregateIndex <= aggregateCount) && return_code; aggregateIndex++)
 	{
-		FmlObjectHandle fmlAggregate = Fieldml_GetObject(fmlHandle, FHT_AGGREGATE_EVALUATOR, aggregateIndex);
-		std::string fieldName = getObjectName(fmlAggregate);
+		FmlObjectHandle fmlAggregate = Fieldml_GetObject(fmlSession, FHT_AGGREGATE_EVALUATOR, aggregateIndex);
+		std::string fieldName = getName(fmlAggregate);
 
-		FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlHandle, fmlAggregate);
-		if (FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlHandle, fmlValueType))
+		FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlAggregate);
+		if (FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, fmlValueType))
 		{
 			display_message(WARNING_MESSAGE, "Read FieldML:  Ignore aggregate %s as not continuous type\n", fieldName.c_str());
 			continue;
 		}
-		FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlHandle, fmlValueType);
+		FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlSession, fmlValueType);
 		const int componentCount = (fmlValueTypeComponentEnsembleType == FML_INVALID_OBJECT_HANDLE) ? 1 :
-			Fieldml_GetEnsembleTypeElementCount(fmlHandle, fmlValueTypeComponentEnsembleType);
+			Fieldml_GetMemberCount(fmlSession, fmlValueTypeComponentEnsembleType);
 
 		// check aggregate components are piecewise over elements
 
 		bool piecewiseOverElements = true;
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
 
-		// GRC must change to iterate over actual identifiers once non-contiguous bounds supported
-		// Note: can iterate over ensemble in FieldML API since it is a full implementation
-
-		FmlObjectHandle fmlElementVariable = FML_INVALID_OBJECT_HANDLE;
+		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
 		for (int componentIndex = 1; componentIndex <= componentCount; componentIndex++)
 		{
+			// Component ensemble identifiers are always 1..N:
 			int componentIdentifier = componentIndex;
 			int ic = componentIndex - 1;
-			fmlComponentEvaluators[ic] = Fieldml_GetElementEvaluator(fmlHandle, fmlAggregate, componentIdentifier, /*allowDefault*/1);
+			fmlComponentEvaluators[ic] = Fieldml_GetElementEvaluator(fmlSession, fmlAggregate, componentIdentifier, /*allowDefault*/1);
 			if (fmlComponentEvaluators[ic] == FML_INVALID_OBJECT_HANDLE)
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d evaluator is missing", fieldName.c_str(), componentIndex);
@@ -1245,17 +1494,17 @@ int FieldMLReader::readAggregateFields()
 				break;
 			}
 			FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
-			if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluators[ic]))
+			if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlSession, fmlComponentEvaluators[ic]))
 			{
-				fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluators[ic], /*evaluatorIndex*/1);
+				fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlComponentEvaluators[ic], /*evaluatorIndex*/1);
 			}
-			if (fmlElementVariable == FML_INVALID_OBJECT_HANDLE)
+			if (fmlElementArgument == FML_INVALID_OBJECT_HANDLE)
 			{
-				fmlElementVariable = fmlIndexEvaluator;
+				fmlElementArgument = fmlIndexEvaluator;
 			}
-			if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluators[ic])) ||
-				(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlComponentEvaluators[ic]))) ||
-				(Fieldml_GetValueType(fmlHandle, fmlIndexEvaluator) != fmlElementsType))
+			if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlComponentEvaluators[ic])) ||
+				(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlComponentEvaluators[ic]))) ||
+				(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator) != fmlElementsType))
 			{
 				if (verbose)
 				{
@@ -1265,8 +1514,8 @@ int FieldMLReader::readAggregateFields()
 				piecewiseOverElements = false;
 				break;
 			}
-			else if ((Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR) ||
-				(fmlIndexEvaluator != fmlElementVariable))
+			else if ((Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator) != FHT_ARGUMENT_EVALUATOR) ||
+				(fmlIndexEvaluator != fmlElementArgument))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s components must use same abstract evaluator for element index",
 					fieldName.c_str());
@@ -1291,46 +1540,64 @@ int FieldMLReader::readAggregateFields()
 
 		// determine if exactly one binding of 'nodal parameters'
 
-		int bindCount = Fieldml_GetBindCount(fmlHandle, fmlAggregate);
-		FmlObjectHandle fmlNodeParametersVariable = Fieldml_GetBindVariable(fmlHandle, fmlAggregate, 1);
-		FmlObjectHandle fmlNodeParameters = Fieldml_GetBindEvaluator(fmlHandle, fmlAggregate, 1);
-		int nodeParametersIndexCount = Fieldml_GetIndexCount(fmlHandle, fmlNodeParameters);
-		FmlObjectHandle fmlNodeParametersIndex1 = Fieldml_GetIndexEvaluator(fmlHandle, fmlNodeParameters, 1);
-		FmlObjectHandle fmlNodeParametersIndex2 = Fieldml_GetIndexEvaluator(fmlHandle, fmlNodeParameters, 2);
-		if ((1 != bindCount) ||
-			(Fieldml_GetObjectType(fmlHandle, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
-			(Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlNodeParameters)) != FHT_CONTINUOUS_TYPE) ||
-			(2 != nodeParametersIndexCount) ||
-			(fmlNodeParametersIndex1 == FML_INVALID_OBJECT_HANDLE) ||
-			(fmlNodeParametersIndex2 == FML_INVALID_OBJECT_HANDLE))
+		int bindCount = Fieldml_GetBindCount(fmlSession, fmlAggregate);
+		if (1 != bindCount)
 		{
 			if (verbose)
 			{
 				display_message(WARNING_MESSAGE,
-					"Read FieldML:  Aggregate %s does not bind exactly 1 nodal parameters object. Skipping.",
+					"Read FieldML:  Aggregate %s does not have exactly 1 binding (for nodal parameters). Skipping.",
 					fieldName.c_str());
 			}
 			continue;
 		}
-		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlHandle, fmlNodeParametersIndex1);
-		FmlObjectHandle fmlNodeParametersIndex2Type = Fieldml_GetValueType(fmlHandle, fmlNodeParametersIndex2);
+		FmlObjectHandle fmlNodeParametersArgument = Fieldml_GetBindArgument(fmlSession, fmlAggregate, 1);
+		FmlObjectHandle fmlNodeParameters = Fieldml_GetBindEvaluator(fmlSession, fmlAggregate, 1);
+		if ((Fieldml_GetObjectType(fmlSession, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
+			(Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlNodeParameters)) != FHT_CONTINUOUS_TYPE))
+		{
+			if (verbose)
+			{
+				display_message(WARNING_MESSAGE,
+					"Read FieldML:  Aggregate %s does not bind a continuous parameters source. Skipping.",
+					fieldName.c_str());
+			}
+			continue;
+		}
+		int nodeParametersIndexCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlNodeParameters);
+		FmlObjectHandle fmlNodeParametersIndex1 = FML_INVALID_OBJECT_HANDLE;
+		FmlObjectHandle fmlNodeParametersIndex2 = FML_INVALID_OBJECT_HANDLE;
+		if ((2 != nodeParametersIndexCount) ||
+			((fmlNodeParametersIndex1 = Fieldml_GetIndexEvaluator(fmlSession, fmlNodeParameters, 1)) == FML_INVALID_OBJECT_HANDLE) ||
+			((fmlNodeParametersIndex2 = Fieldml_GetIndexEvaluator(fmlSession, fmlNodeParameters, 2)) == FML_INVALID_OBJECT_HANDLE))
+		{
+			if (verbose)
+			{
+				display_message(WARNING_MESSAGE,
+					"Read FieldML:  Aggregate %s bound source %s has %d indexes, 2 are expected for nodal parameters. Skipping.",
+					fieldName.c_str(), getName(fmlNodeParameters).c_str(), nodeParametersIndexCount);
+			}
+			continue;
+		}
+		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex1);
+		FmlObjectHandle fmlNodeParametersIndex2Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex2);
 		FmlObjectHandle fmlNodeEnsembleType = FML_INVALID_OBJECT_HANDLE;
-		FmlObjectHandle fmlNodeVariable = FML_INVALID_OBJECT_HANDLE;
+		FmlObjectHandle fmlNodeArgument = FML_INVALID_OBJECT_HANDLE;
 		if (fmlNodeParametersIndex1Type == fmlValueTypeComponentEnsembleType)
 		{
-			fmlNodeVariable = fmlNodeParametersIndex2;
+			fmlNodeArgument = fmlNodeParametersIndex2;
 			fmlNodeEnsembleType = fmlNodeParametersIndex2Type;
 		}
 		else if (fmlNodeParametersIndex2Type == fmlValueTypeComponentEnsembleType)
 		{
-			fmlNodeVariable = fmlNodeParametersIndex1;
+			fmlNodeArgument = fmlNodeParametersIndex1;
 			fmlNodeEnsembleType = fmlNodeParametersIndex1Type;
 		}
 		if (fmlNodeEnsembleType == FML_INVALID_OBJECT_HANDLE)
 		{
 			display_message(ERROR_MESSAGE,
 				"Read FieldML:  Aggregate %s binds parameters %s that do not vary with component.",
-				fieldName.c_str());
+				fieldName.c_str(), getName(fmlNodeParameters).c_str());
 			break;
 		}
 		if ((fmlNodesType != FML_INVALID_OBJECT_HANDLE) &&
@@ -1338,12 +1605,12 @@ int FieldMLReader::readAggregateFields()
 		{
 			display_message(ERROR_MESSAGE,
 				"Read FieldML:  Aggregate %s binds parameters %s indexed by an unknown ensemble %s not matching 'nodes' %s used for other fields.",
-				fieldName.c_str(), getObjectName(fmlNodeParameters).c_str(), getObjectName(fmlNodeEnsembleType).c_str(), getObjectName(fmlNodesType).c_str());
+				fieldName.c_str(), getName(fmlNodeParameters).c_str(), getName(fmlNodeEnsembleType).c_str(), getName(fmlNodesType).c_str());
 			break;
 		}
 
 		return_code = readField(fmlAggregate, fmlComponentEvaluators, fmlNodeEnsembleType, fmlNodeParameters,
-			fmlNodeParametersVariable, fmlNodeVariable, fmlElementVariable);
+			fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
 	}
 	return return_code;
 }
@@ -1352,15 +1619,15 @@ int FieldMLReader::readAggregateFields()
  * interpreted as scalar-valued finite element fields */
 int FieldMLReader::readReferenceFields()
 {
-	const int referenceCount = Fieldml_GetObjectCount(fmlHandle, FHT_REFERENCE_EVALUATOR);
+	const int referenceCount = Fieldml_GetObjectCount(fmlSession, FHT_REFERENCE_EVALUATOR);
 	int return_code = 1;
 	for (int referenceIndex = 1; (referenceIndex <= referenceCount) && return_code; referenceIndex++)
 	{
-		FmlObjectHandle fmlReference = Fieldml_GetObject(fmlHandle, FHT_REFERENCE_EVALUATOR, referenceIndex);
-		std::string fieldName = getObjectName(fmlReference);
+		FmlObjectHandle fmlReference = Fieldml_GetObject(fmlSession, FHT_REFERENCE_EVALUATOR, referenceIndex);
+		std::string fieldName = getName(fmlReference);
 
-		FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlHandle, fmlReference);
-		if (FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlHandle, fmlValueType))
+		FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlReference);
+		if (FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, fmlValueType))
 		{
 			//display_message(WARNING_MESSAGE, "Read FieldML:  Ignore reference %s as not continuous type\n", fieldName.c_str());
 			continue;
@@ -1371,12 +1638,9 @@ int FieldMLReader::readReferenceFields()
 
 		bool piecewiseOverElements = true;
 
-		// GRC must change to iterate over actual identifiers once non-contiguous bounds supported
-		// Note: can iterate over ensemble in FieldML API since it is a full implementation
+		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
 
-		FmlObjectHandle fmlElementVariable = FML_INVALID_OBJECT_HANDLE;
-
-		FmlObjectHandle fmlComponentEvaluator = Fieldml_GetReferenceRemoteEvaluator(fmlHandle, fmlReference);
+		FmlObjectHandle fmlComponentEvaluator = Fieldml_GetReferenceSourceEvaluator(fmlSession, fmlReference);
 		if (fmlComponentEvaluator == FML_INVALID_OBJECT_HANDLE)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s remove evaluator is missing", fieldName.c_str());
@@ -1385,26 +1649,26 @@ int FieldMLReader::readReferenceFields()
 		}
 
 		FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
-		if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluator))
+		if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlSession, fmlComponentEvaluator))
 		{
-			fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlHandle, fmlComponentEvaluator, /*evaluatorIndex*/1);
+			fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlComponentEvaluator, /*evaluatorIndex*/1);
 		}
-		if (fmlElementVariable == FML_INVALID_OBJECT_HANDLE)
+		if (fmlElementArgument == FML_INVALID_OBJECT_HANDLE)
 		{
-			fmlElementVariable = fmlIndexEvaluator;
+			fmlElementArgument = fmlIndexEvaluator;
 		}
-		if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlHandle, fmlComponentEvaluator)) ||
-			(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlComponentEvaluator))) ||
-			(Fieldml_GetValueType(fmlHandle, fmlIndexEvaluator) != fmlElementsType))
+		if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlComponentEvaluator)) ||
+			(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlComponentEvaluator))) ||
+			(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator) != fmlElementsType))
 		{
 			if (verbose)
 			{
 				display_message(WARNING_MESSAGE, "Read FieldML:  Reference %s remote evaluator %s is not piecewise indexed by mesh elements ensemble",
-					fieldName.c_str(), getObjectName(fmlComponentEvaluator).c_str());
+					fieldName.c_str(), getName(fmlComponentEvaluator).c_str());
 			}
 			piecewiseOverElements = false;
 		}
-		else if (Fieldml_GetObjectType(fmlHandle, fmlIndexEvaluator) != FHT_ABSTRACT_EVALUATOR)
+		else if (Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator) != FHT_ARGUMENT_EVALUATOR)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s does not use an abstract evaluator for element index",
 				fieldName.c_str());
@@ -1424,14 +1688,14 @@ int FieldMLReader::readReferenceFields()
 
 		// determine if exactly one binding of 'nodal parameters'
 
-		int bindCount = Fieldml_GetBindCount(fmlHandle, fmlReference);
-		FmlObjectHandle fmlNodeParametersVariable = Fieldml_GetBindVariable(fmlHandle, fmlReference, 1);
-		FmlObjectHandle fmlNodeParameters = Fieldml_GetBindEvaluator(fmlHandle, fmlReference, 1);
-		int nodeParametersIndexCount = Fieldml_GetIndexCount(fmlHandle, fmlNodeParameters);
-		FmlObjectHandle fmlNodeParametersIndex1 = Fieldml_GetIndexEvaluator(fmlHandle, fmlNodeParameters, 1);
+		int bindCount = Fieldml_GetBindCount(fmlSession, fmlReference);
+		FmlObjectHandle fmlNodeParametersArgument = Fieldml_GetBindArgument(fmlSession, fmlReference, 1);
+		FmlObjectHandle fmlNodeParameters = Fieldml_GetBindEvaluator(fmlSession, fmlReference, 1);
+		int nodeParametersIndexCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlNodeParameters);
+		FmlObjectHandle fmlNodeParametersIndex1 = Fieldml_GetIndexEvaluator(fmlSession, fmlNodeParameters, 1);
 		if ((1 != bindCount) ||
-			(Fieldml_GetObjectType(fmlHandle, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
-			(Fieldml_GetObjectType(fmlHandle, Fieldml_GetValueType(fmlHandle, fmlNodeParameters)) != FHT_CONTINUOUS_TYPE) ||
+			(Fieldml_GetObjectType(fmlSession, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
+			(Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlNodeParameters)) != FHT_CONTINUOUS_TYPE) ||
 			(1 != nodeParametersIndexCount) ||
 			(fmlNodeParametersIndex1 == FML_INVALID_OBJECT_HANDLE))
 		{
@@ -1443,21 +1707,21 @@ int FieldMLReader::readReferenceFields()
 			}
 			continue;
 		}
-		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlHandle, fmlNodeParametersIndex1);
-		FmlObjectHandle fmlNodeVariable = fmlNodeParametersIndex1;
+		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex1);
+		FmlObjectHandle fmlNodeArgument = fmlNodeParametersIndex1;
 		FmlObjectHandle fmlNodeEnsembleType = fmlNodeParametersIndex1Type;
 		if ((fmlNodesType != FML_INVALID_OBJECT_HANDLE) &&
 			(fmlNodeEnsembleType != fmlNodesType))
 		{
 			display_message(ERROR_MESSAGE,
 				"Read FieldML:  Reference %s binds parameters %s indexed by an unknown ensemble %s not matching 'nodes' %s used for other fields.",
-				fieldName.c_str(), getObjectName(fmlNodeParameters).c_str(), getObjectName(fmlNodeEnsembleType).c_str(), getObjectName(fmlNodesType).c_str());
+				fieldName.c_str(), getName(fmlNodeParameters).c_str(), getName(fmlNodeEnsembleType).c_str(), getName(fmlNodesType).c_str());
 			break;
 		}
 
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(1, fmlComponentEvaluator);
 		return_code = readField(fmlReference, fmlComponentEvaluators, fmlNodeEnsembleType, fmlNodeParameters,
-			fmlNodeParametersVariable, fmlNodeVariable, fmlElementVariable);
+			fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
 	}
 	return return_code;
 }
@@ -1470,11 +1734,24 @@ int FieldMLReader::parse()
 		display_message(ERROR_MESSAGE, "FieldMLReader::parse.  Invalid construction arguments");
 		return_code = 0;
 	}
-	if (fmlHandle == (const FmlHandle)FML_INVALID_HANDLE)
+	if (fmlSession == (const FmlSessionHandle)FML_INVALID_HANDLE)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML: could not parse file %s", filename);
 		return_code = 0;
 	}
+	else
+	{
+		int parseErrorCount = Fieldml_GetErrorCount(fmlSession);
+		return_code = (parseErrorCount == 0);
+		for (int i = 1; i <= parseErrorCount; i++)
+		{
+			char *error_string = Fieldml_GetError(fmlSession, i);
+			display_message(ERROR_MESSAGE, "FieldML Parse error: %s", error_string);
+			Fieldml_FreeString(error_string);
+		}
+	}
+	if (!return_code)
+		return 0;
 	Cmiss_region_begin_change(region);
 	return_code = return_code && readMeshes();
 	return_code = return_code && readAggregateFields();

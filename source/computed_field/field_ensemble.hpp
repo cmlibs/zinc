@@ -51,11 +51,14 @@ namespace Cmiss
 
 /***************************************************************************//**
  * An internal reference to an ensemble entry.
- * Actually an array index starting at 1, with 0 = invalid.
+ * Actually an array index starting at 0 with -1 == invalid.
  * Must not be in external API - use Cmiss_ensemble_iterator instead.
  * @see Cmiss_ensemble_iterator.
  */
-typedef unsigned int EnsembleEntryRef;
+typedef int EnsembleEntryRef;
+
+const Cmiss_ensemble_identifier CMISS_INVALID_ENSEMBLE_IDENTIFIER = -1;
+const EnsembleEntryRef CMISS_INVALID_ENSEMBLE_ENTRY_REF = -1;
 
 /***************************************************************************//**
  * A domain comprising a set of entries / indexes with unique unsigned integer
@@ -69,11 +72,12 @@ typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef> EnsembleEntryMap;
 typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::iterator EnsembleEntryMapIterator;
 typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::reverse_iterator EnsembleEntryMapReverseIterator;
 
-	bool contiguous; // true while all entries from 1..lastIdentifier exist and are in order
+	bool contiguous; // true while all entries from firstIdentifier..lastIdentifier exist and are in order
 	block_array<EnsembleEntryRef,Cmiss_ensemble_identifier> entries; // used only if not contiguous
 	EnsembleEntryMap identifierMap; // used only if not contiguous
-	Cmiss_ensemble_identifier firstFreeIdentifier, lastIdentifier;
-	EnsembleEntryRef entryCount, maxRef;
+	Cmiss_ensemble_identifier firstFreeIdentifier, firstIdentifier, lastIdentifier;
+	int entryCount; // number of valid entries
+	int refCount; // number of array slots allocated; some unused where members removed
 
 	// linked-lists of active iterators is maintained to keep track of entry refs for
 	// reclaiming memory. When destroyed these are placed on the available list for
@@ -85,9 +89,10 @@ public:
 		Computed_field_core(),
 		contiguous(true),
 		firstFreeIdentifier(1),
-		lastIdentifier(0),
+		firstIdentifier(CMISS_INVALID_ENSEMBLE_IDENTIFIER),
+		lastIdentifier(CMISS_INVALID_ENSEMBLE_IDENTIFIER),
 		entryCount(0),
-		maxRef(0),
+		refCount(0),
 		activeIterators(NULL),
 		availableIterators(NULL)
 	{
@@ -130,16 +135,16 @@ public:
 		return entryCount;
 	}
 
-	/** @return  true if any refs from 1..maxRef are void, false if all are valid */ 
+	/** @return  true if any refs void, false if all are valid */
 	bool hasVoidRefs()
 	{
-		return (entryCount < maxRef);
+		return (entryCount < refCount);
 	}
 
 	/** @return  maximum ref which has ever existed; entry may be void */
-	EnsembleEntryRef getMaxRef()
+	EnsembleEntryRef getRefCount()
 	{
-		return maxRef;
+		return refCount;
 	}
 	
 	EnsembleEntryRef createEntry();
@@ -172,9 +177,9 @@ class Field_ensemble_group : public Computed_field_core
 {
 private:
 	Field_ensemble *ensemble;
-	EnsembleEntryRef entryCount;
-	// maxRef is an upper bound, updated to exact index when queried
-	EnsembleEntryRef maxRef;
+	int entryCount;
+	// refLimit is at least one greater than highest member of group, updated to exact index when queried
+	int refLimit;
 	bool_array<EnsembleEntryRef> values;
 	
 public:
@@ -182,7 +187,7 @@ public:
 		Computed_field_core(),
 		ensemble(from_ensemble),
 		entryCount(0),
-		maxRef(0)
+		refLimit(0)
 	{
 	};
 
@@ -234,7 +239,7 @@ public:
 	{
 		values.clear();
 		entryCount = 0;
-		maxRef = 0;
+		refLimit = 0;
 	}
 
 	EnsembleEntryRef size()
@@ -242,55 +247,57 @@ public:
 		return entryCount;
 	}
 
-	EnsembleEntryRef getMaxRef()
+	EnsembleEntryRef getRefLimit()
 	{
-		if (maxRef > 0)
+		if (refLimit > 0)
 		{
-			EnsembleEntryRef index = maxRef - 1;
+			EnsembleEntryRef index = refLimit - 1;
 			if (values.updateLastTrueIndex(index))
 			{
-				maxRef = index + 1;
+				refLimit = index + 1;
 			}
 		}
-		return maxRef;
+		return refLimit;
 	}
 
-	/** @return true if group contains all entries from 1..maxRef */
+	/** @return true if group contains all entries from 1..refLimit */
 	bool isDense()
 	{
-		getMaxRef();
-		return (entryCount == maxRef);
+		getRefLimit();
+		return (entryCount == refLimit);
 	}
 
-	/** @return true if group contains all entries from belowRef+1..maxRef */
+	/** @return true if group contains all entries from belowRef+1..refLimit */
 	bool isDenseAbove(EnsembleEntryRef belowRef)
 	{
-		getMaxRef();
+		getRefLimit();
 		// GRC: this can be expensive:
-		return values.isRangeTrue(/*index*/belowRef, /*index*/maxRef-1);
+		return values.isRangeTrue(/*minIndex*/belowRef + 1, /*minIndex*/refLimit-1);
 	}
 	
 	/** be careful that ref is for this ensemble */
 	bool hasEntryRef(EnsembleEntryRef ref) const
 	{
-		if (ref == 0)
+		if (ref < 0)
 			return false;
-		return values.getBool(/*index*/ref-1);
+		return values.getBool(/*index*/ref);
 	}
 
 	/** be careful that ref is for this ensemble */
 	int setEntryRef(EnsembleEntryRef ref, bool inGroup)
 	{
+		if (ref < 0)
+			return false;
 		bool wasInGroup;
-		if (values.setBool(/*index*/ref-1, inGroup, wasInGroup))
+		if (values.setBool(/*index*/ref, inGroup, wasInGroup))
 		{
 			if (inGroup != wasInGroup)
 			{
 				if (inGroup)
 				{
 					entryCount++;
-					if (ref > maxRef)
-						maxRef = ref;
+					if (ref >= refLimit)
+						refLimit = ref + 1;
 				}
 				else
 				{
@@ -310,7 +317,7 @@ public:
 	EnsembleEntryRef getFirstEntryRef()
 	{
 		EnsembleEntryRef ref = ensemble->getFirstEntryRef();
-		if (hasEntryRef(ref) || (0 == ref))
+		if (hasEntryRef(ref))
 			return ref;
 		return ensemble->getNextEntryRefBoolTrue(ref, values);
 	}
@@ -366,7 +373,7 @@ public:
 	bool increment()
 	{
 		ref = ensemble->getNextEntryRef(ref);
-		return (ref != 0);
+		return (ref >= 0);
 	}
 };
 
@@ -397,7 +404,7 @@ struct Cmiss_ensemble_index
 		Cmiss_ensemble_iterator *iterator;
 		Cmiss::Field_ensemble_group *ensemble_group;
 		// following mutable members are used by Field_parameter::setValues
-		mutable Cmiss::EnsembleEntryRef maxIndexRef;
+		mutable Cmiss::EnsembleEntryRef indexRefLimit;
 		mutable Cmiss::EnsembleEntryRef firstRef;
 		mutable Cmiss_ensemble_iterator *valuesIterator;
 
@@ -425,8 +432,8 @@ struct Cmiss_ensemble_index
 			ensemble(NULL),
 			iterator(NULL),
 			ensemble_group(NULL),
-			maxIndexRef(0),
-			firstRef(0),
+			indexRefLimit(0),
+			firstRef(Cmiss::CMISS_INVALID_ENSEMBLE_ENTRY_REF),
 			valuesIterator(NULL)
 		{
 		}
@@ -448,7 +455,7 @@ struct Cmiss_ensemble_index
 		unsigned int getEntryCount() const
 		{
 			if (iterator)
-				return (iterator->getRef() > 0) ? 1 : 0;
+				return (iterator->getRef() >= 0) ? 1 : 0;
 			if (ensemble_group)
 				return ensemble_group->size();
 			return ensemble->size();
@@ -477,23 +484,23 @@ struct Cmiss_ensemble_index
 			clear_iterator();
 		}
 
-		void calculateMaxIndexRef()
+		void calculateIndexRefLimit()
 		{
 			if (iterator)
-				maxIndexRef = iterator->getRef();
+				indexRefLimit = iterator->getRef() + 1;
 			else if (ensemble_group)
-				maxIndexRef = ensemble_group->getMaxRef();
+				indexRefLimit = ensemble_group->getRefLimit();
 			else
-				maxIndexRef = ensemble->getMaxRef(); // GRC this is conservative
+				indexRefLimit = ensemble->getRefCount(); // GRC this is conservative
 		}
 
-		/** @return true if indexing is dense from 1..maxIndexRef */
+		/** @return true if indexing is dense from 0..indexRefLimit-1 */
 		bool isDense()
 		{
 			if (ensemble->hasVoidRefs())
 				return false;
 			if (iterator)
-				return (iterator->getRef() == 1);
+				return (iterator->getRef() == 0);
 			if (ensemble_group)
 				return ensemble_group->isDense();
 			return true;
@@ -504,7 +511,9 @@ struct Cmiss_ensemble_index
 			if (ensemble->hasVoidRefs())
 				return false;
 			if (iterator)
+			{
 				return (iterator->getRef() == (belowRef + 1));
+			}
 			if (ensemble_group)
 				return ensemble_group->isDenseAbove(belowRef);
 			return true;
@@ -528,7 +537,7 @@ struct Cmiss_ensemble_index
 				firstRef = ensemble->getFirstEntryRef();
 				valuesIterator = ensemble->createEnsembleIterator(firstRef);
 			}
-			return (firstRef != 0) && (iterator || valuesIterator);
+			return (firstRef >= 0) && (iterator || valuesIterator);
 		}
 
 		Cmiss::EnsembleEntryRef iterationRef()
@@ -672,29 +681,29 @@ public:
 	}
 
 	/**
-	 * Precalculates maxIndexRef values for each ensemble.
+	 * Precalculates indexRefLimit values for each ensemble.
 	 * Note: must call getEntryCount() first to confirm no invalid refs!
 	 */
-	void calculateMaxIndexRefs()
+	void calculateIndexRefLimits()
 	{
 		for (int i = 0; i < number_of_ensembles; i++)
 		{
-			indexing[i].calculateMaxIndexRef();
+			indexing[i].calculateIndexRefLimit();
 		}
 	}
 
 	/**
-	 * Returns maximum entry ref for the indexing of the selected ensemble.
-	 * Must have called calculateMaxIndexRefs first
+	 * Returns limiting entry ref for the indexing of the selected ensemble.
+	 * Must have called calculateIndexRefLimits first
 	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
 	 */
-	Cmiss::EnsembleEntryRef maxIndexRef(int ensemble_array_index)
+	Cmiss::EnsembleEntryRef indexRefLimit(int ensemble_array_index)
 	{
-		return indexing[ensemble_array_index].maxIndexRef;
+		return indexing[ensemble_array_index].indexRefLimit;
 	}
 
 	/**
-	 * Returns true if all refs are specified from 1..maxIndexRef
+	 * Returns true if all refs are specified from 0..indexRefLimit-1
 	 * for the selected ensemble 
 	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
 	 */
@@ -704,7 +713,7 @@ public:
 	}
 
 	/**
-	 * Returns true if all refs are specified from belowRef+1..maxIndexRef
+	 * Returns true if all refs are specified from belowRef+1..maxIndexRef-1
 	 * for the selected ensemble 
 	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
 	 * @param belowRef  Ref one below dense range being checked.
@@ -766,7 +775,7 @@ inline int Field_ensemble::incrementEnsembleEntry(Cmiss_ensemble_iterator *itera
 	if ((!iterator) || (NULL == iterator->getEnsemble()))
 		return 0;
 	iterator->increment();
-	return (iterator->ref != 0);
+	return (iterator->ref >= 0);
 }
 
 inline bool Field_ensemble_group::hasEntry(const Cmiss_ensemble_iterator *iterator) const
@@ -788,7 +797,7 @@ inline int Field_ensemble_group::incrementEnsembleEntry(Cmiss_ensemble_iterator 
 	if (!iterator || (iterator->getEnsemble() != ensemble))
 		return 0;
 	iterator->setRef(getNextEntryRef(iterator->ref));
-	return (iterator->getRef() != 0);
+	return (iterator->getRef() >= 0);
 }
 
 } // namespace Cmiss

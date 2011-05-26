@@ -105,7 +105,8 @@ void Field_ensemble::updateFirstFreeIdentifier()
 {
 	if (firstFreeIdentifier != (lastIdentifier + 1))
 	{
-		while (findEntryByIdentifier(firstFreeIdentifier))
+		while (CMISS_INVALID_ENSEMBLE_ENTRY_REF !=
+			findEntryByIdentifier(firstFreeIdentifier))
 		{
 			firstFreeIdentifier++;
 		}
@@ -118,10 +119,12 @@ void Field_ensemble::setNotContiguous()
 	{
 		contiguous = false;
 		// this can be optimised:
-		for (Cmiss_ensemble_identifier identifier = 1; identifier <= lastIdentifier; identifier++)
+		Cmiss_ensemble_identifier identifier = firstIdentifier;
+		for (EnsembleEntryRef ref = 0; ref < refCount; ++ref)
 		{
-			entries.setValue(/*index*/identifier-1, identifier);
-			identifierMap[identifier] = static_cast<EnsembleEntryRef>(identifier);
+			entries.setValue(ref, identifier);
+			identifierMap[identifier] = ref;
+			++identifier;
 		}
 	}
 }
@@ -129,41 +132,46 @@ void Field_ensemble::setNotContiguous()
 /** private: caller must have checked identifier is not in use! */
 EnsembleEntryRef Field_ensemble::createEntryPrivate(Cmiss_ensemble_identifier identifier)
 {
-	if (identifier == 0)
+	if (identifier < 0)
 		return 0;
-	EnsembleEntryRef ref = 0;
-	if (contiguous && (identifier > firstFreeIdentifier))
-	{
-		setNotContiguous();
-	}
+	EnsembleEntryRef ref = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 	if (contiguous)
 	{
-		ref = static_cast<EnsembleEntryRef>(identifier);
-		lastIdentifier = identifier;
-		firstFreeIdentifier = lastIdentifier + 1;
-		entryCount++;
-		maxRef++;
-	}
-	else
-	{
-		// Future memory optimisation: reclaim unused indexes for new entries.
-		// Note for reclaim to work would have to clear indexes into parameters
-		// as entries are deleted [for parameter fields indexed by this ensemble].
-		if (entries.setValue(/*index*/maxRef, identifier))
+		if (0 == entryCount)
 		{
-			ref = maxRef + 1;
-			identifierMap[identifier] = ref;
-			if (identifier > lastIdentifier)
-			{
-				lastIdentifier = identifier;
-			}
-			if (identifier == firstFreeIdentifier)
-			{
-				firstFreeIdentifier++;
-			}
-			entryCount++;
-			maxRef++;
+			firstIdentifier = identifier;
 		}
+		else if ((identifier < firstIdentifier) || (identifier > (lastIdentifier + 1)))
+		{
+			setNotContiguous();
+		}
+		if (contiguous)
+		{
+			ref = refCount;
+			lastIdentifier = identifier;
+			firstFreeIdentifier = lastIdentifier + 1;
+			entryCount++;
+			refCount++;
+			return ref;
+		}
+	}
+	// Future memory optimisation: reclaim unused indexes for new entries.
+	// Note for reclaim to work would have to clear indexes into parameters
+	// as entries are deleted [for parameter fields indexed by this ensemble].
+	if (entries.setValue(/*index*/refCount, identifier))
+	{
+		ref = refCount;
+		identifierMap[identifier] = ref;
+		if (identifier > lastIdentifier)
+		{
+			lastIdentifier = identifier;
+		}
+		if (identifier == firstFreeIdentifier)
+		{
+			firstFreeIdentifier++;
+		}
+		entryCount++;
+		refCount++;
 	}
 	return ref;
 }
@@ -179,8 +187,8 @@ EnsembleEntryRef Field_ensemble::createEntry()
 EnsembleEntryRef Field_ensemble::createEntry(Cmiss_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
-	if (ref)
-		return 0;
+	if (ref >= 0)
+		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 	return createEntryPrivate(identifier);
 }
 
@@ -188,21 +196,21 @@ EnsembleEntryRef Field_ensemble::createEntry(Cmiss_ensemble_identifier identifie
 EnsembleEntryRef Field_ensemble::findOrCreateEntry(Cmiss_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
-	if (ref)
+	if (ref >= 0)
 		return ref;
 	return createEntryPrivate(identifier);
 }
 
 EnsembleEntryRef Field_ensemble::findEntryByIdentifier(Cmiss_ensemble_identifier identifier)
 {
-	EnsembleEntryRef ref = 0;
-	if (identifier > 0)
+	EnsembleEntryRef ref = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
+	if (identifier >= 0)
 	{
 		if (contiguous)
 		{
-			if (identifier <= lastIdentifier)
+			if ((identifier >= firstIdentifier) && (identifier <= lastIdentifier))
 			{
-				ref = static_cast<EnsembleEntryRef>(identifier);
+				ref = static_cast<EnsembleEntryRef>(identifier - firstIdentifier);
 			}
 		}
 		else
@@ -219,7 +227,7 @@ EnsembleEntryRef Field_ensemble::findEntryByIdentifier(Cmiss_ensemble_identifier
 
 int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 {
-	if ((ref == 0) || (ref > maxRef))
+	if ((ref < 0) || (ref >= refCount))
 		return 0;
 	// GRC must check not in use
 	if (contiguous)
@@ -243,28 +251,32 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 #endif
 	}
 	Cmiss_ensemble_identifier identifier;
-	if (entries.getValue(/*index*/(ref-1), identifier))
+	if (entries.getValue(ref, identifier))
 	{
-		identifierMap.erase(identifier);
-		entries.setValue(/*index*/(ref-1), 0);
-		if (identifier <= firstFreeIdentifier)
-			firstFreeIdentifier = identifier;
-		entryCount--;
-		if (identifier == lastIdentifier)
+		if (identifier >= 0)
 		{
-			if (0 == entryCount)
+			identifierMap.erase(identifier);
+			entries.setValue(ref, CMISS_INVALID_ENSEMBLE_IDENTIFIER);
+			if (identifier <= firstFreeIdentifier)
+				firstFreeIdentifier = identifier;
+			entryCount--;
+			if (identifier == lastIdentifier)
 			{
-				lastIdentifier = 0;
-				firstFreeIdentifier = 1;
+				if (0 == entryCount)
+				{
+					firstIdentifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+					lastIdentifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+					firstFreeIdentifier = 1;
+				}
+				else
+				{
+					EnsembleEntryMapReverseIterator iter = identifierMap.rbegin();
+					EnsembleEntryRef lastRef = iter->second;
+					entries.getValue(lastRef, lastIdentifier);
+				}
 			}
-			else
-			{
-				EnsembleEntryMapReverseIterator iter = identifierMap.rbegin();
-				EnsembleEntryRef lastRef = iter->second;
-				entries.getValue(/*index*/(lastRef-1), lastIdentifier);
-			}
+			return 1;
 		}
-		return 1;
 	}
 	return 0;
 }
@@ -272,20 +284,20 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 int Field_ensemble::removeEntryWithIdentifier(Cmiss_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
-	if (ref)
+	if (ref >= 0)
 		return removeEntry(ref);
 	return 0;
 }
 
 Cmiss_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref)
 {
-	Cmiss_ensemble_identifier identifier = 0;
-	if ((0 < ref) && (ref <= maxRef))
+	Cmiss_ensemble_identifier identifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+	if ((0 <= ref) && (ref < refCount))
 	{
 		if (contiguous)
-			identifier = static_cast<Cmiss_ensemble_identifier>(ref);
+			identifier = firstIdentifier + static_cast<Cmiss_ensemble_identifier>(ref);
 		else
-			entries.getValue(/*index*/(ref-1), identifier);
+			entries.getValue(ref, identifier);
 	}
 	return identifier;
 }
@@ -293,52 +305,58 @@ Cmiss_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef re
 EnsembleEntryRef Field_ensemble::getFirstEntryRef()
 {
 	if (0 == entryCount)
-		return 0;
+		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 	if (contiguous)
-		return 1;
+		return 0;
 	return identifierMap.begin()->second;
 }
 
 EnsembleEntryRef Field_ensemble::getNextEntryRef(EnsembleEntryRef ref)
 {
-	if (0 == ref)
-		return 0;
-	if (contiguous)
+	if (0 <= ref)
 	{
-		if (ref < maxRef)
-			return (ref + 1);
+		if (contiguous)
+		{
+			if (ref < (refCount - 1))
+				return (ref + 1);
+		}
+		else
+		{
+			Cmiss_ensemble_identifier identifier = getEntryIdentifier(ref);
+			if (0 <= identifier)
+			{
+				// optimisation: check if ref+1 -> identifier+1 so it is next
+				if (getEntryIdentifier(ref + 1) == (identifier + 1))
+					return (ref + 1);
+				// O(logN) slow:
+				// can be made more efficient by passing Cmiss_ensemble_iterator
+				// to this function & keeping iterator in it
+				EnsembleEntryMapIterator iter = identifierMap.find(identifier);
+				iter++;
+				if (iter != identifierMap.end())
+				{
+					return iter->second;
+				}
+			}
+		}
 	}
-	else
-	{
-		// optimisation: check if ref+1 -> identifier+1 so it is next 
-		Cmiss_ensemble_identifier identifier = getEntryIdentifier(ref);
-		if (getEntryIdentifier(ref + 1) == (identifier + 1))
-			return ref + 1;
-		// O(logN) slow:
-		// can be made more efficient by passing Cmiss_ensemble_iterator
-		// to this function & keeping iterator in it
-		EnsembleEntryMapIterator iter = identifierMap.find(identifier);
-		iter++;
-		if (iter != identifierMap.end())
-			return iter->second;
-	}
-	return 0;
+	return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 }
 
 EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	bool_array<EnsembleEntryRef>& values)
 {
-	if (0 == ref)
-		return 0;
+	if (ref < 0)
+		return CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 	EnsembleEntryRef newRef = ref;
 	if (contiguous)
 	{
 		do
 		{
 			newRef++;
-			if (newRef > maxRef)
+			if (newRef >= refCount)
 			{
-				newRef = 0;
+				newRef = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 				break;
 			}
 		} while (!values.getBool(newRef));
@@ -354,7 +372,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 			iter++;
 			if (iter == identifierMap.end())
 			{
-				newRef = 0;
+				newRef = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 				break;
 			}
 			newRef = iter->second;
@@ -365,7 +383,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 
 Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef ref)
 {
-	if (0 == getEntryIdentifier(ref))
+	if (CMISS_INVALID_ENSEMBLE_IDENTIFIER == getEntryIdentifier(ref))
 		return NULL;
 	Cmiss_ensemble_iterator *iterator = NULL;
 	if (availableIterators)
@@ -485,6 +503,11 @@ Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
 	}
 }
 
+int Cmiss_field_ensemble_destroy(Cmiss_field_ensemble_id *ensemble_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(ensemble_address));
+}
+
 Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
 	Cmiss_field_ensemble *ensemble_field)
 {
@@ -532,7 +555,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		Cmiss::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
-		if (!ref)
+		if (Cmiss::CMISS_INVALID_ENSEMBLE_ENTRY_REF == ref)
 		{
 			ref = ensemble->createEntry(identifier);
 		}
