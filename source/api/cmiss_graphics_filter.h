@@ -125,7 +125,6 @@ int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_address);
  * @return  Boolean value of filter for this graphic:
  *     1 == true == show or 0 == false == hide
  */
-
 int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
 	Cmiss_graphic_id graphic);
 
@@ -148,8 +147,9 @@ int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
 	const char *name);
 
 /***************************************************************************//**
- * Creates a Cmiss_graphics_filter which matches any graphic with visibility flag
- * set AND its owning rendition visibility flag set.
+ * Creates a Cmiss_graphics_filter which matches any graphic with visibility
+ * flag set AND its owning region and all ancestor region renditions' visibility
+ * flags set i.e. rendition visibility flags work hierarchically.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
  * @param scene  Scene to add filter to.
@@ -170,8 +170,8 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_graphic_name(
 	Cmiss_graphics_module_id graphics_module, const char *match_name);
 
 /***************************************************************************//**
- * Creates a Cmiss_graphics_filter which matches any graphic in region or its
- * subregion.
+ * Creates a Cmiss_graphics_filter which matches any graphic in region or any
+ * of its sub-regions.
  * Caller must call Cmiss_graphics_filter_destroy to clean up the returned handle.
  *
  * @param match_region  The region to be matched by this filter.
@@ -201,27 +201,27 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
+ * Get an integer or Boolean attribute of the scene filter object.
+ *
+ * @param filter  Handle to the graphics filter.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
+int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
+	enum Cmiss_graphics_filter_attribute_id attribute_id);
+
+/***************************************************************************//**
  * Set an integer or Boolean attribute of the graphics_filter object.
  *
- * @param graphics_filter  Handle to the cmiss graphics_filter.
+ * @param filter  Handle to the cmiss graphics_filter.
  * @param attribute_id  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this graphics_filter object.
  */
-int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
+int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
 	enum Cmiss_graphics_filter_attribute_id attribute_id, int value);
-
-/***************************************************************************//**
- * Get an integer or Boolean attribute of the scene filter object.
- *
- * @param graphics_filter  Handle to the cmiss scene filter.
- * @param attribute_id  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
- */
-int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
-	enum Cmiss_graphics_filter_attribute_id attribute_id);
 
 /***************************************************************************//**
  * If the filter is of operator and or or type, then this function returns the
@@ -233,17 +233,7 @@ int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphic
  * otherwise NULL.
  */
 Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(
-	Cmiss_graphics_filter_id graphics_filter);
-
-/*******************************************************************************
- * Add a filter into a collective Cmiss_graphics_filter.
- *
- * @param filter  The operator filter to be modified.
- * @param operand  The filter to be added
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_graphics_filter_operator_append_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand);
+	Cmiss_graphics_filter_id filter);
 
 /***************************************************************************//**
  * Cast operator filter back to its base filter and return the filter.
@@ -254,88 +244,104 @@ int Cmiss_graphics_filter_operator_append_operand(
  * Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_operator_base_cast(
  * graphics_filter), "bob");
  *
- * @param image  Handle to the image field to cast.
+ * @param operator_filter  Handle to the filter operator to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
 CMISS_C_INLINE Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_base_cast(
-	Cmiss_graphics_filter_operator_id graphics_filter)
+	Cmiss_graphics_filter_operator_id operator_filter)
 {
-	return (Cmiss_graphics_filter_id)(graphics_filter);
+	return (Cmiss_graphics_filter_id)(operator_filter);
 }
 
 /***************************************************************************//**
- * Destroys this reference to the and filter (and sets it to NULL).
+ * Destroys this reference to the operator filter (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
- * @param group_address  Address of handle to the and filter.
+ * @param operator_filter_address  Address of handle to the operator filter.
  * @return  1 if successfully destroyed the and filter, otherwise 0.
  */
-int Cmiss_graphics_filter_operator_destroy(Cmiss_graphics_filter_operator_id *filter_address);
+int Cmiss_graphics_filter_operator_destroy(
+	Cmiss_graphics_filter_operator_id *operator_filter_address);
 
 /*******************************************************************************
- * Get the first filter in the list of Cmiss_graphics_filters from the
- * operator filter.
- * @param filter  The operator filter to be modified.
+ * Adds operand to the end of the list of operands for the operator filter.
+ * If operand is already in the list, it is moved to the end.
+ * Fails if operand depends on the operator filter.
+ *
+ * @param operator_filter  The operator filter to be modified.
+ * @param operand  The filter to be added
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_operator_append_operand(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand);
+
+/*******************************************************************************
+ * Get the first operand filter in the operator filter's list of operands.
+ * @param operator_filter  The operator filter to be iterated over.
  * @return  1 on success, 0 on failure.
  */
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter);
+	Cmiss_graphics_filter_operator_id operator_filter);
 
 /*******************************************************************************
- * Get the next filter after <ref_operand> in the list of Cmiss_grpahics_filters
- * from the operator filter.
+ * Get the next filter after <ref_operand> in the operator filter's list of
+ * operands.
  *
- * @param filter  The operator filter to be modified.
+ * @param operator_filter  The operator filter to be iterated over.
  * @param ref_operand  The filter to be referenced
  * @return  1 on success, 0 on failure.
  */
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id ref_operand);
-
-/*******************************************************************************
- * Check either operand is active in the operator filter.
- *
- * @param filter  The operator filter providing a list of filters.
- * @param operand  The filter to be checked.
- * @return  1 if operand is active, 0 if operand is not active or abesent.
- */
-int Cmiss_graphics_filter_operator_get_operand_is_active(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand);
-
-/*******************************************************************************
- * Insert a filter before <ref_operand> into the list of Cmiss_grpahics_filters
- * from the operator filter.
- *
- * @param filter  The operator filter to be modified.
- * @param operand  The filter to be inserted.
- * @param ref_operand  The filter to be referenced
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_graphics_filter_operator_insert_operand_before(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand,
+	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id ref_operand);
 
 /*******************************************************************************
- * Remove a filter from a collective Cmiss_graphics_filter.
+ * Check whether operand is active in the operator filter.
  *
- * @param filter  The operator filter to be modified.
- * @param operand  The filter to be removed
- * @return  1 on success, 0 on failure.
+ * @param operator_filter  The operator filter providing a list of filters.
+ * @param operand  The filter to be checked.
+ * @return  1 if operand is active, 0 if operand is not active or not an operand.
  */
-int Cmiss_graphics_filter_operator_remove_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand);
+int Cmiss_graphics_filter_operator_get_operand_is_active(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand);
 
 /*******************************************************************************
- * Set a operand in the operator filter to be active or inactive.
+ * Set an operand in the operator filter to be active or inactive.
  *
- * @param filter  The operator filter providing a list of filters.
+ * @param operator_filter  The operator filter providing a list of filters.
  * @param operand  The filter to be set.
- * @param is_active  integer to be set to determine either the operand will be
- * 		active or inactive.
- *
+ * @param is_active  Value to set: non-zero to mark as active, 0 for inactive.
  * @return  1 if successfully set, 0 otherwise.
  */
 int Cmiss_graphics_filter_operator_set_operand_is_active(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand,
-	int is_active);
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand, int is_active);
+
+/*******************************************************************************
+ * Insert a filter before ref_operand in the list of operands for the operator
+ * filter. If the operand is already in the list of operands it is moved to the
+ * new location. Fails if operand depends on the operator filter.
+ *
+ * @param operator_filter  The operator filter to be modified.
+ * @param operand  The operand filter to be inserted.
+ * @param ref_operand  The reference filter to insert before.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_operator_insert_operand_before(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand);
+
+/*******************************************************************************
+ * Remove a filter from the list of operands in an operator filter.
+ *
+ * @param operator_filter  The operator filter to be modified.
+ * @param operand  The filter to be removed.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_graphics_filter_operator_remove_operand(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand);
+
 #endif /*__CMISS_GRAPHICS_FILTER_H__*/

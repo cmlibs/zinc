@@ -38,9 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <algorithm>
-#include <map>
-#include <iterator>
+#include <list>
 extern "C" {
 #include "api/cmiss_rendition.h"
 #include "general/debug.h"
@@ -56,48 +54,96 @@ extern "C" {
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
 
-
-typedef std::map<Cmiss_graphics_filter*, int> Graphics_filters_map;
-typedef std::map<Cmiss_graphics_filter*, int>::iterator Graphics_filters_pos;
-
 class Cmiss_graphics_filter_operator : public Cmiss_graphics_filter
 {
 protected:
-	Graphics_filters_map *filters;
+
+	struct Graphics_filter_operand
+	{
+		Cmiss_graphics_filter *filter;
+		bool isActive;
+
+		Graphics_filter_operand(Cmiss_graphics_filter *filter) :
+			filter(Cmiss_graphics_filter_access(filter)),
+			isActive(true)
+		{
+		}
+
+		~Graphics_filter_operand()
+		{
+			Cmiss_graphics_filter_destroy(&filter);
+		}
+	};
+
+	typedef std::list<Graphics_filter_operand*> OperandList;
+
+	OperandList operands;
+
+	OperandList::iterator find_operand(Cmiss_graphics_filter *operand)
+	{
+		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
+		{
+			if ((*pos)->filter == operand)
+				return pos;
+		}
+		return operands.end();
+	}
+
 public:
-	Cmiss_graphics_filter_operator() :
-		filters(new Graphics_filters_map())
+	Cmiss_graphics_filter_operator()
 	{
 		filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR;
 	}
 
 	virtual ~Cmiss_graphics_filter_operator()
 	{
-		for (Graphics_filters_pos pos = filters->begin(); pos != filters->end(); ++pos)
+		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
-			Cmiss_graphics_filter *filter = pos->first;
-			Cmiss_graphics_filter_destroy(&filter);
+			delete *pos;
 		}
-		filters->clear();
-		delete filters;
 	}
 
 	virtual bool match(struct Cmiss_graphic *graphic) = 0;
 
 	virtual void list_type_specific() const = 0;
 
+	/**
+	 * Check for circular dependencies / infinite loops.
+	 * @return  true if this filter depends on other_filter, false if not.
+	 */
+	virtual bool depends_on_filter(const Cmiss_graphics_filter *other_filter) const
+	{
+		if (other_filter == this)
+			return true;
+		for (OperandList::const_iterator pos = operands.begin(); pos != operands.end(); ++pos)
+		{
+			if ((*pos)->filter->depends_on_filter(other_filter))
+				return true;
+		}
+		return false;
+	}
+
 	int append_operand(Cmiss_graphics_filter *operand)
 	{
 		int return_code = 1;
-		if (operand != this)
+		OperandList::iterator pos = find_operand(operand);
+		if (pos != operands.end())
 		{
-			Graphics_filters_pos pos = filters->find(operand);
-			if (pos == filters->end())
-				filters->insert(std::make_pair(operand->access(), 1));
+			// move existing operand to end of list
+			operands.push_back(*pos);
+			operands.erase(pos);
 		}
 		else
 		{
-			return_code = 0;
+			// prevent circular dependency / infinite loop
+			if (!this->depends_on_filter(operand))
+			{
+				operands.push_back(new Graphics_filter_operand(operand));
+			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 		return return_code;
 	}
@@ -105,15 +151,11 @@ public:
 	int remove_operand(Cmiss_graphics_filter *operand)
 	{
 		int return_code = 1;
-		if (operand != this)
+		OperandList::iterator pos = find_operand(operand);
+		if (pos != operands.end())
 		{
-			Graphics_filters_pos pos = filters->find(operand);
-			if (pos != filters->end())
-			{
-				Cmiss_graphics_filter *filter_to_remove = pos->first;
-				Cmiss_graphics_filter_destroy(&filter_to_remove);
-				filters->erase(pos);
-			}
+			delete *pos;
+			operands.erase(pos);
 		}
 		else
 		{
@@ -124,51 +166,34 @@ public:
 
 	Cmiss_graphics_filter_id getFirstOperand()
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
-		Graphics_filters_pos pos = filters->begin();
-		if (pos != filters->end())
+		Cmiss_graphics_filter_id operand = NULL;
+		OperandList::iterator pos = operands.begin();
+		if (pos != operands.end())
 		{
-			graphics_filter = pos->first;
-			graphics_filter->access();
+			operand = (*pos)->filter->access();
 		}
-		return graphics_filter;
+		return operand;
 	}
 
 	Cmiss_graphics_filter_id getNextOperand(Cmiss_graphics_filter_id ref_operand)
 	{
-		Cmiss_graphics_filter_id graphics_filter = NULL;
-		Graphics_filters_pos pos = filters->find(ref_operand);
-		if (pos != filters->end())
+		Cmiss_graphics_filter_id operand = NULL;
+		OperandList::iterator pos = find_operand(ref_operand);
+		pos++;
+		if (pos != operands.end())
 		{
-			pos++;
-			if (pos != filters->end())
-			{
-				graphics_filter = pos->first;
-				graphics_filter->access();
-			}
+			operand = (*pos)->filter->access();
 		}
-		return graphics_filter;
+		return operand;
 	}
 
 	int getOperandIsActive(Cmiss_graphics_filter_id operand)
 	{
 		int return_code = 0;
-		Graphics_filters_pos pos = filters->find(operand);
-		if (pos != filters->end())
+		OperandList::iterator pos = find_operand(operand);
+		if (pos != operands.end())
 		{
-			return_code = pos->second;
-		}
-		return return_code;
-	}
-
-	int insertOperandBefore(Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand)
-	{
-		int return_code = 0;
-		Graphics_filters_pos pos = filters->find(ref_operand);
-		if (pos != filters->end())
-		{
-			filters->insert(pos, std::make_pair(operand->access(), 1));
-			return_code = 1;
+			return_code = (*pos)->isActive;
 		}
 		return return_code;
 	}
@@ -176,10 +201,32 @@ public:
 	int setOperandIsActive(Cmiss_graphics_filter_id operand, int is_active)
 	{
 		int return_code = 0;
-		Graphics_filters_pos pos = filters->find(operand);
-		if (pos != filters->end())
+		OperandList::iterator pos = find_operand(operand);
+		if (pos != operands.end())
 		{
-			pos->second = is_active;
+			(*pos)->isActive = (is_active != 0);
+			return_code = 1;
+		}
+		return return_code;
+	}
+
+	int insertOperandBefore(Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand)
+	{
+		int return_code = 0;
+		OperandList::iterator refpos = find_operand(ref_operand);
+		if (refpos != operands.end())
+		{
+			OperandList::iterator pos = find_operand(operand);
+			if (pos != operands.end())
+			{
+				// move existing operand to before refpos
+				operands.insert(refpos, (*pos));
+				operands.erase(pos);
+			}
+			else
+			{
+				operands.insert(refpos, new Graphics_filter_operand(operand));
+			}
 			return_code = 1;
 		}
 		return return_code;
@@ -197,10 +244,9 @@ public:
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
 		int return_code = 1;
-		for (Graphics_filters_pos pos = filters->begin(); pos != filters->end(); ++pos)
+		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
-			Cmiss_graphics_filter *filter = pos->first;
-			if ((pos->second == 1) && (!filter->match(graphic)))
+			if ((*pos)->isActive && (!(*pos)->filter->match(graphic)))
 			{
 				return_code = 0;
 				break;
@@ -226,14 +272,13 @@ public:
 	virtual bool match(struct Cmiss_graphic *graphic)
 	{
 		int return_code = 1;
-		if (filters->size() > 0)
+		if (operands.size() > 0)
 		{
 			return_code = 0;
 		}
-		for (Graphics_filters_pos pos = filters->begin(); pos != filters->end(); ++pos)
+		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
-			Cmiss_graphics_filter *filter = pos->first;
-			if ((pos->second == 1) && (filter->match(graphic)))
+			if ((*pos)->isActive && (*pos)->filter->match(graphic))
 			{
 				return_code = 1;
 				break;
@@ -1242,97 +1287,100 @@ Cmiss_graphics_filter_operator_id Cmiss_graphics_filter_cast_operator(Cmiss_grap
 	}
 }
 
-int Cmiss_graphics_filter_operator_append_operand(Cmiss_graphics_filter_operator_id graphics_filter,
+int Cmiss_graphics_filter_operator_destroy(Cmiss_graphics_filter_operator_id *operator_filter_address)
+{
+	return Cmiss_graphics_filter_destroy(reinterpret_cast<Cmiss_graphics_filter_id *>(operator_filter_address));
+}
+
+int Cmiss_graphics_filter_operator_append_operand(
+	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand)
 {
 	int return_code = 0;
-	if (graphics_filter && operand)
+	if (operator_filter && operand)
 	{
-		return_code = graphics_filter->append_operand(operand);
+		return_code = operator_filter->append_operand(operand);
 		if (return_code)
 		{
 			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+				operator_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
 		}
 	}
 	return return_code;
 }
 
-int Cmiss_graphics_filter_operator_destroy(Cmiss_graphics_filter_operator_id *filter_address)
-{
-	return Cmiss_graphics_filter_destroy(reinterpret_cast<Cmiss_graphics_filter_id *>(filter_address));
-}
-
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter)
+	Cmiss_graphics_filter_operator_id operator_filter)
 {
 	Cmiss_graphics_filter_id operand = NULL;
-	if (graphics_filter)
+	if (operator_filter)
 	{
-		operand = graphics_filter->getFirstOperand();
+		operand = operator_filter->getFirstOperand();
 	}
 	return operand;
 }
 
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id ref_operand)
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id ref_operand)
 {
 	Cmiss_graphics_filter_id operand = NULL;
-	if (graphics_filter && ref_operand)
+	if (operator_filter && ref_operand)
 	{
-		operand = graphics_filter->getNextOperand(ref_operand);
+		operand = operator_filter->getNextOperand(ref_operand);
 	}
 	return operand;
 }
 
 int Cmiss_graphics_filter_operator_get_operand_is_active(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand)
-{
-	int return_code = 0;
-	if (graphics_filter && operand)
-	{
-		return_code = graphics_filter->getOperandIsActive(operand);
-	}
-	return return_code;
-}
-
-int Cmiss_graphics_filter_operator_insert_operand_before(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand,
-	Cmiss_graphics_filter_id ref_operand)
-{
-	int return_code = 0;
-	if (graphics_filter && operand && ref_operand)
-	{
-		return_code = graphics_filter->insertOperandBefore(operand, ref_operand);
-	}
-	return return_code;
-}
-
-int Cmiss_graphics_filter_operator_remove_operand(Cmiss_graphics_filter_operator_id graphics_filter,
+	Cmiss_graphics_filter_operator_id operator_filter,
 	Cmiss_graphics_filter_id operand)
 {
 	int return_code = 0;
-	if (graphics_filter && operand)
+	if (operator_filter && operand)
 	{
-		return_code = graphics_filter->remove_operand(operand);
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
-				graphics_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
-		}
+		return_code = operator_filter->getOperandIsActive(operand);
 	}
 	return return_code;
 }
 
 int Cmiss_graphics_filter_operator_set_operand_is_active(
-	Cmiss_graphics_filter_operator_id graphics_filter, Cmiss_graphics_filter_id operand,
-	int is_active)
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand, int is_active)
 {
 	int return_code = 0;
-	if (graphics_filter && operand)
+	if (operator_filter && operand)
 	{
-		return_code = graphics_filter->setOperandIsActive(operand, is_active);
+		return_code = operator_filter->setOperandIsActive(operand, is_active);
 	}
 	return return_code;
 }
 
+int Cmiss_graphics_filter_operator_insert_operand_before(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand, Cmiss_graphics_filter_id ref_operand)
+{
+	int return_code = 0;
+	if (operator_filter && operand && ref_operand)
+	{
+		return_code = operator_filter->insertOperandBefore(operand, ref_operand);
+	}
+	return return_code;
+}
+
+int Cmiss_graphics_filter_operator_remove_operand(
+	Cmiss_graphics_filter_operator_id operator_filter,
+	Cmiss_graphics_filter_id operand)
+{
+	int return_code = 0;
+	if (operator_filter && operand)
+	{
+		return_code = operator_filter->remove_operand(operand);
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(
+				operator_filter, MANAGER_CHANGE_RESULT(Cmiss_graphics_filter));
+		}
+	}
+	return return_code;
+}

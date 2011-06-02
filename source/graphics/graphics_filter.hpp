@@ -161,6 +161,16 @@ public:
 
 	virtual void list_type_specific() const = 0;
 
+	/**
+	 * override for filter types with that are functions of other filters to
+	 * prevent circular dependencies / infinite loops.
+	 * @return  true if this filter depends on other_filter, false if not.
+	 */
+	virtual bool depends_on_filter(const Cmiss_graphics_filter *other_filter) const
+	{
+		return (other_filter == this);
+	}
+
 	static inline int deaccess(Cmiss_graphics_filter **graphics_filter_address)
 	{
 		return DEACCESS(Cmiss_graphics_filter)(graphics_filter_address);
