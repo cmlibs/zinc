@@ -152,11 +152,11 @@ public:
 		return filter_type;
 	};
 
-	void list() const
+	void list(const char *prefix) const
 	{
-		display_message(INFORMATION_MESSAGE, "%s", inverse ? "inverse_match " : "normal_match ");
+		display_message(INFORMATION_MESSAGE, "%s %s %s", prefix, name, inverse ? "inverse_match " : "normal_match ");
 		list_type_specific();
-		display_message(INFORMATION_MESSAGE, "\n");
+		display_message(INFORMATION_MESSAGE, ";\n");
 	}
 
 	virtual void list_type_specific() const = 0;
@@ -181,6 +181,9 @@ int Cmiss_graphics_filter_manager_set_owner_private(struct MANAGER(Cmiss_graphic
 	struct Cmiss_graphics_module *graphics_module);
 
 int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void,
+	void *graphics_module_void);
+
+int gfx_list_graphics_filter(struct Parse_state *state, void *dummy_to_be_modified,
 	void *graphics_module_void);
 
 int set_Cmiss_graphics_filter(struct Parse_state *state,

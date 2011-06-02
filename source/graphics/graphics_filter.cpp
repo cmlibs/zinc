@@ -105,7 +105,17 @@ public:
 
 	virtual bool match(struct Cmiss_graphic *graphic) = 0;
 
-	virtual void list_type_specific() const = 0;
+	void list_operands() const
+	{
+		if (0 < operands.size())
+		{
+			display_message(INFORMATION_MESSAGE, " add_filters");
+			for (OperandList::const_iterator pos = operands.begin(); pos != operands.end(); ++pos)
+			{
+				display_message(INFORMATION_MESSAGE, " %s", (*pos)->filter->name);
+			}
+		}
+	}
 
 	/**
 	 * Check for circular dependencies / infinite loops.
@@ -258,6 +268,7 @@ public:
 	virtual void list_type_specific() const
 	{
 		display_message(INFORMATION_MESSAGE, "operator_and");
+		list_operands();
 	}
 };
 
@@ -290,6 +301,7 @@ public:
 	virtual void list_type_specific() const
 	{
 		display_message(INFORMATION_MESSAGE, "operator_or");
+		list_operands();
 	}
 };
 
@@ -1157,6 +1169,62 @@ int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void
 	{
 		display_message(ERROR_MESSAGE,
 			"gfx_define_graphics_filter.  Invalid arguments");
+		return_code = 0;
+	}
+	return return_code;
+}
+
+int gfx_list_graphics_filter(struct Parse_state *state, void *dummy_to_be_modified,
+	void *graphics_module_void)
+{
+	USE_PARAMETER(dummy_to_be_modified);
+	int return_code = 1;
+	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
+	if (state && graphics_module)
+	{
+		char *filter_name = NULL;
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_default_string_entry(option_table,
+			&filter_name, "GRAPHICS_FILTER_NAME[all]");
+		return_code = Option_table_multi_parse(option_table,state);
+		if (return_code)
+		{
+			if (filter_name)
+			{
+				Cmiss_graphics_filter *filter =
+					Cmiss_graphics_module_find_filter_by_name(graphics_module, filter_name);
+				if (filter)
+				{
+					filter->list("gfx define graphics_filter");
+					Cmiss_graphics_filter_destroy(&filter);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Unknown graphics_filter %s", filter_name);
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				MANAGER(Cmiss_graphics_filter) *manager =
+					Cmiss_graphics_module_get_filter_manager(graphics_module);
+				Cmiss_set_Cmiss_graphics_filter *filter_list =
+					reinterpret_cast<Cmiss_set_Cmiss_graphics_filter *>(manager->object_list);
+				// Note: doesn't list in dependency order
+				for (Cmiss_set_Cmiss_graphics_filter::iterator iter = filter_list->begin();
+					iter != filter_list->end(); ++iter)
+				{
+					(*iter)->list("gfx define graphics_filter");
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_list_graphics_filter.  Invalid arguments");
 		return_code = 0;
 	}
 	return return_code;

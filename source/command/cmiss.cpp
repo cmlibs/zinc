@@ -11262,6 +11262,9 @@ Executes a GFX LIST command.
 			/* glyph */
 			Option_table_add_entry(option_table, "glyph", NULL,
 				command_data->glyph_manager, gfx_list_graphics_object);
+			/* graphics_filter */
+			Option_table_add_entry(option_table, "graphics_filter", NULL,
+				(void *)command_data->graphics_module, gfx_list_graphics_filter);
 			/* grid_points */
 			Option_table_add_entry(option_table, "grid_points", NULL,
 				command_data_void, gfx_list_grid_points);
