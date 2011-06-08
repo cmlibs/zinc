@@ -862,8 +862,13 @@ Computed_field *Computed_field_create_image(
 
 Cmiss_texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field)
 {
-	Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
-	return (image_core->get_texture());
+	Cmiss_texture *cmiss_texture = 0;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		cmiss_texture = image_core->get_texture();
+	}
+	return cmiss_texture;
 }
 
 int Computed_field_get_type_image(struct Computed_field *field,
