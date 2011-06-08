@@ -1667,6 +1667,7 @@ Open the <user_interface>.
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
+		user_interface->external_entry = external_entry;
 #if defined (MOTIF_USER_INTERFACE)
 		user_interface->application_context=(XtAppContext)NULL;
 		user_interface->application_shell=(Widget)NULL;
@@ -1690,7 +1691,6 @@ Open the <user_interface>.
 		user_interface->argv=argv;
 		user_interface->application_name=application_name;
 		user_interface->class_name=class_name;
-		user_interface->external_entry = external_entry;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (GTK_USER_INTERFACE)
 		user_interface->main_window = (GtkWidget *)NULL;
