@@ -904,24 +904,40 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 	# Install headers for cmgui
 	SET( CMGUI_LIB_API_INSTALL_HDRS
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_context.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_element.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_alias.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_arithmetic_operators.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_composite.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_conditional.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_ensemble.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_finite_element.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image_processing.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_logical_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_parameters.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_window_projection.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_filter.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_material.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_module.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_window.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_idle.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_material.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_interactive_tool.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_node.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_region.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_rendition.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_selection.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h )
 	IF( USE_OPENCASCADE )
