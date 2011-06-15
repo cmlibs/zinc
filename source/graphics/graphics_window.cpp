@@ -8379,7 +8379,7 @@ and establishing the views in it to the command window to a com file.
 
 #if defined (WX_USER_INTERFACE)
 static int modify_Graphics_window_node_tool(struct Parse_state *state,
-	 void *window_void, void *modify_graphics_window_data_void)
+	 void *window_void, void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2008
 
@@ -8390,22 +8390,25 @@ Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
 	int return_code = 0;
-	Graphics_window *window;
+	Graphics_window *window = NULL;
 	Interactive_tool *interactive_tool;
-	Modify_graphics_window_data *modify_graphics_window_data;
-	Node_tool *node_tool;
-
+	Node_tool *node_tool = NULL;
+	USE_PARAMETER(dummy_void);
 	ENTER(execute_command_gfx_node_tool);
-	if (state && (modify_graphics_window_data=(Modify_graphics_window_data *)
-	  modify_graphics_window_data_void) && (window = (Graphics_window *)window_void))
+	if (state)
 	{
-		interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager);
-		if (interactive_tool)
+		window = (Graphics_window *)window_void;
+		if (window)
 		{
-			node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(interactive_tool));
-			return_code = Node_tool_execute_command_with_parse_state(node_tool, state);
-			Node_tool_set_wx_interface(node_tool);
+			interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager);
+			if (interactive_tool)
+			{
+				node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(interactive_tool));
+			}
 		}
+		return_code = Node_tool_execute_command_with_parse_state(node_tool, state);
+		if (node_tool && return_code)
+			Node_tool_set_wx_interface(node_tool);
 	}
 	else
 	{
@@ -8485,8 +8488,7 @@ Parameter <help_mode> should be NULL when calling this function.
 						modify_Graphics_window_layout);
 #if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(valid_window_option_table, "node_tool",
-						(void *)window, modify_graphics_window_data_void,
-						modify_Graphics_window_node_tool);
+						(void *)window, NULL, modify_Graphics_window_node_tool);
 #endif // defined (WX_USER_INTERFACE)
 				Option_table_add_entry(valid_window_option_table, "overlay",
 						(void *)window, modify_graphics_window_data_void,

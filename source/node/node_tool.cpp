@@ -5574,7 +5574,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 	struct Option_table *option_table;
 
 	ENTER(Node_tool_execute_command_with_parse_state);
-	if (state && node_tool)
+	if (state)
 	{
 		/* initialize defaults */
 		coordinate_field=(struct Computed_field *)NULL;
@@ -5592,7 +5592,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		command_field_name = NULL;
 		region_path = (char *)NULL;
 #if defined (WX_USER_INTERFACE)
-		if (!node_tool->use_data)
+		if (node_tool && !node_tool->use_data)
 		{
 			element_create_enabled = 0;
 			element_dimension = 2;
@@ -5626,7 +5626,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			}
 			Node_tool_get_region_path(node_tool, &region_path);
 #if defined (WX_USER_INTERFACE)
-		if (!node_tool->use_data)
+		if (node_tool && !node_tool->use_data)
 		{
 			 element_create_enabled = Node_tool_get_element_create_enabled(node_tool);
 			 element_dimension =
@@ -5647,7 +5647,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* define/no_define */
 		Option_table_add_switch(option_table,"define","no_define",&define_enabled);
 #if defined (WX_USER_INTERFACE)
-		if (!node_tool->use_data)
+		if (node_tool && !node_tool->use_data)
 		{
 			 /* create/no_create */
 			 Option_table_add_switch(option_table,"element_create","no_element_create",&element_create_enabled);
@@ -5662,8 +5662,11 @@ Which tool that is being modified is passed in <node_tool_void>.
 		Option_table_add_entry(option_table,"element_xi_field",&xi_field_name,
 			NULL,set_name);
 		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			node_tool->root_region, set_Cmiss_region_path);
+		if (node_tool)
+		{
+			Option_table_add_entry(option_table, "group", &region_path,
+				node_tool->root_region, set_Cmiss_region_path);
+		}
 		/* motion_update/no_motion_update */
 		Option_table_add_switch(option_table,"motion_update","no_motion_update",
 			&motion_update_enabled);
@@ -5747,12 +5750,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 					Node_tool_set_element_create_enabled(node_tool,element_create_enabled);
 				}
 #endif /*(WX_USER_INTERFACE)*/
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"execute_command_gfx_node_tool.  Missing node/data tool");
-				return_code=0;
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);

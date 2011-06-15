@@ -13279,11 +13279,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			node_tool = command_data->node_tool;
 		}
-
+		return_code = Node_tool_execute_command_with_parse_state(node_tool, state);
 		if (node_tool)
 		{
-			return_code = Node_tool_execute_command_with_parse_state(node_tool, state);
-
 #if defined (WX_USER_INTERFACE)
 			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
 				Graphics_window_update_Interactive_tool,
@@ -13295,12 +13293,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 			Cmiss_scene_viewer_package_update_Interactive_tool(
 				command_data->scene_viewer_package,
 				Node_tool_get_interactive_tool(node_tool));
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_node_tool.  Missing node/data tool");
-			return_code=0;
 		}
 	}
 	else
