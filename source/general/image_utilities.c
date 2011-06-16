@@ -2010,7 +2010,7 @@ int write_png_image_file(char *file_name,
 			if (png_ptr != NULL && info_ptr != NULL )
 			{
 				/* set error handling */
-				if (0 != setjmp(png_ptr->jmpbuf))
+				if (0 != setjmp(png_jmpbuf(png_ptr)))
 				{
 					display_message(ERROR_MESSAGE, "Error during png creation in write_png_image_file." );
 				}
