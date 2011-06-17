@@ -237,7 +237,6 @@ Cmiss_field_module_create_eigenvalues
 Cmiss_field_module_create_eigenvectors
 Cmiss_field_module_create_matrix_invert
 Cmiss_field_module_create_matrix_multiply
-Cmiss_field_module_create_projection
 Cmiss_field_module_create_transpose
 
 /* api/cmiss_field_subobject_group.h */

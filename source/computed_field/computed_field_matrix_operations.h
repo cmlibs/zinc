@@ -48,7 +48,6 @@ DESCRIPTION :
 #define Computed_field_create_eigenvectors Cmiss_field_module_create_eigenvectors
 #define Computed_field_create_matrix_invert Cmiss_field_module_create_matrix_invert
 #define Computed_field_create_matrix_multiply Cmiss_field_module_create_matrix_multiply
-#define Computed_field_create_projection Cmiss_field_module_create_projection
 #define Computed_field_create_transpose Cmiss_field_module_create_transpose
 
 /***************************************************************************//**
