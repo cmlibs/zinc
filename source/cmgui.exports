@@ -232,6 +232,14 @@ Cmiss_field_cast_threshold_image_filter
 Cmiss_field_module_create_less_than
 Cmiss_field_module_create_greater_than
 
+/* api/cmiss_field_matrix_operations.h */
+Cmiss_field_module_create_eigenvalues
+Cmiss_field_module_create_eigenvectors
+Cmiss_field_module_create_matrix_invert
+Cmiss_field_module_create_matrix_multiply
+Cmiss_field_module_create_projection
+Cmiss_field_module_create_transpose
+
 /* api/cmiss_field_subobject_group.h */
 Cmiss_field_module_create_node_group
 Cmiss_field_cast_node_group
