@@ -103,11 +103,9 @@ DESCRIPTION :
 					wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
 			parent->SetSizer(sizer);
 			typedef int (FE_object_text_chooser::*Member_function)(FE_object *);
-			Callback_base<FE_object*> *callback = 
-					new Callback_member_callback<FE_object*, 
+			update_callback = new Callback_member_callback<FE_object*,
 				 FE_object_text_chooser, Member_function>(
 						this, &FE_object_text_chooser::text_chooser_callback);
-			set_callback(callback);
 			Show();
 	 }
 
@@ -121,6 +119,8 @@ DESCRIPTION :
 		 FE_region_remove_callback(fe_region,
 				FE_object_text_chooser::object_change,
 				this);
+		 if (update_callback)
+			 delete update_callback;
 	}/* FE_object_text_chooser::~FE_object_text_chooser() */
 
 	int set_region(FE_region *fe_region_in)
@@ -173,8 +173,10 @@ DESCRIPTION :
 Changes the callback item.
 ============================================================================*/
 	 {
-			update_callback = new_callback;
-			return (1);
+		 if (update_callback)
+			 delete update_callback;
+		update_callback = new_callback;
+		return (1);
 	 } /* FE_object_chooser::set_callback */
 
 	FE_object *get_object()
@@ -345,11 +347,6 @@ Updates the chosen object and text field in response to messages.
 	 
 } /* FE_object_chooser::object_change */
 
-	int set_callback(Callback_base< FE_object > *callback_object)
-	{
-		update_callback = callback_object;
-		return (1);
-	}
 // 	 char *get_item()
 // 	{
 // 		 return (const_cast<char *>(GetValue().c_str()));
