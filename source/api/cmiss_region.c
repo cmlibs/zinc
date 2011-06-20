@@ -114,40 +114,6 @@ DESCRIPTION :
 	return(return_code);
 }
 
-Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
-	const char *field_name)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Returns the field of <field_name> from <region> if it is defined.
-==============================================================================*/
-{
-	struct Cmiss_field *field;
-	struct MANAGER(Computed_field) *manager;
-
-	ENTER(Cmiss_region_find_field_by_name);
-	if (region && field_name && 
-		(manager = Cmiss_region_get_Computed_field_manager(region)))
-	{
-		field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			(char *)field_name, manager);
-		if (field)
-		{
-			ACCESS(Computed_field)(field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_find_field_by_name.  Invalid argument(s)");
-		field = (struct Cmiss_field *)NULL;
-	}
-	LEAVE;
-
-	return (field);
-} /* Cmiss_region_find_field_by_name */
-
 int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
 	const unsigned int memory_buffer_size)
 {

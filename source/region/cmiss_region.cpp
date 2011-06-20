@@ -1650,6 +1650,22 @@ struct Cmiss_region *Cmiss_region_find_subregion_at_path(
 	return (subregion);
 }
 
+Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
+	const char *field_name)
+{
+	struct Cmiss_field *field = NULL;
+	if (region && field_name)
+	{
+		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			(char *)field_name, Cmiss_region_get_Computed_field_manager(region));
+		if (field)
+		{
+			ACCESS(Computed_field)(field);
+		}
+	}
+	return (field);
+}
+
 int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
 	const char *path, struct Cmiss_region **subregion_address)
 {

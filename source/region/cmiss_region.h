@@ -375,6 +375,13 @@ struct Cmiss_region *Cmiss_region_find_child_by_name(
 struct Cmiss_region *Cmiss_region_find_subregion_at_path(
 	struct Cmiss_region *region, const char *path);
 
+/*******************************************************************************
+ * Internal only. External API is Cmiss_field_module_find_field_by_name.
+ * @return  Accessed handle to field of given name, or NULL if none.
+ */
+Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
+	const char *field_name);
+
 /***************************************************************************//**
  * Deprecated legacy version of Cmiss_region_find_subregion_at_path returning
  * non-ACCESSed region as final argument.
