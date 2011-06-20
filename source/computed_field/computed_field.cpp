@@ -4269,23 +4269,32 @@ options for the various types.
 					if (Cmiss_region_get_partial_region_path(root_region,
 						current_token, &region, &region_path, &field_name))
 					{
-						Cmiss_field_module *field_module =
-							Cmiss_field_module_create(region);
+						Cmiss_field_module *field_module = Cmiss_field_module_create(region);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
 							shift_Parse_state(state,1);
 							Cmiss_field_module_set_field_name(field_module, field_name);
-							Computed_field *existing_field =
-								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-									field_name, Cmiss_region_get_Computed_field_manager(region));
+							Computed_field *existing_field = Cmiss_field_module_find_field_by_name(field_module, field_name);
 							if (existing_field)
 							{
 								Cmiss_field_module_set_replace_field(field_module, existing_field);
+								Cmiss_field_module_set_coordinate_system(field_module, existing_field->coordinate_system);
 							}
 							Computed_field_modify_data field_modify(field_module);
 							return_code = define_Computed_field_coordinate_system(state,
 								(void *)&field_modify,computed_field_package_void);
+							// set coordinate system if only it has changed
+							if (existing_field)
+							{
+								struct Coordinate_system new_coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
+								if (!Coordinate_systems_match(&(existing_field->coordinate_system), &new_coordinate_system))
+								{
+									Computed_field_set_coordinate_system(existing_field, &new_coordinate_system);
+									Computed_field_changed(existing_field);
+								}
+								Cmiss_field_destroy(&existing_field);
+							}
 							Cmiss_field_module_destroy(&field_module);
 						}
 						else
