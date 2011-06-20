@@ -1112,6 +1112,12 @@ int Cmiss_field_module_end_change(Cmiss_field_module_id field_module)
 	return Cmiss_region_fields_end_change(Cmiss_field_module_get_region_internal(field_module));
 }
 
+int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module)
+{
+	return FE_region_define_faces(Cmiss_region_get_FE_region(
+		Cmiss_field_module_get_region_internal(field_module)));
+}
+
 int Cmiss_region_begin_change(struct Cmiss_region *region)
 {
 	int return_code;

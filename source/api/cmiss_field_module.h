@@ -163,4 +163,15 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_module,
 		const char* field_name, const char *command_string);
 
+/***************************************************************************//**
+ * Defines, for all elements of all meshes in field module, face elements of
+ * dimension one lower in the associated face mesh, and all their faces
+ * recursively down to 1 dimensional lines.
+ *
+ * @param field_module  Handle to the field_module owning the meshes to define
+ * faces for.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
+
 #endif /* __CMISS_FIELD_MODULE_H__ */
