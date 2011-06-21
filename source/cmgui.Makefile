@@ -966,13 +966,21 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
 	computed_field/computed_field_conditional.cpp \
+	computed_field/computed_field_coordinate.cpp \
+	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_find_xi.cpp \
 	computed_field/computed_field_finite_element.cpp \
+	computed_field/computed_field_format_output.cpp \
+	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_group.cpp \
-	computed_field/computed_field_subobject_group.cpp \
+	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_set.cpp \
+	computed_field/computed_field_string_constant.cpp \
+	computed_field/computed_field_subobject_group.cpp \
 	computed_field/computed_field_trigonometry.cpp \
+	computed_field/computed_field_vector_operations.cpp \
+	computed_field/computed_field_wrappers.cpp \
 	computed_field/field_cache.cpp \
 	computed_field/field_ensemble.cpp \
 	computed_field/field_location.cpp \
@@ -987,22 +995,14 @@ COMPUTED_FIELD_SRCS = \
 	minimise/minimise.cpp \
 	computed_field/computed_field_alias.cpp \
 	computed_field/computed_field_curve.cpp \
-	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \
-	computed_field/computed_field_fibres.cpp \
-	computed_field/computed_field_format_output.cpp \
-	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
-	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_lookup.cpp \
 	computed_field/computed_field_region_operations.cpp \
-	computed_field/computed_field_string_constant.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
-	computed_field/computed_field_value_index_ranges.cpp \
-	computed_field/computed_field_vector_operations.cpp \
-	computed_field/computed_field_wrappers.cpp
+	computed_field/computed_field_value_index_ranges.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.cpp
 ifeq ($(USE_ITK),true)

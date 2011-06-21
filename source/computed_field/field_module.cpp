@@ -51,7 +51,6 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_conditional.h"
 #include "computed_field/computed_field_coordinate.h"
-#include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_format_output.h"
@@ -342,7 +341,6 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 			Computed_field_register_types_composite(package);
 			Computed_field_register_types_conditional(package);
 			Computed_field_register_types_coordinate(package);
-			Computed_field_register_types_derivatives(package);
 			Computed_field_register_types_fibres(package);
 			Computed_field_register_types_finite_element(package);
 			Computed_field_register_types_format_output(package);
