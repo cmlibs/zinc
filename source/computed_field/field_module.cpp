@@ -353,6 +353,7 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 
 			// execute command
 			std::string fullCommand(field_name);
+			fullCommand += " ";
 			fullCommand += command_string;
 			struct Parse_state *state = create_Parse_state(fullCommand.c_str());
 			return_code = define_Computed_field(state,static_cast<void*>(field_module->region),static_cast<void*>(package));
