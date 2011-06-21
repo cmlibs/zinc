@@ -976,6 +976,7 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/field_cache.cpp \
 	computed_field/field_ensemble.cpp \
 	computed_field/field_location.cpp \
+	computed_field/field_module.cpp \
 	computed_field/field_parameters.cpp \
 	graphics/quaternion.cpp
 COMPUTED_FIELD_GRAPHICS_SRCS = \

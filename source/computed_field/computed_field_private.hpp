@@ -56,9 +56,9 @@ Types used only internally to computed fields.
 */
 
 #include "general/cmiss_set.hpp"
-#include "computed_field/computed_field.h"
 #include "computed_field/field_location.hpp"
 extern "C" {
+#include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "region/cmiss_region.h"
 }
@@ -507,6 +507,19 @@ Computed field functions
 ------------------------
 Functions used only internally to computed fields or the region that owns them.
 */
+
+/***************************************************************************//**
+ * Make a 'unique' field name by appending a number onto the stem_name until no
+ * field of that name is found in the manager.
+ *
+ * @param first_number  First number to try. If negative (the default argument),
+ * start with number of fields in manager + 1.
+ * @return  Allocated string containing valid field name not used by any field
+ * in manager. Caller must DEALLOCATE. NULL on failure.
+ */
+char *Computed_field_manager_get_unique_field_name(
+	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
+	const char *separator="", int first_number=-1);
 
 /***************************************************************************//**
  * Creates a new computed field with the supplied content and for the region
