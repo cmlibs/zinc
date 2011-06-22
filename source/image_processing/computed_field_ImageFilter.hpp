@@ -888,7 +888,10 @@ Evaluate the templated version of this filter
 					index[i] = (long int)(xi[i] * (FE_value)sizes[i]);
 				}
 			}
-			assign_field_values( outputImage->GetPixel( index ) );
+			if (dimension > 0)
+			{
+				assign_field_values( outputImage->GetPixel( index ) );
+			}
 			return_code = 1;
 		}
 		else
@@ -1054,7 +1057,10 @@ for subsequent operations.
 					size[i] = sizes[i];
 				}
 				typename ImageType::RegionType region;
-				region.SetSize( size );
+				if (dimension > 0)
+				{
+					region.SetSize( size );
+				}
 				region.SetIndex( start );
 			
 				inputImage->SetRegions(region);

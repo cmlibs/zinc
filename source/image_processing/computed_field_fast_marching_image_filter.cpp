@@ -256,7 +256,10 @@ and generate the outputImage.
 			}
 
 			node.SetValue( seedValue );
-			node.SetIndex( seedPosition );
+			if (dimension > 0)
+			{
+				node.SetIndex( seedPosition );
+			}
 			seeds->InsertElement( i, node );		
 		}
 

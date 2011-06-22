@@ -255,7 +255,10 @@ and generate the outputImage.
 		{
 			radius[i] = mean_image_filter->radius_sizes[i];
 		}
-		filter->SetRadius( radius );
+		if (mean_image_filter->dimension > 0)
+		{
+			filter->SetRadius( radius );
+		}
 		
 		return_code = mean_image_filter->update_output_image
 			(location, filter, this->outputImage,
