@@ -182,10 +182,18 @@ IF( NOT CMGUI_BUILD_EXECUTABLE )
 	SET( CMGUI_BUILD_LIBRARY_TYPE ${LIBRARY_TYPE_STRING} CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" )
 ENDIF( NOT CMGUI_BUILD_EXECUTABLE )
 
-# Define undefined varaibles, required when using OPTION_WITH_DEFAULT macro
+# Define variables to false that need to be at least defined for passsing to option_with_default macro.
 SET_FALSE_IF_NOT_DEFINED( PERL_INTERPRETER_FOUND )
 SET_FALSE_IF_NOT_DEFINED( ITK_FOUND )
 SET_FALSE_IF_NOT_DEFINED( ImageMagick_FOUND )
+SET_FALSE_IF_NOT_DEFINED( NETGEN_FOUND )
+SET_FALSE_IF_NOT_DEFINED( GLEW_FOUND )
+SET_FALSE_IF_NOT_DEFINED( ZLIB_FOUND )
+SET_FALSE_IF_NOT_DEFINED( BZIP2_FOUND )
+SET_FALSE_IF_NOT_DEFINED( JPEG_FOUND )
+SET_FALSE_IF_NOT_DEFINED( OCE_FOUND )
+SET_FALSE_IF_NOT_DEFINED( OPENCASCADE_FOUND )
+SET_FALSE_IF_NOT_DEFINED( PCRE_FOUND )
 
 # Use options
 OPTION_WITH_DEFAULT( CMGUI_USE_GTKMAIN "Do you want to use GTK Main?" OFF )
@@ -202,19 +210,21 @@ OPTION_WITH_DEFAULT( CMGUI_FE_VALUE_IS_DOUBLE "Double or floats for FE_value?" T
 # Should have dependent library options
 OPTION_WITH_DEFAULT( CMGUI_USE_PERL_INTERPRETER "Do you want to use the perl interpreter?"
 	${PERL_INTERPRETER_FOUND} )
-OPTION_WITH_DEFAULT( CMGUI_USE_NETGEN "Do you want to use netgen?" ON )
-OPTION_WITH_DEFAULT( CMGUI_USE_GLEW "Do you want to use glew?" ON )
-OPTION_WITH_DEFAULT( CMGUI_USE_ZLIB "Do you want to use zlib?" ON )
-OPTION_WITH_DEFAULT( CMGUI_USE_BZip2 "Do you want to use bzip2?" ON )
-OPTION_WITH_DEFAULT( CMGUI_USE_JPEG "Do you want to use jpeg?" ON )
+OPTION_WITH_DEFAULT( CMGUI_USE_NETGEN "Do you want to use netgen?" ${NETGEN_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_GLEW "Do you want to use glew?" ${GLEW_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_ZLIB "Do you want to use zlib?" ${ZLIB_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_BZip2 "Do you want to use bzip2?" ${BZIP2_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_JPEG "Do you want to use jpeg?" ${JPEG_FOUND} )
 # Could have dependent library options
 OPTION_WITH_DEFAULT( CMGUI_USE_IMAGEMAGICK "Do you want to use Image Magick?"
-	OFF ) # ${ImageMagick_FOUND} )
+	${ImageMagick_FOUND} )
 OPTION_WITH_DEFAULT( CMGUI_USE_ITK "Do you want to use ITK?" ${ITK_FOUND} )
-OPTION_WITH_DEFAULT( CMGUI_USE_GDCM "Do you want to use libGDCM?" OFF )
-OPTION_WITH_DEFAULT( CMGUI_USE_OCE "Do you want to use OCE?" OFF )
-OPTION_WITH_DEFAULT( CMGUI_USE_OPENCASCADE "Do you want to use OpenCASCADE?" OFF )
-OPTION_WITH_DEFAULT( CMGUI_USE_PCRE "Do you want to use pcre?" OFF )
+# GDCM is not used directly by Cmgui so there is no need to define it here.  It should be
+# dragged in by the dependencies of those libraries that direclty depend upon it.
+#OPTION_WITH_DEFAULT( CMGUI_USE_GDCM "Do you want to use libGDCM?" OFF )
+OPTION_WITH_DEFAULT( CMGUI_USE_OCE "Do you want to use OCE?" ${OCE_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_OPENCASCADE "Do you want to use OpenCASCADE?" ${OPENCASCADE_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_PCRE "Do you want to use pcre?" ${PCRE_FOUND} )
 IF( ITK_FOUND OR ImageMagick_FOUND )
 	SET( PNG_AND_TIFF_REQUIRED TRUE )
 ELSE( ITK_FOUND OR ImageMagick_FOUND )
@@ -442,14 +452,15 @@ IF( CMGUI_USE_OPENCASCADE )
 ENDIF( CMGUI_USE_OPENCASCADE )
 
 # ImageMagick - is a config file therefore I cannot find twice
+MESSAGE( "Image magick found " ${ImageMagick_INCLUDE_DIRS} )
 IF( CMGUI_USE_IMAGEMAGICK )
 	IF( ImageMagick_FOUND )
 		MARK_AS_ADVANCED( ImageMagick_DIR )
-		DBG_MSG( "Image magick found " ${ImageMagick_INCLUDE_DIRS} )
+		MESSAGE( "Image magick found " ${ImageMagick_INCLUDE_DIRS} )
 		#DBG_MSG( "Image magick inc ${ImageMagick_INCLUDE_DIRS}" )
 		SET( USE_IMAGEMAGICK TRUE )
 		SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} MagickCore )
-		MESSAGE( STATUS " LIBS: ${}" )
+		#MESSAGE( STATUS " LIBS: ${}" )
 		SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${ImageMagick_INCLUDE_DIRS} )
 
 		SET( CMAKE_INCLUDE_PATH ${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/include )
@@ -769,7 +780,7 @@ IF( CMGUI_BUILD_EXECUTABLE )
 	ADD_EXECUTABLE( ${TARGET_NAME} ${BASE_SRCS} ${BASE_HDRS} ${INTERFACE_SRCS} ${INTERFACE_HDRS}
 		${ICON_RESOURCES} ${CONFIGURED_HEADERS} )
 
-	MESSAGE( "DEP LIBS:  ${DEPENDENT_LIBS}")
+	#MESSAGE( "DEP LIBS:  ${DEPENDENT_LIBS}")
 	TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${DEPENDENT_LIBS} )
 	#MESSAGE( "TARGET LINK LIBRARIES: ${DEPENDENT_LIBS}" )
 
