@@ -43,15 +43,10 @@
 #if !defined (CMISS_FIELD_FINITE_ELEMENT_H)
 #define CMISS_FIELD_FINITE_ELEMENT_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-#ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-	/** Handle to a finite_element type Cmiss_field */
-	struct Cmiss_field_finite_element;
-	typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
-	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-#endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_finite_element_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a real-valued finite_element field which can be interpolated over a

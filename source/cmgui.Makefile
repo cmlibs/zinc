@@ -1255,7 +1255,7 @@ NODE_INTERFACE_SRCS = \
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 REGION_SRCS = \
    api/cmiss_region.c \
-   region/cmiss_region.c \
+   region/cmiss_region.cpp \
    region/cmiss_region_write_info.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 REGION_INTERFACE_SRCS = \

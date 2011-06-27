@@ -43,10 +43,9 @@
 #if !defined (CMISS_FIELD_WINDOW_PROJECTION_H)
 #define CMISS_FIELD_WINDOW_PROJECTION_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-typedef struct Cmiss_field_window_projection *Cmiss_field_window_projection_id;
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_field_window_projection_id.h"
 
 enum Cmiss_field_window_projection_type
 {

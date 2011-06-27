@@ -37,34 +37,8 @@
 #ifndef __CMISS_GRAPHICS_MATERIAL_H__
 #define __CMISS_GRAPHICS_MATERIAL_H__
 
-#ifndef CMISS_GRAPHICS_MATERIAL_ID_DEFINED
-/***************************************************************************//**
- * A handle to cmiss material. cmiss material describes the
- * colour, shading and other graphical properties of a material, it is highly 
- * similar to material described by OpenGL.
- * User can get a handle to material either through create new material using 
- * Cmiss_graphics_module_create_material or use existing materials in the 
- * graphics_module provided by the ciss_command_data with 
- * Cmiss_graphics_module_find_material_by_name.
- * Cmgui also provide a number of preset materials in the default
- * graphics_packge.
- * Preset graphical materials are:
- * black, blue, bone, gray50, gold, green, muscle, red, silver, tissue,
- * transparent_gray50 and white. 
- *
- * Please see available Cmiss_graphics_material API functions belong for
- * configurable properties.
- */
-	struct Cmiss_graphics_material;
-	typedef struct Cmiss_graphics_material * Cmiss_graphics_material_id;
-	#define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
-#endif /* CMISS_GRAPHICS_MATERIAL_ID_DEFINED */
-
-#ifndef CMISS_FIELD_IMAGE_ID_DEFINED
-	struct Cmiss_field_image;
-	typedef struct Cmiss_field_image *Cmiss_field_image_id;
-	#define CMISS_FIELD_IMAGE_ID_DEFINED
-#endif /* CMISS_FIELD_IMAGE_ID_DEFINED */
+#include "api/types/cmiss_field_image_id.h"
+#include "api/types/cmiss_graphics_material_id.h"
 
 /***************************************************************************//**
  * Labels of material attributes which may be set or obtained using generic

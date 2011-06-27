@@ -37,17 +37,7 @@
 #if !defined __CMISS_SELECTION_H__
 #define __CMISS_SELECTION_H__
 
-#ifndef CMISS_SELECTION_HANDLER_ID_DEFINED
-struct Cmiss_selection_handler;
-typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
-#define CMISS_SELECTION_HANDLER_ID_DEFINED
-#endif
-#ifndef CMISS_SELECTION_EVENT_ID_DEFINED
-struct Cmiss_selection_event;
-typedef struct Cmiss_selection_event * Cmiss_selection_event_id;
-#define CMISS_SELECTION_EVENT_ID_DEFINED
-#endif
-
+#include "api/types/cmiss_selection_id.h"
 
 typedef void (*Cmiss_selection_handler_callback_function)(
 	Cmiss_selection_event_id selection_event,	void *client_data);

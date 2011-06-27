@@ -49,6 +49,7 @@ extern "C" {
 #include <stdio.h>
 #include <math.h>
 #include "api/cmiss_graphic.h"
+#include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "general/debug.h"
 #include "general/enumerator_private_cpp.hpp"

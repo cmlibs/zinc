@@ -45,8 +45,8 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #ifndef __CMISS_FIELD_COMPOSITE_H__
 #define __CMISS_FIELD_COMPOSITE_H__
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /*****************************************************************************//**
  * Creates a field with the components specified in the array values.

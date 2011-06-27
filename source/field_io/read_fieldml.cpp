@@ -45,6 +45,7 @@
 extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
 #include "api/cmiss_field_ensemble.h"
 #include "api/cmiss_field_finite_element.h"
 #include "api/cmiss_field_parameters.h"

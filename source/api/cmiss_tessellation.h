@@ -43,11 +43,7 @@
 #if !defined (CMISS_TESSELLATION_H)
 #define CMISS_TESSELLATION_H
 
-#ifndef CMISS_TESSELLATION_ID_DEFINED
-struct Cmiss_tessellation;
-typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
-#define CMISS_TESSELLATION_ID_DEFINED
-#endif
+#include "api/types/cmiss_tessellation_id.h"
 
 /***************************************************************************//**
  * Labels of tessellation attributes which may be set or obtained using generic

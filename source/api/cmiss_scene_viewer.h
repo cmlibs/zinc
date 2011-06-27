@@ -62,24 +62,10 @@ scenes.
 #include <Xm/Xm.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
-#include "api/cmiss_field_image.h"
-#include "api/cmiss_scene.h"
-
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_INTERACTIVE_TOOL_ID_DEFINED
-typedef struct Interactive_tool * Cmiss_interactive_tool_id;
-#define CMISS_INTERACTIVE_TOOL_ID_DEFINED
-#endif
-
-#ifndef CMISS_SCENE_VIEWER_PACKAGE_DEFINED
-	struct Cmiss_scene_viewer_package;
-	typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
-  #define CMISS_SCENE_VIEWER_PACKAGE_DEFINED
-#endif /* CMISS_SCENE_VIEWER_PACKAGE_DEFINED */
+#include "api/types/cmiss_field_image_id.h"
+#include "api/types/cmiss_interactive_tool_id.h"
+#include "api/types/cmiss_scene_id.h"
+#include "api/types/cmiss_scene_viewer_id.h"
 
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
@@ -227,11 +213,6 @@ results in the correct final alpha value in a saved image.
 	CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA
 };
 
-typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
-
-typedef void (*Cmiss_scene_viewer_callback)(Cmiss_scene_viewer_id scene_viewer,
-	void *callback_data, void *user_data);
-
 enum Cmiss_scene_viewer_input_event_type
 /*******************************************************************************
 LAST MODIFIED : 11 September 2007
@@ -258,14 +239,6 @@ DESCRIPTION :
 	CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
 	CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
 };
-
-struct Cmiss_scene_viewer_input;
-typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
-
-typedef int (*Cmiss_scene_viewer_input_callback)(
-	Cmiss_scene_viewer_id scene_viewer,
-	struct Cmiss_scene_viewer_input *, void *user_data);
-/* The Cmiss_scene_viewer_input describes the input event */
 
 /*
 Global functions

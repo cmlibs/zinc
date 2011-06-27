@@ -42,51 +42,10 @@
 #ifndef __CMISS_FIELD_H__
 #define __CMISS_FIELD_H__
 
-#ifndef CMISS_C_INLINE_DEFINED
-#if defined (_MSC_VER)
-	#define CMISS_C_INLINE __inline
-#else 
-	#define CMISS_C_INLINE static inline
-#endif
-#define CMISS_C_INLINE_DEFINED
-#endif
-
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-#ifndef CMISS_NODE_ID_DEFINED
-	struct Cmiss_node;
-	/** Handle to a single node object */
-	typedef struct Cmiss_node *Cmiss_node_id;
-	#define CMISS_NODE_ID_DEFINED
-#endif /* CMISS_NODE_ID_DEFINED */
-
-#ifndef CMISS_ELEMENT_ID_DEFINED
-	struct Cmiss_element;
-	/** Handle to a single finite element object from a mesh */
-	typedef struct Cmiss_element *Cmiss_element_id;
-	#define CMISS_ELEMENT_ID_DEFINED
-#endif /* CMISS_ELEMENT_ID_DEFINED */
-
-#ifndef CMISS_FIELD_ID_DEFINED
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-#ifndef CMISS_FIELD_CACHE_ID_DEFINED
-	struct Cmiss_field_cache;
-	typedef struct Cmiss_field_cache *Cmiss_field_cache_id;
-	#define CMISS_FIELD_CACHE_ID_DEFINED
-#endif /* CMISS_FIELD_CACHE_ID_DEFINED */
+#include "api/types/cmiss_element_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_node_id.h"
 
 /***************************************************************************//**
  * Labels of field attributes which may be set or obtained using generic

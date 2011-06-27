@@ -64,6 +64,7 @@ extern "C" {
 #include "choose/choose_enumerator.h"
 #include "colour/edit_var.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "api/cmiss_field_module.h"
 #include "command/parser.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"

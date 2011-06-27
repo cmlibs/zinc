@@ -43,16 +43,9 @@
 
 //#include <vector>
 
-#include "api/cmiss_region.h"
-#include "api/cmiss_field_group.h"
-
-struct Cmiss_field_cad_topology;
-typedef struct Cmiss_field_cad_topology *Cmiss_field_cad_topology_id;
-
-typedef int Cmiss_cad_surface_identifier;
-typedef int Cmiss_cad_surface_point_identifier;
-typedef int Cmiss_cad_curve_identifier;
-typedef int Cmiss_cad_curve_point_identifier;
+#include "api/types/cmiss_regio_id.h"
+#include "api/types/cmiss_field_cad_id.h"
+#include "api/types/cmiss_field_group_id.h"
 
 //typedef std::vector<Cmiss_cad_surface_identifier>::iterator Surface_iterator;
 //typedef std::vector<Cmiss_cad_surface_identifier>::const_iterator Surface_const_iterator;

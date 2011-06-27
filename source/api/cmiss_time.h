@@ -41,19 +41,7 @@ to Cmgui.
 #ifndef __CMISS_TIME_H__
 #define __CMISS_TIME_H__
 
-
-#ifndef CMISS_TIME_NOTIFIER_ID_DEFINED
-/***************************************************************************//**
- * A handle to cmiss time notifier. This notifier provides a concept of time to
- * Cmgui, it will notify its client when time has changed if a callback is setup 
- * for this notifier. time notifier normally receives its callback from a
- * time keeper. See Cmiss_time_keeper_add_time_notifier function.
- */
-	struct Cmiss_time_notifier;
-	typedef struct Cmiss_time_notifier *Cmiss_time_notifier_id;
-	#define CMISS_TIME_NOTIFIER_ID_DEFINED
-#endif
-
+#include "api/types/cmiss_time_id.h"
 
 /***************************************************************************//**
  * The type used for time notifier callback. It is a pointer to a function which

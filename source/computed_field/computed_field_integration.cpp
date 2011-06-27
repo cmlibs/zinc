@@ -46,6 +46,7 @@ and the nodes for 1D elements.
 extern "C" {
 #include <math.h>
 #include <stdio.h>
+#include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"

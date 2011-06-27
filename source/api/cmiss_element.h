@@ -41,71 +41,16 @@
 #ifndef __CMISS_ELEMENT_H__
 #define __CMISS_ELEMENT_H__
 
+#include "api/types/cmiss_element_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_field_finite_element_id.h"
+#include "api/types/cmiss_node_id.h"
+
 /*
 Global types
 ------------
 */
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-#ifndef CMISS_FIELD_ID_DEFINED
-	/* Handle to a generic Cmiss_field */
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-#ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-	/** Handle to a finite_element type Cmiss_field */
-	struct Cmiss_field_finite_element;
-	typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
-	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-#endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
-
-#ifndef CMISS_NODE_ID_DEFINED
-	struct Cmiss_node;
-	/** Handle to a single node object */
-	typedef struct Cmiss_node *Cmiss_node_id;
-	#define CMISS_NODE_ID_DEFINED
-#endif /* CMISS_NODE_ID_DEFINED */
-
-/** Handle to a finite element mesh. */
-#ifndef CMISS_FE_MESH_ID_DEFINED
-	struct Cmiss_fe_mesh;
-	typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
-	#define CMISS_FE_MESH_ID_DEFINED
-#endif /* CMISS_FE_MESH_ID_DEFINED */
-
-/** Handle to a template for creating or defining fields over an element. */
-#ifndef CMISS_ELEMENT_TEMPLATE_ID_DEFINED
-	struct Cmiss_element_template;
-	typedef struct Cmiss_element_template *Cmiss_element_template_id;
-	#define CMISS_ELEMENT_TEMPLATE_ID_DEFINED
-#endif /* CMISS_ELEMENT_TEMPLATE_ID_DEFINED */
-
-#ifndef CMISS_ELEMENT_ID_DEFINED
-	struct Cmiss_element;
-	/** Handle to a single finite element object from a mesh */
-	typedef struct Cmiss_element *Cmiss_element_id;
-	#define CMISS_ELEMENT_ID_DEFINED
-#endif /* CMISS_ELEMENT_ID_DEFINED */
-
-#ifndef CMISS_ELEMENT_ITERATOR_ID_DEFINED
-	struct Cmiss_element_iterator;
-	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
-	#define CMISS_ELEMENT_ITERATOR_ID_DEFINED
-#endif /* CMISS_ELEMENT_ITERATOR_ID_DEFINED */
-
-#ifndef CMISS_BASIS_FUNCTION_ID_DEFINED
-	struct Cmiss_element_basis;
-	/** Handle to an element basis function definition */
-	typedef struct Cmiss_element_basis *Cmiss_element_basis_id;
-	#define CMISS_BASIS_FUNCTION_ID_DEFINED
-#endif /* CMISS_BASIS_FUNCTION_ID_DEFINED */
 
 /***************************************************************************//**
  * Common element shapes.

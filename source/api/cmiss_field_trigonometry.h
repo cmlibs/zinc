@@ -43,8 +43,8 @@ The public interface to the Cmiss_fields that perform trigonometry.
 #ifndef __CMISS_FIELD_TRIGONOMETRY_H__
 #define __CMISS_FIELD_TRIGONOMETRY_H__
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /*****************************************************************************//**
  * Creates a field where the components are the sine value (using radians) of the
@@ -133,6 +133,5 @@ Cmiss_field_id Cmiss_field_module_create_atan2(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
-
 
 #endif /* __CMISS_FIELD_TRIGONOMETRY_H__ */

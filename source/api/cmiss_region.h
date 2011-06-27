@@ -44,26 +44,11 @@ The public interface to the Cmiss_regions.
 #ifndef __CMISS_REGION_H__
 #define __CMISS_REGION_H__
 
-#include "api/cmiss_node.h"
-#include "api/cmiss_element.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_REGION_ID_DEFINED
-	struct Cmiss_region;
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
-
-/*
-Global functions
-----------------
-*/
+#include "api/types/cmiss_element_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_node_id.h"
+#include "api/types/cmiss_region_id.h"
 
 /*******************************************************************************
  * Returns a new reference to the region with reference count incremented.

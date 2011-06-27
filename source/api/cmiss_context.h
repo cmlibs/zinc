@@ -42,9 +42,10 @@
 #ifndef __CMISS_CONTEXT_H__
 #define __CMISS_CONTEXT_H__
 
+#include "api/types/cmiss_context_id.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_scene_viewer.h"
-#include "api/cmiss_region.h"
+#include "api/types/cmiss_region_id.h"
 #include "api/cmiss_time_keeper.h"
 #if defined (WIN32_USER_INTERFACE)
 //#define WINDOWS_LEAN_AND_MEAN
@@ -54,17 +55,6 @@
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-#ifndef CMISS_CONTEXT_ID_DEFINED
-	struct Cmiss_context;
-  typedef struct Cmiss_context * Cmiss_context_id;
-  #define CMISS_CONTEXT_ID_DEFINED
-#endif /* CMISS_CONTEXT_ID_DEFINED */
 
 
 /***************************************************************************//**

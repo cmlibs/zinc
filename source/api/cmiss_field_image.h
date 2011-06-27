@@ -44,29 +44,10 @@ Implements cmiss fields which wrap images, structured grid data.
 #if !defined (CMISS_FIELD_IMAGE_H)
 #define CMISS_FIELD_IMAGE_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-#ifndef CMISS_FIELD_IMAGE_ID_DEFINED
-/*****************************************************************************//**
- * The image field specific handle to a image Cmiss_field.
- */
-	struct Cmiss_field_image;
-	typedef struct Cmiss_field_image *Cmiss_field_image_id;
-	#define CMISS_FIELD_IMAGE_ID_DEFINED
-#endif /* CMISS_FIELD_IMAGE_ID_DEFINED */
-
-enum Cmiss_field_image_storage_pixel_format
-/*******************************************************************************
- */
-{
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE,
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGB,
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGBA,
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_ABGR,
-	CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_BGR
-}; /* enum Cmiss_field_image_storage_pixel_format */
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_image_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /*****************************************************************************//**
  * Describes the format for storage.
@@ -152,15 +133,6 @@ enum Cmiss_field_image_filter_mode
 	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 3,
 	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 4
 };
-
-/*****************************************************************************//**
- * Optional information used to describe the binary data supplied with
- * Cmiss_field_image_set_formatted_image_data and used to specify how to format
- * the binary data retrieved with Cmiss_texture_get_formatted_image_data.
- */
-struct Cmiss_field_image_storage_information;
-
-typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_information_id;
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the

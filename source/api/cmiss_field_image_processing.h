@@ -44,8 +44,9 @@ Implements cmiss fields which deal with image processing
 #if !defined (CMISS_FIELD_IMAGE_PROCESSING_H)
 #define CMISS_FIELD_IMAGE_PROCESSING_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_image_processing_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK binary dilate image filter on scalar source
@@ -89,15 +90,6 @@ If the field is of type FIELD_BINARYERODEFILTER, the source_field and binary_ero
 used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
-
-
-
-/*****************************************************************************//**
- * The image field specific handle to a Cmiss binary threshold field.
- */
-struct Cmiss_field_binary_threshold_image_filter;
-
-typedef struct Cmiss_field_binary_threshold_image_filter * Cmiss_field_binary_threshold_image_filter_id;
 
 /*****************************************************************************//**
  * Creates a field which applies an ITK binary threshold image filter on source.
@@ -207,15 +199,6 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
-
-/*****************************************************************************//**
- * The image field specific handle to a Cmiss discrete gaussian field.
- */
-struct Cmiss_field_discrete_gaussian_image_filter;
-
-typedef struct Cmiss_field_discrete_gaussian_image_filter * Cmiss_field_discrete_gaussian_image_filter_id;
-
 /*****************************************************************************//**
  * Creates a field applying the ITK discrete gaussian image filter to the source
  * field. This means that each pixel value in the new field
@@ -256,8 +239,6 @@ If the field is of type FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field an
 used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
-
-
 
 /***************************************************************************//**
  * Creates a field performing ITK fast marching image filter on scalar source field
@@ -304,8 +285,6 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
-
 /***************************************************************************//**
  * Creates a field performing ITK histogram image filter on scalar source field
  * image. Sets number of components to 1.
@@ -325,8 +304,6 @@ If the field is of type FIELD_HISTOGRAM_IMAGE_FILTER, the source_field and histo
 used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
-
-
 
 /***************************************************************************//**
  * Create field performing ITK mean image filter on source_field image.
@@ -349,8 +326,6 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
-
 /***************************************************************************//**
  * Creates a field performing ITK rescale intensity image filter on scalar
  * source field image. Sets number of components to same number as source field.
@@ -369,8 +344,6 @@ If the field is of type FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and 
 used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
-
-
 
 /***************************************************************************//**
  * Creates a field performing ITK sigmoid image filter on scalar source field
@@ -397,13 +370,6 @@ enum General_threshold_filter_mode
 	GENERAL_THRESHOLD_FILTER_MODE_ABOVE,
 	GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE
 }; /* enum General_threshold_filter_mode */
-
-/*****************************************************************************//**
- * The image field specific handle to a Cmiss threshold field.
- */
-struct Cmiss_field_threshold_image_filter;
-
-typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_filter_id;
 
 /*****************************************************************************//**
  * Creates a field applying the ITK threshold image filter to the source field.

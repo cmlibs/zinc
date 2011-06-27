@@ -42,62 +42,11 @@
 #ifndef __CMISS_NODE_H__
 #define __CMISS_NODE_H__
 
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_FIELD_ID_DEFINED
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-#ifndef CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-	/** Handle to a finite_element type Cmiss_field */
-	struct Cmiss_field_finite_element;
-	typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
-	#define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
-#endif /* CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED */
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-/** Handle to a nodeset, the container for nodes in a region. */
-#ifndef CMISS_NODESET_ID_DEFINED
-	struct Cmiss_nodeset;
-	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
-	#define CMISS_NODESET_ID_DEFINED
-#endif /* CMISS_NODESET_ID_DEFINED */
-
-/** Handle to a template for creating or defining fields at a node. */
-#ifndef CMISS_NODE_TEMPLATE_ID_DEFINED
-	struct Cmiss_node_template;
-	typedef struct Cmiss_node_template *Cmiss_node_template_id;
-	#define CMISS_NODE_TEMPLATE_ID_DEFINED
-#endif /* CMISS_NODE_TEMPLATE_ID_DEFINED */
-
-#ifndef CMISS_NODE_ID_DEFINED
-	struct Cmiss_node;
-	/** Handle to a single node object */
-	typedef struct Cmiss_node *Cmiss_node_id;
-	#define CMISS_NODE_ID_DEFINED
-#endif /* CMISS_NODE_ID_DEFINED */
-
-#ifndef CMISS_NODE_ITERATOR_ID_DEFINED
-	struct Cmiss_node_iterator;
-	typedef struct Cmiss_node_iterator * Cmiss_node_iterator_id;
-	#define CMISS_NODE_ITERATOR_ID_DEFINED
-#endif /* CMISS_NODE_ITERATOR_ID_DEFINED */
-
-#ifndef CMISS_TIME_SEQUENCE_ID_DEFINED
-	struct Cmiss_time_sequence;
-	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
-	#define CMISS_TIME_SEQUENCE_ID_DEFINED
-#endif /* CMISS_TIME_SEQUENCE_ID_DEFINED */
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_field_finite_element_id.h"
+#include "api/types/cmiss_node_id.h"
+#include "api/types/cmiss_time_sequence_id.h"
 
 /***************************************************************************//**
  * The type of a nodal parameter value.

@@ -45,55 +45,14 @@
 #if !defined (CMISS_FIELD_GROUP_H)
 #define CMISS_FIELD_GROUP_H
 
-#include "api/cmiss_field.h"
-
-#ifndef CMISS_REGION_ID_DEFINED
-	struct Cmiss_region;
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-#ifndef CMISS_NODESET_ID_DEFINED
-	struct Cmiss_nodeset;
-	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
-	#define CMISS_NODESET_ID_DEFINED
-#endif /* CMISS_NODESET_ID_DEFINED */
-
-#ifndef CMISS_FE_MESH_ID_DEFINED
-	struct Cmiss_fe_mesh;
-	typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
-	#define CMISS_FE_MESH_ID_DEFINED
-#endif /* CMISS_FE_MESH_ID_DEFINED */
-
-#ifndef CMISS_FIELD_ID_DEFINED
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-#ifndef CMISS_FIELD_GROUP_ID_DEFINED
-	struct Cmiss_field_group;
-	typedef struct Cmiss_field_group *Cmiss_field_group_id;
-	#define CMISS_FIELD_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_GROUP_ID_DEFINED */
-
-#ifndef CMISS_FIELD_NODE_GROUP_ID_DEFINED
-	struct Cmiss_field_node_group;
-	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
-	#define CMISS_FIELD_NODE_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_NODE_GROUP_ID_DEFINED */
-
-#ifndef CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
-	struct Cmiss_field_element_group;
-	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
-	#define CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED */
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_element_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_group_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_node_id.h"
+#include "api/types/cmiss_region_id.h"
+#include "api/types/cmiss_field_subobject_group_id.h"
 
 /***************************************************************************//**
  * Creates a group field which can contain an arbitrary set of subregions or

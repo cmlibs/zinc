@@ -45,39 +45,14 @@
 #ifndef __CMISS_SCENE_H__
 #define __CMISS_SCENE_H__
 
-#include "api/cmiss_graphics_filter.h"
-
-#ifndef CMISS_SCENE_ID_DEFINED
-/***************************************************************************//**
- * A handle to cmiss scene, cmiss scene contains a top region to display 
- * rendition of itself and all of its child regions, it also store a a 
- * collections of objects that make up a 3-D graphical model - lights, 
- * materials, primitives, etc. Also contains interface rouitines for having 
- * these converted to display lists and assembled into a single display list.
- * This single display list, however it is up to others - ie. the Scene_viewer
- * to display.
- */
-	struct Cmiss_scene;
-  typedef struct Cmiss_scene * Cmiss_scene_id;
-  #define CMISS_SCENE_ID_DEFINED
-#endif /* CMISS_SCENE_ID_DEFINED */
-
-#ifndef CMISS_REGION_ID_DEFINED
-  struct Cmiss_region;
-  typedef struct Cmiss_region * Cmiss_region_id;
-  #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
-
-#ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
-  struct Cmiss_graphics_filter;
-  typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
-  #define CMISS_GRAPHICS_FILTER_ID_DEFINED
-#endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
+#include "api/types/cmiss_graphics_filter_id.h"
+#include "api/types/cmiss_region_id.h"
+#include "api/types/cmiss_scene_id.h"
 
 /*******************************************************************************
- * Destroys this reference to the scene (and sets it to NULL).
- * Internally this just decrements the reference count.
- */
+* Destroys this reference to the scene (and sets it to NULL).
+* Internally this just decrements the reference count.
+*/
 int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
 
 /***************************************************************************//** 

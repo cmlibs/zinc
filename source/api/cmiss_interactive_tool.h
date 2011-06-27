@@ -37,11 +37,7 @@
 #if !defined __CMISS_INTERACTIVE_TOOL_H__
 #define __CMISS_INTERACTIVE_TOOL_H__
 
-#ifndef CMISS_INTERACTIVE_TOOL_ID_DEFINED
-	struct Interactive_tool;
-	typedef struct Interactive_tool * Cmiss_interactive_tool_id;
-	#define CMISS_INTERACTIVE_TOOL_ID_DEFINED
-#endif
+#include "api/types/cmiss_interactive_tool_id.h"
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute

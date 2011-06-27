@@ -44,32 +44,12 @@ The public interface to the Cmiss_rendition.
 #ifndef __CMISS_RENDITION_H__
 #define __CMISS_RENDITION_H__
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_graphic.h"
-#include "api/cmiss_region.h"
-
-#ifndef CMISS_RENDITION_ID_DEFINED
-/***************************************************************************//**
- * A handle to a Cmiss rendition. 
- * Cmiss rendition is the graphical represnetation of a region, each region
- * has maximum one rendition at a time. Rendition is created when requested.
- */
-	struct Cmiss_rendition;
-	typedef struct Cmiss_rendition * Cmiss_rendition_id;
-	#define CMISS_RENDITION_ID_DEFINED
-#endif /* CMISS_RENDITION_ID_DEFINED */
-
-#ifndef CMISS_SELECTION_HANDLER_ID_DEFINED
-	struct Cmiss_selection_handler;
-	typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
-	#define CMISS_SELECTION_HANDLER_ID_DEFINED
-#endif
-
-#ifndef CMISS_FIELD_GROUP_ID_DEFINED
-	struct Cmiss_field_group;
-	typedef struct Cmiss_field_group *Cmiss_field_group_id;
-	#define CMISS_FIELD_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_GROUP_ID_DEFINED */
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_group_id.h"
+#include "api/types/cmiss_graphic_id.h"
+#include "api/types/cmiss_region_id.h"
+#include "api/types/cmiss_rendition_id.h"
+#include "api/types/cmiss_selection_id.h"
 
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.

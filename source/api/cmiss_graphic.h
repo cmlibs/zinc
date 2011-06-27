@@ -45,25 +45,10 @@ The public interface to the Cmiss_rendition.
 #ifndef __CMISS_GRAPHIC_H__
 #define __CMISS_GRAPHIC_H__
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_graphics_material.h"
-
-#ifndef CMISS_GRAPHIC_ID_DEFINED
-/***************************************************************************//**
- * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
- * such as lines, surfaces, node points and etc of a rendition. These graphics
- * can be customised through a numebr of set functions.
- */
-struct Cmiss_graphic;
-typedef struct Cmiss_graphic * Cmiss_graphic_id;
-#define CMISS_GRAPHIC_ID_DEFINED
-#endif /* CMISS_GRAPHIC_ID_DEFINED */
-
-#ifndef CMISS_TESSELLATION_ID_DEFINED
-struct Cmiss_tessellation;
-typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
-#define CMISS_TESSELLATION_ID_DEFINED
-#endif
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_graphic_id.h"
+#include "api/types/cmiss_graphics_material_id.h"
+#include "api/types/cmiss_tessellation_id.h"
 
 #ifndef RENDER_TYPE_DEFINED
 /***************************************************************************//**
@@ -77,31 +62,6 @@ enum Render_type
 };
 #define RENDER_TYPE_DEFINED
 #endif /* RENDER_TYPE_DEFINED */
-
-#ifndef CMISS_GRAPHIC_TYPE_DEFINED
-#define CMISS_GRAPHIC_TYPE_DEFINED
-/***************************************************************************//**
- * An enum type to define the type of a cmiss_graphic.
- */
-enum Cmiss_graphic_type
-{
-	CMISS_GRAPHIC_TYPE_INVALID = 0,
-	CMISS_GRAPHIC_NODE_POINTS = 1,
-	CMISS_GRAPHIC_DATA_POINTS = 2,
-	CMISS_GRAPHIC_LINES = 3,
-	CMISS_GRAPHIC_CYLINDERS = 4,
-	CMISS_GRAPHIC_SURFACES = 5,
-	CMISS_GRAPHIC_ISO_SURFACES = 6,
-	CMISS_GRAPHIC_ELEMENT_POINTS = 7,
-	CMISS_GRAPHIC_STREAMLINES = 8,
-	CMISS_GRAPHIC_POINT = 9 /*!< CMISS_GRAPHIC_POINT is different from others,
-	 * as the graphics object of this is created by user instead of generated from
-	 * finite element models, it does not require a coordinate field in the
-	 * rendition. To get an idea of what graphics objects are, take a look at
-	 * the glyphs used in points representation they are a set of preset graphics
-	 * object in cmgui. This will be replaced in the future*/
-}; /* enum Cmiss_graphics_type */
-#endif /* CMISS_GRAPHIC_TYPE_DEFINED */
 
 #ifndef CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED
 #define CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED

@@ -41,47 +41,10 @@
 #if !defined (CMISS_FIELD_ENSEMBLE_H)
 #define CMISS_FIELD_ENSEMBLE_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-/***************************************************************************//**
- * The ensemble type specific handle to an ensemble Cmiss_field.
- * This is a domain comprising a set of entries with unique identifiers.
- */
-struct Cmiss_field_ensemble;
-typedef struct Cmiss_field_ensemble *Cmiss_field_ensemble_id;
-
-
-/***************************************************************************//**
- * The ensemble type specific handle to a ensemble group Cmiss_field.
- * This field stores a subset of entries from an ensemble.
- * When evaluated, returns 1 for entries in the group, 0 otherwise.
- */
-struct Cmiss_field_ensemble_group;
-typedef struct Cmiss_field_ensemble_group *Cmiss_field_ensemble_group_id;
-
-
-/***************************************************************************//**
- * The numeric type of the unique identifier for each entry in an ensemble.
- */
-typedef int Cmiss_ensemble_identifier;
-
-
-/***************************************************************************//**
- * Iterator-handle for referencing an entry in a Cmiss_field_ensemble.
- */
-struct Cmiss_ensemble_iterator;
-typedef struct Cmiss_ensemble_iterator *Cmiss_ensemble_iterator_id;
-
-
-/***************************************************************************//**
- * Index to a selection of entries from N ensembles.
- * Used for getting/setting parameters.
- */
-struct Cmiss_ensemble_index;
-typedef struct Cmiss_ensemble_index *Cmiss_ensemble_index_id;
-
-
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_ensemble_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 Cmiss_field_id Cmiss_field_module_create_ensemble(Cmiss_field_module_id field_module);
 

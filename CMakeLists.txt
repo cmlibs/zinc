@@ -924,7 +924,38 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_c_inline_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_context_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_element_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_alias_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_cad_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_ensemble_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_finite_element_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_group_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_processing_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_module_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_parameters_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_subobject_group_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_window_projection_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphic_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_filter_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_material_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_module_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_interactive_tool_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_node_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_region_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_rendition_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_viewer_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_selection_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_spectrum_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_tessellation_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_keeper_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_sequence_id.h )
 	IF( USE_OPENCASCADE )
 		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
 			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )

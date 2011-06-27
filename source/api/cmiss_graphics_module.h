@@ -37,50 +37,14 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
-#include "api/cmiss_graphics_material.h"
-
-#ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
-struct Cmiss_graphics_module;
-typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
-#define CMISS_GRAPHICS_MODULE_ID_DEFINED
-#endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
-
-#ifndef CMISS_RENDITION_ID_DEFINED
-struct Cmiss_rendition;
-typedef struct Cmiss_rendition * Cmiss_rendition_id;
-#define CMISS_RENDITION_ID_DEFINED
-#endif
-
-#ifndef CMISS_REGION_ID_DEFINED
-struct Cmiss_region;
-typedef struct Cmiss_region * Cmiss_region_id;
-#define CMISS_REGION_ID_DEFINED
-#endif
-
-#ifndef CMISS_SCENE_ID_DEFINED
-struct Cmiss_scene;
-typedef struct Cmiss_scene * Cmiss_scene_id;
-#define CMISS_SCENE_ID_DEFINED
-#endif
-
-#ifndef CMISS_SPECTRUM_ID_DEFINED
-struct Cmiss_spectrum;
-typedef struct Cmiss_spectrum * Cmiss_spectrum_id;
-#define CMISS_SPECTRUM_ID_DEFINED
-#endif
-
-#ifndef CMISS_TESSELLATION_ID_DEFINED
-struct Cmiss_tessellation;
-typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
-#define CMISS_TESSELLATION_ID_DEFINED
-#endif
-
-#ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
-struct Cmiss_graphics_filter;
-typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
-#define CMISS_GRAPHICS_FILTER_ID_DEFINED
-#endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
-
+#include "api/types/cmiss_graphics_filter_id.h"
+#include "api/types/cmiss_graphics_material_id.h"
+#include "api/types/cmiss_graphics_module_id.h"
+#include "api/types/cmiss_region_id.h"
+#include "api/types/cmiss_rendition_id.h"
+#include "api/types/cmiss_scene_id.h"
+#include "api/types/cmiss_spectrum_id.h"
+#include "api/types/cmiss_tessellation_id.h"
 
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.

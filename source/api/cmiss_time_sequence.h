@@ -41,27 +41,8 @@
 #ifndef __CMISS_TIME_SEQUENCE_H__
 #define __CMISS_TIME_SEQUENCE_H__
 
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-#ifndef CMISS_TIME_SEQUENCE_ID_DEFINED
-	struct Cmiss_time_sequence;
-	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
-	#define CMISS_TIME_SEQUENCE_ID_DEFINED
-#endif /* CMISS_TIME_SEQUENCE_ID_DEFINED */
-
-/*
-Global functions
-----------------
-*/
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_time_sequence_id.h"
 
 /***************************************************************************//**
  * Finds or creates a Cmiss_time_sequence in the field module which matches the

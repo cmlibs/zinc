@@ -37,11 +37,7 @@
 #ifndef __CMISS_SPECTRUM_H__
 #define __CMISS_SPECTRUM_H__
 
-#ifndef CMISS_SPECTRUM_ID_DEFINED
-	struct Cmiss_spectrum;
-	typedef struct Cmiss_spectrum *Cmiss_spectrum_id;
-	#define CMISS_SPECTRUM_ID_DEFINED
-#endif /* CMISS_SPECTRUM_ID_DEFINED */
+#include "api/types/cmiss_spectrum_id.h"
 
 /***************************************************************************//**
  * Labels of spectrum attributes which may be set or obtained using generic

@@ -43,45 +43,11 @@
 #ifndef __CMISS_GRAPHICS_FILTER_H__
 #define __CMISS_GRAPHICS_FILTER_H__
 
-
-#ifndef CMISS_GRAPHICS_FILTER_ID_DEFINED
-	struct Cmiss_graphics_filter;
-  typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
-  #define CMISS_GRAPHICS_FILTER_ID_DEFINED
-#endif /* CMISS_GRAPHICS_FILTER_ID_DEFINED */
-
-#ifndef CMISS_GRAPHICS_FILTER_OPERATOR_ID_DEFINED
-	struct Cmiss_graphics_filter_operator;
-	typedef struct Cmiss_graphics_filter_operator *Cmiss_graphics_filter_operator_id;
-	#define CMISS_GRAPHICS_FILTER_OPERATOR_ID_DEFINED
-#endif /* CMISS_GRAPHICS_FILTER_OPERATOR_ID_DEFINED */
-
-#ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
-struct Cmiss_graphics_module;
-typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
-#define CMISS_GRAPHICS_MODULE_ID_DEFINED
-#endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
-
-#ifndef CMISS_REGION_ID_DEFINED
-struct Cmiss_region;
-typedef struct Cmiss_region * Cmiss_region_id;
-#define CMISS_REGION_ID_DEFINED
-#endif
-
-#ifndef CMISS_GRAPHIC_ID_DEFINED
-struct Cmiss_graphic;
-typedef struct Cmiss_graphic * Cmiss_graphic_id;
-#define CMISS_GRAPHIC_ID_DEFINED
-#endif /* CMISS_GRAPHIC_ID_DEFINED */
-
-#ifndef CMISS_C_INLINE_DEFINED
-#if defined (_MSC_VER)
-	#define CMISS_C_INLINE __inline
-#else
-	#define CMISS_C_INLINE static inline
-#endif
-#define CMISS_C_INLINE_DEFINED
-#endif
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_graphic_id.h"
+#include "api/types/cmiss_graphics_filter_id.h"
+#include "api/types/cmiss_graphics_module_id.h"
+#include "api/types/cmiss_region_id.h"
 
 /***************************************************************************//**
  * Labels of graphics_filter attributes which may be set or obtained using generic

@@ -44,33 +44,12 @@
 #if !defined (CMISS_FIELD_SUBOBJECT_GROUP_H)
 #define CMISS_FIELD_SUBOBJECT_GROUP_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_element.h"
-#include "api/cmiss_node.h"
-
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
-
-#ifndef CMISS_FIELD_NODE_GROUP_ID_DEFINED
-	struct Cmiss_field_node_group;
-	typedef struct Cmiss_field_node_group *Cmiss_field_node_group_id;
-	#define CMISS_FIELD_NODE_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_NODE_GROUP_ID_DEFINED */
-
-#ifndef CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
-	struct Cmiss_field_element_group;
-	typedef struct Cmiss_field_element_group *Cmiss_field_element_group_id;
-	#define CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED
-#endif /* CMISS_FIELD_ELEMENT_GROUP_ID_DEFINED */
-
-#ifndef CMISS_ELEMENT_ITERATOR_ID_DEFINED
-	struct Cmiss_element_iterator;
-	typedef struct Cmiss_element_iterator * Cmiss_element_iterator_id;
-	#define CMISS_ELEMENT_ITERATOR_ID_DEFINED
-#endif /* CMISS_ELEMENT_ITERATOR_ID_DEFINED */
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_element_id.h"
+#include "api/types/cmiss_node_id.h"
+#include "api/types/cmiss_field_subobject_group_id.h"
 
 /*****************************************************************************//**
  * Creates a field where nodes from the same nodeset can be put into group.

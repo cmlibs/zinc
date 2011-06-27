@@ -44,7 +44,7 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #ifndef __CMISS_FIELD_MATRIX_OPERATIONS_H__
 #define __CMISS_FIELD_MATRIX_OPERATIONS_H__
 
-#include "api/cmiss_field.h"
+#include "api/types/cmiss_field_id.h"
 
 /**
  * Creates a field returning the N eigenvalues of symmetric N*N component source

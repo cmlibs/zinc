@@ -41,6 +41,9 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+
 /*******************************************************************************
  * Automatic scalar broadcast
  *
@@ -52,27 +55,6 @@
  * For example the result of
  * ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14].
  */
-
-/*
-Global types
-------------
-*/
-
-#ifndef CMISS_FIELD_ID_DEFINED
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
-	#define CMISS_FIELD_ID_DEFINED
-#endif /* CMISS_FIELD_ID_DEFINED */
-
-/***************************************************************************//**
- * Field module, obtained from region, which owns fields and must be passed to
- * field factory create methods.
- */
-#ifndef CMISS_FIELD_MODULE_ID_DEFINED
-	struct Cmiss_field_module;
-	typedef struct Cmiss_field_module *Cmiss_field_module_id;
-	#define CMISS_FIELD_MODULE_ID_DEFINED
-#endif /* CMISS_FIELD_MODULE_ID_DEFINED */
 
 /*
 Global functions

@@ -49,6 +49,7 @@ extern "C" {
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
+#include "api/cmiss_field_group.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "api/cmiss_rendition.h"
 #if defined (USE_OPENCASCADE)

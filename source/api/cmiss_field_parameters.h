@@ -42,17 +42,11 @@
 #if !defined (CMISS_FIELD_PARAMETERS_H)
 #define CMISS_FIELD_PARAMETERS_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_ensemble.h"
-#include "api/cmiss_field_module.h"
-
-/***************************************************************************//**
- * The ensemble type specific handle to a real parameters Cmiss_field.
- * This parameters field stores double precision real numbers.
- */
-struct Cmiss_field_real_parameters;
-typedef struct Cmiss_field_real_parameters *Cmiss_field_real_parameters_id;
-
+#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_ensemble_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_field_parameters_id.h"
 
 /***************************************************************************//**
  * Create a double-precision real-valued parameter set indexed by N ensembles.
