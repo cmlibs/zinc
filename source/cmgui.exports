@@ -275,10 +275,6 @@ Cmiss_field_module_create_acos
 Cmiss_field_module_create_atan
 Cmiss_field_module_create_atan2
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
-Cmiss_field_module_create_window_projection
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
-
 /* api/cmiss_region.h */
 Cmiss_region_access
 Cmiss_region_destroy
@@ -478,7 +474,6 @@ Cmiss_context_create_region
 Cmiss_context_enable_user_interface
 Cmiss_context_execute_command
 Cmiss_context_run_main_loop
-Cmiss_context_get_graphics_window_pane_by_name
 Cmiss_context_get_default_time_keeper
 Cmiss_context_get_default_scene_viewer_package
 Cmiss_context_get_default_IO_stream_package

@@ -168,17 +168,6 @@ int Cmiss_context_execute_command(Cmiss_context_id context,
 int Cmiss_context_run_main_loop(Cmiss_context_id context);
 
 /***************************************************************************//**
- * Returns the a handle to the scene_viewer that inhabits the pane of a 
- * graphics_window.
- * User interface must be enabled before this function can be called successfully.
- *
- * @param context  Handle to a cmiss_context object.
- * @return  The scene viewer if successfully called otherwise NULL.
- */
-Cmiss_scene_viewer_id Cmiss_context_get_graphics_window_pane_by_name(
-	Cmiss_context_id context, const char *name, int pane_number);
-
-/***************************************************************************//**
  * Returns the handle to time keeper and also increments the access count of 
  * the returned time keeper by one.
  * User interface must be enabled before this function can be called successfully.

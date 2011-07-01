@@ -908,8 +908,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
 	   api/cmiss_scene_viewer.c
 endif
-API_INTERFACE_SRCS = \
-	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_curve.c \
@@ -1346,7 +1344,6 @@ SRCS_1 = \
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    SRCS_2 = \
-	   $(API_INTERFACE_SRCS) \
 	   $(CELL_SRCS) \
 	   $(CHOOSE_INTERFACE_SRCS) \
 	   $(COLOUR_INTERFACE_SRCS) \
@@ -1376,7 +1373,6 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       SRCS_2 = \
-	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	      graphics/graphics_window.cpp \
@@ -1384,7 +1380,6 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       SRCS_2 = \
-	      $(API_INTERFACE_SRCS) \
 	      $(COLOUR_INTERFACE_SRCS)\
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
@@ -1395,14 +1390,12 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
       SRCS_2 = \
-	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == CARBON_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
       SRCS_2 = \
-	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	      graphics/graphics_window.cpp

@@ -43,8 +43,20 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H)
 #define COMPUTED_FIELD_WINDOW_PROJECTION_H
 
-#include "api/cmiss_field_window_projection.h"
-#include "graphics/scene_viewer.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_field_window_projection_id.h"
+#include "api/types/cmiss_scene_viewer_id.h"
+
+enum Cmiss_field_window_projection_type
+{
+	NDC_PROJECTION,
+	TEXTURE_PROJECTION,
+	VIEWPORT_PROJECTION,
+	INVERSE_NDC_PROJECTION,
+	INVERSE_TEXTURE_PROJECTION,
+	INVERSE_VIEWPORT_PROJECTION
+};
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_create_window_projection Cmiss_field_module_create_window_projection

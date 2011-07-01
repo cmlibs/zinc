@@ -1334,7 +1334,7 @@ already) and allows its contents to be modified.
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_window_projection(
 						field_modify->get_field_module(),
-						source_field, scene_viewer, graphics_window_name, pane_number,
+						source_field, scene_viewer, graphics_window_name, pane_number - 1,
 						projection_type));
 				DEALLOCATE(graphics_window_name);
 			}

@@ -754,7 +754,12 @@ void Scene_viewer::outputTransformations(double viewport_width, double viewport_
 {
 	// avoid scene callbacks while outputting transformations since we
 	// will be drawing the result of the changes already
-	MANAGER_DEREGISTER(Scene)(scene_manager_callback_id, scene_manager);
+	bool temp_stop_scene_callbacks = (0 != scene_manager_callback_id);
+	if (temp_stop_scene_callbacks)
+	{
+		MANAGER_DEREGISTER(Scene)(scene_manager_callback_id, scene_manager);
+		scene_manager_callback_id = 0;
+	}
 	OutputTransformationMap::iterator iter = output_transformations.begin();
 	while (iter != output_transformations.end())
 	{
@@ -777,8 +782,11 @@ void Scene_viewer::outputTransformations(double viewport_width, double viewport_
 		}
 	}
 	CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(transform_callback_list, this, NULL);
-	scene_manager_callback_id =
-		MANAGER_REGISTER(Scene)(Scene_viewer_scene_change, (void *)this, scene_manager);
+	if (temp_stop_scene_callbacks)
+	{
+		scene_manager_callback_id =
+			MANAGER_REGISTER(Scene)(Scene_viewer_scene_change, (void *)this, scene_manager);
+	}
 }
 
 static int Scene_viewer_render_background_texture(

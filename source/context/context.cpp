@@ -470,47 +470,6 @@ int Cmiss_context_run_main_loop(Cmiss_context_id context)
 	return return_code;
 }
 
-Cmiss_scene_viewer_id Cmiss_context_get_graphics_window_pane_by_name(
-	Cmiss_context_id context, const char *name, int pane_number)
-{
-	Cmiss_scene_viewer_id scene_viewer = NULL;
-
-	if (context && context->UI_module && name)
-	{
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-		struct Graphics_window *window = NULL;
-		struct MANAGER(Graphics_window) *graphics_window_manager =
-			context->UI_module->graphics_window_manager;
-		if (graphics_window_manager)
-		{
-			if (NULL != (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
-										 (char *)name, graphics_window_manager)))
-			{
-				scene_viewer = Graphics_window_get_Scene_viewer(window, pane_number);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"Could not find window named %s",
-					name);
-				scene_viewer = (struct Scene_viewer *)NULL;
-			}
-		}
-#else /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-		display_message(WARNING_MESSAGE,"No graphics windows in this cmgui");
-		scene_viewer = (struct Scene_viewer *)NULL;
-		USE_PARAMETER(pane_number);
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_context_.  Missing context or user interface or"
-			"command is empty.");
-	}
-
-	return scene_viewer;
-}
-
 Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_context_id context)
 {
