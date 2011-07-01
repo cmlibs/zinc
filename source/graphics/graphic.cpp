@@ -78,6 +78,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "user_interface/message.h"
 }
+#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
 #include "computed_field/computed_field_subobject_group.hpp"
@@ -195,7 +196,7 @@ finite element group rendition.
 	/* flag indicating that this settings needs to be regenerated when time
 		changes */
 	int time_dependent;
-	enum Cmiss_graphic_coordinate_system coordinate_system;
+	enum Cmiss_graphics_coordinate_system coordinate_system;
 // 	/* for accessing objects */
 	int access_count;
 }; /* struct GT_element_settings */
@@ -210,53 +211,6 @@ struct Cmiss_graphic_select_graphics_data
 	struct FE_region *fe_region;
 	struct Cmiss_graphic *graphic;
 };
-
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_coordinate_system)
-{
-	const char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(Cmiss_graphic_coordinate_system));
-	switch (enumerator_value)
-	{
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL:
-		{
-			enumerator_string = "local";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		{
-			enumerator_string = "fill";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		{
-			enumerator_string = "fit_centre";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		{
-			enumerator_string = "fit_left";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		{
-			enumerator_string = "fit_right";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		{
-			enumerator_string = "fit_bottom";
-		} break;
-		case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		{
-			enumerator_string = "fit_top";
-		} break;
-		default:
-		{
-			enumerator_string = (const char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(Cmiss_graphic_type) */
-
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphic_coordinate_system)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 {
@@ -488,7 +442,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->seed_node_coordinate_field = (struct Computed_field *)NULL;
 			graphic->overlay_flag = 0;
 			graphic->overlay_order = 1;
-			graphic->coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+			graphic->coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 			/* appearance settings defaults */
 			/* for all graphic types */
 			graphic->visibility_flag = true;
@@ -1910,10 +1864,10 @@ int Cmiss_graphic_selects_elements(struct Cmiss_graphic *graphic)
 	return (return_code);
 } /* Cmiss_graphic_selects_elements */
 
-enum Cmiss_graphic_coordinate_system Cmiss_graphic_get_coordinate_system(
+enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	struct Cmiss_graphic *graphic)
 {
-	enum Cmiss_graphic_coordinate_system coordinate_system;
+	enum Cmiss_graphics_coordinate_system coordinate_system;
 
 	ENTER(Cmiss_graphic_get_coordinate_system);
 	if (graphic)
@@ -1924,7 +1878,7 @@ enum Cmiss_graphic_coordinate_system Cmiss_graphic_get_coordinate_system(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_coordinate_system.  Invalid argument(s)");
-		coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_INVALID;
+		coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID;
 	}
 	LEAVE;
 
@@ -1932,19 +1886,20 @@ enum Cmiss_graphic_coordinate_system Cmiss_graphic_get_coordinate_system(
 }
 
 int Cmiss_graphic_set_coordinate_system(
-	struct Cmiss_graphic *graphic, enum Cmiss_graphic_coordinate_system coordinate_system)
+	struct Cmiss_graphic *graphic, enum Cmiss_graphics_coordinate_system coordinate_system)
 {
 	int return_code = 1;
 	ENTER(Cmiss_graphic_set_coordinate_system);
 	if (graphic)
 	{
 		graphic->coordinate_system=coordinate_system;
-		if ((coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
-				(coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ) ||
-				(coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
-				(coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
-				(coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
-				(coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP))
+		if ((coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
+				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT))
 		{
 			graphic->overlay_flag = 1;
 			graphic->overlay_order = 1;
@@ -2589,7 +2544,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
-			ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(graphic->coordinate_system),&error);
+			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(graphic->coordinate_system),&error);
 		if (CMISS_GRAPHIC_LINES==graphic->graphic_type)
 		{
 			if (0 != graphic->line_width)
@@ -3262,7 +3217,6 @@ int Cmiss_graphic_to_graphics_object(
 	float time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
-	struct Coordinate_system *coordinate_system;
 	struct FE_region *fe_region;
 	struct GT_glyph_set *glyph_set = NULL;
 	struct Cmiss_graphic_select_graphics_data select_data;
@@ -3457,17 +3411,7 @@ int Cmiss_graphic_to_graphics_object(
 						if (graphic->graphics_object)
 						{
 							graphic->selected_graphics_changed=1;
-							coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
-							if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
-							{
-								GT_object_set_coordinate_system(graphic->graphics_object,
-									CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL);
-							}
-							else
-							{
-								GT_object_set_coordinate_system(graphic->graphics_object,
-									graphic->coordinate_system);
-							}
+							GT_object_set_coordinate_system(graphic->graphics_object, graphic->coordinate_system);
 							/* need graphic for FE_element_to_graphics_object routine */
 							graphic_to_object_data->graphic=graphic;
 							switch (graphic->graphic_type)
@@ -3996,11 +3940,12 @@ int Cmiss_graphic_execute_non_distorted_ndc_objects(
 #if defined (OPENGL_API)
 					glLoadName((GLuint)graphic->position);
 #endif
-					if (graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
-						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
-						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
-						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
-						graphic->coordinate_system == CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM)
+					if (graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
+						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
+						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
+						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
+						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM ||
+						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
 					{
 						return_code = renderer->Non_distorted_ndc_graphics_object_execute(graphic->graphics_object);
 					}
@@ -5602,7 +5547,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
 	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
@@ -5672,10 +5617,10 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -5731,7 +5676,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 							graphic->spectrum=ACCESS(Spectrum)(
 								rendition_command_data->default_spectrum);
 						}
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						Cmiss_graphic_set_visibility_flag(graphic, visibility);
@@ -6015,7 +5960,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 {
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
@@ -6145,10 +6090,10 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					DEALLOCATE(valid_strings);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -6235,7 +6180,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 								DEACCESS(GT_object)(&graphic->glyph);
 							}
 						}
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -6303,7 +6248,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 {
 	char *font_name; 
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,visibility;
@@ -6430,10 +6375,10 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					DEALLOCATE(valid_strings);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -6520,7 +6465,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 								DEACCESS(GT_object)(&graphic->glyph);
 							}
 						}
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -6588,7 +6533,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 {
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
@@ -6710,10 +6655,10 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 					DEALLOCATE(valid_strings);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -6819,7 +6764,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 								DEACCESS(GT_object)(&graphic->glyph);
 							}
 						}
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -6886,7 +6831,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
 	const char *select_mode_string,**valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
@@ -6927,10 +6872,10 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 						set_Computed_field_conditional);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -7014,7 +6959,7 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 								rendition_command_data->default_spectrum);
 						}
 						Cmiss_graphic_set_visibility_flag(graphic, visibility);
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -7064,7 +7009,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
 	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
@@ -7114,10 +7059,10 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						set_Computed_field_conditional);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -7215,7 +7160,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 								rendition_command_data->default_spectrum);
 						}
 						Cmiss_graphic_set_visibility_flag(graphic, visibility);
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -7269,7 +7214,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 {
 	const char *render_type_string,*select_mode_string, *use_element_type_string,
 		**valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
@@ -7338,10 +7283,10 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						set_Computed_field_conditional);
 					/* coordinate system */
 					coordinate_system_string =
-						ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &coordinate_system_string);
@@ -7502,7 +7447,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 								rendition_command_data->default_spectrum);
 						}
 						Cmiss_graphic_set_visibility_flag(graphic, visibility);
-						STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -7557,7 +7502,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 	char *font_name;
 	const char *glyph_scaling_mode_string, *select_mode_string, 
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
 	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
@@ -7646,10 +7591,10 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				set_Computed_field_conditional);
 			/* coordinate system */
 			coordinate_system_string =
-				ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+				ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 				&number_of_valid_strings,
-				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 				(void *)NULL);
 			Option_table_add_enumerator(option_table, number_of_valid_strings,
 				valid_strings, &coordinate_system_string);
@@ -7846,7 +7791,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 						DEACCESS(GT_object)(&graphic->glyph);
 					}
 				}
-				STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+				STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 					&coordinate_system);
 				Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
@@ -7901,7 +7846,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	char reverse_track;
 	const char *select_mode_string, *xi_discretization_mode_string,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings, *coordinate_system_string;
-	enum Cmiss_graphic_coordinate_system coordinate_system = CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
 	enum Xi_discretization_mode xi_discretization_mode;
 	enum Streamline_type streamline_type;
@@ -7965,10 +7910,10 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				set_Computed_field_conditional);
 			/* coordinate system */
 			coordinate_system_string =
-				ENUMERATOR_STRING(Cmiss_graphic_coordinate_system)(coordinate_system);
-			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphic_coordinate_system)(
+				ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
 				&number_of_valid_strings,
-				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphic_coordinate_system) *)NULL,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
 				(void *)NULL);
 			Option_table_add_enumerator(option_table, number_of_valid_strings,
 				valid_strings, &coordinate_system_string);
@@ -8198,7 +8143,7 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 						graphic,streamline_data_type,graphic->data_field,
 						graphic->spectrum);
 				}
-				STRING_TO_ENUMERATOR(Cmiss_graphic_coordinate_system)(coordinate_system_string,
+				STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 					&coordinate_system);
 				Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
 				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,

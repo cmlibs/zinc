@@ -4,6 +4,7 @@
 SET( GRAPHICS_SRCS
 	source/graphics/auxiliary_graphics_types.c
 	source/graphics/graphic.cpp
+	source/graphics/graphics_coordinate_system.cpp
 	source/graphics/graphics_module.cpp
 	source/graphics/rendition.cpp
 	source/graphics/colour.c
@@ -38,8 +39,9 @@ SET( GRAPHICS_SRCS
 	source/graphics/volume_texture.c )
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
-	source/graphics/graphics_module.h
 	source/graphics/graphic.h
+	source/graphics/graphics_coordinate_system.hpp
+	source/graphics/graphics_module.h
 	source/graphics/rendition.h
 	source/graphics/rendition.hpp
 	source/graphics/colour.h

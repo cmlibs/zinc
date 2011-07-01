@@ -45,6 +45,7 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #define __CMISS_FIELD_MATRIX_OPERATIONS_H__
 
 #include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /**
  * Creates a field returning the N eigenvalues of symmetric N*N component source
@@ -100,6 +101,34 @@ Cmiss_field_id Cmiss_field_module_create_matrix_multiply(
 	Cmiss_field_module_id field_module,
 	int number_of_rows, Cmiss_field_id source_field1,
 	Cmiss_field_id source_field2);
+
+/***************************************************************************//**
+ * Creates a projection field returning the result of a matrix multiplication
+ * with perspective division on the source field vector. The source_field vector
+ * is expanded to a homogeneous coordinate by appending a component of value 1,
+ * which is multiplied by the projection_matrix_field, and the extra calculated
+ * value resulting from the unit component is used to divide through each of the
+ * other components to give a perspective projection in the resulting field.
+ * The projection_matrix_field must have have a multiple of
+ * (source_field->number_of_components + 1) components forming a matrix with
+ * that many columns and the resulting (number_of_components + 1) rows. The
+ * first values in the projection_matrix are across the first row, followed by
+ * the next row and so on.
+ * Hence a 4x4 matrix transforms a 3-component vector to a 3-component vector:
+ * [x'] = [m1  m2  m3  m4 ][x]
+ * [y'] = [m5  m6  m7  m8 ][y]
+ * [z'] = [m9  m10 m11 m12][z]
+ * [h'] = [m13 m14 m15 m16][1]
+ * The resulting field returns 3 components [x'/h', y'/h', z'/h']
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Source vector field to project.
+ * @param projection_matrix_field  Field supplying projection matrix.
+ * @return  Newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_projection(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field);
 
 /**
  * Creates a field returning the transpose of N*M matrix source_field.

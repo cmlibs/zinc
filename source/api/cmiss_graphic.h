@@ -47,6 +47,7 @@ The public interface to the Cmiss_rendition.
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_graphic_id.h"
+#include "api/types/cmiss_graphics_coordinate_system.h"
 #include "api/types/cmiss_graphics_material_id.h"
 #include "api/types/cmiss_tessellation_id.h"
 
@@ -62,44 +63,6 @@ enum Render_type
 };
 #define RENDER_TYPE_DEFINED
 #endif /* RENDER_TYPE_DEFINED */
-
-#ifndef CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED
-#define CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED
-/***************************************************************************//**
- * An enum type to define the coordinate system fore rendering a cmiss_graphic.
- */
-enum Cmiss_graphic_coordinate_system
-{
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_INVALID = 0,
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL = 1, /*!< Render the graphic with the local
-	coordinate system, relative to coordinate system specified by renditions */
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL = 2,
-	/*!< Render the graphic with normalised window coordinate, this mode may distort
-	 * the graphic. Normalised window coordinates system range from -1 to 1 from
-	 * the left to the right and from the bottom to the top.*/
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE = 3,
-	/*!< Render the graphic with normalised window coordinate, this mode will render
-	 * the graphic with the largest square found in the middle of the display window
-	 * thus preventing distortion of the graphic*/
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT = 4,
-	/*!< Render the graphic with normalised window coordinate, this mode will render
-	 * the graphic with the largest square found on the left of the display window
-	 * thus preventing distortion of the graphic*/
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT = 5,
-	/*!< Render the graphic with normalised window coordinate, this mode will render
-	 * the graphic with the largest square found on the right of the display window
-	 * thus preventing distortion of the graphic*/
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM = 6,
-	/*!< Render the graphic with normalised window coordinate, this mode will render
-	 * the graphic with the largest square found at the bottom of the display window
-	 * thus preventing distortion of the graphic*/
-	CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP = 7
-	/*!< Render the graphic with normalised window coordinate, this mode will render
-	 * the graphic with the largest square found on top of the display window
-	 * thus preventing distortion of the graphic*/
-}; /* enum Cmiss_graphics_type */
-#endif /* CMISS_GRAPHIC_COORDINATE_SYSTEM_DEFINED */
-
 
 /*******************************************************************************
  * Returns a new reference to the graphic with reference count incremented.
@@ -223,7 +186,7 @@ int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
-	enum Cmiss_graphic_coordinate_system coordinate_system);
+	enum Cmiss_graphics_coordinate_system coordinate_system);
 
 /***************************************************************************//**
  * Get the coordinate system in which to render the coordinates of graphics.
@@ -231,7 +194,7 @@ int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to modify.
  * @return  coordinate system used in graphic.
  */
-enum Cmiss_graphic_coordinate_system Cmiss_graphic_get_coordinate_system(
+enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	Cmiss_graphic_id graphic);
 	
 #endif /*__CMISS_GRAPHIC_H__*/

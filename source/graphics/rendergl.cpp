@@ -58,11 +58,12 @@ extern "C" {
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"
 }
-#include "graphics/rendition.hpp"
+#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/rendergl.hpp"
+#include "graphics/rendition.hpp"
 #include "graphics/texture.hpp"
 
 /***************************************************************************//**
@@ -232,7 +233,7 @@ public:
 		return Light_model_render_opengl(light_model, this);
 	}
 
-	int Start_ndc_coordinates(int distorted, enum Cmiss_graphic_coordinate_system coordinate_system)
+	int Start_ndc_coordinates(enum Cmiss_graphics_coordinate_system coordinate_system)
 	{
 		if (picking)
 		{
@@ -258,74 +259,13 @@ public:
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
 			glLoadIdentity();
-			/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
-				and +1 to be the far clipping plane */
-			if (!distorted)
+			double left, right, bottom, top;
+			if (Cmiss_graphics_coordinate_system_get_viewport(coordinate_system,
+				viewport_width, viewport_height, &left, &right, &bottom, &top))
 			{
-				if (this->width_to_height_ratio > (double) 1.0)
-				{
-					switch (coordinate_system)
-					{
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-						{
-							glOrtho(-1, ((double) 2.0 * this->width_to_height_ratio
-								- (double) 1.0), -1.0, 1.0, 1.0, 3.0);
-						}
-						break;
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-						{
-							glOrtho((-(double) 2.0 * this->width_to_height_ratio
-								+ (double) 1.0), 1.0, -1.0, 1.0, 1.0, 3.0);
-						}
-						break;
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-						{
-							glOrtho(-(this->width_to_height_ratio),
-								this->width_to_height_ratio, -1.0, 1.0, 1.0, 3.0);
-						}
-						break;
-						default:
-						{
-						}
-						break;
-					}
-				}
-				else
-				{
-					double reversed_ratio = (double) 1.0 / this->width_to_height_ratio;
-					switch (coordinate_system)
-					{
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-						{
-							glOrtho(-1.0, 1.0, -reversed_ratio, reversed_ratio, 1.0, 3.0);
-						}
-						break;
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-						{
-							glOrtho(-1.0, 1.0,
-								(-(double) 2.0 * reversed_ratio + (double) 1.0), 1.0, 1.0, 3.0);
-						}
-						break;
-						case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-						{
-							glOrtho(-1.0, 1.0, -1.0, ((double) 2.0 * reversed_ratio
-								- (double) 1.0), 1.0, 3.0);
-						}
-						break;
-						default:
-						{
-						}
-						break;
-					}
-				}
-			}
-			else
-			{
-				glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
+				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
+					and +1 to be the far clipping plane */
+				glOrtho(left, right, bottom, top, /*nearVal*/1.0, /*farVal*/3.0);
 			}
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
@@ -4810,21 +4750,19 @@ static int Graphics_object_render_opengl(
 		}
 		switch (graphics_object->coordinate_system)
 		{
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
 			{
 				/* Do nothing */
 			} break;
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
 			{
-				renderer->Start_ndc_coordinates(/*distorted*/1, graphics_object->coordinate_system);
-			} break;
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-			{
-				renderer->Start_ndc_coordinates(/*distorted*/0, graphics_object->coordinate_system);
+				renderer->Start_ndc_coordinates(graphics_object->coordinate_system);
 			} break;
 			default:
 			{
@@ -4884,16 +4822,17 @@ static int Graphics_object_render_opengl(
 		}
 		switch (graphics_object->coordinate_system)
 		{
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_LOCAL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
 			{
 				/* Do nothing */
 			} break;
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-			case CMISS_GRAPHIC_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
 			{
 				renderer->End_ndc_coordinates();
 			} break;

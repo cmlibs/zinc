@@ -2121,7 +2121,7 @@ int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int return_code;
 	if (field && cache && (number_of_values >= field->number_of_components) && values)
 	{
-		return_code = field->core->set_values_at_location(cache->get_location(), values);
+		return_code = Computed_field_set_values_at_location(field, cache->get_location(), values);
 	}
 	else
 	{

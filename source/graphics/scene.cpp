@@ -383,8 +383,8 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
 				scene->list_of_lights);
 		}
-		else
-		{
+//		else
+//		{
 			if (scene->list_of_rendition &&
 				!scene->list_of_rendition->empty())
 			{
@@ -396,7 +396,7 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 					++pos;
 				}
 			}
-		}
+//		}
 	}
 	else
 	{

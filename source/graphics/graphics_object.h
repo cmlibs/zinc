@@ -1425,7 +1425,7 @@ DESCRIPTION :
 Gets the spectrum of a GT_object.
 ==============================================================================*/
 
-enum Cmiss_graphic_coordinate_system GT_object_get_coordinate_system(
+enum Cmiss_graphics_coordinate_system GT_object_get_coordinate_system(
 	struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
@@ -1435,7 +1435,7 @@ Gets the graphical coordinate system of a GT_object.
 ==============================================================================*/
 
 int GT_object_set_coordinate_system(struct GT_object *graphics_object,
-	enum Cmiss_graphic_coordinate_system coordinate_system);
+	enum Cmiss_graphics_coordinate_system coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 9 June 2005
 

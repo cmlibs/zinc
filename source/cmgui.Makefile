@@ -1119,6 +1119,7 @@ GENERAL_INTERFACE_SRCS = \
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/graphic.cpp \
+	graphics/graphics_coordinate_system.cpp \
 	graphics/graphics_module.cpp \
 	graphics/rendition.cpp \
 	graphics/colour.c \

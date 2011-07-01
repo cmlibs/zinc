@@ -1,10 +1,7 @@
-/*******************************************************************************
-FILE : computed_field_matrix_operations.h
-
-LAST MODIFIED : 27 September 2000
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : computed_field_matrix_operations.h
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -104,24 +101,6 @@ Computed_field *Computed_field_create_matrix_multiply(
 	struct Cmiss_field_module *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2);
-
-/***************************************************************************//**
- * Creates a projection field returning the <source_field> with each component
- * multiplied by the perspective <projection_matrix>.
- * The <projection_matrix> array must be of size (number_of_components + 1)
- * rows * (source_field->number_of_components + 1) columns.
- * The source vector is appended with a 1 to make
- * source_field->number_of_components + 1 components. The extra calculated
- * value is a perspective value which divides through each of the other
- * components.
- * 
- * @param field_module  Region field module which will own new field.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_projection(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int number_of_components, 
-	double *projection_matrix);
 
 /***************************************************************************//**
  * Creates a field returning the transpose of N*M matrix source_field.

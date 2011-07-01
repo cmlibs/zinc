@@ -413,7 +413,7 @@ Graphical object data structure.
 
 	Graphics_vertex_array *vertex_array;
 	
-	enum Cmiss_graphic_coordinate_system coordinate_system;
+	enum Cmiss_graphics_coordinate_system coordinate_system;
 
 	/* If the graphics object was compiled with respect to a texture
 		tiling then this pointer is set to that tiling. */

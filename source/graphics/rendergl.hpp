@@ -54,6 +54,8 @@ typedef std::multimap<int, GT_object*>::iterator GT_object_iterator;
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
 public:
+	Graphics_buffer *graphics_buffer;
+
 	/** Specifies that we should be rendering only objects marked as fast
 	 * changing.
 	 */
@@ -62,7 +64,6 @@ public:
 	 * Requires the ndc transformation to be different as the viewport is the picking window.
 	 */
 	int picking;
-	Graphics_buffer *graphics_buffer;
 	
 	int allow_texture_tiling; /** Flag controls whether when compiling a large texture
 	                              it can be split into multiple texture tiles */
@@ -71,17 +72,18 @@ public:
 													 be used when compiling graphics that use that material. */
 	GT_object_map overlay_graphics;
 	
-	double width_to_height_ratio;
+	double viewport_width, viewport_height;
 
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
-		graphics_buffer(graphics_buffer)
+		graphics_buffer(graphics_buffer),
+		fast_changing(0),
+		picking(0),
+		allow_texture_tiling(0),
+		texture_tiling(0),
+		viewport_width(1.0),
+		viewport_height(1.0)
 	{
-		fast_changing = 0;
-		picking = 0;
-		allow_texture_tiling = 0;
-		texture_tiling = NULL;
-		width_to_height_ratio = 1.0;
 	}
 
 	/***************************************************************************//**
@@ -104,7 +106,7 @@ public:
 	 * Temporarily override the viewing coordinates so that the current opengl
 	 * display is in normalised device coordinates (aligned with the viewport).
 	 */
-	virtual int Start_ndc_coordinates(int distorted, enum Cmiss_graphic_coordinate_system coordinate_system) = 0;
+	virtual int Start_ndc_coordinates(enum Cmiss_graphics_coordinate_system coordinate_system) = 0;
 
 	/**************************************************************************//**
 	 * Reverse the changes made by Start_ndc_coordinates and resume normal 

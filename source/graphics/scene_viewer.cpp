@@ -52,16 +52,22 @@ November 97 Created from rendering part of Drawing.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdio.h>
-#include <math.h>
+#include <cmath>
+#include <cstdio>
+#include <map>
 extern "C" {
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
+#include "api/cmiss_graphic.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 }
+#include "computed_field/field_module.hpp"
 #include "general/enumerator_private_cpp.hpp"
 extern "C" {
 #include "general/geometry.h"
@@ -84,6 +90,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }
+#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/scene_viewer.hpp"
 
@@ -167,6 +174,20 @@ LAST MODIFIED : 12 July 2000
 DESCRIPTION :
 ==============================================================================*/
 {
+	struct OutputTransformation
+	{
+		enum Cmiss_graphics_coordinate_system from_coordinate_system;
+		enum Cmiss_graphics_coordinate_system to_coordinate_system;
+
+		OutputTransformation(
+			enum Cmiss_graphics_coordinate_system from_coordinate_system,
+			enum Cmiss_graphics_coordinate_system to_coordinate_system) :
+				from_coordinate_system(from_coordinate_system),
+				to_coordinate_system(to_coordinate_system)
+		{
+		}
+	};
+
 	/* The buffer into which this scene viewer is rendering */
 	struct Graphics_buffer *graphics_buffer;
 	enum Scene_viewer_input_mode input_mode;
@@ -317,9 +338,216 @@ DESCRIPTION :
 	/* Keeps a counter of the frame redraws */
 	unsigned int frame_count;
 	Scene_viewer_image_texture image_texture;
+
+	typedef std::map<Cmiss_field_id,OutputTransformation*> OutputTransformationMap;
+	OutputTransformationMap output_transformations;
+
+	void outputTransformations(double viewport_width, double viewport_height);
+
+	int setOutputTransformationField(Cmiss_field_id field,
+		enum Cmiss_graphics_coordinate_system from_coordinate_system,
+		enum Cmiss_graphics_coordinate_system to_coordinate_system);
+
+	int removeOutputTransformationField(Cmiss_field_id field);
+
+	int removeAllOutputTransformationFields();
+
+private:
+	int getTransformationToWindow(enum Cmiss_graphics_coordinate_system coordinate_system,
+		Cmiss_region_id region, double viewport_width, double viewport_height, double *projection);
+	int outputTransformation(Cmiss_field_id field, double viewport_width, double viewport_height, OutputTransformation& transformation);
+
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
+
+/**
+ * Gets matrix transforming coordinate system to
+ * CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
+ * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
+ * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
+ * coordinates which reverse z so are left-handed.
+ */
+int Scene_viewer::getTransformationToWindow(enum Cmiss_graphics_coordinate_system coordinate_system,
+	Cmiss_region_id region, double viewport_width, double viewport_height, double *projection)
+{
+	int return_code = 1;
+	switch (coordinate_system)
+	{
+		case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+		case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+		{
+			double sum;
+			int i, j, k;
+			for (i = 0; i < 4; i++)
+			{
+				for (j = 0; j < 4; j++)
+				{
+					sum = 0.0;
+					for (k = 0; k < 4; k++)
+					{
+						sum += window_projection_matrix[k*4 + i]*modelview_matrix[j*4 + k];
+					}
+					projection[i*4 + j] = sum;
+				}
+			}
+			// convert from left-handed NDC to right-handed normalised window coordinates
+			for (i = 8; i < 12; i++)
+			{
+				projection[i] = -projection[i];
+			}
+			if (CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL)
+			{
+				USE_PARAMETER(region);
+				// GRC multiply by rendition transformations
+				//double world_to_ndc_projection[16];
+				//memcpy(world_to_ndc_projection, projection, 16*sizeof(double));
+			}
+			break;
+		}
+		default:
+		{
+			static double identity[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+			memcpy(projection, identity, 16*sizeof(double));
+			if (coordinate_system != CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
+			{
+				double left, right, bottom, top;
+				if (Cmiss_graphics_coordinate_system_get_viewport(
+					coordinate_system, viewport_width, viewport_height,
+					&left, &right, &bottom, &top))
+				{
+					double scale_x = 2.0 / (right - left);
+					double scale_y = 2.0 / (top - bottom);
+					projection[0] = scale_x;
+					projection[3] = -0.5*(left + right)*scale_x;
+					projection[5] = scale_y;
+					projection[7] = -0.5*(bottom + top)*scale_y;
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+			break;
+		}
+	}
+	return return_code;
+}
+
+int Scene_viewer::outputTransformation(Cmiss_field_id field, double viewport_width, double viewport_height, OutputTransformation& transformation)
+{
+	int return_code = 1;
+	Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+	if (!field_module)
+	{
+		// owning region of field has been destroyed
+		return 0;
+	}
+	Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+	double from_projection[16], inverse_to_projection[16];
+	if (getTransformationToWindow(transformation.from_coordinate_system, region, viewport_width, viewport_height, from_projection) &&
+		getTransformationToWindow(transformation.to_coordinate_system, region, viewport_width, viewport_height, inverse_to_projection))
+	{
+		double lu_d, temp;
+		int i, j, lu_index[4];
+		if (LU_decompose(/*dimension*/4, inverse_to_projection,
+			lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
+		{
+			double to_projection[16], total_projection[16];
+			for (i = 0 ; i < 4 ; i++)
+			{
+				for (j = 0 ; j < 4 ; j++)
+				{
+					to_projection[i * 4 + j] = 0.0;
+				}
+				to_projection[i * 4 + i] = 1.0;
+				LU_backsubstitute(/*dimension*/4, inverse_to_projection,
+					lu_index, to_projection + i * 4);
+			}
+			/* transpose */
+			for (i = 0 ; i < 4 ; i++)
+			{
+				for (j = i + 1 ; j < 4 ; j++)
+				{
+					temp = to_projection[i*4 + j];
+					to_projection[i*4 + j] = to_projection[j*4 + i];
+					to_projection[j*4 + i] = temp;
+				}
+			}
+			multiply_matrix(4, 4, 4, to_projection, from_projection, total_projection);
+			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+			return_code = Cmiss_field_assign_real(field, field_cache, /*number_of_values*/16, total_projection);
+			Cmiss_field_cache_destroy(&field_cache);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer::outputTransformation.  Failed to get transformation");
+		return_code = 0;
+	}
+	Cmiss_field_module_destroy(&field_module);
+	return return_code;
+}
+
+static int Scene_viewer_calculate_transformation(
+	struct Scene_viewer *scene_viewer, int viewport_width, int viewport_height);
+
+int Scene_viewer::setOutputTransformationField(Cmiss_field_id field,
+	enum Cmiss_graphics_coordinate_system from_coordinate_system,
+	enum Cmiss_graphics_coordinate_system to_coordinate_system)
+{
+	if ((Cmiss_field_get_number_of_components(field) != 16) ||
+		(!Computed_field_is_constant(field)))
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer::setOutputTransformationField.  Field must be a 16 component real-valued constant");
+		return 0;
+	}
+	OutputTransformationMap::iterator iter = output_transformations.find(field);
+	OutputTransformation *transformation = 0;
+	if (iter != output_transformations.end())
+	{
+		transformation = iter->second;
+		transformation->from_coordinate_system = from_coordinate_system;
+		transformation->to_coordinate_system = to_coordinate_system;
+	}
+	else
+	{
+		transformation = new OutputTransformation(from_coordinate_system, to_coordinate_system);
+		Cmiss_field_access(field);
+		output_transformations[field] = transformation;
+	}
+	double viewport_width = Graphics_buffer_get_width(graphics_buffer);
+	double viewport_height = Graphics_buffer_get_height(graphics_buffer);
+	Scene_viewer_calculate_transformation(this, viewport_width, viewport_height);
+	return outputTransformation(field, viewport_width, viewport_height, *transformation);
+}
+
+int Scene_viewer::removeOutputTransformationField(Cmiss_field_id field)
+{
+	OutputTransformationMap::iterator iter = output_transformations.find(field);
+	if (iter != output_transformations.end())
+	{
+		Cmiss_field_destroy(&field);
+		delete iter->second;
+		output_transformations.erase(iter);
+	}
+	return 1;
+}
+
+int Scene_viewer::removeAllOutputTransformationFields()
+{
+	for (OutputTransformationMap::iterator iter = output_transformations.begin();
+		iter != output_transformations.end(); ++iter)
+	{
+		Cmiss_field_id field = iter->first;
+		Cmiss_field_destroy(&field);
+		delete iter->second;
+	}
+	output_transformations.clear();
+	return 1;
+}
 
 struct Scene_viewer_rendering_data
 /*******************************************************************************
@@ -508,7 +736,7 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_package_callback, void
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_package_callback, \
 	struct Cmiss_scene_viewer_package *,void *)
 
-	DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_callback, \
 	struct Scene_viewer *,void *)
@@ -517,6 +745,41 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_input_callback, int)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_input_callback, \
 	struct Scene_viewer *,struct Graphics_buffer_input *)
+
+static void Scene_viewer_scene_change(
+	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void);
+
+/** Update output transformation fields and send transformation callbacks */
+void Scene_viewer::outputTransformations(double viewport_width, double viewport_height)
+{
+	// avoid scene callbacks while outputting transformations since we
+	// will be drawing the result of the changes already
+	MANAGER_DEREGISTER(Scene)(scene_manager_callback_id, scene_manager);
+	OutputTransformationMap::iterator iter = output_transformations.begin();
+	while (iter != output_transformations.end())
+	{
+		Cmiss_field_id field = iter->first;
+		OutputTransformation& transformation = *(iter->second);
+		if (outputTransformation(field, viewport_width, viewport_height, transformation))
+		{
+			++iter;
+		}
+		else
+		{
+			Cmiss_field_id field = iter->first;
+			char *field_name = Cmiss_field_get_name(field);
+			display_message(WARNING_MESSAGE,
+				"Removing field %s as output_transformation for scene viewer. Owning region may have been destroyed.", field_name);
+			DEALLOCATE(field_name);
+			iter = output_transformations.end();
+			removeOutputTransformationField(field);
+			iter = output_transformations.begin();
+		}
+	}
+	CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(transform_callback_list, this, NULL);
+	scene_manager_callback_id =
+		MANAGER_REGISTER(Scene)(Scene_viewer_scene_change, (void *)this, scene_manager);
+}
 
 static int Scene_viewer_render_background_texture(
 	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height,
@@ -2270,8 +2533,7 @@ access this function.
 			/* Send the transform callback before compiling scene if the flag is set */
 			if (scene_viewer->transform_flag)
 			{
-				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->transform_callback_list,scene_viewer,NULL);
+				scene_viewer->outputTransformations((double)rendering_data.viewport_width, (double)rendering_data.viewport_height);
 				scene_viewer->transform_flag = 0;
 			}
 
@@ -2354,8 +2616,8 @@ access this function.
 					 scene_viewer->graphics_buffer);
 				}
 			}
-			rendering_data.renderer->width_to_height_ratio =
-				((double)rendering_data.viewport_width / (double)rendering_data.viewport_height);
+			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
+			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
 			rendering_data.renderer->Scene_compile(scene_viewer->scene);
 
 			if (scene_viewer->overlay_scene)
@@ -2585,7 +2847,6 @@ access this function.
 					} break;
 #endif /* defined GL_VERSION_1_4 */
 				}
-
 				glViewport((GLint)rendering_data.viewport_left,
 					(GLint)rendering_data.viewport_bottom,
 					(GLint)rendering_data.viewport_width,
@@ -3500,11 +3761,11 @@ Converts mouse button-press and motion events into viewing transformations in
 					}
 					if (view_changed)
 					{
+						scene_viewer->transform_flag = 1;
 						Scene_viewer_redraw_now(scene_viewer);
 						/* send the callbacks */
 						CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 							scene_viewer->sync_callback_list,scene_viewer,NULL);
-						scene_viewer->transform_flag = 1;
 					}
 					scene_viewer->previous_pointer_x=pointer_x;
 					scene_viewer->previous_pointer_y=pointer_y;
@@ -4478,7 +4739,8 @@ performed in idle time so that multiple redraws are avoided.
 		if (return_code)
 		{
 			/* allocate memory for the scene_viewer structure */
-			if (ALLOCATE(scene_viewer,struct Scene_viewer,1)&&
+			scene_viewer = new Scene_viewer();
+			if (scene_viewer &&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
@@ -4524,7 +4786,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->depth_of_field=0.0;  /* default 0==infinite */
 				scene_viewer->focal_depth=0.0;
 				scene_viewer->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
- 				scene_viewer->transform_flag=0;
+				scene_viewer->transform_flag=0;
 				scene_viewer->first_fast_change=1;
 				scene_viewer->fast_changing=0;
 				scene_viewer->stereo_eye_spacing=0.25;
@@ -4727,6 +4989,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);
 		}
+		scene_viewer->removeAllOutputTransformationFields();
 
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
@@ -4734,7 +4997,8 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
 		}
-		DEALLOCATE(*scene_viewer_address);
+		delete scene_viewer;
+		*scene_viewer_address = 0;
 		return_code=1;
 	}
 	else
@@ -9366,3 +9630,28 @@ Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
 	return interactive_tool;
 }
 
+int Cmiss_scene_viewer_set_output_transformation_field(
+  Cmiss_scene_viewer_id scene_viewer, Cmiss_field_id field,
+  enum Cmiss_graphics_coordinate_system from_coordinate_system,
+  enum Cmiss_graphics_coordinate_system to_coordinate_system)
+{
+	if (!scene_viewer)
+		return 0;
+	return scene_viewer->setOutputTransformationField(field, from_coordinate_system, to_coordinate_system);
+}
+
+int Cmiss_scene_viewer_remove_output_transformation_field(
+	Cmiss_scene_viewer_id scene_viewer, Cmiss_field_id field)
+{
+	if (!scene_viewer)
+		return 0;
+	return scene_viewer->removeOutputTransformationField(field);
+}
+
+int Cmiss_scene_viewer_remove_all_output_transformation_fields(
+	Cmiss_scene_viewer_id scene_viewer)
+{
+	if (!scene_viewer)
+		return 0;
+	return scene_viewer->removeAllOutputTransformationFields();
+}

@@ -60,8 +60,6 @@ typedef enum Cmiss_graphic_type Cmiss_graphic_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_coordinate_system);
-
 /***************************************************************************//**
  * Unique identifier for each graphic attribute, used to query whether it can be
  * used with each Cmiss_graphic_type.

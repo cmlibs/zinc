@@ -76,6 +76,7 @@ extern "C" {
 #include "general/object.h"
 #include "general/photogrammetry.h"
 #include "graphics/colour.h"
+#include "graphics/graphic.h"
 #include "graphics/graphics_window.h"
 #if defined (MOTIF_USER_INTERFACE)
 static char graphics_window_uidh[] = 
@@ -97,6 +98,7 @@ extern "C" {
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
 }
+#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/scene.hpp"
 extern "C" {
 #include "graphics/scene_viewer.h"
@@ -3061,6 +3063,168 @@ Parser commands for modifying the overlay scene of the current pane of the
 
 	return (return_code);
 } /* modify_Graphics_window_overlay */
+
+/***************************************************************************//**
+ * Modifier function for adding and removing fields for scene viewer (window
+ * pane) transformations to be output to.
+ */
+static int modify_Graphics_window_output_transformation(struct Parse_state *state,
+	void *window_void,void *modify_graphics_window_data_void)
+{
+	int return_code;
+	ENTER(modify_Graphics_window_output_transformation);
+	Modify_graphics_window_data *modify_graphics_window_data =
+		reinterpret_cast<struct Modify_graphics_window_data *>(modify_graphics_window_data_void);
+	if (state && modify_graphics_window_data)
+	{
+		if (state->current_token)
+		{
+			char *field_path_and_name = 0;
+			char *from_coordinate_system_string = 0;
+			char *to_coordinate_system_string = 0;
+			int pane = 1;
+			char remove = 0;
+			int number_of_valid_strings = 0;
+			const char **valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+				(void *)NULL);
+			std::string all_coordinate_systems = " ";
+			for (int i = 0; i < number_of_valid_strings; i++)
+			{
+				if (i)
+					all_coordinate_systems += "|";
+				all_coordinate_systems += valid_strings[i];
+			}
+			const char *all_coordinate_systems_help = all_coordinate_systems.c_str();
+			Option_table *option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"Set a 16-component real constant field to be continuously updated with the transformation "
+				"between 'from' and 'to' graphics coordinate systems in the given pane of window. "
+				"Specify 'remove' to remove the field from being updated, and without field to remove all.");
+			Option_table_add_string_entry(option_table, "field",
+				&field_path_and_name, " [REGION_PATH/]FIELD_NAME");
+			Option_table_add_string_entry(option_table, "from_coordinate_system",
+				&from_coordinate_system_string, all_coordinate_systems_help);
+			Option_table_add_int_non_negative_entry(option_table, "pane",
+				&pane);
+			Option_table_add_char_flag_entry(option_table, "remove",
+				&remove);
+			Option_table_add_string_entry(option_table, "to_coordinate_system",
+				&to_coordinate_system_string, all_coordinate_systems_help);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			DEALLOCATE(valid_strings);
+			if (return_code)
+			{
+				Cmiss_graphics_coordinate_system from_coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID;
+				Cmiss_graphics_coordinate_system to_coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID;
+				if (from_coordinate_system_string)
+				{
+					STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(from_coordinate_system_string,
+						&from_coordinate_system);
+					if (CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID == from_coordinate_system)
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx modify window ~ output_transformation:  Invalid coordinate system %s", from_coordinate_system_string);
+						return_code = 0;
+					}
+				}
+				if (to_coordinate_system_string)
+				{
+					STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(to_coordinate_system_string,
+						&to_coordinate_system);
+					if (CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID == to_coordinate_system)
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx modify window ~ output_transformation:  Invalid coordinate system %s", to_coordinate_system_string);
+						return_code = 0;
+					}
+				}
+				Cmiss_field_id field = 0;
+				if (field_path_and_name)
+				{
+					Cmiss_region_id region = 0;
+					char *region_path = 0;
+					char *remainder = 0;
+					if (Cmiss_region_get_partial_region_path(modify_graphics_window_data->root_region,
+						field_path_and_name, &region, &region_path, &remainder))
+					{
+						field = Cmiss_region_find_field_by_name(region, remainder);
+						if (!field)
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx modify window ~ output_transformation:  Could not find field %s", field_path_and_name);
+							return_code = 0;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+					DEALLOCATE(region_path);
+					DEALLOCATE(remainder);
+				}
+				Graphics_window *window = reinterpret_cast<struct Graphics_window *>(window_void);
+				Scene_viewer *scene_viewer = 0;
+				if (window)
+				{
+					scene_viewer = Graphics_window_get_Scene_viewer(window, pane - 1);
+					if (!scene_viewer)
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx modify window ~ output_transformation: Invalid pane %d", pane);
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					if (remove)
+					{
+						if (field)
+						{
+							return_code =
+								Cmiss_scene_viewer_remove_output_transformation_field(scene_viewer, field);
+						}
+						else
+						{
+							return_code =
+								Cmiss_scene_viewer_remove_all_output_transformation_fields(scene_viewer);
+						}
+					}
+					else
+					{
+						return_code = Cmiss_scene_viewer_set_output_transformation_field(
+							scene_viewer, field, from_coordinate_system, to_coordinate_system);
+					}
+				}
+				if (field)
+				{
+					Cmiss_field_destroy(&field);
+				}
+			}
+			DESTROY(Option_table)(&option_table);
+			DEALLOCATE(field_path_and_name);
+			DEALLOCATE(from_coordinate_system_string);
+			DEALLOCATE(to_coordinate_system_string);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"Missing window output transformation modifications");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"modify_Graphics_window_output_transformation.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}
 
 int Graphics_window_set_antialias_mode(struct Graphics_window *graphics_window,
 	int antialias_mode)
@@ -8494,6 +8658,9 @@ Parameter <help_mode> should be NULL when calling this function.
 				Option_table_add_entry(valid_window_option_table, "overlay",
 						(void *)window, modify_graphics_window_data_void,
 						modify_Graphics_window_overlay);
+				Option_table_add_entry(valid_window_option_table, "output_transformation",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_output_transformation);
 				Option_table_add_entry(valid_window_option_table, "set",
 						(void *)window, modify_graphics_window_data_void,
 						modify_Graphics_window_set);
