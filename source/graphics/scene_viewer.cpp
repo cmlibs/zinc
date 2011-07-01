@@ -518,10 +518,10 @@ int Scene_viewer::setOutputTransformationField(Cmiss_field_id field,
 		Cmiss_field_access(field);
 		output_transformations[field] = transformation;
 	}
-	double viewport_width = Graphics_buffer_get_width(graphics_buffer);
-	double viewport_height = Graphics_buffer_get_height(graphics_buffer);
+	int viewport_width = Graphics_buffer_get_width(graphics_buffer);
+	int viewport_height = Graphics_buffer_get_height(graphics_buffer);
 	Scene_viewer_calculate_transformation(this, viewport_width, viewport_height);
-	return outputTransformation(field, viewport_width, viewport_height, *transformation);
+	return outputTransformation(field, (double)viewport_width, (double)viewport_height, *transformation);
 }
 
 int Scene_viewer::removeOutputTransformationField(Cmiss_field_id field)
