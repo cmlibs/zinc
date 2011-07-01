@@ -3924,10 +3924,10 @@ int Cmiss_graphic_execute_non_distorted_ndc_objects(
 	struct Cmiss_graphic *graphic, void *renderer_void)
 {
 	int return_code = 1;
-	Render_graphics_opengl *renderer;
+	Render_graphics *renderer;
 
 	ENTER(Cmiss_graphic_compile_visible_graphic);
-	if (graphic && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
+	if (graphic && (renderer = static_cast<Render_graphics *>(renderer_void)))
 	{
 		return_code = 1;
 		if (graphic->graphics_object)
@@ -3970,10 +3970,10 @@ int Cmiss_graphic_compile_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void)
 {
 	int return_code = 1;
-	Render_graphics_opengl *renderer;
+	Render_graphics *renderer;
 
 	ENTER(Cmiss_graphic_compile_visible_graphic);
-	if (graphic && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
+	if (graphic && (renderer = static_cast<Render_graphics *>(renderer_void)))
 	{
 		return_code = 1;
 		if (graphic->graphics_object)
@@ -4036,10 +4036,10 @@ int Cmiss_graphic_execute_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void)
 {
 	int return_code = 1;
-	Render_graphics_opengl *renderer;
+	Render_graphics *renderer;
 
 	ENTER(Cmiss_graphic_execute_visible_graphic);
-	if (graphic && (renderer = static_cast<Render_graphics_opengl *>
+	if (graphic && (renderer = static_cast<Render_graphics *>
 			(renderer_void)))
 	{
 		return_code = 1;

@@ -112,6 +112,11 @@ public:
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object) = 0;
 
+	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *)
+	{
+		return 1;
+	}
+
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */

@@ -175,7 +175,7 @@ public:
 	}
 #endif
 
-	int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
+	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
 	{
 		return Graphics_object_render_opengl(graphics_object, this,
 			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
@@ -509,7 +509,7 @@ public:
 		return Render_immediate::Graphics_object_execute(graphics_object);
 	}
 
-	int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
+	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
 	{
 		if (graphics_object->display_list ||
 			(graphics_object->display_list=glGenLists(1)))

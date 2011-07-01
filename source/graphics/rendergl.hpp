@@ -100,8 +100,6 @@ public:
 
 	virtual int Register_overlay_graphics_object(GT_object *graphics_object);
 
-	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object) = 0;
-
 	/**************************************************************************//**
 	 * Temporarily override the viewing coordinates so that the current opengl
 	 * display is in normalised device coordinates (aligned with the viewport).
