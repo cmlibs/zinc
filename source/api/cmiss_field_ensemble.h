@@ -41,7 +41,7 @@
 #if !defined (CMISS_FIELD_ENSEMBLE_H)
 #define CMISS_FIELD_ENSEMBLE_H
 
-#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_ensemble_id.h"
 #include "api/types/cmiss_field_module_id.h"
@@ -127,8 +127,6 @@ Cmiss_ensemble_iterator_id Cmiss_field_ensemble_group_get_first_entry(
  */
 int Cmiss_field_ensemble_group_increment_entry(Cmiss_field_ensemble_group_id ensemble_group_field,
 	Cmiss_ensemble_iterator_id iterator);
-
-
 
 int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index_id *index_address);
 

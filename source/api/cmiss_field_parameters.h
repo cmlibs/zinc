@@ -42,7 +42,7 @@
 #if !defined (CMISS_FIELD_PARAMETERS_H)
 #define CMISS_FIELD_PARAMETERS_H
 
-#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_ensemble_id.h"
 #include "api/types/cmiss_field_module_id.h"

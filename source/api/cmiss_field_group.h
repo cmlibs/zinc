@@ -45,7 +45,7 @@
 #if !defined (CMISS_FIELD_GROUP_H)
 #define CMISS_FIELD_GROUP_H
 
-#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_group_id.h"

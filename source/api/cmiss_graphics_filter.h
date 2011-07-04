@@ -43,7 +43,7 @@
 #ifndef __CMISS_GRAPHICS_FILTER_H__
 #define __CMISS_GRAPHICS_FILTER_H__
 
-#include "api/types/cmiss_c_inline_id.h"
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_graphic_id.h"
 #include "api/types/cmiss_graphics_filter_id.h"
 #include "api/types/cmiss_graphics_module_id.h"

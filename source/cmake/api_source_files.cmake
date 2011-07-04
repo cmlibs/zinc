@@ -42,11 +42,41 @@ SET( API_HDRS
 	source/api/cmiss_tessellation.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
-	source/api/cmiss_time_sequence.h )
+	source/api/cmiss_time_sequence.h 
+	source/api/types/cmiss_c_inline.h
+	source/api/types/cmiss_context_id.h
+	source/api/types/cmiss_element_id.h
+	source/api/types/cmiss_field_alias_id.h
+	source/api/types/cmiss_field_ensemble_id.h
+	source/api/types/cmiss_field_finite_element_id.h
+	source/api/types/cmiss_field_group_id.h
+	source/api/types/cmiss_field_id.h
+	source/api/types/cmiss_field_image_id.h
+	source/api/types/cmiss_field_image_processing_id.h
+	source/api/types/cmiss_field_module_id.h
+	source/api/types/cmiss_field_parameters_id.h
+	source/api/types/cmiss_field_subobject_group_id.h
+	source/api/types/cmiss_graphic_id.h
+	source/api/types/cmiss_graphics_filter_id.h
+	source/api/types/cmiss_graphics_material_id.h
+	source/api/types/cmiss_graphics_module_id.h
+	source/api/types/cmiss_interactive_tool_id.h
+	source/api/types/cmiss_node_id.h
+	source/api/types/cmiss_region_id.h
+	source/api/types/cmiss_rendition_id.h
+	source/api/types/cmiss_scene_id.h
+	source/api/types/cmiss_scene_viewer_id.h
+	source/api/types/cmiss_selection_id.h
+	source/api/types/cmiss_spectrum_id.h
+	source/api/types/cmiss_tessellation_id.h
+	source/api/types/cmiss_time_id.h
+	source/api/types/cmiss_time_keeper_id.h
+	source/api/types/cmiss_time_sequence_id.h )
 	
 IF( USE_OPENCASCADE )
 	SET( API_HDRS ${API_HDRS}
-		source/api/cmiss_field_cad.h )
+		source/api/cmiss_field_cad.h 
+		source/api/types/cmiss_field_cad_id.h )
 ENDIF( USE_OPENCASCADE )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )

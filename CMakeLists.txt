@@ -922,8 +922,14 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_c_inline_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h )
+	IF( USE_OPENCASCADE )
+		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
+			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
+	ENDIF( USE_OPENCASCADE )
+	
+		SET( CMGUI_LIB_API_TYPES_INSTALL_HDRS
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_c_inline.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_context_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_element_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_alias_id.h
@@ -954,8 +960,8 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_keeper_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_sequence_id.h )
 	IF( USE_OPENCASCADE )
-		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
-			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
+		SET( CMGUI_LIB_API_TYPES_INSTALL_HDRS ${CMGUI_LIB_API_TYPES_INSTALL_HDRS}
+			${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_cad_id.h )
 	ENDIF( USE_OPENCASCADE )
 
 	# Install headers for cmgui_general
@@ -975,6 +981,9 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		DESTINATION include/cmgui/configure )
 
 	# Api directory installs
+	INSTALL( FILES ${CMGUI_LIB_API_TYPES_INSTALL_HDRS}
+		DESTINATION include/cmgui/api/types )
+		
 	INSTALL( FILES ${CMGUI_LIB_API_INSTALL_HDRS}
 		${GENERAL_LIB_API_INSTALL_HDRS}
 		${CORE_FIELDS_LIB_API_INSTALL_HDRS}
