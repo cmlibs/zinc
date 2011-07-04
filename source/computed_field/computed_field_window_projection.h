@@ -45,7 +45,6 @@ DESCRIPTION :
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_field_window_projection_id.h"
 #include "api/types/cmiss_scene_viewer_id.h"
 
 enum Cmiss_field_window_projection_type
