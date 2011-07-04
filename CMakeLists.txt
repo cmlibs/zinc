@@ -907,12 +907,10 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_parameters.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_window_projection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_filter.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_material.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_module.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_window.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_idle.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_interactive_tool.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_node.h
@@ -939,7 +937,6 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_module_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_parameters_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_subobject_group_id.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_window_projection_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphic_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_filter_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_material_id.h
