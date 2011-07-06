@@ -89,7 +89,6 @@ extern "C" {
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 #include <OpenGL/glu.h>
-#include <OpenGL/glext.h>
 #include <AGL/agl.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
 }
