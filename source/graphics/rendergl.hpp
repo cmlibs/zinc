@@ -103,7 +103,10 @@ public:
 	virtual int next_layer()
 	{
 		++current_layer;
-		return (current_layer < number_of_layers);
+		if (current_layer < number_of_layers)
+			return 1;
+		current_layer = 0;
+		return 0;
 	}
 
 }; /* class Render_graphics_opengl */
