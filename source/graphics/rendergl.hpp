@@ -43,13 +43,6 @@
 
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
-#include <map>
-
-/***************************************************************************//**
- * Common code for all OpenGL based implementations.
- */
-typedef std::multimap<int, GT_object*> GT_object_map;
-typedef std::multimap<int, GT_object*>::iterator GT_object_iterator;
 
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
@@ -70,9 +63,9 @@ public:
 	Texture_tiling *texture_tiling;  /** If a given texture is compiled into tiles
 													 then this field is filled in and expected to
 													 be used when compiling graphics that use that material. */
-	GT_object_map overlay_graphics;
-	
 	double viewport_width, viewport_height;
+
+	int current_layer, number_of_layers;
 
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
@@ -82,7 +75,9 @@ public:
 		allow_texture_tiling(0),
 		texture_tiling(0),
 		viewport_width(1.0),
-		viewport_height(1.0)
+		viewport_height(1.0),
+		current_layer(0),
+		number_of_layers(1)
 	{
 	}
 
@@ -91,26 +86,25 @@ public:
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object);
 
-	int Overlay_graphics_execute();
-
 	/***************************************************************************//**
 	 * @see Render_graphics::Material_compile
 	 */
 	virtual int Material_compile(Graphical_material *material);
 
-	virtual int Register_overlay_graphics_object(GT_object *graphics_object);
+	virtual int render_layer(int layer)
+	{
+		if (layer == current_layer)
+			return 1;
+		if (layer >= number_of_layers)
+			number_of_layers = layer + 1;
+		return 0;
+	}
 
-	/**************************************************************************//**
-	 * Temporarily override the viewing coordinates so that the current opengl
-	 * display is in normalised device coordinates (aligned with the viewport).
-	 */
-	virtual int Start_ndc_coordinates(enum Cmiss_graphics_coordinate_system coordinate_system) = 0;
-
-	/**************************************************************************//**
-	 * Reverse the changes made by Start_ndc_coordinates and resume normal 
-	 * 3D rendering.
-	 */
-	virtual int End_ndc_coordinates() = 0;
+	virtual int next_layer()
+	{
+		++current_layer;
+		return (current_layer < number_of_layers);
+	}
 
 }; /* class Render_graphics_opengl */
 

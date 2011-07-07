@@ -106,19 +106,6 @@ int Scene_compile_members(struct Scene *scene,
 	Render_graphics *renderer);
 
 /***************************************************************************//**
- * Compile the display list for this object.
- */
-int Scene_compile_opengl_display_list(struct Scene *scene,
-	Callback_base< Scene * > *execute_function,
-	Render_graphics_opengl *renderer);
-
-/***************************************************************************//**
- * Execute the display list for this object.
- */
-int Scene_execute_opengl_display_list(struct Scene *scene,
-	Render_graphics_opengl *renderer);
-
-/***************************************************************************//**
  * Private function only to be called by Cmiss_graphics_filter constructors.
  */
 int Scene_add_filter_private(Scene *scene, Cmiss_graphics_filter *filter);

@@ -61,7 +61,7 @@ extern "C" {
 
 int Render_graphics_compile_members::Scene_compile(Scene *scene)
 {
-	Render_graphics_push_scene push_scene(*this, scene);
+	set_Scene(scene);
 	return Scene_compile_members(scene, this);
 }
 
@@ -73,9 +73,4 @@ int Render_graphics_compile_members::Cmiss_rendition_compile(Cmiss_rendition *cm
 int Render_graphics_compile_members::Cmiss_rendition_compile_members(Cmiss_rendition *cmiss_rendition)
 {
 	return Cmiss_rendition_compile_members_rendition(cmiss_rendition, this);
-}
-
-int Render_graphics_compile_members::Update_non_distorted_ndc_objects(Cmiss_rendition *cmiss_rendition)
-{
-	return Cmiss_rendition_update_non_distorted_ndc_objects(cmiss_rendition, this);
 }

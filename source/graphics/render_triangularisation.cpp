@@ -536,7 +536,7 @@ Render_graphics_triangularisation::~Render_graphics_triangularisation()
 
 int Render_graphics_triangularisation::Scene_execute(Scene *scene)
 {
-	USE_PARAMETER(scene);
+	set_Scene(scene);
  	render_scene_triangularisation(scene, trimesh);
 	return 1;
 }

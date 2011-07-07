@@ -122,30 +122,9 @@ int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
 	return Graphics_object_compile_members_opengl(graphics_object, this);
 }
 
-int Render_graphics_opengl::Overlay_graphics_execute()
-{
-	int return_code = 1;
-	GT_object_iterator pos;
-	int i = 1;
-
-	for (pos = overlay_graphics.begin(); pos != overlay_graphics.end(); ++pos)
-	{
-		// glLoadName((GLuint)i);
-		Graphics_object_execute(pos->second);
-		i++;
-	}
-	return return_code;
-}
-
 int Render_graphics_opengl::Material_compile(Graphical_material *material)
 {
 	return Material_compile_members_opengl(material, this);
-}
-
-int Render_graphics_opengl::Register_overlay_graphics_object(GT_object *graphics_object)
-{
-	overlay_graphics.insert(std::make_pair(graphics_object->overlay, graphics_object));
-	return 1;
 }
 
 /***************************************************************************//**
@@ -164,21 +143,8 @@ public:
 	 */
 	int Scene_execute(Scene *scene)
 	{
-		Render_graphics_push_scene push_scene(*this, scene);
+		set_Scene(scene);
 		return Scene_render_opengl(scene, this);
-	}
-
-#if defined (USE_SCENE_OBJECT)
-	int Scene_object_execute(Scene_object *scene_object)
-	{
-		return execute_Scene_object(scene_object, this);
-	}
-#endif
-
-	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
-	{
-		return Graphics_object_render_opengl(graphics_object, this,
-			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	}
 
 	int Graphics_object_execute(GT_object *graphics_object)
@@ -233,66 +199,100 @@ public:
 		return Light_model_render_opengl(light_model, this);
 	}
 
-	int Start_ndc_coordinates(enum Cmiss_graphics_coordinate_system coordinate_system)
+	virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
 	{
-		if (picking)
+		int return_code = 1;
+		switch (coordinate_system)
 		{
-			/* To position this correctly we would need to know where the small
-			 * window we are looking at is in the whole window.  I don't think this
-			 * is right but at least it allows selection of non ndc objects.
-			 */
-	#if defined (OLD_CODE)
-			glMatrixMode(GL_PROJECTION);
-			glPushMatrix();
-			glLoadIdentity();
-			glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
-	#endif /* defined (OLD_CODE) */
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
-			gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-				/*up*/0.0,1.0,0.0);
-		}
-		else
-		{
-			/* Push the current model matrix and reset the model matrix to identity */
-			glMatrixMode(GL_PROJECTION);
-			glPushMatrix();
-			glLoadIdentity();
-			double left, right, bottom, top;
-			if (Cmiss_graphics_coordinate_system_get_viewport(coordinate_system,
-				viewport_width, viewport_height, &left, &right, &bottom, &top))
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
 			{
-				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
-					and +1 to be the far clipping plane */
-				glOrtho(left, right, bottom, top, /*nearVal*/1.0, /*farVal*/3.0);
-			}
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
-			gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-				/*up*/0.0,1.0,0.0);
+				/* Do nothing */
+			} break;
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+			{
+				glMatrixMode(GL_MODELVIEW);
+				glPushMatrix();
+				glLoadMatrixd(world_view_matrix);
+			} break;
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+			{
+				if (picking)
+				{
+					/* To pick correctly need additional transformation to interaction volume.
+					 * skip window-relative graphics for now. */
+					return_code = 0;
+				}
+				else
+				{
+					/* Push the current model matrix and reset the model matrix to identity */
+					glMatrixMode(GL_PROJECTION);
+					glPushMatrix();
+					glLoadIdentity();
+					double left, right, bottom, top;
+					if (Cmiss_graphics_coordinate_system_get_viewport(coordinate_system,
+						viewport_width, viewport_height, &left, &right, &bottom, &top))
+					{
+						/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
+							and +1 to be the far clipping plane */
+						glOrtho(left, right, bottom, top, /*nearVal*/1.0, /*farVal*/3.0);
+					}
+					else
+					{
+						return_code = 0;
+					}
+					glMatrixMode(GL_MODELVIEW);
+					glPushMatrix();
+					glLoadIdentity();
+					gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+						/*up*/0.0,1.0,0.0);
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"begin_coordinate_system.  Invalid graphics coordinate system.");
+				return_code = 0;
+			} break;
 		}
-		return 1;
+		return return_code;
 	}
 
-	int End_ndc_coordinates()
+	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
 	{
-		if (picking)
+		switch (coordinate_system)
 		{
-			/* Pop the model matrix stack */
-			glMatrixMode(GL_MODELVIEW);
-			glPopMatrix();
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+			{
+				/* Do nothing */
+			} break;
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+			{
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+			} break;
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+			{
+				/* Pop the model matrix stack */
+				glMatrixMode(GL_PROJECTION);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+			} break;
+			default:
+			{
+			} break;
 		}
-		else
-		{
-			/* Pop the model matrix stack */
-			glMatrixMode(GL_PROJECTION);
-			glPopMatrix();
-			glMatrixMode(GL_MODELVIEW);
-			glPopMatrix();
-		}
-		return 1;
 	}
 
 }; /* class Render_graphics_opengl_glbeginend */
@@ -377,7 +377,7 @@ public:
 			GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
 	}
 
-}; /* class Render_graphics_opengl_client_vertex_arrays */
+}; /* class Render_graphics_opengl_vertex_buffer_object */
 
 Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer(
 	Graphics_buffer *graphics_buffer)
@@ -414,79 +414,15 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_rende
 template <class Render_immediate> class Render_graphics_opengl_display_list
 	: public Render_immediate
 {
-#if defined (OLD_CODE)
-	/* can't have these display lists owned by renderer as they are deleted while still called by graphics object */
-   int ndc_display_list, end_ndc_display_list;
-#endif /* defined (OLD_CODE) */
 	
 public:
 	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
 		Render_immediate(graphics_buffer)
 	{
-#if defined (OLD_CODE)
-		ndc_display_list = 0;
-		end_ndc_display_list = 0;
-#endif /* defined (OLD_CODE) */
 	}
 	
 	~Render_graphics_opengl_display_list()
 	{
-#if defined (OLD_CODE)
-		if (ndc_display_list)
-		{
-			glDeleteLists(ndc_display_list,1);
-		}
-		if (end_ndc_display_list)
-		{
-			glDeleteLists(end_ndc_display_list,1);
-		}
-#endif /* defined (OLD_CODE) */
-	}
-
-	int Scene_execute_parent(Scene *scene)
-	{
-		return Render_immediate::Scene_execute(scene);
-	}
-
-	int Scene_compile(Scene *scene)
-	{
-		int return_code;
-		
-#if defined (OLD_CODE)
-		/* Compile the ndc_display_lists here */
-		if (ndc_display_list || (ndc_display_list = glGenLists(1)))
-		{
-			glNewList(ndc_display_list, GL_COMPILE);
-			Render_immediate::Start_ndc_coordinates();
-			glEndList();
-		}
-		if (end_ndc_display_list || (end_ndc_display_list = glGenLists(1)))
-		{
-			glNewList(end_ndc_display_list, GL_COMPILE);
-			Render_immediate::End_ndc_coordinates();
-			glEndList();
-		}
-#endif /* defined (OLD_CODE) */
-		Render_graphics_push_scene push_scene(*this, scene);
-		return_code = Render_immediate::Scene_compile(scene);
-		if (return_code)
-		{
-			Callback_member_callback< Scene*, Render_graphics_opengl_display_list,
-				int (Render_graphics_opengl_display_list::*)(Scene*) >
-				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
-				&Render_graphics_opengl_display_list::Scene_execute_parent);
-			return_code = Scene_compile_opengl_display_list(scene, 
-				&execute_method, this);
-		}
-		return (return_code);
-	}
-
-	/***************************************************************************//**
-	 * Execute the Scene.
-	 */
-	int Scene_execute(Scene *scene)
-	{
-		return Scene_execute_opengl_display_list(scene, this);
 	}
 
 	int Cmiss_rendition_execute_members_parent(Cmiss_rendition *cmiss_rendition)
@@ -507,19 +443,6 @@ public:
 	int Graphics_object_execute_parent(GT_object *graphics_object)
 	{
 		return Render_immediate::Graphics_object_execute(graphics_object);
-	}
-
-	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *graphics_object)
-	{
-		if (graphics_object->display_list ||
-			(graphics_object->display_list=glGenLists(1)))
-		{
-			glNewList(graphics_object->display_list,GL_COMPILE);
-			Render_graphics_opengl_display_list::Graphics_object_execute_parent(graphics_object);
-			glEndList();
-			return 1;
-		}
-		return 0;
 	}
 
 	int Graphics_object_compile(GT_object *graphics_object)
@@ -587,7 +510,7 @@ public:
 				int (Render_graphics_opengl_display_list::*)(Texture*) >
 				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
 				&Render_graphics_opengl_display_list::Texture_execute_parent);
-			return_code = Texture_compile_opengl_display_list(texture, 
+			return_code = Texture_compile_opengl_display_list(texture,
 				&execute_method, this);
 		}
 		return (return_code);
@@ -597,46 +520,6 @@ public:
 	{
 		return Texture_execute_opengl_display_list(texture, this);
 	}
-
-#if defined (OLD_CODE)
-	int Start_ndc_coordinates()
-	{
-	   int return_code;
-	   if (this->picking)
-	   {
-			Render_immediate::Start_ndc_coordinates();   	
-	   }
-	   else if (ndc_display_list)
-	   {
-	   	glCallList(ndc_display_list);
-	   	return_code = 1;
-	   }
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
-	}
-
-	int End_ndc_coordinates()
-	{
-	   int return_code;
-	   if (this->picking)
-	   {
-			Render_immediate::End_ndc_coordinates();
-	   }
-	   else if (end_ndc_display_list)
-	   {
-	   	glCallList(end_ndc_display_list);
-	   	return_code = 1;
-	   }
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
-	}
-#endif /* defined (OLD_CODE) */
 	
 }; /* class Render_graphics_opengl_display_list */
 
@@ -4744,33 +4627,6 @@ static int Graphics_object_render_opengl(
 		{
 			glPushName(0);
 		}
-		if (graphics_object->overlay)
-		{
-			glDisable(GL_DEPTH_TEST);
-		}
-		switch (graphics_object->coordinate_system)
-		{
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
-			{
-				/* Do nothing */
-			} break;
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-			{
-				renderer->Start_ndc_coordinates(graphics_object->coordinate_system);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Invalid object coordinate system.");
-				return_code=0;
-			} break;
-		}
-
 		graphics_object_no=0;
 		for (graphics_object_item=graphics_object;graphics_object_item != NULL;
 			graphics_object_item=graphics_object_item->nextobject)
@@ -4816,31 +4672,6 @@ static int Graphics_object_render_opengl(
 				}
 			}
 		}		
-		if (graphics_object->overlay)
-		{
-			glEnable(GL_DEPTH_TEST);
-		}
-		switch (graphics_object->coordinate_system)
-		{
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
-			{
-				/* Do nothing */
-			} break;
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-			case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-			{
-				renderer->End_ndc_coordinates();
-			} break;
-			default:
-			{
-			} break;
-		}
-
 		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPopName();

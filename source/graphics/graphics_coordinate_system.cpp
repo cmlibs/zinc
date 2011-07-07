@@ -173,3 +173,23 @@ int Cmiss_graphics_coordinate_system_get_viewport(
 	}
 	return return_code;
 }
+
+/*******************************************************************************
+ * Returns true if the coordinate_system is window-relative, which currently
+ * determines whether it is drawn as an overlay.
+ *
+ * @param coordinate_system  The graphics coordinate system.
+ * @return  1 if window-relative, 0 if not.
+ */
+int Cmiss_graphics_coordinate_system_is_window_relative(
+	enum Cmiss_graphics_coordinate_system coordinate_system)
+{
+	return
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT);
+}

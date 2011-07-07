@@ -351,9 +351,6 @@ int Cmiss_graphic_set_visibility_field(
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
 
-int Cmiss_graphic_execute_non_distorted_ndc_objects(
-	struct Cmiss_graphic *graphic, void *renderer_void);
-
 /***************************************************************************//** 
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is compiled.

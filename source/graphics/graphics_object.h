@@ -1425,24 +1425,6 @@ DESCRIPTION :
 Gets the spectrum of a GT_object.
 ==============================================================================*/
 
-enum Cmiss_graphics_coordinate_system GT_object_get_coordinate_system(
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 9 June 2005
-
-DESCRIPTION :
-Gets the graphical coordinate system of a GT_object.
-==============================================================================*/
-
-int GT_object_set_coordinate_system(struct GT_object *graphics_object,
-	enum Cmiss_graphics_coordinate_system coordinate_system);
-/*******************************************************************************
-LAST MODIFIED : 9 June 2005
-
-DESCRIPTION :
-Sets the graphical coordinate system of a GT_object.
-==============================================================================*/
-
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 5 January 1998
@@ -1505,9 +1487,5 @@ LAST MODIFIED : 12 October 2005
 DESCRIPTION :
 Frees the memory for <**context> and sets <*context> to NULL.
 ==============================================================================*/
-
-int GT_object_get_overlay(struct GT_object *graphics_object);
-
-int set_GT_object_overlay(struct GT_object *graphics_object, int overlay);
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */

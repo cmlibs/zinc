@@ -83,8 +83,8 @@ enum Cmiss_graphics_coordinate_system
 	 * bottom-to-top in largest square that fits in top of window.*/
 	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9
 	/*!< Window coordinate system in pixel units with 0,0 at bottom, left of
-	 * bottom-left pixel in display window, abd depth ranging from far = -1 to
+	 * bottom-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1.*/
-}; /* enum Cmiss_graphics_type */
+}; /* enum Cmiss_graphics_coordinate_system */
 
 #endif /* CMISS_GRAPHICS_COORDINATE_SYSTEM_H */

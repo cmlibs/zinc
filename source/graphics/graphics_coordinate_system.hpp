@@ -66,4 +66,14 @@ int Cmiss_graphics_coordinate_system_get_viewport(
 	double viewport_width, double viewport_height,
 	double *left, double *right, double *bottom, double *top);
 
+/*******************************************************************************
+ * Returns true if the coordinate_system is window-relative, which currently
+ * determines whether it is drawn as an overlay.
+ *
+ * @param coordinate_system  The graphics coordinate system.
+ * @return  1 if window-relative, 0 if not.
+ */
+int Cmiss_graphics_coordinate_system_is_window_relative(
+	enum Cmiss_graphics_coordinate_system coordinate_system);
+
 #endif /* GRAPHICS_COORDINATE_SYSTEM_HPP */

@@ -42,8 +42,9 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdio.h>
+#include <cstdio>
 #include <string>
+#include <map>
 #include <set>
 #include <vector>
 #if defined (BUILD_WITH_CMAKE)
@@ -260,24 +261,10 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* flag indicating that graphics objects in scene objects need building */
 	int build;
 	Cmiss_graphics_filter_id filter;
-#if defined (OPENGL_API)
-	/* display list identifier for the scene */
-	GLuint display_list,fast_changing_display_list;
-	/* objects compiled within the context of this scene will execute these
-		display lists if the want to switch to ndc coordinate system and when
-		they want to switch back. These are overridden when picking to ensure that
-		the correct objects are selected. */
-	GLuint ndc_display_list;
-	GLuint end_ndc_display_list;
-#endif /* defined (OPENGL_API) */
-	/* enumeration indicates whether the graphics display list is up to date */
-	enum Graphics_compile_status compile_status;
 	/* the number of objects accessing this scene. The scene cannot be removed
 		from manager unless it is 1 (ie. only the manager is accessing it) */
 	int access_count;
 }; /* struct Scene */
-
-
 
 FULL_DECLARE_LIST_TYPE(Scene);
 FULL_DECLARE_MANAGER_TYPE(Scene);
@@ -322,81 +309,20 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 	if (scene)
 	{
 		return_code = 1;
-		if (GRAPHICS_COMPILED != scene->compile_status)
+		/* compile objects in the scene */
+		if (scene->list_of_rendition)
 		{
-#if defined (NEW_CODE)
-			if (scene->ndc_display_list || (scene->ndc_display_list = glGenLists(1)))
+			Rendition_set::iterator pos =
+				scene->list_of_rendition->begin();
+			while (pos != scene->list_of_rendition->end())
 			{
-				glNewList(scene->ndc_display_list, GL_COMPILE);
-				/* Push the current model matrix and reset the model matrix to identity */
-				glMatrixMode(GL_PROJECTION);
-				glPushMatrix();
-				glLoadIdentity();
-				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
-					and +1 to be the far clipping plane */
-				glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
-				glMatrixMode(GL_MODELVIEW);
-				glPushMatrix();
-				glLoadIdentity();
-				gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-					/*up*/0.0,1.0,0.0);
-				glEndList();
+				renderer->Cmiss_rendition_compile(*pos);
+				++pos;
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Scene.  Could not generate display list");
-				return_code = 0;
-			}
-			if (scene->end_ndc_display_list || (scene->end_ndc_display_list = glGenLists(1)))
-			{
-				glNewList(scene->end_ndc_display_list, GL_COMPILE);
-				/* Pop the model matrix stack */
-				glMatrixMode(GL_PROJECTION);
-				glPopMatrix();
-				glMatrixMode(GL_MODELVIEW);
-				glPopMatrix();
- 				glEndList();
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Scene.  Could not generate display list");
-				return_code = 0;
-			}
-#endif // defined (NEW_CODE)
-			/* compile objects in the scene */
-
-			if (scene->list_of_rendition && 
-				!scene->list_of_rendition->empty())
-			{
-				Rendition_set::iterator pos =
-					scene->list_of_rendition->begin();
-				while (pos != scene->list_of_rendition->end())
-				{
-					renderer->Cmiss_rendition_compile(*pos);
-					++pos;
-				}
-			}
-
-			/* compile lights in the scene */
-			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
-				scene->list_of_lights);
 		}
-//		else
-//		{
-			if (scene->list_of_rendition &&
-				!scene->list_of_rendition->empty())
-			{
-				Rendition_set::iterator pos =
-					scene->list_of_rendition->begin();
-				while (pos != scene->list_of_rendition->end())
-				{
-					renderer->Update_non_distorted_ndc_objects(*pos);
-					++pos;
-				}
-			}
-//		}
+		/* compile lights in the scene */
+		FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
+			scene->list_of_lights);
 	}
 	else
 	{
@@ -407,139 +333,6 @@ int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
 
 	return (return_code);
 } /* Scene_compile_members */
-
-int Scene_compile_opengl_display_list(struct Scene *scene,
-	Callback_base< Scene * > *execute_function,
-	Render_graphics_opengl *renderer)
-{
-	int return_code;
-	Rendition_set::iterator pos;
-
-	ENTER(compile_Scene);
-	USE_PARAMETER(execute_function);
-	if (scene)
-	{
-		return_code = 1;
-		if (GRAPHICS_COMPILED != scene->compile_status)
-		{
-			if (scene->display_list || (scene->display_list = glGenLists(1)))
-			{
-				/* compile non-fast changing part of scene */
-				glNewList(scene->display_list, GL_COMPILE);
-				/* Normally we would call execute_Scene here with the 
-				 * display_list renderer but we are splitting it into two display
-				 * lists.
-				 * execute_function(scene);
-				 */
-				/* push a dummy name to be overloaded with scene_object identifiers */
-				glPushName(0);
-				if (scene->region)
-				{
-					struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
-						scene->region);
-					if (rendition)
-					{
-						Cmiss_rendition_call_renderer(rendition, (void *)renderer);
-						Cmiss_rendition_destroy(&rendition);
-					}
-				}
-				renderer->Overlay_graphics_execute();
-				glPopName();
-				glEndList();
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Scene.  Could not generate display list");
-				return_code = 0;
-			}
-			if (Scene_has_fast_changing_objects(scene))
-			{
-				if (scene->fast_changing_display_list ||
-					(scene->fast_changing_display_list = glGenLists(1)))
-				{
-					renderer->fast_changing = 1;
-					glNewList(scene->fast_changing_display_list, GL_COMPILE);
-					/* push dummy name to be overloaded with scene_object identifiers */
-					glPushName(0);
-					if (scene->region)
-					{
-						struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(
-							scene->region);
-						if (rendition)
-						{
-							Cmiss_rendition_call_renderer(rendition, (void *)renderer);
-							Cmiss_rendition_destroy(&rendition);
-						}
-					}
-					glPopName();
-					glEndList();
-					renderer->fast_changing = 0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"compile_Scene.  Could not generate fast changing display list");
-					return_code = 0;
-				}
-			}
-		}
-		/* Assume the child graphics have just been compiled if necessary, could change
-		 * to toggle GRAPHICS_COMPILED and CHILD_GRAPHICS_COMPILED flags separately.
-		 */
-		if (return_code)
-		{
-			scene->compile_status = GRAPHICS_COMPILED;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "compile_Scene.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compile_Scene */
-
-/***************************************************************************//**
- * Execute the display list for this object.
- */
-int Scene_execute_opengl_display_list(struct Scene *scene, Render_graphics_opengl *renderer)
-{
-	int return_code;
-
-	ENTER(execute_Scene);
-	USE_PARAMETER(renderer);
-	if (scene)
-	{
-		if (GRAPHICS_COMPILED == scene->compile_status)
-		{
-			/* Should handle cases where we only want fast or non-fast */
-			glCallList(scene->display_list);
-			if (Scene_has_fast_changing_objects(scene))
-			{
-				glCallList(scene->fast_changing_display_list);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_child_Scene.  display list not current");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_child_Scene.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_child_Scene */
 
 static int Scene_refresh(struct Scene *scene)
 /*******************************************************************************
@@ -607,11 +400,6 @@ Private to the Scene and Scene_objects
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-		if (GRAPHICS_NOT_COMPILED != scene->compile_status)
-		{
-			/* objects in scene need recompiling */
-			scene->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
-		}
 #if defined (DEBUG)
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
@@ -667,7 +455,6 @@ Private to the Scene and Scene_objects.
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-		scene->compile_status = GRAPHICS_NOT_COMPILED;
 #if defined (DEBUG)
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
@@ -1615,12 +1402,6 @@ from the default versions of these functions.
 		scene->filter = NULL;;
 		scene->cache = 0;
 		scene->build = 1;
-		/* display list index and current flag: */
-		scene->display_list = 0;
-		scene->fast_changing_display_list = 0;
-		scene->ndc_display_list = 0;
-		scene->end_ndc_display_list = 0;
-		scene->compile_status = GRAPHICS_NOT_COMPILED;
 		/* input callback handling information: */
 		scene->input_callback.procedure=(Scene_input_callback_procedure *)NULL;
 		scene->input_callback.data=(void *)NULL;
@@ -1671,23 +1452,6 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_graphics(scene);
 #endif /* defined (OLD_CODE) */
 			DEALLOCATE(scene->name);
-			/* must destroy the display list */
-			if (scene->display_list)
-			{
-				glDeleteLists(scene->display_list,1);
-			}
-			if (scene->fast_changing_display_list)
-			{
-				glDeleteLists(scene->fast_changing_display_list,1);
-			}
-			if (scene->ndc_display_list)
-			{
-				glDeleteLists(scene->ndc_display_list,1);
-			}
-			if (scene->end_ndc_display_list)
-			{
-				glDeleteLists(scene->end_ndc_display_list,1);
-			}
 			if (scene->list_of_rendition)
 			{
 				if (!scene->list_of_rendition->empty())
@@ -3785,6 +3549,7 @@ understood for the type of <interaction_volume> passed.
 								opengl_projection_matrix[j*4+i] = projection_matrix[i*4+j];
 							}
 						}
+						renderer->set_world_view_matrix(opengl_modelview_matrix);
 
 						glSelectBuffer(select_buffer_size,select_buffer);
 						glRenderMode(GL_SELECT);
@@ -3801,7 +3566,11 @@ understood for the type of <interaction_volume> passed.
 						/* glViewport(0,0,1024,1024); */
 						glDepthRange((GLclampd)0,(GLclampd)1);
 						{
-							renderer->Scene_execute(scene);
+							do
+							{
+								return_code = renderer->Scene_execute(scene);
+							}
+							while (return_code && renderer->next_layer());
 						}
 						glFlush();
 						num_hits=glRenderMode(GL_RENDER);
@@ -4057,18 +3826,8 @@ execute_Scene.
 	ENTER(Scene_has_fast_changing_objects);
 	if (scene)
 	{
+		// no longer supported
 		return_code=0;
-#if defined (USE_SCENE_OBJECT)
-		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_is_fast_changing,(void *)NULL,scene->scene_object_list))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-#endif /* defined (USE_SCENE_OBJECT) */
 	}
 	else
 	{
@@ -4157,7 +3916,7 @@ int build_Scene(struct Scene *scene)
 
 int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
-	int return_code = 0;
+	int return_code = 1;
 	Rendition_set::iterator pos;
 	ENTER(Scene_render_opengl);
 	if (scene && renderer)
@@ -4170,11 +3929,12 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 				scene->region);
 			if (rendition)
 			{
-				Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+				renderer->Cmiss_rendition_execute(rendition);
 				Cmiss_rendition_destroy(&rendition);
 			}
 		}
 		glPopName();
+#ifdef OLD_CODE
 		if (Scene_has_fast_changing_objects(scene))
 		{
 			renderer->fast_changing = 1;
@@ -4185,13 +3945,14 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 				scene->region);
 			if (rendition)
 			{
-				Cmiss_rendition_call_renderer(rendition, (void *)renderer);
+				renderer->Cmiss_rendition_execute(rendition);
 				Cmiss_rendition_destroy(&rendition);
 			}
 		}
 			renderer->fast_changing = 0;
 			glPopName();
 		}
+#endif // OLD_CODE
 	}
 	else
 	{
@@ -5051,7 +4812,6 @@ int Scene_rendition_changed(
 			(scene->list_of_rendition->find(rendition)!=scene->list_of_rendition->end()))
 		{
 			scene->build = 1;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
 			scene->change_status = SCENE_CHANGE;
 			if (scene->scene_manager)
 			{
@@ -5232,7 +4992,6 @@ int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter
 		if (return_code && scene->list_of_rendition)
 		{
 			scene->build = 1;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
 			scene->change_status = SCENE_CHANGE;
 			if (scene->scene_manager)
 			{
@@ -5261,7 +5020,6 @@ int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)
 		{
 			scene->build = 1;
 			scene->change_status = SCENE_CHANGE;
-			scene->compile_status = GRAPHICS_NOT_COMPILED;
 			if (scene->scene_manager)
 			{
 				Scene_refresh(scene);

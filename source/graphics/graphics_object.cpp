@@ -3807,7 +3807,6 @@ Allocates memory and assigns fields for a graphics object.
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->update_callback_list =
 				(struct Graphics_object_callback_data *)NULL;
-			object->coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
@@ -3857,7 +3856,6 @@ Allocates memory and assigns fields for a graphics object.
 				object->multipass_frame_buffer_object = 0;
 				object->multipass_frame_buffer_texture = 0;
 #endif /* defined (OPENGL_API) */
-				object->overlay = 0;
 				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
 				if (default_material)
@@ -4098,6 +4096,11 @@ objects interested in this GT_object will be notified that is has changed.
 			GT_object_changed(graphics_object->nextobject);
 		}
 		graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
+		if (graphics_object->manager)
+		{
+			MANAGED_OBJECT_CHANGE(GT_object)(graphics_object,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GT_object));
+		}
 		return_code = GT_object_inform_clients(graphics_object);
 	}
 	else
@@ -7452,75 +7455,6 @@ Gets the spectrum of a GT_object.
 	return (spectrum);
 } /* get_GT_object_spectrum */
 
-enum Cmiss_graphics_coordinate_system GT_object_get_coordinate_system(
-	struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 9 June 2005
-
-DESCRIPTION :
-Gets the graphical coordinate system of a GT_object.
-==============================================================================*/
-{
-	enum Cmiss_graphics_coordinate_system coordinate_system;
-
-	ENTER(GT_object_get_coordinate_system);
-	if (graphics_object)
-	{
-		coordinate_system = graphics_object->coordinate_system;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_get_coordinate_system.  Invalid graphics object");
-		coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID;
-	}
-	LEAVE;
-
-	return (coordinate_system);
-} /* GT_object_get_coordinate_system */
-
-int GT_object_set_coordinate_system(struct GT_object *graphics_object,
-	enum Cmiss_graphics_coordinate_system coordinate_system)
-/*******************************************************************************
-LAST MODIFIED : 9 June 2005
-
-DESCRIPTION :
-Sets the graphical coordinate system of a GT_object.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_object_set_coordinate_system);
-	if (graphics_object)
-	{
-		graphics_object->coordinate_system = coordinate_system;
-		if (coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM ||
-				coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
-		{
-			set_GT_object_overlay(graphics_object, 1);
-		}
-		else
-		{
-			set_GT_object_overlay(graphics_object, 0);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_set_coordinate_system.  Invalid graphics object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_set_coordinate_system */
-
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 1998
@@ -8261,6 +8195,7 @@ Graphics_vertex_array::~Graphics_vertex_array()
 	delete internal;
 }
 
+#if 0
 int GT_object_get_overlay(struct GT_object *graphics_object)
 {
 	return graphics_object->overlay;
@@ -8290,3 +8225,4 @@ int set_GT_object_overlay(struct GT_object *graphics_object, int overlay)
 
 	return (return_code);
 }
+#endif

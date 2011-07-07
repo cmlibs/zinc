@@ -126,9 +126,6 @@ int Cmiss_rendition_end_cache(struct Cmiss_rendition *rendition);
  */
 int Cmiss_region_deaccess_rendition(struct Cmiss_region *region);
 
-int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition, 
-	void *renderer_void);
-
 /***************************************************************************//** 
  * Wrapper for accessing the list of graphic in <Cmiss_rendition>.
  * @param cmiss_rendition target for that rendition

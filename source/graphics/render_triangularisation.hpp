@@ -42,6 +42,7 @@
 #define RENDER_TRIANGULARISATION_HPP
 
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/render.hpp"
 #include "graphics/triangle_mesh.hpp"
 
@@ -155,6 +156,17 @@ public:
 	}
 
 	virtual int Scene_execute(Scene *scene);
+
+	/** Only draw graphics in world and local coordinates. Not fully implemented */
+	virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system coordinate_system)
+	{
+		return !Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system);
+	}
+
+	/** Not fully implemented */
+	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/)
+	{
+	}
 
 	Triangle_mesh *get_triangle_mesh();
 	

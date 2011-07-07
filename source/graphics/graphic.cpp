@@ -2238,8 +2238,6 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 			graphic->secondary_material);
 		set_GT_object_selected_material(graphic->graphics_object,
 			graphic->selected_material);
-		GT_object_set_coordinate_system(graphic->graphics_object,
-			graphic->coordinate_system);
 		if (graphic->data_field && graphic->spectrum)
 		{
 			set_GT_object_Spectrum(graphic->graphics_object,
@@ -3088,8 +3086,6 @@ int Cmiss_graphic_to_point_object_at_time(
 			{
 				overlay = graphic->overlay_order;
 			}
-			GT_object_set_coordinate_system(graphic->graphics_object,
-				graphic->coordinate_system);
 		}
 		else
 		{
@@ -3411,7 +3407,6 @@ int Cmiss_graphic_to_graphics_object(
 						if (graphic->graphics_object)
 						{
 							graphic->selected_graphics_changed=1;
-							GT_object_set_coordinate_system(graphic->graphics_object, graphic->coordinate_system);
 							/* need graphic for FE_element_to_graphics_object routine */
 							graphic_to_object_data->graphic=graphic;
 							switch (graphic->graphic_type)
@@ -3920,52 +3915,6 @@ int Cmiss_graphic_to_graphics_object(
 	return (return_code);
 }
 
-int Cmiss_graphic_execute_non_distorted_ndc_objects(
-	struct Cmiss_graphic *graphic, void *renderer_void)
-{
-	int return_code = 1;
-	Render_graphics *renderer;
-
-	ENTER(Cmiss_graphic_compile_visible_graphic);
-	if (graphic && (renderer = static_cast<Render_graphics *>(renderer_void)))
-	{
-		return_code = 1;
-		if (graphic->graphics_object)
-		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
-			if (filter)
-			{
-				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
-				{
-#if defined (OPENGL_API)
-					glLoadName((GLuint)graphic->position);
-#endif
-					if (graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ||
-						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT ||
-						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT ||
-						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP ||
-						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM ||
-						graphic->coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
-					{
-						return_code = renderer->Non_distorted_ndc_graphics_object_execute(graphic->graphics_object);
-					}
-				}
-				Cmiss_graphics_filter_destroy(&filter);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_compile_visible_graphic.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_compile_visible_graphic */
-
 int Cmiss_graphic_compile_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void)
 {
@@ -3978,19 +3927,12 @@ int Cmiss_graphic_compile_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_Scene());
 			if (filter)
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 				{
-#if defined (OPENGL_API)
-					glLoadName((GLuint)graphic->position);
-#endif
 					return_code = renderer->Graphics_object_compile(graphic->graphics_object);
-					if (graphic->overlay_flag)
-					{
-						return_code = renderer->Register_overlay_graphics_object(graphic->graphics_object);
-					}
 				}
 				Cmiss_graphics_filter_destroy(&filter);
 			}
@@ -4045,19 +3987,23 @@ int Cmiss_graphic_execute_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_scene());
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(renderer->get_Scene());
 			if (filter)
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 				{
-					if (!graphic->overlay_flag)
+					if (renderer->render_layer(graphic->overlay_flag))
 					{
 						//printf("     %i\n", graphic->position);
+						if (renderer->begin_coordinate_system(graphic->coordinate_system))
+						{
 #if defined (OPENGL_API)
-						/* use position in list as name for GL picking */
-						glLoadName((GLuint)graphic->position);
+							/* use position in list as name for GL picking */
+							glLoadName((GLuint)graphic->position);
 #endif /* defined (OPENGL_API) */
-						return_code = renderer->Graphics_object_execute(graphic->graphics_object);
+							return_code = renderer->Graphics_object_execute(graphic->graphics_object);
+							renderer->end_coordinate_system(graphic->coordinate_system);
+						}
 					}
 				}
 				Cmiss_graphics_filter_destroy(&filter);

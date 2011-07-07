@@ -1259,8 +1259,19 @@ scene.
 	ENTER(Scene_viewer_execute_scene_non_fastchanging);
 	if (rendering_data)
 	{
-		return_code = rendering_data->renderer->Scene_execute(
-			rendering_data->scene_viewer->scene);
+		int another_layer = 1;
+		do
+		{
+			return_code = rendering_data->renderer->Scene_execute(
+				rendering_data->scene_viewer->scene);
+			another_layer = rendering_data->renderer->next_layer();
+			if (another_layer)
+			{
+				// clear depth buffer
+				glClear(GL_DEPTH_BUFFER_BIT);
+			}
+		}
+		while (return_code && another_layer);
 	}
 	else
 	{
@@ -2624,6 +2635,7 @@ access this function.
 					 scene_viewer->graphics_buffer);
 				}
 			}
+			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
 			rendering_data.renderer->Scene_compile(scene_viewer->scene);

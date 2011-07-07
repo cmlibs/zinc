@@ -1308,7 +1308,7 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	{
 		/* must first build graphics objects */
 		Render_graphics_build_objects renderer;
-		Render_graphics_push_scene push_scene(renderer, scene);
+		renderer.set_Scene(scene);
 		renderer.Cmiss_rendition_compile(rendition);
 		if (NULL != (transformation = rendition->transformation))
 		{
@@ -1584,38 +1584,6 @@ int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 	return return_code;
 }
 
-int Cmiss_rendition_call_renderer(struct Cmiss_rendition *rendition, 
-	void *renderer_void)
-{
-		Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
-
-		return renderer->Cmiss_rendition_execute(rendition);
-}
-
-int Cmiss_rendition_update_non_distorted_ndc_objects(Cmiss_rendition *rendition,
-	Render_graphics_compile_members *renderer)
-{
-	int return_code = 1;
-
-	ENTER(Cmiss_rendition_update_non_distorted_ndc_objects);
-	if (rendition)
-	{
-    /* Call the renderer to update each of the non distorted ndc objects*/
-		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_execute_non_distorted_ndc_objects, (void *)renderer,
-			rendition->list_of_graphics);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_execute_non_distorted_ndc_objects.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_compile_members  */
-
 int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	Render_graphics_compile_members *renderer)
 {
@@ -1626,7 +1594,7 @@ int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *rendition,
 	{
 		/* check whether rendition contents need building */
 		return_code = Cmiss_rendition_build_graphics_objects(rendition,
-			renderer->get_scene(),renderer->time, renderer->name_prefix);
+			renderer->get_Scene(), renderer->time, renderer->name_prefix);
     /* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_compile_visible_graphic, (void *)renderer,
@@ -1723,7 +1691,7 @@ int Cmiss_rendition_render_child_rendition(struct Cmiss_rendition *rendition,
 			child_rendition = Cmiss_region_get_rendition_internal(child_region);
 			if (child_rendition)
 			{
-				return_code = Cmiss_rendition_call_renderer(child_rendition, (void *)renderer);
+				renderer->Cmiss_rendition_execute(child_rendition);
 				DEACCESS(Cmiss_rendition)(&child_rendition);
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);

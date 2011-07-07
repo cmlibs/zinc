@@ -408,12 +408,9 @@ Graphical object data structure.
 		<times>.  The <times> are in increasing order.  The object varies linearly
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
-	int overlay;
 	float *times;
 
 	Graphics_vertex_array *vertex_array;
-	
-	enum Cmiss_graphics_coordinate_system coordinate_system;
 
 	/* If the graphics object was compiled with respect to a texture
 		tiling then this pointer is set to that tiling. */

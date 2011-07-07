@@ -8995,8 +8995,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 					Render_graphics_triangularisation renderer(NULL, tolerance);
 					if (renderer.Scene_compile(scene))
 					{
-						return_code =
-							renderer.Scene_execute(scene);
+						return_code = renderer.Scene_execute(scene);
 						trimesh = renderer.get_triangle_mesh();
 						struct Cmiss_region *region = Cmiss_region_find_subregion_at_path(
 							command_data->root_region, region_path);
@@ -9103,8 +9102,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 					Render_graphics_triangularisation renderer(NULL, tolerance);
 					if (renderer.Scene_compile(scene))
 					{
-						return_code =
-							renderer.Scene_execute(scene);
+						return_code = renderer.Scene_execute(scene);
 						trimesh = renderer.get_triangle_mesh();
 						struct Cmiss_region *region = Cmiss_region_find_subregion_at_path(
 							command_data->root_region, region_path);

@@ -61,15 +61,8 @@ struct Light_model;
  */
 class Render_graphics
 {
-	friend class Render_graphics_push_scene;
-
 private:
 	Cmiss_scene *current_scene;
-
-	void set_scene(Cmiss_scene *new_scene)
-	{
-		current_scene = new_scene;
-	}
 
 public:
 	Render_graphics() :
@@ -92,45 +85,14 @@ public:
 	virtual int Scene_execute(Scene *scene) = 0;
 
 	/***************************************************************************//**
-	 * Execute just the slow changing parts of the scene.
-	 */
-	virtual int Scene_execute_non_fast_changing(Scene *scene)
-	{
-		return Scene_execute(scene);
-	}
-
-	/***************************************************************************//**
-	 * Execute just the fast changing parts of the scene.
-	 */
-	virtual int Scene_execute_fast_changing(Scene * /*scene*/)
-	{
-		return 1;
-	}
-
-	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object) = 0;
-
-	virtual int Non_distorted_ndc_graphics_object_execute(GT_object *)
-	{
-		return 1;
-	}
 
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
 	virtual int Graphics_object_execute(GT_object *graphics_object) = 0;
-	
-	virtual int Register_overlay_graphics_object(GT_object * /*graphics_object*/)
-	{
-		return 1;
-	}
-
-	virtual int Overlay_graphics_execute()
-	{
-		return 1;
-	}
 
 	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary
@@ -160,9 +122,6 @@ public:
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition) = 0;
 	
-	virtual int Update_non_distorted_ndc_objects(
-	  Cmiss_rendition *cmiss_rendition) = 0;
-
 	/***************************************************************************//**
 	 * Compile the Material.
 	 */
@@ -203,44 +162,57 @@ public:
 	 */
 	virtual int Light_model_execute(Light_model *light_model) = 0;
 
-	Cmiss_scene *get_scene()
+	Cmiss_scene *get_Scene()
 	{
 		return current_scene;
 	}
+
+	void set_Scene(Cmiss_scene *new_scene)
+	{
+		current_scene = new_scene;
+	}
+
+	/** Prepare coordinate system for executing graphics object.
+	 * @return 1 on success, 0 if renderer should not display objects in coordinate system */
+	virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/) = 0;
+
+	/** Must be called after executing graphics object after successful call to begin_coordinate_system. */
+	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/) = 0;
+
+	/** Override if renderer renders in layers to render only graphics in the current layer and to
+	 * increment the number of layers to draw */
+	virtual int render_layer(int /*layer*/)
+	{
+		return 1;
+	}
+
+	/** Override if renderer renders in layers to increment current layer if any remaining */
+	virtual int next_layer()
+	{
+		return 0;
+	}
 }; /* class Render_graphics */
-
-/** class which saves the old current scene for a renderer, sets a new current scene &
- * restores the old current scene when it goes out of scope
- */
-class Render_graphics_push_scene
-{
-	Render_graphics &renderer;
-	Cmiss_scene *old_scene;
-
-public:
-	Render_graphics_push_scene(Render_graphics &renderer, Cmiss_scene *scene) :
-		renderer(renderer),
-		old_scene(renderer.get_scene())
-	{
-		renderer.set_scene(scene);
-	}
-
-	~Render_graphics_push_scene()
-	{
-		renderer.set_scene(old_scene);
-	}
-};
 
 class Render_graphics_compile_members : public Render_graphics
 {
+
 public:
-	Render_graphics_compile_members() : time(0.0), name_prefix(NULL)
+	Render_graphics_compile_members() :
+		time(0.0),
+		name_prefix(NULL)
 	{
+		for (int i = 0; i < 16; i++)
+		{
+			world_view_matrix[i] = (i % 5) ? 0.0 : 1.0;
+		}
 	}
-	
+
 	FE_value time;
 	/** Passed from scene_objects to cmiss_renditions for compilation */
 	const char *name_prefix;
+	/** set to initial modelview_matrix from viewer to get world coordinates.
+	 * Values ordered down columns first, OpenGL style. Initialised to identity */
+	double world_view_matrix[16];
 	
 	/***************************************************************************//**
 	 * Compile the Scene.
@@ -256,8 +228,6 @@ public:
 	virtual int Cmiss_rendition_compile_members(
 		Cmiss_rendition *cmiss_rendition);
 
-	int Update_non_distorted_ndc_objects(Cmiss_rendition *cmiss_rendition);
-		
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
 	 */
@@ -284,7 +254,14 @@ public:
 		/* No member objects */
 		return 1;
 	}
-	
+
+	void set_world_view_matrix(double *matrix)
+	{
+		for (int i = 0; i < 16; i++)
+		{
+			world_view_matrix[i] = matrix[i];
+		}
+	}
 };
 
 
@@ -381,7 +358,16 @@ public:
 	{
 		return 1;
 	}
-	
+
+	virtual int begin_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/)
+	{
+		return 1;
+	}
+
+	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/)
+	{
+	}
+
 };
 
 #endif /* RENDER_HPP */

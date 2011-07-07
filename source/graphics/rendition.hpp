@@ -51,9 +51,6 @@ int Cmiss_rendition_compile_rendition(Cmiss_rendition *cmiss_rendition,
 int Cmiss_rendition_compile_members_rendition(Cmiss_rendition *cmiss_rendition,
 	Render_graphics_compile_members *renderer);
 
-int Cmiss_rendition_update_non_distorted_ndc_objects(Cmiss_rendition *rendition,
-	Render_graphics_compile_members *renderer);
-
 int execute_Cmiss_rendition(Cmiss_rendition *cmiss_rendition,
 	Render_graphics_opengl *renderer);
 
