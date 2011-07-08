@@ -1250,7 +1250,7 @@ handles the flags that mark render_objects as processed.
 static int Scene_viewer_render_layers(
 	struct Scene_viewer_rendering_data *rendering_data)
 {
-	int return_code;
+	int return_code = 1;
 	if (rendering_data)
 	{
 		do

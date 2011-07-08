@@ -321,10 +321,10 @@ public:
 				Cmiss_resource_properties *properties = *pos;
 				resources_list.erase(pos);
 				delete properties;
-				break;
+				return 1;
 			}
 		}
-		return NULL;
+		return 0;
 	}
 
 protected:
