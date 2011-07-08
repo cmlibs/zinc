@@ -39,6 +39,7 @@ SET( API_HDRS
 	source/api/cmiss_scene_viewer.h
 	source/api/cmiss_selection.h
 	source/api/cmiss_spectrum.h
+	source/api/cmiss_stream.h
 	source/api/cmiss_tessellation.h
 	source/api/cmiss_time.h
 	source/api/cmiss_time_keeper.h
@@ -68,6 +69,7 @@ SET( API_HDRS
 	source/api/types/cmiss_scene_viewer_id.h
 	source/api/types/cmiss_selection_id.h
 	source/api/types/cmiss_spectrum_id.h
+	source/api/types/cmiss_stream_id.h
 	source/api/types/cmiss_tessellation_id.h
 	source/api/types/cmiss_time_id.h
 	source/api/types/cmiss_time_keeper_id.h

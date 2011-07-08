@@ -48,6 +48,7 @@ Implements cmiss fields which wrap images, structured grid data.
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_image_id.h"
 #include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_stream_id.h"
 
 /*****************************************************************************//**
  * Describes the format for storage.
@@ -56,17 +57,18 @@ Implements cmiss fields which wrap images, structured grid data.
  * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  * This is a small subset of formats available, more can be selected by specifying
- * the appropriate format_string for a Cmiss_field_image_storage_information.
+ * the appropriate format_string for a Cmiss_stream_information_image.
  */
-enum Cmiss_field_image_storage_file_format
+enum Cmiss_image_file_format
 {
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_BMP,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_DICOM,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_JPG,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_GIF,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_PNG,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_SGI,
-	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_TIFF
+	CMISS_IMAGE_FILE_FORMAT_INVALID = 0,
+	CMISS_IMAGE_FILE_FORMAT_BMP = 1,
+	CMISS_IMAGE_FILE_FORMAT_DICOM = 2,
+	CMISS_IMAGE_FILE_FORMAT_JPG = 3,
+	CMISS_IMAGE_FILE_FORMAT_GIF = 4,
+	CMISS_IMAGE_FILE_FORMAT_PNG = 5,
+	CMISS_IMAGE_FILE_FORMAT_SGI = 6,
+	CMISS_IMAGE_FILE_FORMAT_TIFF = 7
 };
 
 /*****************************************************************************//**
@@ -76,18 +78,19 @@ enum Cmiss_field_image_storage_file_format
  * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  */
-enum Cmiss_field_image_storage_compression
+enum Cmiss_image_compression
 {
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_UNSPECIFIED,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_NONE,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_BZIP,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_FAX,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_JPEG,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_JPEG2000,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_LOSSLESS_JPEG,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_LZW,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_RLE,
-	CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_ZIP
+	CMISS_IMAGE_COMPRESSION_INVALID = 0,
+	CMISS_IMAGE_COMPRESSION_UNSPECIFIED = 1,
+	CMISS_IMAGE_COMPRESSION_NONE = 2,
+	CMISS_IMAGE_COMPRESSION_BZIP = 3,
+	CMISS_IMAGE_COMPRESSION_FAX = 4,
+	CMISS_IMAGE_COMPRESSION_JPEG = 5,
+	CMISS_IMAGE_COMPRESSION_JPEG2000 = 6,
+	CMISS_IMAGE_COMPRESSION_LOSSLESS_JPEG = 7,
+	CMISS_IMAGE_COMPRESSION_LZW = 8,
+	CMISS_IMAGE_COMPRESSION_RLE = 9,
+	CMISS_IMAGE_COMPRESSION_ZIP = 10
 };
 
 /***************************************************************************//**
@@ -96,20 +99,21 @@ enum Cmiss_field_image_storage_compression
  */
 enum Cmiss_field_image_combine_mode
 {
-	CMISS_FIELD_IMAGE_COMBINE_BLEND = 0,
-	CMISS_FIELD_IMAGE_COMBINE_DECAL = 1,
-	CMISS_FIELD_IMAGE_COMBINE_MODULATE = 2,
-	CMISS_FIELD_IMAGE_COMBINE_ADD = 3,
-	CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED = 4,  /*!< Add the value and subtract 0.5 so the texture value
+	CMISS_FIELD_IMAGE_COMBINE_INVALID = 0,
+	CMISS_FIELD_IMAGE_COMBINE_BLEND = 1,
+	CMISS_FIELD_IMAGE_COMBINE_DECAL = 2,
+	CMISS_FIELD_IMAGE_COMBINE_MODULATE = 3,
+	CMISS_FIELD_IMAGE_COMBINE_ADD = 4,
+	CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED = 5,  /*!< Add the value and subtract 0.5 so the texture value
 								 effectively ranges from -0.5 to 0.5 */
-	CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 5,  /*!< Multiply and then scale by 4, so that we can
+	CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 6,  /*!< Multiply and then scale by 4, so that we can
 										 scale down or up */
-	CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 6,  /*!< Same as blend with a 4 * scaling */
-	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT = 7,
-	CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 8,
-	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 9,
-	CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 10,
-	CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 11
+	CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 7,  /*!< Same as blend with a 4 * scaling */
+	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT = 8,
+	CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 9,
+	CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 10,
+	CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 11,
+	CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 12
 };
 
 /***************************************************************************//**
@@ -118,8 +122,10 @@ enum Cmiss_field_image_combine_mode
  */
 enum Cmiss_field_image_compression_mode
 {
-	CMISS_FIELD_IMAGE_COMPRESSION_UNCOMPRESSED = 0,
-	CMISS_FIELD_IMAGE_COMPRESSION_COMPRESSED_UNSPECIFIED = 1/*!< Allow the hardware to choose the compression */
+	CMISS_FIELD_IMAGE_COMPRESSION_INVALID = 0,
+	CMISS_FIELD_IMAGE_COMPRESSION_UNCOMPRESSED = 1,
+	CMISS_FIELD_IMAGE_COMPRESSION_COMPRESSED_UNSPECIFIED = 2
+	/*!< Allow the hardware to choose the compression */
 };
 
 /***************************************************************************//**
@@ -127,11 +133,20 @@ enum Cmiss_field_image_compression_mode
  */
 enum Cmiss_field_image_filter_mode
 {
-	CMISS_FIELD_IMAGE_FILTER_NEAREST = 0,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR = 1,
-	CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 2,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 3,
-	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 4
+	CMISS_FIELD_IMAGE_FILTER_INVALID = 0,
+	CMISS_FIELD_IMAGE_FILTER_NEAREST = 1,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR = 2,
+	CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 3,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 4,
+	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
+};
+
+enum Cmiss_image_attribute_id
+{
+	CMISS_IMAGE_ATTRIBUTE_INVALID = 0,
+	CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
+	CMISS_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL = 2,
+	CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL = 3
 };
 
 /*****************************************************************************//**
@@ -195,69 +210,48 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id i
  */
 int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
 
+int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id);
+
 /*****************************************************************************//**
  * Reads image data into the field.
- * The storage_information may specify a filename, series of filenames or
+ * The stream_information may specify a filename, series of filenames or
  * a memory block reference to read from.
- * If the format specified in the storage_information
+ * If the format specified in the stream_information
  * is a "raw" format (such as rgb or gray) which does not embed
  * information about the pixel storage then the data size is expected to be
- * supplied in the storage_information parameter.
+ * supplied in the stream_information parameter.
  *
  * @param image_field The image field.
- * @param storage_information  Information about the supplied formatted image data.
+ * @param stream_information  Information about the supplied formatted image data.
  * At a minimum it should specify either a filename or a memory block
  * reference.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
-	Cmiss_field_image_storage_information_id storage_information);
+	Cmiss_stream_information_id stream_information);
 
 /*****************************************************************************//**
  * Writes a formatted representation of the image data.
- * The storage_information is used to control the formatted output.
- * If a memory block reference has been specified to the storage_information
+ * The stream_information is used to control the formatted output.
+ * If a memory block reference has been specified to the io_stream
  * then this will be allocated and set and the corresponding memory block
  * length set.
  * Otherwise the routine will try to write to the filename set on the
  * storage information.
- * The routine should fail if the values specified in the storage_information
+ * The routine should fail if the values specified in the stream_information
  * cannot be respected.
- * If one or two of the size parameters are set on the storage_information
+ * If one or two of the size parameters are set on the stream_information
  * then other dimensions will be adjusted to maintain aspect ratio and then the image is
  * resized just for this output.
  *
  * @param image_field The image field.
- * @param storage_information  Information specifying the required format
+ * @param stream_information  Information specifying the required format
  * for the returned formatted image data.
- * At a minimum it should specify either a filename or a memory block
- * reference.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
 int Cmiss_field_image_write(Cmiss_field_image_id image_field,
-	Cmiss_field_image_storage_information_id storage_information);
-
-/*****************************************************************************//**
- * A simple image read function that reads from a single filename.
- *
- * @param image_field The image field.
- * @param storage_information  The file to read from.  The format is normally
- * determined from the extension but can be specified with a colon separated prefix.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_read_file(Cmiss_field_image_id image_field,
-	const char *file_name);
-
-/*****************************************************************************//**
- * A simple image write function that writes to a single filename.
- *
- * @param image_field The image field.
- * @param file_name  The file to write out to.  The format is normally
- * determined from the extension but can be specified with a colon separated prefix.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
-	const char *file_name);
+	Cmiss_stream_information_id stream_information);
 
 /*****************************************************************************//**
  * Returns how the image is combined with the material: blend, decal or modulate.
@@ -321,177 +315,138 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
 int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_filter_mode filter_mode);
 
-/*****************************************************************************//**
- * Creates a Cmiss_field_image_storage_information object.
- * @return The created object.
- */
-Cmiss_field_image_storage_information_id Cmiss_field_image_storage_information_create(void);
+enum Cmiss_stream_information_image_attribute_id
+{
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
+	/*!< Integer specifies the pixel width for binary data reading in using this
+	 * stream_information.
+	 */
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL = 2,
+	/*!< Integer specifies the pixel height for binary data reading in using this
+	 * stream_information.
+	 */
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = 3,
+	/*!< Integer specifies the number of bytes per component for binary data using
+	 * this stream_information. Only 8 and 16 bits are supported at the moment.
+	 */
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = 4
+	/*!< Integer specifies the quality for binary data using this stream_information.
+	 * This parameter controls compression for compressed lossy formats,
+	 * where a quality of 1.0 specifies the least lossy output for a given format and a
+	 * quality of 0.0 specifies the most compression.
+	 */
+};
 
 /*****************************************************************************//**
- * Destroys a Cmiss_field_image_storage_information object.
- * @param storage_information_address  Pointer to a storage_information object, which
+ * Creates a Cmiss_stream_information_image object.
+ * @return The created object.
+ */
+Cmiss_stream_information_id Cmiss_field_image_create_stream_information(
+	Cmiss_field_image_id image_field);
+
+/*****************************************************************************//**
+ * Destroys a Cmiss_stream_information_image object.
+ *
+ * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmiss_field_image_storage_information_destroy(
-	Cmiss_field_image_storage_information_id *storage_information_address);
+int Cmiss_stream_information_image_destroy(
+	Cmiss_stream_information_image_id *stream_information_address);
 
-/*****************************************************************************//**
- * Adds a file name to the list that will be read from or written to when
- * this storage_information is used with #Cmiss_field_image_read and
- * #Cmiss_field_image_write.
+/***************************************************************************//**
+ * If the stream_information is of field_image type, then this function returns
+ * the field_image specific representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived reference.
  *
- * @param storage_information  The storage information object.
- * @param file_name  A file name for reading from or writing to.
- * If the format_string has a prefix, like "jpg:fred" then this prefix is used to
- * describe a format, otherwise the format_string suffix is used, "fred.jpg".
- * If #Cmiss_field_image_storage_information_set_format is
- * also used then it overrides this string (by prepending the appropriate prefix
- * internally).
- * If #Cmiss_field_image_storage_information_set_memory_block or
- * #Cmiss_field_image_storage_information_set_write_to_memory_block are also
- * called then this file_name will only be used to help specify the format
- * of the memory data and no file access will be made.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @param stream_information  The generic stream_information to be cast.
+ * @return  field_image specific representation if the input stream_information is
+ * of this type, otherwise NULL.
  */
-int Cmiss_field_image_storage_information_add_file_name(
-	Cmiss_field_image_storage_information_id storage_information,
-	const char *file_name);
+Cmiss_stream_information_image_id Cmiss_stream_information_cast_image(
+	Cmiss_stream_information_id stream_information);
 
-/*****************************************************************************//**
- * Specifies the format for binary data with this storage information using a
- * enumerated type.  Only a subset of available types can be specified with this
- * function, more are available using #Cmiss_field_image_storage_information_set_format_string.
+/***************************************************************************//**
+ * Cast stream_information_image back to its base stream_information and
+ * return the stream_information.
+ * IMPORTANT NOTE: Returned stream_information does not have incremented
+ * reference count and must not be destroyed. Use Cmiss_stream_information_access()
+ * to add a reference if maintaining returned handle beyond the lifetime of the
+ * stream_information_image argument.
  *
- * @param storage_information  The storage information object.
- * @param file_format  The image file format.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @param stream_information  Handle to the stream_information_image_ to cast.
+ * @return  Non-accessed handle to the base stream information or NULL if failed.
  */
-int Cmiss_field_image_storage_information_set_file_format(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_file_format file_format);
+CMISS_C_INLINE Cmiss_stream_information_id
+	Cmiss_stream_information_image_base_cast(
+		Cmiss_stream_information_image_id stream_information)
+{
+	return (Cmiss_stream_information_id)(stream_information);
+}
 
-/*****************************************************************************//**
- * Specifies the pixel width for binary data using this storage_information.
+/***************************************************************************//**
+ * Set an integer or Boolean attribute of the stream_information_image.
  *
- * @param storage_information  The storage information object.
- * @param width  The width of the formatted data in pixels.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param attribute_id  The identifier of the integer attribute to set.
+ * @param value  The new value for the attribute. For Boolean values use 1 for
+ * true.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this stream_information_image.
  */
-int Cmiss_field_image_storage_information_set_width(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int width);
+int Cmiss_stream_information_image_set_attribute_integer(
+	Cmiss_stream_information_image_id stream_information,
+	enum Cmiss_stream_information_image_attribute_id attribute_id, int value);
 
-/*****************************************************************************//**
- * Specifies the pixel height for binary data using this storage_information.
+/***************************************************************************//**
+ * Set an double attribute of the stream_information_image.
  *
- * @param storage_information  The storage information object.
- * @param height  The height of the formatted data in pixels.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param attribute_id  The identifier of the double attribute to set.
+ * @param value  The new value for the attribute.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this stream_information_image.
  */
-int Cmiss_field_image_storage_information_set_height(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int height);
+int Cmiss_stream_information_image_set_attribute_real(
+	Cmiss_stream_information_image_id stream_information,
+	enum Cmiss_stream_information_image_attribute_id attribute_id,
+	double value);
 
 /*****************************************************************************//**
- * Specifies the pixel depth (the 3D size in pixels) for binary data using this
- * storage_information.
+ * Specifies the compression type for binary data  to be read/written using this
+ * stream_information.
  *
- * @param storage_information  The storage information object.
- * @param depth  The depth of the formatted data in pixels.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-/*int Cmiss_field_image_storage_information_set_depth(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int depth);*/
-
-/*****************************************************************************//**
- * Specifies the pixel format for binary data using this storage_information.
- *
- * @param storage_information  The storage information object.
- * @param pixel_format  The pixel_format of the formatted data.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_storage_information_set_pixel_format(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_pixel_format pixel_format);
-
-/*****************************************************************************//**
- * Specifies the number of bytes per component for binary data using this
- * storage_information.
- *
- * @param storage_information  The storage information object.
- * @param number_of_bytes_per_component  The number of bytes per pixel component
- * of the formatted data.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_storage_information_set_number_of_bytes_per_component(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int number_of_bytes_per_component);
-
-/*****************************************************************************//**
- * Specifies the compression type for binary data using this storage_information.
- *
- * @param storage_information  The storage information object.
+ * @param stream_information  The storage information object.
  * @param compression  The type of compression applied.  Various combinations of image
  * format, compression and quality may or may not work together.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmiss_field_image_storage_information_set_compression(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_compression compression);
+int Cmiss_stream_information_image_set_compression(
+	Cmiss_stream_information_image_id stream_information,
+	enum Cmiss_image_compression compression);
 
 /*****************************************************************************//**
- * Specifies the quality for binary data using this storage_information.
+ * Specifies the format for binary data to be read/written using this
+ * stream_information.
  *
- * @param storage_information  The storage information object.
- * @param quality  This parameter controls compression for compressed lossy formats,
- * where a quality of 1.0 specifies the least lossy output for a given format and a
- * quality of 0.0 specifies the most compression.
+ * @param stream_information  The storage information object.
+ * @param file_format  The image file format.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmiss_field_image_storage_information_set_quality(
-	Cmiss_field_image_storage_information_id storage_information,
-	double quality);
+int Cmiss_stream_information_image_set_file_format(
+	Cmiss_stream_information_image_id stream_information,
+	enum Cmiss_image_file_format file_format);
 
 /*****************************************************************************//**
- * Specifies that this storage_information will read from a memory_block
- * instead of reading from a file.
+ * Specifies the pixel format for binary data of the images  to be read/written
+ * using this stream_information.
  *
- * @param storage_information  The storage information object.
- * @param memory_block  A pointer to memory_block information.
- * @param memory_block_length  The length of this memory_block.
+ * @param stream_information  The storage information object.
+ * @param pixel_format  The pixel_format of the formatted data.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmiss_field_image_storage_information_set_memory_block(
-	Cmiss_field_image_storage_information_id storage_information,
-	void *memory_block, unsigned int memory_block_length);
-
-/*****************************************************************************//**
- * Specifies that this storage_information will write to a memory_block
- * instead of writing to file.  Once read the new memory block can be
- * retrieved with #Cmiss_field_image_storage_information_set_memory_block.
- *
- * @param storage_information  The storage information object.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_storage_information_set_write_to_memory_block(
-	Cmiss_field_image_storage_information_id storage_information);
-
-/*****************************************************************************//**
- * Retrieve a memory block that has been written to when the storage_information
- * specified #Cmiss_field_image_storage_information_set_write_to_memory_block.
- *
- * @param storage_information  The storage information object.
- * @param memory_block_reference  Will be set to point to the allocated
- * memory block.  When no longer required the memory block should be
- * released with #Cmiss_deallocate.
- * @param memory_block_length_reference  Will be set to the length of
- * the returned memory block.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_field_image_storage_information_get_memory_block(
-	Cmiss_field_image_storage_information_id storage_information,
-	void **memory_block, unsigned int *memory_block_length);
+int Cmiss_stream_information_image_set_pixel_format(
+	Cmiss_stream_information_image_id stream_information,
+	enum Cmiss_image_pixel_format pixel_format);
 
 #endif /* !defined (CMISS_FIELD_IMAGE_H) */

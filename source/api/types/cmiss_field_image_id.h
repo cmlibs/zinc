@@ -46,25 +46,35 @@
 	struct Cmiss_field_image;
 	typedef struct Cmiss_field_image *Cmiss_field_image_id;
 
-/*****************************************************************************//**
- * Optional information used to describe the binary data supplied with
- * Cmiss_field_image_set_formatted_image_data and used to specify how to format
- * the binary data retrieved with Cmiss_texture_get_formatted_image_data.
+/***************************************************************************//**
+ * A handle to cmiss stream information image. Stream information image is a
+ * derived type of Cmiss_stream_information_id.
+ * User can create and get a handle to stream information image with functions
+ * provided with Cmiss_field_image.
+ * User can use this derived type to set number of informations associate with
+ * images inputs and outputs. See cmiss_field_image.h for more information.
+ *
+ * #see Cmiss_stream_information_id
+ * #see Cmiss_field_image_create_stream_information
+ * #see Cmiss_stream_information_cast_image
+ * #see Cmiss_stream_information_image_base_cast
  */
-	struct Cmiss_field_image_storage_information;
-	typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_information_id;
+	struct Cmiss_stream_information_image;
+	typedef struct Cmiss_stream_information_image *Cmiss_stream_information_image_id;
 
-	enum Cmiss_field_image_storage_pixel_format
-	/*******************************************************************************
+	/*****************************************************************************//**
+	 * Optional information used to describe the binary data supplied to the images.
 	 */
+	enum Cmiss_image_pixel_format
 	{
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE,
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGB,
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGBA,
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_ABGR,
-		CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_BGR
-	}; /* enum Cmiss_field_image_storage_pixel_format */
+		CMISS_IMAGE_PIXEL_FORMAT_INVALID = 0,
+		CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE = 1,
+		CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA = 2,
+		CMISS_IMAGE_PIXEL_FORMAT_RGB = 3,
+		CMISS_IMAGE_PIXEL_FORMAT_RGBA = 4,
+		CMISS_IMAGE_PIXEL_FORMAT_ABGR = 5,
+		CMISS_IMAGE_PIXEL_FORMAT_BGR = 6
+	};
 
 	#define CMISS_FIELD_IMAGE_ID_H
 

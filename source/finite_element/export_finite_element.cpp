@@ -42,7 +42,6 @@ Functions for exporting finite element data to a file.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
-#include <stdio.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
@@ -58,6 +57,11 @@ extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+using namespace std;
 
 /* the number of spaces each child object is indented from its parent by in the
 	 output file */
@@ -70,7 +74,7 @@ Module types
 
 struct Write_FE_region_element_data
 {
-	FILE *output_file;
+	ostream *output_file;
 	int dimension, output_number_of_nodes, *output_node_indices,
 		output_number_of_scale_factors, *output_scale_factor_indices;
 	enum FE_write_criterion write_criterion;
@@ -82,7 +86,7 @@ struct Write_FE_region_element_data
 
 struct Write_FE_node_field_values
 {
-	FILE *output_file;
+	ostream *output_file;
 	/* store number of values for writing nodal values in columns */
 	int number_of_values;
 	FE_value time;
@@ -94,12 +98,12 @@ struct Write_FE_node_field_info_sub
 		 single and multiple field output can be handled appropriately. Both must be
 		 initialised to 1 before the first time write_FE_node_field is called */
 	int field_number,value_index;
-	FILE *output_file;
+	ostream *output_file;
 }; /* Write_FE_node_field_info_sub */
 
 struct Write_FE_region_node_data
 {
-	FILE *output_file;
+	ostream *output_file;
 	enum FE_write_criterion write_criterion;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node *last_node;
@@ -111,7 +115,7 @@ Module functions
 ----------------
 */
 
-static int write_element_xi_value(FILE *output_file,struct FE_element *element,
+static int write_element_xi_value(ostream *output_file,struct FE_element *element,
 	FE_value *xi)
 /*******************************************************************************
 LAST MODIFIED : 5 November 2002
@@ -144,10 +148,12 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 				element_char = 'E';
 			} break;
 		}
-		fprintf(output_file, " %c %d %d", element_char, cm.number, dimension);
+		(*output_file) << " " << element_char << " " <<  cm.number << " " << dimension;
 		for (i = 0; i < dimension; i++)
 		{
-			fprintf(output_file, " %"FE_VALUE_STRING, xi[i]);
+			char num_string[100];
+			sprintf(num_string, " %"FE_VALUE_STRING, xi[i]);
+			(*output_file) << num_string;
 		}
 		return_code = 1;
 	}
@@ -162,7 +168,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 	return (return_code);
 } /* write_element_xi_value */
 
-static int write_FE_field_header(FILE *output_file,int field_number,
+static int write_FE_field_header(ostream *output_file,int field_number,
 	struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
@@ -185,26 +191,25 @@ Examples:
 	ENTER(write_FE_field_header);
 	if (output_file&&field)
 	{
-		fprintf(output_file," %i) ",field_number);
+		(*output_file) << " " << field_number << ") ";
 		/* write the field name */
 		if (GET_NAME(FE_field)(field,&name))
 		{
-			fprintf(output_file, "%s", name);
+			(*output_file) << name;
 			DEALLOCATE(name);
 		}
 		else
 		{
-			fprintf(output_file,"unknown");
+			(*output_file) << "unknown";
 		}
-		fprintf(output_file,", %s",
-			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(field)));
+		(*output_file) << ", " << ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(field));
 		/* optional constant/indexed, Index_field=~, #Values=# */
 		fe_field_type=get_FE_field_FE_field_type(field);
 		switch (fe_field_type)
 		{
 			case CONSTANT_FE_FIELD:
 			{
-				fprintf(output_file,", constant");
+				(*output_file) << ", constant";
 			} break;
 			case GENERAL_FE_FIELD:
 			{
@@ -215,24 +220,24 @@ Examples:
 				struct FE_field *indexer_field;
 				int number_of_indexed_values;
 
-				fprintf(output_file,", indexed, Index_field=");
+				(*output_file) << ", indexed, Index_field=";
 				if (get_FE_field_type_indexed(field,&indexer_field,
 					&number_of_indexed_values))
 				{
 					if (GET_NAME(FE_field)(indexer_field,&name))
 					{
-						fprintf(output_file, "%s", name);
+						(*output_file) << name;
 						DEALLOCATE(name);
 					}
 					else
 					{
-						fprintf(output_file,"unknown");
+						(*output_file) << "unknown";
 					}
-					fprintf(output_file,", #Values=%d",number_of_indexed_values);
+					(*output_file) << ", #Values=" << number_of_indexed_values;
 				}
 				else
 				{
-					fprintf(output_file,"unknown, #Values=0");
+					(*output_file) << "unknown, #Values=0";
 					display_message(ERROR_MESSAGE,
 						"write_FE_field_header.  Invalid indexed field");
 				}
@@ -249,29 +254,31 @@ Examples:
 			{
 				case CYLINDRICAL_POLAR:
 				{
-					fprintf(output_file,", cylindrical polar");
+					(*output_file) << ", cylindrical polar";
 				} break;
 				case FIBRE:
 				{
-					fprintf(output_file,", fibre");
+					(*output_file) << ", fibre";
 				} break;
 				case OBLATE_SPHEROIDAL:
 				{
-					fprintf(output_file,", oblate spheroidal, focus=%"FE_VALUE_STRING,
-						coordinate_system->parameters.focus);
+					char num_string[100];
+					sprintf(num_string, "%"FE_VALUE_STRING, coordinate_system->parameters.focus);
+					(*output_file) << ", oblate spheroidal, focus=" << num_string;
 				} break;
 				case PROLATE_SPHEROIDAL:
 				{
-					fprintf(output_file,", prolate spheroidal, focus=%"FE_VALUE_STRING,
-						coordinate_system->parameters.focus);
+					char num_string[100];
+					sprintf(num_string, "%"FE_VALUE_STRING, coordinate_system->parameters.focus);
+					(*output_file) << ", prolate spheroidal, focus=" << num_string;
 				} break;
 				case RECTANGULAR_CARTESIAN:
 				{
-					fprintf(output_file,", rectangular cartesian");
+					(*output_file) << ", rectangular cartesian";
 				} break;
 				case SPHERICAL_POLAR:
 				{
-					fprintf(output_file,", spherical polar");
+					(*output_file) << ", spherical polar";
 				} break;
 				default:
 				{
@@ -290,10 +297,10 @@ Examples:
 		if ((FE_VALUE_VALUE!=value_type) || (!coordinate_system) ||
 			(NOT_APPLICABLE==coordinate_system->type))
 		{
-			fprintf(output_file,", %s",Value_type_string(value_type));
+			(*output_file) << ", " << Value_type_string(value_type);
 		}
 		number_of_components=get_FE_field_number_of_components(field);
-		fprintf(output_file,", #Components=%d\n",number_of_components);
+		(*output_file) << ", #Components=" << number_of_components << "\n";
 		return_code=1;
 	}
 	else
@@ -307,7 +314,7 @@ Examples:
 	return (return_code);
 } /* write_FE_field_header */
 
-static int write_FE_field_values(FILE *output_file,struct FE_field *field)
+static int write_FE_field_values(ostream *output_file,struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 22 September 1999
 
@@ -356,7 +363,9 @@ indexed. Each component or version starts on a new line.
 					{
 						if (get_FE_field_FE_value_value(field,k,&value))
 						{
-							fprintf(output_file," %"FE_VALUE_STRING,value);
+							char num_string[100];
+							sprintf(num_string, "%"FE_VALUE_STRING, value);
+							(*output_file) << " " << num_string;
 						}
 						else
 						{
@@ -373,7 +382,7 @@ indexed. Each component or version starts on a new line.
 					{
 						if (get_FE_field_int_value(field,k,&value))
 						{
-							fprintf(output_file," %d",value);
+							(*output_file) << " " << value;
 						}
 						else
 						{
@@ -393,13 +402,13 @@ indexed. Each component or version starts on a new line.
 							if (the_string)
 							{
 								make_valid_token(&the_string);
-								fprintf(output_file," %s",the_string);
+								(*output_file) << " " << the_string;
 								DEALLOCATE(the_string);
 							}
 							else
 							{
 								/* empty string */
-								fprintf(output_file," \"\"");
+								(*output_file) << " \"\"";
 							}
 						}
 						else
@@ -416,7 +425,7 @@ indexed. Each component or version starts on a new line.
 						Value_type_string(value_type));
 				} break;
 			}
-			fprintf(output_file,"\n");
+			(*output_file) << "\n";
 		}
 	}
 	else
@@ -444,7 +453,7 @@ write_FE_field_values.
 
 	ENTER(write_FE_element_field_FE_field_values);
 	USE_PARAMETER(element);
-	return_code=write_FE_field_values((FILE *)output_file_void,field);
+	return_code=write_FE_field_values((ostream *)output_file_void,field);
 	LEAVE;
 
 	return (return_code);
@@ -464,13 +473,13 @@ write_FE_field_values.
 
 	ENTER(write_FE_node_field_FE_field_values);
 	USE_PARAMETER(node);
-	return_code=write_FE_field_values((FILE *)output_file_void,field);
+	return_code=write_FE_field_values((ostream *)output_file_void,field);
 	LEAVE;
 
 	return (return_code);
 } /* write_FE_node_field_FE_field_values */
 
-static int write_FE_element_shape(FILE *output_file,
+static int write_FE_element_shape(ostream *output_file,
 	struct FE_element_shape *element_shape)
 /*******************************************************************************
 LAST MODIFIED : 6 November 2002
@@ -490,7 +499,7 @@ be rewritten for 4-D and above elements.
 		get_FE_element_shape_dimension(element_shape, &dimension))
 	{
 		return_code = 1;
-		fprintf(output_file, " Shape. Dimension=%d, ", dimension);
+		(*output_file) << " Shape. Dimension=" << dimension << ", ";
 		linked_dimensions = 0;
 		for (xi_number = 0; (xi_number < dimension) && return_code; xi_number++)
 		{
@@ -501,12 +510,12 @@ be rewritten for 4-D and above elements.
 				{
 					case LINE_SHAPE:
 					{
-						fprintf(output_file, "line");
+						(*output_file) << "line";
 					} break;
 					case POLYGON_SHAPE:
 					{
 						/* logic currently limited to one polygon in shape - ok up to 3D */
-						fprintf(output_file, "polygon");
+						(*output_file) << "polygon";
 						if (0 == linked_dimensions)
 						{
 							if (get_FE_element_shape_next_linked_xi_number(element_shape,
@@ -515,8 +524,8 @@ be rewritten for 4-D and above elements.
 							{
 								if (number_of_polygon_vertices >= 3)
 								{
-									fprintf(output_file, "(%d;%d)", number_of_polygon_vertices,
-										next_xi_number + 1);
+									(*output_file) << "(" << number_of_polygon_vertices << ";"
+										<< next_xi_number + 1 << ")";
 								}
 								else
 								{
@@ -544,13 +553,13 @@ be rewritten for 4-D and above elements.
 					case SIMPLEX_SHAPE:
 					{
 						/* logic currently limited to one simplex in shape - ok up to 3D */
-						fprintf(output_file, "simplex");
+						(*output_file) << "simplex";
 						if (0 == linked_dimensions)
 						{
 							linked_dimensions++;
 							/* for first linked simplex dimension write (N1[;N2]) where N1 is
 								 first linked dimension, N2 is the second - for tetrahedra */
-							fprintf(output_file,"(");
+							(*output_file) << "(";
 							next_xi_number = xi_number;
 							while (return_code && (next_xi_number < dimension))
 							{
@@ -562,9 +571,9 @@ be rewritten for 4-D and above elements.
 										linked_dimensions++;
 										if (2 < linked_dimensions)
 										{
-											fprintf(output_file, ";");
+											(*output_file) << ";";
 										}
-										fprintf(output_file, "%d", next_xi_number + 1);
+										(*output_file) << next_xi_number + 1;
 									}
 									else
 									{
@@ -578,7 +587,7 @@ be rewritten for 4-D and above elements.
 									return_code = 0;
 								}
 							}
-							fprintf(output_file,")");
+							(*output_file) << ")";
 							if (1 == linked_dimensions)
 							{
 								display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
@@ -603,10 +612,10 @@ be rewritten for 4-D and above elements.
 			}
 			if (xi_number < (dimension - 1))
 			{
-				fprintf(output_file,"*");
+				(*output_file) << "*";
 			}
 		}
-		fprintf(output_file,"\n");
+		(*output_file) << "\n";
 	}
 	else
 	{
@@ -619,7 +628,7 @@ be rewritten for 4-D and above elements.
 	return (return_code);
 } /* write_FE_element_shape */
 
-static int write_FE_element_identifier(FILE *output_file,
+static int write_FE_element_identifier(ostream *output_file,
 	struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 5 November 2002
@@ -640,19 +649,19 @@ output contains no characters before or after the printed numbers.
 		int dimension = get_FE_element_dimension(element);
 		if ((3 == dimension) || FE_element_is_top_level(element, (void *)NULL))
 		{
-			fprintf(output_file, "%d 0 0", cm.number);
+			(*output_file) << cm.number << " 0 0";
 		}
 		else if (2 == dimension)
 		{
-			fprintf(output_file, "0 %d 0", cm.number);
+			(*output_file) << "0 " << cm.number << " 0";
 		}
 		else if (1 == dimension)
 		{
-			fprintf(output_file, "0 0 %d", cm.number);
+			(*output_file) << "0 0 " << cm.number;
 		}
 		else
 		{
-			fprintf(output_file, "%d 0 0", cm.number);
+			(*output_file) << cm.number << " 0 0";
 		}
 	}
 	else
@@ -666,7 +675,7 @@ output contains no characters before or after the printed numbers.
 	return (return_code);
 } /* write_FE_element_identifier */
 
-static int write_FE_basis(FILE *output_file,struct FE_basis *basis)
+static int write_FE_basis(ostream *output_file,struct FE_basis *basis)
 /*******************************************************************************
 LAST MODIFIED : 12 November 2002
 
@@ -684,7 +693,7 @@ Writes out the <basis> to <output_file>.
 		basis_string = FE_basis_get_description_string(basis);
 		if (basis_string)
 		{
-			fprintf(output_file, "%s", basis_string);
+			(*output_file) << basis_string;
 			DEALLOCATE(basis_string);
 		}
 		else
@@ -705,7 +714,7 @@ Writes out the <basis> to <output_file>.
 
 struct Write_FE_element_field_sub
 {
-	FILE *output_file;
+	ostream *output_file;
 	int field_number,output_number_of_nodes,*output_node_indices,
 		output_number_of_scale_factors,*output_scale_factor_indices;
 }; /* struct Write_FE_element_field_sub */
@@ -723,7 +732,7 @@ Writes information describing how <field> is defined at <element>.
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
 	FE_element_field_component_modify modify;
-	FILE *output_file;
+	ostream *output_file;
 	int i, j, k, nodal_value_index, node_index, number_in_xi,
 		number_of_components, number_of_nodal_values,
 		number_of_nodes, number_of_xi_coordinates, return_code, scale_factor_index;
@@ -751,12 +760,12 @@ Writes information describing how <field> is defined at <element>.
 		{
 			if (NULL != (component_name = get_FE_field_component_name(field, i)))
 			{
-				fprintf(output_file, " %s. ", component_name);
+				(*output_file) << " " << component_name << ". ";
 				DEALLOCATE(component_name);
 			}
 			else
 			{
-				fprintf(output_file, "  %d.", i + 1);
+				(*output_file) << "  " << i + 1 << ".";
 			}
 			if (GENERAL_FE_FIELD == fe_field_type)
 			{
@@ -767,27 +776,27 @@ Writes information describing how <field> is defined at <element>.
 					FE_element_field_component_get_modify(component, &modify);
 					if (!modify)
 					{
-						fprintf(output_file,", no modify");
+						(*output_file) << ", no modify";
 					}
 					else if (modify == theta_increasing_in_xi1)
 					{
-						fprintf(output_file,", increasing in xi1");
+						(*output_file) << ", increasing in xi1";
 					}
 					else if (modify == theta_decreasing_in_xi1)
 					{
-						fprintf(output_file,", decreasing in xi1");
+						(*output_file) << ", decreasing in xi1";
 					}
 					else if (modify == theta_non_increasing_in_xi1)
 					{
-						fprintf(output_file,", non-increasing in xi1");
+						(*output_file) << ", non-increasing in xi1";
 					}
 					else if (modify == theta_non_decreasing_in_xi1)
 					{
-						fprintf(output_file,", non-decreasing in xi1");
+						(*output_file) << ", non-decreasing in xi1";
 					}
 					else
 					{
-						fprintf(output_file,", unknown modify function");
+						(*output_file) << ", unknown modify function";
 						display_message(ERROR_MESSAGE,
 							"write_FE_element_field.  Unknown modify function");
 					}
@@ -797,11 +806,11 @@ Writes information describing how <field> is defined at <element>.
 						{
 							case STANDARD_NODE_TO_ELEMENT_MAP:
 							{
-								fprintf(output_file,", standard node based.\n");
+								(*output_file) << ", standard node based.\n";
 								if (FE_element_field_component_get_number_of_nodes(component,
 									&number_of_nodes))
 								{
-									fprintf(output_file,"   #Nodes=%d\n",number_of_nodes);
+									(*output_file) << "   #Nodes=" << number_of_nodes << "\n";
 									for (j = 0; j < number_of_nodes; j++)
 									{
 										if (FE_element_field_component_get_standard_node_map(
@@ -812,38 +821,37 @@ Writes information describing how <field> is defined at <element>.
 												standard_node_map, &number_of_nodal_values))
 										{
 											/* node indices are renumbered */
-											fprintf(output_file,"   %d. #Values=%d\n",
-												write_element_field_data->
-												output_node_indices[node_index] + 1,
-												number_of_nodal_values);
+											(*output_file) << "   " <<
+												write_element_field_data->output_node_indices[node_index] + 1 <<
+												". #Values=" << number_of_nodal_values << "\n";
 											/* nodal value indices are all relative so output as is */
-											fprintf(output_file,"     Value indices:");
+											(*output_file) << "     Value indices:";
 											for (k = 0; k < number_of_nodal_values; k++)
 											{
 												Standard_node_to_element_map_get_nodal_value_index(
 													standard_node_map, k, &nodal_value_index);
-												fprintf(output_file, " %d", nodal_value_index + 1);
+												(*output_file) << " " << nodal_value_index + 1;
 											}
-											fprintf(output_file, "\n");
+											(*output_file) << "\n";
 											/* scale factor indices are renumbered */
-											fprintf(output_file,"     Scale factor indices:");
+											(*output_file) << "     Scale factor indices:";
 											for (k = 0; k < number_of_nodal_values; k++)
 											{
 												Standard_node_to_element_map_get_scale_factor_index(
 													standard_node_map, k, &scale_factor_index);
 												if (0 <= scale_factor_index)
 												{
-													fprintf(output_file, " %d", write_element_field_data->
-														output_scale_factor_indices[scale_factor_index]+1);
+													(*output_file) << " " << write_element_field_data->
+														output_scale_factor_indices[scale_factor_index]+1;
 												}
 												else
 												{
 													/* non-positive index means no scale factor so value
 														 of 1.0 assumed */
-													fprintf(output_file," 0");
+													(*output_file) << " 0";
 												}
 											}
-											fprintf(output_file,"\n");
+											(*output_file) << "\n";
 										}
 										else
 										{
@@ -861,38 +869,38 @@ Writes information describing how <field> is defined at <element>.
 							} break;
 							case GENERAL_NODE_TO_ELEMENT_MAP:
 							{
-								fprintf(output_file,", general node based.\n");
+								(*output_file) << ", general node based.\n";
 								display_message(ERROR_MESSAGE,"write_FE_element_field_sub.  "
 									"general node based map not supported");
 							} break;
 							case FIELD_TO_ELEMENT_MAP:
 							{
-								fprintf(output_file,", field to element.\n");
+								(*output_file) << ", field to element.\n";
 								display_message(ERROR_MESSAGE,
 									"write_FE_element_field.  field to element map not supported");
 							} break;
 							case ELEMENT_GRID_MAP:
 							{
-								fprintf(output_file,", grid based.\n");
+								(*output_file) << ", grid based.\n";
 								FE_basis_get_dimension(basis, &number_of_xi_coordinates);
-								fprintf(output_file, " ");
+								(*output_file) << " ";
 								for (j = 0; j < number_of_xi_coordinates; j++)
 								{
 									if (0 < j)
 									{
-										fprintf(output_file, ", ");
+										(*output_file) << ", ";
 									}
 									FE_element_field_component_get_grid_map_number_in_xi(
 										component, j, &number_in_xi);
-									fprintf(output_file, "#xi%d=%d", j + 1, number_in_xi);
+									(*output_file) << "#xi" << j + 1 << "=" << number_in_xi;
 								}
-								fprintf(output_file, "\n");
+								(*output_file) << "\n";
 							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
 									"write_FE_element_field_sub.  Unknown field component type");
-								fprintf(output_file, "\n");
+								(*output_file) << "\n";
 							} break;
 						}
 					}
@@ -911,7 +919,7 @@ Writes information describing how <field> is defined at <element>.
 			else
 			{
 				/* constant and indexed fields: no further component information */
-				fprintf(output_file,"\n");
+				(*output_file) << "\n";
 			}
 		}
 	}
@@ -926,7 +934,7 @@ Writes information describing how <field> is defined at <element>.
 	return (return_code);
 } /* write_FE_element_field_sub */
 
-static int write_FE_element_field_info(FILE *output_file,
+static int write_FE_element_field_info(ostream *output_file,
 	struct FE_element *element,
 	struct FE_field_order_info *field_order_info,
 	int *output_number_of_nodes,int **output_node_indices,
@@ -1231,8 +1239,7 @@ are passed to this function.
 					}
 					/* output scale factor sets and work out scale_factor renumbering
 						 information */
-					fprintf(output_file, " #Scale factor sets=%d\n",
-						output_number_of_scale_factor_sets);
+					(*output_file) << " #Scale factor sets=" << output_number_of_scale_factor_sets << "\n";
 					*output_number_of_scale_factors = 0;
 					output_scale_factor_index=scale_factor_index = 0;
 					for (j = 0; j < number_of_scale_factor_sets; j++)
@@ -1241,13 +1248,12 @@ are passed to this function.
 							&numbers_in_scale_factor_set);
 						if (scale_factor_set_in_use[j])
 						{
-							fprintf(output_file," ");
+							(*output_file) << " ";
 							get_FE_element_scale_factor_set_identifier(element, j,
 								&scale_factor_set_identifier);
 							write_FE_basis(output_file,
 								(struct FE_basis *)scale_factor_set_identifier);
-							fprintf(output_file,", #Scale factors=%d\n",
-								numbers_in_scale_factor_set);
+							(*output_file) << ", #Scale factors=" << numbers_in_scale_factor_set << "\n";
 							/* set output scale factor indices */
 							for (i = numbers_in_scale_factor_set; 0 < i; i--)
 							{
@@ -1264,7 +1270,7 @@ are passed to this function.
 						}
 					}
 					/* output number of nodes */
-					fprintf(output_file," #Nodes=%d\n",*output_number_of_nodes);
+					(*output_file) << " #Nodes=" << *output_number_of_nodes << "\n";
 					/* output fields / components */
 					write_element_field_data.output_file=output_file;
 					write_element_field_data.field_number=1;
@@ -1277,7 +1283,7 @@ are passed to this function.
 					write_element_field_data.output_scale_factor_indices=
 						*output_scale_factor_indices;
 					
-					fprintf(output_file, " #Fields=%d\n", number_of_fields_in_header);
+					(*output_file) << " #Fields=" << number_of_fields_in_header << "\n";
 					if (field_order_info)
 					{
 						for (field_no = 0; field_no < number_of_fields; field_no++)
@@ -1300,7 +1306,7 @@ are passed to this function.
 
 					if (write_field_values)
 					{
-						fprintf(output_file," Values :\n");
+						(*output_file) << " Values :\n";
 						if (field_order_info)
 						{
 							for (field_no = 0; field_no < number_of_fields; field_no++)
@@ -1338,9 +1344,9 @@ are passed to this function.
 		else
 		{
 			/* no scale factors, nodes or fields */
-			fprintf(output_file, " #Scale factor sets=0\n");
-			fprintf(output_file, " #Nodes=0\n");
-			fprintf(output_file, " #Fields=0\n");
+			(*output_file) << " #Scale factor sets=0\n";
+			(*output_file) << " #Nodes=0\n";
+			(*output_file) << " #Fields=0\n";
 		}
 	}
 	else
@@ -1492,7 +1498,7 @@ Writes grid-based values stored with the element.
 	return (return_code);
 } /* write_FE_element_field_values */
 
-static int write_FE_element(FILE *output_file,struct FE_element *element,
+static int write_FE_element(ostream *output_file,struct FE_element *element,
 	struct FE_field_order_info *field_order_info,
 	int output_number_of_nodes,int *output_node_indices,
 	int output_number_of_scale_factors,int *output_scale_factor_indices)
@@ -1545,9 +1551,9 @@ Notes:
 	{
 		return_code = 1;
 		/* write the element identifier */
-		fprintf(output_file, " Element: ");
+		(*output_file) << " Element: ";
 		write_FE_element_identifier(output_file, element);
-		fprintf(output_file,"\n");
+		(*output_file) << "\n";
 		/* only write faces if writing fields i.e. not with groups */
 		if (!field_order_info || (get_FE_field_order_info_number_of_fields(field_order_info) > 0))
 		{
@@ -1555,10 +1561,10 @@ Notes:
 				(0 < number_of_faces))
 			{
 				/* write the faces */
-				fprintf(output_file," Faces:\n");
+				(*output_file) << " Faces:\n";
 				for (i = 0; i < number_of_faces; i++)
 				{
-					fprintf(output_file," ");
+					(*output_file) << " ";
 					if (get_FE_element_face(element, i, &face) && face)
 					{
 						write_FE_element_identifier(output_file, face);
@@ -1566,9 +1572,9 @@ Notes:
 					else
 					{
 						/* no face = no number, for compatibility with read_FE_element */
-						fprintf(output_file,"0 0 0");
+						(*output_file) << "0 0 0";
 					}
-					fprintf(output_file,"\n");
+					(*output_file) << "\n";
 				}
 			}
 		}
@@ -1585,7 +1591,7 @@ Notes:
 				{
 					if (first_grid_field)
 					{
-						fprintf(output_file, " Values :\n");
+						(*output_file) << " Values :\n";
 						first_grid_field = 0;
 					}
 					write_FE_element_field_values(element, field, (void *)output_file);
@@ -1596,7 +1602,7 @@ Notes:
 		{
 			if (FE_element_has_grid_based_fields(element))
 			{
-				fprintf(output_file," Values :\n");
+				(*output_file) << " Values :\n";
 				for_each_FE_field_at_element_alphabetical_indexer_priority(
 					write_FE_element_field_values,(void *)output_file,element);
 			}
@@ -1608,14 +1614,14 @@ Notes:
 			{
 				if (0 < number_of_nodes)
 				{
-					fprintf(output_file, " Nodes:\n");
+					(*output_file) << " Nodes:\n";
 					for (i = 0; i < number_of_nodes; i++)
 					{
 						if (0 <= output_node_indices[i])
 						{
 							if (get_FE_element_node(element, i, &node))
 							{
-								fprintf(output_file, " %d", get_FE_node_identifier(node));
+								(*output_file) << " " << get_FE_node_identifier(node);
 							}
 							else
 							{
@@ -1625,7 +1631,7 @@ Notes:
 							}
 						}
 					}
-					fprintf(output_file, "\n");
+					(*output_file) << "\n";
 				}
 			}
 			else
@@ -1642,7 +1648,7 @@ Notes:
 			{
 				if (0 < total_number_of_scale_factors)
 				{
-					fprintf(output_file," Scale factors:\n");
+					(*output_file) << " Scale factors:\n";
 					number_of_scale_factors=0;
 					/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 					for (i = 0; i < total_number_of_scale_factors; i++)
@@ -1651,11 +1657,13 @@ Notes:
 						{
 							number_of_scale_factors++;
 							get_FE_element_scale_factor(element, i, &scale_factor);
-							fprintf(output_file, " %"FE_VALUE_STRING, scale_factor);
+							char num_string[100];
+							sprintf(num_string, "%"FE_VALUE_STRING, scale_factor);
+							(*output_file) << " " << num_string;
 							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
 								(0==(number_of_scale_factors%FE_VALUE_MAX_OUTPUT_COLUMNS)))
 							{
-								fprintf(output_file,"\n");
+								(*output_file) << "\n";
 							}
 						}
 					}
@@ -1664,7 +1672,7 @@ Notes:
 					if ((0 >= FE_VALUE_MAX_OUTPUT_COLUMNS) ||
 						(0 != (number_of_scale_factors % FE_VALUE_MAX_OUTPUT_COLUMNS)))
 					{
-						fprintf(output_file,"\n");
+						(*output_file) << "\n";
 					}
 				}
 			}
@@ -1858,7 +1866,7 @@ has no node_scale_field_info - ie. lines and faces - only the shape is output
 in the header.
 ==============================================================================*/
 {
-	FILE *output_file;
+	ostream *output_file;
 	int new_field_header, new_shape, return_code;
 	struct FE_element_shape *element_shape, *last_element_shape;
 	struct Write_FE_region_element_data *write_elements_data;
@@ -1937,7 +1945,7 @@ in the header.
 	return (return_code);
 } /* write_FE_region_element */
 
-static int write_FE_node_field(FILE *output_file,int field_number,
+static int write_FE_node_field(ostream *output_file,int field_number,
 	struct FE_node *node,struct FE_field *field,int *value_index)
 /*******************************************************************************
 LAST MODIFIED : 21 September 1999
@@ -1969,12 +1977,12 @@ time this function is called - this function adds on
 		{
 			if (NULL != (component_name=get_FE_field_component_name(field,i)))
 			{
-				fprintf(output_file,"  %s.",component_name);
+				(*output_file) << "  "<< component_name << ".";
 				DEALLOCATE(component_name);
 			}
 			else
 			{
-				fprintf(output_file,"  %d.",i+1);
+				(*output_file) << "  "<< i+1 << ".";
 			}
 			if (GENERAL_FE_FIELD==fe_field_type)
 			{
@@ -1982,23 +1990,22 @@ time this function is called - this function adds on
 				get_FE_node_field_component_number_of_derivatives(node,field,i);
 				number_of_versions=
 				get_FE_node_field_component_number_of_versions(node,field,i);
-				fprintf(output_file,"  Value index=%d, #Derivatives=%d",*value_index,
-					number_of_derivatives);
+				(*output_file) << "  Value index=" << *value_index << ", #Derivatives=" << number_of_derivatives;
 				if (0<number_of_derivatives)
 				{
 					if (NULL != (nodal_value_types=
 						get_FE_node_field_component_nodal_value_types(node,field,i)))
 					{
-						fprintf(output_file," (");
+						(*output_file) << " (";
 						for (j=1;j<1+number_of_derivatives;j++)
 						{
 							if (1!=j)
 							{
-								fprintf(output_file,",");
+								(*output_file) << ",";
 							}
-							fprintf(output_file, "%s", ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_types[j]));
+							(*output_file) << ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_types[j]);
 						}
-						fprintf(output_file,")");
+						(*output_file) << ")";
 						DEALLOCATE(nodal_value_types);
 					}
 					else
@@ -2007,13 +2014,13 @@ time this function is called - this function adds on
 							"write_FE_node_field.  Could not get nodal value types");
 					}
 				}
-				fprintf(output_file,", #Versions=%d\n",number_of_versions);
+				(*output_file) << ", #Versions=" << number_of_versions << "\n";
 				(*value_index) += number_of_versions*(1+number_of_derivatives);
 			}
 			else
 			{
 				/* constant and indexed fields: 1 version, no derivatives */
-				fprintf(output_file,"\n");
+				(*output_file) << "\n";
 			}
 		}
 		return_code=1;
@@ -2067,7 +2074,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 {
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
-	FILE *output_file;
+	ostream *output_file;
 	int i,j,k,number_of_components,number_of_derivatives,number_of_values,
 		number_of_versions,return_code;
 	struct Write_FE_node_field_values *values_data;
@@ -2102,7 +2109,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 							display_message(ERROR_MESSAGE,
 								"write_FE_node_field_values.  Could not get element_xi value");
 						}
-						fprintf(output_file,"\n");
+						(*output_file) << "\n";
 					}
 				} break;
 				case FE_VALUE_VALUE:
@@ -2122,10 +2129,13 @@ Writes out the nodal values. Each component or version starts on a new line.
 							{
 								for (k=0;k<=number_of_derivatives;k++)
 								{
-									fprintf(output_file," %"FE_VALUE_STRING,*value);
+									char num_string[100];
+									sprintf(num_string, "%"FE_VALUE_STRING, *value);
+
+									(*output_file) << " " << num_string;
 									value++;
 								}
-								fprintf(output_file,"\n");
+								(*output_file) << "\n";
 							}
 						}
 						DEALLOCATE(values);
@@ -2149,10 +2159,10 @@ Writes out the nodal values. Each component or version starts on a new line.
 							{
 								for (k=0;k<=number_of_derivatives;k++)
 								{
-									fprintf(output_file," %d",*value);
+									(*output_file) << " " << *value;
 									value++;
 								}
-								fprintf(output_file,"\n");
+								(*output_file) << "\n";
 							}
 						}
 						DEALLOCATE(values);
@@ -2171,13 +2181,13 @@ Writes out the nodal values. Each component or version starts on a new line.
 							if (the_string)
 							{
 								make_valid_token(&the_string);
-								fprintf(output_file," %s",the_string);
+								(*output_file) << " " << the_string;
 								DEALLOCATE(the_string);
 							}
 							else
 							{
 								/* empty string */
-								fprintf(output_file," \"\"");
+								(*output_file) << " \"\"";
 							}
 						}
 						else
@@ -2185,7 +2195,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 							display_message(ERROR_MESSAGE,
 								"write_FE_node_field_values.  Could not get string");
 						}
-						fprintf(output_file,"\n");
+						(*output_file) << "\n";
 					}
 				} break;
 				default:
@@ -2209,7 +2219,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 	return (return_code);
 } /* write_FE_node_field_values */
 
-static int write_FE_node(FILE *output_file,struct FE_node *node,
+static int write_FE_node(ostream *output_file,struct FE_node *node,
 	struct FE_field_order_info *field_order_info, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -2227,7 +2237,7 @@ written.
 	ENTER(write_FE_node);
 	if (output_file && node)
 	{
-		fprintf(output_file, " Node: %d\n", get_FE_node_identifier(node));
+		(*output_file) << " Node: " << get_FE_node_identifier(node) << "\n";
 		values_data.output_file = output_file;
 		values_data.number_of_values = 0;
 		values_data.time = time;
@@ -2256,7 +2266,7 @@ written.
 			((0 >= FE_VALUE_MAX_OUTPUT_COLUMNS) ||
 				(0 != (values_data.number_of_values % FE_VALUE_MAX_OUTPUT_COLUMNS))))
 		{
-			fprintf(output_file, "\n");
+			(*output_file) << "\n";
 		}
 		return_code = 1;
 	}
@@ -2404,7 +2414,7 @@ different from the last node (taking into account whether a selection of fields
 has been selected for output) then the header is written out.
 ==============================================================================*/
 {
-	FILE *output_file;
+	ostream *output_file;
 	int i, number_of_fields = 0, number_of_fields_in_header, return_code,
 		write_field_values;
 	struct FE_field *field;
@@ -2453,7 +2463,7 @@ has been selected for output) then the header is written out.
 					number_of_fields_in_header = get_FE_node_number_of_fields(node);
 					write_field_values = FE_node_has_FE_field_values(node);
 				}
-				fprintf(output_file, " #Fields=%d\n", number_of_fields_in_header);
+				(*output_file) << " #Fields=" << number_of_fields_in_header << "\n";
 				field_data.field_number = 1;
 				field_data.value_index = 1;
 				field_data.output_file = output_file;
@@ -2477,7 +2487,7 @@ has been selected for output) then the header is written out.
 				if (write_field_values)
 				{
 					/* write values for constant and indexed fields */
-					fprintf(output_file, " Values :\n");
+					(*output_file) << " Values :\n";
 					if (field_order_info)
 					{
 						for (i = 0; i < number_of_fields; i++)
@@ -2514,7 +2524,7 @@ has been selected for output) then the header is written out.
 	return (return_code);
 } /* write_FE_region_node */
 
-static int write_FE_region(FILE *output_file, struct FE_region *fe_region,
+static int write_FE_region(ostream *output_file, struct FE_region *fe_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
@@ -2676,7 +2686,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
  * @param write_recursion  Controls whether sub-regions and sub-groups are
  *   recursively written.
  */
-static int write_Cmiss_region(FILE *output_file,
+static int write_Cmiss_region(ostream *output_file,
 	struct Cmiss_region *region, struct Cmiss_region *parent_region_output,
 	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
@@ -2716,7 +2726,7 @@ static int write_Cmiss_region(FILE *output_file,
 						tidy_path[strlen(tidy_path)-1] = '\0';
 					}
 				}
-				fprintf(output_file, "Region: %s\n", tidy_path);
+				(*output_file) << "Region: " << tidy_path << "\n";
 			}
 			else
 			{
@@ -2739,7 +2749,7 @@ static int write_Cmiss_region(FILE *output_file,
 				{
 					child_region_name++;
 				}
-				fprintf(output_file, " Group name: %s\n", child_region_name);
+				(*output_file) << " Group name: " << child_region_name << "\n";
 			}
 			else
 			{
@@ -2858,7 +2868,35 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_recursion)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
 
-int write_exregion_file(FILE *output_file,
+/***************************************************************************//**
+ * Writes an EX file with supplied root_region at the top level of the file.
+ *
+ * @param output_file  The file to write region and field data to.
+ * @param region  The region/group to output.
+ * @param root_region  The region which will become the root region in the EX
+ *   file. Need not be the true root of region hierarchy, but must contain
+ *   <region>.
+ * @param write_elements  If set, write elements and element fields to file.
+ * @param write_nodes  If set, write nodes and node fields to file.
+ * @param write_data  If set, write data and data fields to file. May only use
+ *   if write_elements and write_nodes are 0.
+ * @param write_fields_mode  Controls which fields are written to file.
+ *   If mode is FE_WRITE_LISTED_FIELDS then:
+ *   - Number/list of field_names must be supplied;
+ *   - Field names not used in a region are ignored;
+ *   - Warnings are given for any field names not used in any output region.
+ * @param number_of_field_names  The number of names in the field_names array.
+ * @param field_names  Array of field names.
+ * @param time  Field values at <time> will be written out if field is time
+ *    dependent. If fields are time dependent but <time> is out of range then
+ *    the values at nearest time will be written out. If fields are not time
+ *    dependent, this parameter is ignored.
+ * @param write_criterion  Controls which objects are written. Some modes
+ *   limit output to nodes or objects with any or all listed fields defined.
+ * @param write_recursion  Controls whether sub-regions and sub-groups are
+ *   recursively written.
+ */
+int write_exregion_file(ostream *output_file,
 	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
@@ -2941,19 +2979,20 @@ int write_exregion_file_of_name(const char *file_name,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion)	
 {
-	FILE *output_file;
 	int return_code;
 
 	ENTER(write_exregion_file_of_name);
 	if (file_name)
 	{
-		if (NULL != (output_file = fopen(file_name, "w")))
+		ofstream output_file;
+		output_file.open(file_name, ios::out);
+		if (output_file.is_open())
 		{
-			return_code = write_exregion_file(output_file, region, root_region,
+			return_code = write_exregion_file(&output_file, region, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);
-			fclose(output_file);
+			output_file.close();
 		}
 		else
 		{
@@ -2972,3 +3011,46 @@ int write_exregion_file_of_name(const char *file_name,
 
 	return (return_code);
 } /* write_exregion_file_of_name */
+
+int write_exregion_file_to_memory_block(struct Cmiss_region *region,
+	struct Cmiss_region *root_region, int write_elements,
+	int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names, FE_value time,
+	enum FE_write_criterion write_criterion,
+	enum FE_write_recursion write_recursion,
+	void **memory_block, unsigned int *memory_block_length)
+{
+	int return_code;
+
+	ENTER(write_exregion_file_of_name);
+	if (memory_block)
+	{
+		ostringstream stringStream;
+		if (stringStream)
+		{
+			return_code = write_exregion_file(&stringStream, region, root_region,
+				write_elements, write_nodes, write_data,
+				write_fields_mode, number_of_field_names, field_names, time,
+				write_criterion, write_recursion);
+			string sstring = stringStream.str();
+			*memory_block_length = sstring.size();
+			*memory_block = duplicate_string(sstring.c_str());
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Could not open for writing exregion into memory");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_exregion_file_of_name.  Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}

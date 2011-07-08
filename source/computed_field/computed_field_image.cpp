@@ -41,6 +41,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
+#include "api/cmiss_stream.h"
 #include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 }
@@ -1173,18 +1174,7 @@ texture fields which reference <texture>.
 	return (return_code);
 } /* Computed_field_depends_on_texture */
 
-Cmiss_field_image_storage_information_id Cmiss_field_image_storage_information_create(void)
-{
-	return ((Cmiss_field_image_storage_information_id)CREATE(Cmgui_image_information)());
-}
-
-int Cmiss_field_image_storage_information_destroy(
-	Cmiss_field_image_storage_information_id *storage_information_address)
-{
-	return (DESTROY(Cmgui_image_information)(
-		(struct Cmgui_image_information **)storage_information_address));
-}
-
+/*
 int Cmiss_field_image_storage_information_add_file_name(
 	Cmiss_field_image_storage_information_id storage_information,
 	const char *file_name)
@@ -1194,79 +1184,6 @@ int Cmiss_field_image_storage_information_add_file_name(
 		(char *)file_name));
 }
 
-int Cmiss_field_image_storage_information_set_file_format(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_file_format format)
-{
-	enum Image_file_format cmgui_file_format = JPG_FILE_FORMAT;
-	int return_code;
-
-	return_code = 1;
-	switch (format)
-	{
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_BMP:
-		{
-			cmgui_file_format = BMP_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_DICOM:
-		{
-			cmgui_file_format = DICOM_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_JPG:
-		{
-			cmgui_file_format = JPG_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_GIF:
-		{
-			cmgui_file_format = GIF_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_PNG:
-		{
-			cmgui_file_format = PNG_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_SGI:
-		{
-			cmgui_file_format = SGI_FILE_FORMAT;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_TIFF:
-		{
-			cmgui_file_format = TIFF_FILE_FORMAT;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_image_storage_information_set_format.  "
-				"File format not implemented yet.");
-		} break;
-	}
-	if (return_code)
-	{
-		return_code = Cmgui_image_information_set_image_file_format(
-			(struct Cmgui_image_information *)storage_information,
-			cmgui_file_format);
-	}
-	return (return_code);
-}
-
-int Cmiss_field_image_storage_information_set_width(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int width)
-{
-	return (Cmgui_image_information_set_width(
-		(struct Cmgui_image_information *)storage_information,
-		width));
-}
-
-int Cmiss_field_image_storage_information_set_height(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int height)
-{
-	return (Cmgui_image_information_set_height(
-		(struct Cmgui_image_information *)storage_information,
-		height));
-}
-
-/*
 int Cmiss_field_image_storage_information_set_depth(
 	Cmiss_field_image_storage_information_id storage_information,
 	unsigned int depth)
@@ -1274,143 +1191,6 @@ int Cmiss_field_image_storage_information_set_depth(
 	return (Cmgui_image_information_set_depth(
 		(struct Cmgui_image_information *)storage_information,
 		depth));
-}
-*/
-
-int Cmiss_field_image_storage_information_set_pixel_format(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_pixel_format pixel_format)
-{
-	int number_of_components, return_code;
-	switch(pixel_format)
-	{
-		case CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE:
-		{
-			number_of_components = 1;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
-		{
-			number_of_components = 2;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGB:
-		{
-			number_of_components = 3;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_RGBA:
-		{
-			number_of_components = 4;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Texture_set_pixel_format.  Pixel format not implemented yet.");
-			number_of_components = 0;
-		} break;
-	}
-	if (number_of_components)
-	{
-		return_code = Cmgui_image_information_set_number_of_components(
-			(struct Cmgui_image_information *)storage_information,
-			number_of_components);
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-int Cmiss_field_image_storage_information_set_number_of_bytes_per_component(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int number_of_bytes_per_component)
-{
-	return (Cmgui_image_information_set_number_of_bytes_per_component(
-		(struct Cmgui_image_information *)storage_information,
-		number_of_bytes_per_component));
-}
-
-int Cmiss_field_image_storage_information_set_compression(
-	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_compression compression)
-{
-	enum Image_storage_compression image_compression;
-	int return_code;
-
-	return_code = 1;
-	switch(compression)
-	{
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_UNSPECIFIED:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_UNSPECIFIED;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_NONE:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_NONE;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_BZIP:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_BZIP;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_FAX:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_FAX;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_JPEG:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_JPEG;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_JPEG2000:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_JPEG2000;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_LOSSLESS_JPEG:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_LOSSLESS_JPEG;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_LZW:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_LZW;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_RLE:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_RLE;
-		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_COMPRESSION_ZIP:
-		{
-			image_compression = IMAGE_STORAGE_COMPRESSION_ZIP;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Texture_set_compression.  Compression type not implemented yet.");
-			return_code = 0;
-		} break;
-	}
-	if (return_code)
-	{
-		return_code = Cmgui_image_information_set_storage_compression(
-			(struct Cmgui_image_information *)storage_information,
-			image_compression);
-	}
-	return (return_code);
-}
-
-int Cmiss_field_image_storage_information_set_quality(
-	Cmiss_field_image_storage_information_id storage_information,
-	double quality)
-{
-	return (Cmgui_image_information_set_quality(
-		(struct Cmgui_image_information *)storage_information,
-		quality));
-}
-
-int Cmiss_field_image_storage_information_set_memory_block(
-	Cmiss_field_image_storage_information_id storage_information,
-	void *memory_block, unsigned int memory_block_length)
-{
-	return (Cmgui_image_information_set_memory_block(
-		(struct Cmgui_image_information *)storage_information,
-		memory_block, memory_block_length));
 }
 
 int Cmiss_field_image_storage_information_set_write_to_memory_block(
@@ -1420,172 +1200,44 @@ int Cmiss_field_image_storage_information_set_write_to_memory_block(
 		(struct Cmgui_image_information *)storage_information));
 }
 
-int Cmiss_field_image_storage_information_get_memory_block(
-	Cmiss_field_image_storage_information_id storage_information,
-	void **memory_block, unsigned int *memory_block_length)
-{
-	return (Cmgui_image_information_get_memory_block(
-		(struct Cmgui_image_information *)storage_information,
-		memory_block, memory_block_length));
-}
+*/
 
 int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(image_address));
 }
 
-int Cmiss_field_image_read(Cmiss_field_image_id image_field,
-	Cmiss_field_image_storage_information_id storage_information)
+int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id)
 {
-	int return_code;
-	struct Cmgui_image_information *cmgui_image_information;
-	struct Cmgui_image *cmgui_image;
-
-	ENTER(Cmiss_field_image_read);
-	if (image_field && (cmgui_image_information =
-		(struct Cmgui_image_information *)storage_information))
+	int return_value = 0, width = 0, height = 0, depth = 0;
+	if (image)
 	{
-		Computed_field *field = Computed_field_cast(image_field);
-		Computed_field_image *image_core =
-			Computed_field_image_core_cast(image_field);
-
-		cmgui_image = Cmgui_image_read(cmgui_image_information);
-		if (cmgui_image != 0)
+		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
+		Texture_get_size(texture,	&width, &height, &depth);
+		switch (attribute_id)
 		{
-			char *property, *value;
-			Texture *texture;
-
-			if ((texture = CREATE(Texture)(field->name)) &&
-				Texture_set_image(texture, cmgui_image,
-				field->name, /*file_number_pattern*/"",
-				/*file_number_series_data.start*/0,
-				/*file_number_series_data.stop*/0,
-				/*file_number_series_data.increment*/1,
-				/*image_data.crop_left_margin*/0,
-				/*image_data.crop_bottom_margin*/0,
-				/*image_data.crop_width*/0, /*image_data.crop_height*/0))
+			case CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
 			{
-				/* Calling get_property with wildcard ensures they
-					will be available to the iterator, as well as
-					any other properties */
-				Cmgui_image_get_property(cmgui_image,"exif:*");
-				Cmgui_image_reset_property_iterator(cmgui_image);
-				while ((property = Cmgui_image_get_next_property(
-					cmgui_image)) &&
-					(value = Cmgui_image_get_property(cmgui_image,
-					property)))
-				{
-					Texture_set_property(texture, property, value);
-					DEALLOCATE(property);
-					DEALLOCATE(value);
-				}
-				DESTROY(Cmgui_image)(&cmgui_image);
-				return_code = 1;
-			}
-			else
+				return_value = width;
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL:
 			{
-				return_code = 0;
-			}
-			if (return_code)
+				return_value = height;
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL:
 			{
-				return_code = image_core->set_texture(texture);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-			"Cmiss_field_image_read.  Could not read image file");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_image_read.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_field_image_read */
-
-int Cmiss_field_image_write(Cmiss_field_image_id image_field,
-	Cmiss_field_image_storage_information_id storage_information)
-{
-	int return_code;
-	struct Cmgui_image_information *cmgui_image_information;
-	struct Cmgui_image *cmgui_image;
-
-	ENTER(Cmiss_field_image_write);
-	return_code = 1;
-	if (image_field && (cmgui_image_information =
-		(struct Cmgui_image_information *)storage_information))
-	{
-		Computed_field *field = Computed_field_cast(image_field);
-		Computed_field_image *image_core =
-			Computed_field_image_core_cast(image_field);
-
-		cmgui_image = Texture_get_image(image_core->get_texture());
-		if (cmgui_image != 0)
-		{
-			if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
+				return_value = depth;
+			} break;
+			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_field_image_write.  "
-					"Error writing image %s", field->name);
-				return_code = 0;
-			}
-			DESTROY(Cmgui_image)(&cmgui_image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_image_write.  "
-				"Could not get image from texture");
-			return_code = 0;
+					"Cmiss_field_image_get_attribute_integer.  Invalid attribute");
+			} break;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_image_write.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_field_image_write */
-
-int Cmiss_field_image_read_file(Cmiss_field_image_id image_field,
-	const char *file_name)
-{
-	Cmiss_field_image_storage_information_id storage_information;
-	int return_code;
-
-	storage_information = Cmiss_field_image_storage_information_create();
-	Cmiss_field_image_storage_information_add_file_name(
-		storage_information, file_name);
-	return_code = Cmiss_field_image_read(image_field, storage_information);
-	Cmiss_field_image_storage_information_destroy(&storage_information);
-
-	return (return_code);
-} /* Cmiss_field_image_read_file */
-
-int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
-	const char *file_name)
-{
-	Cmiss_field_image_storage_information_id storage_information;
-	int return_code;
-
-	storage_information = Cmiss_field_image_storage_information_create();
-	Cmiss_field_image_storage_information_add_file_name(
-		storage_information, file_name);
-	return_code = Cmiss_field_image_write(image_field, storage_information);
-	Cmiss_field_image_storage_information_destroy(&storage_information);
-
-	return (return_code);
-} /* Cmiss_field_image_write_file */
-
+	return return_value;
+}
 
 int Computed_field_is_image_type(struct Computed_field *field,
 	void *dummy_void)
@@ -2135,7 +1787,7 @@ enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
    Cmiss_field_image_id image_field)
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
-	int mode = Texture_get_combine_mode(texture);
+	int mode = Texture_get_combine_mode(texture) + 1;
 	enum Cmiss_field_image_combine_mode combine_mode = (Cmiss_field_image_combine_mode)mode;
 	return combine_mode;
 }
@@ -2145,15 +1797,23 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
 	int mode = combine_mode;
-	enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)mode;
-	return Texture_set_combine_mode(texture, texture_combine_mode);
+	if (mode < 1)
+	{
+		return 0;
+	}
+	else
+	{
+		mode = mode - 1;
+		enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)mode;
+		return Texture_set_combine_mode(texture, texture_combine_mode);
+	}
 }
 
 enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
    Cmiss_field_image_id image_field)
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
-	int mode = Texture_get_compression_mode(texture);
+	int mode = Texture_get_compression_mode(texture) + 1;
 	enum Cmiss_field_image_compression_mode compression_mode =
 		(Cmiss_field_image_compression_mode)mode;
 	return compression_mode;
@@ -2164,16 +1824,24 @@ int Cmiss_field_image_set_compression_mode(Cmiss_field_image_id image_field,
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
 	int mode = compression_mode;
-	enum Texture_compression_mode texture_compression_mode =
-		(Texture_compression_mode)mode;
-	return Texture_set_compression_mode(texture, texture_compression_mode);
+	if (mode < 1)
+	{
+		return 0;
+	}
+	else
+	{
+		mode = mode - 1;
+		enum Texture_compression_mode texture_compression_mode =
+			(Texture_compression_mode)mode;
+		return Texture_set_compression_mode(texture, texture_compression_mode);
+	}
 }
 
 enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
    Cmiss_field_image_id image_field)
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
-	int mode = Texture_get_filter_mode(texture);
+	int mode = Texture_get_filter_mode(texture) + 1;
 	enum Cmiss_field_image_filter_mode filter_mode = (Cmiss_field_image_filter_mode)mode;
 	return filter_mode;
 }
@@ -2183,6 +1851,14 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
 	int mode = filter_mode;
-	enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
-	return Texture_set_filter_mode(texture, texture_filter_mode);
+	if (mode < 1)
+	{
+		return 0;
+	}
+	else
+	{
+		mode = mode - 1;
+		enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
+		return Texture_set_filter_mode(texture, texture_filter_mode);
+	}
 }

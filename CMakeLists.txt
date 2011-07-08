@@ -918,6 +918,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_rendition.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_stream.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_selection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
@@ -955,6 +956,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_viewer_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_selection_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_spectrum_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_stream_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_tessellation_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_time_keeper_id.h

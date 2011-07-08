@@ -390,7 +390,7 @@ int Cmgui_image_information_set_quality(
  * @param memory_block_length  The length of this memory_block.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmgui_image_information_set_memory_block(
+int Cmgui_image_information_add_memory_block(
 	struct Cmgui_image_information *storage_information,
 	void *memory_block, unsigned int memory_block_length);
 
@@ -417,9 +417,9 @@ int Cmgui_image_information_set_write_to_memory_block(
  * the returned memory block.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmgui_image_information_get_memory_block(
-	struct Cmgui_image_information *storage_information,
-	void **memory_block, unsigned int *memory_block_length);
+int Cmgui_image_information_get_memory_blocks(
+	struct Cmgui_image_information *storage_information, int *number_of_memory_blocks,
+	void ***memory_blocks, unsigned int **memory_block_lengths);
 
 int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
 /*******************************************************************************

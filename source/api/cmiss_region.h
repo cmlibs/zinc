@@ -44,11 +44,18 @@ The public interface to the Cmiss_regions.
 #ifndef __CMISS_REGION_H__
 #define __CMISS_REGION_H__
 
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
 #include "api/types/cmiss_node_id.h"
+#include "api/types/cmiss_stream_id.h"
 #include "api/types/cmiss_region_id.h"
+
+/*
+Global functions
+----------------
+*/
 
 /*******************************************************************************
  * Returns a new reference to the region with reference count incremented.
@@ -113,13 +120,6 @@ int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
-
-int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name);
-/*******************************************************************************
-LAST MODIFIED : 19 August 2002
-
-DESCRIPTION :
-==============================================================================*/
 
 /***************************************************************************//**
  * Returns the name of the region. 
@@ -198,8 +198,7 @@ void Cmiss_region_reaccess_next_sibling(Cmiss_region_id *region_address);
  * @param new_child  The child to add.
  * @return  1 on success, 0 on failure. 
  */
-int Cmiss_region_append_child(struct Cmiss_region *region,
-	struct Cmiss_region *new_child);
+int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child);
 
 /***************************************************************************//**
  * Inserts new_child before the existing ref_child in the list of child regions
@@ -306,14 +305,188 @@ Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
 	const char *path);
 
 /***************************************************************************//**
- * Reads region data from a memory buffer into the specified region if compatible.
+ * Reads region data using the Cmiss_stream_resource obejcts provided in the
+ * Cmiss_stream_information object.
+ * @see Cmiss_stream_information_id
  *
- * @param region  The region into which to read the new data.
- * @param memory_buffer  The memory block containing the region data.
- * @param memory_buffer_size  The length of the memory block.
- * @return  1 if data successfully read and merged into specified region, 0 otherwise.
+ * @param region  The region to read the resources in stream_information into.
+ * @paran stream_information Handle to the Cmiss_stream_information containing
+ * 		information to read file into.
+ * @return  1 if data successfully read and merged into specified region,
+ * 	0 otherwise.
  */
-int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
-	const unsigned int memory_buffer_size);
+int Cmiss_region_read(Cmiss_region_id region,
+	Cmiss_stream_information_id stream_information);
+
+/***************************************************************************//**
+ * Convenient function to read a file with the provided name into a region
+ * directly.
+ *
+ * @param region  The region to be written out.
+ * @paran file_name  name of the file to read from.
+ *
+ * @return  1 if data successfully read and merged into specified region,
+ * 	0 otherwise.
+ */
+int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name);
+
+/***************************************************************************//**
+ * Write region data using the data provided in the Cmiss_io_stream object.
+ *
+ * @param region  The region to be written out.
+ * @paran stream_information Handle to the Cmiss_stream_information containing
+ * 		information to read file into.
+ *
+ * @return  1 if data is successfully written out, 0 otherwise.
+ */
+int Cmiss_region_write(Cmiss_region_id region,
+	Cmiss_stream_information_id stream_information);
+
+/***************************************************************************//**
+ * Convenient function to write the region into a file with the provided name.
+ * @see Cmiss_stream_information_id
+ *
+ * @param region  The region to be written out.
+ * @paran file_name  name of the file to write to..
+ *
+ * @return  1 if data is successfully written out, 0 otherwise.
+ */
+int Cmiss_region_write_file(struct Cmiss_region *region, const char *file_name);
+
+enum Cmiss_stream_information_region_attribute_id
+{
+	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
+};
+
+/*****************************************************************************//**
+ * Creates a Cmiss_stream_resource object.
+ *
+ * #see Cmiss_stream_information_id
+ *
+ * @return The created object.
+ */
+Cmiss_stream_information_id Cmiss_region_create_stream_information(
+	Cmiss_region_id region);
+
+/***************************************************************************//**
+ * If the stream_information is of region type, then this function returns
+ * the region specific representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived reference.
+ *
+ * @param stream_information  The generic stream_information to be cast.
+ * @param stream_information  Handle to the Cmiss_stream_information.
+ * @return  region specific representation if the input stream_information is
+ * of this type, otherwise NULL.
+ */
+Cmiss_stream_information_region_id Cmiss_stream_information_cast_region(
+	Cmiss_stream_information_id stream_information);
+
+/***************************************************************************//**
+ * Cast Cmiss_stream_information_region back to its base stream_information and
+ * return the stream_information.
+ * IMPORTANT NOTE: Returned stream_information does not have incremented
+ * reference count and must not be destroyed. Use Cmiss_stream_information_access()
+ * to add a reference if maintaining returned handle beyond the lifetime of the
+ * stream_information_image argument.
+ *
+ * @param stream_information  Handle to the stream_information_image_ to cast.
+ * @return  Non-accessed handle to the base stream information or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_stream_information_id Cmiss_stream_information_region_base_cast(
+	Cmiss_stream_information_region_id stream_information)
+{
+	return (Cmiss_stream_information_id)(stream_information);
+}
+
+/*****************************************************************************//**
+ * Destroys a Cmiss_stream_information_region object.
+ *
+ * @param stream_information_address  Pointer to a stream_information object, which
+ * is destroyed and the pointer is set to NULL.
+ * @return Returns 1 if the operation is successful, 0 if it is not.
+ */
+int Cmiss_stream_information_region_destroy(
+	Cmiss_stream_information_region_id *stream_information_address);
+
+/***************************************************************************//**
+ * Check either an attribute of stream_information has been set or
+ * not.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  1 if attribute has been set.
+ */
+int Cmiss_stream_information_region_has_attribute(
+	Cmiss_stream_information_region_id stream_information,
+	enum Cmiss_stream_information_region_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Get a real value of an attribute of stream_information.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  Value of the attribute.
+ */
+double Cmiss_stream_information_region_get_attribute_real(
+	Cmiss_stream_information_region_id stream_information,
+	enum Cmiss_stream_information_region_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set a double attribute of the Cmiss_stream_information_region.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param attribute_id  The identifier of the double attribute to set.
+ * @param value  The new value for the attribute.
+ *
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this Cmiss_stream_information_region.
+ */
+int Cmiss_stream_information_region_set_attribute_real(
+	Cmiss_stream_information_region_id stream_information,
+	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	double value);
+
+/***************************************************************************//**
+ * Check either an attribute of a stream in stream_information has been set or
+ * not.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param stream  Handle to the Cmiss_stream_resource.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  1 if attribute has been set.
+ */
+int Cmiss_stream_information_region_has_resource_attribute(
+	Cmiss_stream_information_region_id stream_information,
+	Cmiss_stream_resource_id resource,
+	enum Cmiss_stream_information_region_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Get a real value of an attribute of a stream in stream_information.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param stream  Handle to the Cmiss_stream_resource.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  Value of the attribute.
+ */
+double Cmiss_stream_information_region_get_resource_attribute_real(
+	Cmiss_stream_information_region_id stream_information,
+	Cmiss_stream_resource_id resource,
+	enum Cmiss_stream_information_region_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set a double attribute of the Cmiss_stream_information_region.
+ *
+ * @param stream_information  Handle to the Cmiss_stream_information_region.
+ * @param attribute_id  The identifier of the double attribute to set.
+ * @param value  The new value for the attribute.
+ *
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this Cmiss_stream_information_region.
+ */
+int Cmiss_stream_information_region_set_resource_attribute_real(
+	Cmiss_stream_information_region_id stream_information,
+	Cmiss_stream_resource_id resource,
+	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	double value);
 
 #endif /* __CMISS_REGION_H__ */

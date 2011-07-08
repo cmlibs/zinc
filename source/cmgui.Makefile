@@ -1000,7 +1000,8 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
-	computed_field/computed_field_value_index_ranges.cpp
+	computed_field/computed_field_value_index_ranges.cpp \
+	stream/cmiss_field_image_stream.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.cpp
 ifeq ($(USE_ITK),true)
@@ -1098,7 +1099,7 @@ GENERAL_SRCS = \
 	general/image_utilities.c \
 	general/indexed_multi_range.c \
 	general/integration.c \
-	general/io_stream.c \
+	general/io_stream.cpp \
 	general/machine.c \
 	general/matrix_vector.c \
 	general/multi_range.c \
@@ -1107,7 +1108,8 @@ GENERAL_SRCS = \
 	general/octree.c \
 	general/statistics.c \
 	general/time.cpp \
-	general/value.c 
+	general/value.c \
+	stream/cmiss_stream_private.cpp
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GENERAL_SRCS += \
       general/photogrammetry.c
@@ -1255,6 +1257,7 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 REGION_SRCS = \
    api/cmiss_region.c \
    region/cmiss_region.cpp \
+   stream/cmiss_region_stream.cpp \
    region/cmiss_region_write_info.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 REGION_INTERFACE_SRCS = \
@@ -1713,10 +1716,11 @@ endif
 
 LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_time_sequence.c \
-	general/io_stream.c \
+	general/io_stream.cpp \
 	general/statistics.c \
 	node/node_operations.c \
 	element/element_operations.cpp \
+	stream/cmiss_stream_private.cpp \
 	$(MESH_SRCS) \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(COMPUTED_FIELD_CORE_SRCS) \

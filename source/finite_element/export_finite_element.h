@@ -96,42 +96,6 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_criterion);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
 
 /***************************************************************************//**
- * Writes an EX file with supplied root_region at the top level of the file.
- *
- * @param output_file  The file to write region and field data to.
- * @param region  The region/group to output.
- * @param root_region  The region which will become the root region in the EX
- *   file. Need not be the true root of region hierarchy, but must contain
- *   <region>. 
- * @param write_elements  If set, write elements and element fields to file.
- * @param write_nodes  If set, write nodes and node fields to file.
- * @param write_data  If set, write data and data fields to file. May only use
- *   if write_elements and write_nodes are 0.
- * @param write_fields_mode  Controls which fields are written to file.
- *   If mode is FE_WRITE_LISTED_FIELDS then:
- *   - Number/list of field_names must be supplied;
- *   - Field names not used in a region are ignored;
- *   - Warnings are given for any field names not used in any output region.
- * @param number_of_field_names  The number of names in the field_names array.
- * @param field_names  Array of field names.
- * @param time  Field values at <time> will be written out if field is time 
- *    dependent. If fields are time dependent but <time> is out of range then
- *    the values at nearest time will be written out. If fields are not time 
- *    dependent, this parameter is ignored.
- * @param write_criterion  Controls which objects are written. Some modes
- *   limit output to nodes or objects with any or all listed fields defined.
- * @param write_recursion  Controls whether sub-regions and sub-groups are
- *   recursively written.
- */
-int write_exregion_file(FILE *output_file,
-	struct Cmiss_region *region, struct Cmiss_region *root_region,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion);
-
-/***************************************************************************//**
  * Opens file with supplied name, calls write_exregion_file with it and closes
  * file.
  * 
@@ -144,6 +108,15 @@ int write_exregion_file_of_name(const char *file_name,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion);	
+	enum FE_write_recursion write_recursion);
+
+int write_exregion_file_to_memory_block(struct Cmiss_region *region,
+	struct Cmiss_region *root_region, int write_elements,
+	int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names, FE_value time,
+	enum FE_write_criterion write_criterion,
+	enum FE_write_recursion write_recursion,
+	void **memory_block, unsigned int *memory_block_length);
 
 #endif /* !defined (EXPORT_FINITE_ELEMENT_H) */

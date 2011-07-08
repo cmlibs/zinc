@@ -13,7 +13,7 @@ SET( GENERAL_SRCS
 	source/general/image_utilities.c
 	source/general/indexed_multi_range.c
 	source/general/integration.c
-	source/general/io_stream.c
+	source/general/io_stream.cpp
 	source/general/machine.c
 	source/general/matrix_vector.c
 	source/general/multi_range.c

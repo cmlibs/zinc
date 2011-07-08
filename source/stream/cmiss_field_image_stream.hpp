@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_region.c
-
-LAST MODIFIED : 02 March 2005
-
-DESCRIPTION :
-The public interface to the Cmiss_regions.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : Cmiss_field_image_stream.hpp
+ *
+ * The private interface to Cmiss_field_image_stream.
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +21,7 @@ The public interface to the Cmiss_regions.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2005-2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,40 +39,43 @@ The public interface to the Cmiss_regions.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <stdlib.h>
-#include "api/cmiss_region.h"
-#include "computed_field/computed_field.h"
-#include "region/cmiss_region.h"
-#include "general/debug.h"
-#include "user_interface/message.h"
 
-/*
-Global functions
-----------------
-*/
+#if !defined (CMISS_REGION_STREAM_HPP)
+#define CMISS_REGION_STREAM_HPP
 
-Cmiss_region_id Cmiss_region_access(Cmiss_region_id region)
-{
-	return (ACCESS(Cmiss_region)(region));
+extern "C" {
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_image.h"
+#include "general/image_utilities.h"
 }
+#include "stream/cmiss_stream_private.hpp"
 
-int Cmiss_region_destroy(Cmiss_region_id *region)
-/*******************************************************************************
-LAST MODIFIED : 3 January 2008
-
-DESCRIPTION :
-Destroys the <region> and sets the pointer to NULL.
-==============================================================================*/
+struct Cmiss_stream_information_image : Cmiss_stream_information
 {
-	int return_code;
+public:
 
-	ENTER(Cmiss_region_destroy);
-	return_code = 0;
-	if (region && *region)
+	Cmiss_stream_information_image(Cmiss_field_image_id image_field_in) :
+		image_field(image_field_in)
 	{
-		return_code = DEACCESS(Cmiss_region)(region);
+		Cmiss_field_access(Cmiss_field_image_base_cast(image_field_in));
+		image_information = CREATE(Cmgui_image_information)();
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Cmiss_region_destroy */
+	virtual ~Cmiss_stream_information_image()
+	{
+		Cmiss_field_image_destroy(&image_field);
+		DESTROY(Cmgui_image_information)(&image_information);
+	}
+
+	Cmgui_image_information *getImageInformation()
+	{
+		return image_information;
+	}
+
+private:
+	Cmiss_field_image_id image_field;
+	struct Cmgui_image_information *image_information;
+};
+
+
+#endif /* CMISS_REGION_STREAM_HPP */

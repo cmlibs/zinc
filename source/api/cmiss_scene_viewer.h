@@ -934,7 +934,7 @@ rendering a higher resolution image in parts.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
-	enum Cmiss_field_image_storage_pixel_format storage, int *width, int *height,
+	enum Cmiss_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 /*******************************************************************************

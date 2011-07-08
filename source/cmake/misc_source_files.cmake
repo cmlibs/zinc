@@ -88,9 +88,11 @@ SET( NODE_HDRS source/node/node_operations.h
 	source/node/node_tool.h )
 
 SET( REGION_SRCS source/region/cmiss_region.cpp
+	source/stream/cmiss_region_stream.cpp
 	source/region/cmiss_region_write_info.c )
 SET( REGION_HDRS source/region/cmiss_region.h
 	source/region/cmiss_region_private.h
+	source/stream/cmiss_region_stream.hpp
 	source/region/cmiss_region_write_info.h )
 
 SET( SELECTION_SRCS source/selection/any_object_selection.c

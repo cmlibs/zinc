@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : io_stream.c
+FILE : io_stream.cpp
 
 LAST MODIFIED : 
 
@@ -24,7 +24,7 @@ streams.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2005-2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -42,6 +42,7 @@ streams.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
@@ -65,14 +66,13 @@ streams.
 #endif /* defined (USE_IMAGEMAGICK) */
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "user_interface/message.h"
 #include "general/io_stream.h"
 #if !defined (HAVE_VFSCANF)
 #	include "general/alt_vfscanf.h"
 #endif /* !defined (HAVE_VFSCANF) */
-
+}
 
 /* SAB 16 Sept 2004
 	Unfortunately sscanf does a strlen on the buffer.  If the buffer is large
@@ -140,7 +140,7 @@ LAST MODIFIED : 23 March 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct IO_stream_package *class;
+	struct IO_stream_package *stream_class;
 	enum IO_stream_type type;
 	char *uri;
 
@@ -457,7 +457,7 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(io_stream, struct IO_stream, 1))
 		{
-			io_stream->class = stream_class;
+			io_stream->stream_class = stream_class;
 			io_stream->type = IO_STREAM_UNKNOWN_TYPE;
 			io_stream->uri = (char *)NULL;
 
@@ -535,7 +535,7 @@ DESCRIPTION :
 		if (!strncmp("memory:", stream_uri, 7))
 		{
 			stream->memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(stream_uri + 7,
-				stream->class->memory_block_list);
+				stream->stream_class->memory_block_list);
 			if (NULL != stream->memory_block)
 			{
 				return_code = 1;
@@ -599,7 +599,7 @@ DESCRIPTION :
 			/* Look for a colon operator, fail if not file: or d: etc. */
 			int dos_file_uri_specifier = (stream_uri[1] == ':');
 			file_uri_specifier = !strncmp("file:", stream_uri, 5);
-			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(stream_uri, ':'))))
+			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(const_cast<char *>(stream_uri), ':'))))
 			{
 				if (file_uri_specifier)
 				{
@@ -612,7 +612,7 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
-					stream->gzip_file_handle = gzopen(filename, "rb");
+					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
@@ -785,11 +785,11 @@ DESCRIPTION :
 						}
 						else
 						{
-							stream->bz2_memory_stream->next_in = 
+							stream->bz2_memory_stream->next_in =
 								((char *)stream->memory_block->memory_ptr) + stream->memory_block_index;
 							stream->bz2_memory_stream->avail_in = stream->memory_block->data_length
 								- stream->memory_block_index;
-							stream->bz2_memory_stream->next_out = 
+							stream->bz2_memory_stream->next_out =
 								stream->buffer + stream->buffer_valid_index;
 							stream->bz2_memory_stream->avail_out = stream->buffer_chunk_size;
 
@@ -1532,12 +1532,12 @@ DESCRIPTION :
 							} break;
 							case IO_STREAM_BZ2_MEMORY_TYPE:
 							{
-								stream->bz2_memory_stream->next_in = 
+								stream->bz2_memory_stream->next_in =
 									((char *)stream->memory_block->memory_ptr) + stream->memory_block_index;
 								stream->bz2_memory_stream->avail_in = stream->memory_block->data_length
 									- stream->memory_block_index;
 
-								stream->bz2_memory_stream->next_out = 
+								stream->bz2_memory_stream->next_out =
 									stream->data + total_read;
 								stream->bz2_memory_stream->avail_out = read_to_memory_chunk;
 
@@ -1545,7 +1545,7 @@ DESCRIPTION :
 
 								bytes_read = read_to_memory_chunk -
 									stream->bz2_memory_stream->avail_out;
-								stream->memory_block_index += stream->memory_block->data_length - 
+								stream->memory_block_index += stream->memory_block->data_length -
 									stream->bz2_memory_stream->avail_in;
 							} break;
 #endif /* defined (HAVE_BZLIB) */
@@ -1870,4 +1870,3 @@ DESCRIPTION :
 
 	return (return_code);
 } /* DESTROY(IO_stream) */
-

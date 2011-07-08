@@ -42,6 +42,23 @@
 
 	struct Cmiss_region;
   typedef struct Cmiss_region * Cmiss_region_id;
+
+ /***************************************************************************//**
+  * A handle to cmiss stream information region. Stream information region is a
+  * derived type of Cmiss_stream_information_id.
+  * User can create and get a handle to stream information region with functions
+  * provided with Cmiss_region.
+  * User can use this derived type to set number of informations associate with
+  * images inputs and outputs. See cmiss_region.h for more information.
+  *
+  * #see Cmiss_stream_information_id
+  * #see Cmiss_field_image_create_stream_information
+  * #see Cmiss_stream_information_cast_image
+  * #see Cmiss_stream_information_image_base_cast
+  */
+	struct Cmiss_stream_information_region;
+  typedef struct Cmiss_stream_information_region * Cmiss_stream_information_region_id;
+
   #define CMISS_REGION_ID_H
 
 #endif /* CMISS_REGION_ID_H */
