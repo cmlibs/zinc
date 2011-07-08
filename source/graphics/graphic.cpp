@@ -3992,7 +3992,7 @@ int Cmiss_graphic_execute_visible_graphic(
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 				{
-					if (renderer->render_layer(graphic->overlay_flag))
+					if (renderer->rendering_layer(graphic->overlay_flag))
 					{
 						//printf("     %i\n", graphic->position);
 						if (renderer->begin_coordinate_system(graphic->coordinate_system))

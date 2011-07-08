@@ -91,7 +91,7 @@ public:
 	 */
 	virtual int Material_compile(Graphical_material *material);
 
-	virtual int render_layer(int layer)
+	virtual int rendering_layer(int layer)
 	{
 		if (layer == current_layer)
 			return 1;
@@ -105,10 +105,14 @@ public:
 		++current_layer;
 		if (current_layer < number_of_layers)
 			return 1;
-		current_layer = 0;
+		current_layer = 0; // reset
 		return 0;
 	}
 
+	virtual int get_current_layer() const
+	{
+		return current_layer;
+	}
 }; /* class Render_graphics_opengl */
 
 

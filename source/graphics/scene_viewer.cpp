@@ -1244,6 +1244,28 @@ handles the flags that mark render_objects as processed.
 	return (return_code);	
 } /* Scene_viewer_call_next_renderer */
 
+/***************************************************************************//**
+ * Renders graphics in layers with depth buffer cleared between them.
+ */
+static int Scene_viewer_render_layers(
+	struct Scene_viewer_rendering_data *rendering_data)
+{
+	int return_code;
+	if (rendering_data)
+	{
+		do
+		{
+			Scene_viewer_call_next_renderer(rendering_data);
+		}
+		while (rendering_data->renderer->next_layer());
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 static int Scene_viewer_execute_scene_non_fastchanging(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -1259,19 +1281,8 @@ scene.
 	ENTER(Scene_viewer_execute_scene_non_fastchanging);
 	if (rendering_data)
 	{
-		int another_layer = 1;
-		do
-		{
-			return_code = rendering_data->renderer->Scene_execute(
-				rendering_data->scene_viewer->scene);
-			another_layer = rendering_data->renderer->next_layer();
-			if (another_layer)
-			{
-				// clear depth buffer
-				glClear(GL_DEPTH_BUFFER_BIT);
-			}
-		}
-		while (return_code && another_layer);
+		return_code = rendering_data->renderer->Scene_execute(
+			rendering_data->scene_viewer->scene);
 	}
 	else
 	{
@@ -1831,41 +1842,49 @@ Renders the background into the scene.
 			(scene_viewer->background_colour).green,
 			(scene_viewer->background_colour).blue,0.0);
 		glClearDepth(1.0);
+		if (0 == rendering_data->renderer->get_current_layer())
+		{
 #if defined (WIN32_SYSTEM)
-		/* Clear twice, if set then the glClear in the background will be called
-			twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
-		if (1 == scene_viewer->clear_twice_flag)
-		{
-			/* Now that we have a current context check to see what the vendor is */ 
-			if (Graphics_library_vendor_ati == Graphics_library_get_vendor_id())
+			/* Clear twice, if set then the glClear in the background will be called
+				twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
+			if (1 == scene_viewer->clear_twice_flag)
 			{
-				/* Don't check again */
-				scene_viewer->clear_twice_flag = 2;
+				/* Now that we have a current context check to see what the vendor is */
+				if (Graphics_library_vendor_ati == Graphics_library_get_vendor_id())
+				{
+					/* Don't check again */
+					scene_viewer->clear_twice_flag = 2;
+				}
+				else
+				{
+					/* Don't need work around */
+					scene_viewer->clear_twice_flag = 0;
+				}
 			}
-			else
+			if (scene_viewer->clear_twice_flag)
 			{
-				/* Don't need work around */
-				scene_viewer->clear_twice_flag = 0;
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
-		}
-		if (scene_viewer->clear_twice_flag)
-		{
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		}
 #endif /* defined (WIN32_SYSTEM) */
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (scene_viewer->image_texture.texture)
+			if (scene_viewer->image_texture.texture)
+			{
+				glDisable(GL_LIGHTING);
+				glColor3f((scene_viewer->background_colour).red,
+					(scene_viewer->background_colour).green,
+					(scene_viewer->background_colour).blue);
+				Scene_viewer_render_background_texture(scene_viewer,
+					rendering_data->viewport_width,rendering_data->viewport_height,
+					rendering_data->renderer);
+				glEnable(GL_LIGHTING);
+			}
+		}
+		else
 		{
-			glDisable(GL_LIGHTING);
-			glColor3f((scene_viewer->background_colour).red,
-				(scene_viewer->background_colour).green,
-				(scene_viewer->background_colour).blue);
-			Scene_viewer_render_background_texture(scene_viewer,
-				rendering_data->viewport_width,rendering_data->viewport_height,
-				rendering_data->renderer);
-			glEnable(GL_LIGHTING);
-		}	
+			// clear only depth buffer between layers
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
 
 		Scene_viewer_call_next_renderer(rendering_data);
 	}
@@ -2154,7 +2173,7 @@ depth of field effect.
 			{0.1875,0.3125}
 		};
 
-	ENTER(Scene_viewer_antialias);
+	ENTER(Scene_viewer_depth_of_field);
 #if defined (GL_EXT_framebuffer_object)
 	if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
 	{
@@ -2694,6 +2713,11 @@ access this function.
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
+
+				render_object = CREATE(Scene_viewer_render_object)(
+					Scene_viewer_render_layers);
+				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+					rendering_data.render_callstack);
 
 				/* Render the background */
 				render_object = CREATE(Scene_viewer_render_object)(

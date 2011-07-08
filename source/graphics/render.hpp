@@ -179,9 +179,10 @@ public:
 	/** Must be called after executing graphics object after successful call to begin_coordinate_system. */
 	virtual void end_coordinate_system(enum Cmiss_graphics_coordinate_system /*coordinate_system*/) = 0;
 
-	/** Override if renderer renders in layers to render only graphics in the current layer and to
-	 * increment the number of layers to draw */
-	virtual int render_layer(int /*layer*/)
+	/** Ensure this returns true for each graphic's layer before rendering.
+	 * Override if renderer renders in layers to return true only when the
+	 * supplied layer matches the current layer being rendered graphics. */
+	virtual int rendering_layer(int /*layer*/)
 	{
 		return 1;
 	}
@@ -191,6 +192,13 @@ public:
 	{
 		return 0;
 	}
+
+	/** Override to return the current layer for layered renderers, starting at 0 */
+	virtual int get_current_layer() const
+	{
+		return 0;
+	}
+
 }; /* class Render_graphics */
 
 class Render_graphics_compile_members : public Render_graphics
