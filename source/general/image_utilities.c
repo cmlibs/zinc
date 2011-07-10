@@ -5423,7 +5423,8 @@ int Cmgui_image_information_clear_memory_blocks(struct Cmgui_image_information *
 		if (image_information->memory_blocks)
 		{
 			struct Cmgui_image_information_memory_block *block = NULL;
-			for (int i = 0; i < image_information->number_of_memory_blocks; i++)
+			int i = 0;
+			for (i = 0; i < image_information->number_of_memory_blocks; i++)
 			{
 				block = image_information->memory_blocks[i];
 				if (remove_memory_blob && block->memory_block_is_imagemagick_blob)
@@ -6122,7 +6123,8 @@ int Cmgui_image_information_get_memory_blocks(
 		if (ALLOCATE(*memory_blocks, void *, *number_of_memory_blocks) &&
 			ALLOCATE(*memory_block_lengths, unsigned int, *number_of_memory_blocks))
 		{
-			for (int i = 0; i < *number_of_memory_blocks; i++)
+			int i = 0;
+			for (i = 0; i < *number_of_memory_blocks; i++)
 			{
 				struct Cmgui_image_information_memory_block *temp_block =
 					storage_information->memory_blocks[i];
@@ -7612,6 +7614,8 @@ that the images be adjoined in the single file.
 {
 	char *file_name;
 	int i, number_of_file_names = 0, return_code;
+	size_t magick_memory_block_length = 0;
+	void *temp_memory_block = NULL;
 #if defined (USE_IMAGEMAGICK)
 	char *magick_file_name;
 	ExceptionInfo magick_exception;
@@ -7780,10 +7784,10 @@ that the images be adjoined in the single file.
 					temp_next = magick_image->next;
 					magick_image->next = (Image *)NULL;
 					/* Need to use the correct pointer type for the API */
-					size_t magick_memory_block_length = 0;
+					
 					/* If we have one already free it */
 					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
-					void *temp_memory_block = ImagesToBlob(magick_image_info, magick_image,
+					temp_memory_block = ImagesToBlob(magick_image_info, magick_image,
 						&magick_memory_block_length, &magick_exception);
 					if (NULL != temp_memory_block)
 					{
