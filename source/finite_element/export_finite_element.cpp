@@ -1372,12 +1372,12 @@ Writes grid-based values stored with the element.
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
 	enum Value_type value_type;
-	FILE *output_file;
+	ostream *output_file;
 	int i, j, number_of_components, number_of_values, return_code;
 	int number_of_columns,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_element_field_component *component;
 
-	if (element && field && (NULL != (output_file = (FILE *)output_file_void)))
+	if (element && field && (NULL != (output_file = (ostream *)output_file_void)))
 	{
 		return_code = 1;
 		fe_field_type = get_FE_field_FE_field_type(field);
@@ -1410,16 +1410,18 @@ Writes grid-based values stored with the element.
 										/* have new line every number-of-grid-points-in-xi1 */
 										for (j=0;j<number_of_values;j++)
 										{
-											fprintf(output_file," %"FE_VALUE_STRING,values[j]);
+											char num_string[100];
+											sprintf(num_string," %"FE_VALUE_STRING,values[j]);
+											(* output_file) << num_string;
 											if (0==((j+1)%number_of_columns))
 											{
-												fprintf(output_file,"\n");
+												(* output_file) << "\n";
 											}
 										}
 										/* extra newline if not multiple of number_of_columns */
 										if (0 != (number_of_values % number_of_columns))
 										{
-											fprintf(output_file,"\n");
+											(* output_file) << "\n";
 										}
 										DEALLOCATE(values);
 									}
@@ -1441,16 +1443,16 @@ Writes grid-based values stored with the element.
 										/* have new line every number-of-grid-points-in-xi1 */
 										for (j=0;j<number_of_values;j++)
 										{
-											fprintf(output_file," %d",values[j]);
+											(* output_file) << " " << values[j];
 											if (0==((j+1)%number_of_columns))
 											{
-												fprintf(output_file,"\n");
+												(* output_file) << "\n";
 											}
 										}
 										/* extra newline if not multiple of number_of_columns */
 										if (0 != (number_of_values % number_of_columns))
 										{
-											fprintf(output_file,"\n");
+											(* output_file) << "\n";
 										}
 										DEALLOCATE(values);
 									}
