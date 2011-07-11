@@ -57,6 +57,7 @@ extern "C" {
 #include "computed_field/computed_field_function.h"
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_matrix_operations.h"
+#include "computed_field/computed_field_region_operations.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_vector_operations.h"
@@ -347,6 +348,7 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 			Computed_field_register_types_function(package);
 			Computed_field_register_types_logical_operators(package);
 			Computed_field_register_types_matrix_operations(package);
+			Computed_field_register_types_region_operations(package);
 			Computed_field_register_types_string_constant(package);
 			Computed_field_register_types_trigonometry(package);
 			Computed_field_register_types_vector_operations(package);

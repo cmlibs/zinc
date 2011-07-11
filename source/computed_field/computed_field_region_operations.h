@@ -47,8 +47,7 @@ DESCRIPTION :
 #include "region/cmiss_region.h"
 
 int Computed_field_register_types_region_operations(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region);
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 01 May 2006
 

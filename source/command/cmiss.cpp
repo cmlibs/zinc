@@ -21896,8 +21896,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			if (command_data->root_region)
 			{
 				Computed_field_register_types_region_operations(
-					command_data->computed_field_package, 
-					command_data->root_region);
+					command_data->computed_field_package);
 			}
 			Computed_field_register_types_vector_operations(
 				command_data->computed_field_package);

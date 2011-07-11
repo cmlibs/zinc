@@ -844,7 +844,7 @@ ifeq ($(SYSNAME),Linux)
       SYSTEM_LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
       # For the shared object libraries the stdc++ is included several times, do thsi
       # dynamically.
-      SOLIB_LIB = $(LIBG2C) -lstdc++ -lcrypt -lm -ldl -lc -lpthread
+      SOLIB_LIB = $(LIBG2C) -lstdc++ -lcrypt -lm -ldl -lc -lpthread -lz
 #???DB.  Need setenv LD_RUN_PATH /home/bullivan/gcc-3.3.1/lib
 #      SYSTEM_LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
    else # $(STATIC_LINK) != true
@@ -973,6 +973,7 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field_group.cpp \
 	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_matrix_operations.cpp \
+	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_set.cpp \
 	computed_field/computed_field_string_constant.cpp \
 	computed_field/computed_field_subobject_group.cpp \
@@ -991,13 +992,15 @@ COMPUTED_FIELD_SRCS = \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
 	minimise/minimise.cpp \
+	minimise/cmiss_optimisation_private.cpp \
+	minimise/optimisation.cpp \
+	computed_field/field_module_optimisation_private.cpp \
 	computed_field/computed_field_alias.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_lookup.cpp \
-	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
 	computed_field/computed_field_value_index_ranges.cpp \

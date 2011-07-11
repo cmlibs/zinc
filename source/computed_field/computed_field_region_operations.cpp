@@ -64,7 +64,6 @@ using namespace std;
 class Computed_field_region_operations_package : public Computed_field_type_package
 {
 public:
-	struct Cmiss_region *root_region;
 };
 
 namespace {
@@ -949,8 +948,7 @@ already) and allows its contents to be modified.
 } /* define_Computed_field_type_region_mean */
 
 int Computed_field_register_types_region_operations(
-	struct Computed_field_package *computed_field_package, 
-	struct Cmiss_region *root_region)
+	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 01 May 2007
 
@@ -964,9 +962,8 @@ Registering the region operations.
 		new Computed_field_region_operations_package;
 
 	ENTER(Computed_field_register_types_region_operations);
-	if (computed_field_package && root_region)
+	if (computed_field_package)
 	{
-		computed_field_region_operations_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_region_sum_type_string, 
 			define_Computed_field_type_region_sum,

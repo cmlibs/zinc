@@ -12,6 +12,8 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_function.cpp
 	source/computed_field/computed_field_group.cpp
 	source/computed_field/computed_field_logical_operators.cpp
+	source/computed_field/computed_field_matrix_operations.cpp
+	source/computed_field/computed_field_region_operations.cpp
 	source/computed_field/computed_field_subobject_group.cpp
 	source/computed_field/computed_field_string_constant.cpp
 	source/computed_field/computed_field_trigonometry.cpp
@@ -37,6 +39,8 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_group.h
 	source/computed_field/computed_field_group_base.hpp
 	source/computed_field/computed_field_logical_operators.h
+	source/computed_field/computed_field_matrix_operations.h
+	source/computed_field/computed_field_region_operations.h
 	source/computed_field/computed_field_subobject_group.hpp
 	source/computed_field/computed_field_string_constant.h
 	source/computed_field/computed_field_trigonometry.h
@@ -59,6 +63,9 @@ SET( COMPUTED_FIELD_SRCS
 	${COMPUTED_FIELD_CORE_SRCS}
 	${COMPUTED_FIELD_GRAPHICS_SRCS}
 	source/minimise/minimise.cpp
+	source/minimise/cmiss_optimisation_private.cpp
+	source/minimise/optimisation.cpp
+	source/computed_field/field_module_optimisation_private.cpp
 	source/computed_field/computed_field_alias.cpp
 	source/computed_field/computed_field_compose.cpp
 	source/computed_field/computed_field_curve.cpp
@@ -66,8 +73,6 @@ SET( COMPUTED_FIELD_SRCS
 	source/computed_field/computed_field_image.cpp
 	source/computed_field/computed_field_integration.cpp
 	source/computed_field/computed_field_lookup.cpp
-	source/computed_field/computed_field_matrix_operations.cpp
-	source/computed_field/computed_field_region_operations.cpp
 	source/computed_field/computed_field_time.cpp
 	source/computed_field/computed_field_update.cpp
 	source/computed_field/computed_field_value_index_ranges.cpp
@@ -77,6 +82,8 @@ SET( COMPUTED_FIELD_HDRS
 	${COMPUTED_FIELD_CORE_HDRS}
 	${COMPUTED_FIELD_GRAPHICS_HDRS}
 	source/minimise/minimise.h
+	source/minimise/cmiss_optimisation_private.h
+	source/minimise/optimisation.hpp
 	source/computed_field/computed_field_alias.h
 	source/computed_field/computed_field_compose.h
 	source/computed_field/computed_field_curve.h
@@ -86,9 +93,7 @@ SET( COMPUTED_FIELD_HDRS
 	source/computed_field/computed_field_image_processing.h
 	source/computed_field/computed_field_integration.h
 	source/computed_field/computed_field_lookup.h
-	source/computed_field/computed_field_matrix_operations.h
 	source/computed_field/computed_field_private.hpp
-	source/computed_field/computed_field_region_operations.h
 	source/computed_field/computed_field_time.h
 	source/computed_field/computed_field_update.h
 	source/computed_field/computed_field_value_index_ranges.h
