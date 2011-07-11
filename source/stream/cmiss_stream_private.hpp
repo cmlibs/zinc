@@ -44,6 +44,8 @@
 #define CMISS_STREAM_PRIVATE_HPP
 
 #include <list>
+#include <stdio.h>
+#include <string.h>
 extern "C" {
 #include "api/cmiss_stream.h"
 #include "general/debug.h"
@@ -155,10 +157,22 @@ public:
 
 	int getBufferCopy(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
 	{
-		char *temp = (char *)(memory_block->memory_buffer);
-		*memory_buffer_references = (void *)(duplicate_string(temp));
-		*memory_buffer_sizes = memory_block->memory_buffer_size;
-		return 1;
+		if (memory_block->memory_buffer && memory_block->memory_buffer_size)
+		{
+			void *memory_point = NULL;
+			ALLOCATE(memory_point, char, memory_block->memory_buffer_size);
+			memcpy(memory_point, memory_block->memory_buffer,
+				memory_block->memory_buffer_size);
+			*memory_buffer_references = memory_point;
+			*memory_buffer_sizes = memory_block->memory_buffer_size;
+			return 1;
+		}
+		else
+		{
+			*memory_buffer_references = NULL;
+			*memory_buffer_sizes = 0;
+		}
+		return 0;
 	}
 
 	int setBuffer(void *memory_buffer_reference, unsigned int memory_buffer_sizes)

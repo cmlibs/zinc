@@ -210,6 +210,13 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id i
  */
 int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
 
+/***************************************************************************//**
+ * Get an integer or Boolean attribute of the field image.
+ *
+ * @param image  Handle to the cmiss field image.
+ * @param attribute_id  The identifier of the integer attribute to get.
+ * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ */
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 	enum Cmiss_image_attribute_id attribute_id);
 
@@ -230,6 +237,18 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
  */
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information);
+
+/***************************************************************************//**
+ * Convenient function to read a file with the provided name into a field image
+ * directly.
+ *
+ * @param image_field  The field image to be read into.
+ * @paran file_name  name of the file to read from.
+ *
+ * @return  1 if data successfully read and merged into specified region,
+ * 	0 otherwise.
+ */
+int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *file_name);
 
 /*****************************************************************************//**
  * Writes a formatted representation of the image data.
@@ -252,6 +271,17 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
  */
 int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information);
+
+/***************************************************************************//**
+ * Convenient function to write the image into a file with the provided name.
+ *
+ * @param image_field  The image_field which stores the image.
+ * @paran file_name  name of the file to write to..
+ *
+ * @return  1 if data is successfully written out, 0 otherwise.
+ */
+int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
+	const char *file_name);
 
 /*****************************************************************************//**
  * Returns how the image is combined with the material: blend, decal or modulate.

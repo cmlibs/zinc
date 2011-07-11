@@ -205,6 +205,21 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	return (return_code);
 } /* Cmiss_field_image_read */
 
+int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *file_name)
+{
+	int return_code = 0;
+	if (image_field && file_name)
+	{
+		Cmiss_stream_information_id stream_information =
+			Cmiss_field_image_create_stream_information(image_field);
+		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+			stream_information, file_name);
+	  return_code = Cmiss_field_image_read(image_field, stream_information);
+  	Cmiss_stream_resource_destroy(&resource);
+  	Cmiss_stream_information_destroy(&stream_information);
+	}
+	return return_code;
+}
 
 int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information)
@@ -345,6 +360,21 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	return (return_code);
 } /* Cmiss_field_image_write */
 
+int Cmiss_field_image_write_file(Cmiss_field_image_id image_field, const char *file_name)
+{
+	int return_code = 0;
+	if (image_field && file_name)
+	{
+		Cmiss_stream_information_id stream_information =
+			Cmiss_field_image_create_stream_information(image_field);
+		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+			stream_information, file_name);
+	  return_code = Cmiss_field_image_write(image_field, stream_information);
+  	Cmiss_stream_resource_destroy(&resource);
+  	Cmiss_stream_information_destroy(&stream_information);
+	}
+	return return_code;
+}
 
 Cmiss_stream_information_id Cmiss_field_image_create_stream_information(
 	Cmiss_field_image_id image_field)

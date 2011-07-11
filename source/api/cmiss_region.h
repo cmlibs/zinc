@@ -178,7 +178,7 @@ Cmiss_region_id Cmiss_region_get_previous_sibling(Cmiss_region_id region);
  * Replaces the region reference with a reference to its next sibling.
  * Convenient for iterating through a child list, equivalent to:
  * {
- *   struct Cmiss_region *temp = Cmiss_region_get_next_sibling(*region_address);
+ *   Cmiss_region_id temp = Cmiss_region_get_next_sibling(*region_address);
  *   Cmiss_region_destroy(region_address);
  *   *region_address = temp;
  * }
@@ -322,13 +322,13 @@ int Cmiss_region_read(Cmiss_region_id region,
  * Convenient function to read a file with the provided name into a region
  * directly.
  *
- * @param region  The region to be written out.
+ * @param region  The region to be read into
  * @paran file_name  name of the file to read from.
  *
  * @return  1 if data successfully read and merged into specified region,
  * 	0 otherwise.
  */
-int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name);
+int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
 
 /***************************************************************************//**
  * Write region data using the data provided in the Cmiss_io_stream object.
@@ -344,14 +344,13 @@ int Cmiss_region_write(Cmiss_region_id region,
 
 /***************************************************************************//**
  * Convenient function to write the region into a file with the provided name.
- * @see Cmiss_stream_information_id
  *
  * @param region  The region to be written out.
  * @paran file_name  name of the file to write to..
  *
  * @return  1 if data is successfully written out, 0 otherwise.
  */
-int Cmiss_region_write_file(struct Cmiss_region *region, const char *file_name);
+int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
 
 enum Cmiss_stream_information_region_attribute_id
 {
