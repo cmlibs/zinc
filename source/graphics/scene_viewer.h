@@ -135,7 +135,6 @@ and the functions given their public names.
 #define Scene_viewer_set_viewing_volume Cmiss_scene_viewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info Cmiss_scene_viewer_set_background_texture_info
 #define Scene_viewer_set_scene_by_name Cmiss_scene_viewer_set_scene_by_name
-#define Scene_viewer_set_overlay_scene_by_name Cmiss_scene_viewer_set_overlay_scene_by_name
 #define Scene_viewer_set_interactive_tool_by_name Cmiss_scene_viewer_set_interactive_tool_by_name
 #define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
 #define Scene_viewer_win32_set_window_size Cmiss_scene_viewer_win32_set_window_size
@@ -605,7 +604,7 @@ LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Returns the interactive_tool used by the Scene_viewer.
-The interactive_tool may be NULL, indicating that no overlay is in use.
+The interactive_tool may be NULL, indicating that no tool is in use.
 ==============================================================================*/
 
 int Scene_viewer_set_interactive_tool(struct Scene_viewer *scene_viewer,
@@ -829,36 +828,6 @@ the physical dimensions of the NDC cube, used to draw the image on the screen
 without distortion. In RELATIVE viewport_mode, only the ratio of NDC_width to
 NDC_height is important. In ABSOLUTE viewport_mode, the top and left values
 are used to position the intended viewing volume in user coordinates.
-==============================================================================*/
-
-struct Scene *Scene_viewer_get_overlay_scene(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Returns the overlay_scene used by the Scene_viewer.
-The overlay_scene may be NULL, indicating that no overlay is in use.
-==============================================================================*/
-
-int Scene_viewer_set_overlay_scene(struct Scene_viewer *scene_viewer,
-	struct Scene *overlay_scene);
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Sets the overlay_scene displayed in addition to the scene as a fixed parallel
-projection with coordinates ranging from -1 to +1 in the largest square fitting
-in the scene_viewer window, and -1 to +1 from far to near.
-The overlay_scene may be NULL, indicating that no overlay is in use.
-==============================================================================*/
-
-int Scene_viewer_set_overlay_scene_by_name(struct Scene_viewer *scene_viewer,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer overlay scene from names in the scene manager.
 ==============================================================================*/
 
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,

@@ -2600,15 +2600,6 @@ LAST MODIFIED : 18 November 1998
 DESCRIPTION :
 Parser commands for setting the scene and how it is displayed (time, light model
 etc.) in all panes of the <window>.
-???RC Remove add_light and remove_light once we have an overlay scene? ie.
-overlay scene contains headlights - lights stationary w.r.t. the viewer.
-???RC Probably not. The model we will probably end up with is conceptually like
-a spaceship/submarine, where:
-- Lights in the overlay scene light only the "interior" controls, ie. graphics
-  objects in the overlay scene.
-- Lights in the window are attached to the ship and thus positioned relative to
-  it, but they illuminate only the outside scene.
-- Lights in the scene illuminate the scene and are positioned relative to it.
 ==============================================================================*/
 {
 	char update_flag,view_all_flag;
@@ -2965,100 +2956,26 @@ etc.) in all panes of the <window>.
 	return (return_code);
 } /* modify_Graphics_window_layout */
 
+/***************************************************************************//**
+ * Deprecated command: reports overlay scene no longer supported.
+ */
 static int modify_Graphics_window_overlay(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Parser commands for modifying the overlay scene of the current pane of the
-<window>.
-==============================================================================*/
 {
-	int return_code;
-	struct Graphics_window *window;
-	struct Modify_graphics_window_data *modify_graphics_window_data;
-	struct Option_table *option_table;
-	struct Scene *overlay_scene,*previous_overlay_scene;
-	struct Scene_viewer *scene_viewer;
+	int return_code = 0;
 
 	ENTER(modify_Graphics_window_overlay);
+	USE_PARAMETER(window_void);
+	USE_PARAMETER(modify_graphics_window_data_void);
 	if (state)
 	{
-		modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void;
-		if (modify_graphics_window_data)
-		{
-			if (state->current_token)
-			{
-				/* get defaults from scene_viewer for first pane of window */
-				window=(struct Graphics_window *)window_void;
-				if (window && (window->scene_viewer_array) &&
-					(NULL != (scene_viewer=window->scene_viewer_array[window->current_pane])))
-				{
-					overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
-					if (overlay_scene)
-					{
-						ACCESS(Scene)(overlay_scene);
-					}
-				}
-				else
-				{
-					scene_viewer=(struct Scene_viewer *)NULL;
-					overlay_scene=(struct Scene *)NULL;
-				}
-				previous_overlay_scene=overlay_scene;
-				option_table = CREATE(Option_table)();
-				/* scene */
-				Option_table_add_entry(option_table, "scene", &overlay_scene,
-					modify_graphics_window_data->scene_manager, set_Scene);
-				return_code=Option_table_multi_parse(option_table, state);
-				if (return_code)
-				{
-					if (scene_viewer)
-					{
-						return_code=1;
-						if (overlay_scene != previous_overlay_scene)
-						{
-							return_code=
-								Scene_viewer_set_overlay_scene(scene_viewer,overlay_scene);
-							Scene_viewer_redraw_now(scene_viewer);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"modify_Graphics_window_overlay. "
-							"Missing or invalid scene_viewer");
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				DESTROY(Option_table)(&option_table);
-				if (overlay_scene)
-				{
-					DEACCESS(Scene)(&overlay_scene);
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,
-					"Missing window overlay modifications");
-				display_parse_state_location(state);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"modify_Graphics_window_overlay.  "
-				"Missing modify_graphics_window_data");
-			return_code=0;
-		}
+		display_message(INFORMATION_MESSAGE, "Graphics window overlay scene is no longer supported. "
+			"Individual graphics are now drawn in overlay by choosing a window-relative coordinate system.\n");
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"modify_Graphics_window_overlay.  Missing state");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -7931,7 +7848,6 @@ Writes the properties of the <window> to the command window.
 		undistort_on,visual_id;
 	unsigned int antialias, transparency_layers;
 	struct Colour colour;
-	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer = NULL;
 	struct Texture *texture;
 
@@ -8113,21 +8029,6 @@ Writes the properties of the <window> to the command window.
 				"    Viewport coordinates: left=%g top=%g pixels/unit x=%g y=%g\n",
 				viewport_left,viewport_top,viewport_pixels_per_unit_x,
 				viewport_pixels_per_unit_y);
-			/* overlay */
-			display_message(INFORMATION_MESSAGE,"    overlay scene: ");
-			overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
-			if (overlay_scene)
-			{
-				if (GET_NAME(Scene)(overlay_scene,&name))
-				{
-					display_message(INFORMATION_MESSAGE,"%s\n",name);
-					DEALLOCATE(name);
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,"none\n");
-			}
 			/* frame count */
 			display_message(INFORMATION_MESSAGE,
 				"    Rendered frame count: %d\n",
@@ -8239,7 +8140,6 @@ and establishing the views in it to the command window to a com file.
 	int height,i,pane_no,perturb_lines,return_code,width,undistort_on;
 	unsigned int antialias, transparency_layers;
 	struct Colour colour;
-	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer = NULL;
 	struct Texture *texture;
 
@@ -8291,7 +8191,7 @@ and establishing the views in it to the command window to a com file.
 			Graphics_window_layout_mode_string(window->layout_mode),
 			axis_name[window->ortho_up_axis],axis_name[window->ortho_front_axis],
 			window->eye_spacing,width,height);
-		/* background, view and overlay in each active pane */
+		/* background and view in each active pane */
 		for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
 		{
 			scene_viewer=window->scene_viewer_array[pane_no];
@@ -8401,25 +8301,6 @@ and establishing the views in it to the command window to a com file.
 			process_message->process_command(INFORMATION_MESSAGE,
 				" viewport_coordinates %g %g %g %g",viewport_left,viewport_top,
 				viewport_pixels_per_unit_x,viewport_pixels_per_unit_y);
-			process_message->process_command(INFORMATION_MESSAGE,";\n");
-			/* overlay */
-			process_message->process_command(INFORMATION_MESSAGE,
-				"gfx modify window %s overlay",window->name);
-			overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer);
-			if (overlay_scene)
-			{
-				if (GET_NAME(Scene)(overlay_scene,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					process_message->process_command(INFORMATION_MESSAGE," scene %s",name);
-					DEALLOCATE(name);
-				}
-			}
-			else
-			{
-				process_message->process_command(INFORMATION_MESSAGE," scene none");
-			}
 			process_message->process_command(INFORMATION_MESSAGE,";\n");
 		}
 		/* settings */

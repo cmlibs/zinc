@@ -196,13 +196,6 @@ DESCRIPTION :
 	int temporary_transform_mode;
 	/* scene to be viewed */
 	struct Scene *scene;
-	/* overlay scene for showing spectrum scale, annotation, etc. This is always
-		 set up with a parallel projection fitting the largest cube in the window
-		 with coordinates ranging from -1 to +1 from left to right, bottom to top
-		 and far to near_plane. If the window is non-square, coordinates outside -1 to +1
-		 are visible in the longer dimension, while 0,0 is the centre of the screen.
-		 The overlay_scene is NULL by default (ie. no overlay). */
-	struct Scene *overlay_scene;
 	/* The projection mode. PARALLEL and PERSPECTIVE projections get their
 		 modelview matrix using gluLookat, and their projection matrix from the
 		 viewing volume. CUSTOM projection requires both matrices to be read-in */
@@ -1425,122 +1418,6 @@ emoter to make icons representing the current scene.
 	return (return_code);	
 } /* Scene_viewer_use_pixel_buffer */
 
-static int Scene_viewer_render_overlay_scene(
-	struct Scene_viewer_rendering_data *rendering_data)
-/*******************************************************************************
-LAST MODIFIED : 8 April 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	double max_x, max_y;
-	int return_code;
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(Scene_viewer_render_overlay_scene);
-	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
-	{
-		return_code = 1;
-		/* set up parallel projection/modelview combination that gives
-			coordinates ranging from -1 to +1 from left to right and
-			bottom to top in the largest square that fits inside the
-			viewer. Also has -1 to +1 range from far to near_plane */
-		glMatrixMode(GL_PROJECTION);
-		glPushMatrix();
-		glLoadIdentity();
-		if (rendering_data->viewport_width > rendering_data->viewport_height)
-		{
-			max_x = (double)rendering_data->viewport_width/
-				(double)rendering_data->viewport_height;
-			max_y = 1.0;
-		}
-		else
-		{
-			max_x = 1.0;
-			max_y = (double)rendering_data->viewport_height/
-				(double)rendering_data->viewport_width;
-		}
-		if (0 < rendering_data->stencil_depth)
-		{
-			/* use full z-buffer for overlay ranging from -1 to 1 in z */
-			glOrtho(-max_x,max_x,-max_y,max_y,1.0,3.0);
-			glStencilFunc(GL_ALWAYS,1,1);
-			glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
-		}
-		else
-		{
-			/* overlay ranges from -99 to 1 in z, hence it is at front of
-				z-buffer */
-			glOrtho(-max_x,max_x,-max_y,max_y,1.0,101.0);
-		}
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-			/*up*/0.0,1.0,0.0);
-		/* set up lights in overlay_scene */
-		/* only lights in overlay_scene apply to it */
-		reset_Lights();
-		for_each_Light_in_Scene(scene_viewer->overlay_scene,
-			execute_Light,(void *)NULL);
-		
-		/* render overlay_scene */
-		switch (scene_viewer->transparency_mode)
-		{
-			default:
-			{
-				glAlphaFunc(GL_GREATER,0.0);
-				glInitNames();
-				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
-			} break;
-			case SCENE_VIEWER_SLOW_TRANSPARENCY:
-			{
-				glEnable(GL_ALPHA_TEST);
-				/* render only fragments with alpha = 1.0, write depth */
-				glDepthMask(GL_TRUE);
-				glAlphaFunc(GL_EQUAL,1.0);
-				glInitNames();
-				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
-				/* render fragments with alpha != 1.0; do not write into
-					depth buffer */
-				glDepthMask(GL_FALSE);
-				glAlphaFunc(GL_NOTEQUAL,1.0);
-				glInitNames();
-				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
-				glDepthMask(GL_TRUE);
-				glDisable(GL_ALPHA_TEST);
-			} break;
-		}
-		
- 		if (0 < rendering_data->stencil_depth)
-		{
-			/* use full z-buffer for overlay ranging from -1 to 1 in z */
-			glStencilFunc(GL_NOTEQUAL,1,1);
-			glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-		}
-
-		glMatrixMode(GL_PROJECTION);
-		glPopMatrix();
-
-		/* Render everything else */
-		Scene_viewer_call_next_renderer(rendering_data);
-
- 		if (0 < rendering_data->stencil_depth)
-		{
-			/* disable stencil buffer */
-			glDisable(GL_STENCIL_TEST);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Scene_viewer_render_overlay_scene.  "
-			"Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);	
-} /* Scene_viewer_render_overlay_scene */
-
 static int Scene_viewer_initialise_matrices_and_swap_buffers(
 		struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -2659,11 +2536,6 @@ access this function.
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
 			rendering_data.renderer->Scene_compile(scene_viewer->scene);
 
-			if (scene_viewer->overlay_scene)
-			{
-				rendering_data.renderer->Scene_compile(scene_viewer->overlay_scene);
-			}
-
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
 			/* Add functionality to the render callstack */
 			
@@ -2724,23 +2596,6 @@ access this function.
 					Scene_viewer_render_background);
 				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 					rendering_data.render_callstack);
-
-				if (scene_viewer->overlay_scene)
-				{
-					/*???RC property functions should be obtained once, elsewhere */
-					glGetIntegerv(GL_STENCIL_BITS,&rendering_data.stencil_depth);
-					if (0<rendering_data.stencil_depth)
-					{
-						glEnable(GL_STENCIL_TEST);
-						glClearStencil(0);
-						glClear(GL_STENCIL_BUFFER_BIT);
-					}
-
-					render_object = CREATE(Scene_viewer_render_object)(
-						Scene_viewer_render_overlay_scene);
-					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-						rendering_data.render_callstack);
-				}
 
 				/* Apply the modelview matrix, lights and clip planes */
 				render_object = CREATE(Scene_viewer_render_object)(
@@ -4179,7 +4034,7 @@ Manager Callback Module functions
 
 /***************************************************************************//**
  * Something has changed globally in the light manager. If the modified light(s)
- * are in the scene, overlay_scene or the scene_viewer, then redraw.
+ * are in the scene or the scene_viewer, then redraw.
  */
 static void Scene_viewer_light_change(
 	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_void)
@@ -4194,9 +4049,7 @@ static void Scene_viewer_light_change(
 		if (changed_light_list)
 		{
 			if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list) ||
-				Scene_has_light_in_list(scene_viewer->scene, changed_light_list) ||
-				(scene_viewer->overlay_scene &&
-					Scene_has_light_in_list(scene_viewer->overlay_scene, changed_light_list)))
+				Scene_has_light_in_list(scene_viewer->scene, changed_light_list))
 			{
 				Scene_viewer_redraw(scene_viewer);
 			}
@@ -4246,7 +4099,7 @@ in use by the scene_viewer is one of the changed light_models, then redraw.
 
 /***************************************************************************//**
  * Something has changed globally in the scene manager. If either the scene or
- * overlay_scene in this scene_viewer have been modified, then redraw.
+ * this scene_viewer have been modified, then redraw.
  */
 static void Scene_viewer_scene_change(
 	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void)
@@ -4261,10 +4114,7 @@ static void Scene_viewer_scene_change(
 		{
 			int change =
 				MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_viewer->scene);
-			if ((change & MANAGER_CHANGE_RESULT(Scene)) ||
-				(scene_viewer->overlay_scene &&
-					(MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_viewer->overlay_scene)
-						& MANAGER_CHANGE_RESULT(Scene))))
+			if (change & MANAGER_CHANGE_RESULT(Scene))
 			{
 				if (SCENE_FAST_CHANGE == Scene_get_change_status(scene_viewer->scene))
 				{
@@ -4790,7 +4640,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
-				scene_viewer->overlay_scene=(struct Scene *)NULL;
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
 				scene_viewer->temporary_transform_mode=0;
 				scene_viewer->user_interface=user_interface;
@@ -4998,10 +4847,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		/* dispose of our data structure */
 		DEACCESS(Scene)(&(scene_viewer->scene));
-		if (scene_viewer->overlay_scene)
-		{
-			DEACCESS(Scene)(&(scene_viewer->overlay_scene));
-		}
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->sync_callback_list)
@@ -6341,8 +6186,8 @@ The format of the matrix is as in Scene_viewer_set_modelview_matrix.
 		{
 			for (j=0;j<4;j++)
 			{
-				modelview_matrix[i*4+j] = 
-					scene_viewer->modelview_matrix[j*4+i];					
+				modelview_matrix[i*4+j] =
+					scene_viewer->modelview_matrix[j*4+i];
 			}
 		}
 		return_code=1;
@@ -6487,112 +6332,6 @@ are used to position the intended viewing volume in user coordinates.
 
 	return (return_code);
 } /* Scene_viewer_set_NDC_info */
-
-struct Scene *Scene_viewer_get_overlay_scene(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Returns the overlay_scene used by the Scene_viewer.
-The overlay_scene may be NULL, indicating that no overlay is in use.
-==============================================================================*/
-{
-	struct Scene *overlay_scene;
-
-	ENTER(Scene_viewer_get_overlay_scene);
-	if (scene_viewer)
-	{
-		overlay_scene=scene_viewer->overlay_scene;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_overlay_scene.  Invalid argument(s)");
-		overlay_scene=(struct Scene *)NULL;
-	}
-	LEAVE;
-
-	return (overlay_scene);
-} /* Scene_viewer_get_overlay_scene */
-
-int Scene_viewer_set_overlay_scene(struct Scene_viewer *scene_viewer,
-	struct Scene *overlay_scene)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Sets the overlay_scene displayed in addition to the scene as a fixed parallel
-projection with coordinates ranging from -1 to +1 in the largest square fitting
-in the scene_viewer window, and -1 to +1 from far to near.
-The overlay_scene may be NULL, indicating that no overlay is in use.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_overlay_scene);
-	if (scene_viewer)
-	{
-		if (overlay_scene)
-		{
-			ACCESS(Scene)(overlay_scene);
-		}
-		if (scene_viewer->overlay_scene)
-		{
-			DEACCESS(Scene)(&(scene_viewer->overlay_scene));
-		}
-		scene_viewer->overlay_scene=overlay_scene;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_overlay_scene.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_overlay_scene */
-
-int Scene_viewer_set_overlay_scene_by_name(struct Scene_viewer *scene_viewer,
-	const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Sets the Scene_viewer overlay scene from names in the scene manager.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_viewer_set_overlay_scene_by_name);
-	if (scene_viewer&&name)
-	{
-		scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-			(char *)name, scene_viewer->scene_manager);
-		if (scene != 0)
-		{
-			return_code = Scene_viewer_set_overlay_scene(scene_viewer, scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_viewer_set_overlay_scene_by_name.  "
-				"Unable to find a scene named %s.", name);
-			return_code = 0;
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_overlay_scene_by_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_overlay_scene_by_name */
 
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_projection_mode *projection_mode)
@@ -8785,7 +8524,7 @@ LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Returns the interactive_tool used by the Scene_viewer.
-The interactive_tool may be NULL, indicating that no overlay is in use.
+The interactive_tool may be NULL, indicating that no tool is in use.
 ==============================================================================*/
 {
 	struct Interactive_tool *interactive_tool;

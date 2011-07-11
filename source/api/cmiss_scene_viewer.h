@@ -727,16 +727,6 @@ Sets the currently rendered scene in the scene_viewer if one that
 matches the <scene_name> exists.
 ==============================================================================*/
 
-int Cmiss_scene_viewer_set_overlay_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
-	const char *scene_name);
-/*******************************************************************************
-LAST MODIFIED : 10 September 2003
-
-DESCRIPTION :
-Sets the overlay scene rendered in the scene_viewer if one that
-matches the <scene_name> exists.
-==============================================================================*/
-
 int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
 	double bk_texture_left,double bk_texture_top,
 	double bk_texture_width,double bk_texture_height,
