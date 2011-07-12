@@ -146,7 +146,10 @@ enum Cmiss_image_attribute_id
 	CMISS_IMAGE_ATTRIBUTE_INVALID = 0,
 	CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
 	CMISS_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL = 2,
-	CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL = 3
+	CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL = 3,
+	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL = 4,
+	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL = 5,
+	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL = 6
 };
 
 /*****************************************************************************//**
@@ -219,6 +222,28 @@ int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
  */
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 	enum Cmiss_image_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Get a real attribute of the field image.
+ *
+ * @param image  Handle to the cmiss field image.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  Value of the attribute.
+ */
+double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id);
+
+/***************************************************************************//**
+ * Set an double attribute of the image.
+ *
+ * @param stream_information  Handle to the cmiss stream_information_image.
+ * @param attribute_id  The identifier of the double attribute to set.
+ * @param value  The new value for the attribute.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this image.
+ */
+int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id, double value);
 
 /*****************************************************************************//**
  * Reads image data into the field.

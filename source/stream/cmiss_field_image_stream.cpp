@@ -149,8 +149,6 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 						/* Calling get_property with wildcard ensures they
 						will be available to the iterator, as well as
 						any other properties */
-						Texture_set_physical_size(texture, Cmgui_image_get_width(cmgui_image),
-							Cmgui_image_get_height(cmgui_image), Cmgui_image_get_number_of_images(cmgui_image));
 						Cmgui_image_get_property(cmgui_image,"exif:*");
 						Cmgui_image_reset_property_iterator(cmgui_image);
 						while ((property = Cmgui_image_get_next_property(

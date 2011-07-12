@@ -1174,34 +1174,6 @@ texture fields which reference <texture>.
 	return (return_code);
 } /* Computed_field_depends_on_texture */
 
-/*
-int Cmiss_field_image_storage_information_add_file_name(
-	Cmiss_field_image_storage_information_id storage_information,
-	const char *file_name)
-{
-	return (Cmgui_image_information_add_file_name(
-		(struct Cmgui_image_information *)storage_information,
-		(char *)file_name));
-}
-
-int Cmiss_field_image_storage_information_set_depth(
-	Cmiss_field_image_storage_information_id storage_information,
-	unsigned int depth)
-{
-	return (Cmgui_image_information_set_depth(
-		(struct Cmgui_image_information *)storage_information,
-		depth));
-}
-
-int Cmiss_field_image_storage_information_set_write_to_memory_block(
-	Cmiss_field_image_storage_information_id storage_information)
-{
-	return (Cmgui_image_information_set_write_to_memory_block(
-		(struct Cmgui_image_information *)storage_information));
-}
-
-*/
-
 int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(image_address));
@@ -1214,7 +1186,7 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 	if (image)
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
-		Texture_get_size(texture,	&width, &height, &depth);
+		Texture_get_original_size(texture, &width, &height, &depth);
 		switch (attribute_id)
 		{
 			case CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
@@ -1235,6 +1207,77 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 					"Cmiss_field_image_get_attribute_integer.  Invalid attribute");
 			} break;
 		}
+	}
+	return return_value;
+}
+
+double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id)
+{
+	double return_value = 0.0;
+	float width = 0.0, height = 0.0, depth = 0.0;
+	if (image)
+	{
+		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
+		Texture_get_physical_size(texture, &width, &height, &depth);
+		switch (attribute_id)
+		{
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
+			{
+				return_value = (double)width;
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL:
+			{
+				return_value = (double)height;
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL:
+			{
+				return_value = (double)depth;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_field_image_get_attribute_real.  Invalid attribute");
+			} break;
+		}
+	}
+	return return_value;
+}
+
+int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
+	enum Cmiss_image_attribute_id attribute_id, double value)
+{
+	int return_value = 1;
+	float width = 0.0, height = 0.0, depth = 0.0;
+	if (image)
+	{
+		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
+		Texture_get_physical_size(texture, &width, &height, &depth);
+		switch (attribute_id)
+		{
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
+			{
+				Texture_set_physical_size(texture, (float)value, height, depth);
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL:
+			{
+				Texture_set_physical_size(texture, width, (float)value, depth);
+			} break;
+			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL:
+			{
+				Texture_set_physical_size(texture, width, height, (float)value);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_field_image_get_attribute_integer.  Invalid attribute");
+				return_value = 0;
+			} break;
+		}
+	}
+	else
+	{
+		return_value = 0;
 	}
 	return return_value;
 }
@@ -1594,13 +1637,11 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 									 }
 									 else
 									 {
-
 									 	*two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
 									 	two_bytes_ptr++;
 									 	*two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
 									 	two_bytes_ptr++;
 									 }
-
 								} break;
 								case TEXTURE_RGB:
 								{
