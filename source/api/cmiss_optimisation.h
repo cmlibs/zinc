@@ -59,25 +59,61 @@ Global types
  */
 enum Cmiss_optimisation_method
 {
-	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON, /*!< The default optimisation method. Suitable
-		for most problems with a small set of independent parameters. */
-	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON, /*!< A least squares method better
-		suited to larger problems. */
-	CMISS_OPTIMISATION_METHOD_NSDGSL, /*!< Duane's original hard-coded normalised steepest decent
-		with a Golden section line search. */
-	CMISS_OPTIMISATION_METHOD_INVALID
+	CMISS_OPTIMISATION_METHOD_INVALID = 0, /**< unspecified optimisation method. */
+	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
+	/*!< The default optimisation method. Suitable for most problems with a
+	 * small set of independent parameters.
+	 * Need to add more description here.
+	 */
+	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
+	/*!< A least squares method better suited to larger problems.
+	 * Need to add more description here.
+	 */
+	CMISS_OPTIMISATION_METHOD_NSDGSL = 3,
+	/*!< Duane's original internal normalised steepest decent with a Golden section
+	 * line search.
+	 */
 };
 
+/**
+ * Labels of optimisation attributes which may be set or obtained using generic
+ * get/set_attribute functions.
+ */
 enum Cmiss_optimisation_attribute_id
 {
-	CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION,
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS,
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS,
-	CMISS_OPTIMISATION_ATTRIBUTE_ABSOLUTE_TOLERANCE,
-	CMISS_OPTIMISATION_ATTRIBUTE_RELATIVE_TOLERANCE,
-	CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD,
-	CMISS_OPTIMISATION_ATTRIBUTE_DATA_FIELD, /* !< Only used with LSQ methods. */
-	CMISS_OPTIMISATION_ATTRIBUTE_MESH_FIELD /* !< Only used with LSQ methods. */
+	CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION = 1,
+	/*!< The dimension of the elements used to project data points on to.
+	 * Only used in least squares fitting?
+	 * Default value is 2.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS = 2,
+	/*!< The maximum number of iterations the optimiser should make before exit.
+	 * Default value is 100.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS = 3,
+	/*!< The maximum number of obnjective function evaluations the optimiser should
+	 * make before exit.
+	 * Default value is 1000.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_ABSOLUTE_TOLERANCE = 4,
+	/*!< unused, need to better describe the various tolerances used by Opt++.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_RELATIVE_TOLERANCE = 5,
+	/*!< unused, need to better describe the various tolerances used by Opt++.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD = 6,
+	/*!< In Quasi-Newton and NSDGSL optimisation, this is the field which defines the current value
+	 * of the objective function. It is expected, but not checked, to be a scalar valued constant
+	 * field and as such, the objective function value is defined as the value of this field.
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_DATA_FIELD = 7,
+	/*!< Only used with LSQ methods.
+	 * What is it used for?
+	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_MESH_FIELD = 8
+	/*!< Only used with LSQ methods.
+	 * What is it used for?
+	 */
 };
 
 /*
