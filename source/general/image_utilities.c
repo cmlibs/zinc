@@ -5427,10 +5427,12 @@ int Cmgui_image_information_clear_memory_blocks(struct Cmgui_image_information *
 			for (i = 0; i < image_information->number_of_memory_blocks; i++)
 			{
 				block = image_information->memory_blocks[i];
+#if defined (USE_IMAGEMAGICK)
 				if (remove_memory_blob && block->memory_block_is_imagemagick_blob)
 				{
 					RelinquishMagickMemory(block->buffer);
 				}
+#endif
 				DEALLOCATE(block);
 			}
 			DEALLOCATE(image_information->memory_blocks);
