@@ -423,7 +423,7 @@ int Cmiss_stream_information_image_set_attribute_integer(
 		{
 			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
 			{
-				return (Cmgui_image_information_set_height(image_information, value));
+				return (Cmgui_image_information_set_width(image_information, value));
 			} break;
 			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL:
 			{
