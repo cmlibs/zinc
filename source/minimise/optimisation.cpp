@@ -603,15 +603,19 @@ void Minimisation::minimise_QN()
 
 	FDNLF1 nlp(total_dof, objective_function_QN, init_QN);
 	OptQNewton objfcn(&nlp);
-	objfcn.setSearchStrategy(TrustRegion);
-	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
+	objfcn.setSearchStrategy(LineSearch);
+	objfcn.setFcnTol(optimisation->functionTolerance);
+	objfcn.setGradTol(optimisation->gradientTolerance);
+	objfcn.setStepTol(optimisation->stepTolerance);
 	objfcn.setMaxIter(optimisation->maximumIterations);
-	//objfcn.setFcnTol();
-	//objfcn.setMinStep(1.0e-4);
-	//objfcn.setStepTol(1.0e-4);
-	//objfcn.setConTol(1.0e-4);
-	//objfcn.setGradTol(1.0e-4);
-	//objfcn.setLineSearchTol(1.0e-4);
+	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
+	objfcn.setMaxStep(optimisation->maximumStep);
+	objfcn.setMinStep(optimisation->minimumStep);
+	objfcn.setLineSearchTol(optimisation->linesearchTolerance);
+	objfcn.setMaxBacktrackIter(optimisation->maximumBacktrackIterations);
+	/* @todo Add in support for trust region methods
+	objfcn.setTRSize(optimisation->trustRegionSize);
+	*/
 
 	// create a string stream to store messages from Opt++ and set that for all output.
 	std::stringbuf optppMessages;
@@ -751,13 +755,18 @@ void Minimisation::minimise_LSQN()
 	std::ostream optppMessageStream(&optppMessages);
 	if (!objfcn.setOutputFile(optppMessageStream))
 		cerr << "main: output file open failed" << endl;
-	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
+	objfcn.setFcnTol(optimisation->functionTolerance);
+	objfcn.setGradTol(optimisation->gradientTolerance);
+	objfcn.setStepTol(optimisation->stepTolerance);
 	objfcn.setMaxIter(optimisation->maximumIterations);
-	objfcn.setGradTol(1.0e-10);
-	objfcn.setFcnTol(1.0e-10);
-	objfcn.setStepTol(1.0e-10);
-	//objfcn.setMaxFeval(this->maximum_iterations);
-	//objfcn.setTRSize(1.0e3);
+	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
+	objfcn.setMaxStep(optimisation->maximumStep);
+	objfcn.setMinStep(optimisation->minimumStep);
+	objfcn.setLineSearchTol(optimisation->linesearchTolerance);
+	objfcn.setMaxBacktrackIter(optimisation->maximumBacktrackIterations);
+	/* @todo Add in support for trust region methods
+	objfcn.setTRSize(optimisation->trustRegionSize);
+	*/
 	//nlp.setIsExpensive(false);
 	//nlp.setDebug();
 	objfcn.optimize();

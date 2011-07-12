@@ -74,10 +74,6 @@ private:
 
 public:
 	int dimension;
-	int maximumIterations;
-	int maximumNumberFunctionEvaluations;
-	double absoluteTolerance;
-	double relativeTolerance;
 	enum Cmiss_optimisation_method method;
 	Cmiss_field_id objectiveField;
 	Cmiss_field_id meshField;
@@ -86,15 +82,24 @@ public:
 	bool independentFieldsConstant;
 	Cmiss_region_id meshRegion;
 	Cmiss_region_id dataRegion;
+	// Opt++ stopping tolerances
+	double functionTolerance;
+	double gradientTolerance;
+	double stepTolerance;
+	int maximumIterations;
+	int maximumNumberFunctionEvaluations;
+	// Opt++ steplength control
+	double maximumStep;
+	double minimumStep;
+	// Opt++ globalisation strategy parameters
+	double linesearchTolerance;
+	int maximumBacktrackIterations;
+	double trustRegionSize;
 
 	Cmiss_optimisation()
 	{
 		// initialise to default values
 		dimension = 2;
-		maximumIterations = 100;
-		maximumNumberFunctionEvaluations = 1000;
-		absoluteTolerance = 1.0e-8;
-		relativeTolerance = 1.0e-8;
 		method = CMISS_OPTIMISATION_METHOD_QUASI_NEWTON;
 		objectiveField = NULL;
 		meshField = NULL;
@@ -102,6 +107,16 @@ public:
 		independentFieldsConstant = false;
 		meshRegion = NULL;
 		dataRegion = NULL;
+		functionTolerance = 1.49012e-8;
+		gradientTolerance = 6.05545e-6;
+		stepTolerance = 1.49012e-8;
+		maximumIterations = 100;
+		maximumNumberFunctionEvaluations = 1000;
+		maximumStep = 1.0e3;
+		minimumStep = 1.49012e-8;
+		linesearchTolerance = 1.e-4;
+		maximumBacktrackIterations = 5;
+		trustRegionSize = 0.1;
 	}
 
 	static int destroy(Cmiss_optimisation_id &optimisation)

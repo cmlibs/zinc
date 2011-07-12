@@ -99,6 +99,9 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS:
 			return optimisation->maximumNumberFunctionEvaluations;
 			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+			return optimisation->maximumBacktrackIterations;
+			break;
 		default:
 			fprintf(stderr, "Invalid integer attribute\n");
 		}
@@ -123,6 +126,9 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS:
 			optimisation->maximumNumberFunctionEvaluations = value;
 			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
+			optimisation->maximumBacktrackIterations = value;
+			break;
 		default:
 			fprintf(stderr, "Invalid integer attribute\n");
 			code = 0;
@@ -138,11 +144,26 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 	{
 		switch (attribute_id)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_ABSOLUTE_TOLERANCE:
-			return optimisation->absoluteTolerance;
+		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+			return optimisation->functionTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_RELATIVE_TOLERANCE:
-			return optimisation->relativeTolerance;
+		case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+			return optimisation->gradientTolerance;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+			return optimisation->stepTolerance;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+			return optimisation->maximumStep;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+			return optimisation->minimumStep;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+			return optimisation->linesearchTolerance;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_TRUSTREGION_SIZE:
+			return optimisation->trustRegionSize;
 			break;
 		default:
 			fprintf(stderr, "Invalid real attribute\n");
@@ -159,11 +180,26 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	{
 		switch (attribute_id)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_ABSOLUTE_TOLERANCE:
-			optimisation->absoluteTolerance = value;
+		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
+			optimisation->functionTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_RELATIVE_TOLERANCE:
-			optimisation->relativeTolerance = value;
+		case CMISS_OPTIMISATION_ATTRIBUTE_GRADIENT_TOLERANCE:
+			optimisation->gradientTolerance = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_STEP_TOLERANCE:
+			optimisation->stepTolerance = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP:
+			optimisation->maximumStep = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP:
+			optimisation->minimumStep = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
+			optimisation->linesearchTolerance = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_TRUSTREGION_SIZE:
+			optimisation->trustRegionSize = value;
 			break;
 		default:
 			fprintf(stderr, "Invalid real attribute\n");
