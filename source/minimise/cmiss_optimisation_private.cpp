@@ -96,7 +96,7 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			return optimisation->maximumIterations;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS:
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
 			return optimisation->maximumNumberFunctionEvaluations;
 			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
@@ -123,7 +123,7 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			optimisation->maximumIterations = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS:
+		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS:
 			optimisation->maximumNumberFunctionEvaluations = value;
 			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
@@ -162,7 +162,7 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
 			return optimisation->linesearchTolerance;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_TRUSTREGION_SIZE:
+		case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			return optimisation->trustRegionSize;
 			break;
 		default:
@@ -198,7 +198,7 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_LINESEARCH_TOLERANCE:
 			optimisation->linesearchTolerance = value;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_TRUSTREGION_SIZE:
+		case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			optimisation->trustRegionSize = value;
 			break;
 		default:

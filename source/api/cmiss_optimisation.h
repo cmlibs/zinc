@@ -62,16 +62,14 @@ enum Cmiss_optimisation_method {
 	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
 	/*!< The default optimisation method. Suitable for most problems with a
 	 * small set of independent parameters.
-	 * Need to add more description here.
 	 */
 	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
 	/*!< A least squares method better suited to larger problems.
-	 * Need to add more description here.
 	 */
 	CMISS_OPTIMISATION_METHOD_NSDGSL = 3,
-/*!< Duane's original internal normalised steepest decent with a Golden section
- * line search.
- */
+	/*!< Internal normalised steepest decent with a Golden section
+	 * line search.
+	 */
 };
 
 /**
@@ -131,7 +129,7 @@ enum Cmiss_optimisation_attribute_id {
 	 *
 	 * Default value: 100.
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_NUMBER_FUNCTION_EVALUATIONS = 9,
+	CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS = 9,
 	/*!< (Opt++ stopping tolerance) Places an upper bound on the number of function evaluations. The method
 	 * is useful when your function
 	 * is computationally expensive and you only have time to perform a limited number of evaluations. When
@@ -180,7 +178,7 @@ enum Cmiss_optimisation_attribute_id {
 	 * @todo Reserving this one for when trust region methods are available via the API. Currently everything
 	 * uses linesearch methods only.
 	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_TRUSTREGION_SIZE = 14,
+	CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 14,
 	/*<! (Opt++ globalisation strategy parameter) Only relevant when you are using an algorithm with a trust-region
 	 * or a trustpds search strategy. The value initialises the size of the trust region.
 	 *
