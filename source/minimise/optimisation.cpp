@@ -68,6 +68,8 @@ extern "C" {
 }
 #include "minimise/optimisation.hpp"
 #include "general/enumerator_private_cpp.hpp"
+#include "mesh/cmiss_element_private.hpp"
+#include "computed_field/field_module.hpp"
 #include <iostream>
 #include <sstream>
 #include <map>
@@ -106,6 +108,7 @@ class Minimisation {
 public:
 	struct Cmiss_optimisation* optimisation;
 	FE_region *fe_region;
+	Cmiss_region_id meshRegion;
 	Cmiss_field_module_id field_module;
 	Cmiss_field_cache_id field_cache;
 	FE_value current_time;
@@ -114,12 +117,13 @@ public:
 	int currentDataPointIndex;
 	std::map< const FE_node*, Projection > projections;
 
-	Minimisation(struct Cmiss_optimisation* optimisation, FE_region* fe_region) :
+	Minimisation(struct Cmiss_optimisation* optimisation) :
 				optimisation(optimisation),
-				fe_region(fe_region),
-				field_module(Cmiss_region_get_field_module(optimisation->meshRegion)),
-				field_cache(Cmiss_field_module_create_cache(field_module))
+				fe_region(Cmiss_fe_mesh_get_FE_region(optimisation->feMesh))
 	{
+		FE_region_get_Cmiss_region(fe_region, &meshRegion);
+		field_module = Cmiss_region_get_field_module(meshRegion);
+		field_cache = Cmiss_field_module_create_cache(field_module);
 		current_time = 0.0;
 		total_dof = 0;
 		number_of_data_components = 0;
@@ -141,8 +145,8 @@ public:
 
 	static int construct_dof_arrays(struct FE_node *node,
 			void *minimisation_object_void);
-	static int calculate_projection(struct FE_node *node,
-			void *minimisation_object_void);
+
+	int calculate_projection(Cmiss_node_id node);
 
 	inline void set_dof_value(int dof_index, FE_value new_value)
 	{
@@ -179,27 +183,24 @@ Minimisation::~Minimisation()
 	Cmiss_field_cache_destroy(&field_cache);
 	Cmiss_field_module_end_change(field_module);
 	Cmiss_field_module_destroy(&field_module);
+	Cmiss_region_destroy(&meshRegion);
 	LEAVE;
 } /* Minimisation::~Minimisation */
 
-int Minimisation::calculate_projection(struct FE_node *node,
-		void *minimisation_object_void)
+int Minimisation::calculate_projection(Cmiss_node_id node)
 {
-	Minimisation *minimisation;
-	minimisation = static_cast<Minimisation *> (minimisation_object_void);
 	FE_value* values = 0;
-	ALLOCATE(values,FE_value,minimisation->number_of_data_components);
-	Projection projection = minimisation->projections[node];
-	Computed_field_evaluate_at_node(minimisation->optimisation->dataField, node,
-			minimisation->current_time, values);
-	Computed_field_find_element_xi(minimisation->optimisation->meshField,
-		values, minimisation->number_of_data_components, minimisation->current_time,
+	ALLOCATE(values, FE_value, number_of_data_components);
+	Projection projection = projections[node];
+	Computed_field_evaluate_at_node(optimisation->dataField, node, current_time, values);
+	Computed_field_find_element_xi(optimisation->meshField,
+		values, number_of_data_components, current_time,
 		&(projection.element), projection.xi,
-		/*element_dimension*/minimisation->optimisation->dimension,
-		/*search_region*/minimisation->optimisation->meshRegion, /*propagate_field*/0,
+		/*element_dimension*/Cmiss_fe_mesh_get_dimension(optimisation->feMesh),
+		/*search_region*/meshRegion, /*propagate_field*/0,
 		/*find_nearest_location*/1);
 	DEALLOCATE(values);
-	minimisation->projections[node] = projection;
+	projections[node] = projection;
 	//std::cout << "Element: " << FE_element_get_cm_number(projection.element) << ";";
 	//std::cout << " xi: " << projection.xi[0] << "," << projection.xi[1] << ",";
 	//std::cout << projection.xi[2] << std::endl;
@@ -208,10 +209,18 @@ int Minimisation::calculate_projection(struct FE_node *node,
 
 void Minimisation::calculate_data_projections()
 {
+	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(optimisation->dataNodeset);
+	Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
+	// FIXME: must be a better way to set the search region for the find_element_xi.
+	int code = 1;
+	while (node && code)
+	{
+		code = calculate_projection(node);
+		Cmiss_node_destroy(&node);
+		if (code) node = Cmiss_node_iterator_next(iterator);
+	}
+	Cmiss_node_iterator_destroy(&iterator);
 	//std::cout << "Minimisation::calculate_data_projections" << std::endl;
-	// ANDRE struct Cmiss_region* dRegion = Computed_field_get_region(this->optimisation->dataField);
-	struct FE_region* fe_region = Cmiss_region_get_FE_region(this->optimisation->dataRegion);
-	FE_region_for_each_FE_node(fe_region,Minimisation::calculate_projection,this);
 }
 
 int Minimisation::construct_dof_arrays(struct FE_node *node,
@@ -715,8 +724,20 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	ud.first = &fx;
 	ud.second = minimisation;
 	minimisation->currentDataPointIndex = 0;
-	FE_region_for_each_FE_node(Cmiss_region_get_FE_region(minimisation->optimisation->dataRegion),
-			calculate_LS_term,&ud);
+	Cmiss_node_iterator_id iterator =
+			Cmiss_nodeset_create_node_iterator(minimisation->optimisation->dataNodeset);
+	Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
+	int code = 1;
+	while (node && code)
+	{
+		code = calculate_LS_term(node, &ud);
+		Cmiss_node_destroy(&node);
+		if (code) node = Cmiss_node_iterator_next(iterator);
+	}
+	Cmiss_node_iterator_destroy(&iterator);
+
+	//FE_region_for_each_FE_node(Cmiss_region_get_FE_region(minimisation->optimisation->dataRegion),
+	//		calculate_LS_term,&ud);
 	result = NLPFunction;
 }
 
@@ -735,14 +756,7 @@ void Minimisation::minimise_LSQN()
 	ENTER(Minimisation::minimise_LSQN);
 	// need a handle on this object...
 	UserData = static_cast<void*> (this);
-	// FIXME: using objective field as the data field...
-	// GRC: should allow alternative nodeset "cmiss_data" to be used:
-	// Need to get the field_module for the data_group to get the nodeset for the group region
-	Cmiss_field_module_id data_group_field_module = Cmiss_region_get_field_module(this->optimisation->dataRegion);
-	Cmiss_nodeset_id datapointset = Cmiss_field_module_get_nodeset_by_name(data_group_field_module, "cmiss_nodes");
-	this->number_of_data_points = Cmiss_nodeset_get_size(datapointset);
-	Cmiss_nodeset_destroy(&datapointset);
-	Cmiss_field_module_destroy(&data_group_field_module);
+	this->number_of_data_points = Cmiss_nodeset_get_size(optimisation->dataNodeset);
 	this->number_of_data_components = Computed_field_get_number_of_components(
 			this->optimisation->dataField);
 	LSQNLF nlp(total_dof, this->number_of_data_points * this->number_of_data_components,
@@ -793,13 +807,13 @@ int Cmiss_optimisation::runOptimisation()
 	int return_code = 0;
 
 	ENTER(Cmiss_optimisation::runOptimisation);
-	FE_region *fe_region = Cmiss_region_get_FE_region(this->meshRegion);
+	// FIXME: must be a better way to iterate over all the nodes in the mesh?
 	// Create minimisation object
-	Minimisation minimisation(this, fe_region);
+	Minimisation minimisation(this);
 	// Populate the dof pointers and initial values for each node
 	if (Computed_field_is_type_finite_element(independentFields[0]))
 	{
-		FE_region_for_each_FE_node(fe_region,
+		FE_region_for_each_FE_node(minimisation.fe_region,
 				Minimisation::construct_dof_arrays,
 				&minimisation);
 	}

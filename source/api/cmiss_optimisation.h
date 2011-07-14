@@ -46,8 +46,10 @@
  Global types
  ------------
  */
+#include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_node_id.h"
 #include "api/types/cmiss_optimisation_id.h"
 #include "api/types/cmiss_region_id.h"
 
@@ -62,9 +64,15 @@ enum Cmiss_optimisation_method {
 	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
 	/*!< The default optimisation method. Suitable for most problems with a
 	 * small set of independent parameters.
+	 * Given a scalar valued objective field, finds the set of component values for the specified
+	 * independent field(s) which minimises the objective field value.
 	 */
 	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
 	/*!< A least squares method better suited to larger problems.
+	 * Finds the set of independent field(s) component values which minimises the error. The error
+	 * is defined in a least-squares sense as the difference in the DATA_FIELD value a each of the
+	 * data points in the <data_nodeset> and the value of the MESH_FIELD at the corresponding projection
+	 * location in the <fe_mesh>.
 	 */
 	CMISS_OPTIMISATION_METHOD_NSDGSL = 3,
 	/*!< Internal normalised steepest decent with a Golden section
@@ -77,11 +85,6 @@ enum Cmiss_optimisation_method {
  * get/set_attribute functions.
  */
 enum Cmiss_optimisation_attribute_id {
-	CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION = 1,
-	/*!< The dimension of the elements used to project data points on to.
-	 * Only used in least squares fitting?
-	 * Default value is 2.
-	 */
 	CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD = 2,
 	/*!< In Quasi-Newton and NSDGSL optimisation, this is the field which defines the current value
 	 * of the objective function. It is expected, but not checked, to be a scalar valued constant
@@ -217,24 +220,25 @@ Cmiss_optimisation_id Cmiss_field_module_create_optimisation(
 int Cmiss_optimisation_destroy(Cmiss_optimisation_id *optimisation_address);
 
 /**
- * Sets the mesh region (group?) for this optimisation object.
+ * Sets the mesh to be used for this optimisation object.
  *
- * @param optimisation Handle to the cmiss optimisation object.
- * @param region The mesh region.
+ * @param optimisation Handle to the optimisation object.
+ * @param mesh The mesh to assign to this optimisation object.
  * @return 1 on success; 0 otherwise.
  */
-int Cmiss_optimisation_set_mesh_region(Cmiss_optimisation_id optimisation,
-		Cmiss_region_id region);
+int Cmiss_optimisation_set_fe_mesh(Cmiss_optimisation_id optimisation,
+		Cmiss_fe_mesh_id mesh);
 
 /**
- * Sets the data region (group?) for this optimisation object.
+ * Sets the data nodeset to use for this optimisation object. This is only required when
+ * performing a least-squares optimisation problem.
  *
- * @param optimisation Handle to the cmiss optimisation object.
- * @param region The data region.
+ * @param optimisation Handle to the optimisation object.
+ * @param nodeset The nodeset containing the data points to be used in a least-squares optimisation problem.
  * @return 1 on success; 0 otherwise.
  */
-int Cmiss_optimisation_set_data_region(Cmiss_optimisation_id optimisation,
-		Cmiss_region_id region);
+int Cmiss_optimisation_set_data_nodeset(Cmiss_optimisation_id optimisation,
+		Cmiss_nodeset_id nodeset);
 
 /**
  * Get the current optimisation method for the given optimisation object.

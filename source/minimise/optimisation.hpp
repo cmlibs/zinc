@@ -68,20 +68,19 @@ private:
 		{
 			Cmiss_field_destroy(&(independentFields[i]));
 		}
-		if (meshRegion) Cmiss_region_destroy(&meshRegion);
-		if (dataRegion) Cmiss_region_destroy(&dataRegion);
+		if (feMesh) Cmiss_fe_mesh_destroy(&feMesh);
+		if (dataNodeset) Cmiss_nodeset_destroy(&dataNodeset);
 	}
 
 public:
-	int dimension;
 	enum Cmiss_optimisation_method method;
 	Cmiss_field_id objectiveField;
 	Cmiss_field_id meshField;
 	Cmiss_field_id dataField;
 	FieldList independentFields;
 	bool independentFieldsConstant;
-	Cmiss_region_id meshRegion;
-	Cmiss_region_id dataRegion;
+	Cmiss_fe_mesh_id feMesh;
+	Cmiss_nodeset_id dataNodeset;
 	// Opt++ stopping tolerances
 	double functionTolerance;
 	double gradientTolerance;
@@ -99,14 +98,13 @@ public:
 	Cmiss_optimisation()
 	{
 		// initialise to default values
-		dimension = 2;
 		method = CMISS_OPTIMISATION_METHOD_QUASI_NEWTON;
 		objectiveField = NULL;
 		meshField = NULL;
 		dataField = NULL;
 		independentFieldsConstant = false;
-		meshRegion = NULL;
-		dataRegion = NULL;
+		feMesh = NULL;
+		dataNodeset = NULL;
 		functionTolerance = 1.49012e-8;
 		gradientTolerance = 6.05545e-6;
 		stepTolerance = 1.49012e-8;

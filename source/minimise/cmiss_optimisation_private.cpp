@@ -90,9 +90,6 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 	{
 		switch (attribute_id)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION:
-			return optimisation->dimension;
-			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			return optimisation->maximumIterations;
 			break;
@@ -117,9 +114,6 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 	{
 		switch (attribute_id)
 		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION:
-			optimisation->dimension = value;
-			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			optimisation->maximumIterations = value;
 			break;
@@ -305,35 +299,35 @@ int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
 	return code;
 }
 
-int Cmiss_optimisation_set_mesh_region(Cmiss_optimisation_id optimisation, Cmiss_region_id region)
+int Cmiss_optimisation_set_fe_mesh(Cmiss_optimisation_id optimisation, Cmiss_fe_mesh_id mesh)
 {
 	int code = 0;
-	if (optimisation && region)
+	if (optimisation && mesh)
 	{
-		if (optimisation->meshRegion) Cmiss_region_destroy(&(optimisation->meshRegion));
-		optimisation->meshRegion = Cmiss_region_access(region);
+		if (optimisation->feMesh) Cmiss_fe_mesh_destroy(&(optimisation->feMesh));
+		optimisation->feMesh = Cmiss_fe_mesh_access(mesh);
 		code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_mesh_region.  "
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_fe_mesh.  "
 							"Invalid arguments.");
 	}
 	return code;
 }
 
-int Cmiss_optimisation_set_data_region(Cmiss_optimisation_id optimisation, Cmiss_region_id region)
+int Cmiss_optimisation_set_data_nodeset(Cmiss_optimisation_id optimisation, Cmiss_nodeset_id nodeset)
 {
 	int code = 0;
-	if (optimisation && region)
+	if (optimisation && nodeset)
 	{
-		if (optimisation->dataRegion) Cmiss_region_destroy(&(optimisation->dataRegion));
-		optimisation->dataRegion = Cmiss_region_access(region);
+		if (optimisation->dataNodeset) Cmiss_nodeset_destroy(&(optimisation->dataNodeset));
+		optimisation->dataNodeset = Cmiss_nodeset_access(nodeset);
 		code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_data_region.  "
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_data_nodeset.  "
 							"Invalid arguments.");
 	}
 	return code;
@@ -346,20 +340,24 @@ int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation)
 	{
 		code = 1;
 		// check required attributes are set
-		if (optimisation->meshRegion == NULL)
+		if (optimisation->feMesh == NULL)
 		{
 			code = 0;
-			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The mesh region must be set.");
-		}
-		if (optimisation->objectiveField == NULL)
-		{
-			code = 0;
-			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The objective field must be set.");
+			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The FE mesh must be set.");
 		}
 		if (optimisation->independentFields.size() < 1)
 		{
 			code = 0;
 			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. Must set at least one independent field.");
+		}
+		if ((optimisation->method == CMISS_OPTIMISATION_METHOD_QUASI_NEWTON) ||
+				(optimisation->method == CMISS_OPTIMISATION_METHOD_NSDGSL))
+		{
+			if (optimisation->objectiveField == NULL)
+			{
+				code = 0;
+				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The objective field must be set.");
+			}
 		}
 		if (optimisation->method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
 		{
@@ -373,10 +371,21 @@ int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation)
 				code = 0;
 				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data field must be set.");
 			}
-			if (optimisation->dataRegion == NULL)
+			if (code)
+			{
+				int nM = Cmiss_field_get_number_of_components(optimisation->meshField);
+				int nD = Cmiss_field_get_number_of_components(optimisation->dataField);
+				if (nD < nM)
+				{
+					code = 0;
+					display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data field must have at least the same number "
+							"of components as the mesh field.");
+				}
+			}
+			if (optimisation->dataNodeset == NULL)
 			{
 				code = 0;
-				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data region must be set.");
+				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data nodeset must be set.");
 			}
 		}
 		if (code != 0)

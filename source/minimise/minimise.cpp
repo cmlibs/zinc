@@ -188,6 +188,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (package = (struct Minimisation_package *) package_void))
 	{
+		dimension = 2;
 		struct Cmiss_region* meshRegion = NULL;
 		struct Cmiss_region* dataRegion = NULL;
 		objective_field = (struct Computed_field *) NULL;
@@ -278,19 +279,31 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					Cmiss_field_module_id fieldModule = Cmiss_region_get_field_module(meshRegion);
 					Cmiss_optimisation_id optimisation = Cmiss_field_module_create_optimisation(fieldModule);
 					Cmiss_optimisation_set_method(optimisation, package->method);
-					Cmiss_optimisation_set_mesh_region(optimisation, meshRegion);
-					Cmiss_optimisation_set_data_region(optimisation, dataRegion);
-					Cmiss_optimisation_set_attribute_integer(optimisation, CMISS_OPTIMISATION_ATTRIBUTE_DIMENSION, dimension);
-					Cmiss_optimisation_set_attribute_integer(optimisation, CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS,
-							maxIters);
-					Cmiss_optimisation_set_attribute_field(optimisation,
-							CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD, objective_field);
-					for (i=0;i<field_names.number_of_strings;i++)
+
+					Cmiss_fe_mesh_id feMesh = NULL;
+					if (dimension == 1) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_1d");
+					else if (dimension == 2) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_2d");
+					else if (dimension == 3) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_3d");
+					if (feMesh == NULL)
 					{
-						Cmiss_field_id field = Cmiss_field_module_find_field_by_name(fieldModule, field_names.strings[i]);
-						Cmiss_optimisation_add_independent_field(optimisation, field);
+						display_message(ERROR_MESSAGE, "gfx_minimise.  Unable to get the fe_mesh, invalid dimension?");
+						return_code = 0;
 					}
-					return_code = Cmiss_optimisation_optimise(optimisation);
+					else
+					{
+						Cmiss_optimisation_set_fe_mesh(optimisation, feMesh);
+						Cmiss_fe_mesh_destroy(&feMesh);
+						Cmiss_optimisation_set_attribute_integer(optimisation, CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS,
+								maxIters);
+						Cmiss_optimisation_set_attribute_field(optimisation,
+								CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD, objective_field);
+						for (i=0;i<field_names.number_of_strings;i++)
+						{
+							Cmiss_field_id field = Cmiss_field_module_find_field_by_name(fieldModule, field_names.strings[i]);
+							Cmiss_optimisation_add_independent_field(optimisation, field);
+						}
+						return_code = Cmiss_optimisation_optimise(optimisation);
+					}
 					Cmiss_field_module_destroy(&fieldModule);
 					Cmiss_optimisation_destroy(&optimisation);
 				} else {
