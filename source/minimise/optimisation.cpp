@@ -804,7 +804,7 @@ void Minimisation::minimise_LSQN()
 
 int Cmiss_optimisation::runOptimisation()
 {
-	int return_code = 0;
+	int return_code = 1;
 
 	ENTER(Cmiss_optimisation::runOptimisation);
 	// FIXME: must be a better way to iterate over all the nodes in the mesh?
@@ -826,7 +826,7 @@ int Cmiss_optimisation::runOptimisation()
 		// should never get this far?
 		display_message(ERROR_MESSAGE,"Cmiss_optimisation::runOptimisation. "
 				"Invalid independent field type.");
-		return return_code;
+		return 0;
 	}
 
 	// Minimise the objective function
