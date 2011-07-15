@@ -268,7 +268,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 		if (return_code)
 		{
 			if ((field_names.number_of_strings > 0) && (objective_field || (data_field && mesh_field))) {
-				if (meshRegion && dataRegion)
+				if (meshRegion)
 				{
 					if (minimisation_method_string)
 					{
@@ -293,8 +293,35 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					{
 						Cmiss_optimisation_set_fe_mesh(optimisation, feMesh);
 						Cmiss_fe_mesh_destroy(&feMesh);
-						Cmiss_optimisation_set_attribute_integer(optimisation, CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS,
-								maxIters);
+						if (dataRegion)
+						{
+							/* FIXME: for now, assume that if the data region has nodes they are the
+							 * data points; otherwise look for actual data points.
+							 */
+							Cmiss_field_module_id module = Cmiss_region_get_field_module(dataRegion);
+							Cmiss_nodeset_id nodeset =
+									Cmiss_field_module_get_nodeset_by_name(module, "cmiss_nodes");
+							if (Cmiss_nodeset_get_size(nodeset) == 0)
+							{
+								Cmiss_nodeset_destroy(&nodeset);
+								nodeset = Cmiss_field_module_get_nodeset_by_name(module, "cmiss_data");
+							}
+							Cmiss_optimisation_set_data_nodeset(optimisation, nodeset);
+							Cmiss_nodeset_destroy(&nodeset);
+							Cmiss_field_module_destroy(&module);
+						}
+						if (mesh_field)
+						{
+							Cmiss_optimisation_set_attribute_field(optimisation,
+									CMISS_OPTIMISATION_ATTRIBUTE_MESH_FIELD, mesh_field);
+						}
+						if (data_field)
+						{
+							Cmiss_optimisation_set_attribute_field(optimisation,
+									CMISS_OPTIMISATION_ATTRIBUTE_DATA_FIELD, data_field);
+						}
+						Cmiss_optimisation_set_attribute_integer(optimisation,
+								CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS, maxIters);
 						Cmiss_optimisation_set_attribute_field(optimisation,
 								CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD, objective_field);
 						for (i=0;i<field_names.number_of_strings;i++)
@@ -308,7 +335,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					Cmiss_optimisation_destroy(&optimisation);
 				} else {
 					display_message(ERROR_MESSAGE,
-							"gfx_minimise.  Must specify mesh and data regions");
+							"gfx_minimise.  Must specify mesh region.");
 					return_code = 0;
 				}
 			} else {
