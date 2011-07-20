@@ -45,6 +45,7 @@ extern "C" {
 #include "api++/CmissField.hpp"
 #include "api++/CmissFieldTypesArithmeticOperators.hpp"
 #include "api++/CmissFieldTypesComposite.hpp"
+#include "api++/CmissFieldTypesFiniteElement.hpp"
 #include "api++/CmissFieldTypesGroup.hpp"
 #include "api++/CmissFieldTypesImage.hpp"
 #include "api++/CmissFieldTypesTrigonometry.hpp"
@@ -54,6 +55,7 @@ namespace Cmiss
 
 class FieldAdd;
 class FieldConstant;
+class FieldFiniteElement;
 class FieldGroup;
 class FieldImage;
 class FieldSin;
@@ -95,14 +97,24 @@ public:
 		}
 	}
 
+	int beginChange()
+	{
+		return Cmiss_field_module_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return Cmiss_field_module_end_change(id);
+	}
+
 	Field findFieldByName(const char *field_name)
 	{
 		return Field(Cmiss_field_module_find_field_by_name(id, field_name));
 	}
 
-	int defineField(const char *command_string)
+	int defineField(const char *field_name, const char *command_string)
 	{
-		return Cmiss_field_module_define_field(id, command_string);
+		return Cmiss_field_module_define_field(id, field_name, command_string);
 	}
 
 	Field createField(const char *field_name, const char *command_string)
@@ -120,6 +132,12 @@ public:
 	Field createConstant(int numValues, const double *values)
 	{
 		return Cmiss_field_module_create_constant(id, numValues, values);
+	}
+
+	FieldFiniteElement createFiniteElement(int number_of_components)
+	{
+		return FieldFiniteElement(reinterpret_cast<Cmiss_field_finite_element_id>(
+			Cmiss_field_module_create_finite_element(id, number_of_components)));
 	}
 
 	// factory methods for creating new fields
