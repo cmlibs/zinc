@@ -1247,9 +1247,17 @@ Computed_field *Computed_field_create_generic(
 				if (check_source_field_regions &&
 					(Computed_field_get_region(source_fields[i]) != region))
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_create_generic.  Source field is from a different region");
-					return_code = 0;
+					struct Cmiss_region *source_field_region = Computed_field_get_region(source_fields[i]);
+					if (source_field_region != region)
+					{
+						if (!(Cmiss_region_contains_subregion(source_field_region, region) &&
+							Cmiss_region_is_group(region)))
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_create_generic.  Source field is from a different region");
+							return_code = 0;
+						}
+					}
 				}
 			}
 			else
