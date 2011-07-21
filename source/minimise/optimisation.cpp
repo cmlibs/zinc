@@ -118,9 +118,10 @@ public:
 	std::map< const FE_node*, Projection > projections;
 
 	Minimisation(struct Cmiss_optimisation* optimisation) :
-				optimisation(optimisation),
-				fe_region(Cmiss_fe_mesh_get_FE_region(optimisation->feMesh))
+		optimisation(optimisation)
 	{
+		fe_region = Cmiss_fe_mesh_get_FE_region(optimisation->feMesh);
+		// the meshRegion is not accessed, so make sure not to destroy.
 		FE_region_get_Cmiss_region(fe_region, &meshRegion);
 		field_module = Cmiss_region_get_field_module(meshRegion);
 		field_cache = Cmiss_field_module_create_cache(field_module);
@@ -183,7 +184,6 @@ Minimisation::~Minimisation()
 	Cmiss_field_cache_destroy(&field_cache);
 	Cmiss_field_module_end_change(field_module);
 	Cmiss_field_module_destroy(&field_module);
-	Cmiss_region_destroy(&meshRegion);
 	LEAVE;
 } /* Minimisation::~Minimisation */
 

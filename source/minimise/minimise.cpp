@@ -328,6 +328,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 						{
 							Cmiss_field_id field = Cmiss_field_module_find_field_by_name(fieldModule, field_names.strings[i]);
 							Cmiss_optimisation_add_independent_field(optimisation, field);
+							Cmiss_field_destroy(&field);
 						}
 						return_code = Cmiss_optimisation_optimise(optimisation);
 					}

@@ -63,10 +63,11 @@ private:
 		if (objectiveField) Cmiss_field_destroy(&objectiveField);
 		if (meshField) Cmiss_field_destroy(&meshField);
 		if (dataField) Cmiss_field_destroy(&dataField);
-		size_t i;
-		for (i=0;i<independentFields.size();i++)
+		while (!independentFields.empty())
 		{
-			Cmiss_field_destroy(&(independentFields[i]));
+			Cmiss_field_id f = independentFields.back();
+			independentFields.pop_back();
+			Cmiss_field_destroy(&f);
 		}
 		if (feMesh) Cmiss_fe_mesh_destroy(&feMesh);
 		if (dataNodeset) Cmiss_nodeset_destroy(&dataNodeset);
