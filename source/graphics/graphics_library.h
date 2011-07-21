@@ -59,17 +59,17 @@ Functions and structures for interfacing with the graphics library.
 #			endif /*  !defined (NOMINMAX) */
 #			include <windows.h>
 #		endif
-#if defined (USE_GLEW)
-#		include <GL/glew.h>
-#else
-#   include <GL/gl.h>
-#   include <GL/glu.h>
-#endif
+#		if defined (USE_GLEW)
+#			include <GL/glew.h>
+#		else
+#			include <GL/gl.h>
+#			include <GL/glu.h>
+#		endif
 #		if defined (WIN32_SYSTEM)
 #			undef GL_NV_vertex_program
 #			undef GL_NV_register_combiners2
 #		endif /* defined (WIN32_SYSTEM) */
-#	endif /* defined (MOTIF_USER_INTERFACE) || ! defined (APPLE) */
+#	endif /* defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN) */
 #endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"
 #if defined (GTK_USER_INTERFACE)

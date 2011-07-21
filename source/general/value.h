@@ -58,7 +58,7 @@ checking.
 #  else /* defined (CYGWIN) */
 #    if defined (DARWIN)
 #    else /* defined (DARWIN) */
-#      include <values.h>
+#      include <limits.h>
 #    endif /* defined (DARWIN) */
 #  endif /* defined (CYGWIN) */
 #endif /* defined (UNIX) */

@@ -40,7 +40,7 @@ SET( EMOTER_HDRS
 
 SET( NETSCAPE_HELP TRUE )
 SET( HELP_SRCS source/help/help_interface.c )
-SET( HELP_HDRS source/help/help.h
+SET( HELP_HDRS source/help/help_cmgui.h
 	source/help/help_interface.h
 	source/help/help_window.h
 	source/help/help_work.h )

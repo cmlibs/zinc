@@ -54,7 +54,7 @@ Code for opening and closing and working a CMISS help window.
 
 #include "general/debug.h"
 #include "help/help_work.h"
-#include "help/help.h"
+#include "help/help_cmgui.h"
 #include "user_interface/message.h"
 
 

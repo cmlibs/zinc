@@ -4,7 +4,7 @@
 
 // Platform specific defines
 #cmakedefine UNIX
-#cmakedefine APPLE
+#cmakedefine DARWIN
 #cmakedefine CYGWIN
 #cmakedefine WIN32_SYSTEM
 

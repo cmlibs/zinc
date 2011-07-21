@@ -56,7 +56,7 @@ DESCRIPTION :
 #include "command/cmiss_unemap_link.h"
 #endif /* defined (UNEMAP) */
 
-#if defined (WX_USER_INTERFACE) && (DARWIN)
+#if defined (WX_USER_INTERFACE) && defined (DARWIN)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 #if defined (USE_XML2)
