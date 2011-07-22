@@ -2996,6 +2996,19 @@ char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum)
 	return name;
 }
 
+Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_spectrum_destroy);
+	if (spectrum)
+	{
+		return ACCESS(Spectrum)(spectrum);
+	}
+
+	return NULL;
+}
+
 int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 {
 	int return_code = 0;

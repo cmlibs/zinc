@@ -54,6 +54,14 @@ enum Cmiss_spectrum_attribute_id
 };
 
 /***************************************************************************//**
+ * Access the spectrum, increase the access count of the time keeper by one.
+ *
+ * @param spectrum  handle to the "to be access" cmiss spectrum.
+ * @return  handle to spectrum if successfully access spectrum.
+ */
+Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
+
+/***************************************************************************//**
  * Destroy the spectrum.
  *
  * @param spectrum  address to the handle to the "to be destroyed"
