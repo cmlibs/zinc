@@ -85,6 +85,67 @@ enum Cmiss_time_keeper_frame_mode
 	CMISS_TIME_KEEPER_PLAY_EVERY_FRAME = 2
 };
 
+enum Cmiss_time_keeper_attribute
+{
+	CMISS_TIME_KEEPER_ATTRIBUTE_TIME = 1,
+	/*!< Current time of the time keeper. This is a real number attribute.
+	 */
+	CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME = 2,
+	/*!< Minimum allowed time of the time keeper. The time keeper will not
+	 * allow any time lower then the minimum time specified by this function.
+	 * This is a real number attribute.
+	 */
+	CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME = 3,
+	/*!< Maximum allowed time of the time keeper. The time keeper will not allow
+	 * any time larger than the value set by this function.
+	 * This is a real number attribute.
+	 */
+	CMISS_TIME_KEEPER_ATTRIBUTE_SPEED = 4
+	/*!< Rate of increment/decrement on time during playback. This will affect
+	 * how often an event is generate by the time keeper.
+	 * This is a real number attribute.
+	 */
+};
+
+/***************************************************************************//**
+ * Access the time_keeper, increase the access count of the time keeper by one.
+ *
+ * @param time_keeper  handle to the "to be access" cmiss time_keeper.
+ * @return  handle to time_keeper if successfully access time_keeper.
+ */
+Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
+
+/***************************************************************************//**
+ * Destroys this reference to the time keeper (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param time_keeper_address  The address to the handle to time keeper
+ * @return  1 if successfully destroy(deaccess) the time keeper, otherwise 0.
+ */
+int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
+
+/***************************************************************************//**
+ * Get a real value of an attribute of the time keeper.
+ *
+ * @param time_keeper  Handle to the cmiss time_keeper.
+ * @param attribute_id  The identifier of the real attribute to get.
+ * @return  Value of the attribute.
+ */
+double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
+	enum Cmiss_time_keeper_attribute attribute);
+
+/***************************************************************************//**
+ * Set a real value for an attribute of the time_keeper.
+ *
+ * @param time_keeper  Handle to the cmiss time_keeper.
+ * @param attribute  The identifier of the real attribute to set.
+ * @param value  The new value for the attribute.
+ * @return  1 if attribute successfully set, 0 if failed or attribute not valid
+ * or unable to be set for this time_keeper object.
+ */
+int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
+	enum Cmiss_time_keeper_attribute attribute, double value);
+
 /***************************************************************************//**
  * Create and returns a time notifier with regular update time in time keeper.
  * The returned time notifier will automatically be added to the time keeper. 
@@ -100,44 +161,6 @@ enum Cmiss_time_keeper_frame_mode
  */
 Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
 	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
-
-/***************************************************************************//**
- * Get the minimum allowed time in time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  the minimum allowed time in time keeper if successful, otherwise 0.
- */
-double Cmiss_time_keeper_get_minimum(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the minimum available time of the time keeper. The time keeper will not
- * allow any time lower then the minimum time specified by this function.
- *
- * @param time_keeper  Handle to time keeper.
- * @param minimum  The minimum time to be set.
- * @return  1 if successfully set minimum time, otherwise 0.
- */
-int Cmiss_time_keeper_set_minimum(Cmiss_time_keeper_id time_keeper, 
-	double minimum);
-
-/***************************************************************************//**
- * Get the maximum allowed time in time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  the maximum allowed time in time keeper if successful, otherwise 0.
- */
-double Cmiss_time_keeper_get_maximum(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the maximum time of time keeper. The time keeper will not allow any time 
- * larger than the value set by this function.
- *
- * @param time_keeper  Handle to time keeper.
- * @param maximum  The maximum time to be set.
- * @return  1 if successfully set maximum time, otherwise 0.
- */
-int Cmiss_time_keeper_set_maximum(Cmiss_time_keeper_id time_keeper, 
-	double maximum);
 
 /***************************************************************************//**
  * Get the current frame mode of the time keeper. 
@@ -226,49 +249,6 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_repeat_mode repeat_mode);
 
 /***************************************************************************//**
- * Get the current time from the time keeper.
- *
- * @param time_keeper  Handle to time keeper.
- * @return  current time of the time keeper if successful otherwise 0.
- */
-double Cmiss_time_keeper_get_time(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set a new time on the time keeper. This new time should not be 
- * smaller than the minimum time or larger then the maximum time set on the
- * time keeper. This will notify the clients of the changes.
- *
- * @param time_keeper  Handle to time keeper.
- * @param new_time  Time to be set on the time keeper
- * @return  1 if successfully set a time on time keeper, otherwise 0.
- */
-int Cmiss_time_keeper_set_time(Cmiss_time_keeper_id time_keeper, 
-	double new_time);
-
-/***************************************************************************//**
- * Get speed from the time notifier
- *
- * @param time_keeper  Handle to time keeper.
- * @return  Speed of the time keeper if successful otherwise 0.
- */
-double Cmiss_time_keeper_get_speed(Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Set the rate of increment/decrement on time during playback. This will affect 
- * how often an event is generate by the time keeper.
- * i.e If the value of speed is 2 then the amount of real time taken for the
- * time keeper to progress an unit of time is approximately (1/speed)s which is 
- * about 0.5s.
- *
- * @param time_keeper  Handle to time keeper.
- * @param speed  This will affect how quickly time keeper will progress on its 
- *    unit of time per second.
- * @return  1 if successfully set the speed on time keeper, otherwise 0.
- */
-int Cmiss_time_keeper_set_speed(Cmiss_time_keeper_id time_keeper,
-	double speed);
-
-/***************************************************************************//**
  * Add a time notifier to the time keeper. The time keeper will keep track of the
  * time. When time changes, time keeper will notify the time notifier and then 
  * the time notifier will notify its clients. time notifier can only have one set of
@@ -291,14 +271,5 @@ int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
  */
 int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper, 
 	Cmiss_time_notifier_id time_notifier);
-
-/***************************************************************************//**
- * Destroys this reference to the time keeper (and sets it to NULL).
- * Internally this just decrements the reference count.
- *
- * @param time_keeper_address  The address to the handle to time keeper
- * @return  1 if successfully destroy(deaccess) the time keeper, otherwise 0.
- */
-int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
 
 #endif /* __CMISS_TIME_KEEPER_H__ */

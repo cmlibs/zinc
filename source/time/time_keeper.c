@@ -2081,7 +2081,86 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 	return(return_code);
 }
 
+Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper)
+{
+	if (time_keeper)
+	{
+		return ACCESS(Time_keeper)(time_keeper);
+	}
+	return NULL;
+}
+
 int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address)
 {
 	return (DEACCESS(Time_keeper)(time_keeper_address));
+}
+
+double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
+	enum Cmiss_time_keeper_attribute attribute)
+{
+	double value = 0.0;
+	if (time_keeper)
+	{
+		switch (attribute)
+		{
+			case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+			{
+				value = Time_keeper_get_time(time_keeper);
+			} break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+			{
+				value = Time_keeper_get_minimum(time_keeper);
+			}	break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+			{
+				value = Time_keeper_get_maximum(time_keeper);
+			} break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_SPEED:
+			{
+				value = Time_keeper_get_speed(time_keeper);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_time_keeper_get_attribute_real.  Invalid attribute");
+			} break;
+		}
+	}
+	return ((double)value);
+}
+
+int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
+	enum Cmiss_time_keeper_attribute attribute, double value)
+{
+	int return_code = 0;
+	if (time_keeper)
+	{
+		return_code = 1;
+		switch (attribute)
+		{
+			case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+			{
+				return_code = Time_keeper_request_new_time(time_keeper, value);
+			} break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+			{
+				return_code = Time_keeper_set_minimum(time_keeper, value);
+			}	break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+			{
+				return_code = Time_keeper_set_maximum(time_keeper, value);
+			} break;
+			case CMISS_TIME_KEEPER_ATTRIBUTE_SPEED:
+			{
+				return_code = Time_keeper_set_speed(time_keeper, value);
+			}	break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_time_keeper_set_attribute_real.  Invalid attribute");
+				return_code = 0;
+			} break;
+		}
+	}
+	return return_code;
 }

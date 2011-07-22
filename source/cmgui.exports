@@ -382,11 +382,11 @@ Cmiss_time_notifier_regular_set_frequency
 Cmiss_time_notifier_regular_set_offset
 
 /* Cmiss_time_keeper */
+Cmiss_time_keeper_access
+Cmiss_time_keeper_destroy
+Cmiss_time_keeper_get_attribute_real
+Cmiss_time_keeper_set_attribute_real
 Cmiss_time_keeper_create_notifier_regular
-Cmiss_time_keeper_get_minimum
-Cmiss_time_keeper_set_minimum
-Cmiss_time_keeper_get_maximum
-Cmiss_time_keeper_set_maximum
 Cmiss_time_keeper_get_frame_mode
 Cmiss_time_keeper_set_frame_mode
 Cmiss_time_keeper_get_play_direction
@@ -395,13 +395,8 @@ Cmiss_time_keeper_is_playing
 Cmiss_time_keeper_stop
 Cmiss_time_keeper_get_repeat_mode
 Cmiss_time_keeper_set_repeat_mode
-Cmiss_time_keeper_get_time
-Cmiss_time_keeper_set_time
-Cmiss_time_keeper_get_speed
-Cmiss_time_keeper_set_speed
 Cmiss_time_keeper_add_time_notifier
 Cmiss_time_keeper_remove_time_notifier
-Cmiss_time_keeper_destroy
 
 /* Carey's internal exports which we should shift to using Cmiss_field_image */
 create_Cmgui_image_information
@@ -539,6 +534,7 @@ Cmiss_selection_handler_get_hierarchical
 Cmiss_selection_handler_set_hierarchical
 Cmiss_selection_event_owning_rendition_is_destroyed
 
+Cmiss_spectrum_access
 Cmiss_spectrum_destroy
 Cmiss_spectrum_get_attribute_integer
 Cmiss_spectrum_set_attribute_integer

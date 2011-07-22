@@ -17,15 +17,8 @@ This is intended to be multithreaded......
 #define Time_keeper Cmiss_time_keeper
 #define Time_object Cmiss_time_notifier
 
-#define Time_keeper_get_minimum Cmiss_time_keeper_get_minimum
-#define Time_keeper_set_minimum Cmiss_time_keeper_set_minimum
-#define Time_keeper_get_maximum Cmiss_time_keeper_get_maximum
-#define Time_keeper_set_maximum Cmiss_time_keeper_set_maximum
 #define Time_keeper_stop 	Cmiss_time_keeper_stop
-#define Time_keeper_get_time Cmiss_time_keeper_get_time
 #define Time_keeper_request_new_time Cmiss_time_keeper_set_time
-#define Time_keeper_get_speed Cmiss_time_keeper_get_speed
-#define Time_keeper_set_speed Cmiss_time_keeper_set_speed
 #define Time_keeper_is_playing Cmiss_time_keeper_is_playing
 #define Time_keeper_add_time_object Cmiss_time_keeper_add_time_notifier
 #define Time_keeper_remove_time_object Cmiss_time_keeper_remove_time_notifier

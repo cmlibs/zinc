@@ -476,7 +476,7 @@ Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_time_keeper *time_keeper = NULL;
 	if (context && context->UI_module && context->UI_module->default_time_keeper)
 	{
-		time_keeper = ACCESS(Time_keeper)(context->UI_module->default_time_keeper);
+		time_keeper = Cmiss_time_keeper_access(context->UI_module->default_time_keeper);
 	}
 	else
 	{
@@ -529,7 +529,7 @@ int Cmiss_context_enable_user_interface(Cmiss_context_id context,
 	int in_argc, const char *in_argv[], void *user_interface_instance)
 #else
 int Cmiss_context_enable_user_interface(
-	struct Context *context, int in_argc, const char *in_argv[],
+	Cmiss_context_id context, int in_argc, const char *in_argv[],
 	HINSTANCE current_instance, HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state, void *user_interface_instance)
 #endif
