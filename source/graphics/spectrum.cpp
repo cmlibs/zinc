@@ -2998,8 +2998,6 @@ char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum)
 
 Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum)
 {
-	int return_code = 0;
-
 	ENTER(Cmiss_spectrum_destroy);
 	if (spectrum)
 	{
