@@ -413,13 +413,13 @@ Cmiss_stream_information_image_id Cmiss_stream_information_cast_image(
 
 int Cmiss_stream_information_image_set_attribute_integer(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute_id attribute_id, int value)
+	enum Cmiss_stream_information_image_attribute attribute, int value)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	if (stream_information &&
 		(NULL != (image_information = stream_information->getImageInformation())))
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
 			{
@@ -452,13 +452,13 @@ int Cmiss_stream_information_image_set_attribute_integer(
 
 int Cmiss_stream_information_image_set_attribute_real(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute_id attribute_id, double value)
+	enum Cmiss_stream_information_image_attribute attribute, double value)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	if (stream_information &&
 		(NULL != (image_information = stream_information->getImageInformation())))
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
 			{

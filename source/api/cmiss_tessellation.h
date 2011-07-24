@@ -50,7 +50,7 @@
  * get/set_attribute functions.
  * Note: not all attributes can be set.
  */
-enum Cmiss_tessellation_attribute_id
+enum Cmiss_tessellation_attribute
 {
 	CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) tessellation is destroyed when no
@@ -91,24 +91,24 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
  * Get an integer or Boolean attribute of the tessellation object.
  *
  * @param tessellation  Handle to the cmiss tessellation.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute_id attribute_id);
+	enum Cmiss_tessellation_attribute attribute);
 
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the tessellation object.
  *
  * @param tessellation  Handle to the cmiss tessellation.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this tessellation object.
  */
 int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute_id attribute_id, int value);
+	enum Cmiss_tessellation_attribute attribute, int value);
 
 /***************************************************************************//**
  * Return an allocated string containing tessellation name.

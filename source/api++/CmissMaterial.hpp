@@ -81,14 +81,14 @@ public:
 		}
 	}
 
-	int getAttributeInteger(Cmiss_graphics_material_attribute_id attribute_id)
+	int getAttributeInteger(Cmiss_graphics_material_attribute attribute)
 	{
-		return Cmiss_graphics_material_get_attribute_integer(id, attribute_id);
+		return Cmiss_graphics_material_get_attribute_integer(id, attribute);
 	}
 
-	int setAttributeInteger(Cmiss_graphics_material_attribute_id attribute_id, int value)
+	int setAttributeInteger(Cmiss_graphics_material_attribute attribute, int value)
 	{
-		return Cmiss_graphics_material_set_attribute_integer(id, attribute_id, value);
+		return Cmiss_graphics_material_set_attribute_integer(id, attribute, value);
 	}
 
 	char *getName()

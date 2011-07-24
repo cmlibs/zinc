@@ -44,7 +44,7 @@
  * Labels of material attributes which may be set or obtained using generic
  * get/set_attribute functions.
  */
-enum Cmiss_graphics_material_attribute_id
+enum Cmiss_graphics_material_attribute
 {
 	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) material is destroyed when no
@@ -113,69 +113,69 @@ int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
  * Get an integer or Boolean attribute of the graphics material.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id);
+	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the graphics material.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, int value);
+	enum Cmiss_graphics_material_attribute attribute, int value);
 
 /***************************************************************************//**
  * Get a real value of an attribute of the graphics material.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id);
+	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
  * Set a real value for an attribute of the graphics material.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the real attribute to set.
+ * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double value);
+	enum Cmiss_graphics_material_attribute attribute, double value);
 
 /***************************************************************************//**
  * Get a 3 components vectors of an attribute of the graphics material.
  * <values> should be allocated with enough space for 3 components.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the vectors attribute to get.
+ * @param attribute  The identifier of the vectors attribute to get.
  * @return  Values of the attribute.
  */
 int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double *values);
+	enum Cmiss_graphics_material_attribute attribute, double *values);
 
 /***************************************************************************//**
  * Set a 3 components vectors of an attribute for the graphics material.
  * <values> should be a vectors with 3 components containg valid values.
  *
  * @param material  Handle to the cmiss material.
- * @param attribute_id  The identifier of the vectors attribute to get.
+ * @param attribute  The identifier of the vectors attribute to get.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double *values);
+	enum Cmiss_graphics_material_attribute attribute, double *values);
 
 /***************************************************************************//**
  * Return an allocated string containing material name.

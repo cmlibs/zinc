@@ -341,12 +341,12 @@ int Cmiss_stream_information_region_destroy(Cmiss_stream_information_region_id *
 
 int Cmiss_stream_information_region_has_attribute(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id)
+	enum Cmiss_stream_information_region_attribute attribute)
 {
 	int return_value = 0;
 	if (stream_information)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
@@ -364,12 +364,12 @@ int Cmiss_stream_information_region_has_attribute(
 
 double Cmiss_stream_information_region_get_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id)
+	enum Cmiss_stream_information_region_attribute attribute)
 {
 	double return_value = 0.0;
 	if (stream_information)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
@@ -387,13 +387,13 @@ double Cmiss_stream_information_region_get_attribute_real(
 
 int Cmiss_stream_information_region_set_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	enum Cmiss_stream_information_region_attribute attribute,
 	double value)
 {
 	int return_code = 0;
 	if (stream_information)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
@@ -412,12 +412,12 @@ int Cmiss_stream_information_region_set_attribute_real(
 int Cmiss_stream_information_region_has_resource_attribute(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id)
+	enum Cmiss_stream_information_region_attribute attribute)
 {
 	int return_value = 0;
 	if (stream_information && resource)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
@@ -436,12 +436,12 @@ int Cmiss_stream_information_region_has_resource_attribute(
 double Cmiss_stream_information_region_get_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id)
+	enum Cmiss_stream_information_region_attribute attribute)
 {
 	double return_value = 0.0;
 	if (stream_information && resource)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{
@@ -460,13 +460,13 @@ double Cmiss_stream_information_region_get_resource_attribute_real(
 int Cmiss_stream_information_region_set_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	enum Cmiss_stream_information_region_attribute attribute,
 	double value)
 {
 	int return_code = 0;
 	if (stream_information && resource)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME:
 			{

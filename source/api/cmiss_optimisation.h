@@ -84,7 +84,7 @@ enum Cmiss_optimisation_method {
  * Labels of optimisation attributes which may be set or obtained using generic
  * get/set_attribute functions.
  */
-enum Cmiss_optimisation_attribute_id {
+enum Cmiss_optimisation_attribute {
 	CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD = 2,
 	/*!< In Quasi-Newton and NSDGSL optimisation, this is the field which defines the current value
 	 * of the objective function. It is expected, but not checked, to be a scalar valued constant
@@ -263,18 +263,18 @@ int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
  * Get an integer or Boolean attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_optimisation_get_attribute_integer(
 		Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id);
+		enum Cmiss_optimisation_attribute attribute);
 
 /**
  * Set an integer or Boolean attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
@@ -282,47 +282,47 @@ int Cmiss_optimisation_get_attribute_integer(
  */
 int Cmiss_optimisation_set_attribute_integer(
 		Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id, int value);
+		enum Cmiss_optimisation_attribute attribute, int value);
 
 /**
  * Get a real attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_optimisation_get_attribute_real(
 		Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id);
+		enum Cmiss_optimisation_attribute attribute);
 
 /**
  * Set a real attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the real attribute to set.
+ * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this optimisation object.
  */
 int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id, double value);
+		enum Cmiss_optimisation_attribute attribute, double value);
 
 /**
  * Get a field attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the field attribute to get.
+ * @param attribute  The identifier of the field attribute to get.
  * @return  Value of the attribute (should be destroyed with Cmiss_field_destroy()).
  */
 Cmiss_field_id Cmiss_optimisation_get_attribute_field(
 		Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id);
+		enum Cmiss_optimisation_attribute attribute);
 
 /**
  * Set a field attribute of the optimisation object.
  *
  * @param optimisation  Handle to the cmiss optimisation object.
- * @param attribute_id  The identifier of the field attribute to set.
+ * @param attribute  The identifier of the field attribute to set.
  * @param value  The new value for the attribute (accessed internally so safe for caller to destroy locally).
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this optimisation object.
@@ -330,7 +330,7 @@ Cmiss_field_id Cmiss_optimisation_get_attribute_field(
 int
 		Cmiss_optimisation_set_attribute_field(
 				Cmiss_optimisation_id optimisation,
-				enum Cmiss_optimisation_attribute_id attribute_id,
+				enum Cmiss_optimisation_attribute attribute,
 				Cmiss_field_id value);
 
 /**

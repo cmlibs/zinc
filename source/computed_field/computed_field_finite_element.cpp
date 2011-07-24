@@ -163,18 +163,18 @@ private:
 		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
-	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
+	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
 	{
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
 		return 0;
 	}
 
-	virtual int set_attribute_integer(enum Cmiss_field_attribute_id attribute_id, int value)
+	virtual int set_attribute_integer(enum Cmiss_field_attribute attribute, int value)
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 		{
 			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
 			if (value)

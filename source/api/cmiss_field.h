@@ -51,7 +51,7 @@
  * Labels of field attributes which may be set or obtained using generic
  * get/set_attribute functions.
  */
-enum Cmiss_field_attribute_id
+enum Cmiss_field_attribute
 {
 	CMISS_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
 	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
@@ -193,24 +193,24 @@ int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
  * Get an integer or Boolean attribute of the field.
  *
  * @param field  The field to query.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id);
+	enum Cmiss_field_attribute attribute);
 
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the field.
  *
  * @param field  The field to set the attribute for.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * for this field.
  */
 int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id, int value);
+	enum Cmiss_field_attribute attribute, int value);
 
 /***************************************************************************//**
  * Return the name of the field.

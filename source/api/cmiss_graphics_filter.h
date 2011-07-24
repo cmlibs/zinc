@@ -54,7 +54,7 @@
  * get/set_attribute functions.
  * Note: not all attributes can be set.
  */
-enum Cmiss_graphics_filter_attribute_id
+enum Cmiss_graphics_filter_attribute
 {
 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) graphics_filter is destroyed when no
@@ -170,24 +170,24 @@ Cmiss_graphics_filter_id Cmiss_graphics_module_create_filter_operator_or(
  * Get an integer or Boolean attribute of the scene filter object.
  *
  * @param filter  Handle to the graphics filter.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
-	enum Cmiss_graphics_filter_attribute_id attribute_id);
+	enum Cmiss_graphics_filter_attribute attribute);
 
 /***************************************************************************//**
  * Set an integer or Boolean attribute of the graphics_filter object.
  *
  * @param filter  Handle to the cmiss graphics_filter.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or able to be set for this graphics_filter object.
  */
 int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
-	enum Cmiss_graphics_filter_attribute_id attribute_id, int value);
+	enum Cmiss_graphics_filter_attribute attribute, int value);
 
 /***************************************************************************//**
  * If the filter is of operator and or or type, then this function returns the

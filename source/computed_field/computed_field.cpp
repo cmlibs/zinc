@@ -5250,18 +5250,18 @@ for matrix operations.
 } /* Computed_field_broadcast_field_components */
 
 int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id)
+	enum Cmiss_field_attribute attribute)
 {
 	int value = 0;
 	if (field)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
 			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT));
 			break;
 		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
-			value = field->core->get_attribute_integer(attribute_id);
+			value = field->core->get_attribute_integer(attribute);
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
@@ -5273,16 +5273,16 @@ int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
 }
 
 int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
-	enum Cmiss_field_attribute_id attribute_id, int value)
+	enum Cmiss_field_attribute attribute, int value)
 {
 	int return_code = 0;
 	if (field)
 	{
 		return_code = 1;
-		int old_value = Cmiss_field_get_attribute_integer(field, attribute_id);
+		int old_value = Cmiss_field_get_attribute_integer(field, attribute);
 		enum MANAGER_CHANGE(Computed_field) change =
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field);
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
 			if (value)
@@ -5296,7 +5296,7 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 			change = MANAGER_CHANGE_NOT_RESULT(Computed_field);
 			break;
 		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
-			return_code = field->core->set_attribute_integer(attribute_id, value);
+			return_code = field->core->set_attribute_integer(attribute, value);
 			if (!return_code)
 			{
 				display_message(WARNING_MESSAGE,
@@ -5310,7 +5310,7 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 			return_code = 0;
 			break;
 		}
-		if (Cmiss_field_get_attribute_integer(field, attribute_id) != old_value)
+		if (Cmiss_field_get_attribute_integer(field, attribute) != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Computed_field)(field, change);
 		}

@@ -66,7 +66,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
  * Must update Cmiss_graphic_type_uses_attribute as new attribute IDs defined.
  * @see Cmiss_graphic_type_uses_attribute()
  */
-enum Cmiss_graphic_attribute_id
+enum Cmiss_graphic_attribute
 {
 	CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION,
 	CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD,
@@ -208,11 +208,11 @@ DECLARE_LIST_TYPES(Cmiss_graphic);
 /***************************************************************************//**
  * Queries whether an attribute can be used with supplied graphic_type.
  * @param graphic_type  The type of graphic to query.
- * @param attribute_id  Identifier of graphic attribute to query about.
+ * @param attribute  Identifier of graphic attribute to query about.
  * @return  1 if the attribute can be used with graphic type, otherwise 0.
  */
 int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
-	enum Cmiss_graphic_attribute_id attribute_id);
+	enum Cmiss_graphic_attribute attribute);
 
 /***************************************************************************//**
  * Created with access_count = 1.

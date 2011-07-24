@@ -118,9 +118,9 @@ private:
 
 	char* get_command_string();
 
-	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
+	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
 	{
-		if (attribute_id == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
+		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return 1;
 		return 0;
 	}

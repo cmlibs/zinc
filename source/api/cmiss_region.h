@@ -352,7 +352,7 @@ int Cmiss_region_write(Cmiss_region_id region,
  */
 int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
 
-enum Cmiss_stream_information_region_attribute_id
+enum Cmiss_stream_information_region_attribute
 {
 	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
 };
@@ -412,29 +412,29 @@ int Cmiss_stream_information_region_destroy(
  * not.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
 int Cmiss_stream_information_region_has_attribute(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id);
+	enum Cmiss_stream_information_region_attribute attribute);
 
 /***************************************************************************//**
  * Get a real value of an attribute of stream_information.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_stream_information_region_get_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id);
+	enum Cmiss_stream_information_region_attribute attribute);
 
 /***************************************************************************//**
  * Set a double attribute of the Cmiss_stream_information_region.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param attribute_id  The identifier of the double attribute to set.
+ * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
@@ -442,7 +442,7 @@ double Cmiss_stream_information_region_get_attribute_real(
  */
 int Cmiss_stream_information_region_set_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
-	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	enum Cmiss_stream_information_region_attribute attribute,
 	double value);
 
 /***************************************************************************//**
@@ -451,32 +451,32 @@ int Cmiss_stream_information_region_set_attribute_real(
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param stream  Handle to the Cmiss_stream_resource.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
 int Cmiss_stream_information_region_has_resource_attribute(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id);
+	enum Cmiss_stream_information_region_attribute attribute);
 
 /***************************************************************************//**
  * Get a real value of an attribute of a stream in stream_information.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
  * @param stream  Handle to the Cmiss_stream_resource.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_stream_information_region_get_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id);
+	enum Cmiss_stream_information_region_attribute attribute);
 
 /***************************************************************************//**
  * Set a double attribute of the Cmiss_stream_information_region.
  *
  * @param stream_information  Handle to the Cmiss_stream_information_region.
- * @param attribute_id  The identifier of the double attribute to set.
+ * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
@@ -485,7 +485,7 @@ double Cmiss_stream_information_region_get_resource_attribute_real(
 int Cmiss_stream_information_region_set_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
 	Cmiss_stream_resource_id resource,
-	enum Cmiss_stream_information_region_attribute_id attribute_id,
+	enum Cmiss_stream_information_region_attribute attribute,
 	double value);
 
 #endif /* __CMISS_REGION_H__ */

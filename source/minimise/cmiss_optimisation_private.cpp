@@ -84,11 +84,11 @@ int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 }
 
 int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id)
+		enum Cmiss_optimisation_attribute attribute)
 {
 	if (optimisation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			return optimisation->maximumIterations;
@@ -107,12 +107,12 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 }
 
 int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id, int value)
+		enum Cmiss_optimisation_attribute attribute, int value)
 {
 	int code = 1;
 	if (optimisation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
 			optimisation->maximumIterations = value;
@@ -132,11 +132,11 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 }
 
 double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id)
+		enum Cmiss_optimisation_attribute attribute)
 {
 	if (optimisation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
 			return optimisation->functionTolerance;
@@ -167,12 +167,12 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 }
 
 int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id, double value)
+		enum Cmiss_optimisation_attribute attribute, double value)
 {
 	int code = 1;
 	if (optimisation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
 			optimisation->functionTolerance = value;
@@ -204,11 +204,11 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 }
 
 Cmiss_field_id Cmiss_optimisation_get_attribute_field(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id)
+		enum Cmiss_optimisation_attribute attribute)
 {
 	if (optimisation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD:
 			return Cmiss_field_access(optimisation->objectiveField);
@@ -227,12 +227,12 @@ Cmiss_field_id Cmiss_optimisation_get_attribute_field(Cmiss_optimisation_id opti
 }
 
 int Cmiss_optimisation_set_attribute_field(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute_id attribute_id, Cmiss_field_id value)
+		enum Cmiss_optimisation_attribute attribute, Cmiss_field_id value)
 {
 	int code = 1;
 	if (optimisation && value)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD:
 			if (optimisation->objectiveField) Cmiss_field_destroy(&(optimisation->objectiveField));

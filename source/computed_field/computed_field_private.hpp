@@ -318,17 +318,17 @@ public:
 
 	// override if attribute supported by field type
 	// used only for attributes not stored in the generic field object
-	virtual int get_attribute_integer(enum Cmiss_field_attribute_id attribute_id) const
+	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
 	{
-		USE_PARAMETER(attribute_id);
+		USE_PARAMETER(attribute);
 		return 0;
 	}
 
 	// override if attribute can be set for field type
 	// used only for attributes not stored in the generic field object
-	virtual int set_attribute_integer(enum Cmiss_field_attribute_id attribute_id, int value)
+	virtual int set_attribute_integer(enum Cmiss_field_attribute attribute, int value)
 	{
-		USE_PARAMETER(attribute_id);
+		USE_PARAMETER(attribute);
 		USE_PARAMETER(value);
 		return 0;
 	}

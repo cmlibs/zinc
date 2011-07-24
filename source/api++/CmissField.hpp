@@ -102,14 +102,14 @@ public:
 		return Cmiss_field_set_name(id, name);
 	}
 
-	int getAttributeInteger(Cmiss_field_attribute_id attribute_id)
+	int getAttributeInteger(Cmiss_field_attribute attribute)
 	{
-		return Cmiss_field_get_attribute_integer(id, attribute_id);
+		return Cmiss_field_get_attribute_integer(id, attribute);
 	}
 
-	int setAttributeInteger(Cmiss_field_attribute_id attribute_id, int value)
+	int setAttributeInteger(Cmiss_field_attribute attribute, int value)
 	{
-		return Cmiss_field_set_attribute_integer(id, attribute_id, value);
+		return Cmiss_field_set_attribute_integer(id, attribute, value);
 	}
 
 	template<class FieldType> FieldType cast()

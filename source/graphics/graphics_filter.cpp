@@ -1285,12 +1285,12 @@ int set_Cmiss_graphics_filter(struct Parse_state *state,
 }
 
 int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
-	enum Cmiss_graphics_filter_attribute_id attribute_id)
+	enum Cmiss_graphics_filter_attribute attribute)
 {
 	int value = 0;
 	if (graphics_filter)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
 				value = (int)graphics_filter->is_managed_flag;
@@ -1308,17 +1308,17 @@ int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id graphic
 }
 
 int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphics_filter,
-	enum Cmiss_graphics_filter_attribute_id attribute_id, int value)
+	enum Cmiss_graphics_filter_attribute attribute, int value)
 {
 	int return_code = 0;
 	if (graphics_filter)
 	{
 		return_code = 1;
 		int old_value =
-			Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute_id);
+			Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute);
 		enum MANAGER_CHANGE(Cmiss_graphics_filter) change =
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_graphics_filter);
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
 				graphics_filter->is_managed_flag = (value != 0);
@@ -1334,7 +1334,7 @@ int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id graphic
 				return_code = 0;
 			break;
 		}
-		if (Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute_id) != old_value)
+		if (Cmiss_graphics_filter_get_attribute_integer(graphics_filter, attribute) != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Cmiss_graphics_filter)(graphics_filter, change);
 		}

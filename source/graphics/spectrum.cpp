@@ -3038,12 +3038,12 @@ int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum_address)
 }
 
 int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute_id attribute_id)
+	enum Cmiss_spectrum_attribute attribute)
 {
 	int value = 0;
 	if (spectrum)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
 			value = (int)spectrum->is_managed_flag;
@@ -3058,16 +3058,16 @@ int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
 }
 
 int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
-	enum Cmiss_spectrum_attribute_id attribute_id, int value)
+	enum Cmiss_spectrum_attribute attribute, int value)
 {
 	int return_code = 0;
 	if (spectrum)
 	{
 		return_code = 1;
-		int old_value = Cmiss_spectrum_get_attribute_integer(spectrum, attribute_id);
+		int old_value = Cmiss_spectrum_get_attribute_integer(spectrum, attribute);
 		enum MANAGER_CHANGE(Spectrum) change =
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum);
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
 			spectrum->is_managed_flag = (value != 0);
@@ -3079,7 +3079,7 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 			return_code = 0;
 			break;
 		}
-		if (Cmiss_spectrum_get_attribute_integer(spectrum, attribute_id) != old_value)
+		if (Cmiss_spectrum_get_attribute_integer(spectrum, attribute) != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, change);
 		}

@@ -433,12 +433,12 @@ int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address)
 }
 
 int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute_id attribute_id)
+	enum Cmiss_tessellation_attribute attribute)
 {
 	int value = 0;
 	if (tessellation)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
 			value = (int)tessellation->is_managed_flag;
@@ -459,16 +459,16 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
 }
 
 int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
-	enum Cmiss_tessellation_attribute_id attribute_id, int value)
+	enum Cmiss_tessellation_attribute attribute, int value)
 {
 	int return_code = 0;
 	if (tessellation)
 	{
 		return_code = 1;
-		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id);
+		int old_value = Cmiss_tessellation_get_attribute_integer(tessellation, attribute);
 		enum MANAGER_CHANGE(Cmiss_tessellation) change =
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_tessellation);
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_TESSELLATION_ATTRIBUTE_IS_MANAGED:
 			tessellation->is_managed_flag = (value != 0);
@@ -486,7 +486,7 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 			return_code = 0;
 			break;
 		}
-		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute_id) != old_value)
+		if (Cmiss_tessellation_get_attribute_integer(tessellation, attribute) != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Cmiss_tessellation)(tessellation, change);
 		}

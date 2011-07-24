@@ -128,7 +128,7 @@ int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
  * Get a real value of an attribute of the time keeper.
  *
  * @param time_keeper  Handle to the cmiss time_keeper.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,

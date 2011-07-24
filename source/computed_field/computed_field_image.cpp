@@ -1180,14 +1180,14 @@ int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address)
 }
 
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id)
+	enum Cmiss_image_attribute attribute)
 {
 	int return_value = 0, width = 0, height = 0, depth = 0;
 	if (image)
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
 		Texture_get_original_size(texture, &width, &height, &depth);
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
 			{
@@ -1212,7 +1212,7 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 }
 
 double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id)
+	enum Cmiss_image_attribute attribute)
 {
 	double return_value = 0.0;
 	float width = 0.0, height = 0.0, depth = 0.0;
@@ -1220,7 +1220,7 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
 		Texture_get_physical_size(texture, &width, &height, &depth);
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
 			{
@@ -1245,7 +1245,7 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
 }
 
 int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id, double value)
+	enum Cmiss_image_attribute attribute, double value)
 {
 	int return_value = 1;
 	float width = 0.0, height = 0.0, depth = 0.0;
@@ -1253,7 +1253,7 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	{
 		Cmiss_texture *texture = Cmiss_field_image_get_texture(image);
 		Texture_get_physical_size(texture, &width, &height, &depth);
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
 			{

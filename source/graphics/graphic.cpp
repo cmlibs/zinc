@@ -307,11 +307,11 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphic_glyph_scaling_mode)
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode)
 
 int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
-	enum Cmiss_graphic_attribute_id attribute_id)
+	enum Cmiss_graphic_attribute attribute)
 {
 	int return_code = 0;
 
-	switch (attribute_id)
+	switch (attribute)
 	{
 		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
 		{

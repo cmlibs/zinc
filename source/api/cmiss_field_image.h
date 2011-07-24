@@ -141,7 +141,7 @@ enum Cmiss_field_image_filter_mode
 	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
 };
 
-enum Cmiss_image_attribute_id
+enum Cmiss_image_attribute
 {
 	CMISS_IMAGE_ATTRIBUTE_INVALID = 0,
 	CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
@@ -217,33 +217,33 @@ int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
  * Get an integer or Boolean attribute of the field image.
  *
  * @param image  Handle to the cmiss field image.
- * @param attribute_id  The identifier of the integer attribute to get.
+ * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id);
+	enum Cmiss_image_attribute attribute);
 
 /***************************************************************************//**
  * Get a real attribute of the field image.
  *
  * @param image  Handle to the cmiss field image.
- * @param attribute_id  The identifier of the real attribute to get.
+ * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
 double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id);
+	enum Cmiss_image_attribute attribute);
 
 /***************************************************************************//**
  * Set an double attribute of the image.
  *
  * @param stream_information  Handle to the cmiss stream_information_image.
- * @param attribute_id  The identifier of the double attribute to set.
+ * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or unable to be set for this image.
  */
 int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute_id attribute_id, double value);
+	enum Cmiss_image_attribute attribute, double value);
 
 /*****************************************************************************//**
  * Reads image data into the field.
@@ -370,7 +370,7 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
 int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_filter_mode filter_mode);
 
-enum Cmiss_stream_information_image_attribute_id
+enum Cmiss_stream_information_image_attribute
 {
 	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
 	/*!< Integer specifies the pixel width for binary data reading in using this
@@ -443,7 +443,7 @@ CMISS_C_INLINE Cmiss_stream_information_id
  * Set an integer or Boolean attribute of the stream_information_image.
  *
  * @param stream_information  Handle to the cmiss stream_information_image.
- * @param attribute_id  The identifier of the integer attribute to set.
+ * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
@@ -451,20 +451,20 @@ CMISS_C_INLINE Cmiss_stream_information_id
  */
 int Cmiss_stream_information_image_set_attribute_integer(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute_id attribute_id, int value);
+	enum Cmiss_stream_information_image_attribute attribute, int value);
 
 /***************************************************************************//**
  * Set an double attribute of the stream_information_image.
  *
  * @param stream_information  Handle to the cmiss stream_information_image.
- * @param attribute_id  The identifier of the double attribute to set.
+ * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  * @return  1 if attribute successfully set, 0 if failed or attribute not valid
  * or unable to be set for this stream_information_image.
  */
 int Cmiss_stream_information_image_set_attribute_real(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute_id attribute_id,
+	enum Cmiss_stream_information_image_attribute attribute,
 	double value);
 
 /*****************************************************************************//**

@@ -7483,12 +7483,12 @@ int Cmiss_graphics_material_destroy(Graphical_material **material_address)
 }
 
 int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id)
+	enum Cmiss_graphics_material_attribute attribute)
 {
 	int value = 0;
 	if (material)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
 			value = (int)material->is_managed_flag;
@@ -7503,16 +7503,16 @@ int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id mat
 }
 
 int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, int value)
+	enum Cmiss_graphics_material_attribute attribute, int value)
 {
 	int return_code = 0;
 	if (material)
 	{
 		return_code = 1;
-		int old_value = Cmiss_graphics_material_get_attribute_integer(material, attribute_id);
+		int old_value = Cmiss_graphics_material_get_attribute_integer(material, attribute);
 		enum MANAGER_CHANGE(Graphical_material) change =
 			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material);
-		switch (attribute_id)
+		switch (attribute)
 		{
 		case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
 			material->is_managed_flag = (value != 0);
@@ -7524,7 +7524,7 @@ int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id mat
 			return_code = 0;
 			break;
 		}
-		if (Cmiss_graphics_material_get_attribute_integer(material, attribute_id) != old_value)
+		if (Cmiss_graphics_material_get_attribute_integer(material, attribute) != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Graphical_material)(material, change);
 		}
@@ -7589,12 +7589,12 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material)
 }
 
 double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id)
+	enum Cmiss_graphics_material_attribute attribute)
 {
 	float value = 0.0;
 	if (material)
 	{
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 			{
@@ -7615,13 +7615,13 @@ double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id mat
 }
 
 int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double value)
+	enum Cmiss_graphics_material_attribute attribute, double value)
 {
 	int return_code = 0;
 	if (material)
 	{
 		return_code = 1;
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
 			{
@@ -7643,7 +7643,7 @@ int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id materi
 }
 
 int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double *values)
+	enum Cmiss_graphics_material_attribute attribute, double *values)
 {
 	struct Colour colour;
 	int return_code = 0;
@@ -7653,7 +7653,7 @@ int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id mater
 	if (material)
 	{
 		return_code = 1;
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
@@ -7689,7 +7689,7 @@ int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id mater
 }
 
 int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute_id attribute_id, double *values)
+	enum Cmiss_graphics_material_attribute attribute, double *values)
 {
 	struct Colour colour;
 	int return_code = 0;
@@ -7699,7 +7699,7 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
 	if (material)
 	{
 		return_code = 1;
-		switch (attribute_id)
+		switch (attribute)
 		{
 			case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
