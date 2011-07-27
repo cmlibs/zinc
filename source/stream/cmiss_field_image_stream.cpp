@@ -421,11 +421,11 @@ int Cmiss_stream_information_image_set_attribute_integer(
 	{
 		switch (attribute)
 		{
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
 			{
 				return (Cmgui_image_information_set_width(image_information, value));
 			} break;
-			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL:
+			case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
 			{
 				return (Cmgui_image_information_set_height(image_information, value));
 			} break;
@@ -477,7 +477,7 @@ int Cmiss_stream_information_image_set_attribute_real(
 
 int Cmiss_stream_information_image_set_compression(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_compression compression)
+	enum Cmiss_stream_information_image_compression_mode compression)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	int return_code = 0;
@@ -488,43 +488,43 @@ int Cmiss_stream_information_image_set_compression(
 		return_code = 1;
 		switch(compression)
 		{
-			case CMISS_IMAGE_COMPRESSION_UNSPECIFIED:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_UNSPECIFIED:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_UNSPECIFIED;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_NONE:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_NONE:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_NONE;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_BZIP:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_BZIP:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_BZIP;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_FAX:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_FAX:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_FAX;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_JPEG:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_JPEG;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_JPEG2000:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG2000:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_JPEG2000;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_LOSSLESS_JPEG:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LOSSLESS_JPEG:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_LOSSLESS_JPEG;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_LZW:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LZW:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_LZW;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_RLE:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_RLE:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_RLE;
 			} break;
-			case CMISS_IMAGE_COMPRESSION_ZIP:
+			case CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_ZIP:
 			{
 				image_compression = IMAGE_STORAGE_COMPRESSION_ZIP;
 			} break;
@@ -547,7 +547,7 @@ int Cmiss_stream_information_image_set_compression(
 
 int Cmiss_stream_information_image_set_file_format(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_file_format format)
+	enum Cmiss_stream_information_image_file_format format)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	enum Image_file_format cmgui_file_format = JPG_FILE_FORMAT;
@@ -559,31 +559,31 @@ int Cmiss_stream_information_image_set_file_format(
 		return_code = 1;
 		switch (format)
 		{
-			case CMISS_IMAGE_FILE_FORMAT_BMP:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
 			{
 				cmgui_file_format = BMP_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_DICOM:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
 			{
 				cmgui_file_format = DICOM_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_JPG:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
 			{
 				cmgui_file_format = JPG_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_GIF:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
 			{
 				cmgui_file_format = GIF_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_PNG:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
 			{
 				cmgui_file_format = PNG_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_SGI:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
 			{
 				cmgui_file_format = SGI_FILE_FORMAT;
 			} break;
-			case CMISS_IMAGE_FILE_FORMAT_TIFF:
+			case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
 			{
 				cmgui_file_format = TIFF_FILE_FORMAT;
 			} break;

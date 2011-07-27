@@ -59,16 +59,16 @@ Implements cmiss fields which wrap images, structured grid data.
  * This is a small subset of formats available, more can be selected by specifying
  * the appropriate format_string for a Cmiss_stream_information_image.
  */
-enum Cmiss_image_file_format
+enum Cmiss_stream_information_image_file_format
 {
-	CMISS_IMAGE_FILE_FORMAT_INVALID = 0,
-	CMISS_IMAGE_FILE_FORMAT_BMP = 1,
-	CMISS_IMAGE_FILE_FORMAT_DICOM = 2,
-	CMISS_IMAGE_FILE_FORMAT_JPG = 3,
-	CMISS_IMAGE_FILE_FORMAT_GIF = 4,
-	CMISS_IMAGE_FILE_FORMAT_PNG = 5,
-	CMISS_IMAGE_FILE_FORMAT_SGI = 6,
-	CMISS_IMAGE_FILE_FORMAT_TIFF = 7
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID = 0,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP = 1,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM = 2,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG = 3,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF = 4,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG = 5,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI = 6,
+	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF = 7
 };
 
 /*****************************************************************************//**
@@ -78,19 +78,19 @@ enum Cmiss_image_file_format
  * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  */
-enum Cmiss_image_compression
+enum Cmiss_stream_information_image_compression_mode
 {
-	CMISS_IMAGE_COMPRESSION_INVALID = 0,
-	CMISS_IMAGE_COMPRESSION_UNSPECIFIED = 1,
-	CMISS_IMAGE_COMPRESSION_NONE = 2,
-	CMISS_IMAGE_COMPRESSION_BZIP = 3,
-	CMISS_IMAGE_COMPRESSION_FAX = 4,
-	CMISS_IMAGE_COMPRESSION_JPEG = 5,
-	CMISS_IMAGE_COMPRESSION_JPEG2000 = 6,
-	CMISS_IMAGE_COMPRESSION_LOSSLESS_JPEG = 7,
-	CMISS_IMAGE_COMPRESSION_LZW = 8,
-	CMISS_IMAGE_COMPRESSION_RLE = 9,
-	CMISS_IMAGE_COMPRESSION_ZIP = 10
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_INVALID = 0,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_UNSPECIFIED = 1,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_NONE = 2,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_BZIP = 3,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_FAX = 4,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG = 5,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG2000 = 6,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LOSSLESS_JPEG = 7,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LZW = 8,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_RLE = 9,
+	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_ZIP = 10
 };
 
 /***************************************************************************//**
@@ -120,11 +120,11 @@ enum Cmiss_field_image_combine_mode
  * Whether the texture is compressed.  Could add specific compression formats that
  * are explictly requested from the hardware.
  */
-enum Cmiss_field_image_compression_mode
+enum Cmiss_field_image_hardware_compression_mode
 {
-	CMISS_FIELD_IMAGE_COMPRESSION_INVALID = 0,
-	CMISS_FIELD_IMAGE_COMPRESSION_UNCOMPRESSED = 1,
-	CMISS_FIELD_IMAGE_COMPRESSION_COMPRESSED_UNSPECIFIED = 2
+	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
+	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
+	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
 	/*!< Allow the hardware to choose the compression */
 };
 
@@ -141,15 +141,15 @@ enum Cmiss_field_image_filter_mode
 	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
 };
 
-enum Cmiss_image_attribute
+enum Cmiss_field_image_attribute
 {
-	CMISS_IMAGE_ATTRIBUTE_INVALID = 0,
-	CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
-	CMISS_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL = 2,
-	CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL = 3,
-	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL = 4,
-	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL = 5,
-	CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL = 6
+	CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = 3,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS = 4,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = 5,
+	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = 6
 };
 
 /*****************************************************************************//**
@@ -221,7 +221,7 @@ int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute);
+	enum Cmiss_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Get a real attribute of the field image.
@@ -231,7 +231,7 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
  * @return  Value of the attribute.
  */
 double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute);
+	enum Cmiss_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Set an double attribute of the image.
@@ -243,7 +243,7 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
  * or unable to be set for this image.
  */
 int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute, double value);
+	enum Cmiss_field_image_attribute attribute, double value);
 
 /*****************************************************************************//**
  * Reads image data into the field.
@@ -334,7 +334,7 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
  * @param image_field  The image field.
  * @return  Returns enum describing how the image is stored in graphics memory.
  */
-enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
+enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
    Cmiss_field_image_id image_field);
 
 /*****************************************************************************//**
@@ -346,8 +346,8 @@ enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
  * 		material.
  * @return  Returns 1 if successfully set the compression mode.
  */
-int Cmiss_field_image_set_compression_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_compression_mode compression_mode);
+int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_hardware_compression_mode compression_mode);
 
 /*****************************************************************************//**
  * Returns how the image is rasterised onto the screen.
@@ -372,11 +372,11 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 
 enum Cmiss_stream_information_image_attribute
 {
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL = 1,
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
 	/*!< Integer specifies the pixel width for binary data reading in using this
 	 * stream_information.
 	 */
-	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL = 2,
+	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
 	/*!< Integer specifies the pixel height for binary data reading in using this
 	 * stream_information.
 	 */
@@ -385,7 +385,7 @@ enum Cmiss_stream_information_image_attribute
 	 * this stream_information. Only 8 and 16 bits are supported at the moment.
 	 */
 	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = 4
-	/*!< Integer specifies the quality for binary data using this stream_information.
+	/*!< Real number specifies the quality for binary data using this stream_information.
 	 * This parameter controls compression for compressed lossy formats,
 	 * where a quality of 1.0 specifies the least lossy output for a given format and a
 	 * quality of 0.0 specifies the most compression.
@@ -478,7 +478,7 @@ int Cmiss_stream_information_image_set_attribute_real(
  */
 int Cmiss_stream_information_image_set_compression(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_compression compression);
+	enum Cmiss_stream_information_image_compression_mode compression);
 
 /*****************************************************************************//**
  * Specifies the format for binary data to be read/written using this
@@ -490,7 +490,7 @@ int Cmiss_stream_information_image_set_compression(
  */
 int Cmiss_stream_information_image_set_file_format(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_file_format file_format);
+	enum Cmiss_stream_information_image_file_format file_format);
 
 /*****************************************************************************//**
  * Specifies the pixel format for binary data of the images  to be read/written

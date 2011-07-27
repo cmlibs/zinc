@@ -1180,7 +1180,7 @@ int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address)
 }
 
 int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute)
+	enum Cmiss_field_image_attribute attribute)
 {
 	int return_value = 0, width = 0, height = 0, depth = 0;
 	if (image)
@@ -1189,15 +1189,15 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 		Texture_get_original_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
 			{
 				return_value = width;
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
 			{
 				return_value = height;
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
 			{
 				return_value = depth;
 			} break;
@@ -1212,7 +1212,7 @@ int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
 }
 
 double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute)
+	enum Cmiss_field_image_attribute attribute)
 {
 	double return_value = 0.0;
 	float width = 0.0, height = 0.0, depth = 0.0;
@@ -1222,15 +1222,15 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
 		Texture_get_physical_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			{
 				return_value = (double)width;
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			{
 				return_value = (double)height;
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			{
 				return_value = (double)depth;
 			} break;
@@ -1245,7 +1245,7 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
 }
 
 int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_image_attribute attribute, double value)
+	enum Cmiss_field_image_attribute attribute, double value)
 {
 	int return_value = 1;
 	float width = 0.0, height = 0.0, depth = 0.0;
@@ -1255,15 +1255,15 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 		Texture_get_physical_size(texture, &width, &height, &depth);
 		switch (attribute)
 		{
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
 			{
 				Texture_set_physical_size(texture, (float)value, height, depth);
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
 			{
 				Texture_set_physical_size(texture, width, (float)value, depth);
 			} break;
-			case CMISS_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXEL:
+			case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
 			{
 				Texture_set_physical_size(texture, width, height, (float)value);
 			} break;
@@ -1850,18 +1850,18 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 	}
 }
 
-enum Cmiss_field_image_compression_mode Cmiss_field_image_get_compression_mode(
+enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
    Cmiss_field_image_id image_field)
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
 	int mode = Texture_get_compression_mode(texture) + 1;
-	enum Cmiss_field_image_compression_mode compression_mode =
-		(Cmiss_field_image_compression_mode)mode;
+	enum Cmiss_field_image_hardware_compression_mode compression_mode =
+		(Cmiss_field_image_hardware_compression_mode)mode;
 	return compression_mode;
 }
 
-int Cmiss_field_image_set_compression_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_compression_mode compression_mode)
+int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_field,
+   enum Cmiss_field_image_hardware_compression_mode compression_mode)
 {
 	Cmiss_texture *texture = Cmiss_field_image_get_texture(image_field);
 	int mode = compression_mode;
