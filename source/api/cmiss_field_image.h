@@ -71,28 +71,6 @@ enum Cmiss_stream_information_image_file_format
 	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF = 7
 };
 
-/*****************************************************************************//**
- * Describes the type of image compression for storage.
- * Whether a particular image compression is actually available depends on whether
- * it is compatible with a particular format type when used with
- * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
- * has been included when the program was built.
- */
-enum Cmiss_stream_information_image_compression_mode
-{
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_INVALID = 0,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_UNSPECIFIED = 1,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_NONE = 2,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_BZIP = 3,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_FAX = 4,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG = 5,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_JPEG2000 = 6,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LOSSLESS_JPEG = 7,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_LZW = 8,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_RLE = 9,
-	CMISS_STREAM_INFORMATION_IMAGE_COMPRESSION_MODE_ZIP = 10
-};
-
 /***************************************************************************//**
  * Describes the blending of the texture with the texture constant colour and
  * the underlying fragment colour
@@ -467,18 +445,6 @@ int Cmiss_stream_information_image_set_attribute_real(
 	enum Cmiss_stream_information_image_attribute attribute,
 	double value);
 
-/*****************************************************************************//**
- * Specifies the compression type for binary data  to be read/written using this
- * stream_information.
- *
- * @param stream_information  The storage information object.
- * @param compression  The type of compression applied.  Various combinations of image
- * format, compression and quality may or may not work together.
- * @return Returns 1 if the operation is successful, 0 if it is not.
- */
-int Cmiss_stream_information_image_set_compression(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_compression_mode compression);
 
 /*****************************************************************************//**
  * Specifies the format for binary data to be read/written using this
