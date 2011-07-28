@@ -55,20 +55,23 @@ DESCRIPTION :
 ==============================================================================*/
 
 /***************************************************************************//**
- * Creates a field performing ITK histogram image filter on scalar source field
- * image. Sets number of components to 1.
+ * Creates a field performing ITK histogram image filter on source field image.
+ * If neither histogramMinimum or histogramMaximum are specified then the minimums and
+ * maximums are calculated based on the minimum and maximum values in the input image.
  * @param numberOfBins  Number of bins per source field component.
+ * @param marginalScale  A measure of precision with which the histogram is calculated
+ * @param histogramMinimum  Optional array of minimum value of histogram for each source field component
+ * @param histogramMaximum  Optional array of maximum value of histogram for each source field component
  */
 struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int *numberOfBins, double marginalScale);
+	struct Computed_field *source_field, int *numberOfBins, double marginalScale,
+	double *histogramMinimum, double *histogramMaximum);
 
 int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, int **numberOfBins, double *marginalScale);
+	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,
+	double **histogramMinimum, double **histogramMaximum);
 /*******************************************************************************
-LAST MODIFIED : 20 March 2008
-
-DESCRIPTION :
 If the field is of type COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER, the source_field and histogram_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/

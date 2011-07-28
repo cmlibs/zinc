@@ -73,17 +73,21 @@ public:
 	int sourceNumberOfComponents;
 	int *numberOfBins;
 	double marginalScale;
+	double *histogramMinimum;
+	double *histogramMaximum;
 	int totalPixels;
        
 	Computed_field_histogram_image_filter(Computed_field *source_field,
-		int *numberOfBins, double marginalScale);
+		int *numberOfBins, double marginalScale, double *histogramMinimumIn, double *histogramMaximumIn);
 
 	~Computed_field_histogram_image_filter()
 	{
 		if (numberOfBins)
-		{
 			delete [] numberOfBins;
-		}
+		if (histogramMaximum)
+			delete [] histogramMaximum;
+		if (histogramMinimum)
+			delete [] histogramMinimum;
 	};
 
 	template <class ImageType, class HistogramGeneratorType >
@@ -134,7 +138,7 @@ private:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_histogram_image_filter(field->source_fields[0],
-			numberOfBins, marginalScale);
+			numberOfBins, marginalScale, histogramMinimum, histogramMaximum);
 	}
 
 	const char *get_type_string()
@@ -315,13 +319,47 @@ Compare the type specific data.
 			&& (marginalScale == other->marginalScale))
 		{
 			return_code = 1;
-			for (i = 0 ; i < sourceNumberOfComponents ; i++)
+			for (i = 0 ; return_code && i < sourceNumberOfComponents ; i++)
 			{
 				if (numberOfBins[i] != other->numberOfBins[i])
 				{
 					return_code = 0;
 				}
 			}
+			if (histogramMinimum)
+			{
+				if (other->histogramMinimum)
+				{
+					for (i = 0 ; return_code && i < sourceNumberOfComponents ; i++)
+					{
+						if (histogramMinimum[i] != other->histogramMinimum[i])
+						{
+							return_code = 0;
+						}
+					}
+				}
+				else
+					return_code = 0;
+			}
+			else if (other->histogramMinimum)
+				return_code = 0;
+			if (histogramMaximum)
+			{
+				if (other->histogramMaximum)
+				{
+					for (i = 0 ; return_code && i < sourceNumberOfComponents ; i++)
+					{
+						if (histogramMaximum[i] != other->histogramMaximum[i])
+						{
+							return_code = 0;
+						}
+					}
+				}
+				else
+					return_code = 0;
+			}
+			else if (other->histogramMaximum)
+				return_code = 0;
 		}
 		else
 		{
@@ -358,6 +396,33 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE,
 				" %d", numberOfBins[i]);
 		}
+		display_message(INFORMATION_MESSAGE,
+			"    histogram minimum :");
+		if (histogramMinimum)
+		{
+			for (i = 0 ; return_code && i < sourceNumberOfComponents ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %g", histogramMinimum[i]);
+			}
+		}
+		else
+			display_message(INFORMATION_MESSAGE,
+				" not set");
+		display_message(INFORMATION_MESSAGE,
+			"    histogram maximum :");
+		if (histogramMaximum)
+		{
+			for (i = 0 ; return_code && i < sourceNumberOfComponents ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %g", histogramMaximum[i]);
+			}
+		}
+		else
+			display_message(INFORMATION_MESSAGE,
+				" not set");
+			
 		display_message(INFORMATION_MESSAGE,
 			"    filter marginal scale : %g\n", marginalScale);
 	}
@@ -401,6 +466,25 @@ Returns allocated command string for reproducing field. Includes type.
 		for (i = 0 ; i < sourceNumberOfComponents ; i++)
 		{
 			sprintf(temp_string, " %d", numberOfBins[i]);
+			append_string(&command_string, temp_string, &error);	
+		}
+		if (histogramMinimum)
+		{
+			append_string(&command_string,  " minimums", &error);	
+			for (i = 0 ; i < sourceNumberOfComponents ; i++)
+			{
+				sprintf(temp_string, " %g", histogramMinimum[i]);
+				append_string(&command_string, temp_string, &error);	
+			}
+		}
+		if (histogramMaximum)
+		{
+			append_string(&command_string,  " maximums", &error);	
+			for (i = 0 ; i < sourceNumberOfComponents ; i++)
+			{
+				sprintf(temp_string, " %g", histogramMaximum[i]);
+				append_string(&command_string, temp_string, &error);	
+			}
 		}
 		sprintf(temp_string, " marginal_scale  %g", marginalScale);
 		append_string(&command_string, temp_string, &error);	
@@ -519,6 +603,10 @@ and generate the outputImage.
 
 		this->filter->SetNumberOfBins( this->histogram_image_filter->numberOfBins[0] );
 		this->filter->SetMarginalScale( this->histogram_image_filter->marginalScale );
+		if (this->histogram_image_filter->histogramMinimum)
+			this->filter->SetHistogramMin( this->histogram_image_filter->histogramMinimum[0] );
+		if (this->histogram_image_filter->histogramMaximum)
+			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum[0] );
 		
 		return_code = this->histogram_image_filter->update_histogram
 			(location, this->filter, this->histogram,
@@ -599,6 +687,10 @@ and generate the outputImage.
 		this->filter->SetNumberOfBins( binSizes );
 		this->filter->SetMarginalScale(
 			this->histogram_image_filter->marginalScale );
+		if (this->histogram_image_filter->histogramMinimum)
+			this->filter->SetHistogramMin( this->histogram_image_filter->histogramMinimum );
+		if (this->histogram_image_filter->histogramMaximum)
+			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum );
 
 		return_code = this->histogram_image_filter->update_histogram
 			(location, this->filter, this->histogram,
@@ -767,7 +859,8 @@ Evaluate the fields cache at the location
 } /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
 
 Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
-	Computed_field *source_field, int *numberOfBinsIn, double marginalScale) : 
+	Computed_field *source_field, int *numberOfBinsIn, double marginalScale,
+	double *histogramMinimumIn, double *histogramMaximumIn) : 
 	Computed_field_ImageFilter(source_field), marginalScale(marginalScale)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
@@ -783,6 +876,26 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 	{
 		numberOfBins[i] = numberOfBinsIn[i];
 	}
+	if (histogramMinimumIn)
+	{
+		histogramMinimum = new double [sourceNumberOfComponents];
+		for (i = 0 ; i < sourceNumberOfComponents ; i++)
+		{
+			histogramMinimum[i] = histogramMinimumIn[i];
+		}
+	}
+	else
+		histogramMinimum = (double *)NULL;
+	if (histogramMaximumIn)
+	{
+		histogramMaximum = new double [sourceNumberOfComponents];
+		for (i = 0 ; i < sourceNumberOfComponents ; i++)
+		{
+			histogramMaximum[i] = histogramMaximumIn[i];
+		}
+	}
+	else
+		histogramMaximum = (double *)NULL;
 	/* We need to leave the sizes and dimension for 
 		using the functions from Computed_field_ImageFilter::set_input_image */
 	if (dimension > 0 && sizes)
@@ -806,7 +919,8 @@ void Computed_field_histogram_image_filter::create_functor()
 
 struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int *numberOfBins, double marginalScale)
+	struct Computed_field *source_field, int *numberOfBins, double marginalScale,
+	double *histogramMinimum, double *histogramMaximum)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
@@ -817,7 +931,7 @@ struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_histogram_image_filter(source_field,
-				numberOfBins, marginalScale));
+				numberOfBins, marginalScale, histogramMinimum, histogramMaximum));
 	}
 	else
 	{
@@ -829,7 +943,8 @@ struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 }
 
 int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, int **numberOfBins, double *marginalScale)
+	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,
+	double **histogramMinimum, double **histogramMaximum)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -844,13 +959,33 @@ used by it are returned - otherwise an error is reported.
 	ENTER(Cmiss_field_get_type_histogram_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_histogram_image_filter*>(field->core))
 		&& source_field &&
-		ALLOCATE(*numberOfBins, int, core->sourceNumberOfComponents))
+		ALLOCATE(*numberOfBins, int, core->sourceNumberOfComponents)
+		&& (!core->histogramMinimum || ALLOCATE(*histogramMaximum, double, core->sourceNumberOfComponents))
+		&& (!core->histogramMaximum || ALLOCATE(*histogramMaximum, double, core->sourceNumberOfComponents)))
 	{
 		*source_field = field->source_fields[0];
 		for (i = 0 ; i < core->sourceNumberOfComponents ; i++)
 		{
 			(*numberOfBins)[i] = core->numberOfBins[i];
 		}
+		if (core->histogramMinimum)
+		{
+			for (i = 0 ; i < core->sourceNumberOfComponents ; i++)
+			{
+				(*histogramMinimum)[i] = core->histogramMinimum[i];
+			}
+		}
+		else
+			*histogramMinimum = (double *)NULL;
+		if (core->histogramMaximum)
+		{
+			for (i = 0 ; i < core->sourceNumberOfComponents ; i++)
+			{
+				(*histogramMaximum)[i] = core->histogramMaximum[i];
+			}
+		}
+		else
+			*histogramMaximum = (double *)NULL;
 		*marginalScale = core->marginalScale;
 		return_code = 1;
 	}
@@ -877,7 +1012,7 @@ already) and allows its contents to be modified.
 {
 	int i, original_number_of_components, previous_state_index, return_code;
 	int *numberOfBins;
-	double marginalScale;
+	double marginalScale, *histogramMinimum, *histogramMaximum;
 	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
@@ -891,6 +1026,8 @@ already) and allows its contents to be modified.
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		numberOfBins = (int *)NULL;
+		histogramMinimum = (double *)NULL;
+		histogramMaximum = (double *)NULL;
 		marginalScale = 10.0;
 		original_number_of_components = 0;
 		if ((NULL != field_modify->get_field()) &&
@@ -899,7 +1036,7 @@ already) and allows its contents to be modified.
 		{
 			return_code =
 				Cmiss_field_get_type_histogram_image_filter(field_modify->get_field(), &source_field,
-					&numberOfBins, &marginalScale);
+					&numberOfBins, &marginalScale, &histogramMinimum, &histogramMaximum);
 			original_number_of_components = source_field->number_of_components;
 		}
 		if (return_code)
@@ -917,7 +1054,9 @@ already) and allows its contents to be modified.
 				/* Handle help separately */
 				option_table = CREATE(Option_table)();
 				Option_table_add_help(option_table,
-					"The histogram_filter field uses the itk::ImageToHistogramGenerator code to generate binned values representing the relative frequency of the various pixel intensities.  There should be a number_of_bins for each component direction, and so the total number of bins will be a product of these, so that for a 3 component image you would get a volume histogram.  If you wanted a histogram for a single component then set the number_of_bins for the other components to 1.");
+					"The histogram_filter field uses the itk::ImageToHistogramGenerator code to generate binned values representing the relative frequency of the various pixel intensities.  There should be a number_of_bins for each component direction, and so the total number of bins will be a product of these, so that for a 3 component image you would get a volume histogram.  "
+						"If you wanted a histogram for a single component then set the number_of_bins for the other components to 1. "
+						"If you do not set the optional histogram_minimums or histogram_maximums (which is a vector of values, 1 for each source component) then the histogram will automatically range the values to the minimum and maximum values in the source image.");
 
 				/* field */
 				set_source_field_data.computed_field_manager =
@@ -926,6 +1065,14 @@ already) and allows its contents to be modified.
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
 					&set_source_field_data, set_Computed_field_conditional);
+				/* histogramMinimum */
+				double dummyHistogramMinimum = 0.0;
+				Option_table_add_double_entry(option_table, "histogram_minimums",
+					&dummyHistogramMinimum);
+				/* histogramMinimum */
+				double dummyHistogramMaximum = 1.0;
+				Option_table_add_double_entry(option_table, "histogram_maximums",
+					&dummyHistogramMaximum);
 				/* numberOfBins */
 				int dummyNumberOfBins = 64;
 				Option_table_add_int_positive_entry(option_table, "number_of_bins",
@@ -987,6 +1134,18 @@ already) and allows its contents to be modified.
 				int field_expected_parameters = 1;
 				Option_table_add_ignore_token_entry(
 					option_table, "field", &field_expected_parameters);
+				/* histogramMinimum */
+				int histogramMinimumLength = 0;
+				if (histogramMinimum)
+					histogramMinimumLength = original_number_of_components;
+				Option_table_add_variable_length_double_vector_entry(option_table, "histogram_minimums",
+					&histogramMinimumLength, &histogramMinimum);
+				/* histogramMaximum */
+				int histogramMaximumLength = 0;
+				if (histogramMaximum)
+					histogramMaximumLength = original_number_of_components;
+				Option_table_add_variable_length_double_vector_entry(option_table, "histogram_maximums",
+					&histogramMaximumLength, &histogramMaximum);
 				/* numberOfBins */
 				Option_table_add_int_vector_entry(option_table, "number_of_bins",
 					numberOfBins, &source_field->number_of_components);
@@ -997,12 +1156,25 @@ already) and allows its contents to be modified.
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 
+				if (histogramMinimum && histogramMinimumLength != source_field->number_of_components)
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_histogram_image_filter.  Length of histogram_minimums vector does not match source field compontents");
+					return_code = 0;
+				}
+				if (histogramMaximum && histogramMaximumLength != source_field->number_of_components)
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_histogram_image_filter.  Length of histogram_Maximums vector does not match source field compontents");
+					return_code = 0;
+				}
+				
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
 						Cmiss_field_module_create_histogram_image_filter(
 							field_modify->get_field_module(),
-							source_field, numberOfBins, marginalScale));
+							source_field, numberOfBins, marginalScale, histogramMinimum, histogramMaximum));
 				}
 			
 				if (!return_code)
