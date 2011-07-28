@@ -286,16 +286,22 @@ WARNING: To be deprecated.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Creates a field performing ITK histogram image filter on scalar source field
- * image. Sets number of components to 1.
+ * Creates a field performing ITK histogram image filter on source field image.
+ * If neither histogramMinimum or histogramMaximum are specified then the minimums and
+ * maximums are calculated based on the minimum and maximum values in the input image.
  * @param numberOfBins  Number of bins per source field component.
+ * @param marginalScale  A measure of precision with which the histogram is calculated
+ * @param histogramMinimum  Optional array of minimum value of histogram for each source field component
+ * @param histogramMaximum  Optional array of maximum value of histogram for each source field component
  */
 Cmiss_field_id Cmiss_field_module_create_histogram_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	int *numberOfBins, double marginalScale);
+	int *numberOfBins, double marginalScale,
+	double *histogramMinimum, double *histogramMaximum);
 
 int Cmiss_field_get_type_histogram_image_filter(Cmiss_field_id field,
-	Cmiss_field_id *source_field, int **numberOfBins, double *marginalScale);
+	Cmiss_field_id *source_field, int **numberOfBins, double *marginalScale,
+	double **histogramMinimum, double **histogramMaximum);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2008
 
