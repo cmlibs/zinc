@@ -411,7 +411,9 @@ Defines an <alias_name> in the <font_package> which refers to the font
 #if defined (WX_USER_INTERFACE)
 				/* MANAGER_MODIFY_NOT_IDENTIFIER does not copy the font settings in cmgui-wx.
 					 therefore I will copy it manually instead */
-				*(existing_font->font_settings) = *(font->font_settings);
+				if (existing_font->font_settings)
+					delete (existing_font->font_settings);
+				existing_font->font_settings = new wxFont(*(font->font_settings));
 #endif /* (WX_USER_INTERFACE) */
 				DESTROY(Graphics_font)(&font);
 			}
@@ -512,21 +514,20 @@ DESCRIPTION :
 		font->manager_change_status = MANAGER_CHANGE_NONE(Graphics_font);
 
 		font->access_count = 0;
+		font->font_settings = NULL;
 
 #if defined (WX_USER_INTERFACE)
-		font->font_settings = NULL;
 		struct Parse_state *state;
 		const char *current_token;
+		enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
+		enum wxFontWeight font_weight = wxFONTWEIGHT_NORMAL;
+		enum wxFontStyle font_style = wxFONTSTYLE_NORMAL;
+		int size = 8;
 		if (strcmp(font->font_string,"default"))
 		{
 			 state=create_Parse_state(font->font_string);
 			 if (state != 0)
 			 {
-					int size = 8;
-					
-					enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
-					enum wxFontWeight font_weight = wxFONTWEIGHT_NORMAL;
-					enum wxFontStyle font_style = wxFONTSTYLE_NORMAL;
 					current_token = state->current_token;
 					if (current_token != 0)
 					{
@@ -564,8 +565,6 @@ DESCRIPTION :
 								}
 						 }
 					}
-					font->font_settings = new wxFont(size, font_family, 
-						 font_style, font_weight);
 					destroy_Parse_state(&state);
 			 }
 			 else
@@ -575,6 +574,7 @@ DESCRIPTION :
 						 "Use the command gfx define font ? for more information.\n");
 			 }
 		}
+		font->font_settings = new wxFont(size, font_family, font_style, font_weight);
 #endif /* (WX_USER_INTERFACE) */
 	}
 	else
@@ -612,11 +612,11 @@ DESCRIPTION :
 		{
 			glDeleteLists(font->display_list_offset, font->number_of_bitmaps);
 		}
-
 #if defined (WX_USER_INTERFACE)
 		if (font->font_settings)
-			 delete font->font_settings;
+			delete font->font_settings;
 #endif /* defined (WX_USER_INTERFACE) */
+
 		DEALLOCATE(*font_address);
 		*font_address = (struct Graphics_font *)NULL;
 
@@ -886,14 +886,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							dc.SetBrush(*wxWHITE_BRUSH);
 							dc.SetPen(*wxWHITE_PEN);
 						}
-						if (!strcmp(font->font_string,"default"))
-						{
-							 dc.SetFont(*wxNORMAL_FONT);
-						}
-						else if (font->font_settings)
-						{
-							 dc.SetFont(*(font->font_settings)); 
-						}
+						dc.SetFont(*(font->font_settings));
+
 						dc.DrawText(wxstring, 0, 0);
 
 						wxImage image = bitmap->ConvertToImage();
