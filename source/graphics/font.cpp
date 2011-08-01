@@ -514,9 +514,9 @@ DESCRIPTION :
 		font->manager_change_status = MANAGER_CHANGE_NONE(Graphics_font);
 
 		font->access_count = 0;
-		font->font_settings = NULL;
 
 #if defined (WX_USER_INTERFACE)
+		font->font_settings = NULL;
 		struct Parse_state *state;
 		const char *current_token;
 		enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
