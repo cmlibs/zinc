@@ -156,6 +156,8 @@ public:
 
 	void list_dof_values();
 
+	void invalidate_independent_field_caches();
+
 	FE_value evaluate_objective_function();
 
 	void touch_constant_independent_fields();
@@ -364,13 +366,24 @@ void Minimisation::list_dof_values()
 
 } /* Minimisation::list_dof_values */
 
+/** Must call this function after updating independent field DOFs to ensure
+ * dependent field caches are fully recalculated with the DOF changes.
+ */
+void Minimisation::invalidate_independent_field_caches()
+{
+	for (size_t j = 0; j < optimisation->independentFields.size(); ++j)
+	{
+		Cmiss_field_cache_invalidate_field(field_cache, optimisation->independentFields[j]);
+	}
+}
+
 /***************************************************************************//**
  * Evaluates the objective function value given the currents dof values.
  */
 FE_value Minimisation::evaluate_objective_function()
 {
+	invalidate_independent_field_caches();
 	FE_value objective_value[3];
-	Computed_field_clear_cache(optimisation->objectiveField);
 	Cmiss_field_evaluate_real(optimisation->objectiveField, field_cache,
 		/*number_of_values*/3, objective_value);
 	// GRC why do we need sqrt and / 3.0 in following ?
@@ -570,12 +583,7 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 		minimisation->set_dof_value(i, x(i + 1));
 	}
 	//minimisation->list_dof_values();
-	// need to clear the cache of the independent field for the DOF changes to take effect.
-	size_t j;
-	for (j=0;j<minimisation->optimisation->independentFields.size();j++)
-	{
-		Computed_field_clear_cache(minimisation->optimisation->independentFields[j]);
-	}
+
 	fx = static_cast<double> (minimisation->evaluate_objective_function());
 	//cout << "Objective Value = " << fx << endl;
 	result = NLPFunction;
@@ -713,11 +721,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		minimisation->set_dof_value(i, x(i + 1));
 	}
 	//minimisation->list_dof_values();
-	// need to clear the cache of the independent field for the DOF changes to take effect.
-	for (size_t i=0;i<minimisation->optimisation->independentFields.size();i++)
-	{
-		Computed_field_clear_cache(minimisation->optimisation->independentFields[i]);
-	}
+	minimisation->invalidate_independent_field_caches();
 	//minimisation->calculate_data_projections();
 
 	// evaluate the least-squares terms

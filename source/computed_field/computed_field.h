@@ -346,6 +346,19 @@ int Cmiss_field_cache_clear_field_values(Cmiss_field_cache_id cache,
 	Cmiss_field_id field);
 
 /***************************************************************************//**
+ * Fully clears cache of supplied field, its source fields and any fields that
+ * depend on its values.
+ * Internal function.
+ *
+ * @param cache  The field cache to modify.
+ * @param field  The field whose values cache is to be cleared, along with all
+ * its source and dependent fields, recursively.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
+	Cmiss_field_id field);
+
+/***************************************************************************//**
  * Internal function similar to Cmiss_field_assign_real but which only assigns
  * the value in the field_cache, propagating it back to its source fields. This
  * means subsequent evaluations at the same cache location will return the

@@ -1538,6 +1538,52 @@ void Cmiss_field_clear_values_cache_recursive(Cmiss_field *field)
 	}
 }
 
+/**
+ * Recursive function for clearing cache of field if any field it depends on
+ * has no cached value. Note: do not mix with calls to clear_values_cache().
+ * @return  1 if the field has no cache or has cleared cache due to source
+ * fields returning true for this function. Otherwise returns 0.
+ */
+static int Cmiss_field_check_invalid_cache(Cmiss_field *field)
+{
+	if (field)
+	{
+		if (field->values_valid || field->element || field->node
+			|| field->coordinate_reference_field || field->string_cache)
+		{
+			for (int i = 0; i < field->number_of_source_fields; i++)
+			{
+				if (Cmiss_field_check_invalid_cache(field->source_fields[i]))
+				{
+					Cmiss_field_clear_cache_non_recursive(field);
+					return 1;
+				}
+			}
+		}
+		else
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
+	Cmiss_field_id field)
+{
+	if (!field_cache)
+		return 0;
+	if (Computed_field_clear_cache(field))
+	{
+		Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
+		for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
+		{
+			Cmiss_field_check_invalid_cache(field);
+		}
+	}
+	return 1;
+}
+
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
