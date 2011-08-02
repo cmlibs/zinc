@@ -498,7 +498,7 @@ class wxRegionTreeViewer : public wxFrame
 	wxCheckListBox *scenechecklist,*graphicalitemschecklist;
 	wxListBox *scenelistbox,*graphicalitemslistbox;
 	wxStaticText *currentsceneobjecttext,*constantradius,*scalefactor,
-		*isoscalartext, *glyphtext, *centretext, *baseglyphsizetext, *selectmodetext,
+		*isoscalartext, *glyphtext, *offsettext, *baseglyphsizetext, *selectmodetext,
 		*glyphscalefactorstext, *useelementtypetext, *xidiscretizationmodetext,
 		*tessellationtext,
 		*discretizationtext, *circlediscretizationtext,*densityfieldtext,*xitext, 
@@ -510,7 +510,7 @@ class wxRegionTreeViewer : public wxFrame
 	wxRadioButton *isovaluelistradiobutton, *isovaluesequenceradiobutton;
 	wxPanel *isovalueoptionspane;
 	wxTextCtrl *nametextfield,
-		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *centretextctrl,
+		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *offsettextctrl,
 		*baseglyphsizetextctrl,*glyphscalefactorstextctrl,*discretizationtextctrl,
 		*circlediscretizationtextctrl,*xitextctrl,*lengthtextctrl,*widthtextctrl,
 		*linewidthtextctrl,*isovaluesequencenumbertextctrl, *isovaluesequencefirsttextctrl,
@@ -763,8 +763,8 @@ public:
 	XRCCTRL(*this,"IsoValueSequenceLastTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxRegionTreeViewer::EnterIsoScalar),
 		NULL, this);
-	XRCCTRL(*this,"CentreTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
-		wxCommandEventHandler(wxRegionTreeViewer::EnterGlyphCentre),
+	XRCCTRL(*this,"OffsetTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxRegionTreeViewer::EnterGlyphOffset),
 		NULL, this);
 	XRCCTRL(*this,"BaseGlyphSizeTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxRegionTreeViewer::EnterGlyphSize),
@@ -1135,18 +1135,18 @@ Callback from wxChooser<Glyph> when choice is made.
 {
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *old_glyph;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_offset,glyph_scale_factors,glyph_size;
 
 	if (region_tree_viewer->current_graphic)
 	{
 		enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 		if (Cmiss_graphic_get_glyph_parameters(
 					region_tree_viewer->current_graphic, &old_glyph, &glyph_scaling_mode,
-					glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+					glyph_offset, glyph_size, &orientation_scale_field, glyph_scale_factors,
 					&variable_scale_field)&&
 			Cmiss_graphic_set_glyph_parameters(
 				region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-				glyph_centre, glyph_size,	orientation_scale_field, glyph_scale_factors,
+				glyph_offset, glyph_size,	orientation_scale_field, glyph_scale_factors,
 				variable_scale_field))
 		{
 			/* inform the client of the change */
@@ -1180,7 +1180,7 @@ Callback from wxChooser<Orientation Scale> when choice is made.
 	struct Computed_field *temp_orientation_scale_field;
 	struct Computed_field *variable_scale_field;
 	struct GT_object *glyph;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_offset,glyph_scale_factors,glyph_size;
 
 	if (region_tree_viewer->current_graphic)
 	{
@@ -1199,11 +1199,11 @@ Callback from wxChooser<Orientation Scale> when choice is made.
 		}
 		if (Cmiss_graphic_get_glyph_parameters(
 		    region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode,
-		    glyph_centre, glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
+		    glyph_offset, glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
 		    &variable_scale_field)&&
 		   Cmiss_graphic_set_glyph_parameters(
 		    region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-		    glyph_centre, glyph_size,orientation_scale_field, glyph_scale_factors,
+		    glyph_offset, glyph_size,orientation_scale_field, glyph_scale_factors,
 		    variable_scale_field))
 		{
 			/* inform the client of the change */
@@ -1238,14 +1238,14 @@ Callback from wxChooser<Variable Scale> when choice is made.
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	struct Computed_field *orientation_scale_field, *temp_variable_scale_field;
 	struct GT_object *glyph;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_offset,glyph_scale_factors,glyph_size;
 
 	Cmiss_graphic_get_glyph_parameters(
-	 region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+	 region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 	 glyph_size, &orientation_scale_field, glyph_scale_factors,
 	 &temp_variable_scale_field);
 	Cmiss_graphic_set_glyph_parameters(
-	 region_tree_viewer->current_graphic,glyph, glyph_scaling_mode, glyph_centre,
+	 region_tree_viewer->current_graphic,glyph, glyph_scaling_mode, glyph_offset,
 	 glyph_size, orientation_scale_field, glyph_scale_factors,
 	 variable_scale_field);		
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
@@ -2605,7 +2605,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		}
 	}
 
-void EnterGlyphCentre(wxCommandEvent &event)
+void EnterGlyphOffset(wxCommandEvent &event)
 {
 	char *text_entry = NULL, temp_string[50];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
@@ -2613,52 +2613,52 @@ void EnterGlyphCentre(wxCommandEvent &event)
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
 	USE_PARAMETER(event);
 
-	centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
+	offsettextctrl=XRCCTRL(*this,"OffsetTextCtrl",wxTextCtrl);
 	
 	if (region_tree_viewer->current_graphic)
 	{
 		if (Cmiss_graphic_get_glyph_parameters(
-					region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+					region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 					glyph_size, &orientation_scale_field, glyph_scale_factors,
 					&variable_scale_field))
 		{
 			/* Get the text string */
 			text_entry = duplicate_string(
-				const_cast<char *>(centretextctrl->GetValue().c_str()));
+				const_cast<char *>(offsettextctrl->GetValue().c_str()));
 			if (text_entry)
 			{
 				/* clean up spaces? */
 				temp_state=create_Parse_state(text_entry);
 				if (temp_state)
 				{
-					set_float_vector(temp_state,glyph_centre,
+					set_float_vector(temp_state,glyph_offset,
 						(void *)&number_of_components);
 					Cmiss_graphic_set_glyph_parameters(
 						region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field,
+						glyph_offset, glyph_size, orientation_scale_field,
 						glyph_scale_factors, variable_scale_field);
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
 					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 					destroy_Parse_state(&temp_state);
 					Cmiss_graphic_get_glyph_parameters(
-						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 						glyph_size, &orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
 					sprintf(temp_string,"%g,%g,%g",
-						glyph_centre[0],glyph_centre[1],glyph_centre[2]);
-					centretextctrl->ChangeValue(temp_string);
+						glyph_offset[0],glyph_offset[1],glyph_offset[2]);
+					offsettextctrl->ChangeValue(temp_string);
 				}
 				DEALLOCATE(text_entry);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"settings_editor_glyph_centre_text_CB.  Missing text");
+					"settings_editor_glyph_offset_text_CB.  Missing text");
 			}
 		}
 	}
@@ -2671,7 +2671,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_offset,glyph_scale_factors,glyph_size;
 
 	USE_PARAMETER(event);
 
@@ -2679,7 +2679,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	if (region_tree_viewer->current_graphic)
 	{
 		if (Cmiss_graphic_get_glyph_parameters(
-					region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+					region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 					glyph_size, &orientation_scale_field, glyph_scale_factors,
 					&variable_scale_field))
 		{
@@ -2695,14 +2695,14 @@ void EnterGlyphSize(wxCommandEvent &event)
 					set_special_float3(temp_state,glyph_size,const_cast<char *>("*"));
 					Cmiss_graphic_set_glyph_parameters(
 						region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field,
+						glyph_offset, glyph_size, orientation_scale_field,
 						glyph_scale_factors, variable_scale_field);
 					/* inform the client of the change */
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
 					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 					Cmiss_graphic_get_glyph_parameters(
-						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 						glyph_size, &orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
 					sprintf(temp_string,"%g*%g*%g",
@@ -2728,7 +2728,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_offset,glyph_scale_factors,glyph_size;
 
 	USE_PARAMETER(event);
 	glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
@@ -2739,7 +2739,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 		if (region_tree_viewer->current_graphic)
 		{
 			if (Cmiss_graphic_get_glyph_parameters(
-				region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+				region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 				glyph_size, &orientation_scale_field, glyph_scale_factors,
 				&variable_scale_field))
 			{
@@ -2766,14 +2766,14 @@ void EnterGlyphSize(wxCommandEvent &event)
 						}
 						Cmiss_graphic_set_glyph_parameters(
 							region_tree_viewer->current_graphic, glyph, glyph_scaling_mode,
-							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_offset, glyph_size, orientation_scale_field,
 							glyph_scale_factors, variable_scale_field);
 						Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						       region_tree_viewer->edit_rendition);
 						Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 						destroy_Parse_state(&temp_state);
 						Cmiss_graphic_get_glyph_parameters(
-							region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_centre,
+							region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 							glyph_size, &orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
 						sprintf(temp_string,"%g*%g*%g",
@@ -3177,7 +3177,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 	struct GT_object *glyph;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	enum Xi_discretization_mode xi_discretization_mode;
-	Triple glyph_centre, glyph_size, glyph_scale_factors, seed_xi;
+	Triple glyph_offset, glyph_size, glyph_scale_factors, seed_xi;
 	struct Graphics_font *font;
 	struct Element_discretization discretization;
 	enum Streamline_type streamline_type;
@@ -3377,8 +3377,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 		orientation_scale_field_chooser_panel=XRCCTRL(*this,	"OrientationScaleChooserPanel",wxPanel);
 		variable_scale_field_chooser_panel=XRCCTRL(*this,"VariableScaleChooserPanel",wxPanel);
 		glyphtext=XRCCTRL(*this,"GlyphText",wxStaticText);
-		centretext=XRCCTRL(*this,"CentreText",wxStaticText);
-		centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
+		offsettext=XRCCTRL(*this,"OffsetText",wxStaticText);
+		offsettextctrl=XRCCTRL(*this,"OffsetTextCtrl",wxTextCtrl);
 		baseglyphsizetext=XRCCTRL(*this,"BaseGlyphSizeText",wxStaticText);
 		baseglyphsizetextctrl=XRCCTRL(*this,"BaseGlyphSizeTextCtrl",wxTextCtrl);
 		wxStaticText *orientationscaletext=XRCCTRL(*this,"OrientationScaleText",wxStaticText);
@@ -3419,7 +3419,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 				(CMISS_GRAPHIC_ELEMENT_POINTS == region_tree_viewer->current_graphic_type) ||
 				(CMISS_GRAPHIC_POINT == region_tree_viewer->current_graphic_type)) &&
 			Cmiss_graphic_get_glyph_parameters(graphic,
-				 &glyph, &glyph_scaling_mode,glyph_centre, glyph_size,
+				 &glyph, &glyph_scaling_mode,glyph_offset, glyph_size,
 				 &orientation_scale_field, glyph_scale_factors,&variable_scale_field))
 			{
 				/* turn on callbacks */
@@ -3427,8 +3427,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 				orientation_scale_field_chooser_panel->Show();
 				variable_scale_field_chooser_panel->Show();
 				glyphtext->Show();
-				centretext->Show();
-				centretextctrl->Show();
+				offsettext->Show();
+				offsettextctrl->Show();
 				baseglyphsizetext->Show();
 				baseglyphsizetextctrl->Show();
 				orientationscaletext->Show();
@@ -3499,8 +3499,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 				}
 					
 				sprintf(temp_string,"%g,%g,%g",
-					glyph_centre[0],glyph_centre[1],glyph_centre[2]);
-				centretextctrl->SetValue(temp_string);
+					glyph_offset[0],glyph_offset[1],glyph_offset[2]);
+				offsettextctrl->SetValue(temp_string);
 				sprintf(temp_string,"%g*%g*%g",
 					glyph_size[0],glyph_size[1],glyph_size[2]);
 				baseglyphsizetextctrl->SetValue(temp_string);
@@ -3527,8 +3527,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 				orientation_scale_field_chooser_panel->Hide();
 				variable_scale_field_chooser_panel->Hide();
 				glyphtext->Hide();
-				centretext->Hide();
-				centretextctrl->Hide();
+				offsettext->Hide();
+				offsettextctrl->Hide();
 				baseglyphsizetext->Hide();
 				baseglyphsizetextctrl->Hide();
 				orientationscaletext->Hide();
@@ -4552,7 +4552,7 @@ BEGIN_EVENT_TABLE(wxRegionTreeViewer, wxFrame)
 	EVT_TEXT_ENTER(XRCID("IsoValueSequenceNumberTextCtrl"),wxRegionTreeViewer::EnterIsoScalar)
 	EVT_TEXT_ENTER(XRCID("IsoValueSequenceFirstTextCtrl"),wxRegionTreeViewer::EnterIsoScalar)
 	EVT_TEXT_ENTER(XRCID("IsoValueSequenceLastTextCtrl"),wxRegionTreeViewer::EnterIsoScalar)
-	EVT_TEXT_ENTER(XRCID("CentreTextCtrl"),wxRegionTreeViewer::EnterGlyphCentre)
+	EVT_TEXT_ENTER(XRCID("OffsetTextCtrl"),wxRegionTreeViewer::EnterGlyphOffset)
 	EVT_TEXT_ENTER(XRCID("BaseGlyphSizeTextCtrl"),wxRegionTreeViewer::EnterGlyphSize)
 	EVT_TEXT_ENTER(XRCID("GlyphScaleFactorsTextCtrl"),wxRegionTreeViewer::EnterGlyphScale)
 	EVT_CHECKBOX(XRCID("OrientationScaleCheckBox"),wxRegionTreeViewer::EnterGlyphScale)

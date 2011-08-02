@@ -4682,6 +4682,33 @@ Now prints current contents of the vector with help.
 	return (return_code);
 } /* set_float_vector */
 
+int set_reversed_float_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void)
+{
+	int return_code = 0;
+	float *values_address;
+	int comp_no,number_of_components;
+
+	if (set_float_vector(state, values_address_void, number_of_components_address_void))
+	{
+		if ((values_address=(float *)values_address_void)&&
+			number_of_components_address_void&&(0<(number_of_components=
+				*((int *)number_of_components_address_void))))
+		{
+			for (comp_no=0;(comp_no<number_of_components);comp_no++)
+			{
+				if ((abs(values_address[comp_no] - 0.0)) > 0.0000001)
+				{
+					values_address[comp_no]= (-1.0) * values_address[comp_no];
+				}
+			}
+		}
+		return_code = 1;
+	}
+
+	return (return_code);
+} /* set_float_vector */
+
 int set_FE_value(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
 /*******************************************************************************

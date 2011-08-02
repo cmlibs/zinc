@@ -610,6 +610,9 @@ while <values_address_void> should point to a large enough space to store the
 number_of_components floats.
 ==============================================================================*/
 
+int set_reversed_float_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void);
+
 int set_FE_value(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data);
 /*******************************************************************************

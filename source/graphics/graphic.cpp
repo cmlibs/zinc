@@ -134,7 +134,7 @@ finite element group rendition.
 	/* for node_points, data_points and element_points only */
 	struct GT_object *glyph;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 	struct Computed_field *orientation_scale_field;
 	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
@@ -393,9 +393,9 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* for node_points, data_points and element_points only */
 			graphic->glyph=(struct GT_object *)NULL;
 			graphic->glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
-			graphic->glyph_centre[0]=0.0;
-			graphic->glyph_centre[1]=0.0;
-			graphic->glyph_centre[2]=0.0;
+			graphic->glyph_offset[0]=0.0;
+			graphic->glyph_offset[1]=0.0;
+			graphic->glyph_offset[2]=0.0;
 			graphic->glyph_scale_factors[0]=1.0;
 			graphic->glyph_scale_factors[1]=1.0;
 			graphic->glyph_scale_factors[2]=1.0;
@@ -789,7 +789,7 @@ static int FE_element_select_graphics_element_points(struct FE_element *element,
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *graphic_to_object_data_void)
 {
-	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
+	FE_value base_size[3], offset[3], initial_xi[3], scale_factors[3];
 	float time;
 	int draw_element, draw_selected, element_dimension = 1, element_graphics_name,
 		element_selected, i, name_selected,
@@ -1286,9 +1286,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								base_size[0] = (FE_value)(graphic->glyph_size[0]);
 								base_size[1] = (FE_value)(graphic->glyph_size[1]);
 								base_size[2] = (FE_value)(graphic->glyph_size[2]);
-								centre[0] = (FE_value)(graphic->glyph_centre[0]);
-								centre[1] = (FE_value)(graphic->glyph_centre[1]);
-								centre[2] = (FE_value)(graphic->glyph_centre[2]);
+								offset[0] = (FE_value)(graphic->glyph_offset[0]);
+								offset[1] = (FE_value)(graphic->glyph_offset[1]);
+								offset[2] = (FE_value)(graphic->glyph_offset[2]);
 								scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 								scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 								scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
@@ -1298,7 +1298,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										use_element, top_level_element,
 										graphic_to_object_data->rc_coordinate_field,
 										number_of_xi_points, xi_points,
-										graphic->glyph, base_size, centre, scale_factors,
+										graphic->glyph, base_size, offset, scale_factors,
 										graphic_to_object_data->wrapper_orientation_scale_field,
 										graphic->variable_scale_field, graphic->data_field,
 										graphic->font, graphic->label_field, graphic->select_mode,
@@ -2070,14 +2070,14 @@ int Cmiss_graphic_is_from_region_hierarchical(struct Cmiss_graphic *graphic, str
 int Cmiss_graphic_get_glyph_parameters(
 	struct Cmiss_graphic *graphic,
 	struct GT_object **glyph, enum Graphic_glyph_scaling_mode *glyph_scaling_mode,
-	Triple glyph_centre, Triple glyph_size,
+	Triple glyph_offset, Triple glyph_size,
 	struct Computed_field **orientation_scale_field, Triple glyph_scale_factors,
 	struct Computed_field **variable_scale_field)
 {
 	int return_code;
 
 	ENTER(Cmiss_graphic_get_glyph_parameters);
-	if (graphic && glyph && glyph_scaling_mode && glyph_centre && glyph_size &&
+	if (graphic && glyph && glyph_scaling_mode && glyph_offset && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type) ||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -2086,9 +2086,9 @@ int Cmiss_graphic_get_glyph_parameters(
 	{
 		*glyph = graphic->glyph;
 		*glyph_scaling_mode = graphic->glyph_scaling_mode;
-		glyph_centre[0] = graphic->glyph_centre[0];
-		glyph_centre[1] = graphic->glyph_centre[1];
-		glyph_centre[2] = graphic->glyph_centre[2];
+		glyph_offset[0] = graphic->glyph_offset[0];
+		glyph_offset[1] = graphic->glyph_offset[1];
+		glyph_offset[2] = graphic->glyph_offset[2];
 		glyph_size[0] = graphic->glyph_size[0];
 		glyph_size[1] = graphic->glyph_size[1];
 		glyph_size[2] = graphic->glyph_size[2];
@@ -2670,8 +2670,20 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				sprintf(temp_string," size \"%g*%g*%g\"",graphic->glyph_size[0],
 					graphic->glyph_size[1],graphic->glyph_size[2]);
 				append_string(&graphic_string,temp_string,&error);
-				sprintf(temp_string," centre %g,%g,%g",graphic->glyph_centre[0],
-					graphic->glyph_centre[1],graphic->glyph_centre[2]);
+				Triple offset;
+				for (int comp_no=0;(comp_no<3);comp_no++)
+				{
+					if ((abs(graphic->glyph_offset[comp_no] - 0.0)) > 0.0000001)
+					{
+						offset[comp_no] = (-1.0) * graphic->glyph_offset[comp_no];
+					}
+					else
+					{
+						offset[comp_no] = graphic->glyph_offset[comp_no];
+					}
+				}
+				sprintf(temp_string," centre %g,%g,%g", offset[0], offset[1], offset[2]);
+
 				append_string(&graphic_string,temp_string,&error);
 				if (graphic->font)
 				{
@@ -3015,7 +3027,7 @@ int Cmiss_graphic_to_point_object_at_time(
 	struct Cmiss_graphic *graphic, Cmiss_field_cache_id field_cache, FE_value time,
 	float graphics_object_primitive_time)
 {
-	FE_value base_size[3], centre[3], scale_factors[3];
+	FE_value base_size[3], offset[3], scale_factors[3];
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
 	char **labels = NULL;
@@ -3037,9 +3049,9 @@ int Cmiss_graphic_to_point_object_at_time(
 			base_size[0] = (FE_value)(graphic->glyph_size[0]);
 			base_size[1] = (FE_value)(graphic->glyph_size[1]);
 			base_size[2] = (FE_value)(graphic->glyph_size[2]);
-			centre[0] = (FE_value)(graphic->glyph_centre[0]);
-			centre[1] = (FE_value)(graphic->glyph_centre[1]);
-			centre[2] = (FE_value)(graphic->glyph_centre[2]);
+			offset[0] = (FE_value)(graphic->glyph_offset[0]);
+			offset[1] = (FE_value)(graphic->glyph_offset[1]);
+			offset[2] = (FE_value)(graphic->glyph_offset[2]);
 			scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 			scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 			scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
@@ -3057,9 +3069,9 @@ int Cmiss_graphic_to_point_object_at_time(
 				/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 				/*label_density_list*/(Triple *)NULL, /*object_name*/0, /*names*/(int *)NULL);
 			/* NOT an error if no glyph_set produced == empty group */
-			(*point_list)[0] = centre[0];
-			(*point_list)[1] = centre[1];
-			(*point_list)[2] = centre[2];
+			(*point_list)[0] = offset[0];
+			(*point_list)[1] = offset[1];
+			(*point_list)[2] = offset[2];
 			(*axis1_list)[0] = base_size[0];
 			(*axis1_list)[1] = 0.0;
 			(*axis1_list)[2] = 0.0;
@@ -3209,7 +3221,7 @@ int Cmiss_graphic_to_graphics_object(
 {
 	char *existing_name, *graphics_object_name, *graphic_string;
 	const char *graphic_name = NULL;
-	FE_value base_size[3], centre[3], scale_factors[3];
+	FE_value base_size[3], offset[3], scale_factors[3];
 	float time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
@@ -3423,9 +3435,9 @@ int Cmiss_graphic_to_graphics_object(
 									base_size[0] = (FE_value)(graphic->glyph_size[0]);
 									base_size[1] = (FE_value)(graphic->glyph_size[1]);
 									base_size[2] = (FE_value)(graphic->glyph_size[2]);
-									centre[0] = (FE_value)(graphic->glyph_centre[0]);
-									centre[1] = (FE_value)(graphic->glyph_centre[1]);
-									centre[2] = (FE_value)(graphic->glyph_centre[2]);
+									offset[0] = (FE_value)(graphic->glyph_offset[0]);
+									offset[1] = (FE_value)(graphic->glyph_offset[1]);
+									offset[2] = (FE_value)(graphic->glyph_offset[2]);
 									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
@@ -3434,7 +3446,7 @@ int Cmiss_graphic_to_graphics_object(
 									glyph_set = create_GT_glyph_set_from_nodeset(
 										nodeset, graphic_to_object_data->field_cache,
 										graphic_to_object_data->rc_coordinate_field,
-										graphic->glyph, base_size, centre, scale_factors,
+										graphic->glyph, base_size, offset, scale_factors,
 										graphic_to_object_data->time,
 										graphic_to_object_data->wrapper_orientation_scale_field,
 										graphic->variable_scale_field, graphic->data_field, 
@@ -4582,14 +4594,14 @@ int Cmiss_graphic_set_render_type(
 int Cmiss_graphic_set_glyph_parameters(
 	struct Cmiss_graphic *graphic,
 	struct GT_object *glyph, enum Graphic_glyph_scaling_mode glyph_scaling_mode,
-	Triple glyph_centre, Triple glyph_size,
+	Triple glyph_offset, Triple glyph_size,
 	struct Computed_field *orientation_scale_field, Triple glyph_scale_factors,
 	struct Computed_field *variable_scale_field)
 {
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && ((glyph && glyph_centre && glyph_size &&
+	if (graphic && ((glyph && glyph_offset && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -4610,9 +4622,9 @@ int Cmiss_graphic_set_glyph_parameters(
 			GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
 					(void *)graphic);
 			graphic->glyph_scaling_mode = glyph_scaling_mode;
-			graphic->glyph_centre[0] = glyph_centre[0];
-			graphic->glyph_centre[1] = glyph_centre[1];
-			graphic->glyph_centre[2] = glyph_centre[2];
+			graphic->glyph_offset[0] = glyph_offset[0];
+			graphic->glyph_offset[1] = glyph_offset[1];
+			graphic->glyph_offset[2] = glyph_offset[2];
 			graphic->glyph_size[0] = glyph_size[0];
 			graphic->glyph_size[1] = glyph_size[1];
 			graphic->glyph_size[2] = glyph_size[2];
@@ -5055,7 +5067,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		{
 			Cmiss_graphic_set_glyph_parameters(destination,
 				source->glyph, source->glyph_scaling_mode,
-				source->glyph_centre, source->glyph_size,
+				source->glyph_offset, source->glyph_size,
 				source->orientation_scale_field, source->glyph_scale_factors,
 				source->variable_scale_field);
 		}
@@ -5774,9 +5786,9 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 					second_graphic->glyph_scale_factors[1])&&
 				(graphic->glyph_scale_factors[2]==
 					second_graphic->glyph_scale_factors[2])&&
-				(graphic->glyph_centre[0]==second_graphic->glyph_centre[0])&&
-				(graphic->glyph_centre[1]==second_graphic->glyph_centre[1])&&
-				(graphic->glyph_centre[2]==second_graphic->glyph_centre[2])&&
+				(graphic->glyph_offset[0]==second_graphic->glyph_offset[0])&&
+				(graphic->glyph_offset[1]==second_graphic->glyph_offset[1])&&
+				(graphic->glyph_offset[2]==second_graphic->glyph_offset[2])&&
 				(graphic->orientation_scale_field==
 					second_graphic->orientation_scale_field)&&
 				(graphic->variable_scale_field==
@@ -5923,7 +5935,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 		set_data_field_data, set_label_field_data, set_label_density_field_data,
 		set_visibility_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_rendition_node_points);
 	if (state)
@@ -5948,7 +5960,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					if (graphic->glyph)
 					{
 						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
 							&orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
 						ACCESS(GT_object)(glyph);
@@ -5970,8 +5982,8 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					Option_table_add_entry(option_table,"as",&(graphic->name),
 						(void *)1,set_name);
 					/* centre */
-					Option_table_add_entry(option_table,"centre",glyph_centre,
-						&(number_of_components),set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -6115,7 +6127,7 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
 								glyph_scaling_mode_string, &glyph_scaling_mode);
 							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
 						}
@@ -6209,7 +6221,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
 		set_label_density_field_data, set_variable_scale_field_data;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_rendition_data_points);
 	if (state)
@@ -6233,7 +6245,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					if (graphic->glyph)
 					{
 						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
 							&orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
 						ACCESS(GT_object)(glyph);
@@ -6255,8 +6267,8 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					Option_table_add_entry(option_table,"as",&(graphic->name),
 						(void *)1,set_name);
 					/* centre */
-					Option_table_add_entry(option_table,"centre",glyph_centre,
-						&(number_of_components),set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -6400,7 +6412,7 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
 								glyph_scaling_mode_string, &glyph_scaling_mode);
 							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
 						}
@@ -6495,7 +6507,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_rendition_point);
 	if (state)
@@ -6529,7 +6541,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 					if (graphic->glyph)
 					{
 						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
 							&orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
 						ACCESS(GT_object)(glyph);
@@ -6551,8 +6563,8 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 					Option_table_add_entry(option_table,"as",&(graphic->name),
 						(void *)1,set_name);
 					/* centre */
-					Option_table_add_entry(option_table,"centre",glyph_centre,
-						&(number_of_components),set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
@@ -6699,7 +6711,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
 								glyph_scaling_mode_string, &glyph_scaling_mode);
 							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
 								variable_scale_field);
 						}
@@ -7466,7 +7478,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
 		set_label_density_field_data, set_variable_scale_field_data, set_xi_point_density_field_data;
-	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_rendition_element_points);
 	if (state && (rendition_command_data=(struct Rendition_command_data *)
@@ -7489,7 +7501,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			if (graphic->glyph)
 			{
 				Cmiss_graphic_get_glyph_parameters(graphic,
-					&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+					&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
 					&orientation_scale_field, glyph_scale_factors,
 					&variable_scale_field);
 				ACCESS(GT_object)(glyph);
@@ -7526,8 +7538,8 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				valid_strings,&xi_discretization_mode_string);
 			DEALLOCATE(valid_strings);
 			/* centre */
-			Option_table_add_entry(option_table,"centre",glyph_centre,
-				&(number_of_components),set_float_vector);
+			Option_table_add_entry(option_table,"centre",glyph_offset,
+				&(number_of_components),set_reversed_float_vector);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
 				rendition_command_data->computed_field_manager;
@@ -7726,7 +7738,7 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 					STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
 						glyph_scaling_mode_string, &glyph_scaling_mode);
 					Cmiss_graphic_set_glyph_parameters(graphic,
-						glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+						glyph, glyph_scaling_mode, glyph_offset, glyph_size,
 						orientation_scale_field,glyph_scale_factors,
 						variable_scale_field);
 				}

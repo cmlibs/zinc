@@ -196,8 +196,8 @@ number_of_cells_in_xi* are used.
 If the <cell_corners_flag> is not set, glyphs are displayed at the cell centres,
 otherwise they are displayed at the cell corners and there will be one extra
 point in each xi-direction as there are cells.
-At each of these points the <glyph> of <glyph_size> with its centre located at
-<glyph_centre> is displayed. The optional <orientation_scale_field> can be used
+At each of these points the <glyph> of <glyph_size> with its centre location offset
+by <glyph_offset> is displayed. The optional <orientation_scale_field> can be used
 to orient and scale the glyph in a manner depending on the number of components
 in the field (see function make_glyph_orientation_scale_axes). The three
 <glyph_scale_factors> multiply the scaling effect in each axis taken from the
@@ -213,7 +213,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
-	FE_value base_size[3], centre[3], scale_factors[3];
+	FE_value base_size[3], offset[3], scale_factors[3];
 	float time;
 	int face_number,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *coordinate_field, *data_field, *variable_scale_field,
@@ -290,7 +290,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
-	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, 
@@ -304,7 +304,7 @@ DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
 about fields defined over it.
 At each of the <number_of_xi_points> <xi_points> the <glyph> of at least
-<base_size> with the given glyph <centre> is displayed.
+<base_size> with the given glyph <offset> is displayed.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
 optional <variable_scale_field> can provide signed scaling independently of the
@@ -332,7 +332,7 @@ Note:
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
-	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
@@ -342,7 +342,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *group_field);
 /*******************************************************************************
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
-given glyph <centre> at each node in <fe_region>.
+given glyph <offset> at each node in <fe_region>.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
 optional <variable_scale_field> can provide signed scaling independently of the

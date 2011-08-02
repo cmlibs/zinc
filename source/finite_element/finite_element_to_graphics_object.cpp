@@ -91,7 +91,7 @@ Used with iterators for building glyph sets from nodes.
 	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
 	float *label_bounds;
-	FE_value base_size[3], centre[3], *data_values, *label_bounds_vector, scale_factors[3], time;
+	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3], time;
 	GTDATA *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
@@ -238,10 +238,10 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 					}
 					for (j = 0; j < 3; j++)
 					{
-						(*point)[j] = coordinates[j] -
-							glyph_set_data->centre[0]*(*scale)[0]*a[j] -
-							glyph_set_data->centre[1]*(*scale)[1]*b[j] -
-							glyph_set_data->centre[2]*(*scale)[2]*c[j];
+						(*point)[j] = coordinates[j] +
+							glyph_set_data->offset[0]*(*scale)[0]*a[j] +
+							glyph_set_data->offset[1]*(*scale)[1]*b[j] +
+							glyph_set_data->offset[2]*(*scale)[2]*c[j];
 						(*axis1)[j] = a[j];
 						(*axis2)[j] = b[j];
 						(*axis3)[j] = c[j];
@@ -805,7 +805,7 @@ int Use_element_type_dimension(enum Use_element_type use_element_type,
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
-	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
@@ -827,7 +827,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
-		((glyph && centre && base_size && scale_factors &&
+		((glyph && offset && base_size && scale_factors &&
 		((!variable_scale_field) ||
 			(3 >=	Computed_field_get_number_of_components(variable_scale_field))))
 		|| !glyph) &&
@@ -936,7 +936,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					for (i = 0; i < 3; i++)
 					{
 						glyph_set_data.base_size[i] = base_size[i];
-						glyph_set_data.centre[i] = centre[i];
+						glyph_set_data.offset[i] = offset[i];
 						glyph_set_data.scale_factors[i] = scale_factors[i];
 					}
 					glyph_set_data.point = point_list;
@@ -3622,7 +3622,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
-	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, 
@@ -3636,7 +3636,7 @@ DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
 about fields defined over it.
 At each of the <number_of_xi_points> <xi_points> the <glyph> of at least
-<base_size> with the given glyph <centre> is displayed.
+<base_size> with the given glyph <offset> is displayed.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
 optional <variable_scale_field> can provide signed scaling independently of the
@@ -3680,7 +3680,7 @@ Note:
 	if (element && coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
 		(0 < number_of_xi_points) && xi_points && ((glyph &&
-		centre && base_size && scale_factors &&
+		offset && base_size && scale_factors &&
 		((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
@@ -3849,10 +3849,10 @@ Note:
 							}
 							for (j = 0; j < 3; j++)
 							{
-								(*point)[j] = coordinates[j] -
-									centre[0]*(*scale)[0]*a[j] -
-									centre[1]*(*scale)[1]*b[j] -
-									centre[2]*(*scale)[2]*c[j];
+								(*point)[j] = coordinates[j] +
+									offset[0]*(*scale)[0]*a[j] +
+									offset[1]*(*scale)[1]*b[j] +
+									offset[2]*(*scale)[2]*c[j];
 								(*axis1)[j] = a[j];
 								(*axis2)[j] = b[j];
 								(*axis3)[j] = c[j];
@@ -4541,7 +4541,7 @@ fields defined over it.
 						number_of_xi_points, xi_points,
 						element_to_glyph_set_data->glyph,
 						element_to_glyph_set_data->base_size,
-						element_to_glyph_set_data->centre,
+						element_to_glyph_set_data->offset,
 						element_to_glyph_set_data->scale_factors,
 						element_to_glyph_set_data->orientation_scale_field,
 						element_to_glyph_set_data->variable_scale_field,

@@ -614,12 +614,12 @@
 															</object>	
 															<object class="sizeritem">
 																<flag>wxALIGN_CENTRE_VERTICAL</flag>
-																<object class	="wxStaticText" name="CentreText">
-																	<label>   Centre:</label> 
+																<object class	="wxStaticText" name="OffsetText">
+																	<label>   Offset:</label> 
 																</object>
 															</object>	
 															<object class="sizeritem">
-																<object class	="wxTextCtrl" name="CentreTextCtrl">
+																<object class	="wxTextCtrl" name="OffsetTextCtrl">
           														  	<style>wxTE_PROCESS_ENTER</style>
 																</object>
 															</object>														
