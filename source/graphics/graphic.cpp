@@ -5721,7 +5721,8 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 		{
 			return_code=(graphic->constant_radius==second_graphic->constant_radius)
 				&&(graphic->radius_scalar_field==second_graphic->radius_scalar_field)
-				&&(graphic->radius_scale_factor==second_graphic->radius_scale_factor);
+				&&(graphic->radius_scale_factor==second_graphic->radius_scale_factor)
+				&&(graphic->circle_discretization==second_graphic->circle_discretization);
 		}
 		/* for iso_surfaces only */
 		if (return_code&&
