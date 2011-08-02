@@ -15623,7 +15623,7 @@ Sets a transformation matrix from the command line.
 					j=0;
 					while ((j<4)&&return_code&&current_token)
 					{
-						if (1==sscanf(current_token,"%f",&((*transformation_matrix)[i][j])))
+						if (1==sscanf(current_token,"%lf",&((*transformation_matrix)[i][j])))
 						{
 							shift_Parse_state(state,1);
 							current_token=state->current_token;

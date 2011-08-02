@@ -4286,25 +4286,27 @@ int Cmiss_graphic_Computed_field_change(
 
 // GRC pass scene and filter list
 int Cmiss_graphic_get_visible_graphics_object_range(
-	struct Cmiss_graphic *graphic,void *graphics_object_range_void)
+	struct Cmiss_graphic *graphic,void *graphic_range_void)
 {
 	int return_code = 1;
-	struct Graphics_object_range_struct *graphics_object_range =
-		(struct Graphics_object_range_struct *)graphics_object_range_void;
+	struct Cmiss_graphic_range *graphic_range =
+		(struct Cmiss_graphic_range *)graphic_range_void;
 	
 	ENTER(Cmiss_graphic_get_visible_graphics_object_range);
 
-	if (graphic && graphics_object_range)
+	if (graphic && graphic_range && graphic_range->graphics_object_range)
 	{
-		if (graphic->graphics_object)
+		if (graphic->graphics_object &&
+			(graphic->coordinate_system == graphic_range->coordinate_system))
 		{
-			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(graphics_object_range->scene);
+			Cmiss_graphics_filter_id filter = Cmiss_scene_get_filter(
+				graphic_range->graphics_object_range->scene);
 			if (filter)
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 				{
 					return_code=get_graphics_object_range(graphic->graphics_object,
-						graphics_object_range_void);
+						(void *)graphic_range->graphics_object_range);
 				}
 				Cmiss_graphics_filter_destroy(&filter);
 			}

@@ -1294,14 +1294,77 @@ int Cmiss_rendition_set_position(struct Cmiss_rendition *rendition, unsigned int
 	return (return_code);
 } /* Cmiss_rendition_set_position */
 
+/***************************************************************************//**
+* Returns the exact trasnformation matrix in scene. This matrix is the product
+* of the local transformations of different rendition in the hierarchical order.
+*/
+gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
+	struct Cmiss_rendition *rendition, struct Cmiss_scene *scene)
+{
+	gtMatrix *transformation = NULL;
+	int use_local_transformation = 0;
+
+	if (rendition && scene)
+	{
+		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
+
+		if ((scene_region != region) || parent)
+		{
+			struct Cmiss_rendition *parent_rendition = Cmiss_region_get_rendition_internal(parent);
+			if (parent_rendition)
+			{
+				gtMatrix *parent_transformation =
+					Cmiss_rendition_get_total_transformation_on_scene(parent_rendition, scene);
+				transformation = parent_transformation;
+				if (transformation)
+				{
+					if (rendition->transformation)
+					{
+						multiply_gtMatrix(transformation, rendition->transformation, transformation);
+					}
+				}
+				else
+				{
+					/* top level of transformation set by user*/
+					use_local_transformation = 1;
+				}
+				Cmiss_rendition_destroy(&parent_rendition);
+			}
+			Cmiss_region_destroy(&parent);
+		}
+		else
+		{
+			/* top level of transformation */
+			use_local_transformation = 1;
+		}
+
+		/* allocate a gtMatrix for the top/first found transformation */
+		if (use_local_transformation && rendition->transformation &&
+			(ALLOCATE(transformation, gtMatrix, 1)))
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					(*transformation)[i][j] = (*rendition->transformation)[i][j];
+				}
+			}
+		}
+		Cmiss_region_destroy(&scene_region);
+	}
+	return transformation;
+}
+
 int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 	struct Cmiss_scene *scene, struct Graphics_object_range_struct *graphics_object_range)
 {
 	float coordinates[4],transformed_coordinates[4];
-	gtMatrix *transformation;
+	gtMatrix *transformation = NULL;
 	int i,j,k,return_code;
 	struct Graphics_object_range_struct temp_graphics_object_range;
-	void *use_range_void;
+	struct Cmiss_graphic_range graphic_range;
 
 	ENTER(Cmiss_rendition_get_range);
 	if (rendition && graphics_object_range)
@@ -1310,19 +1373,21 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 		Render_graphics_build_objects renderer;
 		renderer.set_Scene(scene);
 		renderer.Cmiss_rendition_compile(rendition);
-		if (NULL != (transformation = rendition->transformation))
+		if (NULL != (transformation = Cmiss_rendition_get_total_transformation_on_scene(
+			rendition, scene)))
 		{
 			temp_graphics_object_range.first = 1;
 			temp_graphics_object_range.scene = scene;
-			use_range_void = (void *)&temp_graphics_object_range;
+			graphic_range.graphics_object_range = &temp_graphics_object_range;
 		}
 		else
 		{
 			graphics_object_range->scene = scene;
-			use_range_void = (void *)graphics_object_range;
+			graphic_range.graphics_object_range = graphics_object_range;
 		}
+		graphic_range.coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_get_visible_graphics_object_range, use_range_void,
+			Cmiss_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			rendition->list_of_graphics);
 		if (return_code&&transformation&&(!temp_graphics_object_range.first))
 		{
@@ -1392,7 +1457,14 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 					graphics_object_range->first=0;
 				}
 			}
+			DEALLOCATE(transformation);
 		}
+		graphics_object_range->scene = scene;
+		graphic_range.graphics_object_range = graphics_object_range;
+		graphic_range.coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD;
+		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
+			Cmiss_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
+			rendition->list_of_graphics);
 	}
 	else
 	{

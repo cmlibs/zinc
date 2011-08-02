@@ -82,12 +82,14 @@ Functions for interfacing with the graphics library.
 #include <stdio.h>
 #include <stdlib.h>
 #include "general/debug.h"
+#include "general/matrix_vector.h"
 #include "general/mystring.h"
 #define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+
 
 /*
 Global functions
@@ -375,7 +377,7 @@ Returns true if <matrix1> and <matrix2> have no components different by
 more than <tolerance> times the largest absolute value in either matrix.
 ==============================================================================*/
 {
-	float abs_value, difference, max_abs_value, max_difference;
+	double abs_value, difference, max_abs_value, max_difference;
 	int i, j, return_code;
 
 	ENTER(gtMatrix_match_with_tolerance);
@@ -414,6 +416,42 @@ more than <tolerance> times the largest absolute value in either matrix.
 
 	return (return_code);
 } /* gtMatrix_match_with_tolerance */
+
+
+int multiply_gtMatrix(gtMatrix *a, gtMatrix *b, gtMatrix *c)
+{
+	if (a && b && c)
+	{
+		double vector_a[16],  vector_b[16], vector_c[16];
+		int i, j, k;
+		k = 0;
+		for (i = 0; i < 4; i++)
+		{
+			for (j = 0; j < 4; j++)
+			{
+				vector_a[k] = (*a)[i][j];
+				vector_b[k] = (*b)[i][j];
+				k++;
+			}
+		}
+		if (multiply_matrix(4, 4, 4, &vector_a[0], &vector_b[0], &vector_c[0]))
+		{
+			k = 0;
+			for (i = 0; i < 4; i++)
+			{
+				for (j = 0; j < 4; j++)
+				{
+					(*c)[i][j] = vector_c[k];
+					k++;
+				}
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+
 
 #if defined (OPENGL_API)
 void wrapperLoadCurrentMatrix(gtMatrix *theMatrix)

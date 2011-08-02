@@ -92,7 +92,7 @@ Global types
 ------------
 */
 
-typedef float gtMatrix[4][4];
+typedef double gtMatrix[4][4];
 
 enum Graphics_library_vendor_id
 {
@@ -182,6 +182,12 @@ DESCRIPTION :
 Cleaned this up from view/coord_trans.c
 <euler_angles> are in radians.
 ==============================================================================*/
+
+/***************************************************************************//**
+* Returns the multiplied matrix.
+*
+*/
+int multiply_gtMatrix(gtMatrix *a, gtMatrix *b, gtMatrix *c);
 
 #if defined (OPENGL_API)
 void wrapperLoadCurrentMatrix(gtMatrix *theMatrix);

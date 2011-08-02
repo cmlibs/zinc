@@ -116,6 +116,12 @@ struct Cmiss_graphic_update_time_behaviour_data
 	int time_dependent;
 };
 
+struct Cmiss_graphic_range
+{
+	struct Graphics_object_range_struct *graphics_object_range;
+	enum Cmiss_graphics_coordinate_system coordinate_system;
+};
+
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphic_glyph_scaling_mode);
 
 struct Cmiss_graphic_to_graphics_object_data
@@ -378,9 +384,8 @@ int Cmiss_graphic_glyph_change(
 int Cmiss_graphic_execute_visible_graphic(
 	struct Cmiss_graphic *graphic, void *renderer_void);
 
-
 int Cmiss_graphic_get_visible_graphics_object_range(
-	struct Cmiss_graphic *graphic,void *graphics_object_range_void);
+	struct Cmiss_graphic *graphic,void *graphic_range_void);
 
 struct GT_object *Cmiss_graphic_get_graphics_object(
 	struct Cmiss_graphic *graphic);
