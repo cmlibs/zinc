@@ -1457,7 +1457,6 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 					graphics_object_range->first=0;
 				}
 			}
-			DEALLOCATE(transformation);
 		}
 		graphics_object_range->scene = scene;
 		graphic_range.graphics_object_range = graphics_object_range;
@@ -1465,6 +1464,8 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_get_visible_graphics_object_range, (void *)&graphic_range,
 			rendition->list_of_graphics);
+		if (transformation)
+			DEALLOCATE(transformation);
 	}
 	else
 	{
