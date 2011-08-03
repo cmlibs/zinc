@@ -228,6 +228,8 @@ public:
 			{
 				child_id = InsertItem(parent_id, i, child_name,0,0);
 				SetTreeIdRegionWithCallback(child_id, child_region);
+				if (!(this->IsExpanded(parent_id)))
+					this->Expand(parent_id);
 			}
 			if (child_id.IsOk())
 			{
@@ -258,6 +260,8 @@ public:
 					SetTreeIdRegionWithCallback(child_id, child_region);
 					update_current_tree_item(child_id);
 					DEALLOCATE(name);
+					if (!(this->IsExpanded(parent_id)))
+						this->Expand(parent_id);
 				}
 				else if (region_changes->child_removed)
 				{
@@ -300,6 +304,7 @@ void add_all_child_regions_to_tree_item(wxTreeItemId parent_id)
 		}
 		Cmiss_region_reaccess_next_sibling(&child_region);
 	}
+	this->ExpandAll();
 }
 
 private:
