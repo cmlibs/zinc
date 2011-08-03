@@ -2673,7 +2673,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				Triple offset;
 				for (int comp_no=0;(comp_no<3);comp_no++)
 				{
-					if ((abs(graphic->glyph_offset[comp_no] - 0.0)) > 0.0000001)
+					if ((fabs(graphic->glyph_offset[comp_no] - 0.0)) > 0.0000001)
 					{
 						offset[comp_no] = (-1.0) * graphic->glyph_offset[comp_no];
 					}

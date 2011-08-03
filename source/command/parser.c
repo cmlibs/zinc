@@ -4697,7 +4697,7 @@ int set_reversed_float_vector(struct Parse_state *state,void *values_address_voi
 		{
 			for (comp_no=0;(comp_no<number_of_components);comp_no++)
 			{
-				if ((abs(values_address[comp_no] - 0.0)) > 0.0000001)
+				if ((fabs(values_address[comp_no] - 0.0)) > 0.0000001)
 				{
 					values_address[comp_no]= (-1.0) * values_address[comp_no];
 				}
