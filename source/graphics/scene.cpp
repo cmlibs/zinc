@@ -402,7 +402,7 @@ Private to the Scene and Scene_objects
 		}
 #if defined (DEBUG)
 		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
+		printf("Scene %s changed %i\n",scene->name,scene->change_status);
 #endif /* defined (DEBUG) */
 		if (scene->scene_manager)
 		{
@@ -457,7 +457,7 @@ Private to the Scene and Scene_objects.
 		}
 #if defined (DEBUG)
 		/*???debug*/
-		printf("Scene %s changed %i\n",scene->name,scene->compile_status);
+		printf("Scene %s changed %i\n",scene->name,scene->change_status);
 #endif /* defined (DEBUG) */
 		if (scene->scene_manager)
 		{

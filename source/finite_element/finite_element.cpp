@@ -23331,17 +23331,6 @@ if (POLYGON_SHAPE== *type_entry) \
 			}
 			if (shape)
 			{
-				/* add the shape to the list of all shapes */
-				if (!ADD_OBJECT_TO_LIST(FE_element_shape)(shape,
-					FE_region_get_FE_element_shape_list(fe_region)))
-				{
-					display_message(ERROR_MESSAGE, "CREATE(FE_element_shape).  "
-						"Could not add shape to the list of all shapes");
-					DEALLOCATE(shape->type);
-					DEALLOCATE(shape->faces);
-					DEALLOCATE(shape->face_to_element);
-					DEALLOCATE(shape);
-				}
 #if defined (DEBUG)
 				printf("Created shape: %p\n", shape);
 				printf("  shape->dimension: %d\n", shape->dimension);
@@ -23362,7 +23351,18 @@ if (POLYGON_SHAPE== *type_entry) \
 					}
 					printf(")\n");
 				}
-#endif /* defined (DEBUG) */				
+#endif /* defined (DEBUG) */
+				/* add the shape to the list of all shapes */
+				if (!ADD_OBJECT_TO_LIST(FE_element_shape)(shape,
+					FE_region_get_FE_element_shape_list(fe_region)))
+				{
+					display_message(ERROR_MESSAGE, "CREATE(FE_element_shape).  "
+						"Could not add shape to the list of all shapes");
+					DEALLOCATE(shape->type);
+					DEALLOCATE(shape->faces);
+					DEALLOCATE(shape->face_to_element);
+					DEALLOCATE(shape);
+				}
 			}
 			if (linked_offsets)
 			{

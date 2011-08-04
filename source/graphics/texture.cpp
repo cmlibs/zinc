@@ -2167,7 +2167,7 @@ and overwritten.
 			unsigned char *expected_destination = *tile_image + tile_row_width_bytes * texture_tiling->tile_size[1] * (z - start_z + 1); 
 			if (destination != expected_destination)
 			{
-				printf("destination mismatch %p %p %ld\n", destination, expected_destination,
+				printf("destination mismatch %p %p %d\n", destination, expected_destination,
 					destination - expected_destination);
 			}
 #endif // defined (DEBUG)			
