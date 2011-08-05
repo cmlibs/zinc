@@ -41,14 +41,11 @@
 #if !defined (CMISS_FIELD_CAD_H)
 #define CMISS_FIELD_CAD_H
 
-//#include <vector>
-
-#include "api/types/cmiss_regio_id.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_region_id.h"
 #include "api/types/cmiss_field_cad_id.h"
 #include "api/types/cmiss_field_group_id.h"
-
-//typedef std::vector<Cmiss_cad_surface_identifier>::iterator Surface_iterator;
-//typedef std::vector<Cmiss_cad_surface_identifier>::const_iterator Surface_const_iterator;
 
 int Cmiss_region_import_cad_file(Cmiss_region_id region, const char *file_name);
 

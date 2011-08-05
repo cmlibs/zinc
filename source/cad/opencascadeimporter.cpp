@@ -87,11 +87,9 @@
 #include <BRepBndLib.hxx>
 
 extern "C" {
-//#include "api/cmiss_field_cad.h"
-//#include "user_interface/message.h"
+#include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-//#include "region/cmiss_region.h"
 }
 
 #include "cad/computed_field_cad_topology.h"
@@ -99,7 +97,6 @@ extern "C" {
 #include "cad/computed_field_cad_colour.h"
 
 #include "cad/opencascadeformatreader.h"
-//#include "cad/element_identifier.h"
 
 void performLabelAnalysis( Handle_TDocStd_Document doc, const TDF_Label& aLabel );
 char *Get_default_cad_subregion_name(Cmiss_region_id region);
