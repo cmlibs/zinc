@@ -65,17 +65,17 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include <stdio.h>
 #include <math.h>
 
-/* #define DEBUG */
+/* #define DEBUG_CODE */
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #  if defined (UNIX)
 #    include <sys/times.h>
 #  endif
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -1837,11 +1837,11 @@ intersections with the boundary.
 	int return_code;
 	/*???debug */
 #if defined (UNIX)
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	struct tms buffer;
 	double real_time1,real_time2,real_time3,real_time4,cpu_time1,cpu_time2,
 		cpu_time3,cpu_time4;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* clock_ticks=100 */
 #endif
 	/* mc array size=2 bigger than standard array nx,ny,nz to account for closed surfaces */
@@ -1901,24 +1901,24 @@ intersections with the boundary.
 	float mc_vertices[3][3];
 
 	ENTER(marching_cubes);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter marching_cubes\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* check arguments */
 	if (scalar_field&&(*scalar_field)&&(0<n_scalar_fields)&&coordinate_field&&
 		mc_iso_surface&&isovalue)
 	{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("iso_values %d:\n",n_scalar_fields);
 		for (i=0;i<n_scalar_fields;i++)
 		{
 			printf("%d %lg\n",i,isovalue[i]);
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		return_code=1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (UNIX)
 		/*???debug */
 		/* diagnostics */
@@ -1927,13 +1927,13 @@ intersections with the boundary.
 		printf("*************  real time=%lf    CPU time=%lf *************\n",
 			real_time1,cpu_time1);
 #endif /* defined (UNIX) */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		mc_iso_surface->n_scalar_fields=n_scalar_fields;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("1: #MC TRIANGLES=%d  #MC VERTICES=%d\n",mc_iso_surface->n_triangles,
 			mc_iso_surface->n_vertices);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		/* get nx,ny,nz values from field */
 		mcnx=mc_iso_surface->dimension[0]+2;
 		mcny=mc_iso_surface->dimension[1]+2;
@@ -1941,10 +1941,10 @@ intersections with the boundary.
 		nx=scalar_field[0]->dimension[0];
 		ny=scalar_field[0]->dimension[1];
 		nz=scalar_field[0]->dimension[2];
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("nx,ny,nz=%d, %d, %d\n",nx,ny,nz);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!temp MC */
 		if (closed_surface)
@@ -2104,11 +2104,11 @@ intersections with the boundary.
 				}
 			}
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("2: #MC TRIANGLES=%d  #MC VERTICES=%d\n",mc_iso_surface->n_triangles,
 			mc_iso_surface->n_vertices);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if ((mc_iso_surface->n_triangles<0)||(mc_iso_surface->n_vertices<0))
 		{
 			display_message(ERROR_MESSAGE,"n_triangles or n_vertices < 0");
@@ -2121,7 +2121,7 @@ intersections with the boundary.
 			{
 				for (i=x_min;i<=x_max;i++)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					if (i==debug_i && j==debug_j && k==debug_k)
 					{
@@ -2135,7 +2135,7 @@ intersections with the boundary.
 					{
 						printf("----x,y,z=%d %d %d ----\n",i,j,k);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* get coords of nodes & scalar values for current cell */
 					/* get colours too? */
 					n_triangles2=0;
@@ -2150,11 +2150,11 @@ intersections with the boundary.
 						fc[n][5]=rqs(scalar_field[n],i,j-1,k);
 						fc[n][6]=rqs(scalar_field[n],i-1,j,k);
 						fc[n][7]=rqs(scalar_field[n],i,j,k);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						/* printf("%d %d %d %d  %g %g %g %g %g %g %g %g\n",i,j,k,n,fc[n][0], */
 /* 							fc[n][1],fc[n][2],fc[n][3],fc[n][4],fc[n][5],fc[n][6],fc[n][7]); */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					}
 					/* get coords */
 					/* border flag
@@ -2269,10 +2269,10 @@ intersections with the boundary.
 						clipped) ] */
 					if (clip_flag)
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						/* printf("%d %d %d clip_flag\n",i,j,k); */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						/* see if cell has alternative polygon
 							configurations */
 						for (m=0;m<n_scalar_fields;m++)
@@ -2333,8 +2333,8 @@ intersections with the boundary.
 									}
 									if ((p<0.0)||(p>1.0))
 									{
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 										/*???debug */
 										printf("iso error in case %d\n",icase[a]);
 										printf("p=%lf\n",p);
@@ -2369,8 +2369,8 @@ intersections with the boundary.
 										vectors_equal(v_out[a][n_triangles[a]][0],
 											v_out[a][n_triangles[a]][2],AREA_ACC))
 									{
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 										if (debug_flag)
 										{
 											printf("VECTORS EQUAL for triangle\n");
@@ -2535,15 +2535,15 @@ intersections with the boundary.
 							/* we successively clip field a with fields b */
 							/* allocate MC_cell triangle list structures */
 							/* create mc_cell if not already created */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							/* printf("----------- Allocating MC_cell %d %d %d --------------\n", */
 /* 								i,j,k); */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny] !=NULL)
 							{
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 								/*???debug */
 								printf("had to delete previous entry\n");
 								/* deletes cells not deleted if closed surface on */
@@ -2649,8 +2649,8 @@ intersections with the boundary.
 											}
 											/* outputs n_clipped_triangles into
 												clipped_triangle_list */
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 											/*???debug */
 											if (n_clipped_triangles >=MAX_INTERSECTION)
 											{
@@ -2729,8 +2729,8 @@ intersections with the boundary.
 															}
 															else
 															{
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 																/*???debug */
 																printf("****** ERROR : polygon does not lie on face\n");
 															}
@@ -2768,8 +2768,8 @@ intersections with the boundary.
 									}
 									if (mc_iso_surface->mc_cells[i+j*mcnx+k*mcnx*mcny]==NULL)
 									{
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#if defined (DEBUG_CODE)
+#endif /* defined (DEBUG_CODE) */
 										/*???debug */
 										printf("****** ERROR ****** cell (%d %d %d)=NULL\n",i,j,k);
 									}
@@ -2785,29 +2785,29 @@ intersections with the boundary.
 				} /*i*/
 			} /*j*/
 		} /*k*/
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (UNIX)
 		/*???debug */
 		real_time2=((double)times(&buffer))/100.0;
 		cpu_time2= ((double)buffer.tms_utime)/100.0;
 #endif
-#endif /* defined (DEBUG) */
-#if defined (DEBUG)
+#endif /* defined (DEBUG_CODE) */
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("3: #MC TRIANGLES=%d  #MC VERTICES=%d\n",
 			mc_iso_surface->n_triangles,mc_iso_surface->n_vertices);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if ((mc_iso_surface->n_triangles>0)&&((return_code=
 					compile_mc_vertex_triangle_lists(mc_iso_surface,closed_surface))>0))
 		{
 			/* create vertex list */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (UNIX)
 			real_time3=((double)times(&buffer))/100.0;
 			cpu_time3= ((double)buffer.tms_utime)/100.0;
 #endif
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 #ifdef CHECKLISTS
 			printf("Checking lists....\n");
@@ -2869,7 +2869,7 @@ intersections with the boundary.
 				  }*/
 			}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (UNIX)
 			/*???debug */
 			real_time4=((double)times(&buffer))/100.0;
@@ -2891,15 +2891,15 @@ intersections with the boundary.
 			  fclose(timefile);
 			*/
 #endif /* defined (UNIX) */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		}
 		else
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("WARNING: No polygons generated \n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (mc_iso_surface->compiled_vertex_list)
 			{
 				DEALLOCATE(mc_iso_surface->compiled_vertex_list);
@@ -2917,10 +2917,10 @@ intersections with the boundary.
 		display_message(ERROR_MESSAGE,"marching_cubes.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave marching_cubes\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);

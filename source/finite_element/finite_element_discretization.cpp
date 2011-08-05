@@ -952,10 +952,10 @@ comments for simplex and polygons shapes for more details.
 								}
 							}
 						}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug*/printf("3D_TRIANGLE_LINE n = %d = %d\n",
 							n, number_of_xi_points);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					} break;
 					case ELEMENT_CATEGORY_3D_POLYGON_LINE:
 					{
@@ -1248,12 +1248,12 @@ array is enlarged if necessary and the new points added at random locations.
 						(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - 0.5);
 						(*xi)[1] = 0.0;
 						(*xi)[2] = 0.0;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug*/
 						printf("FE_element_add_xi_points_1d_line_cell_random.  "
 							"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 							(*xi)[0], (*xi)[1], (*xi)[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						xi++;
 						(*number_of_xi_points)++;
 					}
@@ -1430,12 +1430,12 @@ array is enlarged if necessary and the new points added at random locations.
 								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
 								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
 								(*xi)[2] = 0.0;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/
 								printf("FE_element_add_xi_points_2d_square_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								xi++;
 								(*number_of_xi_points)++;
 							}
@@ -1456,12 +1456,12 @@ array is enlarged if necessary and the new points added at random locations.
 									xi++;
 									(*number_of_xi_points)++;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/
 								printf("FE_element_add_xi_points_2d_cube_cell_random.  "
 								"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							}			
 						} break;
 						default:
@@ -1633,12 +1633,12 @@ array is enlarged if necessary and the new points added at random locations.
 								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
 								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
 								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
  								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								xi++;
 								(*number_of_xi_points)++;
 							}
@@ -1661,12 +1661,12 @@ array is enlarged if necessary and the new points added at random locations.
 									xi++;
 									(*number_of_xi_points)++;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									xi0, xi1, xi2);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							}
 						} break;
 						case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
@@ -1707,12 +1707,12 @@ array is enlarged if necessary and the new points added at random locations.
 									xi++;
 									(*number_of_xi_points)++;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									(*xi)[0], (*xi)[1], (*xi)[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							}
 						} break;
 						default:
@@ -2043,11 +2043,11 @@ comments for simplex and polygons shapes for more details.
 			}
 			if (return_code)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("FE_element_get_xi_points_cell_random.  "
 					"Used %d out of %d points allocated\n",number_of_xi_points,number_of_xi_points_allocated);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				*number_of_xi_points_address = number_of_xi_points;
 				if (xi_points_address)
 				{

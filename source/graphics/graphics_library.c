@@ -527,7 +527,7 @@ initialised.
 
 		p=(char *)glGetString(GL_EXTENSIONS);
 	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/* For debugging */
 		{
 			char *vendor;
@@ -541,7 +541,7 @@ initialised.
 			printf("OpenGL %s\n", p);
 			printf("GLU %s\n", glu);
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if (NULL==p)
 		{
 			/* We still don't know, so return this and allow the calling

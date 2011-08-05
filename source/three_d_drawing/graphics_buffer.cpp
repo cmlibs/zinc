@@ -120,8 +120,8 @@ extern "C" {
 
 #include "three_d_drawing/window_system_extensions.h"
 
-/* #define DEBUG */
-#if defined DEBUG || defined (WIN32_USER_INTERFACE)
+/* #define DEBUG_CODE */
+#if defined DEBUG_CODE || defined (WIN32_USER_INTERFACE)
 #  include <stdio.h>
 #endif
 }
@@ -878,7 +878,7 @@ DESCRIPTION :
 
 	return_code = 0;
 	display = graphics_buffer_package->display;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	{
 		int value;
 		printf("Graphics_buffer_create_from_fb_config\n");
@@ -905,7 +905,7 @@ DESCRIPTION :
  		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_ALPHA_SIZE, &value);
 		printf("   accumulation alpha : %d\n", value);
 	}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	switch (buffer_class)
 	{
@@ -1015,7 +1015,7 @@ DESCRIPTION :
 			}
 		} break;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("Graphics_buffer_create_from_fb_config\n");
 	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
@@ -1027,7 +1027,7 @@ DESCRIPTION :
  		glXQueryContext(display, buffer->context, GLX_FBCONFIG_ID, &value);
 		printf("   fbconfig id : %d\n", value);
 	}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	LEAVE;
 
@@ -1179,14 +1179,14 @@ the equivalent GLX1.3 versions.
 			}
 		} break;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("Graphics_buffer_create_from_fb_config_sgi\n");
 	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
 	printf("   buffer->config : %p\n", buffer->config);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
 	printf("   buffer->context : %p\n\n", buffer->context);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	LEAVE;
 
@@ -1310,13 +1310,13 @@ DESCRIPTION :
 			}
 		} break;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("Graphics_buffer_create_from_visual_info\n");
 	printf("   buffer_class : %d\n", buffer_class);
 	printf("   buffer->type : %d\n", buffer->type);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
 	printf("   buffer->context : %p\n\n", buffer->context);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	LEAVE;
 
@@ -3558,10 +3558,10 @@ DESCRIPTION :
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 				"Unable to create offscreen graphics buffer.");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
 	}
@@ -3614,10 +3614,10 @@ DESCRIPTION :
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 				"Unable to create offscreen graphics buffer.");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
 	}
@@ -3674,11 +3674,11 @@ DESCRIPTION :
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
 				"Unable to create offscreen_from_buffer graphics buffer.");
 			buffer = (struct Graphics_buffer *)NULL;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
 	}
@@ -3721,10 +3721,10 @@ DESCRIPTION :
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
 		if (buffer->type != GRAPHICS_BUFFER_GLX_X3D_TYPE)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
 				"Unable to create X3d graphics buffer.");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
 	}
@@ -3764,10 +3764,10 @@ DESCRIPTION :
 			buffer_to_match);
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
 				"Unable to create X3d graphics buffer.");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
 	}
@@ -3891,9 +3891,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					const float float_pbuffer_attributes[]={
 						0};
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Trying pbuffer\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 					/* Only get the first valid format */
 					if(wglChoosePixelFormatARB(buffer->package->hidden_graphics_buffer->hDC,
@@ -3971,9 +3971,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					}
 				}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Bitmap bit count %d\n", bmi.bmiHeader.biBitCount);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				bmi.bmiHeader.biCompression = BI_RGB;
 				bmi.bmiHeader.biSizeImage = 0;
@@ -3994,9 +3994,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				SelectObject(buffer->device_independent_bitmap_hdc,
 					buffer->device_independent_bitmap);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf ("Made dib\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				return_code = 1;
 
@@ -4230,9 +4230,9 @@ DESCRIPTION :
 				{
 					if (GRAPHICS_BUFFER_GTK_COPY_PBUFFER_TYPE == buffer->type)
 					{
-	#if defined (DEBUG)
+	#if defined (DEBUG_CODE)
 						printf("Using pbuffer\n");
-	#endif /* defined (DEBUG) */
+	#endif /* defined (DEBUG_CODE) */
 						use_pbuffer = 1;
 					}
 					else
@@ -4463,9 +4463,9 @@ DESCRIPTION :
 			{
 				if (GRAPHICS_BUFFER_GTK_COPY_PBUFFER_TYPE == buffer->type)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Using pbuffer\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					use_pbuffer = 1;
 				}
 				else
@@ -4703,15 +4703,15 @@ Actually make the OpenGL context.
 
 			if (format)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf ("Trying format %d, selection level %d\n",
 					format, best_selection_level);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if(SetPixelFormat( buffer->hDC, format, &pfd ))
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf ("SetPixelFormat %d success\n", format);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					buffer->pixel_format = format;
 				}
 				else
@@ -4774,7 +4774,7 @@ Actually make the OpenGL context.
 			{
 				if(wglMakeCurrent(buffer->hDC,buffer->hRC))
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Made new context %p %p\n", buffer->hDC, buffer->hRC);
 
 					PIXELFORMATDESCRIPTOR pfd;
@@ -4809,7 +4809,7 @@ Actually make the OpenGL context.
 					printf("Z depth %d\n",  pfd.cDepthBits);
 					printf("Alpha depth %d\n",  pfd.cAlphaBits);
 					printf("Accumulation depth %d\n",  pfd.cAccumBits);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 				else
 				{
@@ -4819,9 +4819,9 @@ Actually make the OpenGL context.
 				}
 			}
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		fflush(stdout);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	}
 	else
 	{
@@ -4851,10 +4851,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 	if (buffer)
 	{
 		return_code = 0;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("Graphics_buffer_win32_reallocate_offscreen_size %p checking size %d %d current %d %d\n",
 				buffer, buffer->width, buffer->height, buffer->offscreen_width, buffer->offscreen_height);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 		/* We never bother to reduce the size */
 		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
@@ -4933,9 +4933,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 
 				Graphics_buffer_make_current(buffer->package->hidden_graphics_buffer);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Made hidden window current\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				if (Window_system_extensions_check_wgl_extension(WGL_ARB_pixel_format) &&
 					Window_system_extensions_check_wgl_extension(WGL_ARB_pbuffer))
@@ -4966,9 +4966,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					const float float_pbuffer_attributes[]={
 						0};
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Trying pbuffer\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 					/* Only get the first valid format */
 					if(wglChoosePixelFormatARB(buffer->package->hidden_graphics_buffer->hDC,
@@ -4986,9 +4986,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 								buffer->type = GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE;
 								buffer->pixel_format = pixel_format;
 								return_code = 1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								printf("Using pbuffer\n");
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 							}
 							else
 							{
@@ -5009,9 +5009,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				{
 					/* Try non accelerated bitmap OpenGL instead */
 					return_code = 1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Using non accelerated bitmap\n");
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 				}
 			}
 #endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
@@ -5052,10 +5052,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					}
 				}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Bitmap bit count %d %d\n", bmi.bmiHeader.biBitCount,
 				       GetDeviceCaps(onscreen_hdc, BITSPIXEL));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				bmi.bmiHeader.biCompression = BI_RGB;
 				bmi.bmiHeader.biSizeImage = 0;
@@ -5079,11 +5079,11 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				SelectObject(buffer->device_independent_bitmap_hdc,
 					buffer->device_independent_bitmap);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Made dib %p %p %d\n",
 				       buffer->device_independent_bitmap_hdc,
 				       buffer->device_independent_bitmap, buffer->type);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				return_code = 1;
 
@@ -5092,9 +5092,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->type = GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE;
 					/* We use the bitmap directly as the OpenGL rendering surface */
 					buffer->hDC = buffer->device_independent_bitmap_hdc;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("buffer->hDC %p\n", buffer->hDC);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 
 			}
@@ -5112,9 +5112,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 						In the intel workaround case we only want to destroy it at the end. */
 					if (buffer->hRC && (buffer->hRC != buffer->package->wgl_shared_context))
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						printf("Graphics_buffer_win32_reallocate_offscreen_size %p wglDeleteContext %p\n", buffer, buffer->hRC);	
-#endif //defined (DEBUG)
+#endif //defined (DEBUG_CODE)
 						wglDeleteContext(buffer->hRC);
 					}
 				}
@@ -5202,10 +5202,10 @@ are performed but the graphics window will render into the supplied device conte
 
 			render_offscreen = 1;
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf ("create_Graphics_buffer_win32 %p %p %p\n",
 			hWnd, hDC, buffer->hDC);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* Defer creating the graphics context for offscreen rendering until we actually need it
 		 * and will have the correct initial sizes.
@@ -5269,22 +5269,22 @@ mode with zinc.
 		  HDC hdc = (HDC)first_message;
 		  RECT * drc = (RECT *)second_message;
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf("Graphics_buffer_handle_windows_event paint %p\n",
 					buffer);
 		  printf ("Graphics_buffer_handle_windows_event WMPAINT\nhdc %p left %ld right %ld top %ld bottom %ld\n",
 				  hdc, drc->left, drc->right, drc->top, drc->bottom);
 		  fflush(stdout);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 		  Graphics_buffer_win32_reallocate_offscreen_size(buffer, hdc);
 
 		  if (buffer->offscreen_render_required)
 		  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("Graphics_buffer_handle_windows_event render required %p\n",
 					buffer);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 			  wglMakeCurrent( buffer->hDC, buffer->hRC );
 
 			  if (buffer->offscreen_render_required == 1)
@@ -5301,10 +5301,10 @@ mode with zinc.
 			  }
 			  if (buffer->type == GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE)
 			  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				  printf("Graphics_buffer_handle_windows_event opengl update %p\n",
 				     buffer);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 				  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
 				  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
@@ -5390,10 +5390,10 @@ mode with zinc.
 	                  
 			  if ((width > 0) && (height > 0))
 			  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				  const char *vendor_string = (const char *)glGetString(GL_VENDOR);
 				  printf ("Rendering with %s\n", vendor_string);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				  switch (buffer->type)
 				  {
@@ -5401,7 +5401,7 @@ mode with zinc.
 					  {
 						  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
 						  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							  printf ("Going to blend %d %d %d %d (bgra %d %d %d %d)\n",
 								  x - buffer->x, buffer->offscreen_height - height - y + buffer->y,
 								  width, height,
@@ -5413,7 +5413,7 @@ mode with zinc.
 								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 2],
 								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
 								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 3]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 							  BLENDFUNCTION blendfunction =
 								  {
@@ -5431,7 +5431,7 @@ mode with zinc.
 						  }
 						  else
 						  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (DRAW_A_TEST_LINE)
 							  {
 								  int i;
@@ -5481,7 +5481,7 @@ mode with zinc.
 									  printf("   Pixels %0lX %d\n", previous, repeat);
 							  }
 #endif // defined (WRITE_EVERY_PIXEL)
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 							  
 							  BitBlt(hdc, x, y, width, height,
@@ -5511,7 +5511,7 @@ mode with zinc.
 									  AC_SRC_ALPHA
 								  };
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							  printf ("Copied pixels %d %d %d %d (rgba %d %d %d %d)\n",
 								  x - buffer->x, y - buffer->y,
 								  width, height,
@@ -5526,7 +5526,7 @@ mode with zinc.
 							  printf ("Going to alpha blend %ld %d %d %ld %d %d\n",
 								  drc->left, buffer->x, buffer->width,
 								  drc->top, buffer->y, buffer->height );
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 							  AlphaBlend(hdc, x, y, width, height,
 								  buffer->device_independent_bitmap_hdc, 0, 0, width, height,
@@ -5534,7 +5534,7 @@ mode with zinc.
 						  }
 						  else
 						  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (DRAW_A_TEST_LINE)
 							  for (int i = 0 ; i < 128 ; i++)
 								  memset(((char *)buffer->device_independent_bitmap_pixels) + 10 + i * 3 + i * 3 * buffer->offscreen_width, 128,
@@ -5563,7 +5563,7 @@ mode with zinc.
 										  printf("Error writing pixel to %p", buffer->device_independent_bitmap_hdc);
 							  }
 #endif // defined (DRAW_A_TEST_LINE)
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 							  BitBlt(hdc, x, y, width, height,
 								  buffer->device_independent_bitmap_hdc, 0, 0,
@@ -5578,26 +5578,26 @@ mode with zinc.
 					  }
 				  }
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				  printf ("BitBlt %d %d %d %d\n", x, y, width, height);
 				  fflush(stdout);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			  }
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			  else
 			  {
 				  printf ("Nothing to render %d %d, %d %d %d %d\n", width, height, x, y, right, bottom);
 				  fflush(stdout);
 			  }
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		  }
 		  return_code=1;
 	  } break;
 	  case WM_SIZING:
 	  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf ("Graphics_buffer_handle_windows_event WM_SIZING\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			  buffer->resize_callback_list, buffer, NULL);
@@ -5614,11 +5614,11 @@ mode with zinc.
 	  case WM_MBUTTONDOWN:
 	  case WM_MBUTTONUP:
 	  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf ("Graphics_buffer_handle_windows_event WM_BUTTON %d %d %d %d\n",
 				  GET_X_LPARAM(second_message), GET_Y_LPARAM(second_message),
 				  buffer->mouse_x, buffer->mouse_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		  LPARAM offset_coordinates;
 
@@ -5633,9 +5633,9 @@ mode with zinc.
 	  {
 	    /* This message does not seem to propagate through to zinc so
 	     setting cursor on WM_MOUSEMOVE above instead*/
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf ("Graphics_buffer_handle_windows_event WM_SETCURSOR\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 //	          SetCursor(LoadCursor(NULL, IDC_ARROW));
 		  return_code=1;
 	  } break;
@@ -5672,10 +5672,10 @@ will be requested with handle_windows_event.
 		buffer->height = height;
 		buffer->x = x;
 		buffer->y = y;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("Graphics_buffer_win32_set_window_size width %d height %d x %d y %d\n",
 			width, height, x, y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	}
 	else
 	{
@@ -5707,9 +5707,9 @@ DESCRIPTION:
 	struct Graphics_buffer *graphics_buffer =
 		(struct Graphics_buffer *)GetWindowLongPtr(window, GWL_USERDATA);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("window callback %d\n", message_identifier);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	switch (message_identifier)
 	{
@@ -5728,9 +5728,9 @@ DESCRIPTION:
 		*/
 		case WM_PAINT:
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("WM_PAINT\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			BeginPaint(window, &ps);
 			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 				graphics_buffer->expose_callback_list, graphics_buffer, NULL);
@@ -5795,30 +5795,30 @@ DESCRIPTION:
 		} break;
 		case WM_ERASEBKGND:
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("WM_ERASEBKGND\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			return_code=TRUE;
 		} break;
 		case WM_WINDOWPOSCHANGED:
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("WM_WINDOWPOSCHANGED\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			return_code=TRUE;
 		} break;
 		case WM_MOVE:
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("WM_MOVE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			return_code=0;
 		} break;
 		case WM_SIZE:
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("WM_SIZE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			return_code=0;
 		} break;
 		default:
@@ -5909,32 +5909,32 @@ DESCRIPTION :
 		GetEventParameter (event, kEventParamMouseLocation,
 			typeHIPoint, NULL, sizeof(HIPoint), NULL, &location);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("  Graphics_buffer_mouse_Carbon_callback %lf %lf\n",
 			location.x, location.y);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
  		// Convert from global screen coordinates to window coordinates
 		GetWindowBounds(GetWindowFromPort(buffer->port),
 			kWindowGlobalPortRgn, &global_bounds);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("    global bounds %d %d\n", global_bounds.top, global_bounds.left);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 		location.x -= global_bounds.left;
 		location.y -= global_bounds.top;
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("    local coordinates %lf %lf\n", location.x, location.y);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 		location.x -= -buffer->portx;
 		location.y -= -buffer->porty;
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("    graphics buffer coordinates %lf %lf\n", location.x, location.y);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 		if ((location.x < 0) ||
 			(location.x > buffer->clip_width) ||
@@ -6300,9 +6300,9 @@ DESCRIPTION :
 
 	if (buffer)
 	{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("Graphics_buffer_make_current\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		switch (buffer->type)
 		{
 #if defined (MOTIF_USER_INTERFACE)
@@ -6337,10 +6337,10 @@ DESCRIPTION :
 #else /* defined (GTK_USE_GTKGLAREA) */
 			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Graphics_buffer_make_current %p %p\n",
 					buffer->gldrawable, buffer->glcontext);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				gdk_gl_drawable_make_current(buffer->gldrawable, buffer->glcontext);
 				return_code = 1;
 			} break;
@@ -6358,10 +6358,10 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Graphics_buffer_make_current %p %p\n",
 					buffer->hDC, buffer->hRC);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				wglMakeCurrent( buffer->hDC, buffer->hRC );
 				return_code = 1;
 			} break;
@@ -8191,9 +8191,9 @@ x==============================================================================*
 			In the intel workaround case we only want to destroy it at the end. */
 		if (buffer->hRC && (buffer->hRC != buffer->package->wgl_shared_context))
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("wglDeleteContext %p\n", buffer->hRC);	
-#endif //defined (DEBUG)
+#endif //defined (DEBUG_CODE)
 			wglDeleteContext(buffer->hRC);
 		}
 		switch (buffer->type)

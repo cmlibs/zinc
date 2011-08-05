@@ -3266,7 +3266,7 @@ int Cmiss_graphic_to_graphics_object(
 									graphic->stream_vector_field,
 									graphic_to_object_data->rc_coordinate_field))))
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug*/
 						if ((graphic_string = Cmiss_graphic_string(graphic,
 								GRAPHIC_STRING_COMPLETE_PLUS)) != NULL)
@@ -3274,7 +3274,7 @@ int Cmiss_graphic_to_graphics_object(
 							printf("> building %s\n", graphic_string);
 							DEALLOCATE(graphic_string);
 						}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						Cmiss_graphic_get_top_level_number_in_xi(graphic,
 							MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
 						graphic_to_object_data->existing_graphics =
@@ -3296,9 +3296,9 @@ int Cmiss_graphic_to_graphics_object(
 								if (GT_object_has_primitives_at_time(graphic->graphics_object,
 										time))
 								{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									GET_NAME(GT_object)(graphic->graphics_object, &existing_name);
 									graphic_to_object_data->existing_graphics =
 										CREATE(GT_object)(existing_name,

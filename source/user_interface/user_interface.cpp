@@ -651,11 +651,11 @@ actual polling.  Unnecessary in Gtk2 as there is a much more complete interface.
 							asked about in the query, hopefully this doesn't happen
 							too often, and even when it does that another query/check
 						   loop will happen so that the descriptor can be included. */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						display_message(ERROR_MESSAGE,
 							"User_interface_gtk_gpoll_callback.  "
 							"Requested a file descriptor not in our list");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					}
 				}
 			}
@@ -1074,12 +1074,12 @@ unsuccessful.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(create_Shell_list_item);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (MOTIF_USER_INTERFACE)
 printf("enter create_Shell_list_item.  shell_address=%p, user_interface=%p, shell=%p\n",
 	shell_address,user_interface,*shell_address);
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	if (ALLOCATE(list_item,struct Shell_list_item,1))
 	{
 		list_item->user_interface=user_interface;
@@ -1132,12 +1132,12 @@ for the <list_item>.  <*list_item> is set to NULL.
 	struct User_interface *user_interface;
 
 	ENTER(destroy_Shell_list_item);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 #if defined (MOTIF_USER_INTERFACE)
 printf("enter destroy_Shell_list_item.  shell_address=%p, user_interface=%p\n",
 	(*list_item)->shell_address,(*list_item)->user_interface);
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	if (list_item&&(item= *list_item)&&(user_interface=item->user_interface))
 	{
 		/* remove item from shell list */
@@ -1184,10 +1184,10 @@ and frees the memory for the <list_item>.
 	struct Shell_list_item *item;
 
 	ENTER(destroy_Shell_list_item_from_shell);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 printf("enter destroy_Shell_list_item_from_shell.  shell_address=%p, user_interface=%p\n",
 	shell_address,user_interface);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	if (shell_address&&user_interface)
 	{
 		item=user_interface->shell_list;
@@ -2780,10 +2780,10 @@ success and 0 for failure.
 			  if (MrmSUCCESS==MrmOpenHierarchy(1, &ptr_temp_uid_name,
 					NULL,hierarchy))
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(
 						"MrmOpenHierarchy_binary_string.  opened temp file hierachy\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					*hierarchy_open=1;
 					return_code=1;
 				}
@@ -2888,9 +2888,9 @@ success and 0 for failure.
 						if (MrmSUCCESS==MrmOpenHierarchy(number_of_strings, temp_uid_names,
 								NULL,hierarchy))
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							printf("MrmOpenHierarchy_binary_multiple_strings.  opened temp file hierachy\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							*hierarchy_open=1;
 							return_code=1;
 						}

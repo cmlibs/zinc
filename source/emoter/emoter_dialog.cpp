@@ -604,9 +604,9 @@ Returns the vector of mode shapes.
 
 	ENTER(emoter_sum_all_modes);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("emoter_sum_all_modes\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 
 	/* First reset all the flags (so no slider is added in twice)
@@ -681,9 +681,9 @@ Sets the nodes according to all the values of the sliders
 
 	ENTER(emoter_update_face);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("emoter_update_face\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	if ( !shared->movie_playing )
 	{
@@ -2703,16 +2703,16 @@ Reads stuff from a file.
 
 					return_code = 0;
 					slider_to_combine = (struct Emoter_slider *)NULL;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(" %d\n", shared->number_of_sliders);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					for ( i = 0 ; i < shared->number_of_sliders ; i++ )
 					{
 						if ( (shared->sliders[i])->sequence_filename )
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							printf("%s   %s\n", temp_string, (shared->sliders[i])->sequence_filename);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							if ( !strcmp( temp_string, (shared->sliders[i])->sequence_filename ))
 							{
 								slider_to_combine = shared->sliders[i];

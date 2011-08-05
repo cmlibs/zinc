@@ -1227,7 +1227,7 @@ tiles (and <texture_tiling> wasn't NULL.
 			}
 			while ((test_width == 0) && return_code)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf ("texture_dimension %d\n", texture->dimension);
 				printf ("hardware_texture_format %d\n", hardware_texture_format);
 				printf ("format %d\n", format);
@@ -1248,7 +1248,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					printf ("reductions[2] %d\n", reductions[2]);
 				}
 				printf ("next_reduction %d\n\n", next_reduction);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				switch (texture->dimension)
 				{
 					case 1:
@@ -1343,7 +1343,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					}
 				}
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			{
 				int i;
 				printf(" texture.c : max_texture_size %d\n", max_texture_size);
@@ -1353,7 +1353,7 @@ tiles (and <texture_tiling> wasn't NULL.
 				}
 				printf("\n");
 			}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (texture->texture_tiling)
 			{
 				DEACCESS(Texture_tiling)(&texture->texture_tiling);
@@ -1631,14 +1631,14 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 											}
 											*destination = lround(accumulator / number_of_accumulated_pixels);
 											destination++;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 //											printf(" %lf-%lf(%d-%d) %lf-%lf(%d-%d) %lf-%lf(%d-%d)  axi %lf %lf bxi %lf %lf cxi %lf %lf\n       number %lf %lf accumulation %lf\n",
 //													source_depth_start, source_depth_end, a_start, a_end, 
 //													source_height_start, source_height_end, b_start, b_end,
 //													source_width_start, source_width_end, c_start, c_end,
 //													xi_a_start, xi_a_end, xi_b_start, xi_b_end, xi_c_start, xi_c_end, 
 //													number_of_accumulated_pixels, xi_accumulator, accumulator);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 										}
 									}
 									if (0 < padding_bytes)
@@ -2105,10 +2105,10 @@ and overwritten.
 				pad_z_start = 0;
 				pad_z_end = 0;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf ("Rendering tile %d, tile_x %d, tile_y %d, tile_z %d\n",
 				tile_number, tile_x, tile_y, tile_z);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		}
 		source = texture->image + source_row_width_bytes *
 			(start_y + start_z * texture->height_texels) +
@@ -2163,14 +2163,14 @@ and overwritten.
 			}
 			source += source_row_width_bytes * (texture->height_texels -
 				texture_tiling->tile_size[1]);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			unsigned char *expected_destination = *tile_image + tile_row_width_bytes * texture_tiling->tile_size[1] * (z - start_z + 1); 
 			if (destination != expected_destination)
 			{
 				printf("destination mismatch %p %p %d\n", destination, expected_destination,
 					destination - expected_destination);
 			}
-#endif // defined (DEBUG)			
+#endif // defined (DEBUG_CODE)			
 		}
 		for (i = 0 ; i < pad_z_start ; i++)
 		{
@@ -2429,9 +2429,9 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 		
 		number_of_levels = (unsigned int)floor(log2(max_size)) + 1;
 		
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("Max size %d levels %u\n", max_size, number_of_levels);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 		
 		unsigned char *previous_mipmap_image = source_image;
 		int previous_mipmap_width = render_width;
@@ -2456,9 +2456,9 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 			if (level_depth < 1)
 				level_depth = 1;
 			
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf(" Level %u (%d,%d,%d)\n", level, level_width, level_height, level_depth);
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 			unsigned char *mipmap_image = Texture_get_resized_image(texture,
 				previous_mipmap_image, previous_mipmap_width, previous_mipmap_height, previous_mipmap_depth,
@@ -2591,7 +2591,7 @@ Directly outputs the commands setting up the <texture>.
 						format,type, NULL);
 					glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
 						texture->width_texels, texture->height_texels);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA8_EXT, 0, 0,
 						256, 256, 0);
 					glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
@@ -2608,7 +2608,7 @@ Directly outputs the commands setting up the <texture>.
 							256,(GLint)0,
 							GL_RGBA,GL_UNSIGNED_BYTE, test_pixels);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 				else
 				{
@@ -6768,12 +6768,12 @@ The command is started with the string pointed to by <command_prefix>.
 		{
 			display_message(INFORMATION_MESSAGE," movie");
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug*/if (texture->image_file_name&&texture->movie)
 		{
 			printf("Texture %s has image_file_name and movie!!\n",texture->name);
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		/* write the texture size in model units */
 		display_message(INFORMATION_MESSAGE," width %g height %g depth %g",
 			texture->width, texture->height, texture->depth);
@@ -6886,7 +6886,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
 						}
 						X3dThreeDDrawingRemakeCurrent();
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					} break;
 					case TEXTURE_PBUFFER:
 					{

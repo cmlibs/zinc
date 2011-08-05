@@ -138,9 +138,9 @@ Creates the interpreter for processing commands.
 		  {
 			  printf("PCRE REGEX error %s\n", pcre_error_string);
 		  }
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf("Assignment regex: %s\n", assignment_regex);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	  }
 
 	  {
@@ -152,9 +152,9 @@ Creates the interpreter for processing commands.
 		  {
 			  printf("PCRE REGEX error %s\n", pcre_error_string);
 		  }
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf("Substitute regex: %s\n", substitute_regex);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	  }
   }
   else
@@ -251,10 +251,10 @@ back to the main program.
 				strlen(command_string), /*offset*/0, /*options*/0,
 				matches, sizeof(matches)/sizeof(int)))
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf(" VARIABLE DEF MATCH %d %d\n%s\n",
 				matches[0], matches[1], command_string);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if ((interpreter->variable_names = (char **)realloc(
 					 interpreter->variable_names, 
 					 (interpreter->number_of_variables + 1) * sizeof(char *)))
@@ -295,9 +295,9 @@ back to the main program.
 						new_name;
 					interpreter->variable_values[interpreter->number_of_variables] =
 						new_value;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf ("  new variable %s = %s\n", new_name, new_value);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					interpreter->number_of_variables++;
 				}
 			}
@@ -316,19 +316,19 @@ back to the main program.
 				strlen(current_string), /*offset*/0, /*options*/0,
 				matches, sizeof(matches)/sizeof(int))))
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf(" MATCH %d %d %s\n",
 				       matches[0], matches[1], current_string);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				match = -1;
 				for (i = 0 ; (match == -1) && (i < interpreter->number_of_variables) ; i++)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Comparing %d characters %s  %s\n",
 					       (int)strlen(interpreter->variable_names[i]),
 						command_string + matches[0] + 1,
 						interpreter->variable_names[i]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (!strncmp(command_string + matches[0] + 1,
 							interpreter->variable_names[i],
 							strlen(interpreter->variable_names[i])))

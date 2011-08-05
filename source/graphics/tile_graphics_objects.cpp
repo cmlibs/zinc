@@ -1005,9 +1005,9 @@ static int tile_and_bin_GT_surface_quads(struct GT_surface *surface,
 		current_surface = surface;
 		for (k = 0 ; return_code && (k < texture_tiling->dimension) ; k++)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("direction %d\n", k);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (texture_tiling->texture_tiles[k] > 1)
 			{
 				new_surface = tile_create_GT_surface(current_surface,
@@ -1029,12 +1029,12 @@ static int tile_and_bin_GT_surface_quads(struct GT_surface *surface,
 						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
 					vertexk[3] = (texturetri[index+3][k]) / 
 						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(" tricoordinates %g %g %g\n",
 						texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
 					printf(" vertexk %g %g %g\n",
 						vertexk[0], vertexk[1], vertexk[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
 					{
 						vertexstart = 0;
@@ -1060,11 +1060,11 @@ static int tile_and_bin_GT_surface_quads(struct GT_surface *surface,
 						}
 					}
 	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(" vertexstart %d %g %g %g\n",
 						vertexstart, vertexk[vertexstart],
 						vertexk[vertexi], vertexk[vertexj]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	
 					nextcut = floor(vertexk[vertexstart] + 1.0 + small_tolerance);
 					if (vertexk[vertexj] > vertexk[vertexi] + small_tolerance)
@@ -1233,9 +1233,9 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 		current_surface = surface;
 		for (k = 0 ; return_code && (k < texture_tiling->dimension) ; k++)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("direction %d\n", k);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (texture_tiling->texture_tiles[k] > 1)
 			{
 				new_surface = tile_create_GT_surface(current_surface,
@@ -1252,12 +1252,12 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
 					vertexk[2] = (texturetri[index+2][k]) / 
 						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(" tricoordinates %g %g %g\n",
 						texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
 					printf(" vertexk %g %g %g\n",
 						vertexk[0], vertexk[1], vertexk[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
 					{
 						vertexstart = 0;
@@ -1280,11 +1280,11 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 						}
 					}
 	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf(" vertexstart %d %g %g %g\n",
 						vertexstart, vertexk[vertexstart],
 						vertexk[vertexi], vertexk[vertexj]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	
 					nextcuti = floor(vertexk[vertexstart] + 1.0 + small_tolerance);
 					nextcutj = nextcuti;					
@@ -1335,7 +1335,7 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 							xij = 1.0;
 						}
 	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						float lastcut;
 						if (stepindex == 0)
 						{
@@ -1351,7 +1351,7 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 							stepindex, lastcut,
 							nextcuti, nextcutj,
 							vertexk[vertexi], vertexk[vertexj], xi0);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	
 						index_new = 3 * new_surface->n_pts1;
 						if (tile_interpolate_triangle(new_surface,
@@ -1399,11 +1399,11 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 							if ((nextcuti != vertexk[vertexi])
 								|| (nextcutj != vertexk[vertexj]))
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								printf("  not finished %g %g  %g %g\n",
 									nextcuti, nextcutj,
 									vertexk[vertexi], vertexk[vertexj]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								/* Add the remainder to the old list */
 								if (nextcuti < vertexk[vertexi])
 								{
@@ -1434,14 +1434,14 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 									return_code = 0;
 								}
 							}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							else
 							{
 								printf("  finished %g %g  %g %g\n",
 									nextcuti, nextcutj,
 									vertexk[vertexi], vertexk[vertexj]);
 							}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						}
 					}
 				}
@@ -1518,7 +1518,7 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 	return (return_code);
 } /* tile_and_bin_GT_surface */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 static int write_GT_surface(struct GT_surface *surface)
 {
 	struct GT_surface *current_surface = surface;
@@ -1584,7 +1584,7 @@ static int write_GT_surface(struct GT_surface *surface)
 
 	return (1);
 }
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 
 static int tile_test_aligned_texture_coordinates(Triple vertex1, Triple vertex2)
 {
@@ -1837,12 +1837,12 @@ tiles.
 					tile_reallocate_GT_surface(current_surface,
 						index);
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/* Writing every surface is helpful when using valgrind so that it traps
 				 * earlier.  i.e. now rather than in the opengl render.
 				 */
 				write_GT_surface(current_surface);				
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 			}
 			if (triangle_tiles[i])
 			{
@@ -1863,9 +1863,9 @@ tiles.
 					tile_reallocate_GT_surface(current_surface,
 						index);
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				write_GT_surface(current_surface);				
-#endif // defined (DEBUG)
+#endif // defined (DEBUG_CODE)
 			}
 		}
 		DEALLOCATE(surface_tiles);

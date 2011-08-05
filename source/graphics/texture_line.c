@@ -125,10 +125,10 @@ DESCRIPTION :
 	struct VT_texture_curve **p;
 
 	ENTER(add_curve_to_list);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 /*???debug */
 printf("adding curve to list\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* default return value */
 	return_code=0;
 	/* checking arguments */

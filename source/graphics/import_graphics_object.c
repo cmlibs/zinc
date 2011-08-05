@@ -227,10 +227,10 @@ DESCRIPTION :
 	float time;
 
 	ENTER(file_read_graphics_objects);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug*/
 	printf("ENTER(file_read_graphics_objects)\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	if (file_name)
 	{
 		/* files without a header default to 1 */
@@ -242,11 +242,11 @@ DESCRIPTION :
 			while (return_code&&(IO_stream_scan(stream,"%s",objname)!=EOF)&&
 				(strcmp(objname,"END_OF_FILE")))
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("\nReading object: %s\n",objname);
 				display_message(INFORMATION_MESSAGE,"Reading object: %s\n",objname);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (fuzzy_string_compare(objname,"CMISS"))
 				{
 					/* version information */
@@ -347,12 +347,12 @@ DESCRIPTION :
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
 						}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("object type = %d (%s)\n",object_type,
 							get_GT_object_type_string(object_type));
 						printf("object name = %s\n",objname);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						switch (object_type)
 						{
 							case g_POINT:
@@ -371,10 +371,10 @@ DESCRIPTION :
 							} break;
 							case g_POINTSET:
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("Reading g_POINTSET\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								IO_stream_scan(stream,"%d",&npts1);
 								/*???DB.  Check allocation */
 								ALLOCATE(pointlist,Triple,npts1);
@@ -390,25 +390,25 @@ DESCRIPTION :
 									(char **)NULL,g_PLUS_MARKER,global_point_size,g_NO_DATA,
 									(GTDATA *)NULL,(int *)NULL, (struct Graphics_font *)NULL);
 								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" end of g_POINTSET\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							} break;
 							case g_POLYLINE:
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("Reading g_POLYLINE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								/*IO_stream_scan(stream,"%d",&polyline_type);*/
 								if (file_read_GT_polyline_type(stream,&polyline_type))
 								{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug */
 									printf("  polyline_type = %d (%s)\n",polyline_type,
 										get_GT_polyline_type_string(polyline_type));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									IO_stream_scan(stream,"%d",&npts1);
 									/* must clear the following since passed directly to
 										 CREATE(GT_surface) unless specifically allocated */
@@ -486,25 +486,25 @@ DESCRIPTION :
 										"file_read_graphics_objects.  Unknown polyline type");
 									return_code=0;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" end of g_POLYLINE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							} break;
 							case g_SURFACE:
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("Reading g_SURFACE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								/*IO_stream_scan(stream,"%d",&surface_type);*/
 								if (file_read_GT_surface_type(stream,&surface_type))
 								{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug */
 									printf("  surface_type = %d (%s)\n",surface_type,
 										get_GT_surface_type_string(surface_type));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									IO_stream_scan(stream,"%d",&n_data_components);
 									IO_stream_scan(stream,"%d",&npts1);
 									IO_stream_scan(stream,"%d",&npts2);
@@ -524,10 +524,10 @@ DESCRIPTION :
 										case g_SH_DISCONTINUOUS:
 										case g_SH_DISCONTINUOUS_STRIP:
 										{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 											/*???debug */
 											printf("g_SH_DISCONTINUOUS\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											ALLOCATE(pointlist,Triple,npts1*npts2);
 											ALLOCATE(normallist,Triple,npts1*npts2);
 											for (i=0;i<npts1;i++)
@@ -562,10 +562,10 @@ DESCRIPTION :
 										default:      /* continuous types */
 										{
 											/* Only reads points, and normals, No texture coordinates */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 											/*???debug */
 											printf("default\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											ALLOCATE(pointlist,Triple,npts1*npts2);
 											ALLOCATE(normallist,Triple,npts1*npts2);
 											for (i=0;i<npts1;i++)
@@ -611,17 +611,17 @@ DESCRIPTION :
 										"file_read_graphics_objects.  Unknown surface type");
 									return_code=0;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" end of g_SURFACE\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							} break;
 							case g_NURBS:
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("Reading g_NURBS\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								/* 26 June 97. Added nurbs_type */
 								if (version < 3)
 								{
@@ -720,24 +720,24 @@ DESCRIPTION :
 										"file_read_graphics_objects.  Unable to create GT_nurbs object.");
 									return_code=0;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" end of g_NURBS\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							} break;
 							case g_USERDEF:
 							{
 								/*--------- application specific user defined --------*/
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("Reading g_USERDEF\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								file_read_userdef(stream,&userdef);
 								GT_OBJECT_ADD(GT_userdef)(obj,time,userdef);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" end of g_USERDEF\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							} break;
 							default:
 							{
@@ -787,10 +787,10 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_graphics_objects.  Invalid argument(s)");
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("LEAVE(file_read_graphics_objects)\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);

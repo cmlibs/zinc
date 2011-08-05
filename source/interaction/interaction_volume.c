@@ -441,7 +441,7 @@ and will span between their centres.
 				{
 					/* check projections match */
 					matching_projections=1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					{
 						int i;
 						/* SAB Removed this check as we just want to use the 
@@ -458,7 +458,7 @@ and will span between their centres.
 							}
 						}
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if ((interaction_volume1->data.ray_frustum.viewport_left !=
 						interaction_volume2->data.ray_frustum.viewport_left)||
 						(interaction_volume1->data.ray_frustum.viewport_width !=

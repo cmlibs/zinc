@@ -328,10 +328,10 @@ and <pf_get_marker_fitted_positions>.
 		vector[0] = -sin(rotation_angle2) * sin(rotation_angle1);
 		vector[1] = cos(rotation_angle2);
 		vector[2] = -sin(rotation_angle2) * cos(rotation_angle1);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		fprintf(file, "#Rotated default up vector %g %g %g\n",
 				vector[0], vector[1], vector[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		magnitude = sqrt (up_vector[0] * up_vector[0] +
 				up_vector[1] * up_vector[1] + up_vector[2] * up_vector[2]);
 		cross[0] = (vector[1] * up_vector[2] - vector[2] * up_vector[1]) / magnitude;
@@ -342,12 +342,12 @@ and <pf_get_marker_fitted_positions>.
 		vector[0] = cos(rotation_angle2) * sin(rotation_angle1);
 		vector[1] = sin(rotation_angle2);
 		vector[2] = cos(rotation_angle2) * cos(rotation_angle1);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		fprintf(file, "#Rotated	view vector %g %g %g\n",
 				vector[0], vector[1], vector[2]);
 		fprintf(file, "#Cross product vector %g %g %g\n",
 				cross[0], cross[1], cross[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		twist_angle = (float)-asin(sqrt(cross[0] * cross[0] + cross[1] * cross[1] +
 			cross[2] * cross[2]));
 		if ((cross[0] * vector[0] + cross[1] * vector[1] + cross[2] * vector[2])< 0.0)

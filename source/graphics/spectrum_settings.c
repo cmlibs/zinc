@@ -2216,9 +2216,9 @@ DESCRIPTION :
 	unsigned char pixels[3*1024];
 	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i;
 #endif /* defined (OPENGL_API) */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	int error = 0;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	int return_code;
 
 	ENTER(Spectrum_settings_enable);
@@ -2247,15 +2247,15 @@ DESCRIPTION :
 					{
 						if ((settings->black_band_proportion)%(settings->number_of_bands))
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							printf("  proportion %d number %d >>", 
 								settings->black_band_proportion,settings->number_of_bands);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							settings->black_band_proportion += settings->number_of_bands-
 								settings->black_band_proportion%settings->number_of_bands;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							printf("%d\n",settings->black_band_proportion);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						}
 						texels_in_band=(settings->black_band_proportion)/
 							(settings->number_of_bands);
@@ -2286,9 +2286,9 @@ DESCRIPTION :
 							if ((low_flag || texel>texels_in_band) && (high_flag || texel<1020) &&
 								((texel%texels_per_band)<texels_in_band))
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								printf("  band pixel %d texel %d\n",i/3, texel);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								pixels[i]=0;
 								i++;
 								pixels[i]=0;
@@ -2313,12 +2313,12 @@ DESCRIPTION :
 						pixels[i]=255;
 						i++;
 					
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						while (0 != (error=glGetError()))
 						{
 							printf("GL ERROR 0: %s\n",gluErrorString(error));
 						}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						if (!settings->texture_id)
 						{
 							glGenTextures(1, &(settings->texture_id));
@@ -2347,12 +2347,12 @@ DESCRIPTION :
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 						glEnable(GL_TEXTURE_1D);
 #endif /* defined (OLD_CODE) */				
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						while (0 != (error=glGetError()))
 						{
 							printf("GL ERROR 1: %s\n",gluErrorString(error));
 						}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					}
 					else
 					{
@@ -2381,12 +2381,12 @@ DESCRIPTION :
 					pixels[4]=255;
 					pixels[5]=0;
 					/* set up a texture */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					while (0 != (error=glGetError()))
 					{
 						printf("GL ERROR 0: %s\n",gluErrorString(error));
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (!settings->texture_id)
 					{
 						glGenTextures(1, &(settings->texture_id));
@@ -2413,12 +2413,12 @@ DESCRIPTION :
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 					glEnable(GL_TEXTURE_1D);
 #endif /* defined (OLD_CODE) */				
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					while (0 != (error=glGetError()))
 					{
 						printf("GL ERROR 1: %s\n",gluErrorString(error));
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 #endif /* defined (OPENGL_API) */
 				} break;
 				default:

@@ -350,10 +350,10 @@ Locks netscape so that other processes cannot interact with it.
 	unsigned char *data;
 	unsigned long bytes_left,number_of_units;
 	XEvent event;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	char out_string[180];
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	return_code=0;
 	/* check arguments */
@@ -371,11 +371,11 @@ Locks netscape so that other processes cannot interact with it.
 				}
 			}
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		sprintf(out_string,"echo \"lock_data %s\"",lock_data);
 		system(out_string);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if (lock_data)
 		{
 			return_code=1;
@@ -568,10 +568,10 @@ Then it sets the help topic edit field and gets the help on the string.
 #if !defined (HYPERTEXT_HELP)
 	USE_PARAMETER(help_examples_directory);
 #endif /* !defined (HYPERTEXT_HELP) */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter do_help %s\n",help_string);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 #if defined (NETSCAPE_HELP)
 	/* check arguments */
 	if (user_interface&&execute_command)
@@ -702,10 +702,10 @@ Then it sets the help topic edit field and gets the help on the string.
 	display_message(ERROR_MESSAGE,"do_help.  "
 		"Not implemented for the user interface.");
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave do_help\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 } /* do_help */
 

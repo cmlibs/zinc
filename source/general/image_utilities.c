@@ -71,7 +71,7 @@ Utilities for handling images.
 #include "magick/api.h"
 #endif /* defined (USE_IMAGEMAGICK) */
 
-/* #define DEBUG 1 */
+/* #define DEBUG_CODE 1 */
 
 /*
 Module constants
@@ -524,143 +524,143 @@ For reading a field in an image file directory.
 	/* read field information */
 	pbyte_array = byte_array;
 	return_code=1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("Field");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* read tag */
 	if (1==read_and_byte_swap(byte_array,2,1,least_to_most,tiff_file))
 	{
 		*tag = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf(".  tag=%d",*tag);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		/* read field type: short, long, rational ... */
 		if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 			tiff_file))
 		{
 			*type = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf(", type=");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			switch (*type)
 			{
 				case TIFF_BYTE_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("BYTE");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=1;
 				} break;
 				case TIFF_ASCII_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("ASCII");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=1;
 				} break;
 				case TIFF_SHORT_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("SHORT");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=2;
 				} break;
 				case TIFF_LONG_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("LONG");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=4;
 				} break;
 				case TIFF_RATIONAL_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("RATIONAL");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=2;
 					value_component_size=4;
 				} break;
 				case TIFF_SBYTE_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("SBYTE");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=1;
 				} break;
 				case TIFF_UNDEFINED_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("UNDEFINED");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=1;
 				} break;
 				case TIFF_SSHORT_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("SSHORT");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=2;
 				} break;
 				case TIFF_SLONG_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("SLONG");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=4;
 				} break;
 				case TIFF_SRATIONAL_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("SRATIONAL");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=2;
 					value_component_size=4;
 				} break;
 				case TIFF_FLOAT_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("FLOAT");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=4;
 				} break;
 				case TIFF_DOUBLE_FIELD:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("DOUBLE");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=1;
 					value_component_size=8;
 				} break;
 				default:
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("UNKNOWN");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_value_components=0;
 					value_component_size=0;
 				} break;
@@ -670,17 +670,17 @@ For reading a field in an image file directory.
 				tiff_file))
 			{
 				*count = UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf(", count=%ld",*count);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				/* read value/offset */
 				if ((4==fread(byte_array,sizeof(char),4,tiff_file)))
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 					printf(", byte_array=%ld",UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					number_of_bytes=(int)
 						((*count)*number_of_value_components*value_component_size);
 					if (0<number_of_bytes)
@@ -722,11 +722,11 @@ For reading a field in an image file directory.
 							{
 								byte_swap(byte_array,value_component_size,
 								  (int)(*count)*number_of_value_components,least_to_most);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(", swapped_byte_array=%lx",
 									UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								for (i=0;i<number_of_bytes;i++)
 								{
 									value[i]=byte_array[i];
@@ -734,11 +734,11 @@ For reading a field in an image file directory.
 							}
 							if (return_code)
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(", value_address=%p",value);
 								printf(", value[0]=%x", *value);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								*field_values_address = value;
 								/* If 4 >= number_of_bytes then the byte order is
 									already swapped */
@@ -784,10 +784,10 @@ For reading a field in an image file directory.
 			"read_tiff_field.  Could not read field tag");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -1648,10 +1648,10 @@ Uses LZW compression to compress a stream of bytes to a file.
 		search_code,string_table_length[4096];
 
 	ENTER(LZW_compress_to_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	/*printf("enter LZW_compress_to_file\n");*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* check arguments */
 	if (output_file&&uncompressed_bytes&&number_of_compressed_bytes_address)
 	{
@@ -1699,20 +1699,20 @@ Uses LZW compression to compress a stream of bytes to a file.
 			WRITE_LZW_CODE(clear_code);
 			next_byte=uncompressed_bytes;
 			matched_code=(unsigned short)(*next_byte);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			/*printf("in_byte %02x\n",*next_byte);*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			matched_string_length=1;
 			matched_string=string_table[matched_code];
 			i=number_of_uncompressed_bytes-1;
 			while (return_code&&(i>0))
 			{
 				next_byte++;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				/*printf("in_byte %02x\n",*next_byte);*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				search_code=matched_code+1;
 				found=0;
 				while (!found&&(search_code<number_of_codes))
@@ -1825,14 +1825,14 @@ Uses LZW compression to compress a stream of bytes to a file.
 			if (out_bit_count<8)
 			{
 				written=fwrite(&out_byte,1,1,output_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				/*printf("out_byte %02x\n",out_byte);*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				number_of_compressed_bytes++;
 			}
 			*number_of_compressed_bytes_address=number_of_compressed_bytes;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("number_of_codes=%d\n",number_of_codes);
 			printf("number_of_compressed_bytes=%d\n",number_of_compressed_bytes);
@@ -1848,7 +1848,7 @@ Uses LZW compression to compress a stream of bytes to a file.
 				printf("\n");
 			}
 */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		}
 		/* clear string table */
 		while (next_string_table_entry>string_table)
@@ -1863,10 +1863,10 @@ Uses LZW compression to compress a stream of bytes to a file.
 			"LZW_compress_to_file.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	/*printf("leave LZW_compress_to_file\n");*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -2136,10 +2136,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 		*strip_byte_count,*strip_byte_counts,version;
 
 	ENTER(write_tiff_image_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter write_tiff_image_file\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* check arguments */
 	return_code=0;
 	if (file_name && (0 < number_of_components) && (0 < number_of_columns) &&
@@ -2259,11 +2259,11 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						j--;
 					}
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("number_in_colour_map %d\n",number_in_colour_map);
 				printf("i %d\n",i);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (colour_map_list)
 				{
 					if (number_in_colour_map>256)
@@ -2307,13 +2307,13 @@ Not working for 64 bit as assumes a long is 4 bytes!
 			{
 				number_of_strips *= samples_per_pixel;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("number_of_rows %d\n",number_of_rows);
 			printf("number_of_columns %d\n",number_of_columns);
 			printf("rows_per_strip %d\n",rows_per_strip);
 			printf("number_of_strips %d\n",number_of_strips);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			ALLOCATE(strip_byte_counts,unsigned short,number_of_strips);
 			ALLOCATE(strip_offsets,unsigned long,number_of_strips);
 			if (TIFF_PLANAR_PLANAR_CONFIGURATION==planar_configuration_value)
@@ -2354,11 +2354,11 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					image_file_directory_offset += sizeof(unsigned long);
 					written=fwrite(&image_file_directory_offset,sizeof(unsigned long),1,
 						output_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("location %ld %ld\n",ftell(output_file),
 						image_file_directory_offset);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* write the image file directory */
 					if (palette_image)
 					{
@@ -2473,27 +2473,27 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					next_image_file_directory_offset=0;
 					written=fwrite(&next_image_file_directory_offset,sizeof(unsigned long),1,
 						output_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("written image_function_definitions\n");
 					printf("location %ld %ld\n",ftell(output_file),
 						(int)image_file_directory_offset+sizeof(unsigned short)+
 						sizeof(unsigned long)+image_file_directory_entry_count*12);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* write bits_per_sample */
 					if (!palette_image)
 					{
 						/* write bits_per_sample */
 						written=fwrite(bits_per_sample,sizeof(unsigned short),3,output_file);
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("written bits_per_sample\n");
 					printf("strip offsets start %ld %ld\n",ftell(output_file),
 						(int)image_file_directory_offset+sizeof(unsigned short)+
 						image_file_directory_entry_count*12+sizeof(unsigned long)+
 						3*sizeof(unsigned short));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (1<number_of_strips)
 					{
 						/* write the strip offsets (currently 0 will need to be overwritten
@@ -2513,19 +2513,19 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						/* write the colour map */
 						written=fwrite(colour_map,sizeof(unsigned short),3*256,output_file);
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("written strip_offsets and strip_byte_counts\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* write the image to the file */
 					row_number=number_of_rows;
 					strip_offset=strip_offsets;
 					strip_byte_count=strip_byte_counts;
 					strip_offset[0]=value_offset;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("strip_offset[0] %ld %ld\n",strip_offset[0],ftell(output_file));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (palette_image)
 					{
 						uncompressed_bytes=palette_image;
@@ -2565,13 +2565,13 @@ Not working for 64 bit as assumes a long is 4 bytes!
 									samples_per_pixel;
 								}
 							}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							printf(
 								"k=%d,row_number=%d,number_of_strips=%d,rows_per_strip=%d,%d\n",k,
 								row_number,number_of_strips,rows_per_strip,
 								(2-(k-1)/(number_of_strips/samples_per_pixel)));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							uncompressed_byte=uncompressed_bytes;
 							for (i=rows_per_strip;i>0;i--)
 							{
@@ -2646,10 +2646,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 									}
 								}
 							}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							printf("extracted strip %d\n",number_of_strips-k+1);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						}
 						switch (compression)
 						{
@@ -2671,11 +2671,11 @@ Not working for 64 bit as assumes a long is 4 bytes!
 									strip_byte_count);
 							} break;
 						}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("strip_offset[%d] %ld %ld\n",number_of_strips-k+1,
 							strip_offset[0]+strip_byte_count[0],ftell(output_file));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						if (k>1)
 						{
 							strip_offset[1]=strip_offset[0]+strip_byte_count[0];
@@ -2704,20 +2704,20 @@ Not working for 64 bit as assumes a long is 4 bytes!
 							}
 						}
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("written strips\n");
 					for (k=0;k<number_of_strips;k++)
 					{
 						printf("%d %ld %d\n",k,strip_offsets[k],strip_byte_counts[k]);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* write the strip offsets */
 					fseek(output_file,(long int)strip_offsets_start,SEEK_SET);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("strip offsets start %ld %ld\n",ftell(output_file),
 						strip_offsets_start);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					strips_written=fwrite(strip_offsets,sizeof(unsigned long),
 						number_of_strips, output_file);
 					if (strips_written != number_of_strips)
@@ -2730,16 +2730,16 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					}
 					else
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						printf("strip byte counts start %ld %ld\n",ftell(output_file),
 							strip_byte_counts_start);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						/* write the strip byte counts */
 						fseek(output_file,(long int)strip_byte_counts_start,SEEK_SET);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						printf("strip byte counts start %ld %ld\n",ftell(output_file),
 							strip_byte_counts_start);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						strips_written=fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
 							output_file);
 						(void)fclose(output_file);
@@ -2783,10 +2783,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 			"write_tiff_image_file.  Missing argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave write_tiff_image_file\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -3001,7 +3001,7 @@ number_of_components=4, RGBA
 				(1==read_and_byte_swap((unsigned char *)&number_of_components,2,1,
 				least_to_most,image_file)))
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("magic_number %x\n",magic_number);
 				printf("image_file_type %x\n",image_file_type);
@@ -3009,7 +3009,7 @@ number_of_components=4, RGBA
 				printf("width %d\n",width);
 				printf("height %d\n",height);
 				printf("number_of_components %d\n",number_of_components);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if ((0<width)&&(0<height)&&(1<=number_of_components)&&
 					(number_of_components<=4))
 				{
@@ -3430,10 +3430,10 @@ the second the denominator.
 		samples_per_pixel;
 
 	ENTER(read_tiff_image_file);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter read_tiff_image_file\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	return_code=0;
 	pbyte_array=byte_array;
 	if (file_name && width_address && height_address &&
@@ -3445,10 +3445,10 @@ the second the denominator.
 		if (tiff_file != NULL)
 		{
 			return_code=1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("DETAILS OF DATA STORAGE FOR TIFF FILE %s\n",file_name);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			/* read tiff file header */
 			/* find out byte_order of file (most/least to least/most significant) */
 			fseek(tiff_file,0,0);
@@ -3480,22 +3480,22 @@ the second the denominator.
 			}
 			if (return_code)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("A) Byte Order = %d\n", least_to_most);
 				printf("     where 0 = most to least significant\n");
 				printf("           1 = least to most significant\n\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				/* check file number */
 				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
 					file_type = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("B) TIFF Version number = %d\n",file_type);
 					printf("     where 42 is the only valid version.\n\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (42!=file_type)
 					{
 						display_message(ERROR_MESSAGE,
@@ -3517,10 +3517,10 @@ the second the denominator.
 						tiff_file))
 					{
 						ifd_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("C) Address of Image File Directory = %ld\n\n",ifd_offset);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						if (0>=ifd_offset)
 						{
 							display_message(ERROR_MESSAGE,
@@ -3543,11 +3543,11 @@ the second the denominator.
 								least_to_most,tiff_file))
 							{
 								number_of_fields = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("D) Image file directory\n");
 								printf("     Number of Fields = %ld\n",number_of_fields);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								if (0>=number_of_fields)
 								{
 									display_message(ERROR_MESSAGE,
@@ -3591,10 +3591,10 @@ the second the denominator.
 										{
 											case 256: /* image width */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("image width");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if (1==field_count)
 												{
 													switch (field_type)
@@ -3620,7 +3620,7 @@ the second the denominator.
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												if (return_code)
 												{
@@ -3630,14 +3630,14 @@ the second the denominator.
 												{
 													printf(" invalid\n");
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											} break;
 											case 257: /* image length */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("image length");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if (1==field_count)
 												{
 													switch (field_type)
@@ -3663,7 +3663,7 @@ the second the denominator.
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												if (return_code)
 												{
@@ -3673,33 +3673,33 @@ the second the denominator.
 												{
 													printf(" invalid\n");
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											} break;
 											case 258: /* bits per sample */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("bits per sample");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1 == field_count) &&
 													(TIFF_SHORT_FIELD == field_type))
 												{
 													bits_per_sample =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",bits_per_sample);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d %d %d",
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values),
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 2),
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 4));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													if ((3==field_count)&&(TIFF_SHORT_FIELD==field_type))
 													{
 														if ((8 == UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values)) &&
@@ -3707,26 +3707,26 @@ the second the denominator.
 															(8 == UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 4)))
 														{
 															bits_per_sample=8;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 														}
 														else
 														{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf(" not supported\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 															return_code=0;
 														}
 													}
 													else
 													{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 														/*???debug */
 														printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 														return_code=0;
 													}
 												}
@@ -3734,60 +3734,60 @@ the second the denominator.
 											} break;
 											case 259: /* compression */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("compression");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
 													compression =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",compression);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 262: /* photometric interpretation */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("photometric interpretation");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
 													photometric_interpretation =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",photometric_interpretation);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 273: /* strip offsets */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("strip offsets");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if (0 < field_count)
 												{
 													number_of_strips = field_count;
@@ -3817,10 +3817,10 @@ the second the denominator.
 																	return_code = 0;
 																} break;
 															}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf(" %ld", *strip_offset);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 															strip_offset++;
 															field_count--;
 														}
@@ -3835,7 +3835,7 @@ the second the denominator.
 												{
 													return_code=0;
 												}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												if (return_code)
 												{
@@ -3845,39 +3845,39 @@ the second the denominator.
 												{
 													printf(" invalid\n");
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											} break;
 											case 277: /* samples/pixel */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("samples per pixel");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
 													samples_per_pixel =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",samples_per_pixel);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 278: /* rows/strip */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("rows per strip");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if (1==field_count)
 												{
 													switch (field_type)
@@ -3903,7 +3903,7 @@ the second the denominator.
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												if (return_code)
 												{
@@ -3913,14 +3913,14 @@ the second the denominator.
 												{
 													printf(" invalid\n");
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											} break;
 											case 279: /* byte count/strip */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("strip byte counts");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((0 < number_of_strips) &&
 													(field_count == number_of_strips))
 												{
@@ -3951,10 +3951,10 @@ the second the denominator.
 																	return_code = 0;
 																} break;
 															}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf(" %ld", *strip_byte_count);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 															strip_byte_count++;
 															field_count--;
 														}
@@ -3969,7 +3969,7 @@ the second the denominator.
 												{
 													return_code=0;
 												}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												if (return_code)
 												{
@@ -3979,14 +3979,14 @@ the second the denominator.
 												{
 													printf(" invalid\n");
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											} break;
 											case 282: /* x resolution */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("x_resolution");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1 == field_count) &&
 													(TIFF_RATIONAL_FIELD == field_type) &&
 													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
@@ -3994,27 +3994,27 @@ the second the denominator.
 													x_resolution =
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%g\n",x_resolution);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 283: /* y resolution */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("y_resolution");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1 == field_count)&&
 													(TIFF_RATIONAL_FIELD == field_type)&&
 													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
@@ -4022,67 +4022,67 @@ the second the denominator.
 													y_resolution =
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
 														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%g\n",y_resolution);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 284: /* planar configuration */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("planar configuration");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
 													planar_configuration =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",planar_configuration);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
 											} break;
 											case 296: /* resolution unit */
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("resolution unit");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
 													resolution_unit =
 														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("=%d\n",resolution_unit);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												}
 												else
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf(" invalid\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													return_code=0;
 												}
 												DEALLOCATE(field_values);
@@ -4092,16 +4092,16 @@ the second the denominator.
 												DEALLOCATE(field_values);
 											} break;
 										}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 										/*???debug */
 										printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									}
 									number_of_fields--;
 								}
 								if (return_code)
 								{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug */
 									for (i=0;i<(int)number_of_strips;i++)
 									{
@@ -4118,7 +4118,7 @@ the second the denominator.
 									}
 									printf("\n");
 */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									/* classify image */
 									switch (photometric_interpretation)
 									{
@@ -4130,10 +4130,10 @@ the second the denominator.
 											{
 												case 0: case 1:
 												{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("bi-level image\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													/* bi-level image */
 													/* check fields */
 													if ((image_width>0)&&(image_length>0)&&
@@ -4167,10 +4167,10 @@ the second the denominator.
 															{
 																case TIFF_NO_COMPRESSION_VALUE:
 																{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 																	/*???debug */
 																	printf("no compression\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 																	image_ptr=image;
 																	strip_offset=strip_offsets;
 																	strip_byte_count=strip_byte_counts;
@@ -4273,7 +4273,7 @@ the second the denominator.
 												case 8:
 												{
 													/* grey scale image */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 													/*???debug */
 													printf("grey scale %ld %ld %d %d %d %p %p %ld %ld %d %d %d %d\n",
 														image_width,image_length,samples_per_pixel,
@@ -4281,7 +4281,7 @@ the second the denominator.
 														strip_byte_counts,number_of_strips,rows_per_strip,
 														resolution_unit,TIFF_NO_ABSOLUTE_UNIT,TIFF_INCH,
 														TIFF_CENTIMETER);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 													/* check fields */
 													if ((image_width>0)&&(image_length>0)&&
 														(1==samples_per_pixel)&&
@@ -4295,11 +4295,11 @@ the second the denominator.
 														(TIFF_INCH==resolution_unit)||
 														(TIFF_CENTIMETER==resolution_unit)))
 													{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 														/*???debug */
 														printf("image_size=%ld\n",
 															((image_width*image_length-1)/4+1)*4);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 														if (ALLOCATE(image,unsigned char,
 															((image_width*image_length+3)/4)*4))
 														{
@@ -4307,21 +4307,21 @@ the second the denominator.
 															{
 																case TIFF_NO_COMPRESSION_VALUE:
 																{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 																	/*???debug */
 																	printf("no compression\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 																	image_ptr=image;
 																	strip_offset=strip_offsets;
 																	strip_byte_count=strip_byte_counts;
 																	while (return_code&&(number_of_strips>0))
 																	{
 																		byte_count= *strip_byte_count;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 																		/*???debug */
 																		printf("%ld %ld %ld\n",number_of_strips,
 																			byte_count,*strip_offset);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 																		if ((0==fseek(tiff_file,*strip_offset,
 																			SEEK_SET))&&(byte_count==fread(image_ptr,
 																			sizeof(unsigned char),byte_count,
@@ -4392,7 +4392,7 @@ the second the denominator.
 										case TIFF_RGB:
 										{
 											/* RGB full colour image */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 											/*???debug */
 											printf(
 												"rgb %ld %ld %d %d %d %d %p %p %ld %ld %d %d %d %d\n",
@@ -4401,7 +4401,7 @@ the second the denominator.
 												strip_offsets,strip_byte_counts,number_of_strips,
 												rows_per_strip,resolution_unit,TIFF_NO_ABSOLUTE_UNIT,
 												TIFF_INCH,TIFF_CENTIMETER);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											/* check fields */
 											if ((image_width>0)&&(image_length>0)&&
 												(8==bits_per_sample)&&(3==samples_per_pixel)&&
@@ -4415,11 +4415,11 @@ present in some files */
 												(TIFF_INCH==resolution_unit)||
 												(TIFF_CENTIMETER==resolution_unit)))
 											{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug */
 												printf("image_size=%ld\n",
 													((image_width*image_length*samples_per_pixel+3)/4)*4);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 												if (ALLOCATE(image,unsigned char,
 													((image_width*image_length*samples_per_pixel+3)/4)*4))
 												{
@@ -4427,21 +4427,21 @@ present in some files */
 													{
 														case TIFF_NO_COMPRESSION_VALUE:
 														{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf("no compression\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 															image_ptr=image;
 															strip_offset=strip_offsets;
 															strip_byte_count=strip_byte_counts;
 															while (return_code&&(number_of_strips>0))
 															{
 																byte_count= *strip_byte_count;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 																/*???debug */
 																printf("%ld %ld %ld\n",number_of_strips,
 																	byte_count,*strip_offset);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 																if ((0==fseek(tiff_file,*strip_offset,
 																	SEEK_SET))&&(byte_count==fread(image_ptr,
 																	sizeof(unsigned char),byte_count,
@@ -4552,10 +4552,10 @@ present in some files */
 	{
 		display_message(ERROR_MESSAGE,"read_tiff_image_file.  Invalid argument(s)");
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave read_tiff_image_file\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* Keep these in case we want to use them sometime */
 	USE_PARAMETER(planar_configuration);
 	USE_PARAMETER(x_resolution);
@@ -4826,9 +4826,9 @@ be specified in the <width> and <height> arguments.
 			}
 			/* make the default depth 8 bits for raw files */
 			magick_image_info->depth = 8;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			magick_image_info->verbose = 1;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			magick_image=ReadImage(magick_image_info,&magick_exception);
 			if (magick_image)
 			{
@@ -5017,11 +5017,11 @@ corrected version.
 			}
 			else
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("Correcting radial distortion centre=%f,%f k1=%f\n",
 					centre_x,centre_y,factor_k1);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (ALLOCATE(corrected_image,unsigned long,
 					(width*height*number_of_components+3)/4))
 				{
@@ -7260,9 +7260,9 @@ and other parameters for formats that require them.
 			{
 				old_magick_size = magick_image_info->size;
 				magick_image_info->size = (char *)NULL;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				magick_image_info->verbose = 1;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (cmgui_image_information->memory_blocks)
 				{
 					number_of_files = cmgui_image_information->number_of_memory_blocks;
@@ -7695,9 +7695,9 @@ that the images be adjoined in the single file.
 					&magick_exception);
 				magick_image = local_magick_image;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			magick_image_info->verbose = 1;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (!cmgui_image_information->write_to_memory_block)
 			{
 				for (i = 0; (i < number_of_file_names) && return_code; i++)

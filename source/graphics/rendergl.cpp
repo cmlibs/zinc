@@ -1536,9 +1536,9 @@ DESCRIPTION :
 	struct Spectrum_render_data *render_data = NULL;
 
 	ENTER(drawpolylineGL);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf("draw_polylineGL %d\n",n_pts);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	/* checking arguments */
 	if (point_list&&(0<n_pts)&&((!data)||(render_data=
@@ -2718,7 +2718,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		glReadBuffer(GL_NONE);
 		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, 0);
 	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		// Read the buffer out to memory so we can see the vertex values.
 		{
 			//float debugreadbuffer[4 * tex_width * tex_height];
@@ -2739,7 +2739,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 			glReadBuffer(GL_NONE);
 			DEALLOCATE(debugreadbuffer);
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		//Set back to the normal screen
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);

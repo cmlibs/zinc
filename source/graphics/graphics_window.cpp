@@ -1056,30 +1056,30 @@ Updates the time display of the time_slider
 			{
 				time = Time_keeper_get_time(window->time_keeper);
 				edit_var_set_data(window->time_edit_widget,EDIT_VAR_VALUE,time);				
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Graphics_window_time_keeper_callback.  time \n"
 					EDIT_VAR_NUM_FORMAT, time);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				return_code = 1;
 			} break;
 			case TIME_KEEPER_NEW_MINIMUM:
 			{
 				time = Time_keeper_get_minimum(window->time_keeper);
 				edit_var_set_data(window->time_edit_widget,EDIT_VAR_LOW_LIMIT,time);				
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Graphics_window_time_keeper_callback.  time \n"
 					EDIT_VAR_NUM_FORMAT, time);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				return_code = 1;
 			} break;
 			case TIME_KEEPER_NEW_MAXIMUM:
 			{
 				time = Time_keeper_get_maximum(window->time_keeper);
 				edit_var_set_data(window->time_edit_widget,EDIT_VAR_HIGH_LIMIT,time);				
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Graphics_window_time_keeper_callback.  time \n"
 					EDIT_VAR_NUM_FORMAT, time);
-#endif /*defined (DEBUG) */
+#endif /*defined (DEBUG_CODE) */
 				return_code = 1;
 			} break;
 			default:

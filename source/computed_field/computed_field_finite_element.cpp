@@ -63,14 +63,14 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 }
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 /* SAB This field is useful for debugging when things don't clean up properly
 	but has to be used carefully, especially as operations such as caching
 	accesses the node or element being considered so you get effects like 
 	the first point evaluated in an element having a count one less than 
 	all the others */
 #define COMPUTED_FIELD_ACCESS_COUNT
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 /*
 Module types

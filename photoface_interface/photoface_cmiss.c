@@ -187,10 +187,10 @@ used.
 	}
 #endif /* ! defined (WIN32) */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf (command_string);
 	printf ("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	return_code = system(command_string);
 	/* Translate this into a internal return code */
@@ -252,10 +252,10 @@ used.
 	}
 #endif /* ! defined (WIN32) */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	printf (command_string2);
 	printf ("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	return_code = system(command_string2);
 	/* Translate this into a internal return code */
@@ -1055,7 +1055,7 @@ number_of_components=4, RGBA
 				(1==read_and_byte_swap((unsigned char *)&number_of_components,2,1,
 				least_to_most,image_file)))
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("magic_number %x\n",magic_number);
 				printf("image_file_type %x\n",image_file_type);
@@ -1063,7 +1063,7 @@ number_of_components=4, RGBA
 				printf("width %d\n",width);
 				printf("height %d\n",height);
 				printf("number_of_components %d\n",number_of_components);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if ((0<width)&&(0<height)&&(1<=number_of_components)&&
 					(number_of_components<=4))
 				{

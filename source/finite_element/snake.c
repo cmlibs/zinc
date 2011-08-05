@@ -714,13 +714,13 @@ derivatives; helps make smooth snakes from few data points.
 		}
 		if (return_code)
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug*/
 			for (i = 0; i < number_of_data; i++)
 			{
 				printf("length[%d] = %f\n", i, lengths[i]);
 			}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			/* convert lengths array into combined element:xi coordinates. The integer
 				 part of the number is the element number, the fractional part is Xi */
 			/* density_factor controls the density of elements along the snake,
@@ -737,13 +737,13 @@ derivatives; helps make smooth snakes from few data points.
 				lengths[i] = (1.0 - density_factor)*lengths[i]*length_multiplier +
 					density_factor*(FE_value)i*density_multiplier;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug*/
 			for (i = 0; i < number_of_data; i++)
 			{
 				printf("element:xi[%d] = %f\n", i, accumulate_data.lengths[i]);
 			}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			/* allocate stiffness_matrix with (number_of_elements + 1)*2 rows*columns,
 				 and the force_vectors with (number_of_elements + 1)*2 rows for each
 				 coordinate component. The factor or 2 adds the derivative DOFs for
@@ -839,7 +839,7 @@ derivatives; helps make smooth snakes from few data points.
 						}
 					}
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("Stiffness Matrix:\n");
 				print_matrix(number_of_rows,number_of_rows,stiffness_matrix,"%8.4f");
@@ -849,7 +849,7 @@ derivatives; helps make smooth snakes from few data points.
 					print_matrix(number_of_rows,1,
 						force_vectors + n*number_of_rows,"%8.4f");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (LU_decompose(number_of_rows, stiffness_matrix, indx, &d,/*singular_tolerance*/1.0e-12))
 				{
 					for (n = 0; (n < number_of_components) && return_code; n++)
@@ -883,7 +883,7 @@ derivatives; helps make smooth snakes from few data points.
 		if (return_code)
 		{
 			FE_region_begin_change(fe_region);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug*/
 			for (n = 0; n < number_of_components; n++)
 			{
@@ -891,7 +891,7 @@ derivatives; helps make smooth snakes from few data points.
 				print_matrix(number_of_rows,1,
 					force_vectors + n*number_of_rows,"%8.4f");
 			}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			template_node = (struct FE_node *)NULL;
 			template_element = (struct FE_element *)NULL;
 			nodes = (struct FE_node **)NULL;

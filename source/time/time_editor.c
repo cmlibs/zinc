@@ -148,10 +148,10 @@ Updates the time display of the text_widget
 			{
 				current_time=Time_keeper_get_time(time_editor->time_keeper);
 				sprintf(time_string,"%10.6g",current_time);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("time_editor_time_keeper_callback.  time %10.6g\n",current_time);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				XtVaSetValues(time_editor->frame_text,
 					XmNvalue,time_string,
 					NULL);

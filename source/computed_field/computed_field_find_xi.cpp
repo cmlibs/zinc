@@ -285,11 +285,11 @@ as the <data> field or any of its source fields.
 							data->nearest_element_distance_squared = sum;
 						}
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					display_message(INFORMATION_MESSAGE,
 						"Computed_field_iterative_element_conditional.  "
 						"Converged %d iterations %d\n", converged, iterations);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				}
 			}

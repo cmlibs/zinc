@@ -1053,16 +1053,16 @@ char *Cmiss_field_module_get_unique_field_name(
  */
 int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 /**
  * Returns the access count for the supplied field.  This function is only
- * available when DEBUG is defined.
+ * available when DEBUG_CODE is defined.
  *
  * @param field the field to query the access count from
  * @return the access count
  */
 int Cmiss_field_get_access_count(Cmiss_field_id field);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 #ifdef __cplusplus
 }

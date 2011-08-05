@@ -400,10 +400,10 @@ Private to the Scene and Scene_objects
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->change_status);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if (scene->scene_manager)
 		{
 			return_code = Scene_refresh( scene );
@@ -455,10 +455,10 @@ Private to the Scene and Scene_objects.
 		{
 			scene->change_status = SCENE_CHANGE;
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->change_status);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		if (scene->scene_manager)
 		{
 			return_code = Scene_refresh( scene );

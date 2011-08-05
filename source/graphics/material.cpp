@@ -699,10 +699,10 @@ be shared by multiple materials using the same program.
 #if defined (OPENGL_API)
 		/* #define TESTING_PROGRAM_STRINGS */
 /* #define WRITE_STRING */
-/* #define DEBUG */
-#if defined (DEBUG)
+/* #define DEBUG_CODE */
+#if defined (DEBUG_CODE)
 		const GLubyte *error_msg;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		return_code = 1;
 #if defined (TESTING_PROGRAM_STRINGS)
 		/* If testing always recompile */
@@ -731,9 +731,9 @@ be shared by multiple materials using the same program.
 			 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL ||
 					 material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
 			 {
-#if defined DEBUG
+#if defined DEBUG_CODE
 				printf ("Compiling program type:%x\n", material_program->type);
-#endif /* defined DEBUG */
+#endif /* defined DEBUG_CODE */
 #if defined GL_VERSION_2_0
 				const char *vv, *ff, *gg;
 #endif
@@ -798,7 +798,7 @@ be shared by multiple materials using the same program.
 					}
 				}
 
-#if defined DEBUG
+#if defined DEBUG_CODE
 				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 				{
 					display_message(INFORMATION_MESSAGE,
@@ -809,7 +809,7 @@ be shared by multiple materials using the same program.
 					 display_message(INFORMATION_MESSAGE,
 							"ARB shading program supported\n");
 				}
-#endif  /* defined DEBUG */
+#endif  /* defined DEBUG_CODE */
 
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
 				{	
@@ -2849,11 +2849,11 @@ be shared by multiple materials using the same program.
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  Vertex Result: %s\n", error_msg);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 #if defined (WRITE_STRING)
 						FILE *program_file;
 						if (vertex_program_string && (program_file = fopen("out.vp", "w")))
@@ -2870,11 +2870,11 @@ be shared by multiple materials using the same program.
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(fragment_program_string), fragment_program_string);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  Fragment Result: %s\n", error_msg);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 #if defined (WRITE_STRING)
 						if (fragment_program_string && (program_file = fopen("out.fp", "w")))
 						{
@@ -2946,11 +2946,11 @@ be shared by multiple materials using the same program.
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  test.vp Vertex Result: %s", error_msg);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						
 						if (!material_program->fragment_program)
 						{
@@ -2960,11 +2960,11 @@ be shared by multiple materials using the same program.
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(fragment_program_string), fragment_program_string);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  test.fp Fragment Result: %s", error_msg);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					}
 					material_program->compiled = 1;
 #endif /* ! defined (TESTING_PROGRAM_STRINGS) */			
@@ -3006,11 +3006,11 @@ be shared by multiple materials using the same program.
 						glAttachShader(material_program->glsl_current_program,material_program->fragment_program);
 						DEALLOCATE(fragment_program_string);
 
-#if !defined (DEBUG)
-						// If DEBUG is defined always write the program info, otherwise
+#if !defined (DEBUG_CODE)
+						// If DEBUG_CODE is defined always write the program info, otherwise
 						// write the program info only when one of the shaders fails to compile.
 						if (!vertexShaderCompiled || !fragmentShaderCompiled || !geometryShaderCompiled)
-#endif // !defined (DEBUG)
+#endif // !defined (DEBUG_CODE)
 						{
 							int infologLength = 0;
 							int charsWritten  = 0;

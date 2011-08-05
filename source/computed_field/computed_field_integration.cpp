@@ -579,12 +579,12 @@ upwind difference time integration.
 				Computed_field_evaluate_cache_in_element(coordinate_field,
 					mapping_item->location, mapping_item->element,
 					/*calculate_derivatives*/1);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Coordinate %d:  %g %g %g    %g %g %g\n", m,
 					coordinate_field->values[0], coordinate_field->values[1],
 					coordinate_field->values[2], coordinate_field->derivatives[0],
 					coordinate_field->derivatives[1], coordinate_field->derivatives[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				flow_step = time_step * integrand->values[0] *
 					gauss_weights[number_of_gauss_points - 1][m];
 				if (coordinate_field->number_of_components > 1)
@@ -627,12 +627,12 @@ upwind difference time integration.
 			{
 				mapping_item->offset[0] = seed_mapping_item->offset[0] +
 					seed_mapping_item->differentials[0];
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				if (mapping_item->offset[0] < previous_mapping_item->offset[0])
 				{
 					printf("Regression\n");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (length)
 				{
 					mapping_item->differentials[0] = previous_mapping_item->offset[0]
@@ -648,10 +648,10 @@ upwind difference time integration.
 			} break;
 		}
 			
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("Differential:  %g\n",
 				mapping_item->differentials[0]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	}
 	else
 	{
@@ -1007,10 +1007,10 @@ Calculates the mapping for the specified time.
 						(LIST(Computed_field_element_integration_mapping) *)NULL,
 						0.0, time, node_mapping);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Item removed\n");
 					write_Computed_field_element_integration_mapping(mapping_item, NULL);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 					/* remove first_to_be_checked */
 					fifo_node=first_to_be_checked;
@@ -1021,14 +1021,14 @@ Calculates the mapping for the specified time.
 					}
 					DEALLOCATE(fifo_node);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					printf("Texture mapping list\n");
 					FOR_EACH_OBJECT_IN_LIST(Computed_field_element_integration_mapping)(
 						write_Computed_field_element_integration_mapping, NULL, texture_mapping);
 					//printf("To be checked list\n");
 					//FOR_EACH_OBJECT_IN_LIST(Computed_field_element_integration_mapping)(
 					//	write_Computed_field_element_integration_mapping, NULL, to_be_checked);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 				cached_time = time;
 				if (0 == NUMBER_IN_LIST(Computed_field_node_integration_mapping)(node_mapping))

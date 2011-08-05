@@ -1489,7 +1489,7 @@ struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region 
 			(ANY_OBJECT_CONDITIONAL_FUNCTION(Cmiss_rendition) *)NULL, (void *)NULL,
 			Cmiss_region_private_get_any_object_list(cmiss_region))))
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			display_message(ERROR_MESSAGE,
 				"Cmiss_region_get_rendition. Region does not have rendition.");
 			/* It probably should create a rendition here then return it*/

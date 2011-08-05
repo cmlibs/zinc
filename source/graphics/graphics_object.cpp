@@ -6141,13 +6141,13 @@ static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
 				vertex->index = vertex_count;
 			}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/* Move the points so that if they aren't using the same vertex from adjacent triangles
 				then they won't stay connected */
 			existing_voltex->vertex_list[vertex_count]->coordinates[0] += (float)vertex_count / 1000.0;
 			existing_voltex->vertex_list[vertex_count]->coordinates[1] += (float)vertex_count / 1000.0;
 			existing_voltex->vertex_list[vertex_count]->coordinates[2] += (float)vertex_count / 1000.0;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 			Octree_object_set_user_data(octree_vertex, (void *)vertex);
 			Octree_add_object(existing_voltex->vertex_octree,

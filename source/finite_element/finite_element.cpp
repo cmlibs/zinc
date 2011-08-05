@@ -2711,7 +2711,7 @@ Initialises the contents to be zero for values, NULL for pointers.
 	return (values_storage);
 } /* make_value_storage_array */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 int show_FE_nodal_FE_values(struct FE_node *node)
 /************************************************************************
 LAST MODIFIED : 19 April 1999
@@ -2832,7 +2832,7 @@ A debug function to print all a node's node fields (to stdout)
 	LEAVE;
 	return (return_code);
 } /* show_FE_nodal_node_fields */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 static int FE_node_fields_match(struct FE_node_field *node_field_1,
 	struct FE_node_field *node_field_2, int ignore_field_and_time_sequence,
@@ -4817,7 +4817,7 @@ uses them to find faces and lines for elements without them, if they exist.
 						node_numbers[i]=node_number;
 					}
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %s %d has nodes: ",
 					CM_element_type_string(element->identifier.type), element->identifier.number);
@@ -4826,7 +4826,7 @@ uses them to find faces and lines for elements without them, if they exist.
 					printf(" %d",node_numbers[i]);
 				}
 				printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			}
 			else
 			{
@@ -16891,11 +16891,11 @@ int list_FE_node(struct FE_node *node)
 			for_each_FE_field_at_node_alphabetical_indexer_priority(
 				list_FE_node_field, (void *)NULL, node);
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug*/
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			node->access_count);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	}
 	else
 	{
@@ -23280,7 +23280,7 @@ if (POLYGON_SHAPE== *type_entry) \
 								}
 								shape_type += dimension-xi_coordinate;
 							}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							face_to_element=shape->face_to_element;
 							face=shape->faces;
@@ -23298,7 +23298,7 @@ if (POLYGON_SHAPE== *type_entry) \
 									printf("\n");
 								}
 							}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						}
 						else
 						{
@@ -23331,7 +23331,7 @@ if (POLYGON_SHAPE== *type_entry) \
 			}
 			if (shape)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("Created shape: %p\n", shape);
 				printf("  shape->dimension: %d\n", shape->dimension);
 				printf("  shape->type:");
@@ -23351,7 +23351,7 @@ if (POLYGON_SHAPE== *type_entry) \
 					}
 					printf(")\n");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				/* add the shape to the list of all shapes */
 				if (!ADD_OBJECT_TO_LIST(FE_element_shape)(shape,
 					FE_region_get_FE_element_shape_list(fe_region)))
@@ -24715,10 +24715,10 @@ column of the <coordinate_transformation> matrix.
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(inherit_FE_element_field);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter inherit_FE_element_field\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* check the arguments */
 	if (element&&(element->shape)&&element_field_address&&field_element_address&&
 		coordinate_transformation_address)
@@ -24727,10 +24727,10 @@ column of the <coordinate_transformation> matrix.
 		element_field=(struct FE_element_field *)NULL;
 		field_element=(struct FE_element *)NULL;
 		coordinate_transformation=(FE_value *)NULL;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("element %d \n",element->identifier.number);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		/* check if the field is defined for the element */
 		if ((field_info = element->fields) && element->information)
 		{
@@ -24784,7 +24784,7 @@ column of the <coordinate_transformation> matrix.
 					face_number = FE_element_get_child_face_number(parent, element);
 					dimension=parent->shape->dimension;
 					field_element_dimension=field_element->shape->dimension;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("shape %p\n",parent->shape);
 					face_to_element_value=(parent->shape->face_to_element);
@@ -24802,7 +24802,7 @@ column of the <coordinate_transformation> matrix.
 							printf("\n");
 						}
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (coordinate_transformation)
 					{
 						if (ALLOCATE(new_coordinate_transformation,FE_value,
@@ -24812,7 +24812,7 @@ column of the <coordinate_transformation> matrix.
 								transformation */
 							face_to_element=(parent->shape->face_to_element)+
 								(face_number*dimension*dimension);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							printf("face to element:\n");
 							face_to_element_value=face_to_element;
@@ -24825,11 +24825,11 @@ column of the <coordinate_transformation> matrix.
 								}
 								printf("\n");
 							}
-#endif /* defined (DEBUG) */
-#if defined (DEBUG)
+#endif /* defined (DEBUG_CODE) */
+#if defined (DEBUG_CODE)
 							/*???debug */
 							printf("new coordinate transformation:\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							coordinate_transformation_value=coordinate_transformation;
 							new_coordinate_transformation_value=
 								new_coordinate_transformation;
@@ -24857,10 +24857,10 @@ column of the <coordinate_transformation> matrix.
 									face_to_element_value += dimension;
 								}
 								*new_coordinate_transformation_value=(FE_value)sum;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" %g",sum);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								new_coordinate_transformation_value++;
 								/* calculate A entries for this row */
 								for (j=dimension_minus_1;j>0;j--)
@@ -24882,16 +24882,16 @@ column of the <coordinate_transformation> matrix.
 										face_to_element_value += dimension;
 									}
 									*new_coordinate_transformation_value=(FE_value)sum;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug */
 									printf(" %g",sum);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									new_coordinate_transformation_value++;
 								}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								face_to_element -= dimension_minus_1;
 							}
 							DEALLOCATE(coordinate_transformation);
@@ -24907,11 +24907,11 @@ column of the <coordinate_transformation> matrix.
 					}
 					else
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("new coordinate transformation %d %d :\n",dimension,
 							field_element_dimension);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						/* use the face to element map as the transformation */
 						transformation_size=field_element_dimension*dimension;
 						if (ALLOCATE(coordinate_transformation,FE_value,
@@ -24923,20 +24923,20 @@ column of the <coordinate_transformation> matrix.
 							while (transformation_size>0)
 							{
 								*coordinate_transformation_value= *face_to_element_value;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" %g",*face_to_element_value);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								coordinate_transformation_value++;
 								face_to_element_value++;
 								transformation_size--;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								if (0==transformation_size%dimension)
 								{
 									printf("\n");
 								}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							}
 						}
 						else
@@ -24978,10 +24978,10 @@ column of the <coordinate_transformation> matrix.
 			"inherit_FE_element_field.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave inherit_FE_element_field\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -25265,10 +25265,10 @@ The optional <top_level_element> forces inheritance from it as needed.
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_FE_element_field_values);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter calculate_FE_element_field_values\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	/* check the arguments */
 	if (element&&(element->shape)&&element_field_values)
 	{
@@ -25282,15 +25282,15 @@ The optional <top_level_element> forces inheritance from it as needed.
 			&coordinate_transformation,top_level_element))
 		{
 			return_code=1;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("element : %d \n",element->identifier.number);
 			printf("field element : %d \n",field_element->identifier.number);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			element_dimension=element->shape->dimension;
 			field_element_dimension=field_element->shape->dimension;
 			number_of_components=element_field->field->number_of_components;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("coordinate_transformation: %p\n",coordinate_transformation);
 			value=coordinate_transformation;
@@ -25308,7 +25308,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 			}
 			printf("%d #components=%d\n",field_element_dimension,
 				number_of_components);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			switch (field->fe_field_type)
 			{
 				case CONSTANT_FE_FIELD:
@@ -25519,11 +25519,11 @@ The optional <top_level_element> forces inheritance from it as needed.
 											modify;
 										modify=(FE_element_field_component_modify)NULL;
 									}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 									/*???debug */
 									printf("component_number %d\n",component_number);
-#endif /* defined (DEBUG) */
-#if defined (DEBUG)
+#endif /* defined (DEBUG_CODE) */
+#if defined (DEBUG_CODE)
 									/*???debug */
 									{
 										FE_value *value;
@@ -25540,7 +25540,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 										}
 										printf("\n");
 									}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 									if (previous_basis==(*component)->basis)
 									{
 										*standard_basis_address= *(standard_basis_address-1);
@@ -25652,7 +25652,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 										}
 										if (return_code)
 										{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 											/*???debug */
 											printf("number of values=%d\n",
 												*number_of_values_address);
@@ -25672,7 +25672,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 												orders++;
 											}
 											printf("\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 											if (calculate_derivatives)
 											{
 												/* calculate the derivatives with respect to the xi
@@ -25818,7 +25818,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 													return_code=0;
 												}
 											}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 											/*???debug */
 											number_of_values= *number_of_values_address;
 											for (i=0;i<3;i++)
@@ -25830,7 +25830,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 												}
 												printf("\n");
 											}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 										}
 									}
 									if (*number_of_values_address>maximum_number_of_values)
@@ -25914,10 +25914,10 @@ The optional <top_level_element> forces inheritance from it as needed.
 					(element->identifier).number);
 			}
 			return_code=0;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug*/
 			printf("BAD coordinate_transformation=%p\n",coordinate_transformation);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		}
 	}
 	else
@@ -25926,10 +25926,10 @@ The optional <top_level_element> forces inheritance from it as needed.
 			"calculate_FE_element_field_values.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave calculate_FE_element_field_values %d\n",return_code);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -31629,7 +31629,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 					/* multiply face_to_element of top_level_element (currently in
 						 element_to_top_level) by face_to_element of parent */
 					/* this is the 1:3 case */
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					if (1==element->shape->dimension)
 					{
 						printf("\n");
@@ -31642,7 +31642,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 						printf("  [%6.3f %6.3f %6.3f]\n",element_to_top_level[6],
 							element_to_top_level[7],element_to_top_level[8]);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					for (i=0;i<size;i++)
 					{
 						element_to_top_level[i*2  ] = element_to_top_level[i*size] +
@@ -31653,7 +31653,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 							element_to_top_level[i*size+2]*face_to_element[3];
 					}
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				{
 					FE_value *value;
@@ -31672,7 +31672,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 					}
 					printf("\n");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			}
 			else
 			{

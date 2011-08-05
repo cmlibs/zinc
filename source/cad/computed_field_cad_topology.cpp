@@ -165,9 +165,9 @@ int Computed_field_cad_topology::evaluate_cache_at_location(
 
 	if (m_geometric_shape && location)
 	{
-#if defined(DEBUG)
+#if defined(DEBUG_CODE)
 		printf("Hi from Computed_field_cad_topology::evaluate_cache_at_location ...  doing nothing\n");
-#endif /* defined(DEBUG) */
+#endif /* defined(DEBUG_CODE) */
 		//Field_cad_geometry_location *cad_geometry_location = static_cast<Field_cad_geometry_location*>(location);
 		//field->values[0] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 0 );
 		//field->values[1] = surface_point( cad_geometry_location->surface_index(), cad_geometry_location->point_index(), 1 );

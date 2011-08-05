@@ -795,7 +795,7 @@ occurred.
 			}
 			if (any_changes)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug start*/
 				{
 					CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_field)(
@@ -817,7 +817,7 @@ occurred.
 					}
 				}
 				/*???debug stop*/
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				/* fill the changes structure */
 				changes.fe_field_changes = fe_region->fe_field_changes;
@@ -2346,9 +2346,9 @@ A NULL value is returned on any error.
 					{
 						if (FE_field_copy_without_identifier(merged_fe_field, fe_field))
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/printf("FE_region_merge_FE_field: %p OBJECT_NOT_IDENTIFIER_CHANGED field %p\n",fe_region,merged_fe_field);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							FE_REGION_FE_FIELD_CHANGE(master_fe_region, merged_fe_field,
 								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
 						}
@@ -2374,9 +2374,9 @@ A NULL value is returned on any error.
 					master_fe_region->fe_field_list))
 				{
 					merged_fe_field = fe_field;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/printf("FE_region_merge_FE_field: %p ADD field %p\n",master_fe_region,merged_fe_field);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					FE_REGION_FE_FIELD_CHANGE(master_fe_region, merged_fe_field,
 						CHANGE_LOG_OBJECT_ADDED(FE_field));
 				}
@@ -5090,9 +5090,9 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 					{
 						if (ADD_OBJECT_TO_LIST(FE_element)(merged_element, element_list))
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/printf("FE_region_merge_FE_element: %p (M %p) ADD element %p\n",fe_region,fe_region->master_fe_region,merged_element);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							FE_REGION_FE_ELEMENT_CHANGE(fe_region, merged_element,
 								CHANGE_LOG_OBJECT_ADDED(FE_element), merged_element);
 						}
@@ -5131,9 +5131,9 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 							if (merge_FE_element(merged_element, element,
 								changed_fe_field_list))
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/printf("FE_region_merge_FE_element: %p OBJECT_NOT_IDENTIFIER_CHANGED element %p\n",fe_region,merged_element);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region,
 									merged_element,
 									CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
@@ -5161,9 +5161,9 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 					if (ADD_OBJECT_TO_LIST(FE_element)(element, element_list))
 					{
 						merged_element = element;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/printf("FE_region_merge_FE_element: %p ADD element %p\n",fe_region,merged_element);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						FE_REGION_FE_ELEMENT_CHANGE(fe_region, merged_element,
 							CHANGE_LOG_OBJECT_ADDED(FE_element), merged_element);
 					}

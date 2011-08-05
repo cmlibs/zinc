@@ -192,9 +192,9 @@ int main(int argc, char *argv[])
 				{
 					if(1 == fread(&buffer, sizeof(char), 1, infile))
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						printf("%d\n", buffer);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						byte_data = buffer & 255;
 						data += byte_data << (8 * byte_count);
 
@@ -212,11 +212,11 @@ int main(int argc, char *argv[])
 							else
 							{
 								char_data = l64a(data);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								printf("%c%c%c%c%c%c\n", char_data[0], 
 								       char_data[1], char_data[2], char_data[3],
 								       char_data[4], char_data[5]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 #if (defined (BYTE_ORDER)) && (1234==BYTE_ORDER)
 								if (!glibc_version_greater_than_2_2_4())
 								{
@@ -262,11 +262,11 @@ int main(int argc, char *argv[])
 							}
 					
 							fwrite(out_data, sizeof(char), 6, outfile);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							printf("%c%c%c%c%c%c\n", out_data[0], 
 								out_data[1], out_data[2], out_data[3],
 								out_data[4], out_data[5]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 							data = 0;
 							byte_count = 0;

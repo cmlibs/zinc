@@ -100,12 +100,12 @@ appropriately.
 			{
 				return_code = WGLEXTENSION_UNAVAILABLE;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("Handles for WGL_ARB_pixel_format %p %p %p\n",
 				WGLHANDLE(wglGetPixelFormatAttribivARB),
 				WGLHANDLE(wglGetPixelFormatAttribfvARB),
 				WGLHANDLE(wglChoosePixelFormatARB));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			WGLEXTENSIONFLAG(WGL_ARB_pixel_format) = return_code;
 		}
 	}
@@ -136,14 +136,14 @@ appropriately.
 			{
 				return_code = WGLEXTENSION_UNAVAILABLE;
 			}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf("Handles for WGL_ARB_pbuffer %p %p %p %p %p\n",
 				WGLHANDLE(wglCreatePbufferARB),
 				WGLHANDLE(wglGetPbufferDCARB),
 				WGLHANDLE(wglReleasePbufferDCARB),
 				WGLHANDLE(wglDestroyPbufferARB),
 				WGLHANDLE(wglQueryPbufferARB));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			WGLEXTENSIONFLAG(WGL_ARB_pbuffer) = return_code;
 		}
 	}

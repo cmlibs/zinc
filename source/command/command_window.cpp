@@ -1233,28 +1233,28 @@ Create the structures and retrieve the command window from the uil file.
 		{
 			if (XA_CMGUI_VERSION==event->atom)
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("XA_CMGUI_VERSION changed\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			}
 			else
 			{
 				if (XA_CMGUI_LOCK==event->atom)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("XA_CMGUI_LOCK changed\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 				else
 				{
 					if (XA_CMGUI_COMMAND==event->atom)
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("XA_CMGUI_COMMAND changed\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						if (display=XtDisplay(command_window->shell))
 						{
 							example_string=(char *)(NULL);
@@ -1264,10 +1264,10 @@ Create the structures and retrieve the command window from the uil file.
 								(unsigned char **)&example_string);
 							if ((Success==result)&&example_string&&(*example_string))
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								printf("example_string %s\n",const_cast<char *>(example_string));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								if (!strncmp(example_string,"example:",8))
 								{
 									if (temp_char=strchr(example_string,'_'))

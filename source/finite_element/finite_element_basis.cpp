@@ -893,10 +893,10 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_standard_basis_transformation);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter calculate_standard_basis_transformation\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	return_code=0;
 	if (basis&&(inherited_dimension>0)&&inherited_arguments_address&&
 		inherited_standard_basis_function_address&&blending_matrix_address)
@@ -1626,10 +1626,10 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 			"calculate_standard_basis_transformation.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave calculate_standard_basis_transformation %d\n",return_code);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -1700,10 +1700,10 @@ returned.
 			ALLOCATE(basis_function_numbers,int,2*(number_of_xi_coordinates+1))&&
 			ALLOCATE(reorder_xi,int,number_of_xi_coordinates))
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("create basis : %d\n",number_of_xi_coordinates);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			*arguments=number_of_xi_coordinates;
 			*blending_matrix=1;
 			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function

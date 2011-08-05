@@ -2260,11 +2260,11 @@ Converts a 3-D element into an array of streamlines.
 			FE_region_contains_FE_element(node_to_streamline_data->fe_region,
 			element)))
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug*/
 			//printf("node_to_streamline: element %d, xi %f %f %f\n",
 			//	element->cm.number, initial_xi[0], initial_xi[1], initial_xi[2]);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			if (STREAM_LINE==node_to_streamline_data->type)
 			{
 				if (NULL != (polyline = create_GT_polyline_streamline_FE_element(element,

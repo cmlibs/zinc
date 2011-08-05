@@ -2053,10 +2053,10 @@ to say which parent element they should be evaluated on as necessary.
 			"create_GT_nurb_from_FE_element.  Invalid argument(s)");
 		nurbs=(struct GT_nurbs *)NULL;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave create_GT_nurb_from_FE_element\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (nurbs);
@@ -2923,10 +2923,10 @@ faces.
 	int outside_block;
 
 	ENTER(create_GT_voltex_from_FE_element);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter create_GT_voltex_from_FE_element\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	voltex=(struct GT_voltex *)NULL;
 	if (element && (3 == get_FE_element_dimension(element)) && vtexture &&
 		coordinate_field&&
@@ -3340,11 +3340,11 @@ faces.
 														if ((xi[0]+a==0)||(xi[0]+a==n_xi[0])||
 															(xi[1]+b==0)||(xi[1]+b==n_xi[1]))
 														{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 															/*???debug */
 															printf("Hit boundary at %lf %lf %lf\n",
 																(xi[0]+a), (xi[1]+b), (xi[2]+c));
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 															intensity1=0;
 														}
 													}
@@ -3609,10 +3609,10 @@ faces.
 			"create_GT_voltex_from_FE_element.  Invalid argument(s)");
 		voltex=(struct GT_voltex *)NULL;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave create_GT_voltex_from_FE_element %p\n",voltex);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (voltex);
@@ -3952,10 +3952,10 @@ Interpolates xi points (triples in vector field) over the finite <element>
 	struct VT_vector_field *new_field;
 
 	ENTER(interpolate_vector_field_on_FE_element);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("enter interpolate_vector_field_on_FE_element\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	if (element && (3 == get_FE_element_dimension(element)) && vector_field &&
 		coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)))
@@ -4157,10 +4157,10 @@ Interpolates xi points (triples in vector field) over the finite <element>
 		"interpolate_vt_on_FE_element  Invalid argument(s)");
 		new_field=(struct VT_vector_field *)NULL;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave interpolate_vector_field_on_FE_element\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (new_field);
@@ -4214,10 +4214,10 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 				n_scalar_fields=1;
 				if (texture->clipping_field_on)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("texture->clipping_field_on\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* cutting isosurface is defined by a field */
 					scalar_field_list[n_scalar_fields]=texture->clip_field;
 					isovalue_list[n_scalar_fields]=texture->cut_isovalue;
@@ -4227,20 +4227,20 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 				{
 					if (clipping)
 					{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						/*???debug */
 						printf("clipping\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						/* calculate the clip fn over the voltex coordinate field */
 						/* calculate deformed coordinate field */
 						new_field=interpolate_vector_field_on_FE_element(texture->ximax,
 							element,coordinate_field,texture->coordinate_field, time);
 						if (new_field)
 						{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							/*???debug */
 							printf("new_field\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							for (i=0;i<nx*ny*nz;i++)
 							{
 								vector[0]=new_field->vector[3*i];
@@ -4248,14 +4248,14 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 								vector[2]=new_field->vector[3*i+2];
 								texture->clip_field->scalar[i]=
 									(clipping->function)(vector,clipping->parameters);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug */
 								if (0<=texture->clip_field->scalar[i])
 								{
 									printf("clip %g %g %g %g\n",vector[0],vector[1],vector[2],
 									texture->clip_field->scalar[i]);
 								}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 							}
 							scalar_field_list[n_scalar_fields]=texture->clip_field;
 							isovalue_list[n_scalar_fields]=0;
@@ -4283,20 +4283,20 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 						texture->hollow_isovalue*texture->isovalue;
 					n_scalar_fields++;
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug */
 				printf("Clipped Marching cubes: isovalue=%lf : n_scalar_fields=%d : mode [hollow=%d] [closed=%d] [clip=%d]\n",
 					texture->isovalue,n_scalar_fields,texture->hollow_mode_on,
 					texture->closed_surface,texture->cutting_plane_on);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				/* create isosurface */
 				/* ( cutting plane[3]=clip isovalue ) */
 				if (texture->recalculate)
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("Creating Isosurface for texture %s\n", texture->name);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (marching_cubes(scalar_field_list,n_scalar_fields,
 						texture->coordinate_field,texture->mc_iso_surface,isovalue_list,
 						texture->closed_surface,
@@ -4317,19 +4317,19 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 				}
 				else
 				{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("Skipping: Isosurface already created for texture %s\n",
 						texture->name);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					voltex=create_GT_voltex_from_FE_element(element,coordinate_field,
 						data_field, texture, render_type,
 						displacement_map_field, displacement_map_xi_direction,
 						texture_coordinate_field, time);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug */
 					printf("After create GT Voltex (2)\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				}
 			}
 			else
@@ -4341,11 +4341,11 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 		}
 		else
 		{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			/*???debug */
 			printf("Skipping: Obj surface already created for texture %s\n",
 				texture->name);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			voltex=create_GT_voltex_from_FE_element(element,
 				coordinate_field, data_field, texture, render_type,
 				displacement_map_field, displacement_map_xi_direction,
@@ -4358,10 +4358,10 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 			"generate_clipped_GT_voltex_from_FE_element.  Missing texture");
 		voltex=(struct GT_voltex *)NULL;
 	}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	/*???debug */
 	printf("leave generate_clipped_GT_voltex_from_FE_element %p\n",voltex);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (voltex);

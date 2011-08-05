@@ -131,7 +131,7 @@ vector <b>.
 	ENTER(point_pair_to_3d);
 	if (p1&&t1&&p2&&t2&&b)
 	{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("\n>>> ENTER: point_pair_to_3d <<<\n");
 		printf("p1:\n");
 		print_matrix(2,1,p1," %12.7f");
@@ -141,7 +141,7 @@ vector <b>.
 		print_matrix(2,1,p2," %12.7f");
 		printf("t2:\n");
 		print_matrix(4,3,t2," %12.7f");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		a1[ 0] = t1[0]-p1[0]*t1[2];
 		a1[ 1] = t1[3]-p1[0]*t1[5];
@@ -159,10 +159,10 @@ vector <b>.
 		a1[10] = t2[4]-p2[1]*t2[5];
 		a1[11] = t2[7]-p2[1]*t2[8];
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("a1:\n");
 		print_matrix(4,3,a1," %12.7f");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* fill vector b1 */
 		b1[0] = p1[0]*t1[11]-t1[9];
@@ -172,7 +172,7 @@ vector <b>.
 		b1[3] = p2[1]*t2[11]-t2[10];
 		/* printf("b1:\n"); print_matrix(4,1,b1," %12.7f"); */
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/* a1(t)a1 . x = a1(t) b1 */
 		transpose_matrix(4,3,a1,a1t);
 		printf("a1t:\n");
@@ -191,7 +191,7 @@ vector <b>.
 		printf("Solution:\n");
 		print_matrix(3,1,b," %12.7f");
 		return_code=1;
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		return_code=
 			/* a1(t)a1 . x = a1(t) b1 */
@@ -232,7 +232,7 @@ as nearly as possible within the remaining degree of freedom.
 	ENTER(weighted_point_pair_to_3d);
 	if (p1&&t1&&(0<w1)&&p2&&t2&&(0<w2)&&b)
 	{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("\n>>> ENTER: point_pair_to_3d <<<\n");
 		printf("p1:\n");
 		print_matrix(2,1,p1," %12.7f");
@@ -242,7 +242,7 @@ as nearly as possible within the remaining degree of freedom.
 		print_matrix(2,1,p2," %12.7f");
 		printf("t2:\n");
 		print_matrix(4,3,t2," %12.7f");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		a1[ 0] = w1*(t1[0]-p1[0]*t1[2]);
 		a1[ 1] = w1*(t1[3]-p1[0]*t1[5]);
@@ -260,10 +260,10 @@ as nearly as possible within the remaining degree of freedom.
 		a1[10] = w2*(t2[4]-p2[1]*t2[5]);
 		a1[11] = w2*(t2[7]-p2[1]*t2[8]);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("a1:\n");
 		print_matrix(4,3,a1," %12.7f");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* fill vector b1 */
 		b1[0] = w1*(p1[0]*t1[11]-t1[9]);
@@ -272,10 +272,10 @@ as nearly as possible within the remaining degree of freedom.
 		b1[2] = w2*(p2[0]*t2[11]-t2[9]);
 		b1[3] = w2*(p2[1]*t2[11]-t2[10]);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("b1:\n");
 		print_matrix(4,1,b1," %12.7f");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		return_code=
 			/* a1(t)a1 . x = a1(t) b1 */
@@ -321,7 +321,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 	if (t&&(0<near_plane)&&(near_plane<far_plane)&&(0!=NDC_width)&&(0!=NDC_height)&&
 		projection_matrix&&modelview_matrix&&eye&&lookat&&up)
 	{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		{
 			double tmp3[9], tmpb[3], tmpd;
 			/* quick test of matrix solver: It worked! */
@@ -348,7 +348,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 			print_matrix(3,1,tmpb," %12.7f");
 			printf("\n");
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* the eye position is the point where x', y' and h are all zero */
 		eye_matrix[0]=t[0];
@@ -366,7 +366,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		eye[2]=-t[11];
 		LU_backsubstitute(3,eye_matrix,tmpindx,eye);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		{
 			double p1[2], p2[2];
 			/* can also find eye position using photogrammetry calculations with 2
@@ -380,7 +380,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 			printf("Eye position:\n");
 			print_matrix(1,3,eye," %14.7f");
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* form modelview matrix from unit vector axes in t */
 		modelview_matrix[ 0]= t[0];
@@ -435,7 +435,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		S33=(-znorm*(near_plane+far_plane)-2*S44)/(far_plane-near_plane);
 		S34=(-znorm*(near_plane+far_plane)-2*S44)*near_plane/(far_plane-near_plane)-znorm*near_plane-S44;
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		{
 			double tmp_result[16];
 			/* test! */
@@ -465,7 +465,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 			printf("result:\n");
 			print_matrix(4,4,tmp_result," %12.7f");
 		}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		/* Final projection matrix is S premultiplied by the following matrix A */
 		/* to give the viewing volume in Normalized Device Coordinates: */

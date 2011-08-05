@@ -194,9 +194,9 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 			glColor3f(red, green, blue);
 		  
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 			printf ( "%d %lf %lf %lf\n",  cm_information.number, red, green, blue);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 			xi[0] = 0.0;
 			xi[1] = 0.0;
@@ -281,9 +281,9 @@ sequential element_xi lookup should now be performed.
 	int return_code;
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 #define BLOCK_SIZE (20)
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	int dummy[1024 * 1024];
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 	unsigned char *block_ptr, colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE *4],
 		*next_colour;
 	float ditherx, dithery;
@@ -446,7 +446,7 @@ sequential element_xi lookup should now be performed.
 
 							glDeleteLists(gl_list, 1);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 							glReadPixels(values[0] * hint_resolution[0],
 								values[1] * hint_resolution[1],
 								hint_resolution[0], hint_resolution[1], GL_RGBA, GL_UNSIGNED_BYTE,
@@ -454,7 +454,7 @@ sequential element_xi lookup should now be performed.
 				
 							write_rgb_image_file("bob.rgb", 4, 1, hint_resolution[1],
 								hint_resolution[0], 0, (long unsigned *)dummy);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						}
 						else
 						{
@@ -495,9 +495,9 @@ sequential element_xi lookup should now be performed.
 								 fe_region, element_dimension, cm.number)))
 					{
 						first_element = *element;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						printf("First element %d\n", first_element->cm.number);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 						find_element_xi_data.tolerance = 1e-06;
 						if (Computed_field_iterative_element_conditional(
 							*element, (void *)&find_element_xi_data))
@@ -622,13 +622,13 @@ sequential element_xi lookup should now be performed.
 								}
 							}
 						}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 						if (*element)
 						{
 							printf("Final found element %d  %f %f %f\n", (*element)->cm.number,
 								xi[0], xi[1], xi[2]);
 						}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					}
 				}
 				else

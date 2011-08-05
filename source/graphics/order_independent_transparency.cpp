@@ -394,7 +394,7 @@ Draws one peeled layer of the scene.
 		}
 
 	}	
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	else
 	{
 		/* So we can depth test even on the first path when debugging */
@@ -409,7 +409,7 @@ Draws one peeled layer of the scene.
 			GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, data->zbuffer);
 
 	}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
@@ -909,7 +909,7 @@ Actually preforms the rendering pass.
 			(void *)&material_data);
 	}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	{
 		FILE *out;
 		printf("Writing depth.rgba display -size %dx%d -depth 8 depth.rgba\n", data->viewport_width, data->viewport_height);
@@ -920,7 +920,7 @@ Actually preforms the rendering pass.
 			out);
 		fclose(out);
 	}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	USE_PARAMETER(rendering_data);

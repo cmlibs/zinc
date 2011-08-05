@@ -1381,7 +1381,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 												{
 													iso_surface->detail_map=(int *)NULL;
 												}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 												/*???debug*/
 												printf("Vertices:\n");
 												for (i=0;i<iso_surface->n_vertices;i++)
@@ -1433,7 +1433,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 														printf("  cell %i NULL! %p %p",i,cell,source_cell);
 													}
 												}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 												/* 7. Clean up iso_surface in case of error */
 												if (!return_code)

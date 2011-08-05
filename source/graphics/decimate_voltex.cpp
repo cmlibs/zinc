@@ -1063,13 +1063,13 @@ fastest the edge is less likely to collapse.
 							add_triangle++;
 						}
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					if (add_triangle != 1)
 					{
 						display_message(ERROR_MESSAGE,"decimate_triangles.  "
 							"Repeated vertex or valid vertex not found in triangle.");					
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					/* Add this into the triangle pointers of the first vertex */
 					REALLOCATE(vertex->triangles, vertex->triangles,
 						struct VT_iso_triangle *, vertex->number_of_triangles + 1);
@@ -1122,13 +1122,13 @@ fastest the edge is less likely to collapse.
 					REACCESS(Decimation_quadric)(&update_cost->quadric2, cost->quadric1);
 					independent_quadric = update_cost->quadric1;
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				else
 				{
 					display_message(ERROR_MESSAGE,"decimate_triangles.  "
 						"Unable to find expected vertex in dependent_cost_list.");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				ACCESS(Decimation_cost)(update_cost);
 				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost, cost_list);
@@ -1136,13 +1136,13 @@ fastest the edge is less likely to collapse.
 				REMOVE_OBJECT_FROM_LIST(Decimation_cost)(update_cost,
 					independent_quadric->dependent_cost_list);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				if (update_cost->access_count > 1)
 				{
 					display_message(ERROR_MESSAGE,"decimate_triangles.  "
 						"Update cost is still acessed by something.");
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				if (!(FIRST_OBJECT_IN_LIST_THAT(Decimation_cost)(Decimation_cost_has_quadric,
 							(void *)independent_quadric, quadric->dependent_cost_list)))

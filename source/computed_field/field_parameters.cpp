@@ -291,14 +291,14 @@ bool Field_parameters<ValueType>::copyValues(int ensemble_number,
 template <typename ValueType>
 bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 	display_message(INFORMATION_MESSAGE, "Field_parameters::resize  Field %s\n", field->name);	// GRC test
 	for (int i = 0; i < number_of_ensembles; i++)
 	{
 		display_message(INFORMATION_MESSAGE, "    ensemble %s: %u -> %u\n",
 			ensembles[i]->getField()->name, refSize[i], newRefSize[i]);	// GRC test
 	}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 	// values to copy is minimum of refSize and newRefSize
 	EnsembleEntryRef *copySize = new EnsembleEntryRef[number_of_ensembles];
@@ -409,7 +409,7 @@ int Field_parameters<ValueType>::getValues(
 			break;
 		if (!dense && !value_exists.getBool(valueIndex))
 		{
-#if 0 // GRC DEBUG
+#if 0 // GRC DEBUG_CODE
 			display_message(ERROR_MESSAGE,
 				"Field_parameters::getValues  Value doesn't exist at index %d", valueIndex);
 			for (int i = 0; i < number_of_ensembles; i++)

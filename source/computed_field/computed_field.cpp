@@ -778,12 +778,12 @@ Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field)
 	return Cmiss_region_get_field_module(region);
 }
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 int Cmiss_field_get_access_count(Cmiss_field_id field)
 {
 	return field->access_count;
 }
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
 /*****************************************************************************

@@ -2548,10 +2548,10 @@ if it exists.
 									index += strlen(end + 2);
 								}
 								*index = 0;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								display_message(INFORMATION_MESSAGE,
 									"parse_variable.\n\tOld token %s\n\tVariable value %s\n\tNew token %s\n", *token, variable->value, new_token);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								DEALLOCATE(*token);
 								*token = new_token;
 							}

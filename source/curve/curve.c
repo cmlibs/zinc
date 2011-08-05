@@ -895,7 +895,7 @@ Lists the contents of the curve.
 
 	return (return_code);
 } /* cc_list */
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 static int cc_copy_convert_without_name(struct Curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,

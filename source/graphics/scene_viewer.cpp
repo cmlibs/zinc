@@ -850,11 +850,11 @@ DESCRIPTION :
 		viewport_bottom=viewport_top -
 			((double)viewport_height/scene_viewer->user_viewport_pixels_per_unit_y)*
 			texture_height/viewport_texture_height;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("viewport left=%f right=%f  top=%f bottom=%f\n",
 			viewport_left,viewport_right,viewport_top,viewport_bottom);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 		glLoadIdentity();
@@ -898,11 +898,11 @@ DESCRIPTION :
 		{
 			texels_per_polygon_y *= 2;
 		}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("texels per polygon: x=%i y=%i\n",texels_per_polygon_x,
 			texels_per_polygon_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		/* get range of physical texture coordinates across viewport */
 		corner_x[0]=viewport_left;
 		corner_x[1]=viewport_right;
@@ -978,20 +978,20 @@ DESCRIPTION :
 		max_x /= tex_ratio_x;
 		min_y /= tex_ratio_y;
 		max_y /= tex_ratio_y;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("min_x=%f max_x=%f  min_y=%f max_y=%f\n",min_x,max_x,min_y,
 			max_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		min_i = (int)(min_x/(double)texels_per_polygon_x);
 		max_i = (int)ceil(0.999999*max_x/(double)texels_per_polygon_x);
 		min_j = (int)(min_y/(double)texels_per_polygon_y);
 		max_j = (int)ceil(0.999999*max_y/(double)texels_per_polygon_y);
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		/*???debug */
 		printf("min_i=%i max_i=%i  min_j=%i max_j=%i\n",min_i,max_i,min_j,
 			max_j);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		tex_ratio_x *= texels_per_polygon_x;
 		tex_ratio_y *= texels_per_polygon_y;
 		/* draw the array of polygons */
@@ -2405,11 +2405,11 @@ access this function.
 			rendering_data.viewport_height = top - bottom;
 		}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf ("Viewport data %d,%d %d,%d\n",
 			rendering_data.viewport_left, rendering_data.viewport_bottom,
 			rendering_data.viewport_width, rendering_data.viewport_height);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 
 		rendering_data.scene_viewer = scene_viewer;
@@ -2665,10 +2665,10 @@ access this function.
 					glDisable(GL_POLYGON_OFFSET_FILL);
 				}
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("Scene_viewer: build scene and redraw\n");
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 				/*???RC. Is this the best place to set line width and point size? */
 				glLineWidth((GLfloat)global_line_width);
@@ -3488,9 +3488,9 @@ Converts mouse button-press and motion events into viewing transformations in
 			{
 				pointer_x=input->position_x;
 				pointer_y=input->position_y;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("mouse move to %d %d\n",pointer_x,pointer_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				if (Scene_viewer_unproject(pointer_x,pointer_y,
 					&near_x,&near_y,&near_z,&far_x,&far_y,&far_z)&&
 					Scene_viewer_unproject(scene_viewer->previous_pointer_x,
@@ -3684,7 +3684,7 @@ Converts mouse button-press and motion events into viewing transformations in
 								EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 					}
 				}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("button %d release at %d %d\n",input->button_number,
 					input->position_x,input->position_y);
 				pointer_x=input->position_x;
@@ -3695,22 +3695,22 @@ Converts mouse button-press and motion events into viewing transformations in
 					printf("RELEASENear: %8.4f %8.4f %8.4f  Far: %8.4f %8.4f %8.4f\n",
 						near_x,near_y,near_z,far_x,far_y,far_z);
 				}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 			} break;
 			case GRAPHICS_BUFFER_KEY_PRESS:
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("key %d press at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			} break;
 			case GRAPHICS_BUFFER_KEY_RELEASE:
 			{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 				printf("key %d release at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 			} break;
 			default:
 			{
@@ -7812,9 +7812,9 @@ so should not be modified or deallocated.
 		*opengl_vendor=(char *)glGetString(GL_VENDOR);
 		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
 
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		printf("%s\n", *opengl_extensions);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 
 		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
 		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,

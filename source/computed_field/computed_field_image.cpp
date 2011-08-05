@@ -1502,13 +1502,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 				for (k = 0; (k < image_width) && return_code; k++)
 				{
 					values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/
 					if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
 					{
 						printf("  field pos = %10g %10g %10g\n", values[0], values[1], values[2]);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (use_pixel_location)
 					{
 						/* Try to use a pixel coordinate first */
@@ -1566,13 +1566,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 						{
 							if (element)
 							{
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 								/*???debug*/
 								if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
 								{
 									printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
 								}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 								if (Computed_field_evaluate_in_element(field,
 										element, xi,/*time*/0,(struct FE_element *)NULL,
 										data_values, (FE_value *)NULL))
@@ -1602,13 +1602,13 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 							find_element_xi_error_count++;
 						}
 					}
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 					/*???debug*/
 					if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
 					{
 						printf("  RGBA = %10g %10g %10g %10g\n", rgba[0], rgba[1], rgba[2], rgba[3]);
 					}
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 					if (number_of_bytes_per_component == 2)
 					{
 						 multiplier = pow(256.0,number_of_bytes_per_component) - 1.0;
