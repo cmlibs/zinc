@@ -1085,7 +1085,7 @@ Gets the NDC information.
 }
 
 int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_image_pixel_format storage, int *width, int *height,
+	enum Cmiss_stream_information_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)
 /*******************************************************************************
@@ -1105,27 +1105,27 @@ scene viewer on screen.
 	int return_code = 1;
 	switch(storage)
 	{
-		case CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
 		{
 			internal_storage_type = TEXTURE_LUMINANCE;
 		} break;
-		case CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
 		{
 			internal_storage_type = TEXTURE_LUMINANCE_ALPHA;
 		} break;
-		case CMISS_IMAGE_PIXEL_FORMAT_RGB:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
 		{
 			internal_storage_type = TEXTURE_RGB;
 		} break;
-		case CMISS_IMAGE_PIXEL_FORMAT_RGBA:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
 		{
 			internal_storage_type = TEXTURE_RGBA;
 		} break;
-		case CMISS_IMAGE_PIXEL_FORMAT_ABGR:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
 		{
 			internal_storage_type = TEXTURE_ABGR;
 		} break;
-		case CMISS_IMAGE_PIXEL_FORMAT_BGR:
+		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
 		{
 			internal_storage_type = TEXTURE_BGR;
 		} break;

@@ -535,7 +535,7 @@ int Cmiss_stream_information_image_set_file_format(
 
 int Cmiss_stream_information_image_set_pixel_format(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_pixel_format pixel_format)
+	enum Cmiss_stream_information_image_pixel_format pixel_format)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	int return_code = 0;
@@ -545,19 +545,19 @@ int Cmiss_stream_information_image_set_pixel_format(
 		int number_of_components;
 		switch(pixel_format)
 		{
-			case CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE:
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
 			{
 				number_of_components = 1;
 			} break;
-			case CMISS_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
 			{
 				number_of_components = 2;
 			} break;
-			case CMISS_IMAGE_PIXEL_FORMAT_RGB:
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
 			{
 				number_of_components = 3;
 			} break;
-			case CMISS_IMAGE_PIXEL_FORMAT_RGBA:
+			case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
 			{
 				number_of_components = 4;
 			} break;

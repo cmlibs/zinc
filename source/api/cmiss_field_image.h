@@ -468,6 +468,6 @@ int Cmiss_stream_information_image_set_file_format(
  */
 int Cmiss_stream_information_image_set_pixel_format(
 	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_image_pixel_format pixel_format);
+	enum Cmiss_stream_information_image_pixel_format pixel_format);
 
 #endif /* !defined (CMISS_FIELD_IMAGE_H) */
