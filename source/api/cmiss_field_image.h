@@ -72,6 +72,16 @@ enum Cmiss_stream_information_image_file_format
 };
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_stream_information_image_file_format
+	Cmiss_stream_information_image_file_format_string_to_enum(const char *string);
+
+/***************************************************************************//**
  * Describes the blending of the texture with the texture constant colour and
  * the underlying fragment colour
  */
@@ -95,6 +105,16 @@ enum Cmiss_field_image_combine_mode
 };
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_image_combine_mode
+	Cmiss_field_image_combine_mode_string_to_enum(const char *string);
+
+/***************************************************************************//**
  * Whether the texture is compressed.  Could add specific compression formats that
  * are explictly requested from the hardware.
  */
@@ -105,6 +125,16 @@ enum Cmiss_field_image_hardware_compression_mode
 	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
 	/*!< Allow the hardware to choose the compression */
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_image_hardware_compression_mode
+	Cmiss_field_image_hardware_compression_mode_string_to_enum(const char *string);
 
 /***************************************************************************//**
  * Specfiy how the graphics hardware rasterises the texture onto the screen.
@@ -119,6 +149,16 @@ enum Cmiss_field_image_filter_mode
 	CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
 };
 
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_string_to_enum(
+		const char *string);
+
 enum Cmiss_field_image_attribute
 {
 	CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
@@ -129,6 +169,27 @@ enum Cmiss_field_image_attribute
 	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = 5,
 	CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = 6
 };
+
+/***************************************************************************//**
+ * Convert a short attribute name into an enum if the attribute name matches
+ * any of the members in the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
+	const char *string);
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_stream_information_image_pixel_format
+	Cmiss_stream_information_image_pixel_format_string_to_enum(
+		const char *string);
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
@@ -369,6 +430,16 @@ enum Cmiss_stream_information_image_attribute
 	 * quality of 0.0 specifies the most compression.
 	 */
 };
+
+/***************************************************************************//**
+ * Convert a short attribute name into an enum if the attribute name matches
+ * any of the members in the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_stream_information_image_attribute
+	Cmiss_stream_information_image_attribute_string_to_enum(const char *string);
 
 /*****************************************************************************//**
  * Creates a Cmiss_stream_information_image object.

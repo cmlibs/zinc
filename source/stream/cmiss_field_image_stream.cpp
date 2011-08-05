@@ -475,6 +475,28 @@ int Cmiss_stream_information_image_set_attribute_real(
 	return 0;
 }
 
+enum Cmiss_stream_information_image_attribute
+	Cmiss_stream_information_image_attribute_string_to_enum(const char *string)
+{
+	enum Cmiss_stream_information_image_attribute attribute =
+		(Cmiss_stream_information_image_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "BITS_PER_COMPONENT",
+			"COMPRESSION_QUALITY"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_stream_information_image_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
 int Cmiss_stream_information_image_set_file_format(
 	Cmiss_stream_information_image_id stream_information,
 	enum Cmiss_stream_information_image_file_format format)
@@ -533,6 +555,28 @@ int Cmiss_stream_information_image_set_file_format(
 	return (return_code);
 }
 
+enum Cmiss_stream_information_image_file_format
+	Cmiss_stream_information_image_file_format_string_to_enum(const char *string)
+{
+	enum Cmiss_stream_information_image_file_format format =
+		(Cmiss_stream_information_image_file_format)0;
+	if (string)
+	{
+		const char *str[] = {"INVALID", "BMP", "DICOM", "JPG",
+			"GIF", "PNG", "SGI", "TIFF"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				format = (Cmiss_stream_information_image_file_format)(i + 1);
+				break;
+			}
+		}
+	}
+	return format;
+}
+
 int Cmiss_stream_information_image_set_pixel_format(
 	Cmiss_stream_information_image_id stream_information,
 	enum Cmiss_stream_information_image_pixel_format pixel_format)
@@ -575,4 +619,27 @@ int Cmiss_stream_information_image_set_pixel_format(
 		}
 	}
 	return (return_code);
+}
+
+enum Cmiss_stream_information_image_pixel_format
+	Cmiss_stream_information_image_pixel_format_string_to_enum(
+		const char *string)
+{
+	enum Cmiss_stream_information_image_pixel_format format =
+		(Cmiss_stream_information_image_pixel_format)0;
+	if (string)
+	{
+		const char *str[] = {"LUMINANCE", "LUMINANCE_ALPHA", "RGB",
+			"RGBA", "RGBA", "BGR"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				format = (Cmiss_stream_information_image_pixel_format)(i + 1);
+				break;
+			}
+		}
+	}
+	return format;
 }
