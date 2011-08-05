@@ -1282,6 +1282,27 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	return return_value;
 }
 
+enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
+	const char *string)
+{
+	enum Cmiss_field_image_attribute attribute =	(Cmiss_field_image_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "RAW_DEPTH_PIXELS",
+		"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_field_image_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
 int Computed_field_is_image_type(struct Computed_field *field,
 	void *dummy_void)
 {
@@ -1850,6 +1871,29 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 	}
 }
 
+enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_string_to_enum(
+	const char *string)
+{
+	enum Cmiss_field_image_combine_mode mode = (Cmiss_field_image_combine_mode)0;
+	if (string)
+	{
+		const char *str[] = {"BLEND", "DECAL", "MODULATE", "ADD",
+			"ADD_SIGNED", "MODULATE_SCALE_4", "BLEND_SCALE_4", "SUBTRACT",
+			"ADD_SCALE_4", "SUBTRACT_SCALE_4", "INVERT_ADD_SCALE_4",
+			"INVERT_SUBTRACT_SCALE_4"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				mode = (Cmiss_field_image_combine_mode)(i + 1);
+				break;
+			}
+		}
+	}
+	return mode;
+}
+
 enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
    Cmiss_field_image_id image_field)
 {
@@ -1878,6 +1922,27 @@ int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_f
 	}
 }
 
+enum Cmiss_field_image_hardware_compression_mode
+	Cmiss_field_image_hardware_compression_mode_string_to_enum(const char *string)
+{
+	enum Cmiss_field_image_hardware_compression_mode mode =
+		(Cmiss_field_image_hardware_compression_mode)0;
+	if (string)
+	{
+		const char *str[] = {"UNCOMPRESSED", "AUTOMATIC"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				mode = (Cmiss_field_image_hardware_compression_mode)(i + 1);
+				break;
+			}
+		}
+	}
+	return mode;
+}
+
 enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
    Cmiss_field_image_id image_field)
 {
@@ -1902,4 +1967,25 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 		enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
 		return Texture_set_filter_mode(texture, texture_filter_mode);
 	}
+}
+
+enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_string_to_enum(
+		const char *string)
+{
+	enum Cmiss_field_image_filter_mode mode =	(Cmiss_field_image_filter_mode)0;
+	if (string)
+	{
+		const char *str[] = {"NEAREST", "LINEAR", "NEAREST_MIPMAP_NEARES",
+		"LINEAR_MIPMAP_NEAREST", "LINEAR_MIPMAP_LINEAR"};
+
+		for (unsigned int i = 0; i < sizeof(str); i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				mode = (Cmiss_field_image_filter_mode)(i + 1);
+				break;
+			}
+		}
+	}
+	return mode;
 }
