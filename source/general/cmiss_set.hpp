@@ -137,7 +137,16 @@ public:
 			}
 			related_set = related_set->next;
 		}
+		for (iterator iter = begin(); iter != end(); ++iter)
+		{
+			Key object = *iter;
+			object->deaccess(&object);
+		}
 		Base_class::operator=(source);
+		for (iterator iter = begin(); iter != end(); ++iter)
+		{
+			(*iter)->access();
+		}
 		if (related_set == this)
 		{
 			// copy from unrelated set: switch linked-lists
