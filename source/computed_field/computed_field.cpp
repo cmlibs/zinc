@@ -513,14 +513,8 @@ Calls Computed_field_clear_cache before clearing the type.
 
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Sets the coordinate system of the <field> to match that of it's sources.
-==============================================================================*/
 {
-	int i, return_code;
+	int return_code;
 	struct Coordinate_system *coordinate_system_ptr;
 
 	ENTER(Computed_field_set_coordinate_system_from_sources);
@@ -532,7 +526,8 @@ Sets the coordinate system of the <field> to match that of it's sources.
 			coordinate_system_ptr = 
 				Computed_field_get_coordinate_system(field->source_fields[0]);
 			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-			i = 1;
+#ifdef OLD_CODE
+			int i = 1;
 			while (i < field->number_of_source_fields && 
 				Coordinate_systems_match(coordinate_system_ptr,
 					Computed_field_get_coordinate_system(field->source_fields[1])))
@@ -547,6 +542,7 @@ Sets the coordinate system of the <field> to match that of it's sources.
 					"     Defaulting to coordinate system from first source field.");
 				return_code = 0;
 			}
+#endif // OLD_CODE
 		}
 	}
 	else
@@ -776,6 +772,16 @@ Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field)
 {
 	struct Cmiss_region *region = Computed_field_get_region(field);
 	return Cmiss_region_get_field_module(region);
+}
+
+enum Cmiss_field_value_type Cmiss_field_get_value_type(Cmiss_field_id field)
+{
+	Cmiss_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
+	if (field && field->core)
+	{
+		value_type = field->core->get_value_type();
+	}
+	return value_type;
 }
 
 #if defined (DEBUG_CODE)
@@ -2169,6 +2175,33 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 } /* Computed_field_for_each_ancestor */
 
 // External API
+int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, Cmiss_element_id element,
+	int number_of_chart_coordinates, double *chart_coordinates)
+{
+	int return_code;
+	if (field && cache && element && chart_coordinates &&
+		(number_of_chart_coordinates >= get_FE_element_dimension(element)))
+	{
+		Field_location *location = cache->get_location();
+		return_code = field->core->set_mesh_location_value(location, element, chart_coordinates);
+		if (!location->get_assign_to_cache())
+		{
+			Computed_field_clear_cache(field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_assign_mesh_location.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+// External API
 int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int number_of_values, double *values)
 {
@@ -2195,7 +2228,12 @@ int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int return_code;
 	if (field && cache && string_value)
 	{
-		return_code = field->core->set_string_at_location(cache->get_location(), string_value);
+		Field_location *location = cache->get_location();
+		return_code = field->core->set_string_at_location(location, string_value);
+		if (!location->get_assign_to_cache())
+		{
+			Computed_field_clear_cache(field);
+		}
 	}
 	else
 	{
@@ -2241,6 +2279,44 @@ int Cmiss_field_evaluate_boolean(Cmiss_field_id field, Cmiss_field_cache_id cach
 }
 
 // External API
+Cmiss_element_id Cmiss_field_evaluate_mesh_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, int number_of_chart_coordinates,
+	double *chart_coordinates)
+{
+	Cmiss_element_id element = 0;
+	if (field && cache && chart_coordinates)
+	{
+		if (Computed_field_evaluate_cache_at_location(field, cache->get_location()))
+		{
+			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			element = field->core->get_mesh_location_value(xi);
+			if (element)
+			{
+				int dimension = get_FE_element_dimension(element);
+				if (number_of_chart_coordinates >= dimension)
+				{
+					for (int i = 0; i < dimension; i++)
+					{
+						chart_coordinates[i] = xi[i];
+					}
+					ACCESS(FE_element)(element);
+				}
+				else
+				{
+					element = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_evaluate_mesh_location.  Invalid argument(s)");
+	}
+	return element;
+}
+
+// External API
 // Note: no warnings if not evaluated so can be used for is_defined
 int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int number_of_values, double *values)
@@ -2273,6 +2349,59 @@ int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	return (return_code);
 }
 
+char *Computed_field_evaluate_as_string_at_location(
+	struct Computed_field *field,int component_number,
+	Field_location *location)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns a string representing the value of <field>.<component_number> at
+<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and
+converts the value for <component_number> to a string (since result
+may already be in cache).
+
+Use -1 as the <component_number> if you want all the components.
+
+The <top_level_element> parameter has the same use as in
+Computed_field_evaluate_cache_in_element.
+
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Computed_field_evaluate_as_string_in_element);
+	return_string=(char *)NULL;
+	if (field&&location&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
+	{
+		if (Computed_field_evaluate_cache_at_location(field, location))
+		{
+			if (field->string_cache || field->core->make_string_cache(component_number))
+			{
+				return_string = duplicate_string(field->string_cache);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_at_location.  "
+					"Cache values invalid.");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_as_string_at_location.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+}
+
 // External API
 // Note: no warnings if not evaluated so can be used for is_defined
 char *Cmiss_field_evaluate_string(Cmiss_field_id field,
@@ -2281,36 +2410,8 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 	char *return_string = 0;
 	if (field && cache)
 	{
-		if (Computed_field_evaluate_cache_at_location(field, cache->get_location()))
-		{
-			if (field->string_cache)
-			{
-				return_string = duplicate_string(field->string_cache);
-			}
-			else if (field->values_valid)
-			{
-				char tmp_string[50];
-				int error = 0;
-				for (int i = 0; i < field->number_of_components; i++)
-				{
-					if (0 < i)
-					{
-						sprintf(tmp_string,", %g",field->values[i]);
-					}
-					else
-					{
-						sprintf(tmp_string,"%g",field->values[i]);
-					}
-					append_string(&return_string, tmp_string, &error);
-				}
-				field->string_component = -1;
-				field->string_cache = duplicate_string(return_string);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE, "Cmiss_field_evaluate_string.  Cache invalid for field %s\n", field->name);
-			}
-		}
+		return_string = Computed_field_evaluate_as_string_at_location(
+			field, /*component_number*/-1, cache->get_location());
 	}
 	else
 	{
@@ -2540,95 +2641,6 @@ is avoided.
 	return (return_code);
 } /* Computed_field_evaluate_cache_in_element */
 
-char *Computed_field_evaluate_as_string_at_location(
-	struct Computed_field *field,int component_number,
-	Field_location *location)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns a string representing the value of <field>.<component_number> at
-<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and
-converts the value for <component_number> to a string (since result 
-may already be in cache).
-
-Use -1 as the <component_number> if you want all the components.
-
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
-
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-???RC.  Allow derivatives to be evaluated as string too?
-==============================================================================*/
-{
-	char *return_string, tmp_string[100];
-	int error, i;
-
-	ENTER(Computed_field_evaluate_as_string_in_element);
-	return_string=(char *)NULL;
-	if (field&&location&&(-1<=component_number)&&
-		(component_number < field->number_of_components))
-	{
-		if (Computed_field_evaluate_cache_at_location(field, location))
-		{
-			// cache may be valid but we also need to check that the cached string
-			// is the string for the component number we are interested in.
-			if (field->string_cache && field->string_component == component_number)
-			{
-				return_string = duplicate_string(field->string_cache);
-			}
-			else if (field->values_valid)
-			{
-				error = 0;
-				if (-1 == component_number)
-				{
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (0<i)
-						{
-							sprintf(tmp_string,", %g",field->values[i]);
-						}
-						else
-						{
-							sprintf(tmp_string,"%g",field->values[i]);
-						}
-						append_string(&return_string,tmp_string,&error);
-					}
-				}
-				else
-				{
-					sprintf(tmp_string,"%g",field->values[component_number]);
-					return_string=duplicate_string(tmp_string);
-				}
-				field->string_component = component_number;
-				field->string_cache = duplicate_string(return_string);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_as_string_at_location.  "
-					"Cache values invalid.");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_at_location.  "
-				"Unable to evaluate field at location.");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_as_string_at_location.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Computed_field_evaluate_as_string_at_location */
-
 char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,FE_value time,
@@ -2775,7 +2787,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 {
 	char *return_string;
 
-	ENTER(Computed_field_evaluate_as_string_at_location);
+	ENTER(Computed_field_evaluate_as_string_at_node);
 	return_string=(char *)NULL;
 	if (field&&node)
 	{
@@ -2786,13 +2798,13 @@ It is up to the calling function to DEALLOCATE the returned string.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_as_string_in_element.  "
+			"Computed_field_evaluate_as_string_at_node.  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Computed_field_evaluate_as_string_at_location */
+} /* Computed_field_evaluate_as_string_at_node */
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values)
@@ -3618,6 +3630,13 @@ Inherits its result from the first source field that returns it-- if any.
 
 	return (return_code);
 } /* Computed_field_default_get_native_resolution */
+
+int Computed_field_has_value_type_mesh_location(struct Computed_field *field,
+	void *dummy_void)
+{
+	USE_PARAMETER(dummy_void);
+	return (Cmiss_field_get_value_type(field) == CMISS_FIELD_VALUE_TYPE_MESH_LOCATION);
+}
 
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void)
@@ -4983,6 +5002,43 @@ bool Computed_field_core::is_non_linear() const
 			"Computed_field_core::is_non_linear.  Missing field");
 	}
 	return false;
+}
+
+int Computed_field_core::make_string_cache(int component_number)
+{
+	if (!field)
+		return 0;
+	if (field->string_cache)
+		return 1;
+	int error = 0;
+	char tmp_string[50];
+	if (component_number < 0)
+	{
+		for (int i = 0; i < field->number_of_components; i++)
+		{
+			if (0 < i)
+			{
+				sprintf(tmp_string,", %g",field->values[i]);
+			}
+			else
+			{
+				sprintf(tmp_string,"%g",field->values[i]);
+			}
+			append_string(&(field->string_cache), tmp_string, &error);
+		}
+		field->string_component = -1;
+	}
+	else if (component_number < field->number_of_components)
+	{
+		sprintf(tmp_string,"%g",field->values[component_number]);
+		append_string(&(field->string_cache), tmp_string, &error);
+		field->string_component = component_number;
+	}
+	else
+	{
+		error = 1;
+	}
+	return (!error);
 }
 
 struct Computed_field_package *CREATE(Computed_field_package)(

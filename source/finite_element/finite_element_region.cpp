@@ -1700,6 +1700,13 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 					fe_region->change_level);
 			}
 
+			if (!fe_region->master_fe_region)
+			{
+				FE_region_begin_change(fe_region);
+				// clear embedded locations to avoid circular dependencies which prevent cleanup
+				FE_node_list_clear_embedded_locations(fe_region->fe_node_list, fe_region->fe_field_list);
+				FE_region_end_change(fe_region);
+			}
 			if (fe_region->data_fe_region)
 			{
 				DEACCESS(FE_region)(&fe_region->data_fe_region);
@@ -1729,7 +1736,6 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 					*(fe_region->embedding_fe_region_list));
 			}
 #endif /* defined (EMBEDDING_CODE) */
-
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))(
 				&(fe_region->change_callback_list));
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
@@ -3549,10 +3555,8 @@ used by element fields of <fe_field>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node *node;
 	struct FE_region *master_fe_region;
 	struct LIST(FE_node) *tmp_fe_node_list;
-	struct Node_list_field_data node_list_field_data;
 
 	ENTER(FE_region_undefine_FE_field_in_FE_node_list);
 	if (fe_region && fe_region && fe_node_list && number_in_elements_address)
@@ -3585,6 +3589,7 @@ used by element fields of <fe_field>.
 					FE_node_field_is_not_defined, (void *)fe_field, tmp_fe_node_list);
 				*number_in_elements_address = NUMBER_IN_LIST(FE_node)(tmp_fe_node_list);
 				/* remove nodes used in element fields for fe_field */
+				struct Node_list_field_data node_list_field_data;
 				node_list_field_data.fe_field = fe_field;
 				node_list_field_data.fe_node_list = tmp_fe_node_list;
 				if (FE_region_for_each_FE_element(master_fe_region,
@@ -3593,6 +3598,7 @@ used by element fields of <fe_field>.
 				{
 					*number_in_elements_address -=
 						NUMBER_IN_LIST(FE_node)(tmp_fe_node_list);
+					struct FE_node *node;
 					while (return_code &&
 						(NULL != (node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 							(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
@@ -8283,8 +8289,7 @@ functions in <finite_element.c>.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_notify_FE_node_field_change.  Node is not in region");
+			// do nothing if not in region (temporary copy of node)
 			return_code = 0;
 		}
 	}
@@ -8330,8 +8335,7 @@ functions in <finite_element.c>.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_notify_FE_element_field_change.  Element is not in region");
+			// do nothing if not in region (temporary copy of element)
 			return_code = 0;
 		}
 	}

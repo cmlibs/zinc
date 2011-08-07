@@ -267,6 +267,11 @@ public:
 		return 0;
 	};
 
+	virtual int set_mesh_location_value(Field_location* /*location*/, Cmiss_element_id /*element*/, FE_value* /*xi*/)
+	{
+		return 0;
+	};
+
 	virtual int set_string_at_location(Field_location* /*location*/, const char * /*string_value*/)
 	{
 		return 0;
@@ -351,6 +356,24 @@ public:
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message)
 	{
 		USE_PARAMETER(message);
+	}
+
+	/** default implementation converts numerical values into string. Override for
+	 * non-string, non-numeric type to make string version of field values.
+	 */
+	virtual int make_string_cache(int component_number = -1);
+
+	/** override for MESH_LOCATION value type fields to return cached value */
+	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const
+	{
+		USE_PARAMETER(xi);
+		return 0;
+	}
+
+	/** Override if field is not real valued */
+	virtual Cmiss_field_value_type get_value_type() const
+	{
+		return CMISS_FIELD_VALUE_TYPE_REAL;
 	}
 
 }; /* class Computed_field_core */
@@ -690,14 +713,11 @@ DESCRIPTION :
 Returns 1 if the all the source fields are defined at the supplied <location>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Sets coordinate system of the <field> to that of its first source field.
+ */
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 3 July 2000
-
-DESCRIPTION :
-Sets the coordinate system of the <field> to match that of it's sources.
-==============================================================================*/
 
 int Computed_field_broadcast_field_components(
 	struct Cmiss_field_module *field_module,

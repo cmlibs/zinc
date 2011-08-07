@@ -44,6 +44,7 @@
 
 extern "C" {
 #include "api/cmiss_element.h"
+#include "api/cmiss_region.h"
 }
 
 struct FE_region;
@@ -51,5 +52,7 @@ struct FE_region;
 // Internal use only
 
 FE_region *Cmiss_fe_mesh_get_FE_region(Cmiss_fe_mesh_id mesh);
+
+Cmiss_region_id Cmiss_fe_mesh_get_region(Cmiss_fe_mesh_id mesh);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

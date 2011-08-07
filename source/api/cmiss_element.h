@@ -247,6 +247,16 @@ int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
 int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh);
 
 /***************************************************************************//**
+ * Return the name of the mesh.
+ *
+ * @see Cmiss_deallocate()
+ * @param field  The mesh whose name is requested.
+ * @return  On success: allocated string containing mesh name. Up to caller to
+ * free using Cmiss_deallocate().
+ */
+char *Cmiss_fe_mesh_get_name(Cmiss_fe_mesh_id mesh);
+
+/***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.
  * Internally this just decrements the reference count.
  *

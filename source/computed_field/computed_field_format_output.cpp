@@ -4,7 +4,7 @@ FILE : computed_field_format_output.c
 LAST MODIFIED : 14 December 2010
 
 DESCRIPTION :
-Implements a constant string field.
+Implements a field which formats numeric values as a string.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -117,6 +117,12 @@ private:
 	{
 		return 0;
 	}
+
+	virtual Cmiss_field_value_type get_value_type() const
+	{
+		return CMISS_FIELD_VALUE_TYPE_STRING;
+	}
+
 };
 
 int Computed_field_format_output::evaluate_cache_at_location(
@@ -133,6 +139,7 @@ int Computed_field_format_output::evaluate_cache_at_location(
 		if (0 != (return_code = 
 			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
+			field->values_valid = 0; // string-valued
 			/* 2. Write out the source field values using the format_string */
 			/* Allocate a generous string.
 			 */

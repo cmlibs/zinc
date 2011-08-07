@@ -117,6 +117,11 @@ private:
 
 	int set_string_at_location(Field_location* location, const char *string_value_in);
 
+	virtual Cmiss_field_value_type get_value_type() const
+	{
+		return CMISS_FIELD_VALUE_TYPE_STRING;
+	}
+
 };
 
 int Computed_field_string_constant::compare(Computed_field_core* other_field)

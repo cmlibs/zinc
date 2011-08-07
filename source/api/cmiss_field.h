@@ -99,6 +99,22 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
 int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
 /***************************************************************************//**
+ * Assign mesh_location field values at location specified in cache. Only
+ * supported by stored_mesh_location field type.
+ *
+ * @param field  The field to assign value to.
+ * @param cache  Store of location to assign at and intermediate field values.
+ * @param element  The element to set.
+ * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
+ * that it equals or exceeds the dimension of the element.
+ * @param chart_coordinates  Array containing chart coordinate location to set.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, Cmiss_element_id element,
+	int number_of_chart_coordinates, double *chart_coordinates);
+
+/***************************************************************************//**
  * Assign real values to field at location specified in cache.
  * Only supported for some field types, notably finite_element, node_value, and
  * field operators where only one operand is assignable: these back-calculate
@@ -129,6 +145,21 @@ int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
  */
 int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	const char *string_value);
+
+/***************************************************************************//**
+ * Evaluate mesh_location field values at location specified in cache.
+ *
+ * @param field  The field to evaluate.
+ * @param cache  Store of location to evaluate at and intermediate field values.
+ * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
+ * that it equals or exceeds the dimension of the returned element.
+ * @param chart_coordinates  Array to evaluate chart coordinate location into.
+ * @return  Handle to element on success, NULL on failure. Caller is responsible
+ * for destroying handle.
+ */
+Cmiss_element_id Cmiss_field_evaluate_mesh_location(Cmiss_field_id field,
+	Cmiss_field_cache_id cache, int number_of_chart_coordinates,
+	double *chart_coordinates);
 
 /***************************************************************************//**
  * Evaluate real field values at location specified in cache.
@@ -188,6 +219,8 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, Cmiss_field_id chart_field, int order, int term,
 	int number_of_values, double *values);
+
+
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field.
@@ -258,6 +291,26 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
  * @return  Field module which this field belongs to.
  */
 Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field);
+
+/***************************************************************************//**
+ * The types of values fields may produce.
+ * @see Cmiss_field_get_value_type
+ */
+enum Cmiss_field_value_type
+{
+	CMISS_FIELD_VALUE_TYPE_INVALID = 0,
+	CMISS_FIELD_VALUE_TYPE_REAL = 1,
+	CMISS_FIELD_VALUE_TYPE_STRING = 2,
+	CMISS_FIELD_VALUE_TYPE_MESH_LOCATION = 3
+};
+
+/***************************************************************************//**
+ * Gets the type of values produced by the field.
+ *
+ * @param field  The field to query.
+ * @return  Value type produced by field
+ */
+enum Cmiss_field_value_type Cmiss_field_get_value_type(Cmiss_field_id field);
 
 /***************************************************************************//**
  * Determines if the field is defined at the location specified in the field

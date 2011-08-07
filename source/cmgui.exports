@@ -90,8 +90,10 @@ Cmiss_scene_viewer_win32_set_window_size
 
 Cmiss_field_access
 Cmiss_field_destroy
+Cmiss_field_assign_mesh_location
 Cmiss_field_assign_real
 Cmiss_field_assign_string
+Cmiss_field_evaluate_mesh_location
 Cmiss_field_evaluate_real
 Cmiss_field_evaluate_string
 Cmiss_field_evaluate_chart_derivative
@@ -101,6 +103,7 @@ Cmiss_field_get_name
 Cmiss_field_set_name
 Cmiss_field_get_number_of_components
 Cmiss_field_get_field_module
+Cmiss_field_get_value_type
 Cmiss_field_is_defined_at_location
 Cmiss_field_module_create_cache
 Cmiss_field_cache_access
@@ -145,6 +148,15 @@ Cmiss_field_module_create_finite_element
 Cmiss_field_cast_finite_element
 /* inline Cmiss_field_finite_element_base_cast */
 Cmiss_field_finite_element_destroy
+Cmiss_field_create_embedded
+Cmiss_field_module_create_find_mesh_location
+Cmiss_field_cast_find_mesh_location
+/* inline Cmiss_field_find_mesh_location_base_cast */
+Cmiss_field_find_mesh_location_destroy
+Cmiss_field_find_mesh_location_get_attribute_field
+Cmiss_field_find_mesh_location_get_mesh
+Cmiss_field_find_mesh_location_get_search_mode
+Cmiss_field_find_mesh_location_set_search_mode
 
 /* api/cmiss_field_group.h */
 Cmiss_field_module_create_group
@@ -340,6 +352,8 @@ Cmiss_fe_mesh_create_element_iterator
 Cmiss_fe_mesh_define_element
 Cmiss_fe_mesh_find_element_by_identifier
 Cmiss_fe_mesh_get_size
+Cmiss_fe_mesh_get_dimension
+Cmiss_fe_mesh_get_name
 Cmiss_fe_mesh_remove_element
 Cmiss_fe_mesh_remove_elements_conditional
 Cmiss_element_basis_destroy

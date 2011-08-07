@@ -9196,6 +9196,7 @@ any new components. Clears/reallocates the values_storage for FE_field_types
 that use them, eg. CONSTANT_FE_FIELD and INDEXED_FE_FIELD - but only if number
 of components changes. If function fails the field is left exactly as it was.
 Should only call this function for unmanaged fields.
+ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 ==============================================================================*/
 {
 	char **component_names;
@@ -9203,7 +9204,9 @@ Should only call this function for unmanaged fields.
 	Value_storage *values_storage;
 
 	ENTER(set_FE_field_number_of_components);
-	if (field&&(0<number_of_components))
+	if (field && (0<number_of_components) && ((1 == number_of_components) ||
+		((field->value_type != ELEMENT_XI_VALUE) && (field->value_type != STRING_VALUE) &&
+			(field->value_type != URL_VALUE))))
 	{
 		return_code=1;
 		if (number_of_components != field->number_of_components)
@@ -9888,13 +9891,16 @@ Sets the value_type of the <field>. Clears/reallocates the values_storage for
 FE_field_types that use them, eg. CONSTANT_FE_FIELD and INDEXED_FE_FIELD - but
 only if the value_type changes. If function fails the field is left exactly as
 it was. Should only call this function for unmanaged fields.
-=========================================================================*/
+ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
+==============================================================================*/
 {
 	int number_of_values,return_code;
 	Value_storage *values_storage;
 
 	ENTER(set_FE_field_value_type);
-	if (field)
+	if (field && ((1 >= field->number_of_components) ||
+		((value_type != ELEMENT_XI_VALUE) && (value_type != STRING_VALUE) &&
+			(value_type != URL_VALUE))))
 	{
 		return_code=1;
 		if (value_type != field->value_type)
@@ -12379,6 +12385,7 @@ is undefined!
 								exclusion_data.value_exclusion_length,bytes_to_copy);
 						}
 						/* free the currently used space */
+						//GRC also have to clear arrays, embedded locations
 						if (REALLOCATE(values_storage,node->values_storage,Value_storage,
 							new_node_field_info->values_storage_size))
 						{
@@ -13137,16 +13144,7 @@ and <component_number> at the <node>. \
 			} \
          if (return_code) \
          { \
-				/* Check this node is being managed by the region it belongs to (All nodes \
-					are created with respect to some region but they are not necessarily merged \
-					into it yet. */ \
-				if (node->fields && node->fields->fe_region && \
-					FE_region_or_data_FE_region_contains_FE_node(node->fields->fe_region, node)) \
-				{ \
-					/* If so, notify the change */ \
-					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, \
-						field); \
-				} \
+				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field); \
 			} \
 		} \
 		else \
@@ -13222,13 +13220,7 @@ it should only be used temporarily. \
 					changed yet.  If users of the this function have used begin_cache and \
 					end cache around their routines then the correct notifications will happen \
 					once the end cache is done */ \
-				if (node->fields && node->fields->fe_region && \
-					FE_region_or_data_FE_region_contains_FE_node(node->fields->fe_region, node)) \
-				{ \
-					/* If so, notify the change */ \
-					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, \
-						field); \
-				} \
+				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field); \
 			} \
 		} \
 		else \
@@ -13387,15 +13379,15 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 
 	ENTER(set_FE_nodal_element_xi_value);
 	return_code=0;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version)&&
-		element&&element->shape&&xi&&(field->value_type==ELEMENT_XI_VALUE))
+	if (node && field && (field->value_type == ELEMENT_XI_VALUE) &&
+		(0 <= component_number) && (component_number < field->number_of_components) &&
+		(0 <= version) && ((!element) || (element && element->shape && xi)))
 	{
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,field,component_number,
 			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 		{
-			number_of_xi_dimensions = element->shape->dimension;
+			number_of_xi_dimensions = element? element->shape->dimension : 0;
 			/* copy in the element_xi_value */
 			REACCESS(FE_element)((struct FE_element **)values_storage, element);
 			values_storage += sizeof(struct FE_element *);
@@ -13412,12 +13404,11 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 				}
 				values_storage += sizeof(FE_value);
 			}
+			FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
 			return_code=1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  "
-				"find_FE_nodal_values_storage_dest failed");
 			return_code=0;
 		}
 	}
@@ -13766,6 +13757,35 @@ in the <changed_element_list>, or in any elements using nodes from the
 
 	return (return_code);
 } /* FE_node_is_embedded_in_changed_element */
+
+/*******************************************************************************
+ * Clears any embedded locations from nodes in node_list for fields in
+ * field_list. This is to avoid circular dependencies which prevent clean-up.
+ */
+int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
+	struct LIST(FE_field) *field_list)
+{
+	if (!field_list || !node_list)
+		return 0;
+	Cmiss_set_Cmiss_node *nodes = reinterpret_cast<Cmiss_set_Cmiss_node*>(node_list);
+	Cmiss_set_FE_field *fields = reinterpret_cast<Cmiss_set_FE_field*>(field_list);
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
+	for (Cmiss_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
+	{
+		FE_field *field = *field_iter;
+		if ((ELEMENT_XI_VALUE == field->value_type) &&
+			(GENERAL_FE_FIELD == field->fe_field_type))
+		{
+			for (Cmiss_set_Cmiss_node::iterator node_iter = nodes->begin(); node_iter != nodes->end(); ++node_iter)
+			{
+				Cmiss_node *node = *node_iter;
+				set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
+					/*version*/0, FE_NODAL_VALUE, (struct FE_element *)0, xi);
+			}
+		}
+	}
+	return 1;
+}
 
 static int FE_node_field_has_field_with_name(
 	struct FE_node_field *node_field, void *field_name_void)
@@ -15697,6 +15717,7 @@ at the <node>. <string> may be NULL.
 				{
 					strcpy(the_string,string);
 					*string_address=the_string;
+					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
 					return_code=1;
 				}
 				else
@@ -33883,16 +33904,7 @@ get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastes
 						} \
 						if (return_code) \
 						{ \
-							/* Check this node is being managed by the region it belongs to (All nodes \
-								are created with respect to some region but they are not necessarily merged \
-								into it yet. */ \
-							if (element->fields && element->fields->fe_region && \
-								FE_region_contains_FE_element(element->fields->fe_region, element)) \
-							{	\
-								/* If so, notify the change */ \
-								FE_region_notify_FE_element_field_change(element->fields->fe_region, element, \
-									field); \
-							} \
+							FE_region_notify_FE_element_field_change(element->fields->fe_region, element, field); \
 						} \
 					} \
 					else \

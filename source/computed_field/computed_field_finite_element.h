@@ -215,22 +215,6 @@ Note: not returning possible true result for embedded field as evaluate
 at node function does not allow for string value either.
 ==============================================================================*/
 
-int Computed_field_is_type_embedded(struct Computed_field *field, void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_depends_on_embedded_field(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 28 April 1999
-
-DESCRIPTION :
-Returns true if the field is of an embedded type or depends on any computed
-fields which are or an embedded type.
-==============================================================================*/
-
 /*****************************************************************************//**
  * Creates a field returning the values for the given <nodal_value_type> and
  * <version_number> of <fe_field> at a node.

@@ -124,8 +124,9 @@ int Cmiss_nodeset_assign_field_from_source(
 	{
 		const int number_of_components =
 			Computed_field_get_number_of_components(destination_field);
-		if (Computed_field_get_number_of_components(source_field) ==
-			number_of_components)
+		Cmiss_field_value_type value_type = Cmiss_field_get_value_type(destination_field);
+		if ((Computed_field_get_number_of_components(source_field) == number_of_components) &&
+			(Cmiss_field_get_value_type(source_field) == value_type))
 		{
 			Cmiss_field_module_id field_module = Cmiss_nodeset_get_field_module(nodeset);
 			Cmiss_field_module_begin_change(field_module);
@@ -137,16 +138,45 @@ int Cmiss_nodeset_assign_field_from_source(
 			Cmiss_node_id node = 0;
 			int selected_count = 0;
 			int success_count = 0;
-			while (0 != (node = Cmiss_node_iterator_next(iterator)))
+			while (return_code && (0 != (node = Cmiss_node_iterator_next(iterator))))
 			{
 				Cmiss_field_cache_set_node(field_cache, node);
 				if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, field_cache))
 				{
-					if (Cmiss_field_is_defined_at_location(destination_field, field_cache) &&
-						Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values) &&
-						Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values))
+					if (Cmiss_field_is_defined_at_location(destination_field, field_cache))
 					{
-						++success_count;
+						switch (value_type)
+						{
+						case CMISS_FIELD_VALUE_TYPE_MESH_LOCATION:
+							{
+								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+								Cmiss_element_id element = Cmiss_field_evaluate_mesh_location(
+									source_field, field_cache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+								if (element)
+								{
+									if (Cmiss_field_assign_mesh_location(destination_field, field_cache,
+										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi))
+									{
+										++success_count;
+									}
+									Cmiss_element_destroy(&element);
+								}
+							} break;
+						case CMISS_FIELD_VALUE_TYPE_REAL:
+							{
+								if (Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values) &&
+									Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values))
+								{
+									++success_count;
+								}
+							} break;
+						default:
+							{
+								display_message(ERROR_MESSAGE,
+									"Cmiss_nodeset_assign_field_from_source.  Unsupported value type.");
+								return_code = 0;
+							} break;
+						}
 					}
 					++selected_count;
 				}
@@ -171,7 +201,7 @@ int Cmiss_nodeset_assign_field_from_source(
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_nodeset_assign_field_from_source.  "
-				"Number of components in source and destination fields must match.");
+				"Value type and number of components in source and destination fields must match.");
 			return_code = 0;
 		}
 	}

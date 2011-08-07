@@ -62,6 +62,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "computed_field/computed_field_finite_element.h"
 }
+#include "mesh/cmiss_element_private.hpp"
 
 #if defined (DEBUG_CODE)
 /* SAB This field is useful for debugging when things don't clean up properly
@@ -94,6 +95,8 @@ class Computed_field_finite_element : public Computed_field_core
 {
 public:
 	FE_field* fe_field;
+
+private:
 	FE_element_field_values* fe_element_field_values;
 	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
 		 Computed_field_finite_element::not_in_use */
@@ -101,6 +104,7 @@ public:
 	/* Keep a cache of FE_element_field_values as calculation is expensive */
 	LIST(FE_element_field_values) *field_values_cache;
 
+public:
 	Computed_field_finite_element(FE_field *fe_field) : Computed_field_core(),
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
@@ -109,7 +113,7 @@ public:
 		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
 
-	~Computed_field_finite_element();
+	virtual ~Computed_field_finite_element();
 
 private:
 	Computed_field_core *copy();
@@ -143,7 +147,13 @@ private:
 
 	int set_values_at_location(Field_location* location, FE_value *values);
 
+	virtual int set_mesh_location_value(Field_location* location, Cmiss_element_id element, FE_value *xi);
+
 	int set_string_at_location(Field_location* location, const char *string_value);
+
+	virtual int make_string_cache(int component_number = -1);
+
+	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const;
 
 	int get_native_discretization_in_element(
 		struct FE_element *element,int *number_in_xi);
@@ -190,6 +200,32 @@ private:
 			return 1;
 		}
 		return 0;
+	}
+
+	virtual Cmiss_field_value_type get_value_type() const
+	{
+		enum Value_type fe_value_type = get_FE_field_value_type(fe_field);
+		Cmiss_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
+		switch (fe_value_type)
+		{
+			case ELEMENT_XI_VALUE:
+				value_type = CMISS_FIELD_VALUE_TYPE_MESH_LOCATION;
+				break;
+			case STRING_VALUE:
+			case URL_VALUE:
+				value_type = CMISS_FIELD_VALUE_TYPE_STRING;
+				break;
+			case DOUBLE_VALUE:
+			case FE_VALUE_VALUE:
+			case FLT_VALUE:
+			case INT_VALUE:
+			case SHORT_VALUE:
+				value_type = CMISS_FIELD_VALUE_TYPE_REAL;
+				break;
+			default:
+				break;
+		}
+		return value_type;
 	}
 
 };
@@ -578,7 +614,6 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	char *string_value, *value_string;
 	enum Value_type value_type;
 	int error, i, *int_values, return_code;
 
@@ -660,8 +695,7 @@ Evaluate the fields cache at the location
 					case STRING_VALUE:
 					{
 						return_code = calculate_FE_element_field_as_string(-1,
-							fe_element_field_values,xi,&string_value);
-						field->string_cache = string_value;
+							fe_element_field_values,xi,&(field->string_cache));
 						field->values_valid = 0;
 						field->derivatives_valid = 0;
 					} break;
@@ -689,7 +723,6 @@ Evaluate the fields cache at the location
 			/* not very efficient - should cache FE_node_field or similar */
 			return_code = 1;
 			value_type=get_FE_field_value_type(fe_field);
-			value_string = (char *)NULL;
 			error = 0;
 			for (i=0;(i<field->number_of_components)&&return_code;i++)
 			{
@@ -730,19 +763,20 @@ Evaluate the fields cache at the location
 						field->values[i] = (FE_value)short_value;
 					} break;
 					case ELEMENT_XI_VALUE:
+					{
+						// don't cache the value as it is relatively cheap to extract from node
+						return_code = FE_field_is_defined_at_node(fe_field, node);
+						field->values_valid = 0;
+					} break;
   					case STRING_VALUE:
 					case URL_VALUE:
 					{
-						return_code=get_FE_nodal_value_as_string(node,fe_field,
-							/*component_number*/i, 
+						// can only have 1 component
+						return_code = get_FE_nodal_value_as_string(node,fe_field,
+							/*component_number*/i,
 							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time, &string_value);
-						append_string(&value_string, string_value, &error);
-						if (i<field->number_of_components-1)
-						{
-							append_string(&value_string, ",", &error);
-						}
-						DEALLOCATE(string_value);
+							time, &(field->string_cache));
+						field->values_valid = 0;
 					} break;
 					default:
 					{
@@ -751,20 +785,6 @@ Evaluate the fields cache at the location
 							"Unsupported value type %s in finite_element field",
 							Value_type_string(value_type));
 						return_code=0;
-					}
-				}
-				switch (value_type)
-				{
-					case ELEMENT_XI_VALUE:
-  					case STRING_VALUE:
-					case URL_VALUE:
-					{
-						field->values_valid = 0;
-						field->string_cache = value_string;
-					} break;
-					default:
-					{
-						/* OK */
 					} break;
 				}
 				/* No derivatives at node (at least at the moment!) */
@@ -993,7 +1013,7 @@ Sets the <values> of the computed <field> over the <element>.
 								"Computed_field_finite_element::set_values_at_location.  "
 								"Could not set finite_element field %s at node",field->name);
 							return_code=0;
-						}
+						} break;
 					}
 				}
 			}
@@ -1024,6 +1044,24 @@ Sets the <values> of the computed <field> over the <element>.
 	return (return_code);
 } /* Computed_field_finite_element::set_values_at_location */
 
+int Computed_field_finite_element::set_mesh_location_value(Field_location* location, Cmiss_element_id element, FE_value *xi)
+{
+	int return_code;
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
+	if (node_location &&
+		(get_FE_field_value_type(fe_field) == ELEMENT_XI_VALUE) &&
+		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
+	{
+		return_code = set_FE_nodal_element_xi_value(node_location->get_node(), fe_field,
+			/*component_number*/0, /*version*/0, FE_NODAL_VALUE, element, xi);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+};
+
 int Computed_field_finite_element::set_string_at_location(
 	Field_location* location, const char *string_value)
 {
@@ -1042,6 +1080,32 @@ int Computed_field_finite_element::set_string_at_location(
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+int Computed_field_finite_element::make_string_cache(int component_number)
+{
+	if (!field)
+		return 0;
+	if (field->string_cache)
+		return 1;
+	if (get_FE_field_value_type(fe_field) != ELEMENT_XI_VALUE)
+	{
+		return Computed_field_core::make_string_cache(component_number);
+	}
+	field->string_component = -1;
+	return get_FE_nodal_value_as_string(field->node, fe_field,
+		/*component_number*/0, /*version_number*/0,
+		/*nodal_value_type*/FE_NODAL_VALUE,  field->time,
+		&(field->string_cache));
+}
+
+Cmiss_element_id Computed_field_finite_element::get_mesh_location_value(FE_value *xi) const
+{
+	Cmiss_element_id element = 0;
+	// can only have 1 component; can only be evaluated at node so assume node location
+	get_FE_nodal_element_xi_value(field->node, fe_field, /*component_number*/0,
+		/*version_number*/0, FE_NODAL_VALUE, &element, xi);
+	return element;
 }
 
 int Computed_field_finite_element::get_native_discretization_in_element(
@@ -2152,7 +2216,7 @@ public:
 	{
 	};
 			
-	~Computed_field_node_value();
+	virtual ~Computed_field_node_value();
 
 	virtual void inherit_source_field_attributes()
 	{
@@ -2406,7 +2470,7 @@ Evaluate the fields cache at the node.
 								"Unsupported value type %s in node_value field",
 								Value_type_string(value_type));
 							return_code=0;
-						}
+						} break;
 					}
 				}
 				else
@@ -2504,7 +2568,7 @@ Sets the <values> of the computed <field> at <node>.
 								"Computed_field_set_values_at_location.  "
 								"Could not set finite_element field %s at node",field->name);
 							return_code=0;
-						}
+						} break;
 					}
 				}
 			}
@@ -2948,17 +3012,10 @@ char computed_field_embedded_type_string[] = "embedded";
 class Computed_field_embedded : public Computed_field_core
 {
 public:
-	FE_field *element_xi_fe_field;
-	FE_element_field_values *fe_element_field_values;
-
-	Computed_field_embedded(FE_field *element_xi_fe_field) : 
-		Computed_field_core(), 
-		element_xi_fe_field(ACCESS(FE_field)(element_xi_fe_field))
+	Computed_field_embedded() :
+		Computed_field_core()
 	{
-		fe_element_field_values = (FE_element_field_values *)NULL;
 	};
-
-	~Computed_field_embedded();
 
 	virtual void inherit_source_field_attributes()
 	{
@@ -2984,331 +3041,67 @@ private:
 
 	char* get_command_string();
 
-	int clear_cache();
-
 	int is_defined_at_location(Field_location* location);
 
 	int has_numerical_components();
 
-	int set_values_at_location(Field_location* location,
-		FE_value *values);
 };
 
-Computed_field_embedded::~Computed_field_embedded()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-
-	ENTER(Computed_field_embedded::~Computed_field_embedded);
-	if (field)
-	{
-		if (element_xi_fe_field)
-		{
-			DEACCESS(FE_field)(&(element_xi_fe_field));
-		}
-		if (fe_element_field_values)
-		{
-			DEALLOCATE(fe_element_field_values);
-		}
-		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::~Computed_field_embedded.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-
-} /* Computed_field_embedded::~Computed_field_embedded */
-
 Computed_field_core* Computed_field_embedded::copy()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
 {
-	Computed_field_embedded* core =
-		new Computed_field_embedded(element_xi_fe_field);
-
-	return (core);
-} /* Computed_field_embedded::copy */
-
-int Computed_field_embedded::clear_cache()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_finite_element::clear_cache);
-	if (field)
-	{
-		if(fe_element_field_values)
-		{
-			clear_FE_element_field_values(fe_element_field_values);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::clear_cache.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_embedded::clear_cache */
+	return new Computed_field_embedded();
+}
 
 int Computed_field_embedded::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compare the type specific data
-==============================================================================*/
 {
-	Computed_field_embedded* other;
-	int return_code;
-
-	ENTER(Computed_field_embedded::compare);
-	if (field && (other = dynamic_cast<Computed_field_embedded*>(other_core)))
-	{
-		return_code = (element_xi_fe_field == other->element_xi_fe_field);
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_embedded::compare */
+	return (field && (0 != dynamic_cast<Computed_field_embedded*>(other_core)));
+}
 
 int Computed_field_embedded::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	int comp_no,i,number_of_components,return_code;
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct FE_element *element;
-
-	ENTER(Computed_field_embedded::is_defined_at_location);
-	if (field && location)
-	{
-		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
-
-		if (node_location)
-		{
-			FE_node *node = node_location->get_node();
-			
-			if (FE_field_is_defined_at_node(element_xi_fe_field,node))
-			{
-				return_code=1;
-				number_of_components=
-					get_FE_field_number_of_components(element_xi_fe_field);
-				for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
-				{
-					if (FE_nodal_value_version_exists(node,element_xi_fe_field,
-							/*component_number*/comp_no,
-							/*version_number*/0,FE_NODAL_VALUE)&&
-						get_FE_nodal_element_xi_value(node,element_xi_fe_field,comp_no,
-							/*version_number*/0,FE_NODAL_VALUE,&element,xi))
-					{
-						for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-						{
-							if (!Computed_field_is_defined_in_element(
-									 field->source_fields[i],element))
-							{
-								return_code=0;
-							}
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::is_defined_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_embedded::is_defined_at_location */
+	return evaluate_cache_at_location(location);
+}
 
 int Computed_field_embedded::has_numerical_components()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_embedded::has_numerical_components);
-	if (field)
-	{
-		return_code=Computed_field_has_numerical_components(
-			field->source_fields[0],(void *)NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::has_numerical_components.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_embedded::has_numerical_components */
+	return (field && Computed_field_has_numerical_components(
+		field->source_fields[0],(void *)NULL));
+}
 
 int Computed_field_embedded::evaluate_cache_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the node.
-==============================================================================*/
 {
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, return_code;
-	struct FE_element *element;
-
-	ENTER(Computed_field_embedded::evaluate_cache_at_location);
+	int return_code = 0;
 	if (field && location)
 	{
-		Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
-		if (node_location)
+		if (Computed_field_evaluate_cache_at_location(field->source_fields[1], location))
 		{
-			FE_node *node = node_location->get_node();
-			FE_value time = node_location->get_time();
-	
-			return_code = 1;
-			if (get_FE_nodal_element_xi_value(node,
-					element_xi_fe_field, /* component */ 0,
-					/* version */ 0, FE_NODAL_VALUE, &element, xi))
+			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			Cmiss_element_id element = field->source_fields[1]->core->get_mesh_location_value(xi);
+			if (element)
 			{
-				Field_element_xi_location element_xi_location(
-					element,xi,time);
-				/* now calculate source_fields[0] */
-				if(Computed_field_evaluate_cache_at_location(
-						field->source_fields[0],&element_xi_location))
+				Field_element_xi_location element_xi_location(element, xi, location->get_time());
+				if (Computed_field_evaluate_cache_at_location(
+					field->source_fields[0], &element_xi_location))
 				{
-					for (i=0;i<field->number_of_components;i++)
+					for (int i = 0; i < field->number_of_components; i++)
 					{
 						field->values[i] = field->source_fields[0]->values[i];
 					}
-				}
-				else
-				{
-					return_code = 0;
+					return_code = 1;
 				}
 			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			// Only valid for Field_node_location type
-			return_code = 0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::evaluate_cache_at_location.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_embedded::evaluate_cache_at_location */
-
-int Computed_field_embedded::set_values_at_location(Field_location* location,
-	FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Sets the <values> of the computed <field> at <node>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_embedded::set_values_at_location);
-	if (field&&location&&values)
-	{
-		return_code=0;
-
-		display_message(ERROR_MESSAGE,"Computed_field_embedded::set_values_at_location. "
-			" %s not implemented yet. Write the code!",field->name);
-		/* If we ever need to write the code for this, make it so that we set the array */
-		/* values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
-		/* array index. No "taking the nearest one" or anything nasty like that */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_embedded::set_values_at_location.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_embedded::set_values_at_location */
-
+}
 
 int Computed_field_embedded::list()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	char *field_name;
 	int return_code;
-
-	ENTER(List_Computed_field_embedded);
 	if (field)
 	{
-		return_code=GET_NAME(FE_field)(element_xi_fe_field, &field_name);
-		if (return_code)
-		{
-			display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
-			DEALLOCATE(field_name);
-			display_message(INFORMATION_MESSAGE,
-				"    field : %s\n",field->source_fields[0]->name);
-		}
+		display_message(INFORMATION_MESSAGE, "    embedded location field : %s\n", field->source_fields[1]->name);
+		display_message(INFORMATION_MESSAGE, "    source field : %s\n", field->source_fields[0]->name);
 		return_code = 1;
 	}
 	else
@@ -3317,18 +3110,11 @@ DESCRIPTION :
 			"list_Computed_field_embedded.  Invalid arguments.");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* list_Computed_field_embedded */
+}
 
+/** Returns allocated command string for reproducing field. Includes type. */
 char *Computed_field_embedded::get_command_string()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns allocated command string for reproducing field. Includes type.
-==============================================================================*/
 {
 	char *command_string, *field_name;
 	int error;
@@ -3341,7 +3127,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_embedded_type_string, &error);
 		append_string(&command_string, " element_xi ", &error);
-		if (GET_NAME(FE_field)(element_xi_fe_field, &field_name))
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
 		{
 			make_valid_token(&field_name);
 			append_string(&command_string, field_name, &error);
@@ -3363,110 +3149,52 @@ Returns allocated command string for reproducing field. Includes type.
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_embedded::get_command_string */
+}
 
 } //namespace
 
-int Computed_field_is_type_embedded(struct Computed_field *field, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Returns true if <field> has the appropriate static type string.
-==============================================================================*/
+Cmiss_field_id Cmiss_field_create_embedded(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_field_id embedded_location_field)
 {
-	int return_code;
-
-	ENTER(Computed_field_is_type_embedded);
-	USE_PARAMETER(dummy_void);
-	if (field)
+	struct Computed_field *field = 0;
+	if (field_module && embedded_location_field && source_field &&
+		(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION ==
+			Cmiss_field_get_value_type(embedded_location_field)) &&
+		Computed_field_has_numerical_components(source_field, NULL))
 	{
-		if (dynamic_cast<Computed_field_embedded*>(field->core))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_embedded.  Missing field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_type_embedded */
-
-/*****************************************************************************//**
- * Creates a field returning a value of another field at an embedded location.  
- * 
- * @param field_module  Region field module which will own new field.
- * @param element_xi_fe_field  FE_field giving embedded location in an element.
- * @param source_field  Field to evaluate at the embedded location.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_embedded(
-	struct Cmiss_field_module *field_module,
-	struct FE_field *element_xi_fe_field, struct Computed_field *source_field)
-{
-	struct Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_embedded);
-	if (field_module && element_xi_fe_field && 
-		(ELEMENT_XI_VALUE == get_FE_field_value_type(element_xi_fe_field)) &&
-		source_field)
-	{
+		Cmiss_field_id source_fields[2];
+		source_fields[0] = source_field;
+		source_fields[1] = embedded_location_field;
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
-			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_fields*/2, source_fields,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_embedded(element_xi_fe_field));
+			new Computed_field_embedded());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_embedded.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
 }
 
+/** If the field is of type COMPUTED_FIELD_EMBEDDED, returns the fields it uses. */
 int Computed_field_get_type_embedded(struct Computed_field *field,
-	struct FE_field **element_xi_fe_field, struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
+	struct Computed_field **source_field_address,
+	struct Computed_field **embedded_location_field_address)
 {
-	Computed_field_embedded* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_embedded);
-	if (field&&(core=dynamic_cast<Computed_field_embedded*>(field->core)))
+	int return_code = 0;
+	if (field && (0 != dynamic_cast<Computed_field_embedded*>(field->core)))
 	{
-		*element_xi_fe_field = core->element_xi_fe_field;
-		*source_field = field->source_fields[0];
-		return_code=1;
+		*source_field_address = field->source_fields[0];
+		*embedded_location_field_address = field->source_fields[1];
+		return_code = 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_embedded.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_get_type_embedded */
+}
 
 int define_Computed_field_type_embedded(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_finite_element_package_void)
@@ -3479,80 +3207,68 @@ and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *source_field;
-	Computed_field_finite_element_package
-		*computed_field_finite_element_package;
-	Computed_field_modify_data *field_modify;
-	struct FE_field *element_xi_fe_field;
-	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_embedded);
-	computed_field_finite_element_package =
-	  (Computed_field_finite_element_package *)
-	  computed_field_finite_element_package_void;
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
-	    (computed_field_finite_element_package != NULL))
+	Computed_field_modify_data *field_modify = (Computed_field_modify_data *)field_modify_void;
+	USE_PARAMETER(computed_field_finite_element_package_void);
+	if (state && field_modify)
 	{
-		USE_PARAMETER(computed_field_finite_element_package);
 		return_code = 1;
-		element_xi_fe_field = (struct FE_field *)NULL;
-		source_field = (struct Computed_field *)NULL;
+		Cmiss_field_id source_field = 0;
+		Cmiss_field_id embedded_location_field = 0;
 		if ((NULL != field_modify->get_field()) &&
 			(computed_field_embedded_type_string ==
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_embedded(field_modify->get_field(),
-				&element_xi_fe_field, &source_field);
+			Computed_field_get_type_embedded(field_modify->get_field(),
+				&source_field, &embedded_location_field);
+			Cmiss_field_access(source_field);
+			Cmiss_field_access(embedded_location_field);
 		}
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"An embedded field returns the value of a source field at the "
+			"location given by the element_xi field - a field whose value is "
+			"a location in a mesh.");
+		/* embedded_location_field */
+		struct Set_Computed_field_conditional_data set_embedded_location_field_data;
+		set_embedded_location_field_data.conditional_function = Computed_field_has_value_type_mesh_location;
+		set_embedded_location_field_data.conditional_function_user_data = (void *)NULL;
+		set_embedded_location_field_data.computed_field_manager = field_modify->get_field_manager();
+		Option_table_add_entry(option_table, "element_xi", &embedded_location_field,
+			&set_embedded_location_field_data, set_Computed_field_conditional);
+		/* source_field */
+		struct Set_Computed_field_conditional_data set_source_field_data;
+		set_source_field_data.conditional_function = Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		set_source_field_data.computed_field_manager = field_modify->get_field_manager();
+		Option_table_add_entry(option_table, "field", &source_field,
+			&set_source_field_data, set_Computed_field_conditional);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
-			if (element_xi_fe_field)
+			if (embedded_location_field && source_field)
 			{
-				ACCESS(FE_field)(element_xi_fe_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Cmiss_field_create_embedded(field_modify->get_field_module(),
+						source_field, embedded_location_field));
 			}
-			if (source_field)
+			else
 			{
-				ACCESS(Computed_field)(source_field);
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_embedded.  "
+					"Must specify both source field and element_xi field");
+				return_code = 0;
 			}
-			option_table = CREATE(Option_table)();
-			/* element_xi FE_field */
-			Option_table_add_set_FE_field_from_FE_region(option_table, "element_xi", 
-				&element_xi_fe_field,
-				Cmiss_region_get_FE_region(field_modify->get_region()));
-			set_field_data.conditional_function =
-				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data = (void *)NULL;
-			set_field_data.computed_field_manager =
-				field_modify->get_field_manager();
-			Option_table_add_entry(option_table, "field", &source_field,
-				&set_field_data, set_Computed_field_conditional);
-			return_code = Option_table_multi_parse(option_table, state);
-			DESTROY(Option_table)(&option_table);
-			if (return_code)
-			{
-				if (element_xi_fe_field && source_field)
-				{
-					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_embedded(field_modify->get_field_module(),
-							element_xi_fe_field, source_field));
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_embedded.  "
-						"element_xi field or source field not specified");
-					return_code = 0;
-				}
-			}
-			if (element_xi_fe_field)
-			{
-				DEACCESS(FE_field)(&element_xi_fe_field);
-			}
-			if (source_field)
-			{
-				DEACCESS(Computed_field)(&source_field);
-			}
+		}
+		if (source_field)
+		{
+			Cmiss_field_destroy(&source_field);
+		}
+		if (embedded_location_field)
+		{
+			Cmiss_field_destroy(&embedded_location_field);
 		}
 	}
 	else
@@ -3565,6 +3281,539 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_embedded */
+
+namespace {
+
+char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
+
+class Computed_field_find_mesh_location : public Computed_field_core
+{
+private:
+	Cmiss_fe_mesh_id mesh;
+	enum Cmiss_field_find_mesh_location_search_mode search_mode;
+	Cmiss_element_id element_cache;
+	FE_value xi_cache[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+
+public:
+
+	Computed_field_find_mesh_location(Cmiss_fe_mesh_id mesh) :
+		Computed_field_core(),
+		mesh(Cmiss_fe_mesh_access(mesh)),
+		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT),
+		element_cache(0)
+	{
+	};
+
+	virtual ~Computed_field_find_mesh_location();
+
+	Cmiss_field_id get_source_field()
+	{
+		return field->source_fields[0];
+	}
+
+	Cmiss_field_id get_mesh_field()
+	{
+		return field->source_fields[1];
+	}
+
+	Cmiss_fe_mesh_id get_mesh()
+	{
+		return mesh;
+	}
+
+	enum Cmiss_field_find_mesh_location_search_mode get_search_mode() const
+	{
+		return search_mode;
+	}
+
+	int set_search_mode(enum Cmiss_field_find_mesh_location_search_mode search_mode_in)
+	{
+		if (search_mode_in != search_mode)
+		{
+			search_mode = search_mode_in;
+			Computed_field_changed(field);
+		}
+		return 1;
+	}
+
+private:
+	Computed_field_core *copy();
+
+	const char *get_type_string()
+	{
+		return (computed_field_find_mesh_location_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int clear_cache();
+
+	int is_defined_at_location(Field_location* location);
+
+	int has_numerical_components()
+	{
+		return 0;
+	}
+
+	virtual int make_string_cache(int component_number = -1);
+
+	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const;
+
+	virtual Cmiss_field_value_type get_value_type() const
+	{
+		return CMISS_FIELD_VALUE_TYPE_MESH_LOCATION;
+	}
+
+};
+
+Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
+{
+	clear_cache();
+	Cmiss_fe_mesh_destroy(&mesh);
+}
+
+Computed_field_core* Computed_field_find_mesh_location::copy()
+{
+	return new Computed_field_find_mesh_location(mesh);
+}
+
+int Computed_field_find_mesh_location::clear_cache()
+{
+	if (element_cache)
+	{
+		Cmiss_element_destroy(&element_cache);
+	}
+	return 1;
+}
+
+int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
+{
+	Computed_field_find_mesh_location* other;
+	int return_code = 0;
+	if (field && (other = dynamic_cast<Computed_field_find_mesh_location*>(other_core)))
+	{
+		return_code = (mesh == other->mesh);
+	}
+	return (return_code);
+}
+
+int Computed_field_find_mesh_location::is_defined_at_location(Field_location* location)
+{
+	return evaluate_cache_at_location(location);
+}
+
+int Computed_field_find_mesh_location::evaluate_cache_at_location(Field_location* location)
+{
+	int return_code = 0;
+
+	ENTER(Computed_field_find_mesh_location::evaluate_cache_at_location);
+	if (field && location)
+	{
+		if (Computed_field_evaluate_cache_at_location(get_source_field(), location))
+		{
+			if (element_cache)
+			{
+				Cmiss_element_destroy(&element_cache);
+			}
+			if (Computed_field_find_element_xi(get_mesh_field(),
+					get_source_field()->values, get_source_field()->number_of_components,
+					location->get_time(), &element_cache, xi_cache, Cmiss_fe_mesh_get_dimension(mesh),
+					Cmiss_fe_mesh_get_region(mesh), /*propagate_field*/0,
+					/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
+					&& element_cache)
+			{
+				Cmiss_element_access(element_cache);
+				field->values_valid = 0; // not real valued
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_find_mesh_location::evaluate_cache_at_location.  "
+			"Invalid arguments.");
+	}
+	return (return_code);
+}
+
+int Computed_field_find_mesh_location::list()
+{
+	int return_code = 0;
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE, "    search mode : ");
+		if (search_mode == CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		{
+			display_message(INFORMATION_MESSAGE, " find_nearest\n");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, " find_exact\n");
+		}
+		display_message(INFORMATION_MESSAGE, "    mesh : ");
+		char *mesh_name = Cmiss_fe_mesh_get_name(mesh);
+		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
+		DEALLOCATE(mesh_name);
+		display_message(INFORMATION_MESSAGE,
+			"    mesh field : %s\n", get_mesh_field()->name);
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n", get_source_field()->name);
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+/** Returns allocated command string for reproducing field. Includes type */
+char *Computed_field_find_mesh_location::get_command_string()
+{
+	char *command_string = 0;
+	int error = 0;
+	if (field)
+	{
+		append_string(&command_string, computed_field_find_mesh_location_type_string, &error);
+
+		if (search_mode == CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		{
+			append_string(&command_string, " find_nearest", &error);
+		}
+		else
+		{
+			append_string(&command_string, " find_exact", &error);
+		}
+
+		append_string(&command_string, " mesh ", &error);
+		char *mesh_name = Cmiss_fe_mesh_get_name(mesh);
+		append_string(&command_string, mesh_name, &error);
+		DEALLOCATE(mesh_name);
+
+		char *mesh_field_name = Cmiss_field_get_name(get_mesh_field());
+		make_valid_token(&mesh_field_name);
+		append_string(&command_string, " mesh_field ", &error);
+		append_string(&command_string, mesh_field_name, &error);
+		DEALLOCATE(mesh_field_name);
+
+		char *source_field_name = Cmiss_field_get_name(get_source_field());
+		make_valid_token(&source_field_name);
+		append_string(&command_string, " source_field ", &error);
+		append_string(&command_string, source_field_name, &error);
+		DEALLOCATE(source_field_name);
+	}
+	return (command_string);
+}
+
+
+int Computed_field_find_mesh_location::make_string_cache(int component_number)
+{
+	if ((component_number > 0) || !element_cache || !field)
+		return 0;
+	if (field->string_cache)
+		return 1;
+	int error = 0;
+	char tmp_string[50];
+	sprintf(tmp_string,"%d : ", Cmiss_element_get_identifier(element_cache));
+	append_string(&(field->string_cache), tmp_string, &error);
+	int dimension = Cmiss_element_get_dimension(element_cache);
+	for (int i = 0; i < dimension; i++)
+	{
+		if (0 < i)
+		{
+			sprintf(tmp_string,", %g", xi_cache[i]);
+		}
+		else
+		{
+			sprintf(tmp_string,"%g", xi_cache[i]);
+		}
+		append_string(&(field->string_cache), tmp_string, &error);
+	}
+	field->string_component = -1;
+	return (!error);
+}
+
+Cmiss_element_id Computed_field_find_mesh_location::get_mesh_location_value(FE_value *xi) const
+{
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+	{
+		xi[i] = xi_cache[i];
+	}
+	return element_cache;
+}
+
+} // namespace
+
+Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_field_id mesh_field, Cmiss_fe_mesh_id mesh)
+{
+	struct Computed_field *field = NULL;
+	int number_of_source_field_components = Computed_field_get_number_of_components(source_field);
+	int number_of_mesh_field_components = Computed_field_get_number_of_components(mesh_field);
+	if (field_module && source_field && mesh_field && mesh &&
+		(number_of_source_field_components == number_of_mesh_field_components) &&
+		Computed_field_has_numerical_components(source_field, NULL) &&
+		Computed_field_has_numerical_components(mesh_field, NULL) &&
+		(number_of_mesh_field_components >= Cmiss_fe_mesh_get_dimension(mesh)))
+	{
+		Cmiss_field_id source_fields[2];
+		source_fields[0] = source_field;
+		source_fields[1] = mesh_field;
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_find_mesh_location(mesh));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_create_find_mesh_location.  Invalid argument(s)");
+	}
+	return (field);
+}
+
+struct Cmiss_field_find_mesh_location : private Computed_field
+{
+	inline Computed_field_find_mesh_location *get_core()
+	{
+		return static_cast<Computed_field_find_mesh_location*>(core);
+	}
+};
+
+Cmiss_field_find_mesh_location_id Cmiss_field_cast_find_mesh_location(
+	Cmiss_field_id field)
+{
+	if (field)
+	{
+		if (dynamic_cast<Computed_field_find_mesh_location*>(field->core))
+		{
+			Cmiss_field_access(field);
+			return (reinterpret_cast<Cmiss_field_find_mesh_location_id>(field));
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_find_mesh_location_destroy(
+	Cmiss_field_find_mesh_location_id *find_mesh_location_field_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(find_mesh_location_field_address));
+}
+
+Cmiss_field_id Cmiss_field_find_mesh_location_get_attribute_field(
+	Cmiss_field_find_mesh_location_id find_mesh_location_field,
+	enum Cmiss_field_find_mesh_location_attribute attribute)
+{
+	Cmiss_field_id field = 0;
+	if (find_mesh_location_field)
+	{
+		Computed_field_find_mesh_location *core = find_mesh_location_field->get_core();
+		switch (attribute)
+		{
+		case CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_SOURCE_FIELD:
+			field = core->get_source_field();
+			break;
+		case CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_MESH_FIELD:
+			field = core->get_mesh_field();
+			break;
+		default:
+			break;
+		}
+		if (field)
+		{
+			Cmiss_field_access(field);
+		}
+	}
+	return field;
+}
+
+Cmiss_fe_mesh_id Cmiss_field_find_mesh_location_get_mesh(
+	Cmiss_field_find_mesh_location_id find_mesh_location_field)
+{
+	Cmiss_fe_mesh_id mesh = 0;
+	if (find_mesh_location_field)
+	{
+		mesh = find_mesh_location_field->get_core()->get_mesh();
+		Cmiss_fe_mesh_access(mesh);
+	}
+	return mesh;
+}
+
+enum Cmiss_field_find_mesh_location_search_mode
+	Cmiss_field_find_mesh_location_get_search_mode(
+		Cmiss_field_find_mesh_location_id find_mesh_location_field)
+{
+	Cmiss_field_find_mesh_location_search_mode search_mode =
+		CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT;
+	if (find_mesh_location_field)
+	{
+		search_mode = find_mesh_location_field->get_core()->get_search_mode();
+	}
+	return search_mode;
+}
+
+int Cmiss_field_find_mesh_location_set_search_mode(
+	Cmiss_field_find_mesh_location_id find_mesh_location_field,
+	enum Cmiss_field_find_mesh_location_search_mode search_mode)
+{
+	int return_code = 0;
+	if (find_mesh_location_field)
+	{
+		return_code = find_mesh_location_field->get_core()->set_search_mode(search_mode);
+	}
+	return return_code;
+}
+
+/***************************************************************************//**
+ * Command modifier function which converts field into find_mesh_location type
+ * (if it is not already) and allows its contents to be modified.
+ */
+int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
+	void *field_modify_void, void *computed_field_finite_element_package_void)
+{
+	int return_code;
+
+	ENTER(define_Computed_field_type_find_mesh_location);
+	USE_PARAMETER(computed_field_finite_element_package_void);
+	Computed_field_modify_data * field_modify = (Computed_field_modify_data *)field_modify_void;
+	if (state && field_modify)
+	{
+		return_code = 1;
+		Cmiss_field_id mesh_field = 0;
+		Cmiss_field_id source_field = 0;
+		char *mesh_name = 0;
+		int find_nearest_flag = 0;
+		if (NULL != field_modify->get_field())
+		{
+			Cmiss_field_find_mesh_location_id find_mesh_location_field =
+				Cmiss_field_cast_find_mesh_location(field_modify->get_field());
+			if (find_mesh_location_field)
+			{
+				mesh_field = Cmiss_field_find_mesh_location_get_attribute_field(
+					find_mesh_location_field, CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_MESH_FIELD);
+				source_field = Cmiss_field_find_mesh_location_get_attribute_field(
+					find_mesh_location_field, CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_SOURCE_FIELD);
+				Cmiss_fe_mesh_id mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
+				mesh_name = Cmiss_fe_mesh_get_name(mesh);
+				Cmiss_fe_mesh_destroy(&mesh);
+				Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
+				find_nearest_flag = (CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT !=
+					Cmiss_field_find_mesh_location_get_search_mode(find_mesh_location_field));
+			}
+		}
+		if (return_code)
+		{
+			struct Set_Computed_field_conditional_data set_mesh_field_data, set_source_field_data;
+			Option_table *option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"A find_mesh_location field calculates the source_field then finds "
+				"and returns the location in the mesh where the mesh_field has the "
+				"same value. Use an embedded field to evaluate other fields on the "
+				"mesh at the found location. Option find_nearest returns the location "
+				"with the nearest value of the mesh_field if no exact match is found.");
+			// find_nearest|find_exact
+			Option_table_add_switch(option_table,
+				"find_nearest", "find_exact", &find_nearest_flag);
+			// mesh
+			Option_table_add_string_entry(option_table, "mesh", &mesh_name,
+				" [GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
+			// mesh_field
+			set_mesh_field_data.conditional_function =
+				Computed_field_has_numerical_components;
+			set_mesh_field_data.conditional_function_user_data = (void *)NULL;
+			set_mesh_field_data.computed_field_manager =
+				field_modify->get_field_manager();
+			Option_table_add_entry(option_table, "mesh_field", &mesh_field,
+				&set_mesh_field_data, set_Computed_field_conditional);
+			// source_field
+			set_source_field_data.conditional_function =
+				Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data = (void *)NULL;
+			set_source_field_data.computed_field_manager =
+				field_modify->get_field_manager();
+			Option_table_add_entry(option_table, "source_field", &source_field,
+				&set_source_field_data, set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
+			{
+				Cmiss_fe_mesh_id mesh = 0;
+				if (mesh_name)
+				{
+					mesh = Cmiss_field_module_get_fe_mesh_by_name(field_modify->get_field_module(), mesh_name);
+					if (!mesh)
+					{
+						display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  "
+							"Unknown mesh : %s", mesh_name);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  Must specify mesh.");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					Cmiss_field_id field = Cmiss_field_module_create_find_mesh_location(field_modify->get_field_module(),
+						source_field, mesh_field, mesh);
+					if (field)
+					{
+						Cmiss_field_find_mesh_location_id find_mesh_location_field = Cmiss_field_cast_find_mesh_location(field);
+						Cmiss_field_find_mesh_location_set_search_mode(find_mesh_location_field,
+							(find_nearest_flag ? CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST
+							: CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT));
+						Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
+						return_code = field_modify->update_field_and_deaccess(field);
+						field = 0;
+					}
+					else
+					{
+						if ((!source_field) || (!mesh_field) ||
+							(Cmiss_field_get_number_of_components(source_field) !=
+								Cmiss_field_get_number_of_components(mesh_field)))
+						{
+							display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  "
+								"Failed due to source_field and mesh_field unspecified, or number of components different or lower than mesh dimension.");
+							return_code = 0;
+						}
+					}
+				}
+				if (mesh)
+				{
+					Cmiss_fe_mesh_destroy(&mesh);
+				}
+			}
+		}
+		if (mesh_name)
+		{
+			DEALLOCATE(mesh_name);
+		}
+		if (mesh_field)
+		{
+			Cmiss_field_destroy(&mesh_field);
+		}
+		if (source_field)
+		{
+			Cmiss_field_destroy(&source_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_find_mesh_location.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 namespace {
 
@@ -3894,7 +4143,7 @@ public:
 		field_values_cache = (LIST(FE_element_field_values) *)NULL;
 	};
 
-	~Computed_field_basis_derivative();
+	virtual ~Computed_field_basis_derivative();
 
 private:
 	Computed_field_core *copy();
@@ -4967,7 +5216,6 @@ changed, added or removed in <fe_field_change_log>.
 	enum FE_nodal_value_type nodal_value_type;
 	int return_code, version_number;
 	struct CHANGE_LOG(FE_field) *fe_field_change_log;
-	struct Computed_field *source_field;
 	struct FE_field *fe_field;
 
 	ENTER(Computed_field_contains_changed_FE_field);
@@ -4977,11 +5225,6 @@ changed, added or removed in <fe_field_change_log>.
 		if (dynamic_cast<Computed_field_finite_element*>(field->core))
 		{
 			return_code = Computed_field_get_type_finite_element(field, &fe_field);
-		}
-		else if (dynamic_cast<Computed_field_embedded*>(field->core))
-		{
-			return_code = Computed_field_get_type_embedded(field, &fe_field,
-				&source_field);
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
@@ -5021,7 +5264,6 @@ If <field> has a source FE_field, ensures it is in <fe_field_list>.
 {
 	enum FE_nodal_value_type nodal_value_type;
 	int return_code, version_number;
-	struct Computed_field *source_field;
 	struct FE_field *fe_field;
 	struct LIST(FE_field) *fe_field_list;
 
@@ -5032,11 +5274,6 @@ If <field> has a source FE_field, ensures it is in <fe_field_list>.
 		if (dynamic_cast<Computed_field_finite_element*>(field->core))
 		{
 			return_code = Computed_field_get_type_finite_element(field, &fe_field);
-		}
-		else if (dynamic_cast<Computed_field_embedded*>(field->core))
-		{
-			return_code = Computed_field_get_type_embedded(field, &fe_field,
-				&source_field);
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
@@ -5392,45 +5629,6 @@ at node function does not allow for string value either.
 	return (return_code);
 } /* Computed_field_has_string_value_type */
 
-int Computed_field_depends_on_embedded_field(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns true if the field is of an embedded type or depends on any computed
-fields which are or an embedded type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_depends_on_embedded_field);
-	if (field)
-	{
-		if (Computed_field_is_type_embedded(field, NULL))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code=0;
-			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-			{
-				return_code=Computed_field_depends_on_embedded_field(
-					field->source_fields[i]);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_depends_on_embedded_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_depends_on_embedded_field */
-
 Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package)
@@ -5470,6 +5668,10 @@ This function registers the finite_element related types of Computed_fields.
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_node_value_type_string,
 			define_Computed_field_type_node_value,
+			computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_find_mesh_location_type_string,
+			define_Computed_field_type_find_mesh_location,
 			computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_embedded_type_string,

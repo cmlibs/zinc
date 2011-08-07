@@ -689,6 +689,12 @@ DESCRIPTION :
 Iterator/conditional function returning true if <field> has at least 2 components.
 ==============================================================================*/
 
+/*******************************************************************************
+ * @return  1 if field returns mesh_location value type.
+ */
+int Computed_field_has_value_type_mesh_location(struct Computed_field *field,
+	void *dummy_void);
+
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************

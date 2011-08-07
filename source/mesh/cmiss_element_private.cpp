@@ -44,6 +44,7 @@ extern "C" {
 #include "api/cmiss_element.h"
 #include "element/element_operations.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -955,6 +956,41 @@ int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
 	return 0;
 }
 
+char *Cmiss_fe_mesh_get_name(Cmiss_fe_mesh_id mesh)
+{
+	char *name = 0;
+	if (mesh)
+	{
+		int error = 0;
+		Cmiss_region_id region = 0;
+		FE_region_get_Cmiss_region(mesh->getFeRegion(), &region);
+		if (Cmiss_region_is_group(region))
+		{
+			char *group_name = Cmiss_region_get_name(region);
+			append_string(&name, group_name, &error);
+			append_string(&name, ".", &error);
+			DEALLOCATE(group_name);
+		}
+		switch (mesh->getDimension())
+		{
+		case 1:
+			append_string(&name, "cmiss_mesh_1d", &error);
+			break;
+		case 2:
+			append_string(&name, "cmiss_mesh_2d", &error);
+			break;
+		case 3:
+			append_string(&name, "cmiss_mesh_3d", &error);
+			break;
+		default:
+			DEALLOCATE(name);
+			name = 0;
+			break;
+		}
+	}
+	return name;
+}
+
 int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element)
 {
 	int return_code = 0;
@@ -1000,6 +1036,16 @@ FE_region *Cmiss_fe_mesh_get_FE_region(Cmiss_fe_mesh_id mesh)
 		return mesh->getFeRegion();
 	}
 	return 0;
+}
+
+Cmiss_region_id Cmiss_fe_mesh_get_region(Cmiss_fe_mesh_id mesh)
+{
+	Cmiss_region_id region = 0;
+	if (mesh)
+	{
+		FE_region_get_Cmiss_region(mesh->getFeRegion(), &region);
+	}
+	return region;
 }
 
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)

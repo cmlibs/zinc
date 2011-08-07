@@ -46,4 +46,8 @@ struct Cmiss_field_finite_element;
 typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
 #define CMISS_FIELD_FINITE_ELEMENT_ID_DEFINED
 
+/** Handle to a find_mesh_location type Cmiss_field */
+struct Cmiss_field_find_mesh_location;
+typedef struct Cmiss_field_find_mesh_location *Cmiss_field_find_mesh_location_id;
+
 #endif

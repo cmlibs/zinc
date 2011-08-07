@@ -930,6 +930,13 @@ in the <changed_element_list>, or in any elements using nodes from the
 <changed_node_list>, both passed in the <data_void>.
 ==============================================================================*/
 
+/*******************************************************************************
+ * Clears any embedded locations from nodes in node_list for fields in
+ * field_list. This is to avoid circular dependencies which prevent clean-up.
+ */
+int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
+	struct LIST(FE_field) *field_list);
+
 struct FE_node_can_be_merged_data
 /*******************************************************************************
 LAST MODIFIED : 15 November 2002
@@ -3209,6 +3216,7 @@ any new components. Clears/reallocates the values_storage for FE_field_types
 that use them, eg. CONSTANT_FE_FIELD and INDEXED_FE_FIELD - but only if number
 of components changes. If function fails the field is left exactly as it was.
 Should only call this function for unmanaged fields.
+ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 ==============================================================================*/
 
 int get_FE_field_number_of_values(struct FE_field *field);
@@ -3368,6 +3376,7 @@ Sets the value_type of the <field>. Clears/reallocates the values_storage for
 FE_field_types that use them, eg. CONSTANT_FE_FIELD and INDEXED_FE_FIELD - but
 only if the value_type changes. If function fails the field is left exactly as
 it was. Should only call this function for unmanaged fields.
+ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 =========================================================================*/
 
 int get_FE_field_max_array_size(struct FE_field *field,
