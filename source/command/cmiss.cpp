@@ -14476,9 +14476,8 @@ static int gfx_rename_field(struct Parse_state *state,
 		char *new_name = NULL;
 		char *region_and_field_name = NULL;
 		Option_table *option_table = CREATE(Option_table)();
-		Option_table_add_string_entry(option_table, "as", &new_name, " NEW_NAME");
-		Option_table_add_default_string_entry(option_table,
-			&region_and_field_name, "[REGION_PATH/]FIELD_NAME");
+		Option_table_add_string_entry(option_table, "from", &region_and_field_name, " [REGION_PATH/]FIELD_NAME");
+		Option_table_add_string_entry(option_table, "to", &new_name, " NEW_NAME");
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
 		if (return_code)
