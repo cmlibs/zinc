@@ -12373,6 +12373,8 @@ is undefined!
 				{
 					if (0 < exclusion_data.value_exclusion_length)
 					{
+						/* free arrays, embedded locations */
+						FE_node_field_free_values_storage_arrays(node_field, (void*)node->values_storage);
 						/* copy values_storage after the removed field */
 						bytes_to_copy = existing_node_field_info->values_storage_size -
 							(exclusion_data.value_exclusion_start +
@@ -12384,8 +12386,6 @@ is undefined!
 								node->values_storage+exclusion_data.value_exclusion_start+
 								exclusion_data.value_exclusion_length,bytes_to_copy);
 						}
-						/* free the currently used space */
-						//GRC also have to clear arrays, embedded locations
 						if (REALLOCATE(values_storage,node->values_storage,Value_storage,
 							new_node_field_info->values_storage_size))
 						{
