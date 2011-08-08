@@ -3498,10 +3498,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 					variable_scale_field_chooser->include_null_item(true);
 				}
 
-				if (glyph != NULL)
-				{
-					glyph_chooser ->set_object(glyph);
-				}
+				glyph_chooser->set_object(glyph);
 					
 				sprintf(temp_string,"%g,%g,%g",
 					glyph_offset[0],glyph_offset[1],glyph_offset[2]);
