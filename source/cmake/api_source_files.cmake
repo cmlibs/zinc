@@ -59,11 +59,14 @@ SET( API_HDRS
 	source/api/types/cmiss_field_parameters_id.h
 	source/api/types/cmiss_field_subobject_group_id.h
 	source/api/types/cmiss_graphic_id.h
+	source/api/types/cmiss_graphics_coordinate_system.h
 	source/api/types/cmiss_graphics_filter_id.h
 	source/api/types/cmiss_graphics_material_id.h
 	source/api/types/cmiss_graphics_module_id.h
+	source/api/types/cmiss_graphics_render_type.h
 	source/api/types/cmiss_interactive_tool_id.h
 	source/api/types/cmiss_node_id.h
+	source/api/types/cmiss_optimisation_id.h
 	source/api/types/cmiss_region_id.h
 	source/api/types/cmiss_rendition_id.h
 	source/api/types/cmiss_scene_id.h

@@ -953,11 +953,14 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_parameters_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_subobject_group_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphic_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_coordinate_system.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_filter_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_material_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_module_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_render_type.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_interactive_tool_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_node_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_optimisation_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_region_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_rendition_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_scene_id.h

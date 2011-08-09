@@ -1937,8 +1937,9 @@ enum Cmiss_time_keeper_play_direction
 	enum Cmiss_time_keeper_play_direction direction = (enum Cmiss_time_keeper_play_direction)0;
 	if (string)
 	{
+		int i;
 		const char *str[] = {"FORWARD", "BACKWARD"};
-		for (unsigned int i = 0; i < 2; i ++)
+		for (i = 0; i < 2; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -2036,8 +2037,8 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
 	if (string)
 	{
 		const char *str[] = {"PLAY_REAL_TIME", "PLAY_EVERY_FRAME"};
-
-		for (unsigned int i = 0; i < 2; i ++)
+		int i;
+		for (i = 0; i < 2; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -2152,7 +2153,8 @@ enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_strin
 	if (string)
 	{
 		const char *str[] = {"PLAY_ONCE", "PLAY_LOOP", "PLAY_SWING"};
-		for (unsigned int i = 0; i < 3; i ++)
+		int i;
+		for (i = 0; i < 3; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -2267,8 +2269,8 @@ enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
 	if (string)
 	{
 		const char *str[] = {"TIME", "MINIMUM_TIME", "MAXIMUM_TIME", "SPEED"};
-
-		for (unsigned int i = 0; i < 4; i ++)
+		int i;
+		for (i = 0; i < 4; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
