@@ -125,8 +125,10 @@ int Cmiss_nodeset_assign_field_from_source(
 		const int number_of_components =
 			Computed_field_get_number_of_components(destination_field);
 		Cmiss_field_value_type value_type = Cmiss_field_get_value_type(destination_field);
-		if ((Computed_field_get_number_of_components(source_field) == number_of_components) &&
-			(Cmiss_field_get_value_type(source_field) == value_type))
+		// can always evaluate to a string value
+		if ((value_type == CMISS_FIELD_VALUE_TYPE_STRING) ||
+			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
+				(Cmiss_field_get_value_type(source_field) == value_type)))
 		{
 			Cmiss_field_module_id field_module = Cmiss_nodeset_get_field_module(nodeset);
 			Cmiss_field_module_begin_change(field_module);
@@ -168,6 +170,18 @@ int Cmiss_nodeset_assign_field_from_source(
 									Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values))
 								{
 									++success_count;
+								}
+							} break;
+						case CMISS_FIELD_VALUE_TYPE_STRING:
+							{
+								char *string_value = Cmiss_field_evaluate_string(source_field, field_cache);
+								if (string_value)
+								{
+									if (Cmiss_field_assign_string(destination_field, field_cache, string_value))
+									{
+										++success_count;
+									}
+									DEALLOCATE(string_value);
 								}
 							} break;
 						default:

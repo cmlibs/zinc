@@ -1220,7 +1220,6 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		// overzealous to help ensure there is at least one 'coordinate' field to define faces
 		Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_COORDINATE, 1);
 	}
-	Cmiss_field_finite_element_id fe_field = Cmiss_field_cast_finite_element(field);
 
 	// create nodes and set node parameters
 
@@ -1258,7 +1257,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	else
 	{
 		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(nodes);
-		Cmiss_node_template_define_field(node_template, fe_field);
+		Cmiss_node_template_define_field(node_template, field);
 		return_code = Cmiss_node_template_finalise(node_template);
 		Cmiss_ensemble_index_id index = Cmiss_field_real_parameters_create_index(node_parameters);
 		// GRC inefficient to iterate over sparse parameters this way
@@ -1386,7 +1385,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 					total_local_point_count += components[ic]->local_point_count;
 					Cmiss_element_template_set_number_of_nodes(element_template, total_local_point_count);
 				}
-				if (!Cmiss_element_template_define_field_simple_nodal(element_template, fe_field,
+				if (!Cmiss_element_template_define_field_simple_nodal(element_template, field,
 					/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
 					components[ic]->local_point_indexes))
 				{
@@ -1455,7 +1454,6 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		Cmiss_element_template_destroy(&element_template);
 	Cmiss_fe_mesh_destroy(&mesh);
 	Cmiss_nodeset_destroy(&nodes);
-	Cmiss_field_finite_element_destroy(&fe_field);
 	Cmiss_field_destroy(&field);
 
 	return return_code;

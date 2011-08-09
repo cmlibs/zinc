@@ -44,7 +44,6 @@
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_field_finite_element_id.h"
 #include "api/types/cmiss_node_id.h"
 
 /*
@@ -427,7 +426,7 @@ int Cmiss_element_template_set_number_of_nodes(
  * Finalised state is removed on defining fields.
  *
  * @param element_template  Element template to modify.
- * @param field  The field to define.
+ * @param field  The field to define. Must be finite_element type.
  * @param component_number  The component to define from 1 to the number of
  * field components, or -1 to define all components with identical basis and
  * nodal mappings.
@@ -443,7 +442,7 @@ int Cmiss_element_template_set_number_of_nodes(
  */
 int Cmiss_element_template_define_field_simple_nodal(
 	Cmiss_element_template_id element_template,
-	Cmiss_field_finite_element_id field,  int component_number,
+	Cmiss_field_id field,  int component_number,
 	Cmiss_element_basis_id basis, int basis_number_of_nodes,
 	const int *local_node_indexes);
 

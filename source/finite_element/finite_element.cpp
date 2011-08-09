@@ -153,18 +153,20 @@ the point and the Xi coordinates of the point within the element.
 	struct Coordinate_system coordinate_system;
 	/* the number of global values/derivatives that are stored with the field */
 	int number_of_values;
- /* the type of the values returned by the field */
-  enum Value_type value_type;
-  /* array of global values/derivatives that are stored with the field.  The
-    actual values can be extracted using the <value_type> */
-  Value_storage *values_storage;
-    /*???DB.  Have something like enum FE_nodal_value_type ? */
-    /*???DB.  Needs to be clarified for constant fields */
-  /* time series information.  If <number_of_times> is zero then constant in
-    time */
-  enum Value_type time_value_type;
-  int number_of_times;
-  Value_storage *times;
+	/* the type of the values returned by the field */
+	enum Value_type value_type;
+	/* for value_type== ELEMENT_XI_VALUE, fixed mesh dimension, or 0 for any */
+	int element_xi_mesh_dimension;
+	/* array of global values/derivatives that are stored with the field.
+	 * The actual values can be extracted using the <value_type> */
+	Value_storage *values_storage;
+	/*???DB.  Have something like enum FE_nodal_value_type ? */
+	/*???DB.  Needs to be clarified for constant fields */
+	/* time series information.  If <number_of_times> is zero then constant in
+	 * time */
+	enum Value_type time_value_type;
+	int number_of_times;
+	Value_storage *times;
 	/* the number of computed fields wrapping this FE_field */
 	int number_of_wrappers;
 	/* the number of structures that point to this field.  The field cannot be
@@ -7778,6 +7780,7 @@ FE_region.
 			field->number_of_values = 0;
 			field->values_storage = (Value_storage *)NULL;
 			field->value_type = UNKNOWN_VALUE;
+			field->element_xi_mesh_dimension = 0;
 			field->number_of_times = 0;
 			field->time_value_type = UNKNOWN_VALUE;
 			field->times = (Value_storage *)NULL;
@@ -9947,6 +9950,41 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 
 	return (return_code);
 }/* set_FE_field_value_type */
+
+int FE_field_get_element_xi_mesh_dimension(struct FE_field *field)
+{
+	int element_xi_mesh_dimension;
+	if (field && (field->value_type == ELEMENT_XI_VALUE))
+	{
+		element_xi_mesh_dimension = field->element_xi_mesh_dimension;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_field_value_type.  Invalid argument(s)");
+		element_xi_mesh_dimension = 0;
+	}
+	return element_xi_mesh_dimension;
+}
+
+int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
+	int mesh_dimension)
+{
+	int return_code;
+	if (field && (field->value_type == ELEMENT_XI_VALUE) &&
+		(0 <= mesh_dimension) && (mesh_dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		field->element_xi_mesh_dimension = mesh_dimension;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_field_value_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
 
 enum Value_type get_FE_field_time_value_type(struct FE_field *field)
 /*******************************************************************************
@@ -13383,33 +13421,44 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		(0 <= component_number) && (component_number < field->number_of_components) &&
 		(0 <= version) && ((!element) || (element && element->shape && xi)))
 	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,field,component_number,
-			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+		if ((!element) || (0 == field->element_xi_mesh_dimension) ||
+			(element->shape->dimension == field->element_xi_mesh_dimension))
 		{
-			number_of_xi_dimensions = element? element->shape->dimension : 0;
-			/* copy in the element_xi_value */
-			REACCESS(FE_element)((struct FE_element **)values_storage, element);
-			values_storage += sizeof(struct FE_element *);
-			for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			/* get the values storage */
+			if (find_FE_nodal_values_storage_dest(node,field,component_number,
+				version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 			{
-				if (i<number_of_xi_dimensions)
+				number_of_xi_dimensions = element ? element->shape->dimension : 0;
+				/* copy in the element_xi_value */
+				REACCESS(FE_element)((struct FE_element **)values_storage, element);
+				values_storage += sizeof(struct FE_element *);
+				for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
 				{
-					*((FE_value *)values_storage) = xi[i];
+					if (i<number_of_xi_dimensions)
+					{
+						*((FE_value *)values_storage) = xi[i];
+					}
+					else
+					{
+						/* set spare xi values to 0 */
+						*((FE_value *)values_storage) = 0.0;
+					}
+					values_storage += sizeof(FE_value);
 				}
-				else
-				{
-					/* set spare xi values to 0 */
-					*((FE_value *)values_storage) = 0.0;
-				}
-				values_storage += sizeof(FE_value);
+				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
+				return_code=1;
 			}
-			FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
-			return_code=1;
+			else
+			{
+				return_code=0;
+			}
 		}
 		else
 		{
-			return_code=0;
+			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
+				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
+				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->identifier.number);
+			return_code = 0;
 		}
 	}
 	else
@@ -13758,10 +13807,6 @@ in the <changed_element_list>, or in any elements using nodes from the
 	return (return_code);
 } /* FE_node_is_embedded_in_changed_element */
 
-/*******************************************************************************
- * Clears any embedded locations from nodes in node_list for fields in
- * field_list. This is to avoid circular dependencies which prevent clean-up.
- */
 int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 	struct LIST(FE_field) *field_list)
 {
@@ -15597,11 +15642,6 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 					version,type,STRING_VALUE,&values_storage,&time_sequence))
 				{
 					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"get_FE_nodal_string_value.  "
-						"find_FE_nodal_values_storage_dest failed");
 				}
 			} break;
 			case INDEXED_FE_FIELD:

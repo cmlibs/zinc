@@ -776,6 +776,10 @@ Evaluate the fields cache at the location
 							/*component_number*/i,
 							/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
 							time, &(field->string_cache));
+						if (return_code && (!field->string_cache))
+						{
+							field->string_cache = duplicate_string("");
+						}
 						field->values_valid = 0;
 					} break;
 					default:
@@ -1205,8 +1209,17 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
 			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(fe_field)));
+		Value_type value_type = get_FE_field_value_type(fe_field);
 		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
-			Value_type_string(get_FE_field_value_type(fe_field)));
+			Value_type_string(value_type));
+		if (ELEMENT_XI_VALUE == value_type)
+		{
+			int element_xi_mesh_dimension = FE_field_get_element_xi_mesh_dimension(fe_field);
+			if (element_xi_mesh_dimension)
+			{
+				display_message(INFORMATION_MESSAGE,"    mesh dimension : %d\n", element_xi_mesh_dimension);
+			}
+		}
 		return_code = 1;
 	}
 	else
@@ -1359,41 +1372,50 @@ static struct Computed_field *Computed_field_create_finite_element_internal(
 	return (field);
 }
 
+Cmiss_field_id Cmiss_field_module_create_finite_element_internal(
+	Cmiss_field_module_id field_module, enum Value_type value_type, int number_of_components)
+{
+	Cmiss_field_id field = 0;
+	// cache changes to ensure FE_field not automatically wrapped already
+	Cmiss_field_module_begin_change(field_module);
+	FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
+	// ensure FE_field and Computed_field have same name
+	char *field_name = Cmiss_field_module_get_field_name(field_module);
+	bool no_default_name = (0 == field_name);
+	if (no_default_name)
+	{
+		field_name = Cmiss_field_module_get_unique_field_name(field_module);
+		Cmiss_field_module_set_field_name(field_module, field_name);
+	}
+	FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
+		fe_region, field_name, value_type, number_of_components);
+	if (fe_field)
+	{
+		Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
+		set_FE_field_coordinate_system(fe_field, &coordinate_system);
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/false, number_of_components,
+			/*number_of_source_fields*/0, NULL,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_finite_element(fe_field));
+	}
+	DEALLOCATE(field_name);
+	if (no_default_name)
+	{
+		Cmiss_field_module_set_field_name(field_module, /*field_name*/0);
+	}
+	Cmiss_field_module_end_change(field_module);
+	return (field);
+}
+
 Cmiss_field_id Cmiss_field_module_create_finite_element(
 	Cmiss_field_module_id field_module, int number_of_components)
 {
 	Computed_field *field = NULL;
 	if (field_module && (0 < number_of_components))
 	{
-		// cache changes to ensure FE_field not automatically wrapped already
-		Cmiss_field_module_begin_change(field_module);
-		FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
-		// ensure FE_field and Computed_field have same name
-		char *field_name = Cmiss_field_module_get_field_name(field_module);
-		bool no_default_name = (0 == field_name);
-		if (no_default_name)
-		{
-			field_name = Cmiss_field_module_get_unique_field_name(field_module);
-			Cmiss_field_module_set_field_name(field_module, field_name);
-		}
-		FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-			fe_region, field_name, FE_VALUE_VALUE, number_of_components);
-		if (fe_field)
-		{
-			Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
-			set_FE_field_coordinate_system(fe_field, &coordinate_system);
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/false, number_of_components,
-				/*number_of_source_fields*/0, NULL,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_finite_element(fe_field));
-		}
-		DEALLOCATE(field_name);
-		if (no_default_name)
-		{
-			Cmiss_field_module_set_field_name(field_module, /*field_name*/0);
-		}
-		Cmiss_field_module_end_change(field_module);
+		field = Cmiss_field_module_create_finite_element_internal(
+			field_module, FE_VALUE_VALUE, number_of_components);
 	}
 	else
 	{
@@ -1424,6 +1446,82 @@ int Cmiss_field_finite_element_destroy(
 	Cmiss_field_finite_element_id *finite_element_field_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(finite_element_field_address));
+}
+
+Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
+	Cmiss_field_module_id field_module, Cmiss_fe_mesh_id mesh)
+{
+	Computed_field *field = NULL;
+	if (field_module && mesh && (Cmiss_fe_mesh_get_region(mesh) ==
+		Cmiss_field_module_get_region_internal(field_module)))
+	{
+		field = Cmiss_field_module_create_finite_element_internal(
+			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
+		struct FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		FE_field_set_element_xi_mesh_dimension(fe_field, Cmiss_fe_mesh_get_dimension(mesh));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_create_finite_element.  Invalid argument(s)");
+	}
+	return (field);
+}
+
+Cmiss_field_stored_mesh_location_id Cmiss_field_cast_stored_mesh_location(Cmiss_field_id field)
+{
+	if (field)
+	{
+		Computed_field_finite_element* core =
+			dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core &&
+			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(get_FE_field_value_type(core->fe_field) == ELEMENT_XI_VALUE))
+		{
+			Cmiss_field_access(field);
+			return (reinterpret_cast<Cmiss_field_stored_mesh_location_id>(field));
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_stored_mesh_location_destroy(
+	Cmiss_field_stored_mesh_location_id *stored_mesh_location_field_address)
+{
+	return Cmiss_field_destroy(
+		reinterpret_cast<Cmiss_field_id *>(stored_mesh_location_field_address));
+}
+
+Cmiss_field_id Cmiss_field_module_create_stored_string(
+	Cmiss_field_module_id field_module)
+{
+	return Cmiss_field_module_create_finite_element_internal(
+		field_module, STRING_VALUE, /*number_of_components*/1);
+}
+
+Cmiss_field_stored_string_id Cmiss_field_cast_stored_string(Cmiss_field_id field)
+{
+	if (field)
+	{
+		Computed_field_finite_element* core =
+			dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (core &&
+			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(get_FE_field_value_type(core->fe_field) == STRING_VALUE))
+		{
+			Cmiss_field_access(field);
+			return (reinterpret_cast<Cmiss_field_stored_string_id>(field));
+		}
+	}
+	return 0;
+}
+
+int Cmiss_field_stored_string_destroy(
+	Cmiss_field_stored_string_id *stored_string_field_address)
+{
+	return Cmiss_field_destroy(
+		reinterpret_cast<Cmiss_field_id *>(stored_string_field_address));
 }
 
 int Computed_field_is_type_finite_element(struct Computed_field *field)

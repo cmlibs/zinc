@@ -3379,6 +3379,28 @@ it was. Should only call this function for unmanaged fields.
 ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 =========================================================================*/
 
+/***************************************************************************//**
+ * If the FE_field has value_type ELEMENT_XI_VALUE, this returns the
+ * element dimension the field values are restricted to, or 0 if unrestricted.
+ *
+ * @param field  The field to query.
+ * @return  Mesh dimension from 1 to MAXIMUM_ELEMENT_XI_DIMENSIONS or 0 for any
+ * dimension or invalid field type.
+ */
+int FE_field_get_element_xi_mesh_dimension(struct FE_field *field);
+
+/***************************************************************************//**
+ * If the FE_field has value_type ELEMENT_XI_VALUE, this restricts the
+ * element locations that can be stored to mesh of the supplied dimension.
+ *
+ * @param field  The field to modify.
+ * @param mesh_dimension  A fixed mesh dimension from 1 to
+ * MAXIMUM_ELEMENT_XI_DIMENSIONS or 0 for any dimension.
+ * @return  1 on success, 0 on failure.
+ */
+int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
+	int mesh_dimension);
+
 int get_FE_field_max_array_size(struct FE_field *field,
 	int *max_number_of_array_values,enum Value_type *value_type);
 /*******************************************************************************

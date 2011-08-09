@@ -1,4 +1,4 @@
-/*****************************************************************************//**
+/***************************************************************************//**
  * FILE : cmiss_field_finite_element.h
  * 
  * Implements fields interpolated over finite element meshes with
@@ -55,12 +55,12 @@
  *
  * @param field_module  Region field module which will own new field.
  * @param number_of_components  The number of components for the new field.
- * @return  Handle to the found or newly created field.
+ * @return  Handle to the newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_finite_element(
 	Cmiss_field_module_id field_module, int number_of_components);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * If the field is real-valued interpolated finite element then this function
  * returns the finite_element specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the returned derived field reference.
@@ -110,7 +110,7 @@ Cmiss_field_id Cmiss_field_create_embedded(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_field_id embedded_location_field);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Creates a field returning the location in a mesh at which the calculated
  * source_field value equals the mesh_field value. Type-specific functions allow
  * the search to find the nearest value and set a conditional field.
@@ -129,7 +129,7 @@ Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_field_id mesh_field, Cmiss_fe_mesh_id mesh);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * If the field is of type find_mesh_location then this function returns the
  * find_mesh_location specific representation, otherwise returns NULL.
  * Caller is responsible for destroying the returned derived field reference.
@@ -181,7 +181,7 @@ enum Cmiss_field_find_mesh_location_attribute
 	 */
 };
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Returns a field attribute of the find_mesh_location field.
  *
  * @see Cmiss_field_find_mesh_location_attribute
@@ -194,7 +194,7 @@ Cmiss_field_id Cmiss_field_find_mesh_location_get_attribute_field(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field,
 	enum Cmiss_field_find_mesh_location_attribute attribute);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Returns the mesh the find_mesh_location field is to find locations in.
  *
  * @param find_mesh_location_field  The field to query.
@@ -218,7 +218,7 @@ enum Cmiss_field_find_mesh_location_search_mode
 	 */
 };
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Gets the search mode for the find_mesh_location field: whether finding
  * location with exact or nearest value.
  *
@@ -229,7 +229,7 @@ enum Cmiss_field_find_mesh_location_search_mode
 	Cmiss_field_find_mesh_location_get_search_mode(
 		Cmiss_field_find_mesh_location_id find_mesh_location_field);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Sets the search mode for the find_mesh_location field: whether finding
  * location with exact or nearest value.
  *
@@ -240,5 +240,92 @@ enum Cmiss_field_find_mesh_location_search_mode
 int Cmiss_field_find_mesh_location_set_search_mode(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field,
 	enum Cmiss_field_find_mesh_location_search_mode search_mode);
+
+/***************************************************************************//**
+ * Creates a field which stores and returns mesh location values at nodes.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param mesh  The mesh for which locations are stored.
+ * @return  Handle to the newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
+	Cmiss_field_module_id field_module, Cmiss_fe_mesh_id mesh);
+
+/***************************************************************************//**
+ * If the field is stored_mesh_location type, return type-specific handle to it.
+ * Caller is responsible for destroying the returned derived field reference.
+ *
+ * @param field  The field to be cast.
+ * @return  Stored_mesh_location specific representation if the input field is of
+ * this type, otherwise returns NULL.
+ */
+Cmiss_field_stored_mesh_location_id Cmiss_field_cast_stored_mesh_location(Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Cast stored_mesh_location field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param stored_mesh_location_field  Handle to the field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_stored_mesh_location_base_cast(
+	Cmiss_field_stored_mesh_location_id stored_mesh_location_field)
+{
+	return (Cmiss_field_id)(stored_mesh_location_field);
+}
+
+/*******************************************************************************
+ * Destroys this reference to the stored_mesh_location field (and sets it to
+ * NULL). Internally this just decrements the reference count.
+ */
+int Cmiss_field_stored_mesh_location_destroy(
+	Cmiss_field_stored_mesh_location_id *stored_mesh_location_field_address);
+
+/***************************************************************************//**
+ * Creates a field which stores and returns string values at nodes.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @return  Handle to the newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_stored_string(
+	Cmiss_field_module_id field_module);
+
+/***************************************************************************//**
+ * If the field is stored_string type, return type-specific handle to it.
+ * Caller is responsible for destroying the returned derived field reference.
+ *
+ * @param field  The field to be cast.
+ * @return  stored_string specific representation if the input field is of
+ * this type, otherwise returns NULL.
+ */
+Cmiss_field_stored_string_id Cmiss_field_cast_stored_string(Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Cast stored_string field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param stored_string_field  Handle to the field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_field_id Cmiss_field_stored_string_base_cast(
+	Cmiss_field_stored_string_id stored_string_field)
+{
+	return (Cmiss_field_id)(stored_string_field);
+}
+
+/*******************************************************************************
+ * Destroys this reference to the stored_string field (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ */
+int Cmiss_field_stored_string_destroy(
+	Cmiss_field_stored_string_id *stored_string_field_address);
 
 #endif /* !defined (CMISS_FIELD_FINITE_ELEMENT_H) */

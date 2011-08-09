@@ -50,4 +50,12 @@ typedef struct Cmiss_field_finite_element *Cmiss_field_finite_element_id;
 struct Cmiss_field_find_mesh_location;
 typedef struct Cmiss_field_find_mesh_location *Cmiss_field_find_mesh_location_id;
 
+/** Handle to a stored_mesh_location type Cmiss_field */
+struct Cmiss_field_stored_mesh_location;
+typedef struct Cmiss_field_stored_mesh_location *Cmiss_field_stored_mesh_location_id;
+
+/** Handle to a stored_string type Cmiss_field */
+struct Cmiss_field_stored_string_location;
+typedef struct Cmiss_field_stored_string *Cmiss_field_stored_string_id;
+
 #endif

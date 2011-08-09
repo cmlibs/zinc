@@ -562,6 +562,7 @@ for node and element fields.
 	enum FE_field_type fe_field_type = UNKNOWN_FE_FIELD;
 	enum Value_type value_type = UNKNOWN_VALUE;
 	FE_value focus;
+	int element_xi_mesh_dimension = 0;
 	int i, number_of_components, number_of_indexed_values, return_code;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field, *indexer_field = NULL, *temp_indexer_field;
@@ -608,7 +609,7 @@ for node and element fields.
 		next_block = (char *)NULL;
 		if (return_code)
 		{
-			/* next string required for value_type, below */
+			/* next string required for CM_field_type, below */
 			if (!IO_stream_read_string(input_file, "[^,]", &next_block))
 			{
 				location = IO_stream_get_location_string(input_file);
@@ -846,6 +847,24 @@ for node and element fields.
 				DEALLOCATE(location);
 				return_code = 0;
 			}
+			if (return_code && (ELEMENT_XI_VALUE == value_type))
+			{
+				char *mesh_dimension_loc = strstr(next_block, "mesh dimension");
+				if (mesh_dimension_loc)
+				{
+					if ((1 != sscanf(mesh_dimension_loc, "mesh dimension=%d", &element_xi_mesh_dimension)) ||
+						((0 >= element_xi_mesh_dimension) ||
+							(element_xi_mesh_dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS)))
+					{
+						location = IO_stream_get_location_string(input_file);
+						display_message(ERROR_MESSAGE,
+							"Field '%s' of element_xi value has invalid mesh dimension.  %s",
+							field_name, location);
+						DEALLOCATE(location);
+						return_code = 0;
+					}
+				}
+			}
 		}
 		if (next_block)
 		{
@@ -858,6 +877,13 @@ for node and element fields.
 			if (!set_FE_field_value_type(field, value_type))
 			{
 				return_code = 0;
+			}
+			if (0 != element_xi_mesh_dimension)
+			{
+				if (!FE_field_set_element_xi_mesh_dimension(field, element_xi_mesh_dimension))
+				{
+					return_code = 0;
+				}
 			}
 			if (!set_FE_field_number_of_components(field, number_of_components))
 			{

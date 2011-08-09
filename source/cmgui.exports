@@ -157,6 +157,14 @@ Cmiss_field_find_mesh_location_get_attribute_field
 Cmiss_field_find_mesh_location_get_mesh
 Cmiss_field_find_mesh_location_get_search_mode
 Cmiss_field_find_mesh_location_set_search_mode
+Cmiss_field_module_create_stored_mesh_location
+Cmiss_field_cast_stored_mesh_location
+/* inline Cmiss_field_stored_mesh_location_base_cast */
+Cmiss_field_stored_mesh_location_destroy
+Cmiss_field_module_create_stored_string
+Cmiss_field_cast_stored_string
+/* inline Cmiss_field_stored_string_base_cast */
+Cmiss_field_stored_string_destroy
 
 /* api/cmiss_field_group.h */
 Cmiss_field_module_create_group

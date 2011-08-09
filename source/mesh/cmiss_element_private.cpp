@@ -507,7 +507,7 @@ public:
 		return 1;
 	}
 
-	int defineFieldSimpleNodal(Cmiss_field_finite_element_id field,
+	int defineFieldSimpleNodal(Cmiss_field_id field,
 		int component_number, Cmiss_element_basis_id basis, int basis_number_of_nodes,
 		const int *local_node_indexes)
 	{
@@ -552,28 +552,25 @@ public:
 		}
 		FE_region *master_FE_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
 		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(
-			reinterpret_cast<Cmiss_field_id>(field), &fe_field);
-		if (FE_VALUE_VALUE != get_FE_field_value_type(fe_field))
+		if (finite_element_field)
 		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  "
-				"Field must be real-valued");
-			return_code = 0;
+			Computed_field_get_type_finite_element(field, &fe_field);
+			if (FE_field_get_FE_region(fe_field) != master_FE_region)
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_element_template_define_field_simple_nodal.  "
+					"Field is from another region");
+				return_code = 0;
+			}
+			Cmiss_field_finite_element_destroy(&finite_element_field);
 		}
-		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(fe_field))
+		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_template_define_field_simple_nodal.  "
-				"Field must be type GENERAL_FE_FIELD");
-			return_code = 0;
-		}
-		if (FE_field_get_FE_region(fe_field) != master_FE_region)
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  "
-				"Field is from another region");
+				"Can only define real finite_element field type on elements");
 			return_code = 0;
 		}
 		if (return_code)
@@ -1128,7 +1125,7 @@ int Cmiss_element_template_set_number_of_nodes(
 
 int Cmiss_element_template_define_field_simple_nodal(
 	Cmiss_element_template_id element_template,
-	Cmiss_field_finite_element_id field,  int component_number,
+	Cmiss_field_id field,  int component_number,
 	Cmiss_element_basis_id basis, int number_of_nodes,
 	const int *local_node_indexes)
 {

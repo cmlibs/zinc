@@ -44,7 +44,6 @@
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_field_finite_element_id.h"
 #include "api/types/cmiss_node_id.h"
 #include "api/types/cmiss_time_sequence_id.h"
 
@@ -244,11 +243,12 @@ int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
  * Finalised state is removed by this call.
  *
  * @param node_template  Node template to modify.
- * @param field  The field to define.
+ * @param field  The field to define. May be finite_element, stored_string or
+ * stored_mesh_location type only.
  * @return  1 on success, 0 on error.
  */
 int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field);
+	Cmiss_field_id field);
 
 /***************************************************************************//**
  * Adds storage for the supplied derivative type for the component/s of the
@@ -256,14 +256,15 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
  * Must have first called Cmiss_node_template_define_field for field.
  *
  * @param node_template  Node template to modify.
- * @param field  The field to define derivatives for.
+ * @param field  The field to define derivatives for. May be finite_element
+ * type only.
  * @param component_number  The component from 1 to the number of field
  * components, or -1 to define the derivative for all components.
  * @param derivative_type  The type of nodal derivative to define.
  * @return  1 on success, 0 on error.
  */
 int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field, int component_number,
+	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type);
 
 /***************************************************************************//**
@@ -273,7 +274,8 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
  * Finalised state is removed by this call.
  *
  * @param node_template  Node template to modify.
- * @param field  The field to define versions for.
+ * @param field  The field to define versions for. May be finite_element type
+ * only.
  * @param time_sequence  Time sequence object defining the number of times for
  * which field parameters are stored, and the times they are for (increasing).
  * @param node_field_creator  Optionally defines different versions and/or
@@ -281,7 +283,7 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
  * will be defined.
  */
 int Cmiss_node_template_define_time_sequence(
-	Cmiss_node_template_id node_template, Cmiss_field_finite_element_id field,
+	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	struct Cmiss_time_sequence *time_sequence);
 
 /***************************************************************************//**
@@ -291,7 +293,8 @@ int Cmiss_node_template_define_time_sequence(
  * Must have first called Cmiss_node_template_define_field for field.
  *
  * @param node_template  Node template to modify.
- * @param field  The field to define versions for.
+ * @param field  The field to define versions for. May be finite_element type
+ * only.
  * @param component_number  The component from 1 to the number of field
  * components, or -1 to define the number of versions for all components.
  * @param number_of_versions  The number of versions of each value & derivative
@@ -299,8 +302,7 @@ int Cmiss_node_template_define_time_sequence(
  * @return  1 on success, 0 on error.
  */
 int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field, int component_number,
-	int number_of_versions);
+	Cmiss_field_id field, int component_number, int number_of_versions);
 
 /***************************************************************************//**
  * Checks the definition of node fields and prepares the node template for

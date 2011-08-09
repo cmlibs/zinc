@@ -173,32 +173,21 @@ public:
 		return 1;
 	}
 
-	int defineField(Cmiss_field_finite_element_id field)
+	int defineField(Cmiss_field_id field)
 	{
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(
-			reinterpret_cast<Cmiss_field_id>(field), &fe_field);
-		if (!fe_field)
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		Cmiss_field_stored_mesh_location_id stored_mesh_location_field = Cmiss_field_cast_stored_mesh_location(field);
+		Cmiss_field_stored_string_id stored_string_field = Cmiss_field_cast_stored_string(field);
+		if (!(finite_element_field || stored_mesh_location_field || stored_string_field))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_field.  Missing field");
+				"Cmiss_node_template_define_field.  "
+				"Field must be finite_element, stored_mesh_location or stored_string type");
 			return 0;
 		}
 		int return_code = 1;
-		if (FE_VALUE_VALUE != get_FE_field_value_type(fe_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_field.  "
-				"Field must be real-valued");
-			return_code = 0;
-		}
-		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(fe_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_field.  "
-				"Field must be type GENERAL_FE_FIELD");
-			return_code = 0;
-		}
+		FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
@@ -212,6 +201,9 @@ public:
 				"Cmiss_node_template_define_field.  Field is already defined");
 			return_code = 0;
 		}
+		Cmiss_field_finite_element_destroy(&finite_element_field);
+		Cmiss_field_stored_mesh_location_destroy(&stored_mesh_location_field);
+		Cmiss_field_stored_string_destroy(&stored_string_field);
 		if (!return_code)
 			return 0;
 		clearTemplateNode();
@@ -552,7 +544,7 @@ int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)
 }
 
 int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field)
+	Cmiss_field_id field)
 {
 	if (node_template && field)
 	{

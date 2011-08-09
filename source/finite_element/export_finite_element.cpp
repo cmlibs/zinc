@@ -180,6 +180,7 @@ Examples:
 2) variable, field, indexed, Index_field=bob, #Values=3, real, #Components=1
 3) fixed, field, constant, integer, #Components=3
 4) an_array, field, real, #Values=10, #Components=1
+Value_type ELEMENT_XI_VALUE has optional Mesh Dimension=#.
 ==============================================================================*/
 {
 	char *name;
@@ -300,7 +301,16 @@ Examples:
 			(*output_file) << ", " << Value_type_string(value_type);
 		}
 		number_of_components=get_FE_field_number_of_components(field);
-		(*output_file) << ", #Components=" << number_of_components << "\n";
+		(*output_file) << ", #Components=" << number_of_components;
+		if (ELEMENT_XI_VALUE == value_type)
+		{
+			int element_xi_mesh_dimension = FE_field_get_element_xi_mesh_dimension(field);
+			if (element_xi_mesh_dimension != 0)
+			{
+				(*output_file) << "; mesh dimension=" << element_xi_mesh_dimension;
+			}
+		}
+		(*output_file) << "\n";
 		return_code=1;
 	}
 	else
