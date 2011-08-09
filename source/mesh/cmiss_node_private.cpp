@@ -211,12 +211,19 @@ public:
 		return (node_field != NULL);
 	}
 
-	int defineDerivative(Cmiss_field_finite_element_id field, int component_number,
+	int defineDerivative(Cmiss_field_id field, int component_number,
 		enum Cmiss_nodal_value_type derivative_type)
 	{
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		if (!finite_element_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_define_derivative.  Field must be real finite_element type");
+			return 0;
+		}
+		Cmiss_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(
-			reinterpret_cast<Cmiss_field_id>(field), &fe_field);
+		Computed_field_get_type_finite_element(field, &fe_field);
 		Cmiss_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
@@ -265,29 +272,43 @@ public:
 		return node_field->defineDerivative(component_number, fe_nodal_value_type);
 	}
 
-	int defineTimeSequence(Cmiss_field_finite_element_id field,
+	int defineTimeSequence(Cmiss_field_id field,
 		Cmiss_time_sequence_id time_sequence)
 	{
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		if (!finite_element_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_define_time_sequence.  Field must be real finite_element type");
+			return 0;
+		}
+		Cmiss_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(
-			reinterpret_cast<Cmiss_field_id>(field), &fe_field);
+		Computed_field_get_type_finite_element(field, &fe_field);
 		Cmiss_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_derivative.  Field is not defined yet");
+				"Cmiss_node_template_define_time_sequence.  Field is not defined yet");
 			return 0;
 		}
 		clearTemplateNode();
 		return node_field->defineTimeSequence(reinterpret_cast<struct FE_time_sequence *>(time_sequence));
 	}
 
-	int defineVersions(Cmiss_field_finite_element_id field, int component_number,
+	int defineVersions(Cmiss_field_id field, int component_number,
 		int number_of_versions)
 	{
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		if (!finite_element_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_define_versions.  Field must be real finite_element type");
+			return 0;
+		}
+		Cmiss_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(
-			reinterpret_cast<Cmiss_field_id>(field), &fe_field);
+		Computed_field_get_type_finite_element(field, &fe_field);
 		Cmiss_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
@@ -554,7 +575,7 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 }
 
 int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field, int component_number,
+	Cmiss_field_id field, int component_number,
 	enum Cmiss_nodal_value_type derivative_type)
 {
 	if (node_template && field)
@@ -565,7 +586,7 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
 }
 
 int Cmiss_node_template_define_time_sequence(
-	Cmiss_node_template_id node_template, Cmiss_field_finite_element_id field,
+	Cmiss_node_template_id node_template, Cmiss_field_id field,
 	Cmiss_time_sequence_id time_sequence)
 {
 	if (node_template && field && time_sequence)
@@ -576,7 +597,7 @@ int Cmiss_node_template_define_time_sequence(
 }
 
 int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
-	Cmiss_field_finite_element_id field, int component_number,
+	Cmiss_field_id field, int component_number,
 	int number_of_versions)
 {
 	if (node_template && field)
