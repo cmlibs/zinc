@@ -368,3 +368,14 @@ int Cmiss_selection_handler_rendition_destroyed(Cmiss_selection_handler_id selec
 
 	return 0;
 }
+
+char *Cmiss_selection_event_type_enum_to_string(enum Cmiss_selection_change_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 4)
+	{
+		const char *str[] = {"CLEAR", "ADD", "REMOVE", "REPLACE"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
+}

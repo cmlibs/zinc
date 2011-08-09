@@ -475,12 +475,6 @@ int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
 	struct Computed_field *data_field,struct Spectrum *spectrum);
 
 /***************************************************************************//**
- * Get the type for how the graphics will be rendered in GL.
- */
-enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
-	struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
  * Returns 1 if <graphic> is only using exterior elements.
  * For 1-D and 2-D graphic types only.
  */

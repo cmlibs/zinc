@@ -52,6 +52,15 @@ enum Cmiss_selection_change_type
 };
 
 /***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_selection_event_type_enum_to_string(enum Cmiss_selection_change_type type);
+
+/***************************************************************************//**
 * Returns a new reference to the selection_handler with reference count incremented.
 * Caller is responsible for destroying the new reference.
 *

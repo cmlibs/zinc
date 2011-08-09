@@ -136,6 +136,16 @@ int Cmiss_graphic_set_tessellation(
 		Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
 
 /***************************************************************************//**
+ * Get the render type of the graphic.
+ *
+ * @param graphic  The handle to the graphic to be edit
+ * @return  The render type If successfully get render_type for graphic, otherwise
+ * 		it returns INVALID_TYPE;
+ */
+enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
+	Cmiss_graphic_id graphic);
+
+/***************************************************************************//**
  * Set the type for how the graphics will be rendered in GL.
  *
  * @param graphic  The handle to the graphic to be edit
