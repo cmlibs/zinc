@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : import_graphics_object.h
-
-LAST MODIFIED : 6 December 2004
-
-DESCRIPTION :
-Function prototype for reading graphics object data from a file.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_graphics_render_type.h
+ *
+ * Enumerated type for identifying graphics coordinate spaces.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -23,7 +20,7 @@ Function prototype for reading graphics object data from a file.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,35 +38,37 @@ Function prototype for reading graphics object data from a file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (IMPORT_GRAPHICS_OBJECT_H)
-#define IMPORT_GRAPHICS_OBJECT_H
 
-#include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#ifndef CMISS_GRAPHIC_RENDER_TYPE_H_
+#define CMISS_GRAPHIC_RENDER_TYPE_H_
 
-/*
-Global functions
-----------------
-*/
-int file_read_graphics_objects(char *file_name,
-	struct IO_stream_package *io_stream_package,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(GT_object) *object_list);
-/*******************************************************************************
-LAST MODIFIED : 6 December 2004
+/***************************************************************************//**
+ * An enum type to define the render type of a cmiss_graphic.
+ */
+enum Cmiss_graphics_render_type
+{
+	CMISS_GRAPHICS_RENDER_TYPE_INVALD = 0,
+	CMISS_GRAPHICS_RENDER_TYPE_SHADED = 1, /*!< Draw colour filled vertexes. */
+	CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME = 2/*!< Draw boundary of each vertex. */
+};
 
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_graphics_render_type Cmiss_graphics_render_type_enum_from_string(
+	const char *string);
 
-int file_read_voltex_graphics_object_from_obj(char *file_name,
-	struct IO_stream_package *io_stream_package,
-	char *graphics_object_name, enum Cmiss_graphics_render_type render_type,
-	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct Graphical_material *default_material,
-	struct MANAGER(GT_object) *object_list);
-/*******************************************************************************
-LAST MODIFIED : 6 December 2004
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_graphics_render_type_enum_to_string(enum Cmiss_graphics_render_type type);
 
-DESCRIPTION :
-==============================================================================*/
-#endif
+#endif /* CMISS_GRAPHIC_RENDER_TYPE_H_ */

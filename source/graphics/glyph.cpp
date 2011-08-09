@@ -809,7 +809,7 @@ the arrow points in.
 					}
 				}
 				if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
-					RENDER_TYPE_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
+					CMISS_GRAPHICS_RENDER_TYPE_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
 					points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 					/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 				{
@@ -1076,7 +1076,7 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 		{
 			construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 				g_NO_DATA,(GTDATA *)NULL)))
@@ -1143,7 +1143,7 @@ solid base.
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
@@ -1170,7 +1170,7 @@ solid base.
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
@@ -1363,7 +1363,7 @@ cube centred at <0,0,0>.
 				(*normalpoint)[c] = 0.0;
 				normalpoint++;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,RENDER_TYPE_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,6,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
@@ -1524,7 +1524,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 		{
 			construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 				g_NO_DATA,(GTDATA *)NULL)))
@@ -1592,7 +1592,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 			{
 				construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
@@ -1619,7 +1619,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 			{
 				construct_tube(number_of_segments_around,0.0,0.0,0.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
@@ -1645,7 +1645,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 			{
 				construct_tube(number_of_segments_around,1.0,0.0,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
 							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
@@ -1923,7 +1923,7 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 				(*point)[2] = 0.0;
 				point++;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,RENDER_TYPE_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,1,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				texturepoints,g_NO_DATA,(GTDATA *)NULL)))
 			{
@@ -2044,7 +2044,7 @@ twice <number_of_segments_down> look remotely spherical.
 					normal += (number_of_segments_down+1);
 				}
 			}
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 				g_QUADRILATERAL,number_of_segments_down+1,number_of_segments_around+1,
 				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
             /*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))

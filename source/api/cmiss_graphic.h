@@ -47,22 +47,10 @@ The public interface to the Cmiss_rendition.
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_graphic_id.h"
+#include "api/types/cmiss_graphics_render_type.h"
 #include "api/types/cmiss_graphics_coordinate_system.h"
 #include "api/types/cmiss_graphics_material_id.h"
 #include "api/types/cmiss_tessellation_id.h"
-
-#ifndef RENDER_TYPE_DEFINED
-/***************************************************************************//**
- * An enum type to define the render type of a cmiss_graphic.
- */
-enum Render_type
-{
-	RENDER_TYPE_INVALD = 0,
-	RENDER_TYPE_SHADED = 1, /*!< Draw colour filled vertexes. */
-	RENDER_TYPE_WIREFRAME = 2/*!< Draw boundary of each vertex. */
-};
-#define RENDER_TYPE_DEFINED
-#endif /* RENDER_TYPE_DEFINED */
 
 /*******************************************************************************
  * Returns a new reference to the graphic with reference count incremented.
@@ -157,7 +145,7 @@ int Cmiss_graphic_set_tessellation(
  *   otherwise 0
  */
 int Cmiss_graphic_set_render_type(
-	Cmiss_graphic_id graphic, enum Render_type render_type);
+	Cmiss_graphic_id graphic, enum Cmiss_graphics_render_type render_type);
 
 /***************************************************************************//**
  * Return status of graphic visibility flag attribute.
@@ -196,5 +184,23 @@ int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
  */
 enum Cmiss_graphics_coordinate_system Cmiss_graphic_get_coordinate_system(
 	Cmiss_graphic_id graphic);
-	
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
+
 #endif /*__CMISS_GRAPHIC_H__*/

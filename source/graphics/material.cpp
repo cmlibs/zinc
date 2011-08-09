@@ -7727,3 +7727,36 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
 	}
 	return return_code;
 }
+
+enum Cmiss_graphics_material_attribute Cmiss_graphics_material_attribute_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_graphics_material_attribute attribute = (Cmiss_graphics_material_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"IS_MANAGED", "ALPHA", "AMBIENT", "DIFFUSE",
+			"EMISSION", "SHININESS", "SPECULAR"};
+		for (unsigned int i = 0; i < 7; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_graphics_material_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_graphics_material_attribute_enum_to_string(
+	enum Cmiss_graphics_material_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 7)
+	{
+		const char *str[] = {"IS_MANAGED", "ALPHA", "AMBIENT", "DIFFUSE",
+			"EMISSION", "SHININESS", "SPECULAR"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}

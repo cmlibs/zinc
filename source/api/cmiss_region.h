@@ -354,8 +354,29 @@ int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
 
 enum Cmiss_stream_information_region_attribute
 {
+	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_INVALID = 0,
 	CMISS_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_stream_information_region_attribute
+	Cmiss_stream_information_region_attribute_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_stream_information_region_attribute_enum_to_string(
+	enum Cmiss_stream_information_region_attribute attribute);
 
 /*****************************************************************************//**
  * Creates a Cmiss_stream_resource object.

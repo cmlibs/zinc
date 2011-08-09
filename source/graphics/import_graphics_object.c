@@ -599,7 +599,7 @@ DESCRIPTION :
 											}
 										} break;
 									}
-									surface=CREATE(GT_surface)(surface_type,RENDER_TYPE_SHADED,
+									surface=CREATE(GT_surface)(surface_type,CMISS_GRAPHICS_RENDER_TYPE_SHADED,
 										g_QUADRILATERAL,npts1,npts2,pointlist,normallist,
 										/*tangentlist*/(Triple *)NULL,texturelist,
 										n_data_components,data);
@@ -800,7 +800,7 @@ DESCRIPTION :
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	char *graphics_object_name, enum Render_type render_type,
+	char *graphics_object_name, enum Cmiss_graphics_render_type render_type,
 	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct MANAGER(GT_object) *object_list)
@@ -880,11 +880,11 @@ DESCRIPTION :
 			}
 			switch (render_type)
 			{
-				case RENDER_TYPE_SHADED:
+				case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
 				{
 					voltex_type = g_VOLTEX_SHADED_TEXMAP;
 				} break;
-				case RENDER_TYPE_WIREFRAME:
+				case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
 				{
 					voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 				} break;

@@ -477,7 +477,7 @@ int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
 /***************************************************************************//**
  * Get the type for how the graphics will be rendered in GL.
  */
-enum Render_type Cmiss_graphic_get_render_type(
+enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 	struct Cmiss_graphic *graphic);
 
 /***************************************************************************//**

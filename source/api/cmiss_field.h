@@ -61,19 +61,39 @@ enum Cmiss_field_attribute
 	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
 	 */
 
-	CMISS_FIELD_ATTRIBUTE_IS_MANAGED = 1
+	CMISS_FIELD_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) field is destroyed when no longer
 	 * in use, i.e. when number of external references to it, including use as a
 	 * source for other fields, drops to zero. Set to 1 to manage field
 	 * indefinitely, or until this attribute is reset to zero (which effectively
 	 * marks a formerly managed field as pending destruction).
 	 */
+	CMISS_FIELD_ATTRIBUTE_INVALID = 0
 };
 
 /*
 Global functions
 ----------------
 */
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute);
 
 /***************************************************************************//**
  * Get the number of components of the field.

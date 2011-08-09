@@ -265,7 +265,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	enum GT_surface_type surface_type;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	gtPolygonType polygon;
 	int n_data_components;
 	int n_pts1;

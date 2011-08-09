@@ -44,6 +44,7 @@ extern "C" {
 #include <stdarg.h>
 #include "api/cmiss_node.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -620,4 +621,36 @@ int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template)
 	if (node && node_template)
 		return node_template->mergeIntoNode(node);
 	return 0;
+}
+
+enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_nodal_value_type type = (Cmiss_nodal_value_type)0;
+	if (string)
+	{
+		const char *str[] = {"VALUE", "D_DS1", "D_DS2", "D_DS3", "D2_DS1DS2",
+			"D2_DS1DS3", "D2_DS2DS3", "DS1DS2DS3"};
+		for (unsigned int i = 0; i < 8; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				type = (Cmiss_nodal_value_type)(i + 1);
+				break;
+			}
+		}
+	}
+	return type;
+}
+
+char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 8)
+	{
+		const char *str[] = {"VALUE", "D_DS1", "D_DS2", "D_DS3", "D2_DS1DS2",
+			"D2_DS1DS3", "D2_DS2DS3", "DS1DS2DS3"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
 }

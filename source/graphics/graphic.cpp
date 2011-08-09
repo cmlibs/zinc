@@ -182,7 +182,7 @@ finite element group rendition.
 	/* for glyphsets */
 	struct Graphics_font *font;
 	/* for surfaces */
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	/* for lines, a non zero line width overrides the default */
 	int line_width;
 
@@ -456,7 +456,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* for glyphsets */
 			graphic->font = (struct Graphics_font *)NULL;
 			/* for cylinders, surfaces and volumes */
-			graphic->render_type = RENDER_TYPE_SHADED;
+			graphic->render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
 			/* for streamlines only */
 			graphic->streamline_data_type=STREAM_NO_DATA;
 			/* for lines */
@@ -3004,7 +3004,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			{
 				append_string(&graphic_string," ",&error);
 				append_string(&graphic_string,
-					ENUMERATOR_STRING(Render_type)(graphic->render_type),&error);
+					ENUMERATOR_STRING(Cmiss_graphics_render_type)(graphic->render_type),&error);
 			}
 		}
 		if (error)
@@ -4560,7 +4560,7 @@ int Cmiss_graphic_set_data_spectrum_parameters_streamlines(
 } /* Cmiss_graphic_set_data_spectrum_parameters_streamlines */
 
 int Cmiss_graphic_set_render_type(
-	struct Cmiss_graphic *graphic, enum Render_type render_type)
+	struct Cmiss_graphic *graphic, enum Cmiss_graphics_render_type render_type)
 {
 	int return_code;
 
@@ -4568,9 +4568,11 @@ int Cmiss_graphic_set_render_type(
 	if (graphic)
 	{
 		return_code = 1;
-		if (graphic->render_type != render_type)
+		if ((int)(graphic->render_type) != (int)render_type)
 		{
 			graphic->render_type = render_type;
+
+
 			/* This will only affect the external API as it is modifying 
 				 the original graphic with a graphics object. */
 			if (graphic->graphics_object)
@@ -5509,7 +5511,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
 	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
 	struct Rendition_command_data *rendition_command_data;
@@ -5587,10 +5589,10 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 					DEALLOCATE(valid_strings);
 					/* render_type */
 					render_type = graphic->render_type;
-					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
@@ -5643,7 +5645,7 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
-						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
 						Cmiss_graphic_set_render_type(graphic, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
@@ -6972,7 +6974,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
 	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_rendition_data *modify_rendition_data;
 	struct Rendition_command_data *rendition_command_data;
@@ -7058,10 +7060,10 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						&(modify_rendition_data->position),NULL,set_int_non_negative);
 					/* render_type */
 					render_type = graphic->render_type;
-					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
@@ -7127,7 +7129,7 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
-						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
 						Cmiss_graphic_set_render_type(graphic, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
@@ -7177,7 +7179,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 		**valid_strings, *coordinate_system_string;
 	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphics_select_mode select_mode;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	enum Use_element_type use_element_type;
 	int number_of_valid_strings,range_number_of_iso_values,
 		return_code,visibility;
@@ -7312,10 +7314,10 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						&(graphic->line_width));
 					/* render_type */
 					render_type = graphic->render_type;
-					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
-					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
 						&number_of_valid_strings,
-						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
@@ -7414,7 +7416,7 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						Cmiss_graphic_set_select_mode(graphic, select_mode);
-						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
 						Cmiss_graphic_set_render_type(graphic, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
@@ -9016,10 +9018,10 @@ int Cmiss_graphic_set_texture_coordinate_field(
 	return (return_code);
 } /* Cmiss_graphic_set_texture_coordinate_field */
 
-enum Render_type Cmiss_graphic_get_render_type(
+enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
 	struct Cmiss_graphic *graphic)
 {
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 
 	ENTER(Cmiss_graphic_get_render_type);
 	if (graphic)
@@ -9030,7 +9032,7 @@ enum Render_type Cmiss_graphic_get_render_type(
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_graphic_get_render_type.  Invalid argument(s)");
-		render_type = RENDER_TYPE_SHADED;
+		render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
 	}
 	LEAVE;
 
@@ -9662,5 +9664,104 @@ Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic)
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
 {
 	return DEACCESS(Cmiss_graphic)(graphic);
+}
 
+enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string)
+{
+	enum Cmiss_graphic_type type = (Cmiss_graphic_type)0;
+	if (string)
+	{
+		const char *str[] = {"NODE_POINTS", "DATA_POINTS", "LINES", "CYLINDERS",
+			"SURFACES", "ISO_SURFACES", "ELEMENT_POINTS", "STREAMLINES", "POINT"};
+		for (unsigned int i = 0; i < 9; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				type = (Cmiss_graphic_type)(i + 1);
+				break;
+			}
+		}
+	}
+	return type;
+}
+
+char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 9)
+	{
+		const char *str[] = {"NODE_POINTS", "DATA_POINTS", "LINES", "CYLINDERS",
+			"SURFACES", "ISO_SURFACES", "ELEMENT_POINTS", "STREAMLINES", "POINT"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
+}
+
+enum Cmiss_graphics_coordinate_system	Cmiss_graphics_coordinate_system_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_graphics_coordinate_system coordinate_system =
+		(Cmiss_graphics_coordinate_system)0;
+	if (string)
+	{
+		const char *str[] = {"LOCAL", "WORLD", "NORMALISED_WINDOW_FILL",
+			"NORMALISED_WINDOW_FIT_CENTRE", "NORMALISED_WINDOW_FIT_LEFT",
+			"NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM",
+			"NORMALISED_WINDOW_FIT_TOP", "WINDOW_PIXEL_BOTTOM_LEFT"};
+		for (unsigned int i = 0; i < 9; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				coordinate_system = (Cmiss_graphics_coordinate_system)(i + 1);
+				break;
+			}
+		}
+	}
+	return coordinate_system;
+}
+
+char *Cmiss_graphics_coordinate_system_enum_to_string(
+	enum Cmiss_graphics_coordinate_system system)
+{
+	char *string = NULL;
+	if (0 < system && system <= 9)
+	{
+		const char *str[] = {"LOCAL", "WORLD", "NORMALISED_WINDOW_FILL",
+			"NORMALISED_WINDOW_FIT_CENTRE", "NORMALISED_WINDOW_FIT_LEFT",
+			"NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM",
+			"NORMALISED_WINDOW_FIT_TOP", "WINDOW_PIXEL_BOTTOM_LEFT"};
+		string = duplicate_string(str[system - 1]);
+	}
+	return string;
+}
+
+enum Cmiss_graphics_render_type	Cmiss_graphics_render_type_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_graphics_render_type type = (Cmiss_graphics_render_type)0;
+	if (string)
+	{
+		const char *str[] = {"SHADED", "WIREFRAME"};
+		for (unsigned int i = 0; i < 2; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				type = (Cmiss_graphics_render_type)(i + 1);
+				break;
+			}
+		}
+	}
+	return type;
+}
+
+char *Cmiss_graphics_render_type_enum_to_string(
+	enum Cmiss_graphics_render_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 2)
+	{
+		const char *str[] = {"SHADED", "WIREFRAME"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
 }

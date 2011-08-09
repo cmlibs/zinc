@@ -52,41 +52,103 @@ rewind and fast forward.
  */
 enum Cmiss_time_keeper_play_direction
 {
+	CMISS_TIME_KEEPER_PLAY_INVALD = 0,
 	CMISS_TIME_KEEPER_PLAY_FORWARD = 1,
 	CMISS_TIME_KEEPER_PLAY_BACKWARD = 2
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_time_keeper_play_direction
+	Cmiss_time_keeper_play_direction_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param direction  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_time_keeper_play_direction_enum_to_string(
+	enum Cmiss_time_keeper_play_direction direction);
 
 /***************************************************************************//**
  * An enum type to define the play mode of the time keeper.
  */
 enum Cmiss_time_keeper_repeat_mode
 {
-	CMISS_TIME_KEEPER_INVALID_REPEAT_MODE = 0, /*!< Invalid play mode to handle special
+	CMISS_TIME_KEEPER_REPEAT_MODE_INVALID = 0, /*!< Invalid play mode to handle special
 																							 circumstances. */
-	CMISS_TIME_KEEPER_PLAY_ONCE = 1, /*!< Only play once until it reaches either the
+	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_ONCE = 1, /*!< Only play once until it reaches either the
 																    minimum or maximum time set on the 
 																		time keeper. */  
-	CMISS_TIME_KEEPER_PLAY_LOOP = 2, /*!< Play repeatedly in the same direction.
+	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_LOOP = 2, /*!< Play repeatedly in the same direction.
 																    i.e The time keeper will start from the 
 																		minimum time again after it reaches the 
 																		maximum time during a forward playback
 																		time keeper. */  
-	CMISS_TIME_KEEPER_PLAY_SWING = 3 /*!< Play repeatedly in both direction.
+	CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_SWING = 3 /*!< Play repeatedly in both direction.
 																     i.e The time keeper will play forward till 
 																		 it reaches the maximum time and then play 
 																		 backward to minimum time and the same cycle
 																		 will repeat until stopped by the user. */
 };
 
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_time_keeper_repeat_mode_enum_to_string(
+	enum Cmiss_time_keeper_repeat_mode mode);
+
 enum Cmiss_time_keeper_frame_mode
 {
-	CMISS_TIME_KEEPER_INVALID_FRAME_MODE = 0,
-	CMISS_TIME_KEEPER_PLAY_REAL_TIME = 1,
-	CMISS_TIME_KEEPER_PLAY_EVERY_FRAME = 2
+	CMISS_TIME_KEEPER_FRAME_MODE_INVALID = 0,
+	CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME = 1,
+	CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME = 2
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_time_keeper_frame_mode_enum_to_string(
+	enum Cmiss_time_keeper_frame_mode mode);
 
 enum Cmiss_time_keeper_attribute
 {
+	CMISS_TIME_KEEPER_ATTRIBUTE_INVALID = 0,
 	CMISS_TIME_KEEPER_ATTRIBUTE_TIME = 1,
 	/*!< Current time of the time keeper. This is a real number attribute.
 	 */
@@ -106,6 +168,26 @@ enum Cmiss_time_keeper_attribute
 	 * This is a real number attribute.
 	 */
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  attribute to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_time_keeper_attribute_enum_to_string(
+	enum Cmiss_time_keeper_attribute attribute);
 
 /***************************************************************************//**
  * Access the time_keeper, increase the access count of the time keeper by one.

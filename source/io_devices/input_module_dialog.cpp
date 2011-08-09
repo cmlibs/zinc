@@ -525,7 +525,7 @@ static gtMatrix transform_matrix={
 							{
 								ACCESS(GT_object)(input_module_dialog->graphics_object);
 								if ((input_module_dialog->sphere_surface=CREATE(GT_surface)(
-									g_SHADED_TEXMAP, RENDER_TYPE_SHADED, g_QUADRILATERAL,
+									g_SHADED_TEXMAP, CMISS_GRAPHICS_RENDER_TYPE_SHADED, g_QUADRILATERAL,
 									surface_discretise_xi2, surface_discretise_xi1,
 									points, normalpoints, /*tangentpoints*/(Triple *)NULL,
 									/*texturepoints*/(Triple *)NULL,

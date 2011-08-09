@@ -90,7 +90,7 @@ Data for converting a 1-D element into a cylinder.
 	struct Graphical_material *material;
 	struct FE_region *fe_region;
 	struct GT_object *graphics_object;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 }; /* struct Element_to_cylinder_data */
 
 struct Element_to_polyline_data
@@ -153,7 +153,7 @@ Data for converting a 3-D element into a volume.
 	struct FE_time *fe_time;
 	struct GT_object *graphics_object;
 	struct FE_region *fe_region;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	float time;
 	struct VT_volume_texture *volume_texture;
 }; /* struct Element_to_volume_data */
@@ -177,7 +177,7 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_field *native_discretization_field;
 	struct GT_object *graphics_object;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	struct FE_region *fe_region;
 	struct FE_time *fe_time;
 }; /* struct Element_to_iso_surface_data */
@@ -414,7 +414,7 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Render_type render_type,
+	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
 	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 11 October 2002
@@ -466,7 +466,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,enum Render_type render_type,
+	struct FE_element *top_level_element,enum Cmiss_graphics_render_type render_type,
 	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 2 May 2000
@@ -496,7 +496,7 @@ Notes:
 
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *vtexture, enum Render_type render_type,
+	struct VT_volume_texture *vtexture, enum Cmiss_graphics_render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
 	struct Computed_field *texture_coordinate_field, FE_value time);
 /*******************************************************************************
@@ -531,7 +531,7 @@ Interpolates xi points (triples in vector field) over the finite <element>
 struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Clipping *clipping,struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *field_scalar,
-	struct VT_volume_texture *texture, enum Render_type render_type,
+	struct VT_volume_texture *texture, enum Cmiss_graphics_render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
 	struct Computed_field *texture_coordinate_field, FE_value time);
 /*******************************************************************************
@@ -603,7 +603,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi, double decimation_threshold,
-	struct GT_object *graphics_object,enum Render_type render_type);
+	struct GT_object *graphics_object, enum Cmiss_graphics_render_type render_type);
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 

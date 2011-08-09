@@ -56,6 +56,7 @@
  */
 enum Cmiss_graphics_filter_attribute
 {
+	CMISS_GRAPHICS_FILTER_ATTRIBUTE_INVALID = 0,
 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) graphics_filter is destroyed when no
 	 * longer in use, i.e. when number of external references to it drops to
@@ -67,6 +68,26 @@ enum Cmiss_graphics_filter_attribute
 	 * criterion/criteria is/are matched. Set to 1 to invert the result.
 	 */
 };
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_graphics_filter_attribute
+	Cmiss_graphics_filter_attribute_enum_from_string(const char  *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_graphics_filter_attribute_enum_to_string(
+	enum Cmiss_graphics_filter_attribute attribute);
 
 /*******************************************************************************
  * Returns a new reference to the filter with reference count incremented.

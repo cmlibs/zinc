@@ -14293,7 +14293,7 @@ otherwise the wavefront obj file is read.
 {
 	char *file_name, *graphics_object_name,	*specified_graphics_object_name;
 	const char *render_type_string, **valid_strings;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	float time;
 	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
@@ -14318,11 +14318,11 @@ otherwise the wavefront obj file is read.
 			Option_table_add_entry(option_table,"as",&specified_graphics_object_name,
 				(void *)1,set_name);
 			/* render_type */
-			render_type = RENDER_TYPE_SHADED;
-			render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
-			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+			render_type = CMISS_GRAPHICS_RENDER_TYPE_SHADED;
+			render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
 				&number_of_valid_strings,
-				(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&render_type_string);
 			DEALLOCATE(valid_strings);
@@ -14336,7 +14336,7 @@ otherwise the wavefront obj file is read.
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+				STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".obj",

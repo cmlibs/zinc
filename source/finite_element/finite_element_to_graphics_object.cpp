@@ -1287,7 +1287,7 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Render_type render_type,
+	struct FE_element *top_level_element, enum Cmiss_graphics_render_type render_type,
 	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
@@ -2207,7 +2207,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,enum Render_type render_type,
+	struct FE_element *top_level_element,enum Cmiss_graphics_render_type render_type,
 	FE_value time)
 /*****************************************************************************//**
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -2880,7 +2880,7 @@ The <xi> are set to their local values within the returned <element>.
 
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *vtexture, enum Render_type render_type,
+	struct VT_volume_texture *vtexture, enum Cmiss_graphics_render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
 	struct Computed_field *texture_coordinate_field, FE_value time)
 /*******************************************************************************
@@ -3096,11 +3096,11 @@ faces.
 							}
 							switch (render_type)
 							{
-								case RENDER_TYPE_SHADED:
+								case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
 								{
 									voltex_type = g_VOLTEX_SHADED_TEXMAP;
 								} break;
-								case RENDER_TYPE_WIREFRAME:
+								case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
 								{
 									voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 								} break;
@@ -4169,7 +4169,7 @@ Interpolates xi points (triples in vector field) over the finite <element>
 struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Clipping *clipping,struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *texture, enum Render_type render_type,
+	struct VT_volume_texture *texture, enum Cmiss_graphics_render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
 	struct Computed_field *texture_coordinate_field, FE_value time)
 /*******************************************************************************
@@ -4767,7 +4767,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi, double decimation_threshold,
-	struct GT_object *graphics_object,enum Render_type render_type)
+	struct GT_object *graphics_object,enum Cmiss_graphics_render_type render_type)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 

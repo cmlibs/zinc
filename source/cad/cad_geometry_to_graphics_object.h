@@ -52,7 +52,7 @@
  * @returns a GT surface for display, or NULL if the surface cannot be created
  */
 struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-		struct Computed_field *coordinate_field, struct Computed_field *data_field, Render_type render_type, Cmiss_cad_surface_identifier surface_index);
+		struct Computed_field *coordinate_field, struct Computed_field *data_field, Cmiss_graphics_render_type render_type, Cmiss_cad_surface_identifier surface_index);
 
 /**
  * Carete a curve from the given cad topology

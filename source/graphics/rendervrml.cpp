@@ -1714,7 +1714,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,enum Render_type render_type,
+	int npts2,enum GT_surface_type surface_type,enum Cmiss_graphics_render_type render_type,
 	gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -1788,7 +1788,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (RENDER_TYPE_WIREFRAME == render_type)
+			if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1808,7 +1808,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (RENDER_TYPE_SHADED == render_type)
+			if (CMISS_GRAPHICS_RENDER_TYPE_SHADED == render_type)
 			{
 				triple=normalpts;
 				if (triple)
@@ -1836,7 +1836,7 @@ DESCRIPTION :
 				spectrum_end_rendervrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (RENDER_TYPE_SHADED == render_type)
+			if (CMISS_GRAPHICS_RENDER_TYPE_SHADED == render_type)
 			{
 				triple=texturepts;
 				if (triple)
@@ -1864,7 +1864,7 @@ DESCRIPTION :
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (RENDER_TYPE_WIREFRAME == render_type)
+							if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1898,7 +1898,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (RENDER_TYPE_WIREFRAME == render_type)
+							if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1949,7 +1949,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (RENDER_TYPE_WIREFRAME == render_type)
+					if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1988,7 +1988,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (RENDER_TYPE_WIREFRAME == render_type)
+			if (CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME == render_type)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}

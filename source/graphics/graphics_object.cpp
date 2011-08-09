@@ -3376,7 +3376,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Render_type render_type, gtPolygonType polytype,
+	enum Cmiss_graphics_render_type render_type, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data)
@@ -6489,7 +6489,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		{
 			n_texture_coordinates = 3;
 		}
-		GT_voltex_type voltex_type = (surface_list->render_type == RENDER_TYPE_SHADED) ?
+		GT_voltex_type voltex_type = (surface_list->render_type == CMISS_GRAPHICS_RENDER_TYPE_SHADED) ?
 			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
 			triangle_count, triangle_list, n_data_components,
@@ -6624,8 +6624,8 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 					index++;
 				}
 			}
-			Render_type render_type = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
-					RENDER_TYPE_SHADED : RENDER_TYPE_WIREFRAME;
+			Cmiss_graphics_render_type render_type = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
+					CMISS_GRAPHICS_RENDER_TYPE_SHADED : CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME;
 			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);

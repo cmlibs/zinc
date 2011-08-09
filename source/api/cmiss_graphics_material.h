@@ -46,6 +46,7 @@
  */
 enum Cmiss_graphics_material_attribute
 {
+	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_INVALID = 0,
 	CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) material is destroyed when no
 	 * longer in use, i.e. when number of external references to it drops to
@@ -90,6 +91,26 @@ enum Cmiss_graphics_material_attribute
 	 * Minimum acceptable value is 0 and maximum acceptable value is 1.
 	 */
 };
+
+/***************************************************************************//**
+ * Convert a short attribute name into an enum if the attribute name matches
+ * any of the members in the enum.
+ *
+ * @param attribute_name  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_graphics_material_attribute
+	Cmiss_graphics_material_attribute_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_graphics_material_attribute_enum_to_string(
+	enum Cmiss_graphics_material_attribute attribute);
 
 /***************************************************************************//**
  * Access the material, increase the access count of the material by one.

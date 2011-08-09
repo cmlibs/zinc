@@ -1212,3 +1212,67 @@ int Cmiss_element_merge(Cmiss_element_id element,
 		return element_template->mergeIntoElement(element);
 	return 0;
 }
+
+enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_element_shape_type type = (Cmiss_element_shape_type)0;
+	if (string)
+	{
+		const char *str[] = {"LINE", "SQUARE", "TRIANGLE", "CUBE",
+			"TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23"};
+		for (unsigned int i = 0; i < 8; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				type = (Cmiss_element_shape_type)(i + 1);
+				break;
+			}
+		}
+	}
+	return type;
+}
+
+char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 8)
+	{
+		const char *str[] = {"LINE", "SQUARE", "TRIANGLE", "CUBE",
+			"TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
+}
+
+enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_basis_function_type type = (Cmiss_basis_function_type)0;
+	if (string)
+	{
+		const char *str[] = {"CONSTAN", "LINEAR_LAGRANGE", "QUADRATIC_LAGRANGE",
+			"CUBIC_LAGRANG", "LINEAR_SIMPLEX", "QUADRATIC_SIMPLEX"};
+		for (unsigned int i = 0; i < 6; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				type = (Cmiss_basis_function_type)(i + 1);
+				break;
+			}
+		}
+	}
+	return type;
+}
+
+char *Cmiss_basis_function_type_enum_to_string(enum Cmiss_basis_function_type type)
+{
+	char *string = NULL;
+	if (0 < type && type <= 6)
+	{
+		const char *str[] = {"CONSTAN", "LINEAR_LAGRANGE", "QUADRATIC_LAGRANGE",
+			"CUBIC_LAGRANG", "LINEAR_SIMPLEX", "QUADRATIC_SIMPLEX"};
+		string = duplicate_string(str[type - 1]);
+	}
+	return string;
+}

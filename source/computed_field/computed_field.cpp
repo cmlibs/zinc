@@ -5678,3 +5678,32 @@ int Computed_field_manager_message_get_object_change_and_detail(
 	}
 	return (MANAGER_CHANGE_NONE(Computed_field));
 }
+
+enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(const char *string)
+{
+	enum Cmiss_field_attribute attribute =	(Cmiss_field_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"IS_MANAGED", "IS_COORDINATE"};
+		for (unsigned int i = 0; i < 2; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_field_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 2)
+	{
+		const char *str[] = {"IS_MANAGED", "IS_COORDINATE"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}

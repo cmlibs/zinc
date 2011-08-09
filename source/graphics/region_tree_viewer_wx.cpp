@@ -365,7 +365,7 @@ DESCRIPTION :
 	float constant_radius,radius_scale_factor;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *spectrum;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	struct FE_element *fe_element;
 #if defined (WX_USER_INTERFACE)
 	Transformation_editor *transformation_editor;
@@ -600,8 +600,8 @@ class wxRegionTreeViewer : public wxFrame
 	*streamline_data_type_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*texture_coord_field_chooser;
-	DEFINE_ENUMERATOR_TYPE_CLASS(Render_type);
-	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Render_type)>
+	DEFINE_ENUMERATOR_TYPE_CLASS(Cmiss_graphics_render_type);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphics_render_type)>
 	*render_type_chooser;
 	wxWindowID tessellationWindowID;
 public:
@@ -1775,7 +1775,7 @@ Callback from wxChooser<Texture Coord Field> when choice is made.
 	return 1;
 }
 
-int render_type_callback(enum Render_type render_type)
+int render_type_callback(enum Cmiss_graphics_render_type render_type)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2007
 
@@ -3188,7 +3188,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	struct Spectrum *spectrum;
-	enum Render_type render_type;
+	enum Cmiss_graphics_render_type render_type;
 	struct FE_element *seed_element;
 	struct FE_region *fe_region;
 
@@ -4198,14 +4198,14 @@ void SetGraphic(Cmiss_graphic *graphic)
 			if (render_type_chooser == NULL)
 			{
 				render_type_chooser = 
-						new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Render_type)>
+						new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Cmiss_graphics_render_type)>
 						(render_type_chooser_panel, render_type,
-							(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL,
+							(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL,
 							(void *)NULL, region_tree_viewer->user_interface);
 				render_type_chooser_panel->Fit();
-				Callback_base< enum Render_type > *render_type_callback = 
-						new Callback_member_callback< enum Render_type, 
-						wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Render_type) >
+				Callback_base< enum Cmiss_graphics_render_type > *render_type_callback =
+						new Callback_member_callback< enum Cmiss_graphics_render_type,
+						wxRegionTreeViewer, int (wxRegionTreeViewer::*)(enum Cmiss_graphics_render_type) >
 						(this, &wxRegionTreeViewer::render_type_callback);
 				render_type_chooser->set_callback(render_type_callback);
 			}
@@ -4999,7 +4999,7 @@ DESCRIPTION :
 			region_tree_viewer->streamline_data_type=(Streamline_data_type)NULL;
 			region_tree_viewer->spectrum_manager=spectrum_manager;
 			region_tree_viewer->spectrum = default_spectrum;
-			region_tree_viewer->render_type =(Render_type)NULL;
+			region_tree_viewer->render_type =(Cmiss_graphics_render_type)NULL;
 			region_tree_viewer->fe_element =(FE_element *)NULL;
 			region_tree_viewer->root_region = root_region;
 			region_tree_viewer->current_region = NULL;

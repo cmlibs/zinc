@@ -238,7 +238,7 @@ is created.
 			graphics_list = Cell_cmgui_interface_get_graphics_object_list(
 				cmgui_interface);
 			return_code = file_read_voltex_graphics_object_from_obj(obj_file,
-				cell_graphic->name, RENDER_TYPE_SHADED, /*time*/0.0,
+				cell_graphic->name, CMISS_GRAPHICS_RENDER_TYPE_SHADED, /*time*/0.0,
 				Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface),
 				Cell_cmgui_interface_get_default_graphical_material(cmgui_interface),
 				Cell_cmgui_interface_get_graphics_object_list(cmgui_interface));

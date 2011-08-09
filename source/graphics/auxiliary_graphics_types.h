@@ -48,6 +48,7 @@ represent curves in three xi-directions;
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
 #define AUXILIARY_GRAPHICS_TYPES_H
 
+#include "api/types/cmiss_graphics_render_type.h"
 #include "general/enumerator.h"
 
 /* Define this here rather than include the interface header and therefore Motif */
@@ -108,24 +109,6 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	GRAPHICS_DRAW_SELECTED = 3,
 	GRAPHICS_DRAW_UNSELECTED = 4
 }; /* enum Graphics_select_mode */
-
-#ifndef RENDER_TYPE_DEFINED
-enum Render_type
-/*******************************************************************************
-LAST MODIFIED : 19 March 2001
-
-DESCRIPTION :
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-==============================================================================*/
-{
-	RENDER_TYPE_INVALD = 0,
-	RENDER_TYPE_SHADED = 1,
-	RENDER_TYPE_WIREFRAME = 2
-};
-#define RENDER_TYPE_DEFINED
-#endif /* RENDER_TYPE_DEFINED */
 
 enum Streamline_type
 /*******************************************************************************
@@ -281,7 +264,7 @@ A modifier function for setting discretization in each element direction.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Graphics_select_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Render_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphics_render_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_type);
 

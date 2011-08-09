@@ -3086,3 +3086,33 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 	}
 	return return_code;
 }
+
+enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
+	const char *string)
+{
+	enum Cmiss_spectrum_attribute attribute = (Cmiss_spectrum_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"IS_MANAGED"};
+		for (unsigned int i = 0; i < 1; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_spectrum_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_spectrum_attribute_enum_to_string(enum Cmiss_spectrum_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 1)
+	{
+		const char *str[] = {"IS_MANAGED"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}

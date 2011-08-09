@@ -88,6 +88,45 @@ Global functions
 */
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type);
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_basis_function_type_enum_to_string(
+	enum Cmiss_basis_function_type type);
+
+/***************************************************************************//**
  * Get a handle to a finite element mesh from its name. An fe_mesh is the
  * container of elements, intended to be of fixed dimension.
  * Valid names are currently limited to:

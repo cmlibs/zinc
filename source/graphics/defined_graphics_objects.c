@@ -288,7 +288,7 @@ graphics_objects that don't come from finite_elements?
 					}
 				}
 				return_code=(
-					(surface=CREATE(GT_surface)(g_SHADED,RENDER_TYPE_SHADED,g_QUADRILATERAL,
+					(surface=CREATE(GT_surface)(g_SHADED,CMISS_GRAPHICS_RENDER_TYPE_SHADED,g_QUADRILATERAL,
 						points_around_bar,points_along_bar,points,normalpoints,
 						/*tangentpoints*/(Triple *)NULL,
 						/*texturepoints*/(Triple *)NULL,

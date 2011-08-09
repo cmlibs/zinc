@@ -79,7 +79,17 @@ enum Cmiss_stream_information_image_file_format
  * @return  the correct enum type if a match is found.
  */
 enum Cmiss_stream_information_image_file_format
-	Cmiss_stream_information_image_file_format_string_to_enum(const char *string);
+	Cmiss_stream_information_image_file_format_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param format  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_stream_information_image_file_format_enum_to_string(
+	enum Cmiss_stream_information_image_file_format format);
 
 /***************************************************************************//**
  * Describes the blending of the texture with the texture constant colour and
@@ -112,7 +122,17 @@ enum Cmiss_field_image_combine_mode
  * @return  the correct enum type if a match is found.
  */
 enum Cmiss_field_image_combine_mode
-	Cmiss_field_image_combine_mode_string_to_enum(const char *string);
+	Cmiss_field_image_combine_mode_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_image_combine_mode_enum_to_string(
+	enum Cmiss_field_image_combine_mode mode);
 
 /***************************************************************************//**
  * Whether the texture is compressed.  Could add specific compression formats that
@@ -134,7 +154,17 @@ enum Cmiss_field_image_hardware_compression_mode
  * @return  the correct enum type if a match is found.
  */
 enum Cmiss_field_image_hardware_compression_mode
-	Cmiss_field_image_hardware_compression_mode_string_to_enum(const char *string);
+	Cmiss_field_image_hardware_compression_mode_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_image_hardware_compression_mode_enum_to_string(
+	enum Cmiss_field_image_hardware_compression_mode mode);
 
 /***************************************************************************//**
  * Specfiy how the graphics hardware rasterises the texture onto the screen.
@@ -156,8 +186,18 @@ enum Cmiss_field_image_filter_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_string_to_enum(
+enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_string(
 		const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_image_filter_mode_enum_to_string(
+	enum Cmiss_field_image_filter_mode mode);
 
 enum Cmiss_field_image_attribute
 {
@@ -177,8 +217,18 @@ enum Cmiss_field_image_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
+enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
 	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_image_attribute_enum_to_string(
+	enum Cmiss_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
@@ -188,8 +238,18 @@ enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
  * @return  the correct enum type if a match is found.
  */
 enum Cmiss_stream_information_image_pixel_format
-	Cmiss_stream_information_image_pixel_format_string_to_enum(
+	Cmiss_stream_information_image_pixel_format_enum_from_string(
 		const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param format  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_stream_information_image_pixel_format_enum_to_string(
+	enum Cmiss_stream_information_image_pixel_format format);
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
@@ -439,7 +499,17 @@ enum Cmiss_stream_information_image_attribute
  * @return  the correct enum type if a match is found.
  */
 enum Cmiss_stream_information_image_attribute
-	Cmiss_stream_information_image_attribute_string_to_enum(const char *string);
+	Cmiss_stream_information_image_attribute_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_stream_information_image_attribute_enum_to_string(
+	enum Cmiss_stream_information_image_attribute attribute);
 
 /*****************************************************************************//**
  * Creates a Cmiss_stream_information_image object.

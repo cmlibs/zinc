@@ -1282,16 +1282,15 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	return return_value;
 }
 
-enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
+enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
 	const char *string)
 {
 	enum Cmiss_field_image_attribute attribute =	(Cmiss_field_image_attribute)0;
 	if (string)
 	{
 		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "RAW_DEPTH_PIXELS",
-		"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
-
-		for (unsigned int i = 0; i < sizeof(str); i ++)
+			"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
+		for (unsigned int i = 0; i < 6; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -1301,6 +1300,19 @@ enum Cmiss_field_image_attribute Cmiss_field_image_attribute_string_to_enum(
 		}
 	}
 	return attribute;
+}
+
+char *Cmiss_field_image_attribute_enum_to_string(
+	enum Cmiss_field_image_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 6)
+	{
+		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "RAW_DEPTH_PIXELS",
+		"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
 }
 
 int Computed_field_is_image_type(struct Computed_field *field,
@@ -1871,7 +1883,7 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 	}
 }
 
-enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_string_to_enum(
+enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_enum_from_string(
 	const char *string)
 {
 	enum Cmiss_field_image_combine_mode mode = (Cmiss_field_image_combine_mode)0;
@@ -1881,8 +1893,7 @@ enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_string_to_enu
 			"ADD_SIGNED", "MODULATE_SCALE_4", "BLEND_SCALE_4", "SUBTRACT",
 			"ADD_SCALE_4", "SUBTRACT_SCALE_4", "INVERT_ADD_SCALE_4",
 			"INVERT_SUBTRACT_SCALE_4"};
-
-		for (unsigned int i = 0; i < sizeof(str); i ++)
+		for (unsigned int i = 0; i < 12; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -1892,6 +1903,20 @@ enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_string_to_enu
 		}
 	}
 	return mode;
+}
+
+char *Cmiss_field_image_combine_mode_enum_to_string(enum Cmiss_field_image_combine_mode mode)
+{
+	char *string = NULL;
+	if (0 < mode && mode <= 12)
+	{
+		const char *str[] = {"BLEND", "DECAL", "MODULATE", "ADD",
+			"ADD_SIGNED", "MODULATE_SCALE_4", "BLEND_SCALE_4", "SUBTRACT",
+			"ADD_SCALE_4", "SUBTRACT_SCALE_4", "INVERT_ADD_SCALE_4",
+			"INVERT_SUBTRACT_SCALE_4"};
+		string = duplicate_string(str[mode - 1]);
+	}
+	return string;
 }
 
 enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
@@ -1923,15 +1948,14 @@ int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_f
 }
 
 enum Cmiss_field_image_hardware_compression_mode
-	Cmiss_field_image_hardware_compression_mode_string_to_enum(const char *string)
+	Cmiss_field_image_hardware_compression_mode_enum_from_string(const char *string)
 {
 	enum Cmiss_field_image_hardware_compression_mode mode =
 		(Cmiss_field_image_hardware_compression_mode)0;
 	if (string)
 	{
 		const char *str[] = {"UNCOMPRESSED", "AUTOMATIC"};
-
-		for (unsigned int i = 0; i < sizeof(str); i ++)
+		for (unsigned int i = 0; i < 2; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -1941,6 +1965,18 @@ enum Cmiss_field_image_hardware_compression_mode
 		}
 	}
 	return mode;
+}
+
+char *Cmiss_field_image_hardware_compression_mode_enum_to_string(
+	enum Cmiss_field_image_hardware_compression_mode mode)
+{
+	char *string = NULL;
+	if (0 < mode && mode <= 2)
+	{
+		const char *str[] = {"UNCOMPRESSED", "AUTOMATIC"};
+		string = duplicate_string(str[mode - 1]);
+	}
+	return string;
 }
 
 enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
@@ -1969,16 +2005,15 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 	}
 }
 
-enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_string_to_enum(
-		const char *string)
+enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_string(
+	const char *string)
 {
 	enum Cmiss_field_image_filter_mode mode =	(Cmiss_field_image_filter_mode)0;
 	if (string)
 	{
 		const char *str[] = {"NEAREST", "LINEAR", "NEAREST_MIPMAP_NEARES",
 		"LINEAR_MIPMAP_NEAREST", "LINEAR_MIPMAP_LINEAR"};
-
-		for (unsigned int i = 0; i < sizeof(str); i ++)
+		for (unsigned int i = 0; i < 5; i ++)
 		{
 			if (!strcmp(str[i], string))
 			{
@@ -1988,4 +2023,17 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_string_to_enum(
 		}
 	}
 	return mode;
+}
+
+char *Cmiss_field_image_filter_mode_enum_to_string(
+	enum Cmiss_field_image_filter_mode mode)
+{
+	char *string = NULL;
+	if (0 < mode && mode <= 5)
+	{
+		const char *str[] = {"NEAREST", "LINEAR", "NEAREST_MIPMAP_NEARES",
+		"LINEAR_MIPMAP_NEAREST", "LINEAR_MIPMAP_LINEAR"};
+		string = duplicate_string(str[mode - 1]);
+	}
+	return string;
 }

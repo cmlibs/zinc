@@ -70,6 +70,25 @@ Global functions
 */
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destory the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
+
+/***************************************************************************//**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
  * container of nodes - i.e. Cmiss_node objects.
  * Valid names are currently limited to:

@@ -795,18 +795,18 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphics_render_type)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Render_type));
+	ENTER(ENUMERATOR_STRING(Cmiss_graphics_render_type));
 	switch (enumerator_value)
 	{
-		case RENDER_TYPE_SHADED:
+		case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
 		{
 			enumerator_string = "render_shaded";
 		} break;
-		case RENDER_TYPE_WIREFRAME:
+		case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
 		{
 			enumerator_string = "render_wireframe";
 		} break;
@@ -818,9 +818,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_type)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Render_type) */
+} /* ENUMERATOR_STRING(Cmiss_graphic_render_type) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphics_render_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Xi_discretization_mode)
 {

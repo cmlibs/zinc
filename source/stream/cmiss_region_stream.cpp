@@ -497,3 +497,36 @@ Cmiss_region_id Cmiss_stream_information_region_get_root_region(
 	}
 	return NULL;
 }
+
+enum Cmiss_stream_information_region_attribute
+	Cmiss_stream_information_region_attribute_enum_from_string(const char *string)
+{
+	enum Cmiss_stream_information_region_attribute attribute =
+		(Cmiss_stream_information_region_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"TIME"};
+		for (unsigned int i = 0; i < 1; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_stream_information_region_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_stream_information_region_attribute_enum_to_string(
+	enum Cmiss_stream_information_region_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 1)
+	{
+		const char *str[] = {"TIME"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}
+

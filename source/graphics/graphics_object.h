@@ -814,7 +814,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Render_type render_type, gtPolygonType polytype,
+	enum Cmiss_graphics_render_type render_type, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data);

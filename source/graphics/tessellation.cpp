@@ -1168,3 +1168,35 @@ int gfx_list_tessellation(struct Parse_state *state,
 	}
 	return (return_code);
 }
+
+enum Cmiss_tessellation_attribute
+	Cmiss_tessellation_attribute_enum_from_string(const char  *string)
+{
+	enum Cmiss_tessellation_attribute attribute = (Cmiss_tessellation_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"IS_MANAGED", "MINIMUM_DIVISIONS_SIZE",
+			"REFINEMENT_FACTORS_SIZE"};
+		for (unsigned int i = 0; i < 3; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_tessellation_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_tessellation_attribute_enum_to_string(enum Cmiss_tessellation_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 3)
+	{
+		const char *str[] = {"IS_MANAGED", "MINIMUM_DIVISIONS_SIZE",
+			"REFINEMENT_FACTORS_SIZE"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}

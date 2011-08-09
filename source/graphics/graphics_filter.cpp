@@ -1452,3 +1452,35 @@ int Cmiss_graphics_filter_operator_remove_operand(
 	}
 	return return_code;
 }
+
+enum Cmiss_graphics_filter_attribute
+	Cmiss_graphics_filter_attribute_enum_from_string(const char *string)
+{
+	enum Cmiss_graphics_filter_attribute attribute =
+		(Cmiss_graphics_filter_attribute)0;
+	if (string)
+	{
+		const char *str[] = {"IS_MANAGED", "IS_INVERSE"};
+		for (unsigned int i = 0; i < 2; i ++)
+		{
+			if (!strcmp(str[i], string))
+			{
+				attribute = (Cmiss_graphics_filter_attribute)(i + 1);
+				break;
+			}
+		}
+	}
+	return attribute;
+}
+
+char *Cmiss_graphics_filter_attribute_enum_to_string(
+	enum Cmiss_graphics_filter_attribute attribute)
+{
+	char *string = NULL;
+	if (0 < attribute && attribute <= 2)
+	{
+		const char *str[] = {"IS_MANAGED", "IS_INVERSE"};
+		string = duplicate_string(str[attribute - 1]);
+	}
+	return string;
+}
