@@ -71,7 +71,7 @@ enum Cmiss_field_attribute
 	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
 	/*!< Integer number of components of field.
 	 */
-	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
+	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4
 	/*!< Integer number of source fields the field is a function of.
 	 */
 };
@@ -244,8 +244,6 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, Cmiss_field_id chart_field, int order, int term,
 	int number_of_values, double *values);
-
-
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field.
