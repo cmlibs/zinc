@@ -7286,32 +7286,50 @@ and other parameters for formats that require them.
 					}
 					length = strlen(file_name);
 					file_name_prefix = "";
-					if (!strchr(file_name, ':'))
+					switch (cmgui_image_information->image_file_format)
 					{
-						/* Only add prefixes if there isn't one already and we want to
-							 do something tricky */
-						/* test to see if a file with suffix rgb is an sgi rgb file */
-						if ((length > 4) &&  fuzzy_string_compare_same_length(
-							(file_name + length - 4), ".rgb"))
+						case RGB_FILE_FORMAT:
 						{
 							file_name_prefix = "sgi:";
-						}
-						/* if width and height are not specified and the file is of yuv or
-							 uyuv type, try to get standard video resolution from file size */
-						else if ((0 != width) && (0 != height) && (
-							((length > 4) && fuzzy_string_compare_same_length(
-								(file_name + length - 4), ".yuv")) ||
-							((length > 5) && fuzzy_string_compare_same_length(
-								(file_name + length - 5), ".uyvy"))))
+						} break;
+						case DICOM_FILE_FORMAT:
+						{
+							file_name_prefix = "dcm:";
+						} break;
+						case YUV_FILE_FORMAT:
 						{
 							file_name_prefix = "uyvy:";
-							/* try to get width and height from the file_size */
-							if ((0 == stat(file_name, &buf)) &&
-								(0 < (file_size = (long int)(buf.st_size))))
+						} break;
+						default:
+						{
+							if (!strchr(file_name, ':'))
 							{
-								get_yuv_resolution_from_file_size(file_size, &width, &height);
+								/* Only add prefixes if there isn't one already and we want to
+									 do something tricky */
+								/* test to see if a file with suffix rgb is an sgi rgb file */
+								if ((length > 4) &&  fuzzy_string_compare_same_length(
+									(file_name + length - 4), ".rgb"))
+								{
+									file_name_prefix = "sgi:";
+								}
+								/* if width and height are not specified and the file is of yuv or
+									 uyuv type, try to get standard video resolution from file size */
+								else if ((0 != width) && (0 != height) && (
+									((length > 4) && fuzzy_string_compare_same_length(
+										(file_name + length - 4), ".yuv")) ||
+									((length > 5) && fuzzy_string_compare_same_length(
+										(file_name + length - 5), ".uyvy"))))
+								{
+									file_name_prefix = "uyvy:";
+									/* try to get width and height from the file_size */
+									if ((0 == stat(file_name, &buf)) &&
+										(0 < (file_size = (long int)(buf.st_size))))
+									{
+										get_yuv_resolution_from_file_size(file_size, &width, &height);
+									}
+								}
 							}
-						}
+						} break;
 					}
 					sprintf(magick_image_info->filename, "%s%s",
 						file_name_prefix, file_name);
