@@ -127,7 +127,7 @@ Cmiss_field_id Cmiss_field_create_embedded(
  */
 Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id mesh_field, Cmiss_fe_mesh_id mesh);
+	Cmiss_field_id mesh_field, Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * If the field is of type find_mesh_location then this function returns the
@@ -171,7 +171,7 @@ int Cmiss_field_find_mesh_location_destroy(
  * @param find_mesh_location_field  The field to query.
  * @return  The mesh to find locations in. Caller must destroy returned handle.
  */
-Cmiss_fe_mesh_id Cmiss_field_find_mesh_location_get_mesh(
+Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field);
 
 /***************************************************************************//**
@@ -220,7 +220,7 @@ int Cmiss_field_find_mesh_location_set_search_mode(
  * @return  Handle to the newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_fe_mesh_id mesh);
+	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * If the field is stored_mesh_location type, return type-specific handle to it.

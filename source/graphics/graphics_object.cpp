@@ -6969,7 +6969,7 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 #endif /* defined (USE_OPENCASCADE) */
 
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
-    void *group_field_void, Cmiss_fe_mesh_id mesh)
+    void *group_field_void, Cmiss_mesh_id mesh)
 {
   struct Computed_field *group_field =
     (struct Computed_field *)group_field_void;

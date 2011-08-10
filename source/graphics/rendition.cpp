@@ -3974,14 +3974,14 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 			Cmiss_rendition_get_or_create_selection_group(rendition);
 		if (sub_group)
 		{
-			Cmiss_fe_mesh_id temp_mesh =
-				Cmiss_field_module_get_fe_mesh_by_name(field_module,
+			Cmiss_mesh_id temp_mesh =
+				Cmiss_field_module_get_mesh_by_name(field_module,
 					((1 == dimension) ? "cmiss_mesh_1d" :
 					((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
 			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 			if (!element_group)
 				element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
-			Cmiss_fe_mesh_destroy(&temp_mesh);
+			Cmiss_mesh_destroy(&temp_mesh);
 			if (element_group)
 			{
 				if (add_flag)

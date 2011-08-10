@@ -157,7 +157,7 @@ Cmiss_node_iterator_id Cmiss_field_node_group_create_node_iterator(
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
-	Cmiss_fe_mesh_id mesh);
+	Cmiss_mesh_id mesh);
 
 /*****************************************************************************//**
  * If field can be cast to a Cmiss_field_element_group_id do so

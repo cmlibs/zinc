@@ -248,7 +248,7 @@ private:
 
 	int readMeshes();
 
-	ElementFieldComponent *getElementFieldComponent(Cmiss_fe_mesh_id mesh,
+	ElementFieldComponent *getElementFieldComponent(Cmiss_mesh_id mesh,
 		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
 		FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument);
 
@@ -904,10 +904,10 @@ int FieldMLReader::readMeshes()
 				Cmiss_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
 		}
 
-		Cmiss_fe_mesh_id mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
+		Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_name(field_module,
 			(meshDimension == 3 ? "cmiss_mesh_3d" :
 				(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
-		Cmiss_element_template_id element_template = Cmiss_fe_mesh_create_element_template(mesh);
+		Cmiss_element_template_id element_template = Cmiss_mesh_create_element_template(mesh);
 
 		// make FE_elements out of elements ensemble with shape from mesh
 		Cmiss_ensemble_iterator *elementsIterator = Cmiss_field_ensemble_get_first_entry(elementsEnsemble);
@@ -950,7 +950,7 @@ int FieldMLReader::readMeshes()
 				}
 				last_shape_type = shape_type;
 			}
-			if (!Cmiss_fe_mesh_define_element(mesh, elementNumber, element_template))
+			if (!Cmiss_mesh_define_element(mesh, elementNumber, element_template))
 			{
 				return_code = 0;
 				break;
@@ -963,12 +963,12 @@ int FieldMLReader::readMeshes()
 		Cmiss_field_ensemble_destroy(&elementsEnsemble);
 
 		Cmiss_element_template_destroy(&element_template);
-		Cmiss_fe_mesh_destroy(&mesh);
+		Cmiss_mesh_destroy(&mesh);
 	}
 	return return_code;
 }
 
-ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id mesh,
+ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mesh,
 	FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
 	FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument)
 {
@@ -1167,7 +1167,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_fe_mesh_id 
 	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
 	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
 
-	Cmiss_element_basis_id element_basis = Cmiss_fe_mesh_create_element_basis(mesh, libraryBases[basis_index].functionType[0]);
+	Cmiss_element_basis_id element_basis = Cmiss_mesh_create_element_basis(mesh, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
 	{
 		for (int dimension = 2; dimension < meshDimension; dimension++)
@@ -1310,7 +1310,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// define element fields
 
-	Cmiss_fe_mesh_id mesh = Cmiss_field_module_get_fe_mesh_by_name(field_module,
+	Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_name(field_module,
 		(meshDimension == 3 ? "cmiss_mesh_3d" :
 			(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
 	Cmiss_element_template_id element_template = 0;
@@ -1352,7 +1352,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		{
 			if (element_template)
 				Cmiss_element_template_destroy(&element_template);
-			element_template = Cmiss_fe_mesh_create_element_template(mesh);
+			element_template = Cmiss_mesh_create_element_template(mesh);
 			// do not want to override shape of existing elements:
 			Cmiss_element_template_set_shape_type(element_template, CMISS_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
@@ -1436,7 +1436,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		}
 		if (return_code)
 		{
-			Cmiss_element_id element = Cmiss_fe_mesh_find_element_by_identifier(mesh, elementIdentifier);
+			Cmiss_element_id element = Cmiss_mesh_find_element_by_identifier(mesh, elementIdentifier);
 			if (!Cmiss_element_merge(element, element_template))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
@@ -1452,7 +1452,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	Cmiss_field_ensemble_destroy(&nodesEnsemble);
 	if (element_template)
 		Cmiss_element_template_destroy(&element_template);
-	Cmiss_fe_mesh_destroy(&mesh);
+	Cmiss_mesh_destroy(&mesh);
 	Cmiss_nodeset_destroy(&nodes);
 	Cmiss_field_destroy(&field);
 

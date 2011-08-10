@@ -246,27 +246,27 @@ Cmiss_field_node_group_id Cmiss_field_group_get_node_group(
 	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
- * Create and return a handle to an element group for the specified fe_mesh in
+ * Create and return a handle to an element group for the specified mesh in
  * the local region of the specified group. Fails if already exists.
  * Caller is responsible for destroying the returned element group field handle.
  *
  * @param group  Handle to group field to modify.
- * @param mesh  Handle to fe_mesh to create element group for.
+ * @param mesh  Handle to mesh to create element group for.
  * @return  Handle to new element group field, or NULL on failure.
  */
 Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group,
-	Cmiss_fe_mesh_id mesh);
+	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
- * Find and return handle to element group for the specified fe_mesh in the
+ * Find and return handle to element group for the specified mesh in the
  * local region of the specified group, if one exists.
  *
  * @param group  Handle to group field to query.
- * @param nodeset  Handle to fe_mesh to get element group for.
+ * @param nodeset  Handle to mesh to get element group for.
  * @return  Handle to element group field, or NULL if none.
  * */
 Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group,
-	Cmiss_fe_mesh_id mesh);
+	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Get a subgroup of the given group for the specified domain.

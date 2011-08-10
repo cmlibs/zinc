@@ -72,7 +72,7 @@ enum Cmiss_optimisation_method {
 	 * Finds the set of independent field(s) component values which minimises the error. The error
 	 * is defined in a least-squares sense as the difference in the DATA_FIELD value a each of the
 	 * data points in the <data_nodeset> and the value of the MESH_FIELD at the corresponding projection
-	 * location in the <fe_mesh>.
+	 * location in the <mesh>.
 	 */
 	CMISS_OPTIMISATION_METHOD_NSDGSL = 3,
 	/*!< Internal normalised steepest decent with a Golden section
@@ -226,8 +226,8 @@ int Cmiss_optimisation_destroy(Cmiss_optimisation_id *optimisation_address);
  * @param mesh The mesh to assign to this optimisation object.
  * @return 1 on success; 0 otherwise.
  */
-int Cmiss_optimisation_set_fe_mesh(Cmiss_optimisation_id optimisation,
-		Cmiss_fe_mesh_id mesh);
+int Cmiss_optimisation_set_mesh(Cmiss_optimisation_id optimisation,
+		Cmiss_mesh_id mesh);
 
 /**
  * Sets the data nodeset to use for this optimisation object. This is only required when

@@ -126,7 +126,7 @@ char *Cmiss_basis_function_type_enum_to_string(
 	enum Cmiss_basis_function_type type);
 
 /***************************************************************************//**
- * Get a handle to a finite element mesh from its name. An fe_mesh is the
+ * Get a handle to a finite element mesh from its name. An mesh is the
  * container of elements, intended to be of fixed dimension.
  * Valid names are currently limited to:
  * "cmiss_mesh_3d" = 3-D elements.
@@ -138,25 +138,25 @@ char *Cmiss_basis_function_type_enum_to_string(
  * "cmiss_mesh_2d" or "cmiss_mesh_1d".
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
+Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name);
 
 /*******************************************************************************
- * Returns a new handle to the fe_mesh with reference count incremented.
+ * Returns a new handle to the mesh with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The fe_mesh to obtain a new reference to.
- * @return  New fe_mesh handle with incremented reference count.
+ * @param mesh  The mesh to obtain a new reference to.
+ * @return  New mesh handle with incremented reference count.
  */
-Cmiss_fe_mesh_id Cmiss_fe_mesh_access(Cmiss_fe_mesh_id mesh);
+Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the finite element mesh and sets it to NULL.
  * Internally this just decrements the reference count.
  *
- * @param mesh_address  Address of handle to the fe_mesh to destroy.
+ * @param mesh_address  Address of handle to the mesh to destroy.
  */
-int Cmiss_fe_mesh_destroy(Cmiss_fe_mesh_id *mesh_address);
+int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
 
 /***************************************************************************//**
  * Returns whether the element is from the mesh.
@@ -165,7 +165,7 @@ int Cmiss_fe_mesh_destroy(Cmiss_fe_mesh_id *mesh_address);
  * @param element  The element to query about.
  * @return  1 if element is in the mesh, 0 if not or error.
  */
-int Cmiss_fe_mesh_contains_element(Cmiss_fe_mesh_id mesh,
+int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh,
 	Cmiss_element_id element);
 
 /***************************************************************************//**
@@ -177,7 +177,7 @@ int Cmiss_fe_mesh_contains_element(Cmiss_fe_mesh_id mesh,
  * i.e. basis function is initially homogeneous.
  * @return  Handle to element_basis, or NULL if error.
  */
-Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
+Cmiss_element_basis_id Cmiss_mesh_create_element_basis(Cmiss_mesh_id mesh,
 	enum Cmiss_basis_function_type function_type);
 
 /***************************************************************************//**
@@ -187,13 +187,13 @@ Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
  * @param mesh  Handle to the mesh the template works with.
  * @return  Handle to element_template, or NULL if error.
  */
-Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
-	Cmiss_fe_mesh_id mesh);
+Cmiss_element_template_id Cmiss_mesh_create_element_template(
+	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Create a new element in this mesh with shape and fields described by the
  * element_template. Returns handle to new element.
- * @see Cmiss_fe_mesh_define_element
+ * @see Cmiss_mesh_define_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
  * @param identifier  Non-negative integer identifier of new element, or -1 to
@@ -202,7 +202,7 @@ Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
  * @param element_template  Template for element shape and fields.
  * @return  Handle to newly created element, or NULL if error.
  */
-Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
+Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
 	int identifier, Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -216,13 +216,13 @@ Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
  * @return  Handle to element_iterator at position before first, or NULL if
  * error.
  */
-Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
-	Cmiss_fe_mesh_id mesh);
+Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
+	Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Create a new element in this mesh with shape and fields described by the
  * element_template.
- * @see Cmiss_fe_mesh_create_element
+ * @see Cmiss_mesh_create_element
  *
  * @param mesh  Handle to the mesh to create the new element in.
  * @param identifier  Non-negative integer identifier of new element, or -1 to
@@ -231,7 +231,7 @@ Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
  * @param element_template  Template for element shape and fields.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
+int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
 
 /***************************************************************************//**
@@ -241,7 +241,7 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
  * @param identifier  Non-negative integer identifier of element.
  * @return  Handle to the element, or NULL if not found.
  */
-Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
+Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier);
 
 /***************************************************************************//**
@@ -250,7 +250,7 @@ Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
  * @param mesh  Handle to the mesh to query.
  * @return  Number of elements in mesh.
  */
-int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh);
+int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Remove an element from a mesh and any related groups it is in.
@@ -260,7 +260,7 @@ int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh);
  * @param element  The element to be removed.
  * @return  1 if element is successfully removed, 0 if error.
  */
-int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element);
+int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
 
 /***************************************************************************//**
  * Remove from the mesh and any related element groups all elements for which
@@ -273,7 +273,7 @@ int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element
  * indicates it is to be removed.
  * @return  The number of elements removed from the mesh.
  */
-int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
+int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh,
    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
@@ -282,7 +282,7 @@ int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
  * @param mesh  Handle to the mesh to query.
  * @return  dimension of mesh.
  */
-int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh);
+int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Return the name of the mesh.
@@ -292,7 +292,7 @@ int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh);
  * @return  On success: allocated string containing mesh name. Up to caller to
  * free using Cmiss_deallocate().
  */
-char *Cmiss_fe_mesh_get_name(Cmiss_fe_mesh_id mesh);
+char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.

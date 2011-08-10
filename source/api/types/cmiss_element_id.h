@@ -41,8 +41,8 @@
 /** Handle to a finite element mesh. */
 #ifndef CMISS_ELEMENT_ID_H
 
-	struct Cmiss_fe_mesh;
-	typedef struct Cmiss_fe_mesh *Cmiss_fe_mesh_id;
+	struct Cmiss_mesh;
+	typedef struct Cmiss_mesh *Cmiss_mesh_id;
 
 /** Handle to a template for creating or defining fields over an element. */
 	struct Cmiss_element_template;

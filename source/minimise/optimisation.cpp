@@ -120,7 +120,7 @@ public:
 	Minimisation(struct Cmiss_optimisation* optimisation) :
 		optimisation(optimisation)
 	{
-		fe_region = Cmiss_fe_mesh_get_FE_region(optimisation->feMesh);
+		fe_region = Cmiss_mesh_get_FE_region(optimisation->feMesh);
 		// the meshRegion is not accessed, so make sure not to destroy.
 		FE_region_get_Cmiss_region(fe_region, &meshRegion);
 		field_module = Cmiss_region_get_field_module(meshRegion);
@@ -198,7 +198,7 @@ int Minimisation::calculate_projection(Cmiss_node_id node)
 	Computed_field_find_element_xi(optimisation->meshField,
 		values, number_of_data_components, current_time,
 		&(projection.element), projection.xi,
-		/*element_dimension*/Cmiss_fe_mesh_get_dimension(optimisation->feMesh),
+		/*element_dimension*/Cmiss_mesh_get_dimension(optimisation->feMesh),
 		/*search_region*/meshRegion, /*propagate_field*/0,
 		/*find_nearest_location*/1);
 	DEALLOCATE(values);

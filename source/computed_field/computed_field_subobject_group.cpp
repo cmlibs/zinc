@@ -346,7 +346,7 @@ Cmiss_element_iterator_id Cmiss_field_element_group_create_element_iterator(Cmis
 }
 
 Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
-		Cmiss_fe_mesh_id mesh)
+		Cmiss_mesh_id mesh)
 {
 	Computed_field *field;
 
@@ -354,14 +354,14 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 	field = (Computed_field *)NULL;
 	if (field_module && mesh)
 	{
-		FE_region *fe_region = Cmiss_fe_mesh_get_FE_region(mesh);
+		FE_region *fe_region = Cmiss_mesh_get_FE_region(mesh);
 		struct LIST(FE_element) *fe_element_list = FE_region_create_related_element_list_for_dimension(fe_region,
-			Cmiss_fe_mesh_get_dimension(mesh));
+			Cmiss_mesh_get_dimension(mesh));
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_element_group(fe_element_list, Cmiss_fe_mesh_get_dimension(mesh)));
+			new Computed_field_element_group(fe_element_list, Cmiss_mesh_get_dimension(mesh)));
 	}
 	else
 	{

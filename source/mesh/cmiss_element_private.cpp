@@ -437,7 +437,7 @@ private:
 
 struct Cmiss_element_template
 {
-	friend class Cmiss_fe_mesh; // to obtain template_element
+	friend class Cmiss_mesh; // to obtain template_element
 private:
 	FE_region *fe_region;
 	int element_dimension;
@@ -731,7 +731,7 @@ private:
 
 /*============================================================================*/
 
-struct Cmiss_fe_mesh
+struct Cmiss_mesh
 {
 private:
 	FE_region *fe_region;
@@ -739,20 +739,20 @@ private:
 	int access_count;
 
 public:
-	Cmiss_fe_mesh(Cmiss_region_id region, int mesh_dimension) :
+	Cmiss_mesh(Cmiss_region_id region, int mesh_dimension) :
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
 		mesh_dimension(mesh_dimension),
 		access_count(1)
 	{
 	}
 
-	Cmiss_fe_mesh_id access()
+	Cmiss_mesh_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_fe_mesh_id &mesh)
+	static int deaccess(Cmiss_mesh_id &mesh)
 	{
 		if (!mesh)
 			return 0;
@@ -794,7 +794,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_fe_mesh_create_element.  Element template is not finalised");
+				"Cmiss_mesh_create_element.  Element template is not finalised");
 		}
 		return element;
 	}
@@ -811,7 +811,7 @@ public:
 	int getSize() const { return FE_region_get_number_of_FE_elements_of_dimension(fe_region, mesh_dimension); }
 
 private:
-	~Cmiss_fe_mesh()
+	~Cmiss_mesh()
 	{
 		DEACCESS(FE_region)(&fe_region);
 	}
@@ -822,10 +822,10 @@ Global functions
 ----------------
 */
 
-Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
+Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name)
 {
-	Cmiss_fe_mesh_id mesh = NULL;
+	Cmiss_mesh_id mesh = NULL;
 	if (field_module && mesh_name)
 	{
 		int mesh_dimension = 0;
@@ -837,37 +837,37 @@ Cmiss_fe_mesh_id Cmiss_field_module_get_fe_mesh_by_name(
 			mesh_dimension = 1;
 		if (0 < mesh_dimension)
 		{
-			mesh = new Cmiss_fe_mesh(Cmiss_field_module_get_region_internal(field_module), mesh_dimension);
+			mesh = new Cmiss_mesh(Cmiss_field_module_get_region_internal(field_module), mesh_dimension);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_region_get_fe_mesh_by_name.  Unknown mesh name '%s'", mesh_name);
+				"Cmiss_region_get_mesh_by_name.  Unknown mesh name '%s'", mesh_name);
 		}
 	}
 	return (mesh);
 }
 
-Cmiss_fe_mesh_id Cmiss_fe_mesh_access(Cmiss_fe_mesh_id mesh)
+Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh)
 {
 	return mesh->access();
 }
 
-int Cmiss_fe_mesh_destroy(Cmiss_fe_mesh_id *mesh_address)
+int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address)
 {
 	if (mesh_address)
-		return Cmiss_fe_mesh::deaccess(*mesh_address);
+		return Cmiss_mesh::deaccess(*mesh_address);
 	return 0;
 }
 
-int Cmiss_fe_mesh_contains_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element)
+int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
 {
 	if (mesh)
 		return mesh->containsElement(element);
 	return 0;
 }
 
-Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
+Cmiss_element_basis_id Cmiss_mesh_create_element_basis(Cmiss_mesh_id mesh,
 	enum Cmiss_basis_function_type function_type)
 {
 	Cmiss_element_basis_id basis = NULL;
@@ -880,8 +880,8 @@ Cmiss_element_basis_id Cmiss_fe_mesh_create_element_basis(Cmiss_fe_mesh_id mesh,
 	return basis;
 }
 
-Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
-	Cmiss_fe_mesh_id mesh)
+Cmiss_element_template_id Cmiss_mesh_create_element_template(
+	Cmiss_mesh_id mesh)
 {
 	if (mesh)
 	{
@@ -892,7 +892,7 @@ Cmiss_element_template_id Cmiss_fe_mesh_create_element_template(
 	return NULL;
 }
 
-Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
+Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
 	int identifier, Cmiss_element_template_id element_template)
 {
 	if (mesh && element_template)
@@ -900,19 +900,19 @@ Cmiss_element_id Cmiss_fe_mesh_create_element(Cmiss_fe_mesh_id mesh,
 	return NULL;
 }
 
-Cmiss_element_iterator_id Cmiss_fe_mesh_create_element_iterator(
-	Cmiss_fe_mesh_id mesh)
+Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
+	Cmiss_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->createIterator();
 	return NULL;
 }
 
-int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
+int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template)
 {
 	Cmiss_element_id element =
-		Cmiss_fe_mesh_create_element(mesh, identifier, element_template);
+		Cmiss_mesh_create_element(mesh, identifier, element_template);
 	if (element)
 	{
 		Cmiss_element_destroy(&element);
@@ -921,7 +921,7 @@ int Cmiss_fe_mesh_define_element(Cmiss_fe_mesh_id mesh, int identifier,
 	return 0;
 }
 
-Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
+Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier)
 {
 	Cmiss_element_id element = NULL;
@@ -935,7 +935,7 @@ Cmiss_element_id Cmiss_fe_mesh_find_element_by_identifier(Cmiss_fe_mesh_id mesh,
 	return element;
 }
 
-int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh)
+int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
 {
 	if (mesh)
 	{
@@ -944,7 +944,7 @@ int Cmiss_fe_mesh_get_size(Cmiss_fe_mesh_id mesh)
 	return 0;
 }
 
-int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
+int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh)
 {
 	if (mesh)
 	{
@@ -953,7 +953,7 @@ int Cmiss_fe_mesh_get_dimension(Cmiss_fe_mesh_id mesh)
 	return 0;
 }
 
-char *Cmiss_fe_mesh_get_name(Cmiss_fe_mesh_id mesh)
+char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh)
 {
 	char *name = 0;
 	if (mesh)
@@ -988,7 +988,7 @@ char *Cmiss_fe_mesh_get_name(Cmiss_fe_mesh_id mesh)
 	return name;
 }
 
-int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element)
+int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
 {
 	int return_code = 0;
 	if (mesh && element)
@@ -1008,7 +1008,7 @@ int Cmiss_fe_mesh_remove_element(Cmiss_fe_mesh_id mesh, Cmiss_element_id element
 	return return_code;
 }
 
-int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
+int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh,
 	Cmiss_field_id conditional_field)
 {
 	int return_code = 0;
@@ -1026,7 +1026,7 @@ int Cmiss_fe_mesh_remove_elements_conditional(Cmiss_fe_mesh_id mesh,
 	return return_code;
 }
 
-FE_region *Cmiss_fe_mesh_get_FE_region(Cmiss_fe_mesh_id mesh)
+FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh)
 {
 	if (mesh)
 	{
@@ -1035,7 +1035,7 @@ FE_region *Cmiss_fe_mesh_get_FE_region(Cmiss_fe_mesh_id mesh)
 	return 0;
 }
 
-Cmiss_region_id Cmiss_fe_mesh_get_region(Cmiss_fe_mesh_id mesh)
+Cmiss_region_id Cmiss_mesh_get_region(Cmiss_mesh_id mesh)
 {
 	Cmiss_region_id region = 0;
 	if (mesh)
@@ -1183,7 +1183,7 @@ int Cmiss_element_get_identifier(struct Cmiss_element *element)
 	struct CM_element_information cm;
 	if (get_FE_element_identifier(element, &cm))
 	{
-		/* CM_element_type is understood from fe_mesh */
+		/* CM_element_type is understood from mesh */
 		return_code = cm.number;
 	}
 	return (return_code);

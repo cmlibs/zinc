@@ -236,9 +236,9 @@ public:
 
 	Cmiss_field_node_group_id get_node_group(Cmiss_nodeset_id nodeset);
 
-	Cmiss_field_element_group_id create_element_group(Cmiss_fe_mesh_id mesh);
+	Cmiss_field_element_group_id create_element_group(Cmiss_mesh_id mesh);
 
-	Cmiss_field_element_group_id get_element_group(Cmiss_fe_mesh_id mesh);
+	Cmiss_field_element_group_id get_element_group(Cmiss_mesh_id mesh);
 
 	Cmiss_field_id get_subobject_group_for_domain(Cmiss_field_id domain);
 
@@ -1003,12 +1003,12 @@ Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id 
 	return (node_field);
 }
 
-Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe_mesh_id mesh)
+Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_mesh_id mesh)
 {
 	Cmiss_field_element_group_id element_field = NULL;
 	if (!contains_all && mesh)
 	{
-		int dimension = Cmiss_fe_mesh_get_dimension(mesh);
+		int dimension = Cmiss_mesh_get_dimension(mesh);
 		if (!local_element_group[dimension - 1])
 		{
 			Cmiss_field_module_id field_module =
@@ -1042,12 +1042,12 @@ Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_fe
 	return (element_field);
 }
 
-Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_fe_mesh_id mesh)
+Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_mesh_id mesh)
 {
 	Cmiss_field_element_group_id element_field = NULL;
 	if (!contains_all && mesh)
 	{
-		int dimension = Cmiss_fe_mesh_get_dimension(mesh);
+		int dimension = Cmiss_mesh_get_dimension(mesh);
 		if (local_element_group[dimension - 1])
 		{
 			element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
@@ -1346,7 +1346,7 @@ Cmiss_field_node_group_id Cmiss_field_group_get_node_group(Cmiss_field_group_id 
 }
 
 Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group,
-	Cmiss_fe_mesh_id mesh)
+	Cmiss_mesh_id mesh)
 {
 	Cmiss_field_element_group_id field = NULL;
 	if (group && mesh)
@@ -1363,7 +1363,7 @@ Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_
 }
 
 Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group,
-	Cmiss_fe_mesh_id mesh)
+	Cmiss_mesh_id mesh)
 {
 	Cmiss_field_element_group_id field = NULL;
 	if (group && mesh)

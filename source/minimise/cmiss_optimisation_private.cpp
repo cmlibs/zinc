@@ -299,18 +299,18 @@ int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
 	return code;
 }
 
-int Cmiss_optimisation_set_fe_mesh(Cmiss_optimisation_id optimisation, Cmiss_fe_mesh_id mesh)
+int Cmiss_optimisation_set_mesh(Cmiss_optimisation_id optimisation, Cmiss_mesh_id mesh)
 {
 	int code = 0;
 	if (optimisation && mesh)
 	{
-		if (optimisation->feMesh) Cmiss_fe_mesh_destroy(&(optimisation->feMesh));
-		optimisation->feMesh = Cmiss_fe_mesh_access(mesh);
+		if (optimisation->feMesh) Cmiss_mesh_destroy(&(optimisation->feMesh));
+		optimisation->feMesh = Cmiss_mesh_access(mesh);
 		code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_fe_mesh.  "
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_mesh.  "
 							"Invalid arguments.");
 	}
 	return code;

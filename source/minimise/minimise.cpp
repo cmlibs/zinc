@@ -280,19 +280,19 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					Cmiss_optimisation_id optimisation = Cmiss_field_module_create_optimisation(fieldModule);
 					Cmiss_optimisation_set_method(optimisation, package->method);
 
-					Cmiss_fe_mesh_id feMesh = NULL;
-					if (dimension == 1) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_1d");
-					else if (dimension == 2) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_2d");
-					else if (dimension == 3) feMesh = Cmiss_field_module_get_fe_mesh_by_name(fieldModule, "cmiss_mesh_3d");
+					Cmiss_mesh_id feMesh = NULL;
+					if (dimension == 1) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_1d");
+					else if (dimension == 2) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_2d");
+					else if (dimension == 3) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_3d");
 					if (feMesh == NULL)
 					{
-						display_message(ERROR_MESSAGE, "gfx_minimise.  Unable to get the fe_mesh, invalid dimension?");
+						display_message(ERROR_MESSAGE, "gfx_minimise.  Unable to get the mesh, invalid dimension?");
 						return_code = 0;
 					}
 					else
 					{
-						Cmiss_optimisation_set_fe_mesh(optimisation, feMesh);
-						Cmiss_fe_mesh_destroy(&feMesh);
+						Cmiss_optimisation_set_mesh(optimisation, feMesh);
+						Cmiss_mesh_destroy(&feMesh);
 						if (dataRegion)
 						{
 							/* FIXME: for now, assume that if the data region has nodes they are the

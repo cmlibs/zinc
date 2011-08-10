@@ -1310,10 +1310,10 @@ int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_obj
 	void *group_field_void, struct Cmiss_field_cad_topology *cad_topology_domain);
 #endif /* defined (USE_OPENCASCADE) */
 
-struct Cmiss_fe_mesh;
+struct Cmiss_mesh;
 
 int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
-    void *group_field_void, struct Cmiss_fe_mesh *mesh);
+    void *group_field_void, struct Cmiss_mesh *mesh);
 
 struct Cmiss_nodeset;
 

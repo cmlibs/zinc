@@ -69,7 +69,7 @@ private:
 			independentFields.pop_back();
 			Cmiss_field_destroy(&f);
 		}
-		if (feMesh) Cmiss_fe_mesh_destroy(&feMesh);
+		if (feMesh) Cmiss_mesh_destroy(&feMesh);
 		if (dataNodeset) Cmiss_nodeset_destroy(&dataNodeset);
 	}
 
@@ -80,7 +80,7 @@ public:
 	Cmiss_field_id dataField;
 	FieldList independentFields;
 	bool independentFieldsConstant;
-	Cmiss_fe_mesh_id feMesh;
+	Cmiss_mesh_id feMesh;
 	Cmiss_nodeset_id dataNodeset;
 	// Opt++ stopping tolerances
 	double functionTolerance;

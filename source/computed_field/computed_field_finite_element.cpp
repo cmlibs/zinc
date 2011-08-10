@@ -1449,17 +1449,17 @@ int Cmiss_field_finite_element_destroy(
 }
 
 Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_fe_mesh_id mesh)
+	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh)
 {
 	Computed_field *field = NULL;
-	if (field_module && mesh && (Cmiss_fe_mesh_get_region(mesh) ==
+	if (field_module && mesh && (Cmiss_mesh_get_region(mesh) ==
 		Cmiss_field_module_get_region_internal(field_module)))
 	{
 		field = Cmiss_field_module_create_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
 		struct FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		FE_field_set_element_xi_mesh_dimension(fe_field, Cmiss_fe_mesh_get_dimension(mesh));
+		FE_field_set_element_xi_mesh_dimension(fe_field, Cmiss_mesh_get_dimension(mesh));
 	}
 	else
 	{
@@ -3387,16 +3387,16 @@ char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
 class Computed_field_find_mesh_location : public Computed_field_core
 {
 private:
-	Cmiss_fe_mesh_id mesh;
+	Cmiss_mesh_id mesh;
 	enum Cmiss_field_find_mesh_location_search_mode search_mode;
 	Cmiss_element_id element_cache;
 	FE_value xi_cache[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 public:
 
-	Computed_field_find_mesh_location(Cmiss_fe_mesh_id mesh) :
+	Computed_field_find_mesh_location(Cmiss_mesh_id mesh) :
 		Computed_field_core(),
-		mesh(Cmiss_fe_mesh_access(mesh)),
+		mesh(Cmiss_mesh_access(mesh)),
 		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT),
 		element_cache(0)
 	{
@@ -3414,7 +3414,7 @@ public:
 		return field->source_fields[1];
 	}
 
-	Cmiss_fe_mesh_id get_mesh()
+	Cmiss_mesh_id get_mesh()
 	{
 		return mesh;
 	}
@@ -3473,7 +3473,7 @@ private:
 Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
 {
 	clear_cache();
-	Cmiss_fe_mesh_destroy(&mesh);
+	Cmiss_mesh_destroy(&mesh);
 }
 
 Computed_field_core* Computed_field_find_mesh_location::copy()
@@ -3521,8 +3521,8 @@ int Computed_field_find_mesh_location::evaluate_cache_at_location(Field_location
 			}
 			if (Computed_field_find_element_xi(get_mesh_field(),
 					get_source_field()->values, get_source_field()->number_of_components,
-					location->get_time(), &element_cache, xi_cache, Cmiss_fe_mesh_get_dimension(mesh),
-					Cmiss_fe_mesh_get_region(mesh), /*propagate_field*/0,
+					location->get_time(), &element_cache, xi_cache, Cmiss_mesh_get_dimension(mesh),
+					Cmiss_mesh_get_region(mesh), /*propagate_field*/0,
 					/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
 					&& element_cache)
 			{
@@ -3556,7 +3556,7 @@ int Computed_field_find_mesh_location::list()
 			display_message(INFORMATION_MESSAGE, " find_exact\n");
 		}
 		display_message(INFORMATION_MESSAGE, "    mesh : ");
-		char *mesh_name = Cmiss_fe_mesh_get_name(mesh);
+		char *mesh_name = Cmiss_mesh_get_name(mesh);
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
 		display_message(INFORMATION_MESSAGE,
@@ -3587,7 +3587,7 @@ char *Computed_field_find_mesh_location::get_command_string()
 		}
 
 		append_string(&command_string, " mesh ", &error);
-		char *mesh_name = Cmiss_fe_mesh_get_name(mesh);
+		char *mesh_name = Cmiss_mesh_get_name(mesh);
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 
@@ -3647,7 +3647,7 @@ Cmiss_element_id Computed_field_find_mesh_location::get_mesh_location_value(FE_v
 
 Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id mesh_field, Cmiss_fe_mesh_id mesh)
+	Cmiss_field_id mesh_field, Cmiss_mesh_id mesh)
 {
 	struct Computed_field *field = NULL;
 	int number_of_source_field_components = Computed_field_get_number_of_components(source_field);
@@ -3656,7 +3656,7 @@ Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 		(number_of_source_field_components == number_of_mesh_field_components) &&
 		Computed_field_has_numerical_components(source_field, NULL) &&
 		Computed_field_has_numerical_components(mesh_field, NULL) &&
-		(number_of_mesh_field_components >= Cmiss_fe_mesh_get_dimension(mesh)))
+		(number_of_mesh_field_components >= Cmiss_mesh_get_dimension(mesh)))
 	{
 		Cmiss_field_id source_fields[2];
 		source_fields[0] = source_field;
@@ -3704,14 +3704,14 @@ int Cmiss_field_find_mesh_location_destroy(
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(find_mesh_location_field_address));
 }
 
-Cmiss_fe_mesh_id Cmiss_field_find_mesh_location_get_mesh(
+Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field)
 {
-	Cmiss_fe_mesh_id mesh = 0;
+	Cmiss_mesh_id mesh = 0;
 	if (find_mesh_location_field)
 	{
 		mesh = find_mesh_location_field->get_core()->get_mesh();
-		Cmiss_fe_mesh_access(mesh);
+		Cmiss_mesh_access(mesh);
 	}
 	return mesh;
 }
@@ -3768,9 +3768,9 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 			{
 				source_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
 				mesh_field = Cmiss_field_get_source_field(field_modify->get_field(), 2);
-				Cmiss_fe_mesh_id mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
-				mesh_name = Cmiss_fe_mesh_get_name(mesh);
-				Cmiss_fe_mesh_destroy(&mesh);
+				Cmiss_mesh_id mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
+				mesh_name = Cmiss_mesh_get_name(mesh);
+				Cmiss_mesh_destroy(&mesh);
 				find_nearest_flag = (CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT !=
 					Cmiss_field_find_mesh_location_get_search_mode(find_mesh_location_field));
 				Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
@@ -3812,10 +3812,10 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				Cmiss_fe_mesh_id mesh = 0;
+				Cmiss_mesh_id mesh = 0;
 				if (mesh_name)
 				{
-					mesh = Cmiss_field_module_get_fe_mesh_by_name(field_modify->get_field_module(), mesh_name);
+					mesh = Cmiss_field_module_get_mesh_by_name(field_modify->get_field_module(), mesh_name);
 					if (!mesh)
 					{
 						display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  "
@@ -3856,7 +3856,7 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 				}
 				if (mesh)
 				{
-					Cmiss_fe_mesh_destroy(&mesh);
+					Cmiss_mesh_destroy(&mesh);
 				}
 			}
 		}
