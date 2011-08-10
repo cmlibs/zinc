@@ -747,7 +747,7 @@ Sets the coordinate system (including focus for prolate spheroidal and oblate
 spheroidal).
 ==============================================================================*/
 {
-	char cylindrical_polar_flag,fibre_flag,
+	char cylindrical_polar_flag,fibre_flag,not_applicable_flag,
 		normalised_window_coordinates_flag,oblate_spheroidal_flag,
 		prolate_spheroidal_flag,spherical_polar_flag,read_focus,
 		rectangular_cartesian_flag;
@@ -764,6 +764,7 @@ spheroidal).
 		{
 			cylindrical_polar_flag=0;
 			fibre_flag=0;
+			not_applicable_flag=0;
 			normalised_window_coordinates_flag=0;
 			oblate_spheroidal_flag=0;
 			prolate_spheroidal_flag=0;
@@ -772,6 +773,8 @@ spheroidal).
 			option_table = CREATE(Option_table)();
 			Option_table_add_char_flag_entry(option_table, "cylindrical_polar", &cylindrical_polar_flag);
 			Option_table_add_char_flag_entry(option_table, "fibre", &fibre_flag);
+			Option_table_add_char_flag_entry(option_table, "not_applicable",
+				&not_applicable_flag);
 			Option_table_add_char_flag_entry(option_table, "normalised_window_coordinates",
 				&normalised_window_coordinates_flag);
 			Option_table_add_char_flag_entry(option_table, "oblate_spheroidal", &oblate_spheroidal_flag);
@@ -793,10 +796,13 @@ spheroidal).
 				{
 					coordinate_system_copy.type=FIBRE;
 				}
+				else if (not_applicable_flag)
+				{
+					coordinate_system_copy.type=NOT_APPLICABLE;
+				}
 				else if (normalised_window_coordinates_flag)
 				{
 					coordinate_system_copy.type=NORMALISED_WINDOW_COORDINATES;
-					read_focus=1;
 				}
 				else if (oblate_spheroidal_flag)
 				{
@@ -904,7 +910,7 @@ The calling function must not deallocate the returned string.
 		} break;
 		case NOT_APPLICABLE:
 		{
-			coordinate_system_type_string="no coordinate system";
+			coordinate_system_type_string="not_applicable";
 		} break;
 		default:
 		{
