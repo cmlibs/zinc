@@ -3704,33 +3704,6 @@ int Cmiss_field_find_mesh_location_destroy(
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(find_mesh_location_field_address));
 }
 
-Cmiss_field_id Cmiss_field_find_mesh_location_get_attribute_field(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field,
-	enum Cmiss_field_find_mesh_location_attribute attribute)
-{
-	Cmiss_field_id field = 0;
-	if (find_mesh_location_field)
-	{
-		Computed_field_find_mesh_location *core = find_mesh_location_field->get_core();
-		switch (attribute)
-		{
-		case CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_SOURCE_FIELD:
-			field = core->get_source_field();
-			break;
-		case CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_MESH_FIELD:
-			field = core->get_mesh_field();
-			break;
-		default:
-			break;
-		}
-		if (field)
-		{
-			Cmiss_field_access(field);
-		}
-	}
-	return field;
-}
-
 Cmiss_fe_mesh_id Cmiss_field_find_mesh_location_get_mesh(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field)
 {
@@ -3793,16 +3766,14 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 				Cmiss_field_cast_find_mesh_location(field_modify->get_field());
 			if (find_mesh_location_field)
 			{
-				mesh_field = Cmiss_field_find_mesh_location_get_attribute_field(
-					find_mesh_location_field, CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_MESH_FIELD);
-				source_field = Cmiss_field_find_mesh_location_get_attribute_field(
-					find_mesh_location_field, CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_SOURCE_FIELD);
+				source_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
+				mesh_field = Cmiss_field_get_source_field(field_modify->get_field(), 2);
 				Cmiss_fe_mesh_id mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
 				mesh_name = Cmiss_fe_mesh_get_name(mesh);
 				Cmiss_fe_mesh_destroy(&mesh);
-				Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
 				find_nearest_flag = (CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT !=
 					Cmiss_field_find_mesh_location_get_search_mode(find_mesh_location_field));
+				Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
 			}
 		}
 		if (return_code)

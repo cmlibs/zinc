@@ -166,35 +166,6 @@ int Cmiss_field_find_mesh_location_destroy(
 	Cmiss_field_find_mesh_location_id *find_mesh_location_field_address);
 
 /***************************************************************************//**
- * Labels of find_mesh_location field attributes which may be obtained or set
- * using generic get/set_attribute functions.
- */
-enum Cmiss_field_find_mesh_location_attribute
-{
-	CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_SOURCE_FIELD = 1,
-	/*!< Field giving source value for search over mesh to find location where
-	 * MESH_FIELD has matching value.
-	 */
-	CMISS_FIELD_FIND_MESH_LOCATION_ATTRIBUTE_MESH_FIELD = 2,
-	/*!< Field defined over mesh for which location with prescribed SOURCE_FIELD
-	 * value is to be found.
-	 */
-};
-
-/***************************************************************************//**
- * Returns a field attribute of the find_mesh_location field.
- *
- * @see Cmiss_field_find_mesh_location_attribute
- * @param find_mesh_location_field  The field to query.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Handle to field, or NULL if none. Caller is responsible for
- * destroying returned field.
- */
-Cmiss_field_id Cmiss_field_find_mesh_location_get_attribute_field(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field,
-	enum Cmiss_field_find_mesh_location_attribute attribute);
-
-/***************************************************************************//**
  * Returns the mesh the find_mesh_location field is to find locations in.
  *
  * @param find_mesh_location_field  The field to query.

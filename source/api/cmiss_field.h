@@ -53,14 +53,7 @@
  */
 enum Cmiss_field_attribute
 {
-	CMISS_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
-	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
-	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
-	 * and other operations. Can only be set for some fields e.g. finite_element
-	 * where its default is 0 (false). Some fields e.g. cad geometry have this
-	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
-	 */
-
+	CMISS_FIELD_ATTRIBUTE_INVALID = 0,
 	CMISS_FIELD_ATTRIBUTE_IS_MANAGED = 1,
 	/*!< Boolean as integer, when 0 (default) field is destroyed when no longer
 	 * in use, i.e. when number of external references to it, including use as a
@@ -68,7 +61,19 @@ enum Cmiss_field_attribute
 	 * indefinitely, or until this attribute is reset to zero (which effectively
 	 * marks a formerly managed field as pending destruction).
 	 */
-	CMISS_FIELD_ATTRIBUTE_INVALID = 0
+	CMISS_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
+	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
+	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
+	 * and other operations. Can only be set for some fields e.g. finite_element
+	 * where its default is 0 (false). Some fields e.g. cad geometry have this
+	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
+	 */
+	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
+	/*!< Integer number of components of field.
+	 */
+	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
+	/*!< Integer number of source fields the field is a function of.
+	 */
 };
 
 /*
@@ -282,6 +287,18 @@ char *Cmiss_field_get_name(Cmiss_field_id field);
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
+
+/***************************************************************************//**
+ * Return a source field of this field at a given index. Source fields are in
+ * the order presented in the field constructor followed by any optional source
+ * fields set by type-specific API.
+ *
+ * @param field  The field to query.
+ * @param index  The index from 1 to number of source fields.
+ * @return  Handle to the source field at the index, or NULL if none. Caller is
+ * responsible for destroying the returned field handle.
+ */
+Cmiss_field_id Cmiss_field_get_source_field(Cmiss_field_id field, int index);
 
 /***************************************************************************//**
  * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_IS_MANAGED.

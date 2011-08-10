@@ -5365,6 +5365,12 @@ int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
 		case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
 			value = field->core->get_attribute_integer(attribute);
 			break;
+		case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+			value = field->number_of_components;
+			break;
+		case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+			value = field->number_of_source_fields;
+			break;
 		default:
 			display_message(ERROR_MESSAGE,
 				"Cmiss_field_get_attribute_integer.  Invalid attribute");
@@ -5408,7 +5414,7 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_set_attribute_integer.  Invalid attribute");
+				"Cmiss_field_set_attribute_integer.  Cannot set attribute");
 			return_code = 0;
 			break;
 		}
@@ -5510,6 +5516,16 @@ int Cmiss_field_set_name(struct Computed_field *field, const char *name)
 	}
 
 	return (return_code);
+}
+
+Cmiss_field_id Cmiss_field_get_source_field(Cmiss_field_id field, int index)
+{
+	Cmiss_field_id source_field = 0;
+	if (field && (0 < index) && (index <= field->number_of_source_fields))
+	{
+		source_field = ACCESS(Computed_field)(field->source_fields[index - 1]);
+	}
+	return source_field;
 }
 
 struct Cmiss_region *Computed_field_manager_get_region(
@@ -5679,31 +5695,46 @@ int Computed_field_manager_message_get_object_change_and_detail(
 	return (MANAGER_CHANGE_NONE(Computed_field));
 }
 
+static const char *Cmiss_field_attribute_string(enum Cmiss_field_attribute attribute)
+{
+	const char *attribute_string = 0;
+	switch (attribute)
+	{
+	case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+		attribute_string = "IS_MANAGED";
+		break;
+	case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+		attribute_string = "IS_COORDINATE";
+		break;
+	case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+		attribute_string = "NUMBER_OF_COMPONENTS";
+		break;
+	case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+		attribute_string = "NUMBER_OF_SOURCE_FIELDS";
+		break;
+	default:
+		// do nothing
+		break;
+	}
+	return attribute_string;
+}
+
 enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(const char *string)
 {
-	enum Cmiss_field_attribute attribute =	(Cmiss_field_attribute)0;
-	if (string)
+	for (int i = 1; ; ++i)
 	{
-		const char *str[] = {"IS_MANAGED", "IS_COORDINATE"};
-		for (unsigned int i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_field_attribute)(i + 1);
-				break;
-			}
-		}
+		enum Cmiss_field_attribute attribute =	static_cast<Cmiss_field_attribute>(i);
+		const char *attribute_string = Cmiss_field_attribute_string(attribute);
+		if (!attribute_string)
+			break;
+		if (0 == strcmp(attribute_string, string))
+			return attribute;
 	}
-	return attribute;
+	return CMISS_FIELD_ATTRIBUTE_INVALID;
 }
 
 char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 2)
-	{
-		const char *str[] = {"IS_MANAGED", "IS_COORDINATE"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_field_attribute_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
