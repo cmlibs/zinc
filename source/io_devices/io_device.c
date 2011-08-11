@@ -125,9 +125,9 @@ Called when this device has file descriptors that are waiting.
 
 	  if (device->perl_action)
 	  {
-#if defined (DEBUG)
+#if defined (DEBUG_CODE)
 		  printf ("Action function %s\n", device->perl_action);
-#endif /* defined (DEBUG) */
+#endif /* defined (DEBUG_CODE) */
 		  interpreter_evaluate_string(device->interpreter,
 			  device->perl_action, &callback_result, &return_code);
 		  if (callback_result)

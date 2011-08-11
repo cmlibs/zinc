@@ -47,7 +47,6 @@
 #cmakedefine GLEW_STATIC
 #cmakedefine USE_MSAA
 #cmakedefine OPTIMISED
-#cmakedefine DEBUG
 #cmakedefine MEMORY_CHECKING
 
 #endif
