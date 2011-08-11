@@ -223,7 +223,7 @@ OPTION_WITH_DEFAULT( CMGUI_USE_ITK "Do you want to use ITK?" ${ITK_FOUND} )
 # dragged in by the dependencies of those libraries that direclty depend upon it.
 #OPTION_WITH_DEFAULT( CMGUI_USE_GDCM "Do you want to use libGDCM?" OFF )
 OPTION_WITH_DEFAULT( CMGUI_USE_OCE "Do you want to use OCE?" ${OCE_FOUND} )
-OPTION_WITH_DEFAULT( CMGUI_USE_OPENCASCADE "Do you want to use OpenCASCADE?" ${OPENCASCADE_FOUND} )
+OPTION_WITH_DEFAULT( CMGUI_USE_OPENCASCADE "Do you want to use OpenCASCADE?" FALSE )
 OPTION_WITH_DEFAULT( CMGUI_USE_PCRE "Do you want to use pcre?" ${PCRE_FOUND} )
 IF( ITK_FOUND OR ImageMagick_FOUND )
 	SET( PNG_AND_TIFF_REQUIRED TRUE )
