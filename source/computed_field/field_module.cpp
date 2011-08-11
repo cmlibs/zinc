@@ -202,6 +202,17 @@ struct Cmiss_region *Cmiss_field_module_get_region_internal(
 	return NULL;
 }
 
+struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
+	struct Cmiss_field_module *field_module)
+{
+	if (!field_module)
+		return 0;
+	FE_region *fe_region = Cmiss_region_get_FE_region(field_module->region);
+	Cmiss_region_id region = 0;
+	FE_region_get_Cmiss_region(fe_region, &region);
+	return region;
+}
+
 struct Cmiss_region *Cmiss_field_module_get_region(
 	struct Cmiss_field_module *field_module)
 {

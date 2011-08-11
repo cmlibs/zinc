@@ -62,6 +62,8 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_node_private.hpp"
+#include "mesh/cmiss_element_private.hpp"
 #if defined (USE_OPENCASCADE)
 #include "cad/field_location.hpp"
 #endif /* defined (USE_OPENCASCADE) */
@@ -232,9 +234,15 @@ public:
 		}
 	}
 
+	/** @return allocated name for node group for master_nodeset */
+	char *get_standard_node_group_name(Cmiss_nodeset_id master_nodeset);
+
 	Cmiss_field_node_group_id create_node_group(Cmiss_nodeset_id nodeset);
 
 	Cmiss_field_node_group_id get_node_group(Cmiss_nodeset_id nodeset);
+
+	/** @return allocated name for element group for master_mesh */
+	char *get_standard_element_group_name(Cmiss_mesh_id master_mesh);
 
 	Cmiss_field_element_group_id create_element_group(Cmiss_mesh_id mesh);
 
@@ -900,175 +908,192 @@ Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id 
 	return subregion_group;
 }
 
+char *Computed_field_group::get_standard_node_group_name(Cmiss_nodeset_id master_nodeset)
+{
+	char *name = Cmiss_field_get_name(this->getField());
+	int error = 0;
+	append_string(&name, ".", &error);
+	char *nodeset_name = Cmiss_nodeset_get_name(master_nodeset);
+	append_string(&name, nodeset_name, &error);
+	DEALLOCATE(nodeset_name);
+	return name;
+}
+
 Cmiss_field_node_group_id Computed_field_group::create_node_group(Cmiss_nodeset_id nodeset)
 {
-	int use_data = 0;
-	Cmiss_field_node_group_id node_field = NULL;
-	if (!contains_all)
+	if (contains_all)
+		return 0;
+	if (Cmiss_nodeset_get_master_region_internal(nodeset) != region)
+		return 0;
+	Cmiss_field_node_group_id node_group = get_node_group(nodeset);
+	if (node_group)
 	{
-		struct FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		if (!FE_region_get_data_FE_region(fe_region))
-		{
-			use_data = 1;
-		}
-		if ((!use_data && !local_node_group) || (use_data && !local_data_group))
-		{
-			Cmiss_field_module_id field_module =
-				Cmiss_region_get_field_module(region);
-			node_field = get_node_group(nodeset);
-			if (node_field)
-			{
-				Cmiss_field_node_group_destroy(&node_field);
-			}
-			if (!use_data && !local_node_group)
-			{
-				char *temp_string = Cmiss_field_get_name(this->getField());
-				int error = 0;
-				append_string(&temp_string, ".nodes", &error);
-				local_node_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
-				if (!local_node_group)
-				{
-					Cmiss_field_module_set_field_name(field_module, temp_string);
-					local_node_group = Cmiss_field_module_create_node_group(field_module, nodeset);
-				}
-				Cmiss_field_set_attribute_integer(local_node_group, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
-				node_field = Cmiss_field_cast_node_group(local_node_group);
-				DEALLOCATE(temp_string);
-			}
-			if (use_data && !local_data_group)
-			{
-				char *temp_string = Cmiss_field_get_name(this->getField());
-				int error = 0;
-				append_string(&temp_string, ".data", &error);
-				local_data_group = Cmiss_field_module_find_field_by_name(field_module, temp_string);
-				if (!local_data_group)
-				{
-					Cmiss_field_module_set_field_name(field_module, temp_string);
-					local_data_group = Cmiss_field_module_create_node_group(field_module, nodeset);
-				}
-				Cmiss_field_set_attribute_integer(local_data_group, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
-				node_field = Cmiss_field_cast_node_group(local_data_group);
-				DEALLOCATE(temp_string);
-			}
-			Cmiss_field_module_destroy(&field_module);
-		}
+		// can't create if already exists
+		Cmiss_field_node_group_destroy(&node_group);
 	}
-	return (node_field);
+	else
+	{
+		Cmiss_nodeset_id master_nodeset = Cmiss_nodeset_get_master(nodeset);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_module_begin_change(field_module);
+		Cmiss_field_id node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
+		node_group = Cmiss_field_cast_node_group(node_group_field);
+		char *name = get_standard_node_group_name(master_nodeset);
+		Cmiss_field_set_name(node_group_field, name);
+		DEALLOCATE(name);
+		int use_data = Cmiss_nodeset_is_data_internal(master_nodeset);
+		if (use_data)
+		{
+			local_data_group = Cmiss_field_access(node_group_field);
+		}
+		else
+		{
+			local_node_group = Cmiss_field_access(node_group_field);
+		}
+		Cmiss_field_destroy(&node_group_field);
+		Cmiss_field_module_end_change(field_module);
+		Cmiss_field_module_destroy(&field_module);
+		Cmiss_nodeset_destroy(&master_nodeset);
+	}
+	return (node_group);
 }
 
 Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id nodeset)
 {
-	int use_data = 0;
-	Cmiss_field_node_group_id node_field = NULL;
-	if (!contains_all)
+	if (contains_all)
+		return 0;
+	if (Cmiss_nodeset_get_master_region_internal(nodeset) != region)
+		return 0;
+	Cmiss_field_node_group_id node_group = NULL;
+	int use_data = Cmiss_nodeset_is_data_internal(nodeset);
+	if (!use_data && local_node_group)
 	{
-		struct FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		if (!FE_region_get_data_FE_region(fe_region))
+		node_group = Cmiss_field_cast_node_group(local_node_group);
+	}
+	else if (use_data && local_data_group)
+	{
+		node_group = Cmiss_field_cast_node_group(local_data_group);
+	}
+	if (!node_group)
+	{
+		// find by name & check it is for same master nodeset (must avoid group regions)
+		Cmiss_nodeset_id master_nodeset = Cmiss_nodeset_get_master(nodeset);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		char *name = get_standard_node_group_name(master_nodeset);
+		Cmiss_field_id node_group_field = Cmiss_field_module_find_field_by_name(field_module, name);
+		DEALLOCATE(name);
+		node_group = Cmiss_field_cast_node_group(node_group_field);
+		if (node_group)
 		{
-			use_data = 1;
-		}
-		if (!use_data && local_node_group)
-		{
-			node_field = Cmiss_field_cast_node_group(local_node_group);
-		}
-		else if (use_data && local_data_group)
-		{
-			node_field = Cmiss_field_cast_node_group(local_data_group);
-		}
-		if (!node_field)
-		{
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-			char *temp_string = Cmiss_field_get_name(this->getField());
-			int error = 0;
-			if (!use_data)
+			Cmiss_nodeset_id check_master_nodeset = Cmiss_field_node_group_get_master_nodeset(node_group);
+			if (Cmiss_nodeset_match(check_master_nodeset, master_nodeset))
 			{
-				append_string(&temp_string, ".nodes", &error);
-				local_node_group = Cmiss_field_module_find_field_by_name(
-					field_module, temp_string);
-				if (local_node_group)
-					node_field= Cmiss_field_cast_node_group(local_node_group);
+				if (use_data)
+				{
+					local_data_group = Cmiss_field_access(node_group_field);
+				}
+				else
+				{
+					local_node_group = Cmiss_field_access(node_group_field);
+				}
 			}
 			else
 			{
-				append_string(&temp_string, ".data", &error);
-				local_data_group = Cmiss_field_module_find_field_by_name(
-					field_module, temp_string);
-				if (local_data_group)
-					node_field= Cmiss_field_cast_node_group(local_data_group);
+				// wrong nodeset
+				Cmiss_field_node_group_destroy(&node_group);
 			}
-			DEALLOCATE(temp_string);
-			Cmiss_field_module_destroy(&field_module);
+			Cmiss_nodeset_destroy(&check_master_nodeset);
 		}
+		Cmiss_field_destroy(&node_group_field);
+		Cmiss_field_module_destroy(&field_module);
+		Cmiss_nodeset_destroy(&master_nodeset);
 	}
-	return (node_field);
+	return (node_group);
+}
+
+char *Computed_field_group::get_standard_element_group_name(Cmiss_mesh_id master_mesh)
+{
+	char *name = Cmiss_field_get_name(this->getField());
+	int error = 0;
+	append_string(&name, ".", &error);
+	char *mesh_name = Cmiss_mesh_get_name(master_mesh);
+	append_string(&name, mesh_name, &error);
+	DEALLOCATE(mesh_name);
+	return name;
 }
 
 Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_mesh_id mesh)
 {
-	Cmiss_field_element_group_id element_field = NULL;
-	if (!contains_all && mesh)
+	if (contains_all)
+		return 0;
+	if (Cmiss_mesh_get_region(mesh) != region)
+		return 0;
+	Cmiss_field_element_group_id element_group = get_element_group(mesh);
+	if (element_group)
 	{
-		int dimension = Cmiss_mesh_get_dimension(mesh);
-		if (!local_element_group[dimension - 1])
-		{
-			Cmiss_field_module_id field_module =
-				Cmiss_region_get_field_module(region);
-			element_field = get_element_group(mesh);
-			if (element_field)
-			{
-				Cmiss_field_element_group_destroy(&element_field);
-			}
-			if (!local_element_group[dimension - 1])
-			{
-				char *temp_string = Cmiss_field_get_name(this->getField());
-				int error = 0;
-				char suffix[30];
-				sprintf(suffix, ".mesh_%dd", dimension);
-				append_string(&temp_string, suffix, &error);
-				local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(field_module, temp_string);
-				if (!local_element_group[dimension - 1])
-				{
-					Cmiss_field_module_set_field_name(field_module, temp_string);
-					local_element_group[dimension - 1] = Cmiss_field_module_create_element_group(field_module, mesh);
-				}
-				Cmiss_field_set_attribute_integer(local_element_group[dimension - 1], CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 0);
-				element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
-				DEALLOCATE(temp_string);
-			}
-			Cmiss_field_module_destroy(&field_module);
-		}
+		// can't create if already exists
+		Cmiss_field_element_group_destroy(&element_group);
 	}
-
-	return (element_field);
+	else
+	{
+		Cmiss_mesh_id master_mesh = Cmiss_mesh_get_master(mesh);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_module_begin_change(field_module);
+		Cmiss_field_id element_group_field = Cmiss_field_module_create_element_group(field_module, master_mesh);
+		element_group = Cmiss_field_cast_element_group(element_group_field);
+		char *name = get_standard_element_group_name(master_mesh);
+		Cmiss_field_set_name(element_group_field, name);
+		DEALLOCATE(name);
+		int dimension = Cmiss_mesh_get_dimension(mesh);
+		local_element_group[dimension - 1] = Cmiss_field_access(element_group_field);
+		Cmiss_field_destroy(&element_group_field);
+		Cmiss_field_module_end_change(field_module);
+		Cmiss_field_module_destroy(&field_module);
+		Cmiss_mesh_destroy(&master_mesh);
+	}
+	return (element_group);
 }
 
 Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_mesh_id mesh)
 {
-	Cmiss_field_element_group_id element_field = NULL;
-	if (!contains_all && mesh)
+	if (contains_all)
+		return 0;
+	if (Cmiss_mesh_get_region(mesh) != region)
+		return 0;
+	Cmiss_field_element_group_id element_group = NULL;
+	int dimension = Cmiss_mesh_get_dimension(mesh);
+	if (local_element_group[dimension - 1])
 	{
-		int dimension = Cmiss_mesh_get_dimension(mesh);
-		if (local_element_group[dimension - 1])
-		{
-			element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
-		}
-		else
-		{
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-			char *temp_string = Cmiss_field_get_name(this->getField());
-			int error = 0;
-			char suffix[30];
-			sprintf(suffix, ".mesh_%dd", dimension);
-			append_string(&temp_string, suffix, &error);
-			local_element_group[dimension - 1] = Cmiss_field_module_find_field_by_name(
-				field_module, temp_string);
-			DEALLOCATE(temp_string);
-			if (local_element_group[dimension - 1])
-				element_field = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
-			Cmiss_field_module_destroy(&field_module);
-		}
+		element_group = Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
 	}
-	return (element_field);
+	else
+	{
+		// find by name & check it is for same master mesh (must avoid group regions)
+		Cmiss_mesh_id master_mesh = Cmiss_mesh_get_master(mesh);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		char *name = get_standard_element_group_name(master_mesh);
+		Cmiss_field_id element_group_field = Cmiss_field_module_find_field_by_name(field_module, name);
+		DEALLOCATE(name);
+		element_group = Cmiss_field_cast_element_group(element_group_field);
+		if (element_group)
+		{
+			Cmiss_mesh_id check_master_mesh = Cmiss_field_element_group_get_master_mesh(element_group);
+			if (Cmiss_mesh_match(check_master_mesh, master_mesh))
+			{
+				local_element_group[dimension - 1] = Cmiss_field_access(element_group_field);
+			}
+			else
+			{
+				// wrong mesh
+				Cmiss_field_element_group_destroy(&element_group);
+			}
+			Cmiss_mesh_destroy(&check_master_mesh);
+		}
+		Cmiss_field_destroy(&element_group_field);
+		Cmiss_field_module_destroy(&field_module);
+		Cmiss_mesh_destroy(&master_mesh);
+	}
+	return (element_group);
 }
 
 Cmiss_field_id Computed_field_group::get_subobject_group_for_domain(Cmiss_field_id domain)

@@ -60,6 +60,15 @@ struct Cmiss_region *Cmiss_field_module_get_region_internal(
 	struct Cmiss_field_module *field_module);
 
 /***************************************************************************//**
+ * Get non-accessed pointer to master region for this field_module.
+ *
+ * @param field_module  The field module to query.
+ * @return  Non-accessed handle to master region for field_module.
+ */
+struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
+	struct Cmiss_field_module *field_module);
+
+/***************************************************************************//**
  * Gets the region this field module can create fields for.
  *
  * @param field_module  The field module to query.

@@ -49,9 +49,20 @@ extern "C" {
 
 struct FE_region;
 
+
+/** Internal use only
+ * @return non-accessed FE_region for this mesh.
+ */
+FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh);
+
+/** Internal use only.
+ * Use this function to avoid using mesh from group regions.
+ * @return non-accessed master FE_region for this mesh.
+ */
+FE_region *Cmiss_mesh_get_master_FE_region_internal(Cmiss_mesh_id mesh);
+
 // Internal use only
 
-FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh);
 
 Cmiss_region_id Cmiss_mesh_get_region(Cmiss_mesh_id mesh);
 

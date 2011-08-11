@@ -503,6 +503,34 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	return node;
 }
 
+char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset)
+{
+	char *name = 0;
+	if (nodeset)
+	{
+		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+		int error = 0;
+		Cmiss_region_id region = 0;
+		FE_region_get_Cmiss_region(fe_region, &region);
+		if (Cmiss_region_is_group(region))
+		{
+			char *group_name = Cmiss_region_get_name(region);
+			append_string(&name, group_name, &error);
+			append_string(&name, ".", &error);
+			DEALLOCATE(group_name);
+		}
+		if (FE_region_is_data_FE_region(fe_region))
+		{
+			append_string(&name, "cmiss_data", &error);
+		}
+		else
+		{
+			append_string(&name, "cmiss_nodes", &error);
+		}
+	}
+	return name;
+}
+
 int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
 {
 	if (nodeset)
@@ -552,9 +580,42 @@ Cmiss_field_module_id Cmiss_nodeset_get_field_module(Cmiss_nodeset_id nodeset)
 	return Cmiss_region_get_field_module(region);
 }
 
+Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset)
+{
+	FE_region *fe_region = Cmiss_nodeset_get_master_FE_region_internal(nodeset);
+	return reinterpret_cast<Cmiss_nodeset_id>(ACCESS(FE_region)(fe_region));
+}
+
+int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2)
+{
+	return (nodeset1 && (nodeset1 == nodeset2));
+}
+
 FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset)
 {
 	return reinterpret_cast<FE_region *>(nodeset);
+}
+
+FE_region *Cmiss_nodeset_get_master_FE_region_internal(Cmiss_nodeset_id nodeset)
+{
+	FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
+	FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
+	return fe_region;
+}
+
+Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset)
+{
+	Cmiss_region_id region = 0;
+	if (nodeset)
+	{
+		FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset), &region);
+	}
+	return region;
+}
+
+int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset)
+{
+	return FE_region_is_data_FE_region(reinterpret_cast<FE_region *>(nodeset));
 }
 
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)

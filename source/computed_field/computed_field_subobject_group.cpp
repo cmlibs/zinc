@@ -52,6 +52,7 @@ extern "C" {
 
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/field_module.hpp"
 extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -60,6 +61,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #if defined (USE_OPENCASCADE)
 #include "cad/computed_field_cad_topology.h"
 #include "cad/element_identifier.h"
@@ -205,21 +207,34 @@ int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(node_group_address));
 }
 
+Cmiss_nodeset_id Cmiss_field_node_group_get_master_nodeset(
+	Cmiss_field_node_group_id node_group)
+{
+	Cmiss_nodeset_id master_nodeset = 0;
+	if (node_group)
+	{
+		Computed_field_node_group *group_core =
+			Computed_field_node_group_core_cast(node_group);
+		// deliberately create another wrapper:
+		master_nodeset = Cmiss_nodeset_get_master(group_core->get_master_nodeset());
+	}
+	return master_nodeset;
+}
+
 Computed_field *Cmiss_field_module_create_node_group(Cmiss_field_module_id field_module, Cmiss_nodeset_id nodeset)
 {
 	Computed_field *field;
 
-	ENTER(Computed_field_create_group);
+	ENTER(Cmiss_field_module_create_node_group);
 	field = (Computed_field *)NULL;
-	if (field_module && nodeset)
+	if (field_module && nodeset && (Cmiss_nodeset_get_master_region_internal(nodeset) ==
+		Cmiss_field_module_get_master_region_internal(field_module)))
 	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		struct LIST(FE_node) *fe_node_list = FE_region_create_related_node_list(fe_region);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_node_group(fe_node_list));
+			new Computed_field_node_group(nodeset));
 
 	}
 	else
@@ -352,16 +367,14 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 
 	ENTER(Cmiss_field_module_create_element_group);
 	field = (Computed_field *)NULL;
-	if (field_module && mesh)
+	if (field_module && mesh && (Cmiss_mesh_get_region(mesh) ==
+		Cmiss_field_module_get_master_region_internal(field_module)))
 	{
-		FE_region *fe_region = Cmiss_mesh_get_FE_region(mesh);
-		struct LIST(FE_element) *fe_element_list = FE_region_create_related_element_list_for_dimension(fe_region,
-			Cmiss_mesh_get_dimension(mesh));
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_element_group(fe_element_list, Cmiss_mesh_get_dimension(mesh)));
+			new Computed_field_element_group(mesh));
 	}
 	else
 	{
@@ -378,6 +391,19 @@ int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_grou
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
 }
 
+Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
+	Cmiss_field_element_group_id element_group)
+{
+	Cmiss_mesh_id master_mesh = 0;
+	if (element_group)
+	{
+		Computed_field_element_group *group_core =
+			Computed_field_element_group_core_cast(element_group);
+		// deliberately create another wrapper:
+		master_mesh = Cmiss_mesh_get_master(group_core->get_master_mesh());
+	}
+	return master_mesh;
+}
 
 #if defined (USE_OPENCASCADE)
 

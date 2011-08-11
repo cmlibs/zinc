@@ -245,12 +245,49 @@ Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier);
 
 /***************************************************************************//**
+ * Returns the number of dimensions of the mesh.
+ *
+ * @param mesh  Handle to the mesh to query.
+ * @return  dimension of mesh.
+ */
+int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Get the master mesh which owns the elements for this mesh. Can be the
+ * same as the supplied mesh if it is a master.
+ *
+ * @param mesh  The mesh to query.
+ * @return  Handle to the master mesh. Caller is responsible for destroying
+ * the returned handle.
+ */
+Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Return the name of the mesh.
+ *
+ * @see Cmiss_deallocate()
+ * @param mesh  The mesh whose name is requested.
+ * @return  On success: allocated string containing mesh name. Up to caller to
+ * free using Cmiss_deallocate().
+ */
+char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
  * Return the number of elements in the mesh.
  *
  * @param mesh  Handle to the mesh to query.
  * @return  Number of elements in mesh.
  */
 int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Check if two mesh handles refer to the same object.
+ *
+ * @param mesh1  The first mesh to match.
+ * @param mesh2  The second mesh to match.
+ * @return  1 if the two meshes match, 0 if not.
+ */
+int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
 
 /***************************************************************************//**
  * Remove an element from a mesh and any related groups it is in.
@@ -275,24 +312,6 @@ int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
  */
 int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh,
    Cmiss_field_id conditional_field);
-
-/***************************************************************************//**
- * Returns the number of dimensions of the mesh.
- *
- * @param mesh  Handle to the mesh to query.
- * @return  dimension of mesh.
- */
-int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh);
-
-/***************************************************************************//**
- * Return the name of the mesh.
- *
- * @see Cmiss_deallocate()
- * @param field  The mesh whose name is requested.
- * @return  On success: allocated string containing mesh name. Up to caller to
- * free using Cmiss_deallocate().
- */
-char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Destroys this handle to the element_basis and sets it to NULL.

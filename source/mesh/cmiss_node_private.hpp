@@ -48,11 +48,30 @@ extern "C" {
 
 struct FE_region;
 
-// Internal use only
+/** Internal use only
+ * @return non-accessed FE_region for this nodeset.
+ */
 FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset);
 
-// Internal use only
-// @return  Accessed reference to field_module
+/** Internal use only.
+ * Use this function to avoid using nodeset from group regions.
+ * @return non-accessed master FE_region for this nodeset.
+ */
+FE_region *Cmiss_nodeset_get_master_FE_region_internal(Cmiss_nodeset_id nodeset);
+
+/** Internal use only
+ * @return non-accessed master region for this nodeset.
+ */
+Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset);
+
+/** Internal use only
+ * @return  Accessed reference to field_module
+ */
 Cmiss_field_module_id Cmiss_nodeset_get_field_module(Cmiss_nodeset_id nodeset);
+
+/** Internal use only
+ * @return  1 if nodeset represents data points.
+ */
+int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset);
 
 #endif /* !defined (CMISS_NODE_PRIVATE_HPP) */

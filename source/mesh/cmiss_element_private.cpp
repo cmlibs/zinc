@@ -935,20 +935,26 @@ Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	return element;
 }
 
-int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
-{
-	if (mesh)
-	{
-		return mesh->getSize();
-	}
-	return 0;
-}
-
 int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh)
 {
 	if (mesh)
 	{
 		return mesh->getDimension();
+	}
+	return 0;
+}
+
+Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+	{
+		FE_region *fe_region = Cmiss_mesh_get_master_FE_region_internal(mesh);
+		Cmiss_region_id region = 0;
+		FE_region_get_Cmiss_region(fe_region, &region);
+		if (region)
+		{
+			return new Cmiss_mesh(region, mesh->getDimension());
+		}
 	}
 	return 0;
 }
@@ -986,6 +992,22 @@ char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh)
 		}
 	}
 	return name;
+}
+
+int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+	{
+		return mesh->getSize();
+	}
+	return 0;
+}
+
+int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2)
+{
+	return (mesh1 && mesh2 &&
+		(mesh1->getFeRegion() == mesh2->getFeRegion()) &&
+		(mesh1->getDimension() == mesh1->getDimension()));
 }
 
 int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
@@ -1033,6 +1055,17 @@ FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh)
 		return mesh->getFeRegion();
 	}
 	return 0;
+}
+
+FE_region *Cmiss_mesh_get_master_FE_region_internal(Cmiss_mesh_id mesh)
+{
+	FE_region *fe_region = 0;
+	if (mesh)
+	{
+		fe_region = mesh->getFeRegion();
+		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
+	}
+	return fe_region;
 }
 
 Cmiss_region_id Cmiss_mesh_get_region(Cmiss_mesh_id mesh)

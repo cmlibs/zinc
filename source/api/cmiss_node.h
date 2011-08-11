@@ -177,12 +177,41 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier);
 
 /***************************************************************************//**
+ * Get the master nodeset which owns the nodes for this nodeset. Can be the
+ * same as the supplied nodeset if it is a master.
+ *
+ * @param nodeset  The nodeset to query.
+ * @return  Handle to the master nodeset. Caller is responsible for destroying
+ * the returned handle.
+ */
+Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Return the name of the nodeset.
+ *
+ * @see Cmiss_deallocate()
+ * @param nodeset  The nodeset whose name is requested.
+ * @return  On success: allocated string containing nodeset name. Up to caller
+ * to free using Cmiss_deallocate().
+ */
+char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
  * Return the number of nodes in the nodeset.
  *
  * @param nodeset  Handle to the nodeset to query.
  * @return  Number of nodes in nodeset.
  */
 int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Check if two nodeset handles refer to the same object.
+ *
+ * @param nodeset1  The first nodeset to match.
+ * @param nodeset2  The second nodeset to match.
+ * @return  1 if the two nodesets match, 0 if not.
+ */
+int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
 
 /***************************************************************************//**
  * Remove a node from the nodeset and any related node groups it is in.

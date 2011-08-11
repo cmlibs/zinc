@@ -1614,66 +1614,6 @@ them to be specified allows sharing across regions).
 	return (fe_region);
 } /* CREATE(FE_region) */
 
-struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 24 October 2008
-
-DESCRIPTION :
-Gets the data FE_region for <fe_region>, which has an additional set
-of discrete data objects, just like nodes, which we call "data". Data points
-in the data_FE_region share the same fields as <fe_region>.
-Returns NULL with error if <fe_region> is itself a data region.
-==============================================================================*/
-{
-	struct FE_region *data_fe_region, *data_master_fe_region;
-
-	ENTER(FE_region_get_data_FE_region);
-	data_fe_region = (struct FE_region *)NULL;
-	if (fe_region)
-	{
-		if (!fe_region->base_fe_region)
-		{
-			if (fe_region->data_fe_region)
-			{
-				data_fe_region = fe_region->data_fe_region;
-			}
-			else
-			{
-				if (fe_region->master_fe_region)
-				{
-					data_master_fe_region =
-						FE_region_get_data_FE_region(fe_region->master_fe_region);
-				}
-				else
-				{
-					data_master_fe_region = fe_region;
-				}
-				data_fe_region = CREATE(FE_region)(data_master_fe_region,
-					(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
-				if (data_fe_region)
-				{
-					fe_region->data_fe_region = ACCESS(FE_region)(data_fe_region);
-					data_fe_region->base_fe_region = fe_region;
-					/* decrement access count of master to avoid circular reference */
-					data_master_fe_region->access_count--;
-					if (data_master_fe_region == fe_region)
-					{
-						data_fe_region->top_data_hack = 1;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_get_data_FE_region.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (data_fe_region);
-} /* FE_region_get_data_FE_region */
-
 int DESTROY(FE_region)(struct FE_region **fe_region_address)
 /*******************************************************************************
 LAST MODIFIED : 5 June 2003
@@ -1824,6 +1764,62 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 DECLARE_OBJECT_FUNCTIONS(FE_region)
 
 DEFINE_ANY_OBJECT(FE_region)
+
+struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region)
+{
+	struct FE_region *data_fe_region, *data_master_fe_region;
+
+	ENTER(FE_region_get_data_FE_region);
+	data_fe_region = (struct FE_region *)NULL;
+	if (fe_region)
+	{
+		if (!fe_region->base_fe_region)
+		{
+			if (fe_region->data_fe_region)
+			{
+				data_fe_region = fe_region->data_fe_region;
+			}
+			else
+			{
+				if (fe_region->master_fe_region)
+				{
+					data_master_fe_region =
+						FE_region_get_data_FE_region(fe_region->master_fe_region);
+				}
+				else
+				{
+					data_master_fe_region = fe_region;
+				}
+				data_fe_region = CREATE(FE_region)(data_master_fe_region,
+					(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
+				if (data_fe_region)
+				{
+					fe_region->data_fe_region = ACCESS(FE_region)(data_fe_region);
+					data_fe_region->base_fe_region = fe_region;
+					/* decrement access count of master to avoid circular reference */
+					data_master_fe_region->access_count--;
+					if (data_master_fe_region == fe_region)
+					{
+						data_fe_region->top_data_hack = 1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_data_FE_region.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (data_fe_region);
+}
+
+int FE_region_is_data_FE_region(struct FE_region *fe_region)
+{
+	return (fe_region && fe_region->base_fe_region);
+}
 
 int FE_region_begin_change(struct FE_region *fe_region)
 /*******************************************************************************

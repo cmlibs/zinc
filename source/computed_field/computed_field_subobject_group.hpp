@@ -46,6 +46,7 @@ extern "C" {
 #include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 }
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_private.hpp"
@@ -56,6 +57,8 @@ extern "C" {
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #include <map>
 #include <iterator>
 
@@ -365,18 +368,34 @@ namespace {
 
 	class Computed_field_element_group : public Computed_field_subobject_group
 	{
+	private:
+
+		Cmiss_mesh_id master_mesh;
+		const int dimension;
+		struct LIST(FE_element) *object_list;
+		Cmiss_field_subobject_group_change_detail change_detail;
+
 	public:
 
-		Computed_field_element_group(struct LIST(FE_element) *object_list_in, int dimension_in) :
+		Computed_field_element_group(Cmiss_mesh_id mesh) :
 			Computed_field_subobject_group(),
-			object_list(object_list_in),
-			dimension(dimension_in)
+			// don't want element_groups based on group region FE_region so get master:
+			master_mesh(Cmiss_mesh_get_master(mesh)),
+			dimension(Cmiss_mesh_get_dimension(master_mesh)),
+			object_list(FE_region_create_related_element_list_for_dimension(
+				Cmiss_mesh_get_FE_region(master_mesh), dimension))
 		{
 		}
 
 		~Computed_field_element_group()
 		{
 			DESTROY(LIST(FE_element))(&object_list);
+			Cmiss_mesh_destroy(&master_mesh);
+		}
+
+		Cmiss_mesh_id get_master_mesh()
+		{
+			return master_mesh;
 		}
 
 		inline int addObject(FE_element *object)
@@ -484,16 +503,9 @@ namespace {
 
 	private:
 
-		struct LIST(FE_element) *object_list;
-		Cmiss_field_subobject_group_change_detail change_detail;
-		const int dimension;
-
 		Computed_field_core* copy()
 		{
-			Computed_field_element_group *core = new Computed_field_element_group(NULL, this->dimension);
-			core->object_list = CREATE(LIST(FE_element))();
-			COPY_LIST(FE_element)(core->object_list, this->object_list);
-			return (core);
+			return new Computed_field_element_group(master_mesh);
 		};
 
 		int compare(Computed_field_core* other_field)
@@ -566,17 +578,31 @@ namespace {
 
 	class Computed_field_node_group : public Computed_field_subobject_group
 	{
+	private:
+
+		Cmiss_nodeset_id master_nodeset;
+		struct LIST(FE_node) *object_list;
+		Cmiss_field_subobject_group_change_detail change_detail;
+
 	public:
 
-		Computed_field_node_group(struct LIST(FE_node) *object_list_in) :
+		Computed_field_node_group(Cmiss_nodeset_id nodeset) :
 			Computed_field_subobject_group(),
-			object_list(object_list_in)
+			// don't want node_groups based on group region FE_region so get master:
+			master_nodeset(Cmiss_nodeset_get_master(nodeset)),
+			object_list(FE_region_create_related_node_list(Cmiss_nodeset_get_FE_region(master_nodeset)))
 		{
 		}
 
 		~Computed_field_node_group()
 		{
 			DESTROY(LIST(FE_node))(&object_list);
+			Cmiss_nodeset_destroy(&master_nodeset);
+		}
+
+		Cmiss_nodeset_id get_master_nodeset()
+		{
+			return master_nodeset;
 		}
 
 		inline int addObject(FE_node *object)
@@ -681,15 +707,9 @@ namespace {
 
 	private:
 
-		struct LIST(FE_node) *object_list;
-		Cmiss_field_subobject_group_change_detail change_detail;
-
 		Computed_field_core* copy()
 		{
-			Computed_field_node_group *core = new Computed_field_node_group(NULL);
-			core->object_list = CREATE(LIST(FE_node))();
-			COPY_LIST(FE_node)(core->object_list, this->object_list);
-			return (core);
+			return new Computed_field_node_group(master_nodeset);
 		};
 
 		int compare(Computed_field_core* other_field)

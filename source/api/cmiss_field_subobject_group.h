@@ -92,6 +92,15 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
 int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
 /*****************************************************************************//**
+ * Get a handle to the master nodeset this node group is a subset of.
+ *
+ * @param node_group  Handle to node group field.
+ * @return  Handle to master nodeset. Caller is responsible for destroying this.
+ */
+Cmiss_nodeset_id Cmiss_field_node_group_get_master_nodeset(
+	Cmiss_field_node_group_id node_group);
+
+/*****************************************************************************//**
  * Add specified node to node group.
  *
  * @param node_group  handle to target node group field.
@@ -188,6 +197,15 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
  * @return  1 if successfully destroy the element group, otherwise 0.
  */
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
+
+/*****************************************************************************//**
+ * Get a handle to the master mesh this element group is a subset of.
+ *
+ * @param element_group  Handle to element group field.
+ * @return  Handle to master mesh. Caller is responsible for destroying this.
+ */
+Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
+	Cmiss_field_element_group_id element_group);
 
 /*****************************************************************************//**
  * Add specified element to element group.

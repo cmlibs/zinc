@@ -178,17 +178,6 @@ supplied then a default empty object will be created for this region.  (Allowing
 them to be specified allows sharing across regions).
 ==============================================================================*/
 
-struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 24 October 2008
-
-DESCRIPTION :
-Gets the data FE_region for <fe_region>, which has an additional set
-of discrete data objects, just like nodes, which we call "data". Data points
-in the data_FE_region share the same fields as <fe_region>.
-Returns NULL with error if <fe_region> is itself a data region.
-==============================================================================*/
-
 int DESTROY(FE_region)(struct FE_region **fe_region_address);
 /*******************************************************************************
 LAST MODIFIED : 19 October 2002
@@ -200,6 +189,19 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
 PROTOTYPE_ANY_OBJECT(FE_region);
+
+/***************************************************************************//**
+ * Gets the data FE_region for <fe_region>, which has an additional set
+ * of discrete data objects, just like nodes, which we call "data". Data points
+ * in the data_FE_region share the same fields as <fe_region>.
+ * @return  Data region or NULL with error if fe_region is itself a data region.
+ */
+struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region);
+
+/***************************************************************************//**
+ * @return  1 if fe_region is a data FE_region, 0 if not.
+ */
+int FE_region_is_data_FE_region(struct FE_region *fe_region);
 
 int FE_region_begin_change(struct FE_region *fe_region);
 /*******************************************************************************
