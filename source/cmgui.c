@@ -59,10 +59,8 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE) && defined (DARWIN)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#if defined (USE_XML2)
 #include <libxml/catalog.h>
 #include <libxml/xmlschemastypes.h>
-#endif
 
 /*
 Global functions
@@ -170,10 +168,8 @@ Main program for the CMISS Graphical User Interface
 		Cmiss_context_destroy(&context);
 		/* FieldML does not cleanup the global varaibles xmlSchematypes and
 		 * xmlCatalog at this moment, so we clean it up here instead*/
-#if defined (USE_XML2)
 		xmlCatalogCleanup();
 		xmlSchemaCleanupTypes();
-#endif
 	}
 	else
 	{
@@ -186,3 +182,4 @@ Main program for the CMISS Graphical User Interface
 	
 	return (return_code);
 } /* main */
+

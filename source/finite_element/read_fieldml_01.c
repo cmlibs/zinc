@@ -41,7 +41,6 @@
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-#if defined (USE_XML2)
 #if defined (UNIX)
 #include <ctype.h>
 #endif /* defined (UNIX) */
@@ -5436,7 +5435,6 @@ merge incompatible data will leave the global region in a compromised state.
 
 	return (return_code);
 } /* parse_fieldml_file */
-#endif /* defined (USE_XML2) */
 
 int is_fieldml_01_file(const char *filename)
 {

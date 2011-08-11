@@ -34,7 +34,6 @@
 #cmakedefine USE_IMAGEMAGICK
 #cmakedefine USE_ITK
 #cmakedefine USE_PERL_INTERPRETER
-#cmakedefine USE_XML2
 #cmakedefine USE_NETGEN
 #cmakedefine USE_GLEW
 #cmakedefine USE_PNG
