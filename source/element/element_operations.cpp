@@ -539,9 +539,8 @@ FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
 				if (sub_group)
 				{
 					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-					Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_name(field_module,
-						((1 == dimension) ? "cmiss_mesh_1d" :
-							((2 == dimension) ? "cmiss_mesh_2d" : "cmiss_mesh_3d")));
+					Cmiss_mesh_id temp_mesh =
+						Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
 					element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 					Cmiss_mesh_destroy(&temp_mesh);
 					Cmiss_field_group_destroy(&sub_group);

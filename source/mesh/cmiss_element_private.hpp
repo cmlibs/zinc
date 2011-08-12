@@ -49,7 +49,6 @@ extern "C" {
 
 struct FE_region;
 
-
 /** Internal use only
  * @return non-accessed FE_region for this mesh.
  */

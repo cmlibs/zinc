@@ -126,16 +126,27 @@ char *Cmiss_basis_function_type_enum_to_string(
 	enum Cmiss_basis_function_type type);
 
 /***************************************************************************//**
- * Get a handle to a finite element mesh from its name. An mesh is the
- * container of elements, intended to be of fixed dimension.
+ * Get a handle to the default mesh of a given dimension. Cmgui is currently
+ * limited to 1 mesh of each dimension from 1 to 3. These meshes have default
+ * names of "cmiss_mesh_Nd", where "N" is the dimension.
+ *
+ * @param field_module  The field module the mesh belongs to.
+ * @param dimension  The dimension of the mesh from 1 to 3.
+ * @return  Handle to the finite element mesh, or NULL if error.
+ */
+Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
+	Cmiss_field_module_id field_module, int dimension);
+
+/***************************************************************************//**
+ * Get a handle to a finite element mesh from its name. A mesh is the container
+ * of elements of a fixed dimension.
  * Valid names are currently limited to:
  * "cmiss_mesh_3d" = 3-D elements.
  * "cmiss_mesh_2d" = 2-D elements including faces of 3-D elements.
  * "cmiss_mesh_1d" = 1-D elements including faces (lines) of 2-D elements.
  *
  * @param field_module  The field module the mesh belongs to.
- * @param name  The name of the finite element mesh, currently "cmiss_mesh_3d",
- * "cmiss_mesh_2d" or "cmiss_mesh_1d".
+ * @param name  The name of the finite element mesh.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
 Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(

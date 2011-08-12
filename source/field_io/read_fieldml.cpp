@@ -904,9 +904,8 @@ int FieldMLReader::readMeshes()
 				Cmiss_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
 		}
 
-		Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_name(field_module,
-			(meshDimension == 3 ? "cmiss_mesh_3d" :
-				(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
+		Cmiss_mesh_id mesh =
+			Cmiss_field_module_get_mesh_by_dimension(field_module, meshDimension);
 		Cmiss_element_template_id element_template = Cmiss_mesh_create_element_template(mesh);
 
 		// make FE_elements out of elements ensemble with shape from mesh
@@ -1310,9 +1309,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// define element fields
 
-	Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_name(field_module,
-		(meshDimension == 3 ? "cmiss_mesh_3d" :
-			(meshDimension == 2 ? "cmiss_mesh_2d" : "cmiss_mesh_1d")));
+	Cmiss_mesh_id mesh =
+		Cmiss_field_module_get_mesh_by_dimension(field_module, meshDimension);
 	Cmiss_element_template_id element_template = 0;
 	Cmiss_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 	Cmiss_ensemble_iterator_id elementsIterator = Cmiss_field_ensemble_get_first_entry(elementsEnsemble);

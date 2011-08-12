@@ -280,10 +280,8 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					Cmiss_optimisation_id optimisation = Cmiss_field_module_create_optimisation(fieldModule);
 					Cmiss_optimisation_set_method(optimisation, package->method);
 
-					Cmiss_mesh_id feMesh = NULL;
-					if (dimension == 1) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_1d");
-					else if (dimension == 2) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_2d");
-					else if (dimension == 3) feMesh = Cmiss_field_module_get_mesh_by_name(fieldModule, "cmiss_mesh_3d");
+					Cmiss_mesh_id feMesh =
+						Cmiss_field_module_get_mesh_by_dimension(fieldModule, dimension);
 					if (feMesh == NULL)
 					{
 						display_message(ERROR_MESSAGE, "gfx_minimise.  Unable to get the mesh, invalid dimension?");
