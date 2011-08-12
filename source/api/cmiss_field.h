@@ -399,7 +399,7 @@ int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
  * element shape.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_cache_set_element_location(Cmiss_field_cache_id cache,
+int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 	Cmiss_element_id element, int number_of_chart_coordinates,
 	double *chart_coordinates);
 

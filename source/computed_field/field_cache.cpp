@@ -112,7 +112,7 @@ int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
 	return 1;
 }
 
-int Cmiss_field_cache_set_element_location_with_parent(
+int Cmiss_field_cache_set_mesh_location_with_parent(
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
 	int number_of_chart_coordinates, double *chart_coordinates,
 	Cmiss_element_id top_level_element)
@@ -143,11 +143,11 @@ int Cmiss_field_cache_set_element_location_with_parent(
 	return 0;
 }
 
-int Cmiss_field_cache_set_element_location(Cmiss_field_cache_id cache,
+int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 	Cmiss_element_id element, int number_of_chart_coordinates,
 	double *chart_coordinates)
 {
-	return Cmiss_field_cache_set_element_location_with_parent(cache, element,
+	return Cmiss_field_cache_set_mesh_location_with_parent(cache, element,
 		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
 }
 

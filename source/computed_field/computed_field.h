@@ -327,7 +327,7 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
  * inherit fields from.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_cache_set_element_location_with_parent(
+int Cmiss_field_cache_set_mesh_location_with_parent(
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
 	int number_of_chart_coordinates, double *chart_coordinates,
 	Cmiss_element_id top_level_element);

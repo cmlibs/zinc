@@ -2439,7 +2439,7 @@ normals are used.
 			Cmiss_field_cache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
-				return_code = Cmiss_field_cache_set_element_location_with_parent(
+				return_code = Cmiss_field_cache_set_mesh_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
 				if (!(Cmiss_field_evaluate_chart_derivative(coordinate_field, field_cache,
