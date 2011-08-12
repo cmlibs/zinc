@@ -407,6 +407,7 @@ void TessellationDialog::manager_callback(struct MANAGER_MESSAGE(Cmiss_tessellat
 {
 	wxSizer *sizer = TessellationItemsPanel->GetSizer();
 	std::map<Cmiss_tessellation *, TessellationItem *>::iterator pos;
+	wxSize oldSize = GetSizer()->GetMinSize();
 	int change_flags = 0;
 	for (pos = itemMap.begin(); pos != itemMap.end();)
 	{
@@ -444,13 +445,17 @@ void TessellationDialog::manager_callback(struct MANAGER_MESSAGE(Cmiss_tessellat
 		sizer->Detach(addNewButton);
 		sizer->Add(addNewButton, 0 ,wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
 	}
-	sizer->FitInside(TessellationItemsPanel);
+	sizer->Fit(TessellationItemsPanel);
 	wxSize newSize = GetSizer()->GetMinSize();
 	wxSize originalSize = GetSize();
 	int height = newSize.GetHeight();
 	if (originalSize.GetHeight() > height)
 	{
 		height = originalSize.GetHeight();
+	}
+	else
+	{
+		height = originalSize.GetHeight() + height - oldSize.GetHeight();
 	}
 	SetSize(wxSize(originalSize.GetWidth(), height));
 }
