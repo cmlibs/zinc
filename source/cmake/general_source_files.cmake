@@ -41,7 +41,7 @@ SET( GENERAL_HDRS
 	source/general/compare.h
 	source/general/debug.h
 	source/general/enumerator.h
-	source/general/enumerator_conversion.hpp"
+	source/general/enumerator_conversion.hpp
 	source/general/enumerator_private.h
 	source/general/enumerator_private_cpp.hpp
 	source/general/error_handler.h
