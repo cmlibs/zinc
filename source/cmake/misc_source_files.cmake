@@ -109,7 +109,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/three_d_drawing/window_system_extensions.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 
-SET( TIME_SRCS source/time/time.c source/time/time_keeper.c )
+SET( TIME_SRCS source/time/time.c source/time/time_keeper.cpp )
 SET( TIME_HDRS
 	source/time/time.h
 	source/time/time_keeper.h

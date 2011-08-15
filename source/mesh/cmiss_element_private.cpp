@@ -50,6 +50,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
@@ -1254,66 +1255,98 @@ int Cmiss_element_merge(Cmiss_element_id element,
 	return 0;
 }
 
+class Cmiss_element_shape_type_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_element_shape_type type)
+    {
+        const char *enum_string = 0;
+        switch (type)
+        {
+        	case CMISS_ELEMENT_SHAPE_LINE:
+        		enum_string = "LINE";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_SQUARE:
+        		enum_string = "SQUARE";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_TRIANGLE:
+        		enum_string = "TRIANGLE";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_CUBE:
+        		enum_string = "CUBE";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
+        		enum_string = "TETRAHEDRON";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_WEDGE12:
+        		enum_string = "WEDGE12";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_WEDGE13:
+        		enum_string = "WEDGE13";
+        		break;
+        	case CMISS_ELEMENT_SHAPE_WEDGE23:
+        		enum_string = "_WEDGE23";
+        		break;
+        	default:
+        		break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_element_shape_type type = (Cmiss_element_shape_type)0;
-	if (string)
-	{
-		const char *str[] = {"LINE", "SQUARE", "TRIANGLE", "CUBE",
-			"TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23"};
-		for (unsigned int i = 0; i < 8; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				type = (Cmiss_element_shape_type)(i + 1);
-				break;
-			}
-		}
-	}
-	return type;
+	return string_to_enum<enum Cmiss_element_shape_type,	Cmiss_element_shape_type_conversion>(string);
 }
 
 char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type)
 {
-	char *string = NULL;
-	if (0 < type && type <= 8)
-	{
-		const char *str[] = {"LINE", "SQUARE", "TRIANGLE", "CUBE",
-			"TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23"};
-		string = duplicate_string(str[type - 1]);
-	}
-	return string;
+	const char *type_string = Cmiss_element_shape_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }
+
+class Cmiss_basis_function_type_conversion
+{
+public:
+	static const char *to_string(enum Cmiss_basis_function_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMISS_BASIS_FUNCTION_CONSTANT:
+				enum_string = "CONSTANT";
+				break;
+			case CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE:
+				enum_string = "LINEAR_LAGRANGE";
+				break;
+			case CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
+				enum_string = "QUADRATIC_LAGRANGE";
+				break;
+			case CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE:
+				enum_string = "CUBIC_LAGRANGE";
+				break;
+			case CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX:
+				enum_string = "LINEAR_SIMPLEX";
+				break;
+			case CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
+				enum_string = "QUADRATIC_SIMPLEX";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
 
 enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_basis_function_type type = (Cmiss_basis_function_type)0;
-	if (string)
-	{
-		const char *str[] = {"CONSTAN", "LINEAR_LAGRANGE", "QUADRATIC_LAGRANGE",
-			"CUBIC_LAGRANG", "LINEAR_SIMPLEX", "QUADRATIC_SIMPLEX"};
-		for (unsigned int i = 0; i < 6; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				type = (Cmiss_basis_function_type)(i + 1);
-				break;
-			}
-		}
-	}
-	return type;
+	return string_to_enum<enum Cmiss_basis_function_type,	Cmiss_basis_function_type_conversion>(string);
 }
 
 char *Cmiss_basis_function_type_enum_to_string(enum Cmiss_basis_function_type type)
 {
-	char *string = NULL;
-	if (0 < type && type <= 6)
-	{
-		const char *str[] = {"CONSTAN", "LINEAR_LAGRANGE", "QUADRATIC_LAGRANGE",
-			"CUBIC_LAGRANG", "LINEAR_SIMPLEX", "QUADRATIC_SIMPLEX"};
-		string = duplicate_string(str[type - 1]);
-	}
-	return string;
+	const char *type_string = Cmiss_basis_function_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }

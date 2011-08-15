@@ -61,6 +61,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 }
 #include <math.h>
+#include "general/enumerator_conversion.hpp"
 
 class Computed_field_image_package : public Computed_field_type_package
 {
@@ -1282,37 +1283,50 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	return return_value;
 }
 
+class Cmiss_field_image_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_field_image_attribute attribute)
+    {
+        const char *enum_string = 0;
+        switch (attribute)
+        {
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+            enum_string = "RAW_WIDTH_PIXELS";
+            break;
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+            enum_string = "RAW_HEIGHT_PIXELS";
+            break;
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS:
+            enum_string = "RAW_DEPTH_PIXELS";
+            break;
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS:
+            enum_string = "PHYSICAL_WIDTH_PIXELS";
+            break;
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS:
+            enum_string = "PHYSICAL_HEIGHT_PIXELS";
+            break;
+        case CMISS_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS:
+            enum_string = "PHYSICAL_DEPTH_PIXELS";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_field_image_attribute attribute =	(Cmiss_field_image_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "RAW_DEPTH_PIXELS",
-			"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
-		for (unsigned int i = 0; i < 6; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_field_image_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+	return string_to_enum<enum Cmiss_field_image_attribute,
+		Cmiss_field_image_attribute_conversion>(string);
 }
 
-char *Cmiss_field_image_attribute_enum_to_string(
-	enum Cmiss_field_image_attribute attribute)
+char *Cmiss_field_image_attribute_enum_to_string(enum Cmiss_field_image_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 6)
-	{
-		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "RAW_DEPTH_PIXELS",
-		"PHYSICAL_WIDTH_PIXELS", "PHYSICAL_HEIGHT_PIXELS", "PHYSICAL_DEPTH_PIXELS"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_field_image_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
 
 int Computed_field_is_image_type(struct Computed_field *field,
@@ -1883,40 +1897,68 @@ int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
 	}
 }
 
+class Cmiss_field_image_combine_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_field_image_combine_mode mode)
+    {
+        const char *enum_string = 0;
+        switch (mode)
+        {
+        case CMISS_FIELD_IMAGE_COMBINE_BLEND:
+            enum_string = "BLEND";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_DECAL:
+            enum_string = "DECAL";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_MODULATE:
+            enum_string = "MODULATE";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_ADD:
+            enum_string = "ADD";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_ADD_SIGNED:
+            enum_string = "ADD_SIGNED";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4:
+            enum_string = "MODULATE_SCALE_4";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_BLEND_SCALE_4:
+            enum_string = "BLEND_SCALE_4";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT:
+            enum_string = "SUBTRACT";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_ADD_SCALE_4:
+            enum_string = "ADD_SCALE_4";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4:
+            enum_string = "SUBTRACT_SCALE_4";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4:
+            enum_string = "INVERT_ADD_SCALE_4";
+            break;
+        case CMISS_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4:
+            enum_string = "INVERT_SUBTRACT_SCALE_4";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_field_image_combine_mode Cmiss_field_image_combine_mode_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_field_image_combine_mode mode = (Cmiss_field_image_combine_mode)0;
-	if (string)
-	{
-		const char *str[] = {"BLEND", "DECAL", "MODULATE", "ADD",
-			"ADD_SIGNED", "MODULATE_SCALE_4", "BLEND_SCALE_4", "SUBTRACT",
-			"ADD_SCALE_4", "SUBTRACT_SCALE_4", "INVERT_ADD_SCALE_4",
-			"INVERT_SUBTRACT_SCALE_4"};
-		for (unsigned int i = 0; i < 12; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				mode = (Cmiss_field_image_combine_mode)(i + 1);
-				break;
-			}
-		}
-	}
-	return mode;
+	return string_to_enum<enum Cmiss_field_image_combine_mode,
+	Cmiss_field_image_combine_mode_conversion>(string);
 }
 
 char *Cmiss_field_image_combine_mode_enum_to_string(enum Cmiss_field_image_combine_mode mode)
 {
-	char *string = NULL;
-	if (0 < mode && mode <= 12)
-	{
-		const char *str[] = {"BLEND", "DECAL", "MODULATE", "ADD",
-			"ADD_SIGNED", "MODULATE_SCALE_4", "BLEND_SCALE_4", "SUBTRACT",
-			"ADD_SCALE_4", "SUBTRACT_SCALE_4", "INVERT_ADD_SCALE_4",
-			"INVERT_SUBTRACT_SCALE_4"};
-		string = duplicate_string(str[mode - 1]);
-	}
-	return string;
+	const char *mode_string = Cmiss_field_image_combine_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
 enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
@@ -1947,36 +1989,39 @@ int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_f
 	}
 }
 
+class Cmiss_field_image_hardware_compression_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_field_image_hardware_compression_mode mode)
+    {
+        const char *enum_string = 0;
+        switch (mode)
+        {
+        case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
+            enum_string = "UNCOMPRESSED";
+            break;
+        case CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
+            enum_string = "AUTOMATIC";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_field_image_hardware_compression_mode
 	Cmiss_field_image_hardware_compression_mode_enum_from_string(const char *string)
 {
-	enum Cmiss_field_image_hardware_compression_mode mode =
-		(Cmiss_field_image_hardware_compression_mode)0;
-	if (string)
-	{
-		const char *str[] = {"UNCOMPRESSED", "AUTOMATIC"};
-		for (unsigned int i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				mode = (Cmiss_field_image_hardware_compression_mode)(i + 1);
-				break;
-			}
-		}
-	}
-	return mode;
+	return string_to_enum<enum Cmiss_field_image_hardware_compression_mode,
+	Cmiss_field_image_hardware_compression_mode_conversion>(string);
 }
 
 char *Cmiss_field_image_hardware_compression_mode_enum_to_string(
 	enum Cmiss_field_image_hardware_compression_mode mode)
 {
-	char *string = NULL;
-	if (0 < mode && mode <= 2)
-	{
-		const char *str[] = {"UNCOMPRESSED", "AUTOMATIC"};
-		string = duplicate_string(str[mode - 1]);
-	}
-	return string;
+	const char *mode_string = Cmiss_field_image_hardware_compression_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
 enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
@@ -2005,35 +2050,45 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 	}
 }
 
+class Cmiss_field_image_filter_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_field_image_filter_mode mode)
+    {
+        const char *enum_string = 0;
+        switch (mode)
+        {
+        case CMISS_FIELD_IMAGE_FILTER_NEAREST:
+            enum_string = "NEAREST";
+            break;
+        case CMISS_FIELD_IMAGE_FILTER_LINEAR:
+            enum_string = "LINEAR";
+            break;
+        case CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST:
+            enum_string = "NEAREST_MIPMAP_NEAREST";
+            break;
+        case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST:
+            enum_string = "LINEAR_MIPMAP_NEAREST";
+            break;
+        case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR:
+					enum_string = "LINEAR_MIPMAP_LINEAR";
+					break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_field_image_filter_mode mode =	(Cmiss_field_image_filter_mode)0;
-	if (string)
-	{
-		const char *str[] = {"NEAREST", "LINEAR", "NEAREST_MIPMAP_NEARES",
-		"LINEAR_MIPMAP_NEAREST", "LINEAR_MIPMAP_LINEAR"};
-		for (unsigned int i = 0; i < 5; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				mode = (Cmiss_field_image_filter_mode)(i + 1);
-				break;
-			}
-		}
-	}
-	return mode;
+	return string_to_enum<enum Cmiss_field_image_filter_mode,
+	Cmiss_field_image_filter_mode_conversion>(string);
 }
 
-char *Cmiss_field_image_filter_mode_enum_to_string(
-	enum Cmiss_field_image_filter_mode mode)
+char *Cmiss_field_image_filter_mode_enum_to_string(enum Cmiss_field_image_filter_mode mode)
 {
-	char *string = NULL;
-	if (0 < mode && mode <= 5)
-	{
-		const char *str[] = {"NEAREST", "LINEAR", "NEAREST_MIPMAP_NEARES",
-		"LINEAR_MIPMAP_NEAREST", "LINEAR_MIPMAP_LINEAR"};
-		string = duplicate_string(str[mode - 1]);
-	}
-	return string;
+	const char *mode_string = Cmiss_field_image_filter_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }

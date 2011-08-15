@@ -43,6 +43,7 @@ This is intended to be multithreaded......
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include "general/debug.h"
@@ -56,6 +57,8 @@ This is intended to be multithreaded......
 #include "time/time.h"
 #include "time/time_private.h"
 #include "time/time_keeper.h"
+}
+#include "general/enumerator_conversion.hpp"
 
 static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);
 /* Declaration for circular reference between this and the event handler and
@@ -1931,36 +1934,39 @@ int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 	return(return_code);
 }
 
+class Cmiss_time_keeper_play_direction_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_time_keeper_play_direction direction)
+    {
+    	const char *enum_string = 0;
+    	switch (direction)
+    	{
+    		case CMISS_TIME_KEEPER_PLAY_FORWARD:
+    			enum_string = "FORWARD";
+    			break;
+    		case CMISS_TIME_KEEPER_PLAY_BACKWARD:
+    			enum_string = "BACKWARD";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_time_keeper_play_direction
 	Cmiss_time_keeper_play_direction_enum_from_string(const char *string)
 {
-	enum Cmiss_time_keeper_play_direction direction = (enum Cmiss_time_keeper_play_direction)0;
-	if (string)
-	{
-		int i;
-		const char *str[] = {"FORWARD", "BACKWARD"};
-		for (i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				direction = (enum Cmiss_time_keeper_play_direction)(i + 1);
-				break;
-			}
-		}
-	}
-	return direction;
+	return string_to_enum<enum Cmiss_time_keeper_play_direction,
+		Cmiss_time_keeper_play_direction_conversion>(string);
 }
 
 char *Cmiss_time_keeper_play_direction_enum_to_string(
 	enum Cmiss_time_keeper_play_direction direction)
 {
-	char *string = NULL;
-	if (0 < direction && direction <= 2)
-	{
-		const char *str[] = {"FORWARD", "BACKWARD"};
-		string = duplicate_string(str[direction - 1]);
-	}
-	return string;
+	const char *direction_string = Cmiss_time_keeper_play_direction_conversion::to_string(direction);
+	return (direction_string ? duplicate_string(direction_string) : 0);
 }
 
 enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
@@ -2030,36 +2036,38 @@ int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
 	return(return_code);
 }
 
+class Cmiss_time_keeper_frame_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_time_keeper_frame_mode mode)
+    {
+    	const char *enum_string = 0;
+    	switch (mode)
+    	{
+    		case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_REAL_TIME:
+    			enum_string = "PLAY_REAL_TIME";
+    			break;
+    		case CMISS_TIME_KEEPER_FRAME_MODE_PLAY_EVERY_FRAME:
+    			enum_string = "PLAY_EVERY_FRAME";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_frame_mode_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_time_keeper_frame_mode mode = (enum Cmiss_time_keeper_frame_mode)0;
-	if (string)
-	{
-		const char *str[] = {"PLAY_REAL_TIME", "PLAY_EVERY_FRAME"};
-		int i;
-		for (i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				mode = (enum Cmiss_time_keeper_frame_mode)(i + 1);
-				break;
-			}
-		}
-	}
-	return mode;
+	return string_to_enum<enum Cmiss_time_keeper_frame_mode,
+	Cmiss_time_keeper_frame_mode_conversion>(string);
 }
 
-char *Cmiss_time_keeper_frame_mode_enum_to_string(
-	enum Cmiss_time_keeper_frame_mode mode)
+char *Cmiss_time_keeper_frame_mode_enum_to_string(enum Cmiss_time_keeper_frame_mode mode)
 {
-	char *string = NULL;
-	if (0 < mode && mode <= 2)
-	{
-		const char *str[] = {"PLAY_REAL_TIME", "PLAY_EVERY_FRAME"};
-		string = duplicate_string(str[mode - 1]);
-	}
-	return string;
+	const char *mode_string =Cmiss_time_keeper_frame_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
 enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
@@ -2146,36 +2154,41 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 	return(return_code);
 }
 
+class Cmiss_time_keeper_repeat_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_time_keeper_repeat_mode mode)
+    {
+    	const char *enum_string = 0;
+    	switch (mode)
+    	{
+    		case CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_ONCE:
+    			enum_string = "PLAY_ONCE";
+    			break;
+    		case CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_LOOP:
+    			enum_string = "PLAY_LOOP";
+    			break;
+    		case CMISS_TIME_KEEPER_REPEAT_MODE_PLAY_SWING:
+    			enum_string = "PLAY_SWING";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_repeat_mode_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_time_keeper_repeat_mode mode = (enum Cmiss_time_keeper_repeat_mode)0;
-	if (string)
-	{
-		const char *str[] = {"PLAY_ONCE", "PLAY_LOOP", "PLAY_SWING"};
-		int i;
-		for (i = 0; i < 3; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				mode = (enum Cmiss_time_keeper_repeat_mode)(i + 1);
-				break;
-			}
-		}
-	}
-	return mode;
+	return string_to_enum<enum Cmiss_time_keeper_repeat_mode,
+	Cmiss_time_keeper_repeat_mode_conversion>(string);
 }
 
-char *Cmiss_time_keeper_repeat_mode_enum_to_string(
-	enum Cmiss_time_keeper_repeat_mode mode)
+char *Cmiss_time_keeper_repeat_mode_enum_to_string(enum Cmiss_time_keeper_repeat_mode mode)
 {
-	char *string = NULL;
-	if (0 < mode && mode <= 3)
-	{
-		const char *str[] = {"PLAY_ONCE", "PLAY_LOOP", "PLAY_SWING"};
-		string = duplicate_string(str[mode - 1]);
-	}
-	return string;
+	const char *mode_string = Cmiss_time_keeper_repeat_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
 Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper)
@@ -2262,33 +2275,42 @@ int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
 	return return_code;
 }
 
+class Cmiss_time_keeper_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_time_keeper_attribute attribute)
+    {
+    	const char *enum_string = 0;
+    	switch (attribute)
+    	{
+    		case CMISS_TIME_KEEPER_ATTRIBUTE_TIME:
+    			enum_string = "TIME";
+    			break;
+    		case CMISS_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
+    			enum_string = "MINIMUM_TIME";
+    			break;
+    		case CMISS_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
+    			enum_string = "MAXIMUM_TIME";
+    			break;
+    		case CMISS_TIME_KEEPER_ATTRIBUTE_SPEED:
+    			enum_string = "SPEED";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_time_keeper_attribute Cmiss_time_keeper_attribute_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_time_keeper_attribute attribute = (enum Cmiss_time_keeper_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"TIME", "MINIMUM_TIME", "MAXIMUM_TIME", "SPEED"};
-		int i;
-		for (i = 0; i < 4; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (enum Cmiss_time_keeper_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+	return string_to_enum<enum Cmiss_time_keeper_attribute,
+		Cmiss_time_keeper_attribute_conversion>(string);
 }
 
 char *Cmiss_time_keeper_attribute_enum_to_string(enum Cmiss_time_keeper_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 4)
-	{
-		const char *str[] = {"TIME", "MINIMUM_TIME", "MAXIMUM_TIME", "SPEED"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_time_keeper_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

@@ -80,7 +80,7 @@ enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.

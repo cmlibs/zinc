@@ -79,6 +79,7 @@ extern "C" {
 #include "graphics/scene.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
@@ -9658,102 +9659,146 @@ int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic)
 	return DEACCESS(Cmiss_graphic)(graphic);
 }
 
+class Cmiss_graphic_type_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_graphic_type type)
+    {
+        const char *enum_string = 0;
+        switch (type)
+        {
+        	case CMISS_GRAPHIC_NODE_POINTS:
+        		enum_string = "NODE_POINTS";
+        		break;
+        	case CMISS_GRAPHIC_DATA_POINTS:
+        		enum_string = "DATA_POINTS";
+        		break;
+        	case CMISS_GRAPHIC_LINES:
+        		enum_string = "LINES";
+        		break;
+        	case CMISS_GRAPHIC_CYLINDERS:
+        		enum_string = "CYLINDERS";
+        		break;
+        	case CMISS_GRAPHIC_SURFACES:
+        		enum_string = "SURFACES";
+        		break;
+        	case CMISS_GRAPHIC_ISO_SURFACES:
+        		enum_string = "ISO_SURFACES";
+        		break;
+        	case CMISS_GRAPHIC_ELEMENT_POINTS:
+        		enum_string = "ELEMENT_POINTS";
+        		break;
+        	case CMISS_GRAPHIC_STREAMLINES:
+        		enum_string = "STREAMLINES";
+        		break;
+        	case CMISS_GRAPHIC_POINT:
+        		enum_string = "POINT";
+        		break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string)
 {
-	enum Cmiss_graphic_type type = (Cmiss_graphic_type)0;
-	if (string)
-	{
-		const char *str[] = {"NODE_POINTS", "DATA_POINTS", "LINES", "CYLINDERS",
-			"SURFACES", "ISO_SURFACES", "ELEMENT_POINTS", "STREAMLINES", "POINT"};
-		for (unsigned int i = 0; i < 9; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				type = (Cmiss_graphic_type)(i + 1);
-				break;
-			}
-		}
-	}
-	return type;
+	return string_to_enum<enum Cmiss_graphic_type, Cmiss_graphic_type_conversion>(string);
 }
 
 char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type)
 {
-	char *string = NULL;
-	if (0 < type && type <= 9)
-	{
-		const char *str[] = {"NODE_POINTS", "DATA_POINTS", "LINES", "CYLINDERS",
-			"SURFACES", "ISO_SURFACES", "ELEMENT_POINTS", "STREAMLINES", "POINT"};
-		string = duplicate_string(str[type - 1]);
-	}
-	return string;
+	const char *type_string = Cmiss_graphic_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }
+
+class Cmiss_graphics_coordinate_system_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_graphics_coordinate_system system)
+    {
+        const char *enum_string = 0;
+        switch (system)
+        {
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+            enum_string = "LOCAL";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+            enum_string = "WORLD";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+            enum_string = "NORMALISED_WINDOW_FILL";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+            enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+            enum_string = "NORMALISED_WINDOW_FIT_LEFT";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+            enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+            enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+            enum_string = "NORMALISED_WINDOW_FIT_TOP";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+            enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
 
 enum Cmiss_graphics_coordinate_system	Cmiss_graphics_coordinate_system_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_graphics_coordinate_system coordinate_system =
-		(Cmiss_graphics_coordinate_system)0;
-	if (string)
-	{
-		const char *str[] = {"LOCAL", "WORLD", "NORMALISED_WINDOW_FILL",
-			"NORMALISED_WINDOW_FIT_CENTRE", "NORMALISED_WINDOW_FIT_LEFT",
-			"NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM",
-			"NORMALISED_WINDOW_FIT_TOP", "WINDOW_PIXEL_BOTTOM_LEFT"};
-		for (unsigned int i = 0; i < 9; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				coordinate_system = (Cmiss_graphics_coordinate_system)(i + 1);
-				break;
-			}
-		}
-	}
-	return coordinate_system;
+	return string_to_enum<enum Cmiss_graphics_coordinate_system,
+		Cmiss_graphics_coordinate_system_conversion>(string);
 }
 
 char *Cmiss_graphics_coordinate_system_enum_to_string(
 	enum Cmiss_graphics_coordinate_system system)
 {
-	char *string = NULL;
-	if (0 < system && system <= 9)
-	{
-		const char *str[] = {"LOCAL", "WORLD", "NORMALISED_WINDOW_FILL",
-			"NORMALISED_WINDOW_FIT_CENTRE", "NORMALISED_WINDOW_FIT_LEFT",
-			"NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM",
-			"NORMALISED_WINDOW_FIT_TOP", "WINDOW_PIXEL_BOTTOM_LEFT"};
-		string = duplicate_string(str[system - 1]);
-	}
-	return string;
+	const char *system_string = Cmiss_graphics_coordinate_system_conversion::to_string(system);
+	return (system_string ? duplicate_string(system_string) : 0);
 }
+
+class Cmiss_graphics_render_type_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_graphics_render_type type)
+    {
+        const char *enum_string = 0;
+        switch (type)
+        {
+        case CMISS_GRAPHICS_RENDER_TYPE_SHADED:
+            enum_string = "SHADED";
+            break;
+        case CMISS_GRAPHICS_RENDER_TYPE_WIREFRAME:
+            enum_string = "WIREFRAME";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
 
 enum Cmiss_graphics_render_type	Cmiss_graphics_render_type_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_graphics_render_type type = (Cmiss_graphics_render_type)0;
-	if (string)
-	{
-		const char *str[] = {"SHADED", "WIREFRAME"};
-		for (unsigned int i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				type = (Cmiss_graphics_render_type)(i + 1);
-				break;
-			}
-		}
-	}
-	return type;
+	return string_to_enum<enum Cmiss_graphics_render_type,
+		Cmiss_graphics_render_type_conversion>(string);
 }
 
 char *Cmiss_graphics_render_type_enum_to_string(
 	enum Cmiss_graphics_render_type type)
 {
-	char *string = NULL;
-	if (0 < type && type <= 2)
-	{
-		const char *str[] = {"SHADED", "WIREFRAME"};
-		string = duplicate_string(str[type - 1]);
-	}
-	return string;
+	const char *type_string = Cmiss_graphics_render_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }

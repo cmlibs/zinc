@@ -83,7 +83,7 @@ enum Cmiss_stream_information_image_file_format
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -126,7 +126,7 @@ enum Cmiss_field_image_combine_mode
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -158,7 +158,7 @@ enum Cmiss_field_image_hardware_compression_mode
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -191,7 +191,7 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_strin
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -222,7 +222,7 @@ enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -243,7 +243,7 @@ enum Cmiss_stream_information_image_pixel_format
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
@@ -503,7 +503,7 @@ enum Cmiss_stream_information_image_attribute
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.

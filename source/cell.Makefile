@@ -533,7 +533,7 @@ THREE_D_DRAWING_SRCS = \
 	three_d_drawing/ThreeDDraw.c
 TIME_SRCS = \
 	time/time.c \
-	time/time_keeper.c \
+	time/time_keeper.cpp \
 	time/time_editor.c \
 	time/time_editor_dialog.c
 TRANSFORMATION_SRCS =

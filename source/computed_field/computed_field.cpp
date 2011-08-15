@@ -187,6 +187,7 @@ extern "C" {
 #include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include <typeinfo>
 #include "user_interface/process_list_or_write_command.hpp"
 
@@ -5695,46 +5696,40 @@ int Computed_field_manager_message_get_object_change_and_detail(
 	return (MANAGER_CHANGE_NONE(Computed_field));
 }
 
-static const char *Cmiss_field_attribute_string(enum Cmiss_field_attribute attribute)
+class Cmiss_field_attribute_conversion
 {
-	const char *attribute_string = 0;
-	switch (attribute)
-	{
-	case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
-		attribute_string = "IS_MANAGED";
-		break;
-	case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
-		attribute_string = "IS_COORDINATE";
-		break;
-	case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
-		attribute_string = "NUMBER_OF_COMPONENTS";
-		break;
-	case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
-		attribute_string = "NUMBER_OF_SOURCE_FIELDS";
-		break;
-	default:
-		// do nothing
-		break;
-	}
-	return attribute_string;
-}
+public:
+    static const char *to_string(enum Cmiss_field_attribute attribute)
+    {
+        const char *enum_string = 0;
+        switch (attribute)
+        {
+        case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+            enum_string = "IS_MANAGED";
+            break;
+        case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+            enum_string = "IS_COORDINATE";
+            break;
+        case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+            enum_string = "NUMBER_OF_COMPONENTS";
+            break;
+        case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+            enum_string = "NUMBER_OF_SOURCE_FIELDS";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
 
 enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(const char *string)
 {
-	for (int i = 1; ; ++i)
-	{
-		enum Cmiss_field_attribute attribute =	static_cast<Cmiss_field_attribute>(i);
-		const char *attribute_string = Cmiss_field_attribute_string(attribute);
-		if (!attribute_string)
-			break;
-		if (0 == strcmp(attribute_string, string))
-			return attribute;
-	}
-	return CMISS_FIELD_ATTRIBUTE_INVALID;
+	return string_to_enum<enum Cmiss_field_attribute,	Cmiss_field_attribute_conversion>(string);
 }
 
 char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute)
 {
-	const char *attribute_string = Cmiss_field_attribute_string(attribute);
+	const char *attribute_string = Cmiss_field_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

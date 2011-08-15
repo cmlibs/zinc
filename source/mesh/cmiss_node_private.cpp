@@ -51,6 +51,7 @@ extern "C" {
 #include "node/node_operations.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
@@ -697,34 +698,53 @@ int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template)
 	return 0;
 }
 
+class Cmiss_nodal_value_type_conversion
+{
+public:
+	static const char *to_string(enum Cmiss_nodal_value_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMISS_NODAL_VALUE:
+				enum_string = "VALUE";
+				break;
+			case CMISS_NODAL_D_DS1:
+				enum_string = "D_DS1";
+				break;
+			case CMISS_NODAL_D_DS2:
+				enum_string = "D_DS2";
+				break;
+			case CMISS_NODAL_D_DS3:
+				enum_string = "D_DS3";
+				break;
+			case CMISS_NODAL_D2_DS1DS2:
+				enum_string = "D2_DS1DS2";
+				break;
+			case CMISS_NODAL_D2_DS1DS3:
+				enum_string = "_D2_DS1DS3";
+				break;
+			case CMISS_NODAL_D2_DS2DS3:
+				enum_string = "D2_DS2DS3";
+				break;
+			case CMISS_NODAL_D3_DS1DS2DS3:
+				enum_string = "D3_DS1DS2DS3";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
 enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_nodal_value_type type = (Cmiss_nodal_value_type)0;
-	if (string)
-	{
-		const char *str[] = {"VALUE", "D_DS1", "D_DS2", "D_DS3", "D2_DS1DS2",
-			"D2_DS1DS3", "D2_DS2DS3", "DS1DS2DS3"};
-		for (unsigned int i = 0; i < 8; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				type = (Cmiss_nodal_value_type)(i + 1);
-				break;
-			}
-		}
-	}
-	return type;
+	return string_to_enum<enum Cmiss_nodal_value_type,	Cmiss_nodal_value_type_conversion>(string);
 }
 
 char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type)
 {
-	char *string = NULL;
-	if (0 < type && type <= 8)
-	{
-		const char *str[] = {"VALUE", "D_DS1", "D_DS2", "D_DS3", "D2_DS1DS2",
-			"D2_DS1DS3", "D2_DS2DS3", "DS1DS2DS3"};
-		string = duplicate_string(str[type - 1]);
-	}
-	return string;
+	const char *type_string = Cmiss_nodal_value_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }

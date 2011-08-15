@@ -84,6 +84,7 @@ extern "C" {
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
@@ -7728,35 +7729,52 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
 	return return_code;
 }
 
+class Cmiss_graphics_material_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_graphics_material_attribute attribute)
+    {
+        const char *enum_string = 0;
+        switch (attribute)
+        {
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED:
+        		enum_string = "IS_MANAGED";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+        		enum_string = "ALPHA";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+        		enum_string = "AMBIENT";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+        		enum_string = "DIFFUSE";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+        		enum_string = "EMISSION";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+        		enum_string = "SHININESS";
+        		break;
+        	case CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+        		enum_string = "SPECULAR";
+        		break;
+        	default:
+        		break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_graphics_material_attribute Cmiss_graphics_material_attribute_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_graphics_material_attribute attribute = (Cmiss_graphics_material_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"IS_MANAGED", "ALPHA", "AMBIENT", "DIFFUSE",
-			"EMISSION", "SHININESS", "SPECULAR"};
-		for (unsigned int i = 0; i < 7; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_graphics_material_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+	return string_to_enum<enum Cmiss_graphics_material_attribute,
+	Cmiss_graphics_material_attribute_conversion>(string);
 }
 
 char *Cmiss_graphics_material_attribute_enum_to_string(
 	enum Cmiss_graphics_material_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 7)
-	{
-		const char *str[] = {"IS_MANAGED", "ALPHA", "AMBIENT", "DIFFUSE",
-			"EMISSION", "SHININESS", "SPECULAR"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_graphics_material_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

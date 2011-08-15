@@ -99,7 +99,7 @@ enum Cmiss_graphics_coordinate_system
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destory the successfully returned string.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
  *
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.

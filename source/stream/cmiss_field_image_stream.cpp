@@ -49,6 +49,7 @@ extern "C" {
 #include "graphics/texture.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "stream/cmiss_field_image_stream.hpp"
 
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
@@ -475,38 +476,45 @@ int Cmiss_stream_information_image_set_attribute_real(
 	return 0;
 }
 
+class Cmiss_stream_information_image_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_stream_information_image_attribute attribute)
+    {
+    	const char *enum_string = 0;
+    	switch (attribute)
+    	{
+    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS:
+    			enum_string = "RAW_WIDTH_PIXELS";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS:
+    			enum_string = "RAW_HEIGHT_PIXELS";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT:
+    			enum_string = "BITS_PER_COMPONENT";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY:
+    			enum_string = "COMPRESSION_QUALITY";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_stream_information_image_attribute
 	Cmiss_stream_information_image_attribute_enum_from_string(const char *string)
 {
-	enum Cmiss_stream_information_image_attribute attribute =
-		(Cmiss_stream_information_image_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "BITS_PER_COMPONENT",
-			"COMPRESSION_QUALITY"};
-		for (unsigned int i = 0; i < 4; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_stream_information_image_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+	return string_to_enum<enum Cmiss_stream_information_image_attribute,
+		Cmiss_stream_information_image_attribute_conversion>(string);
 }
 
 char *Cmiss_stream_information_image_attribute_enum_to_string(
 	enum Cmiss_stream_information_image_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 4)
-	{
-		const char *str[] = {"RAW_WIDTH_PIXELS", "RAW_HEIGHT_PIXELS", "BITS_PER_COMPONENT",
-			"COMPRESSION_QUALITY"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_stream_information_image_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
 
 int Cmiss_stream_information_image_set_file_format(
@@ -567,36 +575,54 @@ int Cmiss_stream_information_image_set_file_format(
 	return (return_code);
 }
 
+class Cmiss_stream_information_image_file_format_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_stream_information_image_file_format format)
+    {
+    	const char *enum_string = 0;
+    	switch (format)
+    	{
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP:
+    			enum_string = "BMP";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM:
+    			enum_string = "DICOM";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG:
+    			enum_string = "JPG";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF:
+    			enum_string = "GIF";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG:
+    			enum_string = "PNG";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI:
+    			enum_string = "SGI";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
+    			enum_string = "TIFF";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_stream_information_image_file_format
 	Cmiss_stream_information_image_file_format_enum_from_string(const char *string)
 {
-	enum Cmiss_stream_information_image_file_format format =
-		(Cmiss_stream_information_image_file_format)0;
-	if (string)
-	{
-		const char *str[] = {"BMP", "DICOM", "JPG", "GIF", "PNG", "SGI", "TIFF"};
-		for (unsigned int i = 0; i < 7; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				format = (Cmiss_stream_information_image_file_format)(i + 1);
-				break;
-			}
-		}
-	}
-	return format;
+	return string_to_enum<enum Cmiss_stream_information_image_file_format,
+	Cmiss_stream_information_image_file_format_conversion>(string);
 }
 
 char *Cmiss_stream_information_image_file_format_enum_to_string(
 	enum Cmiss_stream_information_image_file_format format)
 {
-	char *string = NULL;
-	if (0 < format && format <= 7)
-	{
-		const char *str[] = {"BMP", "DICOM", "JPG", "GIF", "PNG", "SGI", "TIFF"};
-		string = duplicate_string(str[format - 1]);
-	}
-	return string;
+	const char *format_string = Cmiss_stream_information_image_file_format_conversion::to_string(format);
+	return (format_string ? duplicate_string(format_string) : 0);
 }
 
 int Cmiss_stream_information_image_set_pixel_format(
@@ -643,37 +669,50 @@ int Cmiss_stream_information_image_set_pixel_format(
 	return (return_code);
 }
 
+class Cmiss_stream_information_image_pixel_format_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_stream_information_image_pixel_format format)
+    {
+    	const char *enum_string = 0;
+    	switch (format)
+    	{
+    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+    			enum_string = "LUMINANCE";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+    			enum_string = "RGB";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+    			enum_string = "RGBA";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
+    			enum_string = "ABGR";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
+    			enum_string = "BGR";
+    			break;
+    		case CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF:
+    			enum_string = "TIFF";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
 enum Cmiss_stream_information_image_pixel_format
 	Cmiss_stream_information_image_pixel_format_enum_from_string(
 		const char *string)
 {
-	enum Cmiss_stream_information_image_pixel_format format =
-		(Cmiss_stream_information_image_pixel_format)0;
-	if (string)
-	{
-		const char *str[] = {"LUMINANCE", "LUMINANCE_ALPHA", "RGB",
-			"RGBA", "ABGR", "BGR"};
-		for (unsigned int i = 0; i < 6; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				format = (Cmiss_stream_information_image_pixel_format)(i + 1);
-				break;
-			}
-		}
-	}
-	return format;
+	return string_to_enum<enum Cmiss_stream_information_image_pixel_format,
+		Cmiss_stream_information_image_pixel_format_conversion>(string);
 }
 
 char *Cmiss_stream_information_image_pixel_format_enum_to_string(
 	enum Cmiss_stream_information_image_pixel_format format)
 {
-	char *string = NULL;
-	if (0 < format && format <= 6)
-	{
-		const char *str[] = {"LUMINANCE", "LUMINANCE_ALPHA", "RGB",
-			"RGBA", "ABGR", "BGR"};
-		string = duplicate_string(str[format - 1]);
-	}
-	return string;
+	const char *format_string = Cmiss_stream_information_image_pixel_format_conversion::to_string(format);
+	return (format_string ? duplicate_string(format_string) : 0);
 }

@@ -61,6 +61,7 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/spectrum.hpp"
 #include "user_interface/process_list_or_write_command.hpp"
@@ -3087,32 +3088,33 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 	return return_code;
 }
 
+class Cmiss_spectrum_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_spectrum_attribute attribute)
+    {
+        const char *enum_string = 0;
+        switch (attribute)
+        {
+        	case CMISS_SPECTRUM_ATTRIBUTE_IS_MANAGED:
+        		enum_string = "IS_MANAGED";
+        		break;
+        	default:
+        		break;
+        }
+        return enum_string;
+    }
+};
+
 enum Cmiss_spectrum_attribute Cmiss_spectrum_attribute_enum_from_string(
 	const char *string)
 {
-	enum Cmiss_spectrum_attribute attribute = (Cmiss_spectrum_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"IS_MANAGED"};
-		for (unsigned int i = 0; i < 1; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_spectrum_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+	return string_to_enum<enum Cmiss_spectrum_attribute,
+	Cmiss_spectrum_attribute_conversion>(string);
 }
 
 char *Cmiss_spectrum_attribute_enum_to_string(enum Cmiss_spectrum_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 1)
-	{
-		const char *str[] = {"IS_MANAGED"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string = Cmiss_spectrum_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

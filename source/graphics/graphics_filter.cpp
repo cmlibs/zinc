@@ -50,6 +50,7 @@ extern "C" {
 #include "region/cmiss_region.h"
 }
 #include "general/cmiss_set.hpp"
+#include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_filter.hpp"
@@ -1453,34 +1454,37 @@ int Cmiss_graphics_filter_operator_remove_operand(
 	return return_code;
 }
 
-enum Cmiss_graphics_filter_attribute
-	Cmiss_graphics_filter_attribute_enum_from_string(const char *string)
+class Cmiss_graphics_filter_attribute_conversion
 {
-	enum Cmiss_graphics_filter_attribute attribute =
-		(Cmiss_graphics_filter_attribute)0;
-	if (string)
-	{
-		const char *str[] = {"IS_MANAGED", "IS_INVERSE"};
-		for (unsigned int i = 0; i < 2; i ++)
-		{
-			if (!strcmp(str[i], string))
-			{
-				attribute = (Cmiss_graphics_filter_attribute)(i + 1);
-				break;
-			}
-		}
-	}
-	return attribute;
+public:
+    static const char *to_string(enum Cmiss_graphics_filter_attribute attribute)
+    {
+        const char *enum_string = 0;
+        switch (attribute)
+        {
+        case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+            enum_string = "IS_MANAGED";
+            break;
+        case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
+            enum_string = "IS_INVERSE";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
+enum Cmiss_graphics_filter_attribute Cmiss_graphics_filter_attribute_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum Cmiss_graphics_filter_attribute,
+		Cmiss_graphics_filter_attribute_conversion>(string);
 }
 
 char *Cmiss_graphics_filter_attribute_enum_to_string(
 	enum Cmiss_graphics_filter_attribute attribute)
 {
-	char *string = NULL;
-	if (0 < attribute && attribute <= 2)
-	{
-		const char *str[] = {"IS_MANAGED", "IS_INVERSE"};
-		string = duplicate_string(str[attribute - 1]);
-	}
-	return string;
+	const char *attribute_string =Cmiss_graphics_filter_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
