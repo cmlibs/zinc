@@ -868,6 +868,29 @@ struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
 	return scene_manager;
 }
 
+Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name)
+{
+	Cmiss_scene_id scene = NULL;
+
+	if (graphics_module && name)
+	{
+		struct MANAGER(Scene) *scene_manager =
+			Cmiss_graphics_module_get_scene_manager(graphics_module);
+		if (scene_manager)
+		{
+			if (NULL != (scene=FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(
+					name, scene_manager)))
+			{
+				ACCESS(Scene)(scene);
+			}
+		}
+	}
+	LEAVE;
+
+	return scene;
+}
+
 struct Scene *Cmiss_graphics_module_create_scene(
 	struct Cmiss_graphics_module *graphics_module)
 {

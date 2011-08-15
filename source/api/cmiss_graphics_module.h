@@ -99,6 +99,17 @@ Cmiss_scene_id Cmiss_graphics_module_create_scene(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
+ * Find the scene with the supplied name in graphics module, if any.
+ *
+ * @param graphics_module  The handle to the graphics module to find the
+ * 	spectrum in.
+ * @param name  The name of the scene.
+ * @return  Handle to the scene with the matching name, or NULL if not found.
+ */
+Cmiss_scene_id Cmiss_graphics_module_find_scene_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
+
+/***************************************************************************//**
  * Get a rendition of region from graphics module with an access_count incremented
  * by 1. Caller is responsible for calling Cmiss_rendition_destroy to destroy the
  * reference to it.
