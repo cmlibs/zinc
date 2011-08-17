@@ -1322,7 +1322,7 @@ gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
 				{
 					if (rendition->transformation)
 					{
-						multiply_gtMatrix(transformation, rendition->transformation, transformation);
+						multiply_gtMatrix(rendition->transformation, transformation, transformation);
 					}
 				}
 				else
