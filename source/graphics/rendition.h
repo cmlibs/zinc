@@ -282,6 +282,19 @@ int Cmiss_rendition_set_transformation_with_time_callback(struct Cmiss_rendition
 int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 	gtMatrix *transformation);
 
+/**************************************************************************//**
+ * This function will return the gtMatrix containing the total transformation
+ * from the root region of scene to the current rendition.
+ *
+ * @param cmiss_rendition  pointer to the cmiss_rendition.
+ * @param scene  pointer to the scene.
+ *
+ * @return Return an allocated gtMatrix if successfully get a transformation
+ * 	matrix. NULL if failed or if no transformation is set.
+ */
+gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
+	struct Cmiss_rendition *rendition, struct Cmiss_scene *scene);
+
 int Cmiss_rendition_get_transformation(struct Cmiss_rendition *rendition,
 	gtMatrix *transformation);
 

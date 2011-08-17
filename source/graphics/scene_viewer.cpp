@@ -81,6 +81,7 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include "graphics/rendition.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
@@ -389,12 +390,32 @@ int Scene_viewer::getTransformationToWindow(enum Cmiss_graphics_coordinate_syste
 			{
 				projection[i] = -projection[i];
 			}
-			if (CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL)
+			if (coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL)
 			{
-				USE_PARAMETER(region);
-				// GRC multiply by rendition transformations
-				//double world_to_ndc_projection[16];
-				//memcpy(world_to_ndc_projection, projection, 16*sizeof(double));
+				double sum;
+				struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+				gtMatrix *transformation = Cmiss_rendition_get_total_transformation_on_scene(
+					rendition, scene);
+				// apply local transformation if there is one
+				if (transformation)
+				{
+					double world_to_ndc_projection[16];
+					memcpy(world_to_ndc_projection, projection, 16*sizeof(double));
+					for (i = 0 ; i < 4 ; i++)
+					{
+						for (j = 0 ; j < 4 ; j++)
+						{
+							sum = 0.0;
+							for (k = 0; k < 4; k++)
+							{
+								sum += world_to_ndc_projection[i*4 + k] * (*transformation)[j][k];
+							}
+							projection[i*4 + j] = sum;
+						}
+					}
+					DEALLOCATE(transformation);
+				}
+				Cmiss_rendition_destroy(&rendition);
 			}
 			break;
 		}
