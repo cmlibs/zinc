@@ -179,13 +179,21 @@ DESCRIPTION :
 	{
 		enum Cmiss_graphics_coordinate_system from_coordinate_system;
 		enum Cmiss_graphics_coordinate_system to_coordinate_system;
+		gtMatrix *current_local_transformation;
 
 		OutputTransformation(
 			enum Cmiss_graphics_coordinate_system from_coordinate_system,
 			enum Cmiss_graphics_coordinate_system to_coordinate_system) :
 				from_coordinate_system(from_coordinate_system),
-				to_coordinate_system(to_coordinate_system)
+				to_coordinate_system(to_coordinate_system),
+				current_local_transformation(NULL)
 		{
+		}
+
+		~OutputTransformation()
+		{
+			if (current_local_transformation)
+				DEALLOCATE(current_local_transformation);
 		}
 	};
 
@@ -336,6 +344,8 @@ DESCRIPTION :
 	typedef std::map<Cmiss_field_id,OutputTransformation*> OutputTransformationMap;
 	OutputTransformationMap output_transformations;
 
+	int checkIfLocalToOutputTransformationUpdatedRequired();
+
 	void outputTransformations(double viewport_width, double viewport_height);
 
 	int setOutputTransformationField(Cmiss_field_id field,
@@ -348,9 +358,9 @@ DESCRIPTION :
 
 private:
 	int getTransformationToWindow(enum Cmiss_graphics_coordinate_system coordinate_system,
-		Cmiss_region_id region, double viewport_width, double viewport_height, double *projection);
+		Cmiss_region_id region, double viewport_width, double viewport_height, double *projection,
+		gtMatrix **local_transformation_matrix);
 	int outputTransformation(Cmiss_field_id field, double viewport_width, double viewport_height, OutputTransformation& transformation);
-
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -363,7 +373,8 @@ DECLARE_LIST_TYPES(Scene_viewer);
  * coordinates which reverse z so are left-handed.
  */
 int Scene_viewer::getTransformationToWindow(enum Cmiss_graphics_coordinate_system coordinate_system,
-	Cmiss_region_id region, double viewport_width, double viewport_height, double *projection)
+	Cmiss_region_id region, double viewport_width, double viewport_height, double *projection,
+	gtMatrix **local_transformation_matrix)
 {
 	int return_code = 1;
 	switch (coordinate_system)
@@ -394,10 +405,14 @@ int Scene_viewer::getTransformationToWindow(enum Cmiss_graphics_coordinate_syste
 			{
 				double sum;
 				struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-				gtMatrix *transformation = Cmiss_rendition_get_total_transformation_on_scene(
+				if (*local_transformation_matrix)
+				{
+					DEALLOCATE(*local_transformation_matrix);
+				}
+				(*local_transformation_matrix) = Cmiss_rendition_get_total_transformation_on_scene(
 					rendition, scene);
 				// apply local transformation if there is one
-				if (transformation)
+				if (*local_transformation_matrix)
 				{
 					double world_to_ndc_projection[16];
 					memcpy(world_to_ndc_projection, projection, 16*sizeof(double));
@@ -408,12 +423,11 @@ int Scene_viewer::getTransformationToWindow(enum Cmiss_graphics_coordinate_syste
 							sum = 0.0;
 							for (k = 0; k < 4; k++)
 							{
-								sum += world_to_ndc_projection[i*4 + k] * (*transformation)[j][k];
+								sum += world_to_ndc_projection[i*4 + k] * (**(local_transformation_matrix))[j][k];
 							}
 							projection[i*4 + j] = sum;
 						}
 					}
-					DEALLOCATE(transformation);
 				}
 				Cmiss_rendition_destroy(&rendition);
 			}
@@ -457,10 +471,22 @@ int Scene_viewer::outputTransformation(Cmiss_field_id field, double viewport_wid
 		// owning region of field has been destroyed
 		return 0;
 	}
+	if (transformation.from_coordinate_system == transformation.to_coordinate_system)
+	{
+		double identity[16];
+		identity_matrix4(identity);
+		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+		return_code = Cmiss_field_assign_real(field, field_cache, /*number_of_values*/16, identity);
+		Cmiss_field_cache_destroy(&field_cache);
+		Cmiss_field_module_destroy(&field_module);
+		return return_code;
+	}
 	Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
 	double from_projection[16], inverse_to_projection[16];
-	if (getTransformationToWindow(transformation.from_coordinate_system, region, viewport_width, viewport_height, from_projection) &&
-		getTransformationToWindow(transformation.to_coordinate_system, region, viewport_width, viewport_height, inverse_to_projection))
+	if (getTransformationToWindow(transformation.from_coordinate_system, region, viewport_width, viewport_height,
+		from_projection, &(transformation.current_local_transformation)) &&
+		getTransformationToWindow(transformation.to_coordinate_system, region, viewport_width, viewport_height,
+		inverse_to_projection, &(transformation.current_local_transformation)))
 	{
 		double lu_d, temp;
 		int i, j, lu_index[4];
@@ -501,6 +527,60 @@ int Scene_viewer::outputTransformation(Cmiss_field_id field, double viewport_wid
 		return_code = 0;
 	}
 	Cmiss_field_module_destroy(&field_module);
+	return return_code;
+}
+
+int Scene_viewer::checkIfLocalToOutputTransformationUpdatedRequired()
+{
+	int return_code = 0;
+	OutputTransformationMap::iterator iter = output_transformations.begin();
+	while (iter != output_transformations.end() && !return_code)
+	{
+		Cmiss_field_id field = iter->first;
+		OutputTransformation& transformation = *(iter->second);
+		if ((transformation.from_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL) ||
+			(transformation.to_coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL))
+		{
+			Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+			if (!field_module)
+			{
+				return 0;
+			}
+			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+			struct Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+			gtMatrix *local_transformation_matrix = Cmiss_rendition_get_total_transformation_on_scene(
+				rendition, scene);
+			if (local_transformation_matrix && transformation.current_local_transformation)
+			{
+				int i, j;
+				for (i=0; i<4 && !return_code; i++)
+				{
+					for (j=0; j<4 && !return_code; j++)
+					{
+						if (fabs(((*(local_transformation_matrix))[i][j]) -
+							((*(transformation.current_local_transformation))[i][j])) > 0.0000001)
+						{
+							return_code = 1;
+							break;
+						}
+					}
+				}
+			}
+			else if(!local_transformation_matrix && !(transformation.current_local_transformation))
+			{
+				return_code = 0;
+			}
+			else
+			{
+				return_code = 1;
+			}
+			Cmiss_field_module_destroy(&field_module);
+			Cmiss_rendition_destroy(&rendition);
+			if (local_transformation_matrix)
+				DEALLOCATE(local_transformation_matrix);
+		}
+		++iter;
+	}
 	return return_code;
 }
 
@@ -2467,6 +2547,11 @@ access this function.
 				rendering_data.viewport_width,rendering_data.viewport_height);
 
 			/* Send the transform callback before compiling scene if the flag is set */
+
+			if (!scene_viewer->transform_flag)
+			{
+				scene_viewer->transform_flag = scene_viewer->checkIfLocalToOutputTransformationUpdatedRequired();
+			}
 			if (scene_viewer->transform_flag)
 			{
 				scene_viewer->outputTransformations((double)rendering_data.viewport_width, (double)rendering_data.viewport_height);
