@@ -1026,7 +1026,7 @@ Cmiss_field_element_group_id Computed_field_group::create_element_group(Cmiss_me
 {
 	if (contains_all)
 		return 0;
-	if (Cmiss_mesh_get_region(mesh) != region)
+	if (Cmiss_mesh_get_region_internal(mesh) != region)
 		return 0;
 	Cmiss_field_element_group_id element_group = get_element_group(mesh);
 	if (element_group)
@@ -1058,7 +1058,7 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_mesh_
 {
 	if (contains_all)
 		return 0;
-	if (Cmiss_mesh_get_region(mesh) != region)
+	if (Cmiss_mesh_get_region_internal(mesh) != region)
 		return 0;
 	Cmiss_field_element_group_id element_group = NULL;
 	int dimension = Cmiss_mesh_get_dimension(mesh);

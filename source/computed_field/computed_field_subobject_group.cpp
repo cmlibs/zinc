@@ -367,7 +367,7 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 
 	ENTER(Cmiss_field_module_create_element_group);
 	field = (Computed_field *)NULL;
-	if (field_module && mesh && (Cmiss_mesh_get_region(mesh) ==
+	if (field_module && mesh && (Cmiss_mesh_get_region_internal(mesh) ==
 		Cmiss_field_module_get_master_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -403,6 +403,12 @@ Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
 		master_mesh = Cmiss_mesh_get_master(group_core->get_master_mesh());
 	}
 	return master_mesh;
+}
+
+Cmiss_mesh_id Cmiss_field_element_group_get_mesh(
+	Cmiss_field_element_group_id element_group)
+{
+	return Cmiss_mesh_create_from_element_group_internal(element_group);
 }
 
 #if defined (USE_OPENCASCADE)

@@ -208,6 +208,16 @@ Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
 	Cmiss_field_element_group_id element_group);
 
 /*****************************************************************************//**
+ * Get a handle to the 'dual' mesh of this element group, which provides most of
+ * the methods for working with it.
+ *
+ * @param element_group  Handle to element group field.
+ * @return  Handle to mesh. Caller is responsible for destroying this.
+ */
+Cmiss_mesh_id Cmiss_field_element_group_get_mesh(
+	Cmiss_field_element_group_id element_group);
+
+/*****************************************************************************//**
  * Add specified element to element group.
  *
  * @param element_group  handle to target element group field.

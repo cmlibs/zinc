@@ -1452,7 +1452,7 @@ Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
 	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh)
 {
 	Computed_field *field = NULL;
-	if (field_module && mesh && (Cmiss_mesh_get_region(mesh) ==
+	if (field_module && mesh && (Cmiss_mesh_get_region_internal(mesh) ==
 		Cmiss_field_module_get_region_internal(field_module)))
 	{
 		field = Cmiss_field_module_create_finite_element_internal(
@@ -3522,7 +3522,7 @@ int Computed_field_find_mesh_location::evaluate_cache_at_location(Field_location
 			if (Computed_field_find_element_xi(get_mesh_field(),
 					get_source_field()->values, get_source_field()->number_of_components,
 					location->get_time(), &element_cache, xi_cache, Cmiss_mesh_get_dimension(mesh),
-					Cmiss_mesh_get_region(mesh), /*propagate_field*/0,
+					Cmiss_mesh_get_region_internal(mesh), /*propagate_field*/0,
 					/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
 					&& element_cache)
 			{
@@ -3791,7 +3791,7 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 				"find_nearest", "find_exact", &find_nearest_flag);
 			// mesh
 			Option_table_add_string_entry(option_table, "mesh", &mesh_name,
-				" [GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
+				" ELEMENT_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
 			// mesh_field
 			set_mesh_field_data.conditional_function =
 				Computed_field_has_numerical_components;

@@ -167,6 +167,31 @@ Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
 	Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
+ * Destroy the node if it is in the nodeset. Removes node from any related
+ * groups it is in. All handles to the destroyed node become invalid.
+ *
+ * @param nodeset  Handle to the nodeset whose node is to be destroyed.
+ * @param node  The node to destroy.
+ * @return  1 if node is successfully destroyed, 0 if error.
+ */
+int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
+
+/***************************************************************************//**
+ * Destroy all nodes in the nodeset for which the conditional field is true i.e.
+ * non-zero valued. These nodes are removed from any related groups they are in.
+ * All handles to removed nodes become invalid.
+ * Nodes are only removed if not in use by elements in region.
+ * Note that group and node_group fields are valid conditional fields.
+ *
+ * @param nodeset  Handle to the nodeset to destroy nodes from.
+ * @param conditional_field  Field which if non-zero at any node indicates it
+ * is to be destroyed.
+ * @return  The number of nodes destroyed.
+ */
+int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
+    Cmiss_field_id conditional_field);
+
+/***************************************************************************//**
  * Return a handle to the node in the nodeset with this identifier.
  *
  * @param nodeset  Handle to the nodeset to find the node in.
@@ -212,32 +237,6 @@ int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
  * @return  1 if the two nodesets match, 0 if not.
  */
 int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
-
-/***************************************************************************//**
- * Remove a node from the nodeset and any related node groups it is in.
- * Nodes can only be removed if not in use by elements in region.
- * This destroys the node: any handles to it become invalid.
- *
- * @param nodeset  Handle to the nodeset to remove the node from.
- * @param node  The node to be removed.
- * @return  1 if node is successfully removed, 0 if error.
- */
-int Cmiss_nodeset_remove_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
-
-/***************************************************************************//**
- * Remove from the nodeset and any related node groups all nodes for which the
- * conditional field is true i.e. non-zero valued. Note that group and
- * node_group fields are valid conditional fields.
- * Nodes are only removed if not in use by elements in region.
- * Any handles to removed nodes become invalid.
- *
- * @param nodeset  Handle to the nodeset to remove nodes from.
- * @param conditional_field  Field which if non-zero at any node indicates it
- * is to be removed.
- * @return  The number of nodes removed from the nodeset.
- */
-int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
-    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Destroys this handle to the node_iterator and sets it to NULL.

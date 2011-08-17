@@ -94,19 +94,4 @@ struct LIST(FE_element) *
 		struct Computed_field *group_field,
 		struct Computed_field *conditional_field, FE_value time);
 
-/***************************************************************************//**
- * Create an element list with the supplied region, dimesnion, conditional field
- * and a specified time.
- *
- * @param region  The pointer to a region
- * @param dimension  The dimension of elements to query about
- * @param conditional_field  Conditional field
- * @param time  Time of the group field to be evaluated
- * @return  Returns element list if successfully create a element list with the given
- *    arguments, otherwise NULL.
- */
-struct LIST(FE_element) *FE_element_list_from_conditional_field_of_dimension(
-	struct FE_region *fe_region, int dimension,
-	struct Computed_field *conditional_field, FE_value time);
-
 #endif /* !defined (ELEMENT_OPERATIONS_H) */

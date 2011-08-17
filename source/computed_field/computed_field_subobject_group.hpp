@@ -383,7 +383,7 @@ namespace {
 			master_mesh(Cmiss_mesh_get_master(mesh)),
 			dimension(Cmiss_mesh_get_dimension(master_mesh)),
 			object_list(FE_region_create_related_element_list_for_dimension(
-				Cmiss_mesh_get_FE_region(master_mesh), dimension))
+				Cmiss_mesh_get_FE_region_internal(master_mesh), dimension))
 		{
 		}
 
@@ -431,6 +431,24 @@ namespace {
 			return 0;
 		};
 
+		/** remove objects from the group if they are in the supplied list */
+		int removeObjectsInList(struct LIST(FE_element) *element_list)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
+			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+				FE_element_is_in_list, (void *)element_list, object_list);
+			const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
+			if (new_size != old_size)
+			{
+				if (new_size == 0)
+					change_detail.changeClear();
+				else
+					change_detail.changeRemove();
+				update();
+			}
+			return return_code;
+		}
+
 		virtual int clear()
 		{
 			if (NUMBER_IN_LIST(FE_element)(object_list))
@@ -462,6 +480,20 @@ namespace {
 			return CREATE_LIST_ITERATOR(FE_element)(object_list);
 		}
 
+		/** @return  non-accessed element with that identifier, or 0 if none */
+		inline Cmiss_element_id findElementByIdentifier(int identifier)
+		{
+			struct CM_element_information cm;
+			cm.type = ((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE));
+			cm.number = identifier;
+			return FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm, object_list);
+		}
+
+		int getSize()
+		{
+			return NUMBER_IN_LIST(FE_element)(object_list);
+		}
+
 		virtual int isEmpty() const
 		{
 			if (NUMBER_IN_LIST(FE_element)(object_list))
@@ -472,17 +504,7 @@ namespace {
 
 		virtual int isIdentifierInList(int identifier)
 		{
-			struct CM_element_information cm;
-			cm.type = ((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE));
-			cm.number = identifier;
-			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm, object_list))
-			{
-				return 1;
-			}
-			else
-			{
-				return 0;
-			}
+			return (0 != findElementByIdentifier(identifier));
 		}
 
 		virtual Cmiss_field_change_detail *extract_change_detail()

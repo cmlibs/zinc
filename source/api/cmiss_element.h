@@ -139,11 +139,14 @@ Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
 
 /***************************************************************************//**
  * Get a handle to a finite element mesh from its name. A mesh is the container
- * of elements of a fixed dimension.
- * Valid names are currently limited to:
+ * of elements of a fixed dimension. Valid names may be any element_group field,
+ * or any of the following special names:
  * "cmiss_mesh_3d" = 3-D elements.
  * "cmiss_mesh_2d" = 2-D elements including faces of 3-D elements.
  * "cmiss_mesh_1d" = 1-D elements including faces (lines) of 2-D elements.
+ * The above special mesh names may be preceded by a group region name with '.'
+ * separator to obtain the submesh from that group, i.e.
+ * "GROUPNAME.cmiss_mesh_Nd", where "N" is the dimension.
  *
  * @param field_module  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh.
@@ -168,6 +171,15 @@ Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
  * @param mesh_address  Address of handle to the mesh to destroy.
  */
 int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
+
+/*****************************************************************************//**
+ * Add specified element to group mesh, i.e. not a master mesh.
+ *
+ * @param mesh_group  Handle to group mesh to modify.
+ * @param element  Handle to element to add. Must be from the master mesh.
+ * @return  1 if element added, 0 if failed.
+ */
+int Cmiss_mesh_add_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element);
 
 /***************************************************************************//**
  * Returns whether the element is from the mesh.
@@ -245,6 +257,39 @@ Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
 int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
 
+/*****************************************************************************//**
+ * Destroy all elements in mesh, also removing them from any related groups.
+ * All handles to the destroyed element become invalid.
+ *
+ * @param mesh  Handle to mesh to destroy elements from.
+ * @return  1 if all elements destroyed, 0 if failed.
+ */
+int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Destroy the element if it is in the mesh. Removes element from any related
+ * groups it is in. All handles to the destroyed element become invalid.
+ *
+ * @param mesh  Handle to the mesh whose element is to be destroyed.
+ * @param element  The element to destroy.
+ * @return  1 if element is successfully destroyed, 0 if error.
+ */
+int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
+
+/***************************************************************************//**
+ * Destroy all elements in the mesh for which the conditional field is true i.e.
+ * non-zero valued at the element centroid. These elements are removed from any
+ * related groups they are in. All handles to removed elements become invalid.
+ * Note that group and element_group fields are valid conditional fields.
+ *
+ * @param mesh  Handle to the mesh to destroy elements from.
+ * @param conditional_field  Field which if non-zero at the element centroid
+ * indicates it is to be destroyed.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
+   Cmiss_field_id conditional_field);
+
 /***************************************************************************//**
  * Return a handle to the element in the mesh with this identifier.
  *
@@ -292,6 +337,14 @@ char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
 int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
+ * Query whether mesh is a sub-group mesh so add/remove functions can be used.
+ *
+ * @param mesh  The mesh to query.
+ * @return  1 if the mesh is a group mesh, 0 if it is not.
+ */
+int Cmiss_mesh_is_group(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
  * Check if two mesh handles refer to the same object.
  *
  * @param mesh1  The first mesh to match.
@@ -300,28 +353,34 @@ int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
  */
 int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
 
-/***************************************************************************//**
- * Remove an element from a mesh and any related groups it is in.
- * This destroys the element; any handles to it become invalid.
+/*****************************************************************************//**
+ * Remove all elements from group mesh, i.e. not a master mesh.
  *
- * @param mesh  Handle to the mesh to remove the element from.
- * @param element  The element to be removed.
- * @return  1 if element is successfully removed, 0 if error.
+ * @param mesh_group  Handle to group mesh to modify.
+ * @return  1 if all elements removed, 0 if failed.
  */
-int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
+int Cmiss_mesh_remove_all_elements(Cmiss_mesh_id mesh_group);
+
+/*****************************************************************************//**
+ * Remove specified element from group mesh, i.e. not a master mesh.
+ *
+ * @param mesh_group  Handle to group mesh to modify.
+ * @param element  Handle to element to remove.
+ * @return  1 if element removed, 0 if failed.
+ */
+int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element);
 
 /***************************************************************************//**
- * Remove from the mesh and any related element groups all elements for which
- * the conditional field is true i.e. non-zero valued at the element centroid.
+ * Remove all elements in the mesh for which the conditional field is true i.e.
+ * non-zero valued at the element centroid.
  * Note that group and element_group fields are valid conditional fields.
- * Any handles to removed elements become invalid.
  *
- * @param mesh  Handle to the mesh to remove elements from.
+ * @param mesh_group  Handle to the group mesh to remove elements from.
  * @param conditional_field  Field which if non-zero at the element centroid
  * indicates it is to be removed.
- * @return  The number of elements removed from the mesh.
+ * @return  1 on success, 0 on failure.
  */
-int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh,
+int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh_group,
    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
@@ -341,26 +400,27 @@ int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
 int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis);
 
 /***************************************************************************//**
- * Gets the basis function type for a dimension of the basis.
+ * Gets the basis function type for a component of the basis.
  *
  * @param element_basis  Element basis to query.
- * @param dimension  The dimension to get the function for from 1 to dimensions.
- * @param basis_type  The basis type to use on the chosen dimension.
+ * @param chart_component  The chart component to get the function for from 1 to
+ * dimension.
  * @return  The basis function type.
  */
 enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
-	Cmiss_element_basis_id element_basis, int dimension);
+	Cmiss_element_basis_id element_basis, int chart_component);
 
 /***************************************************************************//**
- * Sets a simple basis function type for a dimension of the basis.
+ * Sets a simple basis function type for a component of the basis.
  *
  * @param element_basis  Element basis to modify.
- * @param dimension  The dimension to set the function for from 1 to dimensions.
- * @param basis_type  The basis type to use on the chosen dimension.
+ * @param chart_component  The chart component to set the function for from 1 to
+ * dimension.
+ * @param basis_type  The basis type to use on the chosen chart component.
  * @return  1 on success, 0 on error.
  */
 int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
-	int dimension, enum Cmiss_basis_function_type function_type);
+	int chart_component, enum Cmiss_basis_function_type function_type);
 
 /***************************************************************************//**
  * If the basis is valid, gets the number of nodes the element_basis expects.

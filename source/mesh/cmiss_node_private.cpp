@@ -542,7 +542,7 @@ int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
 	return 0;
 }
 
-int Cmiss_nodeset_remove_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
+int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
 {
 	int return_code = 0;
 	if (nodeset && node)
@@ -556,7 +556,7 @@ int Cmiss_nodeset_remove_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
 	return return_code;
 }
 
-int Cmiss_nodeset_remove_nodes_conditional(Cmiss_nodeset_id nodeset,
+int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 	Cmiss_field_id conditional_field)
 {
 	int return_code = 0;

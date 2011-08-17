@@ -4495,6 +4495,11 @@ the data_hack or no master; this is the region owning the nodes/elements.
 	return (return_code);
 } /* FE_region_get_ultimate_master_FE_region */
 
+int FE_region_is_group(struct FE_region *fe_region)
+{
+	return (fe_region && fe_region->master_fe_region && (!fe_region->top_data_hack));
+}
+
 struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
 	struct FE_region *fe_region)
 /*******************************************************************************
@@ -5062,6 +5067,31 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 	LEAVE;
 
 	return (new_element);
+}
+
+int FE_region_add_FE_element(struct FE_region *fe_region,
+	struct FE_element *element)
+{
+	int return_code = 0;
+	if (fe_region && fe_region->master_fe_region &&
+		(!fe_region->base_fe_region) && element)
+	{
+		int dimension = get_FE_element_dimension(element);
+		struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
+		if (!IS_OBJECT_IN_LIST(FE_element)(element, element_list))
+		{
+			if (FE_region_contains_FE_element(fe_region->master_fe_region, element))
+			{
+				if (ADD_OBJECT_TO_LIST(FE_element)(element, element_list))
+				{
+					FE_REGION_FE_ELEMENT_CHANGE(fe_region, element,
+						CHANGE_LOG_OBJECT_ADDED(FE_element), element);
+					return_code = 1;
+				}
+			}
+		}
+	}
+	return return_code;
 }
 
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,

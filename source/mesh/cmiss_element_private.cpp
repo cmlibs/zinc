@@ -42,6 +42,8 @@
 
 extern "C" {
 #include "api/cmiss_element.h"
+#include "api/cmiss_field_subobject_group.h"
+#include "api/cmiss_field_module.h"
 #include "element/element_operations.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -53,7 +55,7 @@ extern "C" {
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include <vector>
-#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 
 namespace {
 
@@ -96,19 +98,19 @@ struct Cmiss_element_basis
 {
 private:
 	FE_region *fe_region; // needed to get basis manager
-	int dimensions;
+	int dimension;
 	Cmiss_basis_function_type *function_types;
 	int access_count;
 
 public:
-	Cmiss_element_basis(FE_region *fe_region, int dimensions,
+	Cmiss_element_basis(FE_region *fe_region, int mesh_dimension,
 			Cmiss_basis_function_type function_type) :
 		fe_region(ACCESS(FE_region)(fe_region)),
-		dimensions(dimensions),
-		function_types(new Cmiss_basis_function_type[dimensions]),
+		dimension(mesh_dimension),
+		function_types(new Cmiss_basis_function_type[mesh_dimension]),
 		access_count(1)
 	{
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < dimension; i++)
 		{
 			function_types[i] = function_type;
 		}
@@ -125,13 +127,13 @@ public:
 		return 1;
 	}
 
-	int getDimensions() const { return dimensions; }
+	int getDimension() const { return dimension; }
 
-	/** @return  number of dimensions using supplied function_type */
+	/** @return  number of dimension using supplied function_type */
 	int getDimensionsUsingFunction(Cmiss_basis_function_type function_type) const
 	{
 		int count = 0;
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < dimension; i++)
 		{
 			if (function_types[i] == function_type)
 				count++;
@@ -140,8 +142,8 @@ public:
 	}
 
 	/**
-	 * @return  1 if all function types set & at least 2 dimensions for each
-	 * simplex basis */
+	 * @return  1 if all function types set & at least 2 chart components linked
+	 * for each simplex basis */
 	int isValid() const
 	{
 		int return_code = 1;
@@ -166,13 +168,13 @@ public:
 	{
 		if (!isValid())
 			return NULL;
-		const int length = dimensions*(dimensions + 1)/2 + 1;
+		const int length = dimension*(dimension + 1)/2 + 1;
 		int *int_basis_type_array;
 		if (!ALLOCATE(int_basis_type_array, int, length))
 			return NULL;
-		*int_basis_type_array = dimensions;
+		*int_basis_type_array = dimension;
 		int *temp = int_basis_type_array + 1;
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < dimension; i++)
 		{
 			FE_basis_type fe_basis_type = FE_BASIS_TYPE_INVALID;
 			switch (function_types[i])
@@ -201,7 +203,7 @@ public:
 			}
 			*temp = (int)fe_basis_type;
 			++temp;
-			for (int j = i + 1; j < dimensions; j++)
+			for (int j = i + 1; j < dimension; j++)
 			{
 				if (((fe_basis_type == LINEAR_SIMPLEX) ||
 					(fe_basis_type == QUADRATIC_SIMPLEX)) &&
@@ -222,18 +224,18 @@ public:
 		return ACCESS(FE_basis)(fe_basis);
 	}
 
-	enum Cmiss_basis_function_type getFunctionType(int dimension) const
+	enum Cmiss_basis_function_type getFunctionType(int chart_component) const
 	{
-		if ((dimension < 1) || (dimension > dimensions))
+		if ((chart_component < 1) || (chart_component > dimension))
 			return CMISS_BASIS_FUNCTION_TYPE_INVALID;
-		return function_types[dimension-1];
+		return function_types[chart_component - 1];
 	}
 
-	int setFunctionType(int dimension, Cmiss_basis_function_type function_type)
+	int setFunctionType(int chart_component, Cmiss_basis_function_type function_type)
 	{
-		if ((dimension < 1) || (dimension > dimensions))
+		if ((chart_component < 1) || (chart_component > dimension))
 			return 0;
-		function_types[dimension-1] = function_type;
+		function_types[chart_component - 1] = function_type;
 		return 1;
 	}
 
@@ -279,10 +281,10 @@ public:
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_basis::getNumberOfNodes.  "
-				"Invalid number of dimensions linked in simplex");
+				"Invalid number of chart components linked in simplex");
 			return 0;
 		}
-		for (int i = 0; i < dimensions; i++)
+		for (int i = 0; i < dimension; i++)
 		{
 			switch (function_types[i])
 			{
@@ -513,11 +515,11 @@ public:
 		const int *local_node_indexes)
 	{
 		int return_code = 1;
-		if (basis->getDimensions() != element_dimension)
+		if (basis->getDimension() != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_element_template_define_field_simple_nodal.  "
-				"Basis has different number of dimensions to mesh");
+				"Basis has different dimension to mesh");
 			return_code = 0;
 		}
 		FE_basis *fe_basis = basis->getFeBasis();
@@ -736,15 +738,31 @@ struct Cmiss_mesh
 {
 private:
 	FE_region *fe_region;
-	int mesh_dimension;
+	int dimension;
+	Cmiss_field_element_group_id group;
 	int access_count;
 
 public:
 	Cmiss_mesh(Cmiss_region_id region, int mesh_dimension) :
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
-		mesh_dimension(mesh_dimension),
+		dimension(mesh_dimension),
+		group(0),
 		access_count(1)
 	{
+	}
+
+	Cmiss_mesh(Cmiss_field_element_group_id group) :
+		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
+			Computed_field_get_region(Cmiss_field_element_group_base_cast(group))))),
+		dimension(0),
+		group(group),
+		access_count(1)
+	{
+		// GRC Cmiss_field_element_group_access missing:
+		Cmiss_field_access(Cmiss_field_element_group_base_cast(group));
+		Cmiss_mesh_id master_mesh = Cmiss_field_element_group_get_master_mesh(group);
+		dimension = master_mesh->getDimension();
+		Cmiss_mesh_destroy(&master_mesh);
 	}
 
 	Cmiss_mesh_id access()
@@ -764,12 +782,31 @@ public:
 		return 1;
 	}
 
+	int addElement(Cmiss_element_id element)
+	{
+		int return_code = 0;
+		if (isElementCompatible(element))
+		{
+			if (group)
+			{
+				return_code = Computed_field_element_group_core_cast(group)->addObject(element);
+			}
+			else if (FE_region_is_group(fe_region))
+			{
+				return_code = FE_region_add_FE_element(fe_region, element);
+			}
+		}
+		return return_code;
+	}
+
 	int containsElement(Cmiss_element_id element)
 	{
+		if (group)
+			return Cmiss_field_element_group_contains_element(group, element);
 		CM_element_information cm;
 		get_FE_element_identifier(element, &cm);
 		int element_dimension = get_FE_element_dimension(element);
-		if (element_dimension == mesh_dimension)
+		if (element_dimension == dimension)
 		{
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			if ((element_fe_region == fe_region) ||
@@ -791,6 +828,8 @@ public:
 			FE_element *template_element = element_template->getTemplateElement();
 			element = ACCESS(FE_element)(FE_region_create_FE_element_copy(
 				fe_region, identifier, template_element));
+			if (group)
+				Cmiss_field_element_group_add_element(group, element);
 		}
 		else
 		{
@@ -800,22 +839,222 @@ public:
 		return element;
 	}
 
-	Cmiss_element_iterator_id createIterator()
+	Cmiss_element_basis_id createElementBasis(enum Cmiss_basis_function_type function_type)
 	{
-		return FE_region_create_element_iterator(fe_region, mesh_dimension);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return new Cmiss_element_basis(master_fe_region, dimension, function_type);
 	}
 
-	int getDimension() const { return mesh_dimension; }
+	Cmiss_element_template_id createElementTemplate()
+	{
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return new Cmiss_element_template(master_fe_region, dimension);
+	}
+
+	Cmiss_element_iterator_id createIterator()
+	{
+		if (group)
+			return Cmiss_field_element_group_create_element_iterator(group);
+		return FE_region_create_element_iterator(fe_region, dimension);
+	}
+
+	int destroyAllElements()
+	{
+		return destroyElementsConditional(/*conditional_field*/0);
+	}
+
+	int destroyElement(Cmiss_element_id element)
+	{
+		if (containsElement(element))
+		{
+			FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+			return FE_region_remove_FE_element(master_fe_region, element);
+		}
+		return 0;
+	}
+
+	int destroyElementsConditional(Cmiss_field_id conditional_field)
+	{
+		struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		int return_code = FE_region_remove_FE_element_list(master_fe_region, element_list);
+		DESTROY(LIST(FE_element))(&element_list);
+		return return_code;
+	}
+
+	Cmiss_element_id findElementByIdentifier(int identifier) const
+	{
+		Cmiss_element_id element = 0;
+		if (group)
+		{
+			element = Computed_field_element_group_core_cast(group)->findElementByIdentifier(identifier);
+		}
+		else
+		{
+			element = FE_region_get_FE_element_from_identifier(fe_region, dimension, identifier);
+		}
+		if (element)
+			ACCESS(FE_element)(element);
+		return element;
+	}
+
+	int getDimension() const { return dimension; }
 
 	FE_region *getFeRegion() const { return fe_region; }
 
-	int getSize() const { return FE_region_get_number_of_FE_elements_of_dimension(fe_region, mesh_dimension); }
+	char *getName()
+	{
+		char *name = 0;
+		if (group)
+		{
+			name = Cmiss_field_get_name(Cmiss_field_element_group_base_cast(group));
+		}
+		else
+		{
+			int error = 0;
+			Cmiss_region_id region = 0;
+			FE_region_get_Cmiss_region(fe_region, &region);
+			if (Cmiss_region_is_group(region))
+			{
+				char *group_name = Cmiss_region_get_name(region);
+				append_string(&name, group_name, &error);
+				append_string(&name, ".", &error);
+				DEALLOCATE(group_name);
+			}
+			switch (dimension)
+			{
+			case 1:
+				append_string(&name, "cmiss_mesh_1d", &error);
+				break;
+			case 2:
+				append_string(&name, "cmiss_mesh_2d", &error);
+				break;
+			case 3:
+				append_string(&name, "cmiss_mesh_3d", &error);
+				break;
+			default:
+				DEALLOCATE(name);
+				name = 0;
+				break;
+			}
+		}
+		return name;
+	}
+
+	Cmiss_mesh_id getMaster()
+	{
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		Cmiss_region_id region = 0;
+		FE_region_get_Cmiss_region(master_fe_region, &region);
+		if (region)
+			return new Cmiss_mesh(region, dimension);
+		return 0;
+	}
+
+	int getSize() const
+	{
+		if (group)
+			return Computed_field_element_group_core_cast(group)->getSize();
+		return FE_region_get_number_of_FE_elements_of_dimension(fe_region, dimension);
+	}
+
+	int isGroup()
+	{
+		return (group || FE_region_is_group(fe_region));
+	}
+
+	int match(Cmiss_mesh& other_mesh)
+	{
+		return ((fe_region == other_mesh.fe_region) &&
+			(dimension == other_mesh.dimension) &&
+			(group == other_mesh.group));
+	}
+
+	int removeAllElements()
+	{
+		int return_code = 0;
+		if (group)
+		{
+			return_code = Computed_field_element_group_core_cast(group)->clear();
+		}
+		else if (FE_region_is_group(fe_region))
+		{
+			return removeElementsConditional(/*conditional_field*/0);
+		}
+		return 0;
+	}
+
+	int removeElement(Cmiss_element_id element)
+	{
+		int return_code = 0;
+		if (group)
+		{
+			return_code = Computed_field_element_group_core_cast(group)->removeObject(element);
+		}
+		else if (FE_region_is_group(fe_region))
+		{
+			return_code = FE_region_remove_FE_element(fe_region, element);
+		}
+		return return_code;
+	}
+
+	int removeElementsConditional(Cmiss_field_id conditional_field)
+	{
+		int return_code = 0;
+		if (group || FE_region_is_group(fe_region))
+		{
+			struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
+			if (group)
+				return_code = Computed_field_element_group_core_cast(group)->removeObjectsInList(element_list);
+			else
+				return_code = FE_region_remove_FE_element_list(fe_region, element_list);
+			DESTROY(LIST(FE_element))(&element_list);
+		}
+		return return_code;
+	}
 
 private:
 	~Cmiss_mesh()
 	{
+		if (group)
+			Cmiss_field_element_group_destroy(&group);
 		DEACCESS(FE_region)(&fe_region);
 	}
+
+	struct LIST(FE_element) *createElementListWithCondition(Cmiss_field_id conditional_field)
+	{
+		Cmiss_region_id region = 0;
+		FE_region_get_Cmiss_region(fe_region, &region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_element_iterator_id iterator = createIterator();
+		Cmiss_element_id element = 0;
+		struct LIST(FE_element) *element_list =
+			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
+		while (0 != (element = Cmiss_element_iterator_next(iterator)))
+		{
+			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
+				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
+			Cmiss_element_destroy(&element);
+		}
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_field_module_destroy(&field_module);
+		return element_list;
+	}
+
+	bool isElementCompatible(Cmiss_element_id element)
+	{
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		FE_region *element_fe_region = FE_element_get_FE_region(element);
+		return (element_fe_region == master_fe_region);
+	}
+
 };
 
 /*
@@ -837,24 +1076,69 @@ Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
 Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name)
 {
-	Cmiss_mesh_id mesh = NULL;
+	Cmiss_mesh_id mesh = 0;
 	if (field_module && mesh_name)
 	{
-		int mesh_dimension = 0;
-		if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
-			mesh_dimension = 3;
-		else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
-			mesh_dimension = 2;
-		else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
-			mesh_dimension = 1;
-		if (0 < mesh_dimension)
+		Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, mesh_name);
+		if (field)
 		{
-			mesh = new Cmiss_mesh(Cmiss_field_module_get_region_internal(field_module), mesh_dimension);
+			Cmiss_field_element_group_id element_group_field = Cmiss_field_cast_element_group(field);
+			if (element_group_field)
+			{
+				mesh = Cmiss_field_element_group_get_mesh(element_group_field);
+				Cmiss_field_element_group_destroy(&element_group_field);
+			}
+			Cmiss_field_destroy(&field);
 		}
-		else
+		if (!mesh)
 		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_get_mesh_by_name.  Unknown mesh name '%s'", mesh_name);
+			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+			const char *dotpos = strrchr(mesh_name, '.');
+			const char *trimmed_mesh_name = 0;
+			if (dotpos)
+			{
+				Cmiss_region_id master_region = 0;
+				if (Cmiss_region_is_group(region))
+				{
+					master_region = Cmiss_region_get_parent(region);
+				}
+				else
+				{
+					master_region = Cmiss_region_access(region);
+				}
+				char *group_name = duplicate_string(mesh_name);
+				group_name[dotpos - mesh_name] = '\0';
+				Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
+				if (child)
+				{
+					if (Cmiss_region_is_group(child))
+					{
+						region = child;
+						trimmed_mesh_name = dotpos + 1;
+					}
+					Cmiss_region_destroy(&child);
+				}
+				DEALLOCATE(group_name);
+				Cmiss_region_destroy(&master_region);
+			}
+			else
+			{
+				trimmed_mesh_name = mesh_name;
+			}
+			if (trimmed_mesh_name)
+			{
+				int mesh_dimension = 0;
+				if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
+					mesh_dimension = 3;
+				else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
+					mesh_dimension = 2;
+				else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
+					mesh_dimension = 1;
+				if (0 < mesh_dimension)
+				{
+					mesh = new Cmiss_mesh(region, mesh_dimension);
+				}
+			}
 		}
 	}
 	return (mesh);
@@ -872,6 +1156,13 @@ int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address)
 	return 0;
 }
 
+int Cmiss_mesh_add_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element)
+{
+	if (mesh_group && element)
+		return mesh_group->addElement(element);
+	return 0;
+}
+
 int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
 {
 	if (mesh)
@@ -882,26 +1173,17 @@ int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
 Cmiss_element_basis_id Cmiss_mesh_create_element_basis(Cmiss_mesh_id mesh,
 	enum Cmiss_basis_function_type function_type)
 {
-	Cmiss_element_basis_id basis = NULL;
 	if (mesh)
-	{
-		FE_region *fe_region = mesh->getFeRegion();
-		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-		basis = new Cmiss_element_basis(fe_region, mesh->getDimension(), function_type);
-	}
-	return basis;
+		return mesh->createElementBasis(function_type);
+	return 0;
 }
 
 Cmiss_element_template_id Cmiss_mesh_create_element_template(
 	Cmiss_mesh_id mesh)
 {
 	if (mesh)
-	{
-		FE_region *fe_region = mesh->getFeRegion();
-		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-		return new Cmiss_element_template(fe_region, mesh->getDimension());
-	}
-	return NULL;
+		return mesh->createElementTemplate();
+	return 0;
 }
 
 Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
@@ -909,7 +1191,7 @@ Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
 {
 	if (mesh && element_template)
 		return mesh->createElement(identifier, element_template);
-	return NULL;
+	return 0;
 }
 
 Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
@@ -917,7 +1199,7 @@ Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
 {
 	if (mesh)
 		return mesh->createIterator();
-	return NULL;
+	return 0;
 }
 
 int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
@@ -933,154 +1215,114 @@ int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	return 0;
 }
 
+int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->destroyAllElements();
+	return 0;
+}
+
+int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
+{
+	if (mesh && element)
+		return mesh->destroyElement(element);
+	return 0;
+}
+
+int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
+	Cmiss_field_id conditional_field)
+{
+	if (mesh && conditional_field)
+		return mesh->destroyElementsConditional(conditional_field);
+	return 0;
+}
+
 Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier)
 {
-	Cmiss_element_id element = NULL;
 	if (mesh)
-	{
-		element = FE_region_get_FE_element_from_identifier(mesh->getFeRegion(),
-			mesh->getDimension(), identifier);
-		if (element)
-			ACCESS(FE_element)(element);
-	}
-	return element;
+		return mesh->findElementByIdentifier(identifier);
+	return 0;
 }
 
 int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh)
 {
 	if (mesh)
-	{
 		return mesh->getDimension();
-	}
 	return 0;
 }
 
 Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh)
 {
 	if (mesh)
-	{
-		FE_region *fe_region = Cmiss_mesh_get_master_FE_region_internal(mesh);
-		Cmiss_region_id region = 0;
-		FE_region_get_Cmiss_region(fe_region, &region);
-		if (region)
-		{
-			return new Cmiss_mesh(region, mesh->getDimension());
-		}
-	}
+		return mesh->getMaster();
 	return 0;
 }
 
 char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh)
 {
-	char *name = 0;
 	if (mesh)
-	{
-		int error = 0;
-		Cmiss_region_id region = 0;
-		FE_region_get_Cmiss_region(mesh->getFeRegion(), &region);
-		if (Cmiss_region_is_group(region))
-		{
-			char *group_name = Cmiss_region_get_name(region);
-			append_string(&name, group_name, &error);
-			append_string(&name, ".", &error);
-			DEALLOCATE(group_name);
-		}
-		switch (mesh->getDimension())
-		{
-		case 1:
-			append_string(&name, "cmiss_mesh_1d", &error);
-			break;
-		case 2:
-			append_string(&name, "cmiss_mesh_2d", &error);
-			break;
-		case 3:
-			append_string(&name, "cmiss_mesh_3d", &error);
-			break;
-		default:
-			DEALLOCATE(name);
-			name = 0;
-			break;
-		}
-	}
-	return name;
+		return mesh->getName();
+	return 0;
 }
 
 int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
 {
 	if (mesh)
-	{
 		return mesh->getSize();
-	}
+	return 0;
+}
+
+int Cmiss_mesh_is_group(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->isGroup();
 	return 0;
 }
 
 int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2)
 {
-	return (mesh1 && mesh2 &&
-		(mesh1->getFeRegion() == mesh2->getFeRegion()) &&
-		(mesh1->getDimension() == mesh1->getDimension()));
+	return (mesh1 && mesh2 && mesh1->match(*mesh2));
 }
 
-int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
+int Cmiss_mesh_remove_all_elements(Cmiss_mesh_id mesh_group)
 {
-	int return_code = 0;
-	if (mesh && element)
-	{
-		FE_region *fe_region = mesh->getFeRegion();
-		CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
-		int element_dimension = get_FE_element_dimension(element);
-		if (element_dimension == mesh->getDimension())
-		{
-			FE_region *master_fe_region = fe_region;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-			return_code = FE_region_remove_FE_element(master_fe_region, element);
-		}
-	}
-
-	return return_code;
-}
-
-int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh,
-	Cmiss_field_id conditional_field)
-{
-	int return_code = 0;
-	if (mesh && conditional_field)
-	{
-		FE_region *fe_region = mesh->getFeRegion();
-		struct LIST(FE_element) *element_list =	FE_element_list_from_conditional_field_of_dimension(
-			fe_region, mesh->getDimension(), conditional_field, /*time*/0);
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return_code = FE_region_remove_FE_element_list(master_fe_region, element_list);
-		DESTROY(LIST(FE_element))(&element_list);
-	}
-
-	return return_code;
-}
-
-FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh)
-{
-	if (mesh)
-	{
-		return mesh->getFeRegion();
-	}
+	if (mesh_group)
+		return mesh_group->removeAllElements();
 	return 0;
 }
 
-FE_region *Cmiss_mesh_get_master_FE_region_internal(Cmiss_mesh_id mesh)
+int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element)
 {
-	FE_region *fe_region = 0;
-	if (mesh)
-	{
-		fe_region = mesh->getFeRegion();
-		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-	}
-	return fe_region;
+	if (mesh_group && element)
+		return mesh_group->removeElement(element);
+	return 0;
 }
 
-Cmiss_region_id Cmiss_mesh_get_region(Cmiss_mesh_id mesh)
+int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh_group,
+	Cmiss_field_id conditional_field)
+{
+	if (mesh_group && conditional_field)
+		return mesh_group->removeElementsConditional(conditional_field);
+	return 0;
+}
+
+Cmiss_mesh_id Cmiss_mesh_create_from_element_group_internal(
+	Cmiss_field_element_group_id element_group_field)
+{
+	if (element_group_field)
+		return new Cmiss_mesh(element_group_field);
+	return 0;
+}
+
+FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->getFeRegion();
+	return 0;
+}
+
+Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh)
 {
 	Cmiss_region_id region = 0;
 	if (mesh)
@@ -1100,23 +1342,23 @@ int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)
 int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis)
 {
 	if (element_basis)
-		return element_basis->getDimensions();
+		return element_basis->getDimension();
 	return 0;
 }
 
 enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
-	Cmiss_element_basis_id element_basis, int dimension)
+	Cmiss_element_basis_id element_basis, int chart_component)
 {
 	if (element_basis)
-		return element_basis->getFunctionType(dimension);
+		return element_basis->getFunctionType(chart_component);
 	return CMISS_BASIS_FUNCTION_TYPE_INVALID;
 }
 
 int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
-	int dimension, enum Cmiss_basis_function_type function_type)
+	int chart_component, enum Cmiss_basis_function_type function_type)
 {
 	if (element_basis)
-		return element_basis->setFunctionType(dimension, function_type);
+		return element_basis->setFunctionType(chart_component, function_type);
 	return 0;
 }
 

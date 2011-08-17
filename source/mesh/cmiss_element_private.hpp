@@ -45,24 +45,25 @@
 extern "C" {
 #include "api/cmiss_element.h"
 #include "api/cmiss_region.h"
+#include "api/cmiss_field_subobject_group.h"
 }
 
 struct FE_region;
 
 /** Internal use only
+ * @return  handle to mesh wrapping element_group_field.
+ */
+Cmiss_mesh_id Cmiss_mesh_create_from_element_group_internal(
+	Cmiss_field_element_group_id element_group_field);
+
+/** Internal use only
  * @return non-accessed FE_region for this mesh.
  */
-FE_region *Cmiss_mesh_get_FE_region(Cmiss_mesh_id mesh);
+FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh);
 
 /** Internal use only.
- * Use this function to avoid using mesh from group regions.
- * @return non-accessed master FE_region for this mesh.
+ * @return non-accessed master region for this mesh.
  */
-FE_region *Cmiss_mesh_get_master_FE_region_internal(Cmiss_mesh_id mesh);
-
-// Internal use only
-
-
-Cmiss_region_id Cmiss_mesh_get_region(Cmiss_mesh_id mesh);
+Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

@@ -120,7 +120,7 @@ public:
 	Minimisation(struct Cmiss_optimisation* optimisation) :
 		optimisation(optimisation)
 	{
-		fe_region = Cmiss_mesh_get_FE_region(optimisation->feMesh);
+		fe_region = Cmiss_mesh_get_FE_region_internal(optimisation->feMesh);
 		// the meshRegion is not accessed, so make sure not to destroy.
 		FE_region_get_Cmiss_region(fe_region, &meshRegion);
 		field_module = Cmiss_region_get_field_module(meshRegion);

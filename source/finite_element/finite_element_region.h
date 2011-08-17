@@ -770,6 +770,11 @@ Returns the FE_region that the fields, nodes and elements of <fe_region>
 ultimately belong to. <fe_region> is returned if it has no immediate master.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * @return  1 if fe_region is a sub-group of a master fe_region, 0 if not.
+ */
+int FE_region_is_group(struct FE_region *fe_region);
+
 struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
 	struct FE_region *fe_region);
 /*******************************************************************************
@@ -926,6 +931,15 @@ Should place multiple calls to this function between begin_change/end_change.
  */
 struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 	int identifier, struct FE_element *source);
+
+/***************************************************************************//**
+ * For group FE_region only. Checks element is from master region and adds it
+ * to this region if not already in it.
+ *
+ * @return  1 if element added, otherwise 0.
+ */
+int FE_region_add_FE_element(struct FE_region *fe_region,
+	struct FE_element *element);
 
 /***************************************************************************//**
  * Checks <element> is compatible with <fe_region> and any existing FE_element
