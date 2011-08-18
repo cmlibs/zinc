@@ -793,9 +793,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 {
 	FE_value base_size[3], offset[3], initial_xi[3], scale_factors[3];
 	float time;
-	int draw_element, draw_selected, element_dimension = 1, element_graphics_name,
-		element_selected, i, name_selected,
-		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	int draw_element, element_dimension = 1, element_graphics_name,
+		element_selected, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
 		*top_level_xi_point_numbers,
 		use_element_dimension, *use_number_in_xi;
@@ -827,31 +826,17 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		if (Cmiss_graphic_uses_FE_element(graphic, element,
 			graphic_to_object_data->fe_region))
 		{
+			Cmiss_field_cache_set_element(graphic_to_object_data->field_cache, element);
 			if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
 				(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
 			{
-				draw_selected = (GRAPHICS_DRAW_SELECTED==graphic->select_mode);
-				name_selected = 0;
+				int name_selected = 0;
 				if (graphic_to_object_data->group_field)
 				{
-					Cmiss_field_group_id group_id = Cmiss_field_cast_group(graphic_to_object_data->group_field);
-					if (group_id)
-					{
-						Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
-							graphic_to_object_data->field_module, element_dimension);
-						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group_id, temp_mesh);
-						Cmiss_mesh_destroy(&temp_mesh);
-						if (element_group)
-						{
-							name_selected =
-								Cmiss_field_element_group_contains_element(element_group, element);
-							Cmiss_field_element_group_destroy(&element_group);
-						}
-			      Cmiss_field_group_destroy(&group_id);
-					}
+					name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
 				}
-				draw_element = ((draw_selected && name_selected) ||
-					((!draw_selected) && (!name_selected)));
+				draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
+					((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
 			}
 			else
 			{
@@ -1269,17 +1254,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								element_selected = 0;
 								if (graphic_to_object_data->group_field)
 								{
-									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
-									Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
-										graphic_to_object_data->field_module, element_dimension);
-									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
-									Cmiss_mesh_destroy(&temp_mesh);
-									if (element_group)
-									{
-										element_selected = Cmiss_field_element_group_contains_element(element_group, use_element);
-										Cmiss_field_element_group_destroy(&element_group);
-									}
-									Cmiss_field_group_destroy(&group);
+									element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
 								}
 								base_size[0] = (FE_value)(graphic->glyph_size[0]);
 								base_size[1] = (FE_value)(graphic->glyph_size[1]);
@@ -3862,18 +3837,16 @@ int Cmiss_graphic_to_graphics_object(
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									if (element_group)
 									{
-										Cmiss_element_iterator_id iterator = Cmiss_field_element_group_create_element_iterator(element_group);
-										if (iterator)
+										Cmiss_mesh_id mesh = Cmiss_field_element_group_get_mesh(element_group);
+										Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
+										Cmiss_element_id element;
+										while (0 != (element = Cmiss_element_iterator_next(iterator)))
 										{
-											Cmiss_element_id element = Cmiss_element_iterator_next(iterator);
-											while (element)
-											{
-												FE_element_select_graphics_element_points(element, (void *)&select_data);
-												Cmiss_element_destroy(&element);
-												element = Cmiss_element_iterator_next(iterator);
-											}
-											Cmiss_element_iterator_destroy(&iterator);
+											FE_element_select_graphics_element_points(element, (void *)&select_data);
+											Cmiss_element_destroy(&element);
 										}
+										Cmiss_element_iterator_destroy(&iterator);
+										Cmiss_mesh_destroy(&mesh);
 										Cmiss_field_element_group_destroy(&element_group);
 									}
 									Cmiss_field_group_destroy(&group);

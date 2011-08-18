@@ -262,12 +262,12 @@ public:
 
 	virtual int evaluate_cache_at_location(Field_location* location) = 0;
 
-	virtual int set_values_at_location(Field_location* /*location*/, FE_value * /*values*/)
+	virtual int set_values_at_location(Field_location* /*location*/, const FE_value * /*values*/)
 	{
 		return 0;
 	};
 
-	virtual int set_mesh_location_value(Field_location* /*location*/, Cmiss_element_id /*element*/, FE_value* /*xi*/)
+	virtual int set_mesh_location_value(Field_location* /*location*/, Cmiss_element_id /*element*/, const FE_value* /*xi*/)
 	{
 		return 0;
 	};
@@ -834,7 +834,7 @@ Upon successful return the node values of the <field> are stored in its cache.
 } /* Computed_field_evaluate_cache_at_location */
 
 int Computed_field_set_values_at_location(struct Computed_field *field,
-	Field_location* location, FE_value *values);
+	Field_location* location, const FE_value *values);
 /*******************************************************************************
 LAST MODIFIED : 10 August 2006
 

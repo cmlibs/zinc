@@ -112,9 +112,17 @@ int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
 	return 1;
 }
 
+int Cmiss_field_cache_set_element(Cmiss_field_cache_id cache,
+	Cmiss_element_id element)
+{
+	const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
+	return Cmiss_field_cache_set_mesh_location_with_parent(cache, element,
+		MAXIMUM_ELEMENT_XI_DIMENSIONS, chart_coordinates, /*top_level_element*/0);
+}
+
 int Cmiss_field_cache_set_mesh_location_with_parent(
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
-	int number_of_chart_coordinates, double *chart_coordinates,
+	int number_of_chart_coordinates, const double *chart_coordinates,
 	Cmiss_element_id top_level_element)
 {
 	if (!cache)
@@ -145,7 +153,7 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
 
 int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 	Cmiss_element_id element, int number_of_chart_coordinates,
-	double *chart_coordinates)
+	const double *chart_coordinates)
 {
 	return Cmiss_field_cache_set_mesh_location_with_parent(cache, element,
 		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
@@ -171,7 +179,7 @@ int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node)
 }
 
 int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
-	Cmiss_field_id reference_field, int number_of_values, double *values)
+	Cmiss_field_id reference_field, int number_of_values, const double *values)
 {
 	if (!cache)
 		return 0;

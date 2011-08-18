@@ -48,20 +48,32 @@ The public interface to the Cmiss_fields that perform logical operations.
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
- * source_field_one is less than the component value in source_field_two.
+ * source_field_one AND source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
+ *
  * @param field_module  Region field module which will own new field.
- * @param source_field_one First input field
- * @param source_field_two Second input field
+ * @param source_field_one  First input field
+ * @param source_field_two  Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_less_than(
+Cmiss_field_id Cmiss_field_module_create_and(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+/***************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one EQUALS that component of source_field_two, 0 otherwise.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field_one  First input field
+ * @param source_field_two  Second input field
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_equal_to(
 	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
@@ -75,7 +87,46 @@ Cmiss_field_id Cmiss_field_module_create_less_than(
  */
 Cmiss_field_id Cmiss_field_module_create_greater_than(
 	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+/*****************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one is less than the component value in source_field_two.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * 
+ * @param field_module  Region field module which will own new field.
+ * @param source_field_one First input field
+ * @param source_field_two Second input field
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_less_than(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+/***************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one OR source_field_two is non-zero, 0 otherwise.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field_one  First input field
+ * @param source_field_two  Second input field
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+/***************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one OR source_field_two is non-zero (but not both), 0 otherwise.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field_one  First input field
+ * @param source_field_two  Second input field
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_xor(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
 
 #endif /* __CMISS_FIELD_LOGICAL_OPERATORS_H__ */

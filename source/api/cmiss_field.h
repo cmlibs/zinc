@@ -137,7 +137,7 @@ int Cmiss_field_destroy(Cmiss_field_id *field_address);
  */
 int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
-	int number_of_chart_coordinates, double *chart_coordinates);
+	int number_of_chart_coordinates, const double *chart_coordinates);
 
 /***************************************************************************//**
  * Assign real values to field at location specified in cache.
@@ -156,7 +156,7 @@ int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
-	int number_of_values, double *values);
+	int number_of_values, const double *values);
 
 /***************************************************************************//**
  * Assign a string value to a field at location specified in cache.
@@ -384,6 +384,19 @@ Cmiss_field_cache_id Cmiss_field_cache_access(Cmiss_field_cache_id cache);
 int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
 
 /***************************************************************************//**
+ * Prescribes an element location without specifying chart coordinates. Suitable
+ * only for evaluating fields that are constant across the element.
+ * Note: replaces any other spatial location in cache (e.g. node.) but time
+ * is unchanged.
+ *
+ * @param cache  The field cache to set the location in.
+ * @param element  The element to set. Must belong to same region as cache.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_cache_set_element(Cmiss_field_cache_id cache,
+	Cmiss_element_id element);
+
+/***************************************************************************//**
  * Prescribes a location in an element for field evaluation or assignment with
  * the cache.
  * Note: replaces any other spatial location in cache (e.g. node.) but time
@@ -401,7 +414,7 @@ int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
  */
 int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 	Cmiss_element_id element, int number_of_chart_coordinates,
-	double *chart_coordinates);
+	const double *chart_coordinates);
 
 /***************************************************************************//**
  * Prescribes a value of a field for subsequent evaluation and assignment with
@@ -417,7 +430,7 @@ int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
-	Cmiss_field_id reference_field, int number_of_values, double *values);
+	Cmiss_field_id reference_field, int number_of_values, const double *values);
 
 /***************************************************************************//**
  * Prescribes a node location for field evaluation or assignment with the cache.

@@ -278,8 +278,9 @@ int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
 
 /***************************************************************************//**
  * Destroy all elements in the mesh for which the conditional field is true i.e.
- * non-zero valued at the element centroid. These elements are removed from any
- * related groups they are in. All handles to removed elements become invalid.
+ * non-zero valued in element. These elements are removed from any related
+ * groups they are in. All handles to removed elements become invalid.
+ * Results are undefined if conditional field is not constant over element.
  * Note that group and element_group fields are valid conditional fields.
  *
  * @param mesh  Handle to the mesh to destroy elements from.
@@ -372,7 +373,8 @@ int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element
 
 /***************************************************************************//**
  * Remove all elements in the mesh for which the conditional field is true i.e.
- * non-zero valued at the element centroid.
+ * non-zero valued in the element.
+ * Results are undefined if conditional field is not constant over element.
  * Note that group and element_group fields are valid conditional fields.
  *
  * @param mesh_group  Handle to the group mesh to remove elements from.

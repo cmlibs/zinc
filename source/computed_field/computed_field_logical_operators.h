@@ -52,66 +52,6 @@ Implements logical operations on computed fields.
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
- * source_field_one OR source_field_two is non-zero, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  First input field
- * @param source_field_two  Second input field
- * @return Newly created field
- */
-Computed_field *Computed_field_create_or(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
-
-/***************************************************************************//**
- * Creates a field whose component values are 1 if that component of
- * source_field_one AND source_field_two is non-zero, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  First input field
- * @param source_field_two  Second input field
- * @return Newly created field
- */
-Computed_field *Computed_field_create_and(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
-
-/***************************************************************************//**
- * Creates a field whose component values are 1 if that component of
- * source_field_one OR source_field_two is non-zero (but not both), 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  First input field
- * @param source_field_two  Second input field
- * @return Newly created field
- */
-Computed_field *Computed_field_create_xor(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
-
-/***************************************************************************//**
- * Creates a field whose component values are 1 if that component of
- * source_field_one EQUALS that component of source_field_two, 0 otherwise.
- * Automatic scalar broadcast will apply, see cmiss_field.h.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  First input field
- * @param source_field_two  Second input field
- * @return Newly created field
- */
-Computed_field *Computed_field_create_equal_to(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
-
-/***************************************************************************//**
- * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 

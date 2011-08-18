@@ -151,7 +151,7 @@ private:
 	int evaluate_projection_matrix(
 		int element_dimension, int calculate_derivatives);
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi( 
 		FE_value *values, int number_of_values, struct FE_element **element,
@@ -825,7 +825,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_window_projection::evaluate_cache_at_location */
 
 int Computed_field_window_projection::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 

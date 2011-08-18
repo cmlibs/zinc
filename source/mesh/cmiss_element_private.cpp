@@ -738,7 +738,7 @@ struct Cmiss_mesh
 {
 private:
 	FE_region *fe_region;
-	int dimension;
+	const int dimension;
 	Cmiss_field_element_group_id group;
 	int access_count;
 
@@ -754,15 +754,12 @@ public:
 	Cmiss_mesh(Cmiss_field_element_group_id group) :
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
 			Computed_field_get_region(Cmiss_field_element_group_base_cast(group))))),
-		dimension(0),
+		dimension(Computed_field_element_group_core_cast(group)->getDimension()),
 		group(group),
 		access_count(1)
 	{
 		// GRC Cmiss_field_element_group_access missing:
 		Cmiss_field_access(Cmiss_field_element_group_base_cast(group));
-		Cmiss_mesh_id master_mesh = Cmiss_field_element_group_get_master_mesh(group);
-		dimension = master_mesh->getDimension();
-		Cmiss_mesh_destroy(&master_mesh);
 	}
 
 	Cmiss_mesh_id access()
@@ -802,7 +799,7 @@ public:
 	int containsElement(Cmiss_element_id element)
 	{
 		if (group)
-			return Cmiss_field_element_group_contains_element(group, element);
+			return Computed_field_element_group_core_cast(group)->containsObject(element);
 		CM_element_information cm;
 		get_FE_element_identifier(element, &cm);
 		int element_dimension = get_FE_element_dimension(element);
@@ -829,7 +826,7 @@ public:
 			element = ACCESS(FE_element)(FE_region_create_FE_element_copy(
 				fe_region, identifier, template_element));
 			if (group)
-				Cmiss_field_element_group_add_element(group, element);
+				Computed_field_element_group_core_cast(group)->addObject(element);
 		}
 		else
 		{
@@ -856,7 +853,7 @@ public:
 	Cmiss_element_iterator_id createIterator()
 	{
 		if (group)
-			return Cmiss_field_element_group_create_element_iterator(group);
+			return Computed_field_element_group_core_cast(group)->createIterator();
 		return FE_region_create_element_iterator(fe_region, dimension);
 	}
 
@@ -1049,6 +1046,8 @@ private:
 
 	bool isElementCompatible(Cmiss_element_id element)
 	{
+		if (get_FE_element_dimension(element) != dimension)
+			return false;
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 		FE_region *element_fe_region = FE_element_get_FE_region(element);

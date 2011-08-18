@@ -96,7 +96,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 };
 
@@ -255,7 +255,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_function::evaluate_cache_at_location */
 
 int Computed_field_function::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
 

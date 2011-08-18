@@ -339,10 +339,10 @@ private:
 
 	char* get_command_string();
 
-	Cmiss_field_element_group_id get_element_group_private(int dimension)
+	Cmiss_field_id get_element_group_field_private(int dimension)
 	{
 		if ((dimension > 0) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
-			return Cmiss_field_cast_element_group(local_element_group[dimension - 1]);
+			return local_element_group[dimension - 1];
 		return 0;
 	}
 
@@ -419,7 +419,7 @@ int Computed_field_group::evaluate_cache_at_location(
 	ENTER(Computed_field_group::evaluate_cache_at_location);
 	if (field && location)
 	{
-			field->values[0] = 0;
+		field->values[0] = 0.0;
 		if (contains_all)
 		{
 			field->values[0] = 1;
@@ -430,60 +430,43 @@ int Computed_field_group::evaluate_cache_at_location(
 			printf("=== Cad geometry field location\n");
 		}
 #endif /* defined (USE_OPENCASCADE) */
-		else if (dynamic_cast<Field_node_location*>(location))
-		{
-			Field_node_location *node_location = 
-				reinterpret_cast<Field_node_location *>(location);
-			Cmiss_node_id node = node_location->get_node();
-			FE_region *fe_region = FE_node_get_FE_region(node);
-			Cmiss_region_id node_region = NULL;
-			FE_region_get_Cmiss_region(fe_region, &node_region);
-			if (local_node_group)
-			{
-				Cmiss_field_node_group_id node_group_id = 
-					Cmiss_field_cast_node_group(local_node_group);
-				field->values[0] = Cmiss_field_node_group_contains_node(
-					node_group_id, node);
-				Cmiss_field_node_group_destroy(&node_group_id);
-			}
-			if (!(field->values[0]) &&  local_data_group)
-			{
-				Cmiss_field_node_group_id data_group_id =
-					Cmiss_field_cast_node_group(local_data_group);
-				field->values[0] = Cmiss_field_node_group_contains_node(
-					data_group_id, node);
-				Cmiss_field_node_group_destroy(&data_group_id);
-			}
-			if (!field->values[0] && node_region != region)
-			{
-				Region_field_map_iterator pos = subregion_group_map.find(node_region);
-				if (pos == subregion_group_map.end())
-				{
-					field->values[0] = 0;
-				}
-			}
-		}
- 		else if (dynamic_cast<Field_element_xi_location*>(location))
- 		{
- 			Field_element_xi_location *element_xi_location =
- 				reinterpret_cast<Field_element_xi_location *>(location);
- 			Cmiss_element_id element = element_xi_location->get_element();
- 			int dimension = Cmiss_element_get_dimension(element);
- 			Cmiss_field_element_group_id element_group = get_element_group_private(dimension);
- 			if (element_group)
- 			{
- 				field->values[0] = Cmiss_field_element_group_contains_element(element_group, element);
-				Cmiss_field_element_group_destroy(&element_group);
- 			}
- 			else
- 			{
- 				field->values[0] = 0;
- 			}
- 		}
 		else
 		{
-			field->values[0] = 0;
-		}
+			if (dynamic_cast<Field_node_location*>(location))
+			{
+				if (local_node_group)
+				{
+					return_code = Computed_field_evaluate_cache_at_location(local_node_group, location);
+					if (return_code)
+					{
+						field->values[0] = local_node_group->values[0];
+					}
+				}
+				if (local_data_group && (0.0 == field->values[0]) && return_code)
+				{
+					return_code = Computed_field_evaluate_cache_at_location(local_data_group, location);
+					if (return_code)
+					{
+						field->values[0] = local_data_group->values[0];
+					}
+				}
+			}
+			else if (Field_element_xi_location *element_xi_location =
+				dynamic_cast<Field_element_xi_location*>(location))
+	 		{
+	 			Cmiss_element_id element = element_xi_location->get_element();
+	 			int dimension = Cmiss_element_get_dimension(element);
+	 			Cmiss_field_id subobject_group_field = get_element_group_field_private(dimension);
+				if (subobject_group_field)
+				{
+					return_code = Computed_field_evaluate_cache_at_location(subobject_group_field, location);
+					if (return_code)
+					{
+						field->values[0] = subobject_group_field->values[0];
+					}
+				}
+	 		}
+ 		}
 	}
 	else
 	{
@@ -1077,8 +1060,8 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_mesh_
 		element_group = Cmiss_field_cast_element_group(element_group_field);
 		if (element_group)
 		{
-			Cmiss_mesh_id check_master_mesh = Cmiss_field_element_group_get_master_mesh(element_group);
-			if (Cmiss_mesh_match(check_master_mesh, master_mesh))
+			if (Cmiss_mesh_match(master_mesh,
+				Computed_field_element_group_core_cast(element_group)->getMasterMesh()))
 			{
 				local_element_group[dimension - 1] = Cmiss_field_access(element_group_field);
 			}
@@ -1087,7 +1070,6 @@ Cmiss_field_element_group_id Computed_field_group::get_element_group(Cmiss_mesh_
 				// wrong mesh
 				Cmiss_field_element_group_destroy(&element_group);
 			}
-			Cmiss_mesh_destroy(&check_master_mesh);
 		}
 		Cmiss_field_destroy(&element_group_field);
 		Cmiss_field_module_destroy(&field_module);
@@ -1308,7 +1290,7 @@ int Computed_field_group::clear_region_tree_element()
 		{
 			Cmiss_field_element_group_id element_group =
 				Cmiss_field_cast_element_group(local_element_group[i]);
-			return_code = Cmiss_field_element_group_clear(element_group);
+			return_code = Computed_field_element_group_core_cast(element_group)->clear();
 			Computed_field_changed(this->field);
 			Cmiss_field_element_group_destroy(&element_group);
 		}

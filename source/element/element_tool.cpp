@@ -163,40 +163,27 @@ Module functions
 ----------------
 */
 
-static int Element_tool_remove_region_selected_elements(Cmiss_field_id field)
+static int Cmiss_field_group_destroy_all_elements(Cmiss_field_id field)
 {
 	int return_code = 0;
 
 	if (field)
 	{
 		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
-		Cmiss_region_id region = Computed_field_get_region(field);
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
-		if (group && fe_region)
+		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+		if (group)
 		{
 			for (int i = 1; i <= 3; i++)
 			{
-				Cmiss_mesh_id temp_mesh =
+				Cmiss_mesh_id master_mesh =
 					Cmiss_field_module_get_mesh_by_dimension(field_module, /*dimension*/i);
-				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
-				Cmiss_mesh_destroy(&temp_mesh);
+				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+				Cmiss_mesh_destroy(&master_mesh);
 				if (element_group)
 				{
-					Cmiss_element_iterator_id iterator = Cmiss_field_element_group_create_element_iterator(element_group);
-					if (iterator)
-					{
-						FE_region_begin_change(fe_region);
-						Cmiss_element_id element = Cmiss_element_iterator_next(iterator);
-						while (element)
-						{
-							FE_region_remove_FE_element(fe_region, element);
-							Cmiss_element_destroy(&element);
-							element = Cmiss_element_iterator_next(iterator);
-						}
-						FE_region_end_change(fe_region);
-						Cmiss_element_iterator_destroy(&iterator);
-					}
+					Cmiss_mesh_id mesh = Cmiss_field_element_group_get_mesh(element_group);
+					Cmiss_mesh_destroy_all_elements(mesh);
+					Cmiss_mesh_destroy(&mesh);
 					Cmiss_field_element_group_destroy(&element_group);
 				}
 			}
@@ -209,7 +196,7 @@ static int Element_tool_remove_region_selected_elements(Cmiss_field_id field)
 	return return_code;
 }
 
-int Element_tool_remove_selected_element(struct Element_tool *element_tool)
+int Element_tool_destroy_selected_elements(struct Element_tool *element_tool)
 {
 	int return_code = 0;
 	if (element_tool->region)
@@ -219,8 +206,8 @@ int Element_tool_remove_selected_element(struct Element_tool *element_tool)
 		Cmiss_field_group_id root_group = Cmiss_rendition_get_selection_group(root_rendition);
 		if (root_group)
 		{
-			Cmiss_field_group_for_each_child(root_group, Element_tool_remove_region_selected_elements,1);
-			Element_tool_remove_region_selected_elements(Cmiss_field_group_base_cast(root_group));
+			Cmiss_field_group_for_each_child(root_group, Cmiss_field_group_destroy_all_elements,1);
+			Cmiss_field_group_destroy_all_elements(Cmiss_field_group_base_cast(root_group));
 			Cmiss_field_group_clear_region_tree_element(root_group);
 			Cmiss_rendition_flush_tree_selections(root_rendition);
 			Cmiss_field_group_destroy(&root_group);
@@ -623,14 +610,14 @@ release.
 									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
 									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
 									int dimension = Cmiss_element_get_dimension(picked_element);
-									Cmiss_mesh_id temp_mesh =
-										Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
-									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
-									Cmiss_mesh_destroy(&temp_mesh);
+									Cmiss_mesh_id master_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+									Cmiss_mesh_destroy(&master_mesh);
 									if (element_group)
 									{
-										element_tool->picked_element_was_unselected =
-											!Cmiss_field_element_group_contains_element(element_group,picked_element);
+										Cmiss_mesh_id mesh = Cmiss_field_element_group_get_mesh(element_group);
+										element_tool->picked_element_was_unselected = !Cmiss_mesh_contains_element(mesh, picked_element);
+										Cmiss_mesh_destroy(&mesh);
 										Cmiss_field_element_group_destroy(&element_group);
 									}
 									Cmiss_field_group_destroy(&group);
@@ -665,7 +652,7 @@ release.
 									rendition);
 								Cmiss_region *sub_region = NULL;
 								Cmiss_field_group_id sub_group = NULL;
-								Cmiss_field_element_group_id element_group = NULL;
+								Cmiss_mesh_id mesh_group = 0;
 								if (element_tool->rendition)
 								{
 									sub_region = Cmiss_rendition_get_region(element_tool->rendition);
@@ -676,26 +663,24 @@ release.
 										Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
 										Cmiss_mesh_id temp_mesh =
 											Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
-										element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+										Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 										if (!element_group)
 											element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+										mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+										Cmiss_field_element_group_destroy(&element_group);
 										Cmiss_mesh_destroy(&temp_mesh);
 										Cmiss_field_module_destroy(&field_module);
 									}
 								}
-								if (sub_region && sub_group && element_group)
+								if (mesh_group)
 								{
-									Cmiss_field_element_group_add_element(element_group,
-										picked_element);
-									Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
+									Cmiss_mesh_add_element(mesh_group, picked_element);
+									//Computed_field_changed(Cmiss_field_group_base_cast(sub_group)); // not sure this was ever needed
+									Cmiss_mesh_destroy(&mesh_group);
 								}
 								if (sub_group)
 								{
 									Cmiss_field_group_destroy(&sub_group);
-								}
-								if (element_group)
-								{
-									Cmiss_field_element_group_destroy(&element_group);
 								}
 							}
 							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
@@ -780,11 +765,11 @@ release.
 											Cmiss_region *sub_region = NULL;
 											Cmiss_field_group_id sub_group = NULL;
 											Cmiss_rendition *region_rendition = NULL;
-											Cmiss_field_element_group_id mesh_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+											Cmiss_mesh_id mesh_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 											int iter = 0;
 											for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)
 											{
-												mesh_group[iter] = NULL;
+												mesh_group[iter] = 0;
 											}
 											Region_element_map::iterator pos;
 											for (pos = element_map->begin(); pos != element_map->end(); ++pos)
@@ -800,7 +785,7 @@ release.
 													{
 														if (mesh_group[iter])
 														{
-															Cmiss_field_element_group_destroy(&(mesh_group[iter]));
+															Cmiss_mesh_destroy(&(mesh_group[iter]));
 														}
 													}
 													if (region_rendition)
@@ -824,12 +809,17 @@ release.
 														{
 															Cmiss_mesh_id temp_mesh =
 																Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
-															mesh_group[dimension - 1] = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-															if (!mesh_group[dimension - 1])
-																mesh_group[dimension - 1] = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+															Cmiss_field_element_group_id element_group =
+																Cmiss_field_group_get_element_group(sub_group, temp_mesh);
+															if (!element_group)
+															{
+																element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
+															}
+															mesh_group[dimension - 1] = Cmiss_field_element_group_get_mesh(element_group);
+															Cmiss_field_element_group_destroy(&element_group);
 															Cmiss_mesh_destroy(&temp_mesh);
 														}
-														Cmiss_field_element_group_add_element(mesh_group[dimension - 1], pos->second);
+														Cmiss_mesh_add_element(mesh_group[dimension - 1], pos->second);
 													}
 													Cmiss_field_module_destroy(&field_module);
 												}
@@ -843,7 +833,7 @@ release.
 											{
 												if (mesh_group[iter])
 												{
-													Cmiss_field_element_group_destroy(&(mesh_group[iter]));
+													Cmiss_mesh_destroy(&(mesh_group[iter]));
 												}
 											}
 											if (region_rendition)
@@ -1108,11 +1098,10 @@ public:
 			button_line->IsChecked());
 	}
 
-
 	void OnButtonDestroypressed(wxCommandEvent& event)
 	{
 		USE_PARAMETER(event);
-		Element_tool_remove_selected_element(element_tool);
+		Element_tool_destroy_selected_elements(element_tool);
 	}
 
 	void ElementToolInterfaceRenew(Element_tool *destination_element_tool)

@@ -145,7 +145,7 @@ private:
 		return (1);
 	}
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, 
@@ -334,7 +334,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_composite::evaluate_cache_at_location */
 
 int Computed_field_composite::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

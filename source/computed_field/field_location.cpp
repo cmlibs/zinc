@@ -227,7 +227,7 @@ Field_coordinate_location::~Field_coordinate_location()
 }
 
 int Field_coordinate_location::set_field_values(Cmiss_field_id reference_field_in,
-	int number_of_values_in, FE_value *values_in)
+	int number_of_values_in, const FE_value *values_in)
 {
 	if ((!reference_field_in) || (number_of_values_in < 1) || (!values_in))
 		return 0;
@@ -312,7 +312,7 @@ int Field_coordinate_location::update_cache_for_location(Computed_field *field)
 }
 
 int Field_coordinate_location::set_values_for_location(Computed_field *field,
-	FE_value *values_in)
+	const FE_value *values_in)
 {
 	int return_code;
 	if ((field == reference_field) &&

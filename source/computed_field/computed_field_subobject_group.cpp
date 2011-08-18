@@ -266,100 +266,6 @@ inline Computed_field *Computed_field_cast(
 	return (reinterpret_cast<Computed_field*>(element_group_field));
 }
 
-int Cmiss_field_element_group_add_element(Cmiss_field_element_group_id element_group,
-	Cmiss_element_id element)
-{
-	int return_code = 1;
-	if (element_group && element)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		group_core->addObject(element);
-	}
-	else
-	{
-		return_code = 0;
-	}
-
-	return return_code;
-}
-
-int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id element_group,
-		Cmiss_element_id element)
-{
-	int return_code = 1;
-	if (element_group && element)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		group_core->removeObject(element);
-	}
-	else
-	{
-		return_code = 0;
-	}
-
-	return return_code;
-}
-
-int Cmiss_field_element_group_clear(Cmiss_field_element_group_id element_group)
-{
-	int return_code = 1;
-
-	if (element_group)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		group_core->clear();
-	}
-	else
-	{
-		return_code = 0;
-	}
-
-	return return_code;
-}
-
-int Cmiss_field_element_group_contains_element(
-	Cmiss_field_element_group_id element_group, Cmiss_element_id element)
-{
-	int return_code = 0;
-	if (element_group && element)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		return_code = group_core->containsObject(element);
-	}
-
-	return return_code;
-}
-
-int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group)
-{
-	int return_code = 0;
-	if (element_group)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		return_code = group_core->isEmpty();
-	}
-
-	return return_code;
-}
-
-Cmiss_element_iterator_id Cmiss_field_element_group_create_element_iterator(Cmiss_field_element_group_id element_group)
-{
-	Cmiss_element_iterator_id iterator = NULL;
-	if (element_group)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		iterator = group_core->createIterator();
-	}
-
-	return iterator;
-}
-
 Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
 		Cmiss_mesh_id mesh)
 {
@@ -389,20 +295,6 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
-}
-
-Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
-	Cmiss_field_element_group_id element_group)
-{
-	Cmiss_mesh_id master_mesh = 0;
-	if (element_group)
-	{
-		Computed_field_element_group *group_core =
-			Computed_field_element_group_core_cast(element_group);
-		// deliberately create another wrapper:
-		master_mesh = Cmiss_mesh_get_master(group_core->get_master_mesh());
-	}
-	return master_mesh;
 }
 
 Cmiss_mesh_id Cmiss_field_element_group_get_mesh(

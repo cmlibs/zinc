@@ -289,7 +289,7 @@ focus for prolate and oblate spheroidal systems.
 
 int convert_Coordinate_system(
   struct Coordinate_system *source_coordinate_system,
-  int number_of_source_coordinates, FE_value *source_coordinates,
+  int number_of_source_coordinates, const FE_value *source_coordinates,
   struct Coordinate_system *destination_coordinate_system,
   int number_of_destinations_coordinates, FE_value *destination_coordinates,
   FE_value *jacobian);

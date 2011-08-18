@@ -1036,7 +1036,7 @@ focus for prolate and oblate spheroidal systems.
 
 int convert_Coordinate_system(
 	struct Coordinate_system *source_coordinate_system,
-	int number_of_source_coordinates, FE_value *source_coordinates,
+	int number_of_source_coordinates, const FE_value *source_coordinates,
 	struct Coordinate_system *destination_coordinate_system,
 	int number_of_destination_coordinates, FE_value *destination_coordinates,
 	FE_value *jacobian)
@@ -1051,7 +1051,7 @@ Calculate the <jacobian> if not NULL.
 ==============================================================================*/
 {
 	FE_value *destination_values,local_destination_values[3],local_source_values[3],
-		*jacobian_1,*jacobian_2,*source_values,temp1[9],temp2[9],x,y,z;
+		*jacobian_1,*jacobian_2, temp1[9],temp2[9],x,y,z;
 	int return_code = 0;
 
 	ENTER(convert_Coordinate_system);
@@ -1061,6 +1061,7 @@ Calculate the <jacobian> if not NULL.
 	{
 		/* Either point to the actual values if they are 3D or
 			copy and point if they are less */
+		const FE_value *source_values;
 		if (number_of_source_coordinates >= 3)
 		{
 			source_values = source_coordinates;

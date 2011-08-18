@@ -393,7 +393,12 @@ namespace {
 			Cmiss_mesh_destroy(&master_mesh);
 		}
 
-		Cmiss_mesh_id get_master_mesh()
+		int getDimension()
+		{
+			return dimension;
+		}
+
+		Cmiss_mesh_id getMasterMesh()
 		{
 			return master_mesh;
 		}

@@ -254,7 +254,7 @@ private:
 
 	int evaluate(int element_dimension,int calculate_derivatives);
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element, 
@@ -373,7 +373,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_coordinate_transformation::evaluate_cache_at_location */
 
 int Computed_field_coordinate_transformation::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -700,7 +700,7 @@ private:
 
 	int evaluate();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 };
 
 int Computed_field_vector_coordinate_transformation::evaluate()
@@ -804,7 +804,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_vector_coordinate_transformation::evaluate_cache_at_location */
 
 int Computed_field_vector_coordinate_transformation::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

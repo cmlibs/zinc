@@ -199,15 +199,6 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 
 /*****************************************************************************//**
- * Get a handle to the master mesh this element group is a subset of.
- *
- * @param element_group  Handle to element group field.
- * @return  Handle to master mesh. Caller is responsible for destroying this.
- */
-Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
-	Cmiss_field_element_group_id element_group);
-
-/*****************************************************************************//**
  * Get a handle to the 'dual' mesh of this element group, which provides most of
  * the methods for working with it.
  *
@@ -215,65 +206,6 @@ Cmiss_mesh_id Cmiss_field_element_group_get_master_mesh(
  * @return  Handle to mesh. Caller is responsible for destroying this.
  */
 Cmiss_mesh_id Cmiss_field_element_group_get_mesh(
-	Cmiss_field_element_group_id element_group);
-
-/*****************************************************************************//**
- * Add specified element to element group.
- *
- * @param element_group  handle to target element group field.
- * @param element  handle to target element to be added.
- * @return  1 if successfully add element into element group, otherwise 0.
- */
-int Cmiss_field_element_group_add_element(Cmiss_field_element_group_id element_group,
-	Cmiss_element_id element);
-
-/*****************************************************************************//**
- * Remove specified element from element group.
- *
- * @param element_group  handle to target element group field.
- * @param element  handle to target element to be remove.
- * @return  1 if successfully remove element into element group, otherwise 0.
- */
-int Cmiss_field_element_group_remove_element(Cmiss_field_element_group_id element_group,
-		Cmiss_element_id element);
-
-/*****************************************************************************//**
- * Remove all elements in element group.
- *
- * @param element_group  handle to target element group field.
- * @return  1 if successfully remove all elements from element group, otherwise 0.
- */
-int Cmiss_field_element_group_clear(Cmiss_field_element_group_id element_group);
-
-/*****************************************************************************//**
- * Check if the specified element is in element group.
- *
- * @param element_group  handle to target element group field.
- * @return  1 if element group contains element, otherwise 0.
- */
-int Cmiss_field_element_group_contains_element(
-	Cmiss_field_element_group_id element_group, Cmiss_element_id element);
-
-/*****************************************************************************//**
- * Check if element group does not contain any element.
- *
- * @param element_group  handle to target element group field.
- * @return  1 if element group does not contain any element, otherwise 0.
- */
-int Cmiss_field_element_group_is_empty(Cmiss_field_element_group_id element_group);
-
-/***************************************************************************//**
- * Create an element iterator object for iterating through the elements in the
- * group which are ordered from lowest to highest identifier. The iterator
- * initially points at the position before the first element, so the first call
- * to Cmiss_element_iterator_next() returns the first element and advances the
- * iterator.
- *
- * @param element_group  handle to target element group field.
- * @return  Handle to element_iterator at position before first, or NULL if
- * error.
- */
-Cmiss_element_iterator_id Cmiss_field_element_group_create_element_iterator(
 	Cmiss_field_element_group_id element_group);
 
 #endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */

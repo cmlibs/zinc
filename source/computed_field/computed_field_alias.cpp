@@ -145,7 +145,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	void field_is_managed(void)
 	{
@@ -282,7 +282,7 @@ int Computed_field_alias::evaluate_cache_at_location(
  * Sets values of the original field at the supplied location. 
  */
 int Computed_field_alias::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 {
 	int return_code;
 	

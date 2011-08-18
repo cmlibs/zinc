@@ -1589,7 +1589,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element,
@@ -1658,7 +1658,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_scale::evaluate_cache_at_location */
 
 int Computed_field_scale::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2115,7 +2115,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 };
 
@@ -2191,7 +2191,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_clamp_maximum::evaluate_cache_at_location */
 
 int Computed_field_clamp_maximum::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2578,7 +2578,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 };
 
 int Computed_field_clamp_minimum::evaluate_cache_at_location(
@@ -2653,7 +2653,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_clamp_minimum::evaluate_cache_at_location */
 
 int Computed_field_clamp_minimum::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3048,7 +3048,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element, 
@@ -3117,7 +3117,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_offset::evaluate_cache_at_location */
 
 int Computed_field_offset::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3949,7 +3949,7 @@ private:
 
 	char* get_command_string();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 };
 
 int Computed_field_edit_mask::evaluate_cache_at_location(
@@ -4014,7 +4014,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_edit_mask::evaluate_cache_at_location */
 
 int Computed_field_edit_mask::set_values_at_location(
-   Field_location* location, FE_value *values)
+   Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

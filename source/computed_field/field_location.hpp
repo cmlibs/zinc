@@ -109,7 +109,7 @@ public:
 	}
 
 	virtual int set_values_for_location(Cmiss_field * /*field*/,
-		FE_value * /*values*/)
+		const FE_value * /*values*/)
 	{
 		/* Default is that the location can't set the values */
 		return 0;
@@ -291,14 +291,14 @@ public:
 	}
 
 	int set_field_values(Cmiss_field_id reference_field_in,
-		int number_of_values_in, FE_value *values_in);
+		int number_of_values_in, const FE_value *values_in);
 
 	int check_cache_for_location(Cmiss_field *field);
 
 	int update_cache_for_location(Cmiss_field *field);
 
 	int set_values_for_location(Cmiss_field *field,
-		FE_value *values);
+		const FE_value *values);
 
 };
 

@@ -783,7 +783,7 @@ should.
 
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type,struct FE_element *element, FE_value *xi);
+	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi);
 /*******************************************************************************
 LAST MODIFIED : 23 April 1999
 

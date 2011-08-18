@@ -110,6 +110,7 @@ Cmiss_field_is_defined_at_location
 Cmiss_field_module_create_cache
 Cmiss_field_cache_access
 Cmiss_field_cache_destroy
+Cmiss_field_cache_set_element
 Cmiss_field_cache_set_mesh_location
 Cmiss_field_cache_set_field_real
 Cmiss_field_cache_set_node
@@ -252,8 +253,12 @@ Cmiss_field_module_create_threshold_image_filter
 Cmiss_field_cast_threshold_image_filter
 
 /* api/cmiss_field_logical_operators.h */
-Cmiss_field_module_create_less_than
+Cmiss_field_module_create_and
+Cmiss_field_module_create_equal_to
 Cmiss_field_module_create_greater_than
+Cmiss_field_module_create_less_than
+Cmiss_field_module_create_or
+Cmiss_field_module_create_xor
 
 /* api/cmiss_field_matrix_operations.h */
 Cmiss_field_module_create_eigenvalues
@@ -279,14 +284,7 @@ Cmiss_field_module_create_element_group
 Cmiss_field_cast_element_group
 /* inline Cmiss_field_element_group_base_cast */
 Cmiss_field_element_group_destroy
-Cmiss_field_element_group_get_master_mesh
 Cmiss_field_element_group_get_mesh
-Cmiss_field_element_group_add_element
-Cmiss_field_element_group_remove_element
-Cmiss_field_element_group_clear
-Cmiss_field_element_group_contains_element
-Cmiss_field_element_group_is_empty
-Cmiss_field_element_group_create_element_iterator
 
 /* api/cmiss_field_trigonometry.h */
 Cmiss_field_module_create_sin

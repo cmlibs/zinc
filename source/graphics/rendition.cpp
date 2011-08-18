@@ -3935,31 +3935,6 @@ int Cmiss_rendition_remove_selection_from_node_list(Cmiss_rendition_id rendition
 	return return_code;
 } /* Cmiss_rendition_remove_selection_from_node_list */
 
-
-int Cmiss_field_element_group_add_element_iterator(Cmiss_element_id element,
-	void *element_group_void)
-{
-	Cmiss_field_element_group_id element_group =
-		(Cmiss_field_element_group_id)element_group_void;
-	if (NULL != element_group)
-	{
-		Cmiss_field_element_group_add_element(element_group, element);
-	}
-	return 1;
-}
-
-int Cmiss_field_element_group_remove_element_iterator(Cmiss_element_id element,
-	void *element_group_void)
-{
-	Cmiss_field_element_group_id element_group =
-		(Cmiss_field_element_group_id)element_group_void;
-	if (NULL != element_group)
-	{
-		Cmiss_field_element_group_remove_element(element_group, element);
-	}
-	return 1;
-}
-
 int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
 	struct LIST(FE_element) *element_list, int add_flag, int dimension)
 {
@@ -3970,34 +3945,31 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 	{
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_module_begin_change(field_module);
-		Cmiss_field_group_id sub_group =
-			Cmiss_rendition_get_or_create_selection_group(rendition);
-		if (sub_group)
+		Cmiss_field_group_id selection_group = Cmiss_rendition_get_or_create_selection_group(rendition);
+		Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+		Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(selection_group, temp_mesh);
+		if (!element_group)
+			element_group = Cmiss_field_group_create_element_group(selection_group, temp_mesh);
+		Cmiss_mesh_destroy(&temp_mesh);
+		Cmiss_mesh_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+		Cmiss_field_element_group_destroy(&element_group);
+		Cmiss_element_iterator_id iterator = CREATE_LIST_ITERATOR(FE_element)(element_list);
+		Cmiss_element_id element = 0;
+		while (0 != (element = Cmiss_element_iterator_next(iterator)))
 		{
-			Cmiss_mesh_id temp_mesh =
-				Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
-			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-			if (!element_group)
-				element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
-			Cmiss_mesh_destroy(&temp_mesh);
-			if (element_group)
+			if (add_flag)
 			{
-				if (add_flag)
-				{
-					FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						Cmiss_field_element_group_add_element_iterator,
-						(void *)element_group, element_list);
-				}
-				else
-				{
-					FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						Cmiss_field_element_group_remove_element_iterator,
-						(void *)element_group, element_list);
-				}
-				Cmiss_field_element_group_destroy(&element_group);
+				Cmiss_mesh_add_element(mesh_group, element);
 			}
-			Cmiss_field_group_destroy(&sub_group);
+			else
+			{
+				Cmiss_mesh_remove_element(mesh_group, element);
+			}
+			Cmiss_element_destroy(&element);
 		}
+		Cmiss_element_iterator_destroy(&iterator);
+		Cmiss_mesh_destroy(&mesh_group);
+		Cmiss_field_group_destroy(&selection_group);
 		Cmiss_field_module_end_change(field_module);
 		Cmiss_field_module_destroy(&field_module);
 	}
@@ -4005,18 +3977,13 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 
 	return (return_code);
 }
+
 int Cmiss_rendition_add_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
 	struct LIST(FE_element) *element_list, int dimension)
-/*******************************************************************************
-LAST MODIFIED : 28 April 2000
-
-DESCRIPTION :
-Create a element list selection
-==============================================================================*/
 {
 	return Cmiss_rendition_change_selection_from_element_list_of_dimension(rendition,
-		element_list, 1, dimension);
-} /* Cmiss_rendition_add_selection_from_element_list */
+		element_list, /*add_flag*/1, dimension);
+}
 
 int Cmiss_rendition_remove_selection_from_element_list_of_dimension(Cmiss_rendition_id rendition,
 	struct LIST(FE_element) *element_list, int dimension)
@@ -4029,7 +3996,7 @@ int Cmiss_rendition_remove_selection_from_element_list_of_dimension(Cmiss_rendit
 		return_code = 1;
 	}
 	return return_code;
-} /* Cmiss_rendition_remove_selection_from_element_list_of_dimension */
+}
 
 int Cmiss_rendition_remove_field_manager_and_callback(struct Cmiss_rendition *rendition)
 {

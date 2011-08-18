@@ -2178,7 +2178,7 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 // External API
 int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
-	int number_of_chart_coordinates, double *chart_coordinates)
+	int number_of_chart_coordinates, const double *chart_coordinates)
 {
 	int return_code;
 	if (field && cache && element && chart_coordinates &&
@@ -2204,7 +2204,7 @@ int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
 
 // External API
 int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
-	int number_of_values, double *values)
+	int number_of_values, const double *values)
 {
 	int return_code;
 	if (field && cache && (number_of_values >= field->number_of_components) && values)
@@ -2913,7 +2913,7 @@ int Computed_field_evaluate_at_location(struct Computed_field *field,
 }
 
 int Computed_field_set_values_at_location(struct Computed_field *field,
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
 

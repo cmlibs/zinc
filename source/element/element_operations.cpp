@@ -48,6 +48,7 @@ extern "C"
 #include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
+#include "api/cmiss_field_logical_operators.h"
 #include "api/cmiss_field_subobject_group.h"
 #include "computed_field/computed_field_group.h"
 #include "element/element_operations.h"
@@ -56,6 +57,7 @@ extern "C"
 #include "graphics/auxiliary_graphics_types.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_element_private.hpp"
 
 /*
  Global functions
@@ -430,187 +432,116 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	return (return_code);
 } /* FE_region_change_element_identifiers */
 
-static int FE_element_add_if_selection_ranges_condition_with_group(
-		struct FE_element *element, void *data_void)
-/*******************************************************************************
- LAST MODIFIED : 10 March 2008
-
- DESCRIPTION :
- ==============================================================================*/
+/***************************************************************************//**
+ * Create an element list from the elements in mesh optionally restricted to
+ * those within the element_ranges or where conditional_field is true at time.
+ *
+ * @param mesh  Handle to the mesh.
+ * @param element_ranges  Optional Multi_range of elements.
+ * @param conditional_field  Field interpreted as a boolean value which must be
+ * true for an element from mesh to be included.
+ * @param time  Time to evaluate the conditional_field at.
+ * @return  The element list, or NULL on failure.
+ */
+struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh,
+	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
+	FE_value time)
 {
-	int return_code, selected;
-	struct CM_element_information identifier;
-	struct FE_element_fe_region_selection_ranges_condition_data *data;
-
-	ENTER(FE_element_add_if_selection_ranges_condition);
-	if (element
-		&& (data
-			= (struct FE_element_fe_region_selection_ranges_condition_data *) data_void))
+	if (!mesh)
+		return 0;
+	const int dimension = Cmiss_mesh_get_dimension(mesh);
+	struct LIST(FE_element) *element_list = FE_region_create_related_element_list_for_dimension(
+		Cmiss_mesh_get_FE_region_internal(mesh), dimension);
+	Cmiss_element_id element = 0;
+	Cmiss_field_cache_id field_cache = 0;
+	if (conditional_field)
 	{
-		return_code = get_FE_element_identifier(element, &identifier);
-		selected = 1;
-		if (selected && data->element_ranges)
+		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(conditional_field);
+		field_cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_field_cache_set_time(field_cache, (double)time);
+		Cmiss_field_module_destroy(&field_module);
+	}
+	if (element_ranges && (2*Multi_range_get_total_number_in_ranges(element_ranges) < Cmiss_mesh_get_size(mesh)))
+	{
+		const int number_of_ranges = Multi_range_get_number_of_ranges(element_ranges);
+		for (int i = 0; (i < number_of_ranges) && element_list; ++i)
 		{
-			selected = Multi_range_is_value_in_range(data->element_ranges,
-				identifier.number);
-		}
-		if (selected && data->group_field)
-		{
-			Cmiss_field_id element_group_field = data->group_field;
-			Cmiss_field_element_group_id element_group =
-				Cmiss_field_cast_element_group(element_group_field);
-			selected = Cmiss_field_element_group_contains_element(
-				element_group, element);
-			Cmiss_field_destroy(&element_group_field);
-		}
-		if (selected && data->conditional_field)
-		{
-			selected = Computed_field_is_true_in_element(
-				data->conditional_field, element,
-				data->conditional_field_time);
-		}
-		if (selected)
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
-				data->element_list);
+			int start, stop;
+			Multi_range_get_range(element_ranges, i, &start, &stop);
+			for (int identifier = start; (identifier <= stop) && element_list; ++identifier)
+			{
+				element = Cmiss_mesh_find_element_by_identifier(mesh, identifier);
+				if (element)
+				{
+					bool add = true;
+					if (conditional_field)
+					{
+						Cmiss_field_cache_set_element(field_cache, element);
+						add = Cmiss_field_evaluate_boolean(conditional_field, field_cache);
+					}
+					if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
+					{
+						DESTROY(LIST(FE_element))(&element_list);
+					}
+					Cmiss_element_destroy(&element);
+				}
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_add_if_selection_ranges_condition.  Invalid argument(s)");
-		return_code = 0;
-	}LEAVE;
-
-	return (return_code);
-} /* FE_element_add_if_selection_ranges_condition */
-
-struct LIST(FE_element) *
-FE_element_list_from_region_and_selection_group(struct Cmiss_region *region,
-		int dimension,
-		struct Multi_range *element_ranges, struct Computed_field *group_field,
-		struct Computed_field *conditional_field, FE_value time)
-{
-	int i, element_number, elements_in_region, elements_in_ranges = 0,
-		number_of_ranges = 0, start, stop;
-	struct FE_element *element;
-	struct FE_element_fe_region_selection_ranges_condition_data data;
-	struct FE_region *fe_region = NULL;
-
-	ENTER(FE_element_list_from_fe_region_selection_ranges_condition);
-	if (region)
-	{
-		fe_region = Cmiss_region_get_FE_region(region);
-	}
-	data.element_list = (struct LIST(FE_element) *) NULL;
-	if (fe_region)
-	{
-		data.element_list = CREATE(LIST(FE_element))();
-		if (data.element_list)
+		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
+		while (element_list && (0 != (element = Cmiss_element_iterator_next(iterator))))
 		{
-			int return_code = 1;
-			elements_in_region = FE_region_get_number_of_FE_elements_of_dimension(fe_region, dimension);
+			bool add = true;
 			if (element_ranges)
 			{
-				elements_in_ranges = Multi_range_get_total_number_in_ranges(
-					element_ranges);
+				add = Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element));
 			}
-
-			data.fe_region = fe_region;
-			/* Seems odd to specify an empty element_ranges but I have
-			 maintained the previous behaviour */
-			if (element_ranges && (0 < (number_of_ranges
-				= Multi_range_get_number_of_ranges(element_ranges))))
+			if (add && conditional_field)
 			{
-				data.element_ranges = element_ranges;
+				Cmiss_field_cache_set_element(field_cache, element);
+				add = Cmiss_field_evaluate_boolean(conditional_field, field_cache);
 			}
-			else
+			if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
 			{
-				data.element_ranges = (struct Multi_range *) NULL;
+				DESTROY(LIST(FE_element))(&element_list);
 			}
-			data.group_field = group_field;
-			data.conditional_field = conditional_field;
-			data.conditional_field_time = time;
-
-			Cmiss_field_element_group_id element_group = NULL;
-			if (group_field)
-			{
-				Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-				if (sub_group)
-				{
-					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-					Cmiss_mesh_id temp_mesh =
-						Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
-					element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
-					Cmiss_mesh_destroy(&temp_mesh);
-					Cmiss_field_group_destroy(&sub_group);
-					Cmiss_field_module_destroy(&field_module);
-				}
-			}
-			if ((!group_field) || (element_group))
-			{
-				if (data.element_ranges
-						&& (elements_in_ranges < elements_in_region))
-				{
-					for (i = 0; (i < number_of_ranges) && return_code; i++)
-					{
-						Multi_range_get_range(element_ranges, i, &start, &stop);
-						for (element_number = start; (element_number <= stop) && return_code; element_number++)
-						{
-							element = FE_region_get_FE_element_from_identifier(
-								fe_region, dimension, element_number);
-							if (element && ((!element_group) ||
-								Cmiss_field_element_group_contains_element(element_group, element)))
-							{
-								return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data.element_list);
-							}
-						}
-					}
-				}
-				else
-				{
-					data.group_field = (struct Computed_field *) element_group;
-					data.conditional_field = conditional_field;
-					return_code	= FE_region_for_each_FE_element_of_dimension(
-						fe_region, dimension,
-						FE_element_add_if_selection_ranges_condition_with_group,
-						(void *) &data);
-				}
-			}
-			if (data.conditional_field)
-			{
-				Computed_field_clear_cache(data.conditional_field);
-			}
-			if (data.group_field)
-			{
-				Computed_field_clear_cache(data.group_field);
-			}
-			if (element_group)
-			{
-				Cmiss_field_element_group_destroy(&element_group);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_list_from_fe_region_selection_ranges_condition.  "
-					"Error building list");
-				DESTROY(LIST(FE_element))(&data.element_list);
-			}
+			Cmiss_element_destroy(&element);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_list_from_fe_region_selection_ranges_condition.  "
-				"Could not create list");
-		}
+		Cmiss_element_iterator_destroy(&iterator);
 	}
-	else
+	return element_list;
+}
+
+struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
+	struct Cmiss_region *region, int dimension,
+	struct Multi_range *element_ranges, struct Computed_field *group_field,
+	struct Computed_field *conditional_field, FE_value time)
+{
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_field_module_begin_change(field_module);
+	Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+	Cmiss_field_id use_conditional_field = 0;
+	if (group_field && conditional_field)
+		use_conditional_field = Cmiss_field_module_create_or(field_module, group_field, conditional_field);
+	else if (group_field)
+		use_conditional_field = Cmiss_field_access(group_field);
+	else if (conditional_field)
+		use_conditional_field = Cmiss_field_access(conditional_field);
+	struct LIST(FE_element) *element_list = 0;
+	if (((!group_field) && (!conditional_field)) || use_conditional_field)
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_list_from_fe_region_selection_ranges_condition.  "
-			"Invalid argument(s)");
+		// code assumes no ranges = ranges not specified.
+		struct Multi_range *use_element_ranges = (Multi_range_get_number_of_ranges(element_ranges) > 0) ? element_ranges : 0;
+		element_list = Cmiss_mesh_get_selected_element_list(mesh, use_element_ranges, use_conditional_field, time);
 	}
-	LEAVE;
-
-	return (data.element_list);
-} /* FE_element_list_from_fe_region_selection_ranges_condition */
+	if (use_conditional_field)
+	{
+		Cmiss_field_destroy(&use_conditional_field);
+	}
+	Cmiss_mesh_destroy(&mesh);
+	Cmiss_field_module_end_change(field_module);
+	Cmiss_field_module_destroy(&field_module);
+	return element_list;
+}

@@ -76,22 +76,40 @@ allowed during identifier changes.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Create an element list with the supplied region, group field at a specific time
+ * Create an element list from the elements in mesh optionally restricted to
+ * those within the element_ranges or where conditional_field is true in element
+ * at time.
+ *
+ * @param mesh  Handle to the mesh.
+ * @param element_ranges  Optional Multi_range of element identifiers.
+ * @param conditional_field  Optional field interpreted as a boolean value which
+ * must be true for an element from mesh to be included in list.
+ * @param time  Time to evaluate the conditional_field at.
+ * @return  The element list, or NULL on failure.
+ */
+struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh,
+	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
+	FE_value time);
+
+/***************************************************************************//**
+ * Create an element list from those elements of dimension in the supplied
+ * region, optionally restricted to any of the following conditions:
+ * - element identifier is in the element_ranges;
+ * - element is in the group_field;
+ * - conditional field is true in the element;
  *
  * @param region  The pointer to a region
  * @param dimension  The dimension of elements to query about
  * @param element_ranges  Multi_range of elements.
  * @param group_field  Group field of the region
- * @param time  Time of the group field to be evaluated
- * @param use_data  Flag indicating either node or data is in used.
- * @return  Returns element list if successfully create a element list with the given
- *    arguments, otherwise NULL.
+ * @param conditional_field  Optional field interpreted as a boolean value which
+ * must be true for an element from mesh to be included in list.
+ * @param time  Time to evaluate the conditional_field at.
+ * @return  The element list, or NULL on failure.
  */
-struct LIST(FE_element) *
-	FE_element_list_from_region_and_selection_group(
-		struct Cmiss_region *region, int dimension,
-		struct Multi_range *element_ranges,
-		struct Computed_field *group_field,
-		struct Computed_field *conditional_field, FE_value time);
+struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
+	struct Cmiss_region *region, int dimension,
+	struct Multi_range *element_ranges, struct Computed_field *group_field,
+	struct Computed_field *conditional_field, FE_value time);
 
 #endif /* !defined (ELEMENT_OPERATIONS_H) */

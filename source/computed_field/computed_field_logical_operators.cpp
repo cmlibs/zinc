@@ -148,7 +148,7 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-Computed_field *Computed_field_create_or(
+Computed_field *Cmiss_field_module_create_or(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -178,7 +178,7 @@ Computed_field *Computed_field_create_or(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -278,7 +278,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_or(field_modify->get_field_module(),
+						Cmiss_field_module_create_or(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -413,7 +413,7 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-Computed_field *Computed_field_create_and(
+Computed_field *Cmiss_field_module_create_and(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -443,7 +443,7 @@ Computed_field *Computed_field_create_and(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -543,7 +543,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_and(field_modify->get_field_module(),
+						Cmiss_field_module_create_and(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -683,7 +683,7 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-Computed_field *Computed_field_create_xor(
+Computed_field *Cmiss_field_module_create_xor(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -713,7 +713,7 @@ Computed_field *Computed_field_create_xor(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -813,7 +813,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_xor(field_modify->get_field_module(),
+						Cmiss_field_module_create_xor(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -978,7 +978,7 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-Computed_field *Computed_field_create_equal_to(
+Computed_field *Cmiss_field_module_create_equal_to(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -1008,7 +1008,7 @@ Computed_field *Computed_field_create_equal_to(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -1109,7 +1109,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_equal_to(field_modify->get_field_module(),
+						Cmiss_field_module_create_equal_to(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1274,7 +1274,7 @@ Computed_field *Computed_field_create_less_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
@@ -1539,7 +1539,7 @@ Computed_field *Computed_field_create_greater_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_or.  Invalid argument(s)");
+			"Cmiss_field_module_create_or.  Invalid argument(s)");
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);

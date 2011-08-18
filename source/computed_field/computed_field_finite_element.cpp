@@ -145,9 +145,9 @@ private:
 		int calculate_derivatives, struct FE_element *element,
 		FE_value time, struct FE_element *top_level_element);
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
-	virtual int set_mesh_location_value(Field_location* location, Cmiss_element_id element, FE_value *xi);
+	virtual int set_mesh_location_value(Field_location* location, Cmiss_element_id element, const FE_value *xi);
 
 	int set_string_at_location(Field_location* location, const char *string_value);
 
@@ -813,7 +813,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_finite_element::evaluate_cache_at_location */
 
 int Computed_field_finite_element::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1048,7 +1048,8 @@ Sets the <values> of the computed <field> over the <element>.
 	return (return_code);
 } /* Computed_field_finite_element::set_values_at_location */
 
-int Computed_field_finite_element::set_mesh_location_value(Field_location* location, Cmiss_element_id element, FE_value *xi)
+int Computed_field_finite_element::set_mesh_location_value(
+	Field_location* location, Cmiss_element_id element, const FE_value *xi)
 {
 	int return_code;
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(location);
@@ -2345,7 +2346,7 @@ private:
 
 	int has_numerical_components();
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int has_multiple_times();
 };
@@ -2597,7 +2598,7 @@ Evaluate the fields cache at the node.
 } /* Computed_field_node_value::evaluate_cache_at_location */
 
 int Computed_field_node_value::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -4242,7 +4243,7 @@ private:
 		int calculate_derivatives, struct FE_element *element,
 		FE_value time, struct FE_element *top_level_element);
 
-	int set_values_at_location(Field_location* location, FE_value *values);
+	int set_values_at_location(Field_location* location, const FE_value *values);
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element,
@@ -4661,7 +4662,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_basis_derivative::evaluate_cache_at_location */
 
 int Computed_field_basis_derivative::set_values_at_location(
-	Field_location* location, FE_value *values)
+	Field_location* location, const FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
