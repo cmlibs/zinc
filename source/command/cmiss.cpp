@@ -9320,7 +9320,7 @@ DESCRIPTION :
 						}
 						if (node_region_path || data_region_path)
 						{
-							Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 								field_module, node_region_path ? "cmiss_nodes" : "cmiss_data");
 							Cmiss_nodeset_assign_field_from_source(nodeset, destination_field, source_field,
 								/*conditional_field*/Cmiss_field_group_base_cast(group_field), time);

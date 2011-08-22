@@ -281,7 +281,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 					Cmiss_optimisation_set_method(optimisation, package->method);
 
 					Cmiss_mesh_id feMesh =
-						Cmiss_field_module_get_mesh_by_dimension(fieldModule, dimension);
+						Cmiss_field_module_find_mesh_by_dimension(fieldModule, dimension);
 					if (feMesh == NULL)
 					{
 						display_message(ERROR_MESSAGE, "gfx_minimise.  Unable to get the mesh, invalid dimension?");
@@ -298,11 +298,11 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 							 */
 							Cmiss_field_module_id module = Cmiss_region_get_field_module(dataRegion);
 							Cmiss_nodeset_id nodeset =
-									Cmiss_field_module_get_nodeset_by_name(module, "cmiss_nodes");
+									Cmiss_field_module_find_nodeset_by_name(module, "cmiss_nodes");
 							if (Cmiss_nodeset_get_size(nodeset) == 0)
 							{
 								Cmiss_nodeset_destroy(&nodeset);
-								nodeset = Cmiss_field_module_get_nodeset_by_name(module, "cmiss_data");
+								nodeset = Cmiss_field_module_find_nodeset_by_name(module, "cmiss_data");
 							}
 							Cmiss_optimisation_set_data_nodeset(optimisation, nodeset);
 							Cmiss_nodeset_destroy(&nodeset);

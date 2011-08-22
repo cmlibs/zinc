@@ -3845,7 +3845,7 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 		if (sub_group)
 		{
 			Cmiss_field_node_group_id node_group = NULL;
-			Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 				field_module, use_data ? "cmiss_data" : "cmiss_nodes");
 			if (nodeset)
 			{
@@ -3946,7 +3946,7 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_group_id selection_group = Cmiss_rendition_get_or_create_selection_group(rendition);
-		Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+		Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 		Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(selection_group, temp_mesh);
 		if (!element_group)
 			element_group = Cmiss_field_group_create_element_group(selection_group, temp_mesh);

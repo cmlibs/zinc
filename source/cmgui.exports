@@ -330,7 +330,7 @@ Cmiss_time_sequence_destroy
 Cmiss_time_sequence_set_value
 
 /* api/cmiss_node.h */
-Cmiss_field_module_get_nodeset_by_name
+Cmiss_field_module_find_nodeset_by_name
 Cmiss_nodeset_access
 Cmiss_nodeset_destroy
 Cmiss_nodeset_contains_node
@@ -360,8 +360,8 @@ Cmiss_nodal_value_type_enum_from_string
 Cmiss_nodal_value_type_enum_to_string
 
 /* api/cmiss_element.h */
-Cmiss_field_module_get_mesh_by_dimension
-Cmiss_field_module_get_mesh_by_name
+Cmiss_field_module_find_mesh_by_dimension
+Cmiss_field_module_find_mesh_by_name
 Cmiss_mesh_access
 Cmiss_mesh_destroy
 Cmiss_mesh_add_element

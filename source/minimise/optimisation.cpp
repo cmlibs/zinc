@@ -231,7 +231,7 @@ int Minimisation::construct_dof_arrays()
 		FE_field *fe_field;
 		Computed_field_get_type_finite_element(optimisation->independentFields[0], &fe_field);
 		int number_of_components = get_FE_field_number_of_components(fe_field);
-		Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(field_module, "cmiss_nodes");
+		Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
 		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
 		Cmiss_node_id node = 0;
 		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))

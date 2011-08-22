@@ -176,7 +176,7 @@ static int Cmiss_field_group_destroy_all_elements(Cmiss_field_id field)
 			for (int i = 1; i <= 3; i++)
 			{
 				Cmiss_mesh_id master_mesh =
-					Cmiss_field_module_get_mesh_by_dimension(field_module, /*dimension*/i);
+					Cmiss_field_module_find_mesh_by_dimension(field_module, /*dimension*/i);
 				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
 				Cmiss_mesh_destroy(&master_mesh);
 				if (element_group)
@@ -610,7 +610,7 @@ release.
 									Cmiss_region_id temp_region = Cmiss_rendition_get_region(rendition);
 									Cmiss_field_module_id field_module = Cmiss_region_get_field_module(temp_region);
 									int dimension = Cmiss_element_get_dimension(picked_element);
-									Cmiss_mesh_id master_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+									Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
 									Cmiss_mesh_destroy(&master_mesh);
 									if (element_group)
@@ -662,7 +662,7 @@ release.
 										int dimension = Cmiss_element_get_dimension(picked_element);
 										Cmiss_field_module_id field_module = Cmiss_region_get_field_module(sub_region);
 										Cmiss_mesh_id temp_mesh =
-											Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+											Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 										Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 										if (!element_group)
 											element_group = Cmiss_field_group_create_element_group(sub_group, temp_mesh);
@@ -808,7 +808,7 @@ release.
 														if (!mesh_group[dimension - 1])
 														{
 															Cmiss_mesh_id temp_mesh =
-																Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+																Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 															Cmiss_field_element_group_id element_group =
 																Cmiss_field_group_get_element_group(sub_group, temp_mesh);
 															if (!element_group)

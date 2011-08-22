@@ -1060,7 +1060,7 @@ Global functions
 ----------------
 */
 
-Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
+Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
 	Cmiss_field_module_id field_module, int dimension)
 {
 	Cmiss_mesh_id mesh = NULL;
@@ -1071,7 +1071,7 @@ Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
 	return mesh;
 }
 
-Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(
+Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name)
 {
 	Cmiss_mesh_id mesh = 0;

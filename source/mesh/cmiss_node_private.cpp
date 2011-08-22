@@ -407,7 +407,7 @@ Global functions
 ----------------
 */
 
-Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
+Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name)
 {
 	FE_region *fe_region = NULL;
@@ -425,7 +425,7 @@ Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_get_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
+				"Cmiss_field_module_find_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
 			fe_region = NULL;
 		}
 	}

@@ -1445,7 +1445,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			graphic_to_object_data->rc_coordinate_field)))
 		{
 			// GRC temporary: replace with mesh_location valued field
-			Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(
+			Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(
 				graphic_to_object_data->field_module, element_dimension);
 			/* determine if the element is required */
 			if (Computed_field_evaluate_at_node(graphic->seed_node_coordinate_field, node,
@@ -3417,7 +3417,7 @@ int Cmiss_graphic_to_graphics_object(
 									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-									Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(graphic_to_object_data->field_module,
+									Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
 										(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
 									glyph_set = create_GT_glyph_set_from_nodeset(
 										nodeset, graphic_to_object_data->field_cache,
@@ -3748,7 +3748,7 @@ int Cmiss_graphic_to_graphics_object(
 						{
 							case CMISS_GRAPHIC_DATA_POINTS:
 							{
-								Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+								Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 									graphic_to_object_data->field_module, "cmiss_data");
 								GT_object_set_node_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, nodeset);
@@ -3756,7 +3756,7 @@ int Cmiss_graphic_to_graphics_object(
 							} break;
 							case CMISS_GRAPHIC_NODE_POINTS:
 							{
-								Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(
+								Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 									graphic_to_object_data->field_module, "cmiss_nodes");
 								GT_object_set_node_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, nodeset);
@@ -3765,7 +3765,7 @@ int Cmiss_graphic_to_graphics_object(
 							case CMISS_GRAPHIC_CYLINDERS:
 							case CMISS_GRAPHIC_LINES:
 							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
+								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 									graphic_to_object_data->field_module, /*dimension*/1);
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
@@ -3799,7 +3799,7 @@ int Cmiss_graphic_to_graphics_object(
 							}
 #else
 							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
+								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 									graphic_to_object_data->field_module, /*dimension*/2);
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
@@ -3808,7 +3808,7 @@ int Cmiss_graphic_to_graphics_object(
 #endif /* defined(USE_OPENCASCADE) */
 							case CMISS_GRAPHIC_ISO_SURFACES:
 							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
+								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 									graphic_to_object_data->field_module, /*dimension*/3);
 								GT_object_set_element_highlight_functor(graphic->graphics_object,
 									(void *)graphic_to_object_data->group_field, temp_mesh);
@@ -3832,7 +3832,7 @@ int Cmiss_graphic_to_graphics_object(
 								{
 									use_element_type = highest_dimension;
 								}
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_get_mesh_by_dimension(
+								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 									graphic_to_object_data->field_module, use_element_type);
 								if (graphic_to_object_data->group_field)
 								{

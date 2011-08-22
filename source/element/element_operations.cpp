@@ -521,7 +521,7 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
 {
 	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 	Cmiss_field_module_begin_change(field_module);
-	Cmiss_mesh_id mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, dimension);
+	Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
 	Cmiss_field_id use_conditional_field = 0;
 	if (group_field && conditional_field)
 		use_conditional_field = Cmiss_field_module_create_or(field_module, group_field, conditional_field);

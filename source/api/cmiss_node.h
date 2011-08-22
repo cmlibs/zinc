@@ -100,7 +100,7 @@ char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
  * @param name  The name of the nodeset: "cmiss_nodes" or "cmiss_data".
  * @return  Handle to the nodeset, or NULL if error.
  */
-Cmiss_nodeset_id Cmiss_field_module_get_nodeset_by_name(
+Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	Cmiss_field_module_id field_module, const char *nodeset_name);
 
 /*******************************************************************************

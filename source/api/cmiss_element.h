@@ -134,7 +134,7 @@ char *Cmiss_basis_function_type_enum_to_string(
  * @param dimension  The dimension of the mesh from 1 to 3.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
+Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
 	Cmiss_field_module_id field_module, int dimension);
 
 /***************************************************************************//**
@@ -152,7 +152,7 @@ Cmiss_mesh_id Cmiss_field_module_get_mesh_by_dimension(
  * @param name  The name of the finite element mesh.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-Cmiss_mesh_id Cmiss_field_module_get_mesh_by_name(
+Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 	Cmiss_field_module_id field_module, const char *mesh_name);
 
 /*******************************************************************************
