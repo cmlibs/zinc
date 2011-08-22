@@ -1528,7 +1528,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 		}
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(search_region);
 		int use_element_dimension = element_dimension ? element_dimension : number_of_texture_coordinate_components;
-		Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, use_element_dimension);
+		Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, use_element_dimension);
 		hint_resolution[0] = image_width;
 		hint_resolution[1] = image_height;
 		hint_resolution[2] = image_depth;

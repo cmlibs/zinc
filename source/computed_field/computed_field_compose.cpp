@@ -718,7 +718,7 @@ already) and allows its contents to be modified.
 			{
 				Cmiss_field_module_id search_region_field_module =
 					Cmiss_region_get_field_module(search_region);
-				Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(
+				Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(
 					search_region_field_module, element_dimension);
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_compose(field_modify->get_field_module(),

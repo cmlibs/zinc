@@ -3781,7 +3781,7 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 				Cmiss_mesh_id mesh = 0;
 				if (mesh_name)
 				{
-					mesh = Cmiss_field_module_get_mesh_by_name(field_modify->get_field_module(), mesh_name);
+					mesh = Cmiss_field_module_find_mesh_by_name(field_modify->get_field_module(), mesh_name);
 					if (!mesh)
 					{
 						display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  "
