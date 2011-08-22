@@ -61,22 +61,33 @@ struct Computed_field_find_element_xi_cache is private.
 extern "C" {
 #endif /* __cplusplus */
 
+/***************************************************************************//**
+ * Find location in mesh or element where the field has same or nearest value to
+ * the prescribed values. This routine is either called directly by
+ * Computed_field_find_element_xi or if that field is propagating it's values
+ * backwards, it is called by the last ancestor field implementing
+ * propagate_find_element_xi.
+ *
+ * @param field  The field whose values need to match.
+ * @param values  Array of values to match or get nearest to. Implementation
+ * promises to copy this, hence can pass a pointer to field cache values.
+ * @param number_of_values  The size of the values array, must equal the number
+ * of components of field.
+ * @param time  The time at which field values are evaluated.
+ * @param element_address  Address to return element in. If mesh is omitted,
+ * must point at a single element to search.
+ * @param xi  Array of same dimension as mesh or element to return chart
+ * coordinates in.
+ * @param mesh  The mesh to search over. Can be omitted if element specified.
+ * @param find_nearest  Set to 1 to find location of nearest field value, or 0
+ * to find exact match.
+ * @return  1 if search carried out without error including when no element is
+ * found, or 0 if failed.
+ */
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, double time, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
-	int find_nearest_location);
-/*******************************************************************************
-LAST MODIFIED : 18 April 2005
-
-DESCRIPTION :
-This function actually searches through the elements in the 
-<search_region> trying to find an <xi> location which returns the correct
-<values>.  This routine is either called directly by Computed_field_find_element_xi
-or if that field is propogating it's values backwards, it is called by the 
-ultimate parent finite_element field.
-An <element_dimension> of 0 searches in elements of all dimension, any other
-value searches just elements of that dimension.
-==============================================================================*/
+	const FE_value *values, int number_of_values, FE_value time,
+	struct FE_element **element_address, FE_value *xi,
+	Cmiss_mesh_id search_mesh, int find_nearest);
 
 int DESTROY(Computed_field_find_element_xi_cache)
 	  (struct Computed_field_find_element_xi_cache **cache_address);

@@ -153,10 +153,9 @@ private:
 
 	int set_values_at_location(Field_location* location, const FE_value *values);
 
-	int find_element_xi( 
-		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, double time,
-		struct Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 const char *Computed_field_window_projection::projection_type_string(
@@ -895,24 +894,16 @@ Sets the <values> of the computed <field> at <location>.
 	return (return_code);
 } /* Computed_field_window_projection::set_values_at_location */
 
-int Computed_field_window_projection::find_element_xi( 
-	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Computed_field_window_projection::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 {
 	double d,lu_matrix[16],result[4];
 	int indx[4],return_code;
 	FE_value source_values[3];
 
-	ENTER(Computed_field_window_projection::find_element_xi);
-	if (field && values
-		&&(number_of_values==field->number_of_components)&&element&&xi&&
-		search_region)
+	ENTER(Computed_field_window_projection::propagate_find_element_xi);
+	if (field && values && (number_of_values==field->number_of_components))
 	{
 		if (scene_viewer)
 		{
@@ -931,14 +922,14 @@ DESCRIPTION :
 					source_values[1] = (result[1] / result[3]);
 					source_values[2] = (result[2] / result[3]);
 					return_code=Computed_field_find_element_xi(
-						field->source_fields[0], source_values, 3, time, element,
-						xi, element_dimension, search_region, /*propagate_field*/1,
+						field->source_fields[0], source_values, 3, time, element_address,
+						xi, mesh, /*propagate_field*/1,
 						/*find_nearest_location*/0);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_window_projection::find_element_xi.  "
+						"Computed_field_window_projection::propagate_find_element_xi.  "
 						"Could not invert field %s",field->name);
 					return_code=0;
 				}
@@ -946,7 +937,7 @@ DESCRIPTION :
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_window_projection::find_element_xi.  "
+					"Computed_field_window_projection::propagate_find_element_xi.  "
 					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
@@ -954,7 +945,7 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_window_projection::find_element_xi.  "
+				"Computed_field_window_projection::propagate_find_element_xi.  "
 				"Scene_viewer invalid.");
 			return_code=0;
 		}
@@ -962,13 +953,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection::find_element_xi.  Invalid argument(s)");
+			"Computed_field_window_projection::propagate_find_element_xi.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_window_projection::find_element_xi */
+} /* Computed_field_window_projection::propagate_find_element_xi */
 
 int Computed_field_window_projection::list()
 /*******************************************************************************

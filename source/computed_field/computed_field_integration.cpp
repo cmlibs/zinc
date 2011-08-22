@@ -395,10 +395,9 @@ private:
 
 	int is_defined_at_node(FE_node *node);
 
-	int find_element_xi(
-		FE_value *values, int number_of_values, FE_element **element, 
-		FE_value *xi, int element_dimension, double time,
-		Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 int Computed_field_integration::integrate_path(FE_element *element,
@@ -1669,27 +1668,21 @@ Evaluate the fields cache at the location
 } /* Computed_field_integration::evaluate_cache_at_location */
 
 
-int Computed_field_integration::find_element_xi(
-	FE_value *values, int number_of_values, FE_element **element, 
-	FE_value *xi, int element_dimension, double time,
-	Cmiss_region *search_region)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Computed_field_integration::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 {
 	FE_value floor_values[3];
 	int i, return_code;
 	Computed_field_element_integration_mapping *mapping;
 	Computed_field_integration_has_values_data has_values_data;
-	FE_region *fe_region;
 
-	ENTER(Computed_field_integration::find_element_xi);
+	ENTER(Computed_field_integration::propagate_find_element_xi);
 	USE_PARAMETER(time);
-	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
-		search_region && (fe_region = Cmiss_region_get_FE_region(search_region)))
+	if (field && values && (number_of_values==field->number_of_components) && mesh)
 	{
+		const int element_dimension = mesh ?
+			Cmiss_mesh_get_dimension(mesh) : get_FE_element_dimension(*element_address);
 		if (!texture_mapping)
 		{
 			calculate_mapping(/*time*/0);
@@ -1742,24 +1735,24 @@ DESCRIPTION :
 				}
 				if (return_code)
 				{
-					*element = find_element_xi_mapping->element;
-					for (i = 0 ; i < get_FE_element_dimension(*element) ; i++)
+					*element_address = find_element_xi_mapping->element;
+					for (i = 0 ; i < get_FE_element_dimension(*element_address) ; i++)
 					{
 						xi[i] = values[i] - floor_values[i];	
 					}
-					if (!FE_region_contains_FE_element(fe_region, *element))
+					if (!FE_region_contains_FE_element(fe_region, *element_address))
 					{
-						*element = (FE_element *)NULL;
+						*element_address = (FE_element *)NULL;
 						display_message(ERROR_MESSAGE,
-							"Computed_field_integration::find_element_xi.  "
+							"Computed_field_integration::propagate_find_element_xi.  "
 							"Element is not in specified group");
 						return_code=0;
 					}
-					if (element_dimension && (element_dimension != get_FE_element_dimension(*element)))
+					if (element_dimension && (element_dimension != get_FE_element_dimension(*element_address)))
 					{
-						*element = (FE_element *)NULL;
+						*element_address = (FE_element *)NULL;
 						display_message(ERROR_MESSAGE,
-							"Computed_field_integration::find_element_xi.  "
+							"Computed_field_integration::propagate_find_element_xi.  "
 							"Element is not of the required dimension");
 						return_code=0;
 					}
@@ -1768,7 +1761,7 @@ DESCRIPTION :
 				{
 #if defined (OLD_CODE)
 					display_message(ERROR_MESSAGE,
-						"Computed_field_integration::find_element_xi.  "
+						"Computed_field_integration::propagate_find_element_xi.  "
 						"Unable to find mapping for given values");
 #endif /* defined (OLD_CODE) */
 					return_code=0;
@@ -1777,7 +1770,7 @@ DESCRIPTION :
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_integration::find_element_xi.  "
+					"Computed_field_integration::propagate_find_element_xi.  "
 					"Xi texture coordinate mapping not calculated");
 				return_code=0;
 			}
@@ -1785,7 +1778,7 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_integration::find_element_xi.  "
+				"Computed_field_integration::propagate_find_element_xi.  "
 				"Only implemented for three or less values");
 			return_code=0;
 		}
@@ -1793,14 +1786,14 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration::find_element_xi.  "
+			"Computed_field_integration::propagate_find_element_xi.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_integration::find_element_xi */
+} /* Computed_field_integration::propagate_find_element_xi */
 
 int Computed_field_integration::list(
 	)

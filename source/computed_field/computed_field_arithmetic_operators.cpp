@@ -1591,10 +1591,9 @@ private:
 
 	int set_values_at_location(Field_location* location, const FE_value *values);
 
-	int find_element_xi(
-		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, double time,
-		struct Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 int Computed_field_scale::evaluate_cache_at_location(
@@ -1714,22 +1713,15 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_scale::set_values_at_location */
 
-
-int Computed_field_scale::find_element_xi(
-	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region) 
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Computed_field_scale::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 {
 	FE_value *source_values;
 	int i,return_code;
 
-	ENTER(Computed_field_scale::find_element_xi);
-	if (field && element && xi && values && (number_of_values == field->number_of_components))
+	ENTER(Computed_field_scale::propagate_find_element_xi);
+	if (field && values && (number_of_values == field->number_of_components))
 	{
 		return_code = 1;
 		/* reverse the scaling - unless any scale_factors are zero */
@@ -1752,10 +1744,10 @@ DESCRIPTION :
 			}
 			if (return_code)
 			{
-				return_code=Computed_field_find_element_xi(
-					field->source_fields[0],source_values,number_of_values,time,element,
-					xi,element_dimension,search_region,/*propagate_field*/1,
-					/*find_nearest_location*/0);
+				return_code = Computed_field_find_element_xi(
+					field->source_fields[0], source_values, number_of_values, time,
+					element_address, xi, mesh, /*propagate_field*/1,
+					/*find_nearest*/0);
 			}
 			DEALLOCATE(source_values);
 		}
@@ -1767,13 +1759,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_scale::find_element_xi.  Invalid argument(s)");
+			"Computed_field_scale::propagate_find_element_xi.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_scale::find_element_xi */
+} /* Computed_field_scale::propagate_find_element_xi */
 
 int Computed_field_scale::list()
 /*******************************************************************************
@@ -3050,10 +3042,9 @@ private:
 
 	int set_values_at_location(Field_location* location, const FE_value *values);
 
-	int find_element_xi(
-		FE_value *values, int number_of_values, struct FE_element **element, 
-		FE_value *xi, int element_dimension, double time,
-		struct Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 int Computed_field_offset::evaluate_cache_at_location(
@@ -3159,22 +3150,15 @@ DESCRIPTION :
 } /* Computed_field_offset::set_values_at_location */
 
 
-int Computed_field_offset::find_element_xi(
-	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Computed_field_offset::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 {
 	FE_value *source_values;
 	int i,return_code;
 
-	ENTER(Computed_field_offset::find_element_xi);
-	if (field && element && xi && values &&
-		(number_of_values == field->number_of_components))
+	ENTER(Computed_field_offset::propagate_find_element_xi);
+	if (field && values && (number_of_values == field->number_of_components))
 	{
 		return_code = 1;
 		/* reverse the offset */
@@ -3184,10 +3168,10 @@ DESCRIPTION :
 			{
 				source_values[i] = values[i] - field->source_values[i];
 			}
-			return_code=Computed_field_find_element_xi(
-				field->source_fields[0],source_values,number_of_values,time,element,
-				xi,element_dimension,search_region,/*propagate_field*/1,
-				/*find_nearest_location*/0);
+			return_code = Computed_field_find_element_xi(
+				field->source_fields[0], source_values, number_of_values, time,
+				element_address, xi, mesh, /*propagate_field*/1,
+				/*find_nearest*/0);
 			DEALLOCATE(source_values);
 		}
 		else
@@ -3198,13 +3182,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_offset::find_element_xi.  Invalid argument(s)");
+			"Computed_field_offset::propagate_find_element_xi.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_offset::find_element_xi */
+} /* Computed_field_offset::propagate_find_element_xi */
 
 int Computed_field_offset::list()
 /*******************************************************************************

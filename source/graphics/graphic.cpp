@@ -1418,9 +1418,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 /***************************************************************************//** 
  * Creates a node point seeded with the seed_node_coordinate_field at the node.
  * @param node The FE node
- * @param selected_data_void void pointer to Cmiss_graphic_select_graphics_data
- * @return 1 if successfully add strealine
-==============================================================================*/
+ * @param graphic_to_object_data_void void pointer to Cmiss_graphic_to_graphics_object_data
+ * @return 1 if successfully added streamline
+ */
 static int Cmiss_node_to_streamline(struct FE_node *node,
 	void *graphic_to_object_data_void)
 {
@@ -1444,13 +1444,15 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 			&& (number_of_components == Computed_field_get_number_of_components(
 			graphic_to_object_data->rc_coordinate_field)))
 		{
+			// GRC temporary: replace with mesh_location valued field
+			Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(
+				graphic_to_object_data->field_module, element_dimension);
 			/* determine if the element is required */
 			if (Computed_field_evaluate_at_node(graphic->seed_node_coordinate_field, node,
 					graphic_to_object_data->time, coordinates)
 				&& Computed_field_find_element_xi(graphic_to_object_data->rc_coordinate_field,
 					coordinates, number_of_components, /*time*/0, &element, xi,
-					element_dimension, graphic_to_object_data->region,
-					/*propagate_field*/0, /*find_nearest_location*/0))
+					search_mesh, /*propagate_field*/0, /*find_nearest_location*/0))
 			{
 				if (STREAM_LINE==graphic->streamline_type)
 				{
@@ -1505,6 +1507,7 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 					return_code=0;
 				}
 			}
+			Cmiss_mesh_destroy(&search_mesh);
 		}
 		else
 		{

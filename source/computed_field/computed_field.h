@@ -779,38 +779,36 @@ The number of components controls how the field is interpreted:
     normal).
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Find location in mesh or element where the field has same or nearest value to
+ * the prescribed values.
+ *
+ * @param field  The field whose values need to match.
+ * @param values  Array of values to match or get nearest to. Implementation
+ * promises to copy this, hence can pass a pointer to field cache values.
+ * @param number_of_values  The size of the values array, must equal the number
+ * of components of field.
+ * @param time  The time at which field values are evaluated.
+ * @param element_address  Address to return element in. If mesh is omitted,
+ * must point at a single element to search.
+ * @param xi  Array of same dimension as mesh or element to return chart
+ * coordinates in.
+ * @param mesh  The mesh to search over. Can be omitted if element specified.
+ * @param propagate_to_source  If this is set, find_nearest is not set, and
+ * field implements a propagate_find_element_xi function this is called to undo
+ * its field calculation and resume the search on its source field. This can
+ * result in less computation, but can fail if the source field is multi-valued,
+ * a common case being when it is in a polar coordinate system since valid
+ * values may be a multiple of 2*PI out.
+ * @param find_nearest  Set to 1 to find location of nearest field value, or 0
+ * to find exact match.
+ * @return  1 if search carried out without error including when no element is
+ * found, or 0 if failed.
+ */
 int Computed_field_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, double time, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
-	int propagate_field, int find_nearest_location);
-/*******************************************************************************
-LAST MODIFIED : 18 April 2005
-
-DESCRIPTION :
-This function implements the reverse of some certain computed_fields
-(Computed_field_is_find_element_xi_capable) so that it tries to find an element
-and xi which would evaluate to the given values.
-This has been implemented so that the texture_coordinates can be used to extract
-information from textures (sample_texture computed_field) and then modified and
-then put back into another texture.
-The <search_element_group> is the set of elements from which the chosen element
-will belong or alternatively this can be NULL and the <*element> set to 
-a single element to search in.
-If <propagate_field> is set and the field has a find_element_xi_function, it
-is called to undo its field calculation and resume the search on its source
-field. This can result in less computation, but can fail if the source field
-is multivalued, a common case being when it is in a polar coordinate system
-since valid values may be a multiple of  2*PI out.
-If <propagate_field> is not set or there is no <find_element_xi_function> this
-function searches all elements in <search_element_group> trying to find a point
-at which the field evaluates to the <values>.
-If <propagate_field> is not set then <find_nearest_location> can be set and 
-then rather than requiring an exact match the closest location in the 
-<search_region> or the <*element> will be found.  If <propagate_field> is set
-then the <find_nearest_location> flag is ignored.
-Note a copy of the <values> array is immediately made so it will be possible to
-pass in pointers to field cache values.
-==============================================================================*/
+	const FE_value *values, int number_of_values,
+	FE_value time, struct FE_element **element_address, FE_value *xi,
+	Cmiss_mesh_id mesh, int propagate_to_source, int find_nearest);
 
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
 	void *dummy_void);

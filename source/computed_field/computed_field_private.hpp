@@ -280,9 +280,9 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int find_element_xi(FE_value * /*values*/, int /*number_of_values*/, 
-		struct FE_element ** /*element*/, FE_value * /*xi*/,
-		int /*element_dimension*/, double /*time*/, struct Cmiss_region * /*search_region*/)
+	virtual int propagate_find_element_xi(const FE_value * /*values*/, int /*number_of_values*/,
+		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
+		FE_value /*time*/, Cmiss_mesh_id /*mesh*/)
 	{
 		return 0;
 	};

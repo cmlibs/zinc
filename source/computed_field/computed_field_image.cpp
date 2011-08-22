@@ -1487,6 +1487,15 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	}
 	number_of_data_components =
 		Computed_field_get_number_of_components(field);
+	const int number_of_texture_coordinate_components =
+		Computed_field_get_number_of_components(texture_coordinate_field);
+	if ((number_of_texture_coordinate_components > 3) ||
+		(number_of_texture_coordinate_components < dimension))
+	{
+		display_message(ERROR_MESSAGE,
+			"Set_cmiss_field_value_to_texture.  Invalid number of texture coordinate components");
+		return 0;
+	}
 	Texture_get_physical_size(texture, &texture_width, &texture_height,
 		&texture_depth);
 	/* allocate space for a single image plane */
@@ -1517,6 +1526,9 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 		{
 			search_region = Computed_field_get_region(field);
 		}
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(search_region);
+		int use_element_dimension = element_dimension ? element_dimension : number_of_texture_coordinate_components;
+		Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(field_module, use_element_dimension);
 		hint_resolution[0] = image_width;
 		hint_resolution[1] = image_height;
 		hint_resolution[2] = image_depth;
@@ -1560,7 +1572,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 					{
 						/* Try to use a pixel coordinate first */
 						if (Cmiss_field_evaluate_at_field_coordinates(field,
-							texture_coordinate_field, dimension, values,
+							texture_coordinate_field, number_of_texture_coordinate_components, values,
 							/*time*/0.0, data_values))
 						{
 							if (!spectrum)
@@ -1602,13 +1614,11 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 						if ((graphics_buffer_package && Computed_field_find_element_xi_special(
 								 texture_coordinate_field, &cache, values,
 								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
-								 search_region, element_dimension,
-								 graphics_buffer_package,
+								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
 							Computed_field_find_element_xi(texture_coordinate_field,
 								values, Computed_field_get_number_of_components(texture_coordinate_field),
-								/*time*/0, &element, xi,
-								element_dimension, search_region, propagate_field,
+								/*time*/0, &element, xi, search_mesh, propagate_field,
 								/*find_nearest_location*/0))
 						{
 							if (element)
@@ -1851,6 +1861,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 				"Unable to find element:xi for %d out of %d pixels",
 				find_element_xi_error_count, total_number_of_pixels);
 		}
+		Cmiss_mesh_destroy(&search_mesh);
+		Cmiss_field_module_destroy(&field_module);
 	}
 	else
 	{

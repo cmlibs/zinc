@@ -4883,7 +4883,7 @@ int FE_region_get_number_of_FE_elements_of_dimension(
 
 int FE_region_get_highest_dimension(struct FE_region *fe_region)
 {
-	int highest_dimension = 3;
+	int highest_dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS;
 	while (highest_dimension &&
 		(0 == NUMBER_IN_LIST(FE_element)(FE_region_get_element_list(fe_region, highest_dimension))))
 	{

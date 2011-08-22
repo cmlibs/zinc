@@ -62,8 +62,13 @@ Cmiss_mesh_id Cmiss_mesh_create_from_element_group_internal(
 FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh);
 
 /** Internal use only.
- * @return non-accessed master region for this mesh.
+ * @return non-accessed region for this mesh.
  */
 Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh);
+
+/** Internal use only.
+ * @return non-accessed master region for this mesh.
+ */
+Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

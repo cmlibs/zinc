@@ -50,7 +50,6 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "user_interface/message.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
@@ -1327,6 +1326,18 @@ Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh)
 	if (mesh)
 	{
 		FE_region_get_Cmiss_region(mesh->getFeRegion(), &region);
+	}
+	return region;
+}
+
+Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh)
+{
+	Cmiss_region_id region = 0;
+	if (mesh)
+	{
+		FE_region *master_fe_region = mesh->getFeRegion();
+		FE_region_get_ultimate_master_FE_region(master_fe_region, &master_fe_region);
+		FE_region_get_Cmiss_region(master_fe_region, &region);
 	}
 	return region;
 }

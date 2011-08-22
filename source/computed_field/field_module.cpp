@@ -207,9 +207,12 @@ struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
 {
 	if (!field_module)
 		return 0;
-	FE_region *fe_region = Cmiss_region_get_FE_region(field_module->region);
-	Cmiss_region_id region = 0;
-	FE_region_get_Cmiss_region(fe_region, &region);
+	Cmiss_region_id region = field_module->region;
+	if (Cmiss_region_is_group(region))
+	{
+		Cmiss_region_id temp = region = Cmiss_region_get_parent(region);
+		Cmiss_region_destroy(&temp);
+	}
 	return region;
 }
 

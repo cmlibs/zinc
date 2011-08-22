@@ -273,7 +273,7 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 
 	ENTER(Cmiss_field_module_create_element_group);
 	field = (Computed_field *)NULL;
-	if (field_module && mesh && (Cmiss_mesh_get_region_internal(mesh) ==
+	if (field_module && mesh && (Cmiss_mesh_get_master_region_internal(mesh) ==
 		Cmiss_field_module_get_master_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,

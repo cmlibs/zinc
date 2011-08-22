@@ -107,8 +107,6 @@ class Minimisation {
 
 public:
 	struct Cmiss_optimisation* optimisation;
-	FE_region *fe_region;
-	Cmiss_region_id meshRegion;
 	Cmiss_field_module_id field_module;
 	Cmiss_field_cache_id field_cache;
 	FE_value current_time;
@@ -120,10 +118,7 @@ public:
 	Minimisation(struct Cmiss_optimisation* optimisation) :
 		optimisation(optimisation)
 	{
-		fe_region = Cmiss_mesh_get_FE_region_internal(optimisation->feMesh);
-		// the meshRegion is not accessed, so make sure not to destroy.
-		FE_region_get_Cmiss_region(fe_region, &meshRegion);
-		field_module = Cmiss_region_get_field_module(meshRegion);
+		field_module = Cmiss_region_get_field_module(Cmiss_mesh_get_master_region_internal(optimisation->feMesh));
 		field_cache = Cmiss_field_module_create_cache(field_module);
 		current_time = 0.0;
 		total_dof = 0;
@@ -144,8 +139,7 @@ public:
 	// FIXME: andre tmp make public until function pointers sorted out.
 	FE_value *dof_initial_values;
 
-	static int construct_dof_arrays(struct FE_node *node,
-			void *minimisation_object_void);
+	int construct_dof_arrays();
 
 	int calculate_projection(Cmiss_node_id node);
 
@@ -198,8 +192,7 @@ int Minimisation::calculate_projection(Cmiss_node_id node)
 	Computed_field_find_element_xi(optimisation->meshField,
 		values, number_of_data_components, current_time,
 		&(projection.element), projection.xi,
-		/*element_dimension*/Cmiss_mesh_get_dimension(optimisation->feMesh),
-		/*search_region*/meshRegion, /*propagate_field*/0,
+		optimisation->feMesh, /*propagate_field*/0,
 		/*find_nearest_location*/1);
 	DEALLOCATE(values);
 	projections[node] = projection;
@@ -212,138 +205,122 @@ int Minimisation::calculate_projection(Cmiss_node_id node)
 void Minimisation::calculate_data_projections()
 {
 	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(optimisation->dataNodeset);
-	Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
+	Cmiss_node_id node = 0;
 	// FIXME: must be a better way to set the search region for the find_element_xi.
-	int code = 1;
-	while (node && code)
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 	{
-		code = calculate_projection(node);
-		Cmiss_node_destroy(&node);
-		if (code) node = Cmiss_node_iterator_next(iterator);
+		if (!calculate_projection(node))
+			break;
 	}
 	Cmiss_node_iterator_destroy(&iterator);
 	//std::cout << "Minimisation::calculate_data_projections" << std::endl;
 }
 
-int Minimisation::construct_dof_arrays(struct FE_node *node,
-		void *minimisation_object_void)
-/*******************************************************************************
- LAST MODIFIED : 7 June 2007
-
- DESCRIPTION :
- Populates the array of pointers to the dof values and the array of the dof
- initial values. Notice the population includes both nodal values and derivatives
- but does NOT handle versions - this needs to be added by someone who understands
- and can test versions.
- ==============================================================================*/
+/***************************************************************************//**
+ *  Populates the array of pointers to the dof values and the array of the dof
+ *  initial values. Notice the population includes both nodal values and
+ *  derivatives but does NOT handle versions - this needs to be added by someone
+ *  who understands and can test versions.
+ */
+int Minimisation::construct_dof_arrays()
 {
-	enum FE_nodal_value_type *nodal_value_types;
-	FE_field *fe_field;
-	int i, component_number, return_code, number_of_components,
-			number_of_values;
-	Minimisation *minimisation;
-
-	ENTER(Minimisation::construct_dof_arrays);
-	minimisation = static_cast<Minimisation *> (minimisation_object_void);
-	if (minimisation != 0)
+	int return_code = 1;
+	if (Computed_field_is_type_finite_element(optimisation->independentFields[0]))
 	{
-		if (node)
+		// should only have one independent field
+		FE_field *fe_field;
+		Computed_field_get_type_finite_element(optimisation->independentFields[0], &fe_field);
+		int number_of_components = get_FE_field_number_of_components(fe_field);
+		Cmiss_nodeset_id nodeset = Cmiss_field_module_get_nodeset_by_name(field_module, "cmiss_nodes");
+		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+		Cmiss_node_id node = 0;
+		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 		{
-			// should only have one independent field
-			Computed_field_get_type_finite_element(minimisation->optimisation->independentFields[0],
-					&fe_field);
-			//Get number of components
-			number_of_components = get_FE_field_number_of_components(fe_field);
-			//for each component in field
-			for (component_number = 0; component_number < number_of_components; component_number++)
+			if (FE_field_is_defined_at_node(fe_field, node))
 			{
-				number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
-						fe_field, component_number);
-
-				// FIXME: tmp remove derivatives
-				//number_of_values = 1;
-
-				nodal_value_types = get_FE_node_field_component_nodal_value_types(
-						node, fe_field, component_number);
-				for (i = 0; i < number_of_values; i++)
+				for (int component_number = 0; component_number < number_of_components; component_number++)
 				{
-					// increment total_dof
-					minimisation->total_dof++;
-					// reallocate arrays
-					REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
-							FE_value *, minimisation->total_dof);
-					REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
-							FE_value, minimisation->total_dof);
-					// get value storage pointer
-					// FIXME: need to handle versions for the femur mesh?
-					get_FE_nodal_FE_value_storage(
-							node,fe_field,/*component_number*/component_number,
-							/*version_number*/ 0, /*nodal_value_type*/nodal_value_types[i],
-							minimisation->current_time,
-							&(minimisation->dof_storage_array[minimisation->total_dof - 1]));
-					// get initial value from value storage pointer
-					minimisation->dof_initial_values[minimisation->total_dof - 1]
-							= *minimisation->dof_storage_array[minimisation->total_dof
-									- 1];
-					/*cout << minimisation->dof_storage_array[minimisation->total_dof
-							- 1] << "   "
-							<< minimisation->dof_initial_values[minimisation->total_dof
-									- 1] << endl;*/
-				}
-				DEALLOCATE(nodal_value_types);
-			}
-		}
-		else
-		{
-			// constant field(s) - could have many
-			size_t i;
-			for (i=0;i<minimisation->optimisation->independentFields.size();i++)
-			{
-				number_of_components = Cmiss_field_get_number_of_components(
-						minimisation->optimisation->independentFields[i]);
-				FE_value *constant_values_storage =
-					Computed_field_constant_get_values_storage(minimisation->optimisation->independentFields[i]);
-				if (constant_values_storage)
-				{
-					// reallocate arrays
-					REALLOCATE(minimisation->dof_storage_array, minimisation->dof_storage_array,
-						FE_value *, minimisation->total_dof + number_of_components);
-					REALLOCATE(minimisation->dof_initial_values, minimisation->dof_initial_values,
-						FE_value, minimisation->total_dof + number_of_components);
-					for (component_number = 0; component_number < number_of_components; component_number++)
+					int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
+							fe_field, component_number);
+
+					// FIXME: tmp remove derivatives
+					//number_of_values = 1;
+
+					enum FE_nodal_value_type *nodal_value_types =
+						get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
+					if (nodal_value_types)
 					{
-						// get value storage pointer
-						minimisation->dof_storage_array[minimisation->total_dof] =
-							constant_values_storage + component_number;
-						// get initial value from value storage pointer
-						minimisation->dof_initial_values[minimisation->total_dof] =
-							*minimisation->dof_storage_array[minimisation->total_dof];
-						/*cout << minimisation->dof_storage_array[minimisation->total_dof] << "   "
-								<< minimisation->dof_initial_values[minimisation->total_dof] << endl;*/
-						minimisation->total_dof++;
+						REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + number_of_values);
+						REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + number_of_values);
+						for (int i = 0; i < number_of_values; i++)
+						{
+							total_dof++;
+							// get value storage pointer
+							// FIXME: need to handle versions for the femur mesh?
+							get_FE_nodal_FE_value_storage(node, fe_field, component_number,
+								/*version_number*/0, /*nodal_value_type*/nodal_value_types[i],
+								current_time, &(dof_storage_array[total_dof - 1]));
+							// get initial value from value storage pointer
+							dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
+							/*cout << dof_storage_array[total_dof - 1] << "   "
+									<< dof_initial_values[total_dof - 1] << endl;*/
+						}
+						DEALLOCATE(nodal_value_types);
 					}
 				}
-				else
-				{
-					char *field_name = Cmiss_field_get_name(minimisation->optimisation->independentFields[i]);
-					display_message(WARNING_MESSAGE, "Minimisation::construct_dof_arrays.  "
-						"Independent field '%s' is not a constant. Skipping.", field_name);
-					DEALLOCATE(field_name);
-				}
 			}
 		}
-		return_code = 1;
+		Cmiss_node_iterator_destroy(&iterator);
+		Cmiss_nodeset_destroy(&nodeset);
+	}
+	else if (optimisation->independentFieldsConstant)
+	{
+		// constant field(s) - could have many
+		size_t i;
+		for (i = 0; i < optimisation->independentFields.size(); i++)
+		{
+			int number_of_components = Cmiss_field_get_number_of_components(
+				optimisation->independentFields[i]);
+			FE_value *constant_values_storage =
+				Computed_field_constant_get_values_storage(optimisation->independentFields[i]);
+			if (constant_values_storage)
+			{
+				// reallocate arrays
+				REALLOCATE(dof_storage_array, dof_storage_array,
+					FE_value *, total_dof + number_of_components);
+				REALLOCATE(dof_initial_values, dof_initial_values,
+					FE_value, total_dof + number_of_components);
+				for (int component_number = 0; component_number < number_of_components; component_number++)
+				{
+					// get value storage pointer
+					dof_storage_array[total_dof] =
+						constant_values_storage + component_number;
+					// get initial value from value storage pointer
+					dof_initial_values[total_dof] =
+						*dof_storage_array[total_dof];
+					/*cout << dof_storage_array[total_dof] << "   "
+							<< dof_initial_values[total_dof] << endl;*/
+					total_dof++;
+				}
+			}
+			else
+			{
+				char *field_name = Cmiss_field_get_name(optimisation->independentFields[i]);
+				display_message(WARNING_MESSAGE, "Minimisation::construct_dof_arrays.  "
+					"Independent field '%s' is not a constant. Skipping.", field_name);
+				DEALLOCATE(field_name);
+			}
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Minimisation::construct_dof_arrays.  "
-			"Invalid argument(s)");
+		// should never get this far?
+		display_message(ERROR_MESSAGE,"Cmiss_optimisation::runOptimisation. "
+				"Invalid independent field type.");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Minimisation::construct_dof_arrays */
+}
 
 void Minimisation::list_dof_values()
 /*******************************************************************************
@@ -730,13 +707,11 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	minimisation->currentDataPointIndex = 0;
 	Cmiss_node_iterator_id iterator =
 			Cmiss_nodeset_create_node_iterator(minimisation->optimisation->dataNodeset);
-	Cmiss_node_id node = Cmiss_node_iterator_next(iterator);
-	int code = 1;
-	while (node && code)
+	Cmiss_node_id node = 0;
+	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 	{
-		code = calculate_LS_term(node, &ud);
-		Cmiss_node_destroy(&node);
-		if (code) node = Cmiss_node_iterator_next(iterator);
+		if (!calculate_LS_term(node, &ud))
+			break;
 	}
 	Cmiss_node_iterator_destroy(&iterator);
 
@@ -814,22 +789,9 @@ int Cmiss_optimisation::runOptimisation()
 	// FIXME: must be a better way to iterate over all the nodes in the mesh?
 	// Create minimisation object
 	Minimisation minimisation(this);
-	// Populate the dof pointers and initial values for each node
-	if (Computed_field_is_type_finite_element(independentFields[0]))
-	{
-		FE_region_for_each_FE_node(minimisation.fe_region,
-				Minimisation::construct_dof_arrays,
-				&minimisation);
-	}
-	else if (independentFieldsConstant)
-	{
-		Minimisation::construct_dof_arrays(NULL,&minimisation);
-	}
-	else
+	if (!minimisation.construct_dof_arrays())
 	{
 		// should never get this far?
-		display_message(ERROR_MESSAGE,"Cmiss_optimisation::runOptimisation. "
-				"Invalid independent field type.");
 		return 0;
 	}
 

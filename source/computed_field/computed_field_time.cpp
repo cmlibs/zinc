@@ -103,10 +103,9 @@ private:
 
 	int has_multiple_times();
 
-	int find_element_xi(
-		FE_value *values, int number_of_values, FE_element **element, 
-		FE_value *xi, int element_dimension, double time,
-		Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 int Computed_field_time_lookup::evaluate_cache_at_location(
@@ -322,23 +321,21 @@ global time do not matter.
 	return (return_code);
 } /* Computed_field_time_lookup::has_multiple_times */
 
-int Computed_field_time_lookup::find_element_xi(
-	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region)
+int Computed_field_time_lookup::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 {
 	FE_value *source_values;
 	int i,return_code;
 
-	ENTER(Computed_field_time_lookup::find_element_xi);
+	ENTER(Computed_field_time_lookup::propagate_find_element_xi);
 	USE_PARAMETER(time);
-	if (field && element && xi && values &&
-		(number_of_values == field->number_of_components))
+	if (field && values && (number_of_values == field->number_of_components))
 	{
 		return_code = 1;
 		/* reverse the offset */
 		Field_element_xi_location location_no_derivatives(
-			*element, xi, time);
+			*element_address, xi, time);
 		if (Computed_field_evaluate_cache_at_location(
 					field->source_fields[1], &location_no_derivatives) &&
 			ALLOCATE(source_values,FE_value,field->number_of_components))
@@ -349,8 +346,8 @@ int Computed_field_time_lookup::find_element_xi(
 			}
 			return_code=Computed_field_find_element_xi(
 				field->source_fields[0],source_values,number_of_values,
-				field->source_fields[1]->values[0],element,
-				xi,element_dimension,search_region,/*propagate_field*/1,
+				field->source_fields[1]->values[0],element_address,
+				xi,mesh,/*propagate_field*/1,
 				/*find_nearest_location*/0);
 			DEALLOCATE(source_values);
 			Computed_field_clear_cache(field->source_fields[1]);
@@ -363,13 +360,13 @@ int Computed_field_time_lookup::find_element_xi(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_time_lookup::find_element_xi.  Invalid argument(s)");
+			"Computed_field_time_lookup::propagate_find_element_xi.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_offset::find_element_xi */
+} /* Computed_field_offset::propagate_find_element_xi */
 
 } //namespace
 

@@ -62,6 +62,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "computed_field/computed_field_finite_element.h"
 }
+#include "computed_field/field_module.hpp"
 #include "mesh/cmiss_element_private.hpp"
 
 #if defined (DEBUG_CODE)
@@ -157,11 +158,6 @@ private:
 
 	int get_native_discretization_in_element(
 		struct FE_element *element,int *number_in_xi);
-
-	int find_element_xi(
-		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, double time,
-		struct Cmiss_region *search_region);
 
 	virtual bool is_non_linear() const
 	{
@@ -1158,37 +1154,6 @@ Returns 0 with no errors if the field is not grid-based.
 	return (return_code);
 } /* Computed_field_get_native_discretization_in_element */
 
-int Computed_field_finite_element::find_element_xi(
-	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_find_element_xi);
-	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_region)
-	{
-		return_code = Computed_field_perform_find_element_xi(field,
-			values, number_of_values, time, element, xi, element_dimension, search_region,
-			/*find_nearest_element*/0);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_find_element_xi */
-
 int Computed_field_finite_element::list()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -1453,8 +1418,8 @@ Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
 	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh)
 {
 	Computed_field *field = NULL;
-	if (field_module && mesh && (Cmiss_mesh_get_region_internal(mesh) ==
-		Cmiss_field_module_get_region_internal(field_module)))
+	if (field_module && mesh && (Cmiss_mesh_get_master_region_internal(mesh) ==
+		Cmiss_field_module_get_master_region_internal(field_module)))
 	{
 		field = Cmiss_field_module_create_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
@@ -3522,8 +3487,8 @@ int Computed_field_find_mesh_location::evaluate_cache_at_location(Field_location
 			}
 			if (Computed_field_find_element_xi(get_mesh_field(),
 					get_source_field()->values, get_source_field()->number_of_components,
-					location->get_time(), &element_cache, xi_cache, Cmiss_mesh_get_dimension(mesh),
-					Cmiss_mesh_get_region_internal(mesh), /*propagate_field*/0,
+					location->get_time(), &element_cache, xi_cache, mesh,
+					/*propagate_field*/0,
 					/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
 					&& element_cache)
 			{
@@ -4244,11 +4209,6 @@ private:
 		FE_value time, struct FE_element *top_level_element);
 
 	int set_values_at_location(Field_location* location, const FE_value *values);
-
-	int find_element_xi(
-		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, double time,
-		struct Cmiss_region *search_region);
 };
 
 Computed_field_basis_derivative::~Computed_field_basis_derivative()
@@ -4691,37 +4651,6 @@ Sets the <values> of the computed <field> over the <element>.
 
 	return (return_code);
 } /* Computed_field_basis_derivative::set_values_at_location */
-
-int Computed_field_basis_derivative::find_element_xi(
-	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, double time,
-	struct Cmiss_region *search_region)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_basis_derivative::find_element_xi);
-	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_region)
-	{
-		return_code = Computed_field_perform_find_element_xi(field,
-			values, number_of_values, time, element, xi, element_dimension, search_region,
-			/*find_nearest_element*/0);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_basis_derivative::find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_basis_derivative::find_element_xi */
 
 int Computed_field_basis_derivative::list()
 /*******************************************************************************

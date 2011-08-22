@@ -45,6 +45,7 @@ Essentially it is used to embed one mesh in the elements of another.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
+#include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
@@ -56,6 +57,8 @@ extern "C" {
 #include "user_interface/message.h"
 #include "computed_field/computed_field_compose.h"
 }
+#include "computed_field/field_module.hpp"
+#include "mesh/cmiss_element_private.hpp"
 
 class Computed_field_compose_package : public Computed_field_type_package
 {
@@ -69,25 +72,22 @@ char computed_field_compose_type_string[] = "compose";
 
 class Computed_field_compose : public Computed_field_core
 {
-//These parameters are protected to this file using a NULL namespace
-public:
-	char *region_path;
+private:
+	Cmiss_mesh_id mesh;
 	int find_nearest;
-	struct Cmiss_region *region;
-	int element_dimension;
 	int use_point_five_when_out_of_bounds;
 
-	Computed_field_compose(char *region_path,
-		int find_nearest, Cmiss_region* region, int element_dimension = 0,
-		int use_point_five_when_out_of_bounds = 0) : 
-		Computed_field_core(), region_path(duplicate_string(region_path)),
-		find_nearest(find_nearest), region(ACCESS(Cmiss_region)(region)),
-		element_dimension(element_dimension),
+public:
+	Computed_field_compose(Cmiss_mesh_id search_mesh,
+			int find_nearest, int use_point_five_when_out_of_bounds = 0) :
+		Computed_field_core(),
+		mesh(Cmiss_mesh_access(search_mesh)),
+		find_nearest(find_nearest),
 		use_point_five_when_out_of_bounds(use_point_five_when_out_of_bounds)
 	{		
 	};
 		
-	~Computed_field_compose();
+	virtual ~Computed_field_compose();
 
 	virtual void inherit_source_field_attributes()
 	{
@@ -99,6 +99,13 @@ public:
 				Computed_field_get_coordinate_system(calculate_values_field));
 		}
 	}
+
+	int get_type(
+		struct Computed_field **texture_coordinate_field_address,
+		struct Computed_field **find_element_xi_field_address,
+		struct Computed_field **calculate_values_field_address,
+		Cmiss_mesh_id *mesh_address, int *find_nearest_address,
+		int *use_point_five_when_out_of_bounds_address);
 
 private:
 	Computed_field_core *copy();
@@ -120,66 +127,25 @@ private:
 };
 
 Computed_field_compose::~Computed_field_compose()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
 {
-	ENTER(Computed_field_compose::~Computed_field_compose);
-	if (field)
-	{
-		if (region)
-		{
-			DEACCESS(Cmiss_region)(&region);
-		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_compose::~Computed_field_compose.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_compose::~Computed_field_compose */
+	Cmiss_mesh_destroy(&mesh);
+}
 
 Computed_field_core *Computed_field_compose::copy()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
 {
-	Computed_field_compose* core = new Computed_field_compose(
-		region_path, find_nearest, region, element_dimension,
-		use_point_five_when_out_of_bounds);
-
-	return (core);
+	return new Computed_field_compose(mesh, find_nearest, use_point_five_when_out_of_bounds);
 }
 
 int Computed_field_compose::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compare the type specific data.
-==============================================================================*/
 {
 	int return_code;
 	struct Computed_field_compose *other;
 
 	ENTER(Computed_field_compose::type_specific_contents_match);
-	if (field && (other = dynamic_cast<Computed_field_compose*>(other_core)))
+	if (field && (0 != (other = dynamic_cast<Computed_field_compose*>(other_core))))
 	{
-		if ((region == other->region) &&
+		if (Cmiss_mesh_match(mesh, other->mesh) &&
 			(find_nearest == other->find_nearest) &&
-			(!strcmp(region_path, other->region_path)) &&
-			(element_dimension == other->element_dimension) &&
 			(use_point_five_when_out_of_bounds == 
 				other->use_point_five_when_out_of_bounds))
 		{
@@ -226,8 +192,7 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, location->get_time(),
-					&element, xi, element_dimension, region,
-					/*propagate_field*/0, find_nearest) && element)
+					&element, xi, mesh, /*propagate_field*/0, find_nearest) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -276,11 +241,10 @@ Evaluate the fields cache at the location
 				second source field to get element_xi which is evaluated with
 				the third source field */
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
-						field->source_fields[0]->values,
-						field->source_fields[0]->number_of_components,
-						location->get_time(),
-					  &compose_element, compose_xi, element_dimension,
-						region, /*propagate_field*/0, find_nearest))
+					field->source_fields[0]->values,
+					field->source_fields[0]->number_of_components,
+					location->get_time(),  &compose_element, compose_xi,
+					mesh, /*propagate_field*/0, find_nearest))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -326,7 +290,6 @@ Evaluate the fields cache at the location
 	return (return_code);
 } /* Computed_field_compose::evaluate_cache_at_location */
 
-
 int Computed_field_compose::list()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -336,7 +299,7 @@ DESCRIPTION :
 {
 	int return_code = 0;
 
-	ENTER(List_Computed_field_compose);
+	ENTER(Computed_field_compose::list);
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
@@ -345,8 +308,13 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,"    find element xi field :");
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[1]->name);
-		display_message(INFORMATION_MESSAGE,"    search element group :");
-		display_message(INFORMATION_MESSAGE," %s\n", region_path);
+		Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
+		if (Cmiss_region_is_group(region))
+		{
+			char *group_name = Cmiss_region_get_name(region);
+			display_message(INFORMATION_MESSAGE,"    search element group : %s\n", group_name);
+			DEALLOCATE(group_name);
+		}
 		display_message(INFORMATION_MESSAGE,"    calculate values field :");
 		display_message(INFORMATION_MESSAGE," %s\n",
 			field->source_fields[2]->name);
@@ -362,25 +330,18 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    use point five when out of bounds\n");
 		}
-		if (element_dimension)
-		{
-			display_message(INFORMATION_MESSAGE,"    only element dimension %d\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"    element dimension all\n");
-		}			
+		display_message(INFORMATION_MESSAGE,"    element dimension %d\n", Cmiss_mesh_get_dimension(mesh));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_compose.  Invalid argument(s)");
+			"Computed_field_compose::list.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_compose */
+}
 
 char *Computed_field_compose::get_command_string()
 /*******************************************************************************
@@ -390,7 +351,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *group_name, *field_name, temp_string[40];
+	char *command_string, *field_name, temp_string[40];
 	int error;
 
 	ENTER(Computed_field_compose::get_command_string);
@@ -414,11 +375,11 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		append_string(&command_string, " group ", &error);
-		group_name = duplicate_string(region_path);
-		if (group_name != 0)
+		Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
+		if (Cmiss_region_is_group(region))
 		{
-			make_valid_token(&group_name);
+			char *group_name = Cmiss_region_get_name(region);
+			append_string(&command_string, " group ", &error);
 			append_string(&command_string, group_name, &error);
 			DEALLOCATE(group_name);
 		}
@@ -437,7 +398,7 @@ Returns allocated command string for reproducing field. Includes type.
 		{
 			append_string(&command_string, " use_point_five_when_out_of_bounds", &error);
 		}
-		sprintf(temp_string, " element_dimension %d", element_dimension);
+		sprintf(temp_string, " element_dimension %d", Cmiss_mesh_get_dimension(mesh));
 		append_string(&command_string, temp_string, &error);
 	}
 	else
@@ -452,19 +413,34 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
+/***************************************************************************//**
+ * Creates a field of type COMPUTED_FIELD_COMPOSE. This field allows you to
+ * evaluate one field to find "texture coordinates", use a find_element_xi field
+ * to then calculate a corresponding element/xi and finally calculate values
+ * using this element/xi and a third field.  You can then evaluate values on a
+ * "host" mesh for any points "contained" inside.  The <search_mesh> is the
+ * domain from which any returned element_xi will belong.
+ * If <use_point_five_when_out_of_bounds> is true then if the
+ * texture_coordinate_field values cannot be found in the find_element_xi_field,
+ * then instead of returning failure, the values will be set to 0.5 and returned
+ * as success.
+ * NOTE: this field type has been superceded by find_mesh_location combined with
+ * embedded field. DO NOT add to external API.
+ */
 Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	struct Cmiss_region *search_region, char *region_path,
-	int find_nearest, int use_point_five_when_out_of_bounds,
-	int element_dimension)
+	Cmiss_mesh_id search_mesh,
+	int find_nearest, int use_point_five_when_out_of_bounds)
 {
 	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_compose);
 	if (texture_coordinate_field && find_element_xi_field &&
-		calculate_values_field && search_region && region_path)
+		calculate_values_field && search_mesh &&
+		(Cmiss_mesh_get_master_region_internal(search_mesh) ==
+			Cmiss_field_module_get_master_region_internal(field_module)))
 	{
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)
@@ -481,8 +457,7 @@ Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 					calculate_values_field->number_of_components,
 					/*number_of_source_fields*/3, source_fields,
 					/*number_of_source_values*/0, NULL,
-					new Computed_field_compose(region_path, find_nearest,
-						search_region, element_dimension,
+					new Computed_field_compose(search_mesh, find_nearest,
 						use_point_five_when_out_of_bounds));
 			}
 			else
@@ -511,51 +486,40 @@ Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 	return (field);
 } /* Computed_field_create_compose */
 
-int Computed_field_get_type_compose(struct Computed_field *field,
-	struct Computed_field **texture_coordinate_field,
-	struct Computed_field **find_element_xi_field,
-	struct Computed_field **calculate_values_field,
-	struct Cmiss_region **search_region, char **region_path,
-	int *find_nearest, int *use_point_five_when_out_of_bounds,
-	int *element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
-fields which define the field.
-Note that the fields are not ACCESSed and the <region_path> points to the
-internally used path.
-==============================================================================*/
+/***************************************************************************//**
+ * If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the
+ * three fields which define the field.
+ * Note that the fields and mesh are not ACCESSed.
+ */
+int Computed_field_compose::get_type(
+	struct Computed_field **texture_coordinate_field_address,
+	struct Computed_field **find_element_xi_field_address,
+	struct Computed_field **calculate_values_field_address,
+	Cmiss_mesh_id *mesh_address, int *find_nearest_address,
+	int *use_point_five_when_out_of_bounds_address)
 {
 	int return_code;
-	Computed_field_compose* compose_core;
-
-	ENTER(Computed_field_get_type_compose);
-	if (field && (compose_core = dynamic_cast<Computed_field_compose*>(field->core)) &&
-		texture_coordinate_field &&
-		find_element_xi_field && calculate_values_field && search_region)
+	if (field && texture_coordinate_field_address &&
+		find_element_xi_field_address && calculate_values_field_address &&
+		mesh_address && find_nearest_address &&
+		use_point_five_when_out_of_bounds_address)
 	{
-		*texture_coordinate_field = field->source_fields[0];
-		*find_element_xi_field = field->source_fields[1];
-		*calculate_values_field = field->source_fields[2];
-		*search_region = compose_core->region;
-		*region_path = compose_core->region_path;
-		*find_nearest = compose_core->find_nearest;
-		*use_point_five_when_out_of_bounds = compose_core->use_point_five_when_out_of_bounds;
-		*element_dimension = compose_core->element_dimension;
+		*texture_coordinate_field_address = field->source_fields[0];
+		*find_element_xi_field_address = field->source_fields[1];
+		*calculate_values_field_address = field->source_fields[2];
+		*mesh_address = mesh;
+		*find_nearest_address = find_nearest;
+		*use_point_five_when_out_of_bounds_address = use_point_five_when_out_of_bounds;
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_compose.  Invalid argument(s)");
+			"Computed_field_compose::get_type.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_get_type_compose */
+}
 
 int define_Computed_field_type_compose(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_compose_package_void)
@@ -568,7 +532,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char fail_when_out_of_bounds_flag, find_nearest_flag, find_exact_flag,
-		*old_region_path, *search_region_path, use_point_five_when_out_of_bounds_flag;
+		use_point_five_when_out_of_bounds_flag;
 	int element_dimension, find_nearest, return_code,
 		use_point_five_when_out_of_bounds;
 	struct Computed_field *calculate_values_field,*find_element_xi_field,
@@ -589,8 +553,7 @@ already) and allows its contents to be modified.
 	{
 		return_code = 1;
 		search_region = (struct Cmiss_region *)NULL;
-		search_region_path = (char *)NULL;
-		old_region_path = (char *)NULL;
+		char *search_group_name = 0;
 		calculate_values_field = (struct Computed_field *)NULL;
 		find_element_xi_field = (struct Computed_field *)NULL;
 		texture_coordinates_field = (struct Computed_field *)NULL;
@@ -603,23 +566,24 @@ already) and allows its contents to be modified.
 		/* Maintain the existing behaviour as the default */
 		find_nearest = 0;
 		/* get valid parameters for composite field */
-		if ((NULL != field_modify->get_field()) &&
-			(computed_field_compose_type_string ==
-				Computed_field_get_type_string(field_modify->get_field())))
+		if (field_modify->get_field())
 		{
-			return_code = Computed_field_get_type_compose(field_modify->get_field(), 
-				&calculate_values_field, &find_element_xi_field,
-				&texture_coordinates_field, &search_region, &old_region_path,
-				&find_nearest, &use_point_five_when_out_of_bounds,
-				&element_dimension);
-		}
-		if (old_region_path)
-		{
-			search_region_path = duplicate_string(old_region_path);
-		}
-		else
-		{
-			search_region_path = Cmiss_region_get_root_region_path();
+			Computed_field_compose* compose_core =
+				dynamic_cast<Computed_field_compose*>(field_modify->get_field()->core);
+			if (compose_core)
+			{
+				Cmiss_mesh_id mesh = 0;
+				return_code = compose_core->get_type(
+					&calculate_values_field, &find_element_xi_field,
+					&texture_coordinates_field, &mesh,
+					&find_nearest, &use_point_five_when_out_of_bounds);
+				Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
+				if (Cmiss_region_is_group(region))
+				{
+					search_group_name = Cmiss_region_get_name(region);
+				}
+				element_dimension = Cmiss_mesh_get_dimension(mesh);
+			}
 		}
 		if (return_code)
 		{
@@ -650,7 +614,7 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "calculate_values_field", 
 				&calculate_values_field, &set_calculate_values_field_data, 
 				set_Computed_field_conditional);
-			Option_table_add_int_non_negative_entry(option_table,"element_dimension",
+			Option_table_add_int_positive_entry(option_table,"element_dimension",
 				&element_dimension);
 			/* find_element_xi_field */
 			set_find_element_xi_field_data.computed_field_manager =
@@ -669,8 +633,8 @@ already) and allows its contents to be modified.
 				&find_exact_flag);
 			Option_table_add_suboption_table(option_table, find_option_table);
 			/* group */
-			Option_table_add_set_Cmiss_region_path(option_table, "group", 
-				 computed_field_compose_package->root_region, &search_region_path);
+			Option_table_add_string_entry(option_table, "group",
+				 &search_group_name, " GROUP_NAME");
 			/* texture_coordinates_field */
 			set_texture_coordinates_field_data.computed_field_manager =
 				field_modify->get_field_manager();
@@ -694,20 +658,21 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				if (search_region_path)
+				if (search_group_name)
 				{
-					if (!(Cmiss_region_get_region_from_path_deprecated(
-						computed_field_compose_package->root_region, 
-						search_region_path, &search_region)))
+					search_region = Cmiss_region_find_child_by_name(
+						field_modify->get_region(), search_group_name);
+					if (!search_region)
 					{
 						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_compose.  Unable to find region %s",
-							search_region_path);
+							"define_Computed_field_type_compose.  Cannot find group %s",
+							search_group_name);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "You must specify a region path (group)");
+					search_region = Cmiss_region_access(field_modify->get_region());
 				}
 			}
 			if (return_code)
@@ -742,15 +707,26 @@ already) and allows its contents to be modified.
 				{
 					use_point_five_when_out_of_bounds = 0;
 				}
+				if ((0 >= element_dimension) || (element_dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+				{
+					display_message(ERROR_MESSAGE,
+						"Must specify element_dimension from 1 to %d", MAXIMUM_ELEMENT_XI_DIMENSIONS);
+					return_code = 0;
+				}
 			}
 			if (return_code)
 			{
+				Cmiss_field_module_id search_region_field_module =
+					Cmiss_region_get_field_module(search_region);
+				Cmiss_mesh_id search_mesh = Cmiss_field_module_get_mesh_by_dimension(
+					search_region_field_module, element_dimension);
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_compose(field_modify->get_field_module(),
 						texture_coordinates_field, find_element_xi_field,
-						calculate_values_field, search_region, search_region_path,
-						find_nearest, use_point_five_when_out_of_bounds,
-						element_dimension));
+						calculate_values_field, search_mesh,
+						find_nearest, use_point_five_when_out_of_bounds));
+				Cmiss_mesh_destroy(&search_mesh);
+				Cmiss_field_module_destroy(&search_region_field_module);
 			}
 			if (!return_code)
 			{
@@ -771,9 +747,13 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&find_element_xi_field);
 			}
-			if (search_region_path)
+			if (search_region)
 			{
-				DEALLOCATE(search_region_path);
+				Cmiss_region_destroy(&search_region);
+			}
+			if (search_group_name)
+			{
+				DEALLOCATE(search_group_name);
 			}
 			if (texture_coordinates_field)
 			{

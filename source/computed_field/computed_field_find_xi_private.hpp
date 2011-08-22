@@ -46,6 +46,7 @@ Data structures and prototype functions needed for all find xi implementations.
 
 class Computed_field_find_element_xi_base_cache
 {
+	Cmiss_mesh_id search_mesh;
 public:
 	struct FE_element *element;
 	int valid_values;
@@ -54,11 +55,11 @@ public:
 	FE_value *values;
 	FE_value *working_values;
 	int in_perform_find_element_xi;
-	struct Cmiss_region *search_region;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* Warn when trying to destroy this cache as it is being filled in */
 	
 	Computed_field_find_element_xi_base_cache() :
+		search_mesh(0),
 		element((struct FE_element *)NULL),
 		valid_values(0),
 		number_of_values(0),
@@ -71,6 +72,10 @@ public:
 	
 	virtual ~Computed_field_find_element_xi_base_cache()
 	{
+		if (search_mesh)
+		{
+			Cmiss_mesh_destroy(&search_mesh);
+		}
 		if (values)
 		{
 			DEALLOCATE(values);
@@ -81,6 +86,23 @@ public:
 		}
 	}
 
+	Cmiss_mesh_id get_search_mesh()
+	{
+		return search_mesh;
+	};
+
+	void set_search_mesh(Cmiss_mesh_id new_search_mesh)
+	{
+		if (new_search_mesh)
+		{
+			Cmiss_mesh_access(new_search_mesh);
+		}
+		if (search_mesh)
+		{
+			Cmiss_mesh_destroy(&search_mesh);
+		}
+		search_mesh = new_search_mesh;
+	};
 };
 
 struct Computed_field_find_element_xi_cache
@@ -116,7 +138,6 @@ matches the <field> in this structure or one of its source fields.
 	struct Computed_field *field;
 	int number_of_values;
 	FE_value *values;
-	int element_dimension;
 	int found_number_of_xi;
 	FE_value *found_values;
 	FE_value *found_derivatives;
@@ -129,17 +150,16 @@ matches the <field> in this structure or one of its source fields.
 	double time;
 }; /* Computed_field_iterative_find_element_xi_data */
 
-int Computed_field_iterative_element_conditional(
-	struct FE_element *element, void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns true if a valid element xi is found.
-Important note:
-The <values> passed in the <data> structure must not be a pointer to values
-inside a field cache otherwise they may be overwritten if the field is the same
-as the <data> field or any of its source fields.
-==============================================================================*/
+int Computed_field_iterative_element_conditional(struct FE_element *element,
+	struct Computed_field_iterative_find_element_xi_data *data);
+/***************************************************************************//**
+ * Searches element for location with matching field values.
+ * Important note:
+ * The <values> passed in the <data> structure must not be a pointer to values
+ * inside a field cache otherwise they may be overwritten if the field is the
+ * same as the <data> field or any of its source fields.
+ *
+ * @return  1 if a valid element xi is found.
+ */
 
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_PRIVATE_HPP) */

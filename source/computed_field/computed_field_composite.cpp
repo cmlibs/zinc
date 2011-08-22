@@ -147,10 +147,9 @@ private:
 
 	int set_values_at_location(Field_location* location, const FE_value *values);
 
-	int find_element_xi(
-		FE_value *values, int number_of_values, 
-		struct FE_element **element, FE_value *xi, int element_dimension,
-		double time, struct Cmiss_region *search_region);
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 Computed_field_composite::~Computed_field_composite()
@@ -422,11 +421,9 @@ Sets the <values> of the computed <field> over the <element>.
 	return (return_code);
 } /* Computed_field_composite::set_values_at_location */
 
-int Computed_field_composite::find_element_xi(
-	 FE_value *values, int number_of_values, 
-	 struct FE_element **element, FE_value *xi, int element_dimension,
-	 double time,
-	 struct Cmiss_region *search_region)
+int Computed_field_composite::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -438,8 +435,8 @@ Zero is used for any source field values that aren't set from the composite fiel
 	int i, number_of_source_values, return_code, source_field_number;
 	FE_value *source_values;
 	
-	ENTER(Computed_field_composite::find_element_xiset_values_at_node);
-	if (field && element && xi && values && (number_of_values == field->number_of_components))
+	ENTER(Computed_field_composite::propagate_find_element_xi);
+	if (field && values && (number_of_values == field->number_of_components))
 	{
 		return_code=1;
 		if (field->number_of_source_fields == 1)
@@ -460,10 +457,10 @@ Zero is used for any source field values that aren't set from the composite fiel
 						source_values[source_value_numbers[i]] = values[i];
 					}
 				}
-				return_code=Computed_field_find_element_xi(
-					field->source_fields[source_field_number],source_values,
-					number_of_source_values, time, element, xi, element_dimension, search_region,
-					/*propagate_field*/1, /*find_nearest_location*/0);
+				return_code = Computed_field_find_element_xi(
+					field->source_fields[source_field_number], source_values,
+					number_of_values, time, element_address, xi, mesh,
+					/*propagate_field*/1, /*find_nearest*/0);
 				DEALLOCATE(source_values);
 			}
 			else
@@ -473,14 +470,14 @@ Zero is used for any source field values that aren't set from the composite fiel
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_composite::find_element_xi.  Failed");
+					"Computed_field_composite::propagate_find_element_xi.  Failed");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_composite::find_element_xi.  "
+				"Computed_field_composite::propagate_find_element_xi.  "
 				"Unable to find element xi on a composite field involving more than one source field.");
 			return_code=0;
 		}
@@ -488,13 +485,13 @@ Zero is used for any source field values that aren't set from the composite fiel
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_composite::find_element_xi.  Invalid argument(s)");
+			"Computed_field_composite::propagate_find_element_xi.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_composite::find_element_xi */
+} /* Computed_field_composite::propagate_find_element_xi */
 
 char *Computed_field_composite::get_source_string(int commands)
 /*******************************************************************************

@@ -113,51 +113,8 @@ struct Render_element_data
 };
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-int Expand_element_range(struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Stores cache data for the Computed_field_find_element_xi_special routine.
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_find_element_xi_graphics_cache *data;
-	struct CM_element_information cm_information;
-	
-	ENTER(Expand_element_range);
-	
-	if ((data = (Computed_field_find_element_xi_graphics_cache *)data_void))
-	{
-		/* Expand the element number range */
-		if (get_FE_element_identifier(element, &cm_information) &&
-			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
-		{
-			if (cm_information.number > data->maximum_element_number)
-			{
-				data->maximum_element_number = cm_information.number;
-			}
-			if (cm_information.number < data->minimum_element_number)
-			{
-				data->minimum_element_number = cm_information.number;
-			}			
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Expand_element_range.  Missing Computed_field_find_element_xi_cache data.");
-		return_code = 0;
-	}
-	LEAVE;
-	
-	return (return_code);
-} /* Expand_element_range */
-#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
-
-#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-int Render_element_as_texture(struct FE_element *element, void *data_void)
+int Render_element_as_texture(struct FE_element *element,
+	struct Render_element_data *data)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -171,12 +128,10 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	int return_code;
 	struct CM_element_information cm_information;
 	struct FE_element_shape *shape;
-	struct Render_element_data *data;
  	unsigned int scaled_number;
 	
 	ENTER(Render_element_as_texture);
-	
-	if ((data = (struct Render_element_data *)data_void))
+	if (data)
 	{
 		/* Code the element number into the colour */
 		if (get_FE_element_identifier(element, &cm_information) &&
@@ -242,7 +197,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Render_element_as_texture.  Missing Computed_field_find_element_xi_cache data.");
+			"Render_element_as_texture.  Missing Render_element_data.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -253,30 +208,10 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_cache **cache_ptr,
-	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct Cmiss_region *search_region,
-	int element_dimension,
+	const FE_value *values, int number_of_values, struct FE_element **element,
+	FE_value *xi, Cmiss_mesh_id search_mesh,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-This function implements the reverse of some certain computed_fields
-(Computed_field_is_find_element_xi_capable) so that it tries to find an element
-and xi which would evaluate to the given values.
-This implementation of find_element_xi has been separated out as it uses OpenGL
-to accelerate the element xi lookup.
-The <graphics_buffer_package> is required to connect to the OpenGL implementation.
-The <find_element_xi_data> is passed in just to avoid reimplementing the code
-from Computed_field_find_element_xi.
-<hint_minimums> and <hint_maximums> are used to indicate the range over which
-the values supplied will vary and <hint_resolution> indicates the resolution
-at which values will be sampled for element_xi, as this algorithm will generate
-an element lookup image using these parameters.
-The return code indicates if the algorithm should be relied on or whether a
-sequential element_xi lookup should now be performed.
-==============================================================================*/
 {
 	int return_code;
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
@@ -287,11 +222,9 @@ sequential element_xi lookup should now be performed.
 	unsigned char *block_ptr, colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE *4],
 		*next_colour;
 	float ditherx, dithery;
-	struct CM_element_information cm;
 	struct Computed_field_find_element_xi_graphics_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
-	struct FE_region *fe_region;
 	struct Render_element_data data;
 	int gl_list, i, nx, ny, px, py, scaled_number;
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
@@ -303,9 +236,8 @@ sequential element_xi lookup should now be performed.
 	USE_PARAMETER(cache_ptr);
 	USE_PARAMETER(values);
 	USE_PARAMETER(element);
-	USE_PARAMETER(element_dimension);
 	USE_PARAMETER(xi);
-	USE_PARAMETER(search_region);
+	USE_PARAMETER(search_mesh);
 	USE_PARAMETER(graphics_buffer_package);
 	USE_PARAMETER(hint_minimums);
 	USE_PARAMETER(hint_maximums);
@@ -321,18 +253,15 @@ sequential element_xi lookup should now be performed.
 	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_region &&
-		/* At some point we may want to search in any FE_regions below the search_region */
-		(fe_region = Cmiss_region_get_FE_region(search_region))
+		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh &&
 		/* This special case actually only works for 2D elements */
-		&& (element_dimension == 2)
-		&& (5 < FE_region_get_number_of_FE_elements_of_dimension(fe_region, element_dimension))
+		&& (Cmiss_mesh_get_dimension(search_mesh) == 2)
+		&& (5 < Cmiss_mesh_get_size(search_mesh))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = values;
 		find_element_xi_data.number_of_values = number_of_values;
-		find_element_xi_data.element_dimension = element_dimension;
 		find_element_xi_data.found_number_of_xi = 0;
 		find_element_xi_data.found_derivatives = (FE_value *)NULL;
 		find_element_xi_data.tolerance = 1e-06;
@@ -357,121 +286,132 @@ sequential element_xi lookup should now be performed.
 				}
 				/* Get the element number range so we can spread the colour range
 					as widely as possible */
-				if ((first_element = FE_region_get_first_FE_element_that(fe_region,
-							(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL)))
+				cache = new Computed_field_find_element_xi_graphics_cache;
+				*cache_ptr = CREATE(Computed_field_find_element_xi_cache)(cache);
+				Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(search_mesh);
+				Cmiss_element_id element = 0;
+				element = Cmiss_element_iterator_next(iterator);
+				int identifier = Cmiss_element_get_identifier(element);
+				cache->maximum_element_number = identifier;
+				cache->minimum_element_number = identifier;
+				Cmiss_element_destroy(&element);
+				while (0 != (element = Cmiss_element_iterator_next(iterator)))
 				{
-					cache = new Computed_field_find_element_xi_graphics_cache;
-					*cache_ptr = CREATE(Computed_field_find_element_xi_cache)(cache);
-
-					get_FE_element_identifier(first_element, &cm);
-					cache->maximum_element_number = cm.number;
-					cache->minimum_element_number = cm.number;
-					FE_region_for_each_FE_element(fe_region, Expand_element_range,
-						(void *)cache);
-
-					cache->bit_shift = (int)ceil(log((double)(cache->maximum_element_number - 
-						cache->minimum_element_number + 2)) / log (2.0));
-					cache->bit_shift = (cache->bit_shift / 3) + 1;
-					/* 1024 is the limit on an Octane and the limit incorrectly reported by
-						the O2 proxy query.  I didn't want to limit the CREATE(Dm_buffer) to
-						1024 on an O2 so it doesn't check or handle limits properly so I do 
-						it here instead. */
-					if (hint_resolution[0] > 1024.0)
+					identifier = Cmiss_element_get_identifier(element);
+					if (identifier > cache->maximum_element_number)
 					{
-						hint_resolution[0] = 1024;
+						cache->maximum_element_number = identifier;
 					}
-					if (hint_resolution[1] > 1024.0)
+					if (identifier < cache->minimum_element_number)
 					{
-						hint_resolution[1] = 1024;
+						cache->minimum_element_number = identifier;
 					}
-					if ((cache->graphics_buffer = create_Graphics_buffer_offscreen(
-							 graphics_buffer_package, (int)hint_resolution[0], (int)hint_resolution[1],
-						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-						/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
-							 /*minimum_accumulation_buffer_depth*/0)))
+					Cmiss_element_destroy(&element);
+				}
+				Cmiss_element_iterator_destroy(&iterator);
+
+				cache->bit_shift = (int)ceil(log((double)(cache->maximum_element_number -
+					cache->minimum_element_number + 2)) / log (2.0));
+				cache->bit_shift = (cache->bit_shift / 3) + 1;
+				/* 1024 is the limit on an Octane and the limit incorrectly reported by
+					the O2 proxy query.  I didn't want to limit the CREATE(Dm_buffer) to
+					1024 on an O2 so it doesn't check or handle limits properly so I do
+					it here instead. */
+				if (hint_resolution[0] > 1024.0)
+				{
+					hint_resolution[0] = 1024;
+				}
+				if (hint_resolution[1] > 1024.0)
+				{
+					hint_resolution[1] = 1024;
+				}
+				if ((cache->graphics_buffer = create_Graphics_buffer_offscreen(
+						 graphics_buffer_package, (int)hint_resolution[0], (int)hint_resolution[1],
+					GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+					/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
+						 /*minimum_accumulation_buffer_depth*/0)))
+				{
+					data.field = field;
+					data.bit_shift = cache->bit_shift;
+					data.minimum_element_number = cache->minimum_element_number;
+					data.maximum_element_number = cache->maximum_element_number;
+					Graphics_buffer_make_current(cache->graphics_buffer);
+					glClearColor(0.0, 0.0, 0.0, 0.0);
+					glClear(GL_COLOR_BUFFER_BIT);
+
+					glDisable(GL_ALPHA_TEST);
+					glDisable(GL_DEPTH_TEST);
+					glDisable(GL_SCISSOR_TEST);
+
+					gl_list = glGenLists(1);
+					glNewList(gl_list, GL_COMPILE);
+					if (gl_list)
 					{
-						data.field = field;
-						data.bit_shift = cache->bit_shift;
-						data.minimum_element_number = cache->minimum_element_number;
-						data.maximum_element_number = cache->maximum_element_number;
-						Graphics_buffer_make_current(cache->graphics_buffer);
-						glClearColor(0.0, 0.0, 0.0, 0.0);
-						glClear(GL_COLOR_BUFFER_BIT);
-
-						glDisable(GL_ALPHA_TEST);
-						glDisable(GL_DEPTH_TEST);
-						glDisable(GL_SCISSOR_TEST);
-
-						gl_list = glGenLists(1);
-						glNewList(gl_list, GL_COMPILE);
-						if (gl_list)
+						glBegin(GL_QUADS);
+						Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(search_mesh);
+						Cmiss_element_id element = 0;
+						while (0 != (element = Cmiss_element_iterator_next(iterator)))
 						{
+							Render_element_as_texture(element, &data);
+							Cmiss_element_destroy(&element);
+						}
+						Cmiss_element_iterator_destroy(&iterator);
+						glEnd();
 
-							glBegin(GL_QUADS);
-							FE_region_for_each_FE_element(fe_region, Render_element_as_texture,
-								(void *)&data);
-							glEnd();
-						
-							glEndList();
+						glEndList();
 
-							/* Dither things around a bit so that we get elements around the edges */
-							ditherx = (hint_maximums[0] - hint_minimums[0]) / hint_resolution[0];
-							dithery = (hint_maximums[1] - hint_minimums[1]) / hint_resolution[1];
-							glLoadIdentity();
-							glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
-							        hint_minimums[1] - dithery, hint_maximums[1] - dithery,
-							        -1.0, 1.0);
-							glCallList(gl_list);
-							glLoadIdentity();
-							glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
-							        hint_minimums[1] - dithery, hint_maximums[1] - dithery,
-							        -1.0, 1.0);
-							glCallList(gl_list);
-							glLoadIdentity();
-							glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
-							        hint_minimums[1] + dithery, hint_maximums[1] + dithery,
-							        -1.0, 1.0);
-							glCallList(gl_list);
-							glLoadIdentity();
-							glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
-							        hint_minimums[1] + dithery, hint_maximums[1] + dithery,
-							        -1.0, 1.0);
-							glCallList(gl_list);
-				
-							glLoadIdentity();
-							glOrtho(hint_minimums[0], hint_maximums[0],
-							        hint_minimums[1], hint_maximums[1],
-							        -1.0, 1.0);
-							glCallList(gl_list);
+						/* Dither things around a bit so that we get elements around the edges */
+						ditherx = (hint_maximums[0] - hint_minimums[0]) / hint_resolution[0];
+						dithery = (hint_maximums[1] - hint_minimums[1]) / hint_resolution[1];
+						glLoadIdentity();
+						glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
+								  hint_minimums[1] - dithery, hint_maximums[1] - dithery,
+								  -1.0, 1.0);
+						glCallList(gl_list);
+						glLoadIdentity();
+						glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
+								  hint_minimums[1] - dithery, hint_maximums[1] - dithery,
+								  -1.0, 1.0);
+						glCallList(gl_list);
+						glLoadIdentity();
+						glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
+								  hint_minimums[1] + dithery, hint_maximums[1] + dithery,
+								  -1.0, 1.0);
+						glCallList(gl_list);
+						glLoadIdentity();
+						glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
+								  hint_minimums[1] + dithery, hint_maximums[1] + dithery,
+								  -1.0, 1.0);
+						glCallList(gl_list);
 
-							glDeleteLists(gl_list, 1);
+						glLoadIdentity();
+						glOrtho(hint_minimums[0], hint_maximums[0],
+								  hint_minimums[1], hint_maximums[1],
+								  -1.0, 1.0);
+						glCallList(gl_list);
+
+						glDeleteLists(gl_list, 1);
 
 #if defined (DEBUG_CODE)
-							glReadPixels(values[0] * hint_resolution[0],
-								values[1] * hint_resolution[1],
-								hint_resolution[0], hint_resolution[1], GL_RGBA, GL_UNSIGNED_BYTE,
-								dummy);
-				
-							write_rgb_image_file("bob.rgb", 4, 1, hint_resolution[1],
-								hint_resolution[0], 0, (long unsigned *)dummy);
+						glReadPixels(values[0] * hint_resolution[0],
+							values[1] * hint_resolution[1],
+							hint_resolution[0], hint_resolution[1], GL_RGBA, GL_UNSIGNED_BYTE,
+							dummy);
+
+						write_rgb_image_file("bob.rgb", 4, 1, hint_resolution[1],
+							hint_resolution[0], 0, (long unsigned *)dummy);
 #endif /* defined (DEBUG_CODE) */
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(Computed_field_find_element_xi_special).  Unable to make display list.");
-						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"CREATE(Computed_field_find_element_xi_special).  Unable to create offscreen buffer.");
+							"CREATE(Computed_field_find_element_xi_special).  Unable to make display list.");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"CREATE(Computed_field_find_element_xi_special).  No elements in group.");
+						"CREATE(Computed_field_find_element_xi_special).  Unable to create offscreen buffer.");
 				}
 			}
 			if (cache->graphics_buffer)
@@ -487,20 +427,17 @@ sequential element_xi lookup should now be performed.
 					(((unsigned int)colour[1] >> (8 - cache->bit_shift)) 
 						<< cache->bit_shift) +
 					((unsigned int)colour[2] >> (8 - cache->bit_shift));
-				cm.number = scaled_number + cache->minimum_element_number - 1;
-				cm.type = CM_ELEMENT;
 				if (scaled_number)
 				{
-					if ((*element = FE_region_get_FE_element_from_identifier(
-								 fe_region, element_dimension, cm.number)))
+					int identifier = scaled_number + cache->minimum_element_number - 1;
+					if (0 != (*element = Cmiss_mesh_find_element_by_identifier(search_mesh, identifier)))
 					{
 						first_element = *element;
 #if defined (DEBUG_CODE)
-						printf("First element %d\n", first_element->cm.number);
+						printf("First element %d\n", identifier);
 #endif /* defined (DEBUG_CODE) */
 						find_element_xi_data.tolerance = 1e-06;
-						if (Computed_field_iterative_element_conditional(
-							*element, (void *)&find_element_xi_data))
+						if (Computed_field_iterative_element_conditional(*element, &find_element_xi_data))
 						{
 							for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
 							{
@@ -585,14 +522,13 @@ sequential element_xi lookup should now be performed.
 									(((unsigned int)colour[1] >> (8 - cache->bit_shift)) 
 										<< cache->bit_shift) +
 									((unsigned int)colour[2] >> (8 - cache->bit_shift));
-								cm.number = scaled_number + cache->minimum_element_number - 1;
 								if (scaled_number)
 								{
-									if ((*element = FE_region_get_FE_element_from_identifier(
-												 fe_region, element_dimension, cm.number)))
+									identifier = scaled_number + cache->minimum_element_number - 1;
+									if (0 != (*element = Cmiss_mesh_find_element_by_identifier(search_mesh, identifier)))
 									{
 										if (Computed_field_iterative_element_conditional(
-											*element, (void *)&find_element_xi_data))
+											*element, &find_element_xi_data))
 										{
 											for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)
 											{
@@ -612,7 +548,7 @@ sequential element_xi lookup should now be performed.
 								/* Revert to the originally found element and extrapolate if it close (to allow for boundaries) */
 								find_element_xi_data.tolerance = 1.0;
 								if (Computed_field_iterative_element_conditional(
-									first_element, (void *)&find_element_xi_data))
+									first_element, &find_element_xi_data))
 								{
 									*element = first_element;
 									for (i = 0 ; i < find_element_xi_data.found_number_of_xi ; i++)

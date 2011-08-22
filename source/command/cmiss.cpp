@@ -3684,7 +3684,7 @@ Modifies the properties of a texture.
 					image_data.crop_height=0;
 
 					evaluate_data.region_path = (char *)NULL;
-					evaluate_data.element_dimension = 0; /* any dimension */
+					evaluate_data.element_dimension = 0; /* dimension == number of texture coordinates components */
 					evaluate_data.propagate_field = 1;
 					evaluate_data.field = (struct Computed_field *)NULL;
 					evaluate_data.texture_coordinates_field =
