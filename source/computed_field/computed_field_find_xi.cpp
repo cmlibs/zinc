@@ -499,11 +499,14 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 				/* If an exact match is not found then accept the closest one */
 				if (!*element_address && find_nearest)
 				{
-					*element_address = find_element_xi_data.nearest_element;
-					number_of_xi = get_FE_element_dimension(*element_address);
-					for (i = 0 ; i < number_of_xi ; i++)
+					if (find_element_xi_data.nearest_element)
 					{
-						xi[i] = find_element_xi_data.nearest_xi[i];
+						*element_address = find_element_xi_data.nearest_element;
+						number_of_xi = get_FE_element_dimension(*element_address);
+						for (i = 0 ; i < number_of_xi ; i++)
+						{
+							xi[i] = find_element_xi_data.nearest_xi[i];
+						}
 					}
 				}
 				else if (*element_address)
