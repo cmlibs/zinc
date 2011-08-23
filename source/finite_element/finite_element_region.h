@@ -1269,15 +1269,15 @@ Currently, a Cmiss_region may have at most one FE_region.
 This function returns it, or NULL if no FE_region found.
 ==============================================================================*/
 
-int FE_region_get_Cmiss_region(struct FE_region *fe_region,
-	struct Cmiss_region **cmiss_region_address);
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
+/***************************************************************************//**
+ * @return  The Cmiss_region containing this fe_region.
+ */
+struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region);
 
-DESCRIPTION :
-Returns in <cmiss_region_address> either the owning <cmiss_region> for
-<fe_region> or NULL if none/error.
-==============================================================================*/
+/***************************************************************************//**
+ * @return  The master Cmiss_region containing this fe_region.
+ */
+struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region);
 
 int FE_regions_can_be_merged(struct FE_region *global_fe_region,
 	struct FE_region *fe_region);

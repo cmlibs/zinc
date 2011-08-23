@@ -6847,43 +6847,27 @@ This function returns it, or NULL if no FE_region found.
 	return (fe_region);
 } /* Cmiss_region_get_FE_region */
 
-int FE_region_get_Cmiss_region(struct FE_region *fe_region,
-	struct Cmiss_region **cmiss_region_address)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Returns in <cmiss_region_address> either the owning <cmiss_region> for
-<fe_region> or NULL if none/error.
-==============================================================================*/
+struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region)
 {
-	int return_code;
-
-	ENTER(FE_region_get_Cmiss_region);
-	if (fe_region && cmiss_region_address)
+	Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
+	if (FE_region_is_group(fe_region))
 	{
-		FE_region *master_fe_region = fe_region;
-		while (master_fe_region->master_fe_region)
-		{
-			master_fe_region = master_fe_region->master_fe_region;
-		}
-		*cmiss_region_address = master_fe_region->cmiss_region;
-		return_code = (*cmiss_region_address != 0);
+		region = Cmiss_region_get_child_with_FE_region(region, fe_region);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_get_Cmiss_region.  Invalid argument(s)");
-		if (cmiss_region_address)
-		{
-			*cmiss_region_address = (struct Cmiss_region *)NULL;
-		}
-		return_code = 0;
-	}
-	LEAVE;
+	return region;
+}
 
-	return (return_code);
-} /* FE_region_get_Cmiss_region */
+struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region)
+{
+	if (!fe_region)
+		return 0;
+	FE_region *master_fe_region = fe_region;
+	while (master_fe_region->master_fe_region)
+	{
+		master_fe_region = master_fe_region->master_fe_region;
+	}
+	return master_fe_region->cmiss_region;
+}
 
 int FE_regions_can_be_merged(struct FE_region *global_fe_region,
 	struct FE_region *fe_region)

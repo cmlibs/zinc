@@ -51,6 +51,7 @@ extern "C" {
 #include "node/node_operations.h"
 #include "user_interface/message.h"
 }
+#include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #include <vector>
@@ -413,20 +414,41 @@ Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 	FE_region *fe_region = NULL;
 	if (field_module && nodeset_name)
 	{
-		fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
-		if (0 == strcmp(nodeset_name, "cmiss_nodes"))
+		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+		const char *dotpos = strrchr(nodeset_name, '.');
+		const char *trimmed_nodeset_name = 0;
+		if (dotpos)
 		{
-			ACCESS(FE_region)(fe_region);
-		}
-		else if (0 == strcmp(nodeset_name, "cmiss_data"))
-		{
-			fe_region = ACCESS(FE_region)(FE_region_get_data_FE_region(fe_region));
+			Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
+			char *group_name = duplicate_string(nodeset_name);
+			group_name[dotpos - nodeset_name] = '\0';
+			Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
+			if (child)
+			{
+				if (Cmiss_region_is_group(child))
+				{
+					region = child;
+					trimmed_nodeset_name = dotpos + 1;
+				}
+				Cmiss_region_destroy(&child);
+			}
+			DEALLOCATE(group_name);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_find_nodeset_by_name.  Unknown nodeset name '%s'", nodeset_name);
-			fe_region = NULL;
+			trimmed_nodeset_name = nodeset_name;
+		}
+		if (trimmed_nodeset_name)
+		{
+			fe_region = Cmiss_region_get_FE_region(region);
+			if (0 == strcmp(trimmed_nodeset_name, "cmiss_nodes"))
+			{
+				ACCESS(FE_region)(fe_region);
+			}
+			else if (0 == strcmp(trimmed_nodeset_name, "cmiss_data"))
+			{
+				fe_region = ACCESS(FE_region)(FE_region_get_data_FE_region(fe_region));
+			}
 		}
 	}
 	return reinterpret_cast<Cmiss_nodeset_id>(fe_region);
@@ -511,8 +533,7 @@ char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset)
 	{
 		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
 		int error = 0;
-		Cmiss_region_id region = 0;
-		FE_region_get_Cmiss_region(fe_region, &region);
+		Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
 		if (Cmiss_region_is_group(region))
 		{
 			char *group_name = Cmiss_region_get_name(region);
@@ -573,13 +594,6 @@ int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 
 	return return_code;
 }
-// @return  Accessed reference to field_module
-Cmiss_field_module_id Cmiss_nodeset_get_field_module(Cmiss_nodeset_id nodeset)
-{
-	Cmiss_region_id region = 0;
-	FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset), &region);
-	return Cmiss_region_get_field_module(region);
-}
 
 Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset)
 {
@@ -592,7 +606,7 @@ int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2)
 	return (nodeset1 && (nodeset1 == nodeset2));
 }
 
-FE_region *Cmiss_nodeset_get_FE_region(Cmiss_nodeset_id nodeset)
+FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset)
 {
 	return reinterpret_cast<FE_region *>(nodeset);
 }
@@ -604,14 +618,18 @@ FE_region *Cmiss_nodeset_get_master_FE_region_internal(Cmiss_nodeset_id nodeset)
 	return fe_region;
 }
 
+Cmiss_region_id Cmiss_nodeset_get_region_internal(Cmiss_nodeset_id nodeset)
+{
+	if (!nodeset)
+		return 0;
+	return FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset));
+}
+
 Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset)
 {
-	Cmiss_region_id region = 0;
-	if (nodeset)
-	{
-		FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset), &region);
-	}
-	return region;
+	if (!nodeset)
+		return 0;
+	return FE_region_get_master_Cmiss_region(reinterpret_cast<FE_region *>(nodeset));
 }
 
 int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset)

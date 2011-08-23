@@ -3339,8 +3339,7 @@ Notes:
 									if ((fe_region = Cmiss_region_get_FE_region(child_region)) &&
 										(return_code = FE_region_get_master_FE_region(fe_region,
 											&master_fe_region)) && master_fe_region &&
-										(return_code = FE_region_get_Cmiss_region(master_fe_region,
-											&master_region)) &&
+										(0 != (master_region = FE_region_get_master_Cmiss_region(master_fe_region))) &&
 										(return_code = get_Cmiss_region_write_info(write_info_list,
 											master_region, &master_write_status, &master_path)))
 									{

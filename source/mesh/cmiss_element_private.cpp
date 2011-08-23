@@ -51,6 +51,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
 }
+#include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include <vector>
@@ -912,8 +913,7 @@ public:
 		else
 		{
 			int error = 0;
-			Cmiss_region_id region = 0;
-			FE_region_get_Cmiss_region(fe_region, &region);
+			Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
 			if (Cmiss_region_is_group(region))
 			{
 				char *group_name = Cmiss_region_get_name(region);
@@ -943,10 +943,7 @@ public:
 
 	Cmiss_mesh_id getMaster()
 	{
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		Cmiss_region_id region = 0;
-		FE_region_get_Cmiss_region(master_fe_region, &region);
+		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
 		if (region)
 			return new Cmiss_mesh(region, dimension);
 		return 0;
@@ -1024,8 +1021,7 @@ private:
 
 	struct LIST(FE_element) *createElementListWithCondition(Cmiss_field_id conditional_field)
 	{
-		Cmiss_region_id region = 0;
-		FE_region_get_Cmiss_region(fe_region, &region);
+		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
 		Cmiss_element_iterator_id iterator = createIterator();
@@ -1095,15 +1091,7 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 			const char *trimmed_mesh_name = 0;
 			if (dotpos)
 			{
-				Cmiss_region_id master_region = 0;
-				if (Cmiss_region_is_group(region))
-				{
-					master_region = Cmiss_region_get_parent(region);
-				}
-				else
-				{
-					master_region = Cmiss_region_access(region);
-				}
+				Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
 				char *group_name = duplicate_string(mesh_name);
 				group_name[dotpos - mesh_name] = '\0';
 				Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
@@ -1117,7 +1105,6 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 					Cmiss_region_destroy(&child);
 				}
 				DEALLOCATE(group_name);
-				Cmiss_region_destroy(&master_region);
 			}
 			else
 			{
@@ -1126,11 +1113,11 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 			if (trimmed_mesh_name)
 			{
 				int mesh_dimension = 0;
-				if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
+				if      (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_3d"))
 					mesh_dimension = 3;
-				else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
+				else if (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_2d"))
 					mesh_dimension = 2;
-				else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
+				else if (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_1d"))
 					mesh_dimension = 1;
 				if (0 < mesh_dimension)
 				{
@@ -1322,24 +1309,16 @@ FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh)
 
 Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh)
 {
-	Cmiss_region_id region = 0;
-	if (mesh)
-	{
-		FE_region_get_Cmiss_region(mesh->getFeRegion(), &region);
-	}
-	return region;
+	if (!mesh)
+		return 0;
+	return FE_region_get_Cmiss_region(mesh->getFeRegion());
 }
 
 Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh)
 {
-	Cmiss_region_id region = 0;
-	if (mesh)
-	{
-		FE_region *master_fe_region = mesh->getFeRegion();
-		FE_region_get_ultimate_master_FE_region(master_fe_region, &master_fe_region);
-		FE_region_get_Cmiss_region(master_fe_region, &region);
-	}
-	return region;
+	if (!mesh)
+		return 0;
+	return FE_region_get_master_Cmiss_region(mesh->getFeRegion());
 }
 
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)

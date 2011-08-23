@@ -52,6 +52,7 @@ extern "C" {
 #include "api/cmiss_graphic.h"
 #include "api/cmiss_graphics_filter.h"
 #include "api/cmiss_field_subobject_group.h"
+#include "api/cmiss_node.h"
 #include "general/debug.h"
 #include "general/enumerator_private_cpp.hpp"
 #include "general/indexed_list_private.h"
@@ -167,11 +168,9 @@ finite element group rendition.
 	int reverse_track;
 	float streamline_length, streamline_width;
 	enum Streamline_data_type streamline_data_type;
-	/* seed node region */
-	struct FE_region *seed_node_region;
-	char *seed_node_region_path; /* So that we can generate the defining string */
-	/* seed element_xi field */
-	struct Computed_field *seed_node_coordinate_field;
+	/* streamline seed nodeset and field giving mesh location */
+	Cmiss_nodeset_id seed_nodeset;
+	struct Computed_field *seed_node_mesh_location_field;
 
 	/* appearance settings */
 	/* for all graphic types */
@@ -439,9 +438,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			graphic->reverse_track=0;
 			graphic->streamline_length=1.0;
 			graphic->streamline_width=1.0;
-			graphic->seed_node_region = (struct FE_region *)NULL;
-			graphic->seed_node_region_path = (char *)NULL;
-			graphic->seed_node_coordinate_field = (struct Computed_field *)NULL;
+			graphic->seed_nodeset = (Cmiss_nodeset_id)0;
+			graphic->seed_node_mesh_location_field = (struct Computed_field *)NULL;
 			graphic->overlay_flag = 0;
 			graphic->overlay_order = 1;
 			graphic->coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
@@ -609,17 +607,13 @@ int DESTROY(Cmiss_graphic)(
 		{
 			DEACCESS(FE_element)(&(graphic->seed_element));
 		}
-		if (graphic->seed_node_region)
+		if (graphic->seed_nodeset)
 		{
-			DEACCESS(FE_region)(&(graphic->seed_node_region));
+			Cmiss_nodeset_destroy(&graphic->seed_nodeset);
 		}
-		if (graphic->seed_node_region_path)
+		if (graphic->seed_node_mesh_location_field)
 		{
-			DEALLOCATE(graphic->seed_node_region_path);
-		}
-		if (graphic->seed_node_coordinate_field)
-		{
-			DEACCESS(Computed_field)(&(graphic->seed_node_coordinate_field));
+			DEACCESS(Computed_field)(&(graphic->seed_node_mesh_location_field));
 		}
 		DEALLOCATE(*cmiss_graphic_address);
 		return_code = 1;
@@ -1416,98 +1410,85 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 } /* FE_element_to_graphics_object */
  
 /***************************************************************************//** 
- * Creates a node point seeded with the seed_node_coordinate_field at the node.
- * @param node The FE node
- * @param graphic_to_object_data_void void pointer to Cmiss_graphic_to_graphics_object_data
- * @return 1 if successfully added streamline
+ * Creates a streamline seeded from the location given by the
+ * seed_node_mesh_location_field at the node.
+ * @param node  The node to seed streamline from.
+ * @param graphic_to_object_data  All other data including graphic.
+ * @return  1 if successfully added streamline
  */
 static int Cmiss_node_to_streamline(struct FE_node *node,
-	void *graphic_to_object_data_void)
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
 {
-	FE_value coordinates[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, number_of_components, return_code = 1;
-	struct FE_element *element;
-	struct Cmiss_graphic *graphic;
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
+	int return_code = 1;
 
 	ENTER(node_to_streamline);
-	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
-		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
+	struct Cmiss_graphic *graphic = 0;
 	if (node && graphic_to_object_data &&
 		(NULL != (graphic = graphic_to_object_data->graphic)) &&
 		graphic->graphics_object)
 	{
-		element_dimension = 3;
-		if ((3 >= (number_of_components = Computed_field_get_number_of_components(
-			graphic->seed_node_coordinate_field)))
-			&& (number_of_components == Computed_field_get_number_of_components(
-			graphic_to_object_data->rc_coordinate_field)))
+		Cmiss_field_cache_set_node(graphic_to_object_data->field_cache, node);
+		FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		Cmiss_element_id element = Cmiss_field_evaluate_mesh_location(
+			graphic->seed_node_mesh_location_field, graphic_to_object_data->field_cache,
+			MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+		if (element)
 		{
-			// GRC temporary: replace with mesh_location valued field
-			Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(
-				graphic_to_object_data->field_module, element_dimension);
-			/* determine if the element is required */
-			if (Computed_field_evaluate_at_node(graphic->seed_node_coordinate_field, node,
-					graphic_to_object_data->time, coordinates)
-				&& Computed_field_find_element_xi(graphic_to_object_data->rc_coordinate_field,
-					coordinates, number_of_components, /*time*/0, &element, xi,
-					search_mesh, /*propagate_field*/0, /*find_nearest_location*/0))
+			if (STREAM_LINE==graphic->streamline_type)
 			{
-				if (STREAM_LINE==graphic->streamline_type)
+				struct GT_polyline *polyline;
+				if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
+						xi,graphic_to_object_data->rc_coordinate_field,
+						graphic_to_object_data->wrapper_stream_vector_field,
+						graphic->reverse_track, graphic->streamline_length,
+						graphic->streamline_data_type, graphic->data_field,
+							graphic_to_object_data->time,graphic_to_object_data->fe_region)))
 				{
-					if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
-							xi,graphic_to_object_data->rc_coordinate_field,
-							graphic_to_object_data->wrapper_stream_vector_field,
-							graphic->reverse_track, graphic->streamline_length,
-							graphic->streamline_data_type, graphic->data_field,
-								graphic_to_object_data->time,graphic_to_object_data->fe_region)))
+					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
+								graphic->graphics_object,
+								/*graphics_object_time*/0,polyline)))
 					{
-						if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
-									graphic->graphics_object,
-									/*graphics_object_time*/0,polyline)))
-						{
-							DESTROY(GT_polyline)(&polyline);
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				else if ((graphic->streamline_type == STREAM_RIBBON)||
-					(graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
-					(graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
-					(graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
-				{
-					if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
-								xi,graphic_to_object_data->rc_coordinate_field,
-								graphic_to_object_data->wrapper_stream_vector_field,
-								graphic->reverse_track, graphic->streamline_length,
-								graphic->streamline_width, graphic->streamline_type,
-								graphic->streamline_data_type, graphic->data_field,
-								graphic_to_object_data->time,graphic_to_object_data->fe_region)))
-					{
-						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
-									graphic->graphics_object,
-									/*graphics_object_time*/0,surface)))
-						{
-							DESTROY(GT_surface)(&surface);
-						}
-					}
-					else
-					{
-						return_code=0;
+						DESTROY(GT_polyline)(&polyline);
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_node_to_streamline.  Unknown streamline type");
 					return_code=0;
 				}
 			}
-			Cmiss_mesh_destroy(&search_mesh);
+			else if ((graphic->streamline_type == STREAM_RIBBON)||
+				(graphic->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
+				(graphic->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
+				(graphic->streamline_type == STREAM_EXTRUDED_CIRCLE))
+			{
+				struct GT_surface *surface;
+				if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
+							xi,graphic_to_object_data->rc_coordinate_field,
+							graphic_to_object_data->wrapper_stream_vector_field,
+							graphic->reverse_track, graphic->streamline_length,
+							graphic->streamline_width, graphic->streamline_type,
+							graphic->streamline_data_type, graphic->data_field,
+							graphic_to_object_data->time,graphic_to_object_data->fe_region)))
+				{
+					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
+								graphic->graphics_object,
+								/*graphics_object_time*/0,surface)))
+					{
+						DESTROY(GT_surface)(&surface);
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_node_to_streamline.  Unknown streamline type");
+				return_code=0;
+			}
+			Cmiss_element_destroy(&element);
 		}
 		else
 		{
@@ -2870,18 +2851,21 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 			append_string(&graphic_string,temp_string,&error);
 			append_string(&graphic_string,
 				ENUMERATOR_STRING(Streamline_data_type)(graphic->streamline_data_type),&error);
-			if (graphic->seed_node_region_path)
+			if (graphic->seed_nodeset)
 			{
-				sprintf(temp_string," seed_node_region %s", graphic->seed_node_region_path);
-				append_string(&graphic_string,temp_string,&error);
+				append_string(&graphic_string, " seed_nodeset ", &error);
+				char *nodeset_name = Cmiss_nodeset_get_name(graphic->seed_nodeset);
+				make_valid_token(&nodeset_name);
+				append_string(&graphic_string, nodeset_name, &error);
+				DEALLOCATE(nodeset_name);
 			}
-			if (graphic->seed_node_coordinate_field)
+			if (graphic->seed_node_mesh_location_field)
 			{
-				if (GET_NAME(Computed_field)(graphic->seed_node_coordinate_field,&name))
+				if (GET_NAME(Computed_field)(graphic->seed_node_mesh_location_field,&name))
 				{
 					/* put quotes around name if it contains special characters */
 					make_valid_token(&name);
-					append_string(&graphic_string," seed_node_coordinate_field ",&error);
+					append_string(&graphic_string," seed_node_mesh_location_field ",&error);
 					append_string(&graphic_string,name,&error);
 					DEALLOCATE(name);
 				}
@@ -3577,12 +3561,20 @@ int Cmiss_graphic_to_graphics_object(
 										return_code = FE_element_to_graphics_object(
 											graphic->seed_element, graphic_to_object_data_void);
 									}
-									else if (graphic->seed_node_region &&
-										graphic->seed_node_coordinate_field)
+									else if (graphic->seed_nodeset &&
+										graphic->seed_node_mesh_location_field)
 									{
-										return_code = FE_region_for_each_FE_node(
-											graphic->seed_node_region,
-											Cmiss_node_to_streamline, graphic_to_object_data_void);
+										Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(graphic->seed_nodeset);
+										Cmiss_node_id node = 0;
+										while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+										{
+											if (!Cmiss_node_to_streamline(node, graphic_to_object_data))
+											{
+												return_code = 0;
+												break;
+											}
+										}
+										Cmiss_node_iterator_destroy(&iterator);
 									}
 									else
 									{
@@ -3648,10 +3640,6 @@ int Cmiss_graphic_to_graphics_object(
 						Computed_field_clear_cache(graphic_to_object_data->rc_coordinate_field);
 						Computed_field_end_wrap(
 							&(graphic_to_object_data->rc_coordinate_field));
-						if (graphic->seed_node_coordinate_field)
-						{
-							Computed_field_clear_cache(graphic->seed_node_coordinate_field);
-						}
 						if (graphic->data_field)
 						{
 							graphic_to_object_data->number_of_data_values = 0;
@@ -5105,23 +5093,16 @@ int Cmiss_graphic_copy_without_graphics_object(
 		destination->reverse_track=source->reverse_track;
 		destination->streamline_length=source->streamline_length;
 		destination->streamline_width=source->streamline_width;
-		REACCESS(FE_region)(&destination->seed_node_region, 
-			source->seed_node_region);
-		if (destination->seed_node_region_path)
+		if (destination->seed_nodeset)
 		{
-			DEALLOCATE(destination->seed_node_region_path);
+			Cmiss_nodeset_destroy(&destination->seed_nodeset);
 		}
-		if (source->seed_node_region_path)
+		if (source->seed_nodeset)
 		{
-			destination->seed_node_region_path = duplicate_string( 
-				source->seed_node_region_path);
+			destination->seed_nodeset = Cmiss_nodeset_access(source->seed_nodeset);
 		}
-		else
-		{
-			destination->seed_node_region_path = (char *)NULL;
-		}
-		REACCESS(Computed_field)(&(destination->seed_node_coordinate_field),
-			source->seed_node_coordinate_field);		
+		REACCESS(Computed_field)(&(destination->seed_node_mesh_location_field),
+			source->seed_node_mesh_location_field);
 
 		/* copy appearance graphic */
 		/* for all graphic types */
@@ -5841,8 +5822,10 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 				(graphic->reverse_track==second_graphic->reverse_track)&&
 				(graphic->streamline_length==second_graphic->streamline_length)&&
 				(graphic->streamline_width==second_graphic->streamline_width)&&
-				(graphic->seed_node_region==second_graphic->seed_node_region)&&
-				(graphic->seed_node_coordinate_field==second_graphic->seed_node_coordinate_field);
+				(((graphic->seed_nodeset==0) && (second_graphic->seed_nodeset==0)) ||
+					((graphic->seed_nodeset) && (second_graphic->seed_nodeset) &&
+						Cmiss_nodeset_match(graphic->seed_nodeset, second_graphic->seed_nodeset)))&&
+				(graphic->seed_node_mesh_location_field==second_graphic->seed_node_mesh_location_field);
 		}
 	}
 	else
@@ -7787,21 +7770,17 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	int number_of_components,number_of_valid_strings,return_code,
 		reverse_track_int, visibility;
 	struct Computed_field *stream_vector_field = NULL, *xi_point_density_field = NULL;
-	struct Cmiss_region *seed_node_region;
-	struct FE_region *fe_region;
 	struct Rendition_command_data *rendition_command_data;
 	struct Modify_rendition_data *modify_rendition_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_seed_node_coordinate_field_data,
-		set_stream_vector_field_data, set_xi_point_density_field_data;
+		set_data_field_data, set_stream_vector_field_data, set_xi_point_density_field_data;
 
 	ENTER(gfx_modify_rendition_streamlines);
 	if (state && (rendition_command_data =
 		(struct Rendition_command_data *)rendition_command_data_void) &&
 		(modify_rendition_data =
-			(struct Modify_rendition_data *)modify_rendition_data_void) &&
-		(fe_region = Cmiss_region_get_FE_region(rendition_command_data->region)))
+			(struct Modify_rendition_data *)modify_rendition_data_void))
 	{
 		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
 			rendition_command_data->rendition, CMISS_GRAPHIC_STREAMLINES,
@@ -7827,6 +7806,11 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				ACCESS(Computed_field)(xi_point_density_field);
 			}
 			visibility = graphic->visibility_flag;
+			char *seed_nodeset_name = 0;
+			if (graphic->seed_nodeset)
+			{
+				seed_nodeset_name = Cmiss_nodeset_get_name(graphic->seed_nodeset);
+			}
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(graphic->name),
@@ -7933,22 +7917,19 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				&reverse_track,NULL,set_char_flag);
 			/* seed_element */
 			Option_table_add_entry(option_table, "seed_element",
-				&(graphic->seed_element), fe_region,
+				&(graphic->seed_element), Cmiss_region_get_FE_region(rendition_command_data->region),
 				set_FE_element_top_level_FE_region);
-			/* seed_node_region */
-			Option_table_add_entry(option_table, "seed_node_region",
-				&graphic->seed_node_region_path,
-				rendition_command_data->root_region, set_Cmiss_region_path);
-			/* seed_node_coordinate_field */
-			set_seed_node_coordinate_field_data.computed_field_manager=
-				rendition_command_data->computed_field_manager;
-			set_seed_node_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_seed_node_coordinate_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"seed_node_coordinate_field",
-				&(graphic->seed_node_coordinate_field),&set_seed_node_coordinate_field_data,
-				set_Computed_field_conditional);
+			// seed_node_mesh_location_field
+			struct Set_Computed_field_conditional_data set_seed_mesh_location_field_data;
+			set_seed_mesh_location_field_data.conditional_function = Computed_field_has_value_type_mesh_location;
+			set_seed_mesh_location_field_data.conditional_function_user_data = (void *)NULL;
+			set_seed_mesh_location_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
+			Option_table_add_entry(option_table, "seed_node_mesh_location_field",
+				&(graphic->seed_node_mesh_location_field),
+				&set_seed_mesh_location_field_data, set_Computed_field_conditional);
+			// seed_nodeset
+			Option_table_add_string_entry(option_table, "seed_nodeset", &seed_nodeset_name,
+				" NODE_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_nodes|cmiss_data|none");
 			/* select_mode */
 			select_mode = Cmiss_graphic_get_select_mode(graphic);
 			select_mode_string =
@@ -8013,27 +7994,33 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 				{
 					display_message(INFORMATION_MESSAGE,"Must specify a vector before any streamlines can be created");
 				}
-				if (graphic->seed_node_region_path)
+				if (return_code && seed_nodeset_name)
 				{
-					seed_node_region = Cmiss_region_find_subregion_at_path(
-						rendition_command_data->root_region,
-						graphic->seed_node_region_path);
-					if (!(seed_node_region &&
-						(REACCESS(FE_region)(&graphic->seed_node_region,
-						Cmiss_region_get_FE_region(seed_node_region)))))
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition_command_data->region);
+					Cmiss_nodeset_id seed_nodeset =
+						Cmiss_field_module_find_nodeset_by_name(field_module, seed_nodeset_name);
+					if (seed_nodeset || (fuzzy_string_compare(seed_nodeset_name, "none")))
+					{
+						if (graphic->seed_nodeset)
+						{
+							Cmiss_nodeset_destroy(&graphic->seed_nodeset);
+						}
+						// take over reference:
+						graphic->seed_nodeset = seed_nodeset;
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_create_streamlines.  Invalid seed_node_region");
+							"Unknown seed_nodeset %s", seed_nodeset_name);
 						return_code = 0;
 					}
-					Cmiss_region_destroy(&seed_node_region);
+					Cmiss_field_module_destroy(&field_module);
 				}
-				if ((graphic->seed_node_coordinate_field && (!graphic->seed_node_region)) ||
-					((!graphic->seed_node_coordinate_field) && graphic->seed_node_region))
+				if ((graphic->seed_node_mesh_location_field && (!graphic->seed_nodeset)) ||
+					((!graphic->seed_node_mesh_location_field) && graphic->seed_nodeset))
 				{
 					display_message(ERROR_MESSAGE,
-						"If you specify a seed_node_coordinate_field then you must also specify a "
-						"seed_node_region");
+						"Must specify both seed_nodeset and seed_node_mesh_location_field, or neither");
 					return_code = 0;
 				}
 				if (return_code)
@@ -8091,6 +8078,10 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			if (xi_point_density_field)
 			{
 				DEACCESS(Computed_field)(&xi_point_density_field);
+			}
+			if (seed_nodeset_name)
+			{
+				DEALLOCATE(seed_nodeset_name);
 			}
 		}
 		else
@@ -9503,9 +9494,9 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->data_field));
 		}
-		if (graphic->seed_node_coordinate_field)
+		if (graphic->seed_node_mesh_location_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->seed_node_coordinate_field));
+			DEACCESS(Computed_field)(&(graphic->seed_node_mesh_location_field));
 		}
 	}
 	else

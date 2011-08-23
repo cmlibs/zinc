@@ -108,4 +108,15 @@ struct Cmiss_region_fields;
 struct Cmiss_region *Cmiss_region_fields_get_master_region(
 	struct Cmiss_region_fields *region_fields);
 
+/***************************************************************************//**
+ * Internal function returning the child region which contains FE_region either
+ * as the main FE_region or as data_FE_region, or NULL if not found.
+ *
+ * @param region  The parent region.
+ * @param fe_region  The fe_region the child needs to contain
+ * @return  The child region containing the FE_region, if any.
+ */
+struct Cmiss_region *Cmiss_region_get_child_with_FE_region(
+	struct Cmiss_region *region, struct FE_region *fe_region);
+
 #endif /* !defined (CMISS_REGION_PRIVATE_H) */

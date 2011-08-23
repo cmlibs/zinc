@@ -130,7 +130,7 @@ int Cmiss_nodeset_assign_field_from_source(
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
 				(Cmiss_field_get_value_type(source_field) == value_type)))
 		{
-			Cmiss_field_module_id field_module = Cmiss_nodeset_get_field_module(nodeset);
+			Cmiss_field_module_id field_module = Cmiss_field_get_field_module(destination_field);
 			Cmiss_field_module_begin_change(field_module);
 			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 			FE_value *values = new FE_value[number_of_components];

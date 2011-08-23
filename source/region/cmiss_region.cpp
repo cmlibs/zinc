@@ -2075,3 +2075,24 @@ struct Cmiss_field_module *Cmiss_region_get_field_module(struct Cmiss_region *re
 {
 	return Cmiss_field_module_create(region);
 }
+
+struct Cmiss_region *Cmiss_region_get_child_with_FE_region(
+	struct Cmiss_region *region, struct FE_region *fe_region)
+{
+	if (region && fe_region)
+	{
+		bool is_data = FE_region_is_data_FE_region(fe_region);
+		Cmiss_region *child = region->first_child;
+		while (child)
+		{
+			FE_region *child_fe_region = Cmiss_region_get_FE_region(child);
+			if ((child_fe_region == fe_region) || ((is_data) &&
+				(fe_region == FE_region_get_data_FE_region(child_fe_region))))
+			{
+				return child;
+			}
+			child = child->next_sibling;
+		}
+	}
+	return 0;
+}

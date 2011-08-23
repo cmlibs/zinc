@@ -282,13 +282,7 @@ Evaluate the fields cache at the location
 } /* Computed_field_time_value::evaluate_cache_at_location */
 
 
-int Computed_field_nodal_lookup::list(
-	)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Computed_field_nodal_lookup::list()
 {
 	int return_code;
 
@@ -301,8 +295,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(lookup_node));
-		Cmiss_region *region = NULL;
-		FE_region_get_Cmiss_region(FE_node_get_FE_region(lookup_node), &region);
+		Cmiss_region *region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(lookup_node));
 		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
@@ -348,8 +341,7 @@ Returns allocated command string for reproducing field.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " region ", &error);
-		Cmiss_region *region = NULL;
-		FE_region_get_Cmiss_region(FE_node_get_FE_region(lookup_node), &region);
+		Cmiss_region *region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(lookup_node));
 		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
@@ -529,7 +521,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				node_identifier = get_FE_node_identifier(node);
-				FE_region_get_Cmiss_region(FE_node_get_FE_region(node), &region);
+				region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(node));
 			}
 		}
 		if (return_code)
@@ -907,8 +899,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(nodal_lookup_node));
-		Cmiss_region *region = NULL;
-		FE_region_get_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node), &region);
+		Cmiss_region *region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node));
 		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
@@ -954,8 +945,7 @@ Returns allocated command string for reproducing field. Includes type.
 			 DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " region ", &error);
-		Cmiss_region *region = NULL;
-		FE_region_get_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node), &region);
+		Cmiss_region *region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(nodal_lookup_node));
 		char *region_path = Cmiss_region_get_path(region);
 		if (region_path)
 		{
@@ -1155,7 +1145,7 @@ contents to be modified.
 			if (lookup_node)
 			{
 				node_identifier = get_FE_node_identifier(lookup_node);
-				FE_region_get_Cmiss_region(FE_node_get_FE_region(lookup_node), &region);
+				region = FE_region_get_master_Cmiss_region(FE_node_get_FE_region(lookup_node));
 			}
 			if (source_field)
 			{

@@ -617,7 +617,7 @@ namespace {
 			Computed_field_subobject_group(),
 			// don't want node_groups based on group region FE_region so get master:
 			master_nodeset(Cmiss_nodeset_get_master(nodeset)),
-			object_list(FE_region_create_related_node_list(Cmiss_nodeset_get_FE_region(master_nodeset)))
+			object_list(FE_region_create_related_node_list(Cmiss_nodeset_get_master_FE_region_internal(master_nodeset)))
 		{
 		}
 
