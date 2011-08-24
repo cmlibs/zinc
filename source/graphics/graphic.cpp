@@ -3828,8 +3828,9 @@ int Cmiss_graphic_to_graphics_object(
 									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
 									if (element_group)
 									{
-										Cmiss_mesh_id mesh = Cmiss_field_element_group_get_mesh(element_group);
-										Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
+										Cmiss_mesh_group_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+										Cmiss_element_iterator_id iterator =
+											Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(mesh_group));
 										Cmiss_element_id element;
 										while (0 != (element = Cmiss_element_iterator_next(iterator)))
 										{
@@ -3837,7 +3838,7 @@ int Cmiss_graphic_to_graphics_object(
 											Cmiss_element_destroy(&element);
 										}
 										Cmiss_element_iterator_destroy(&iterator);
-										Cmiss_mesh_destroy(&mesh);
+										Cmiss_mesh_group_destroy(&mesh_group);
 										Cmiss_field_element_group_destroy(&element_group);
 									}
 									Cmiss_field_group_destroy(&group);

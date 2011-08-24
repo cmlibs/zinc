@@ -736,20 +736,11 @@ private:
 
 struct Cmiss_mesh
 {
-private:
+protected:
 	FE_region *fe_region;
 	const int dimension;
 	Cmiss_field_element_group_id group;
 	int access_count;
-
-public:
-	Cmiss_mesh(Cmiss_region_id region, int mesh_dimension) :
-		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
-		dimension(mesh_dimension),
-		group(0),
-		access_count(1)
-	{
-	}
 
 	Cmiss_mesh(Cmiss_field_element_group_id group) :
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
@@ -760,6 +751,15 @@ public:
 	{
 		// GRC Cmiss_field_element_group_access missing:
 		Cmiss_field_access(Cmiss_field_element_group_base_cast(group));
+	}
+
+public:
+	Cmiss_mesh(Cmiss_region_id region, int mesh_dimension) :
+		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
+		dimension(mesh_dimension),
+		group(0),
+		access_count(1)
+	{
 	}
 
 	Cmiss_mesh_id access()
@@ -777,23 +777,6 @@ public:
 			delete mesh;
 		mesh = 0;
 		return 1;
-	}
-
-	int addElement(Cmiss_element_id element)
-	{
-		int return_code = 0;
-		if (isElementCompatible(element))
-		{
-			if (group)
-			{
-				return_code = Computed_field_element_group_core_cast(group)->addObject(element);
-			}
-			else if (FE_region_is_group(fe_region))
-			{
-				return_code = FE_region_add_FE_element(fe_region, element);
-			}
-		}
-		return return_code;
 	}
 
 	int containsElement(Cmiss_element_id element)
@@ -943,6 +926,8 @@ public:
 
 	Cmiss_mesh_id getMaster()
 	{
+		if (!isGroup())
+			return access();
 		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
 		if (region)
 			return new Cmiss_mesh(region, dimension);
@@ -966,6 +951,72 @@ public:
 		return ((fe_region == other_mesh.fe_region) &&
 			(dimension == other_mesh.dimension) &&
 			(group == other_mesh.group));
+	}
+
+protected:
+	~Cmiss_mesh()
+	{
+		if (group)
+			Cmiss_field_element_group_destroy(&group);
+		DEACCESS(FE_region)(&fe_region);
+	}
+
+	struct LIST(FE_element) *createElementListWithCondition(Cmiss_field_id conditional_field)
+	{
+		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_element_iterator_id iterator = createIterator();
+		Cmiss_element_id element = 0;
+		struct LIST(FE_element) *element_list =
+			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
+		while (0 != (element = Cmiss_element_iterator_next(iterator)))
+		{
+			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
+				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
+			Cmiss_element_destroy(&element);
+		}
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_field_module_destroy(&field_module);
+		return element_list;
+	}
+
+	bool isElementCompatible(Cmiss_element_id element)
+	{
+		if (get_FE_element_dimension(element) != dimension)
+			return false;
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		FE_region *element_fe_region = FE_element_get_FE_region(element);
+		return (element_fe_region == master_fe_region);
+	}
+
+};
+
+struct Cmiss_mesh_group : public Cmiss_mesh
+{
+public:
+
+	Cmiss_mesh_group(Cmiss_field_element_group_id group) :
+		Cmiss_mesh(group)
+	{
+	}
+
+	int addElement(Cmiss_element_id element)
+	{
+		int return_code = 0;
+		if (isElementCompatible(element))
+		{
+			if (group)
+			{
+				return_code = Computed_field_element_group_core_cast(group)->addObject(element);
+			}
+			else if (FE_region_is_group(fe_region))
+			{
+				return_code = FE_region_add_FE_element(fe_region, element);
+			}
+		}
+		return return_code;
 	}
 
 	int removeAllElements()
@@ -1011,44 +1062,6 @@ public:
 		return return_code;
 	}
 
-private:
-	~Cmiss_mesh()
-	{
-		if (group)
-			Cmiss_field_element_group_destroy(&group);
-		DEACCESS(FE_region)(&fe_region);
-	}
-
-	struct LIST(FE_element) *createElementListWithCondition(Cmiss_field_id conditional_field)
-	{
-		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_element_iterator_id iterator = createIterator();
-		Cmiss_element_id element = 0;
-		struct LIST(FE_element) *element_list =
-			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
-		while (0 != (element = Cmiss_element_iterator_next(iterator)))
-		{
-			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
-				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
-			Cmiss_element_destroy(&element);
-		}
-		Cmiss_field_cache_destroy(&cache);
-		Cmiss_field_module_destroy(&field_module);
-		return element_list;
-	}
-
-	bool isElementCompatible(Cmiss_element_id element)
-	{
-		if (get_FE_element_dimension(element) != dimension)
-			return false;
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		FE_region *element_fe_region = FE_element_get_FE_region(element);
-		return (element_fe_region == master_fe_region);
-	}
-
 };
 
 /*
@@ -1079,7 +1092,7 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 			Cmiss_field_element_group_id element_group_field = Cmiss_field_cast_element_group(field);
 			if (element_group_field)
 			{
-				mesh = Cmiss_field_element_group_get_mesh(element_group_field);
+				mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group_field));
 				Cmiss_field_element_group_destroy(&element_group_field);
 			}
 			Cmiss_field_destroy(&field);
@@ -1138,13 +1151,6 @@ int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address)
 {
 	if (mesh_address)
 		return Cmiss_mesh::deaccess(*mesh_address);
-	return 0;
-}
-
-int Cmiss_mesh_add_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element)
-{
-	if (mesh_group && element)
-		return mesh_group->addElement(element);
 	return 0;
 }
 
@@ -1258,33 +1264,47 @@ int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
 	return 0;
 }
 
-int Cmiss_mesh_is_group(Cmiss_mesh_id mesh)
-{
-	if (mesh)
-		return mesh->isGroup();
-	return 0;
-}
-
 int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2)
 {
 	return (mesh1 && mesh2 && mesh1->match(*mesh2));
 }
 
-int Cmiss_mesh_remove_all_elements(Cmiss_mesh_id mesh_group)
+Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh)
+{
+	if (mesh && mesh->isGroup())
+		return static_cast<Cmiss_mesh_group_id>(mesh->access());
+	return 0;
+}
+
+int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address)
+{
+	if (mesh_group_address)
+		return Cmiss_mesh::deaccess(*(reinterpret_cast<Cmiss_mesh_id*>(mesh_group_address)));
+	return 0;
+}
+
+int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+{
+	if (mesh_group && element)
+		return mesh_group->addElement(element);
+	return 0;
+}
+
+int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group)
 {
 	if (mesh_group)
 		return mesh_group->removeAllElements();
 	return 0;
 }
 
-int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element)
+int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->removeElement(element);
 	return 0;
 }
 
-int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh_group,
+int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
 	Cmiss_field_id conditional_field)
 {
 	if (mesh_group && conditional_field)
@@ -1292,11 +1312,11 @@ int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh_group,
 	return 0;
 }
 
-Cmiss_mesh_id Cmiss_mesh_create_from_element_group_internal(
+Cmiss_mesh_group_id Cmiss_mesh_create_from_element_group_internal(
 	Cmiss_field_element_group_id element_group_field)
 {
 	if (element_group_field)
-		return new Cmiss_mesh(element_group_field);
+		return new Cmiss_mesh_group(element_group_field);
 	return 0;
 }
 

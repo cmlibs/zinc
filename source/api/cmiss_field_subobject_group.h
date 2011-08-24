@@ -51,17 +51,23 @@
 #include "api/types/cmiss_node_id.h"
 #include "api/types/cmiss_field_subobject_group_id.h"
 
-/*****************************************************************************//**
- * Creates a field where nodes from the same nodeset can be put into group.
+/***************************************************************************//**
+ * Creates a node group field which packages a Cmiss_nodeset_group i.e. a subset
+ * of nodes from a master nodeset. As a field it evaluates to 1 for nodes in
+ * the nodeset group and 0 elsewhere, i.e. it is the predicate for the sub-
+ * domain, and this Boolean value can be combined in logical operations with
+ * other fields.
  *
  * @param field_module  Region field module which will own new field.
- * @param nodeset  Handle to a set of node
- * @return Newly created field
+ * @param mesh  Handle to a nodeset the node group is to be compatible with. If
+ * it is not a master nodeset, the master is obtained from it.
+ * Nodeset must be from the same region as field_module.
+ * @return  Newly created field, or NULL if failed.
  */
-Cmiss_field_id Cmiss_field_module_create_node_group(Cmiss_field_module_id field_module,
-		Cmiss_nodeset_id nodeset);
+Cmiss_field_id Cmiss_field_module_create_node_group(
+	Cmiss_field_module_id field_module, Cmiss_nodeset_id nodeset);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * If field can be cast to a Cmiss_field_node_group_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new reference.
@@ -71,7 +77,7 @@ Cmiss_field_id Cmiss_field_module_create_node_group(Cmiss_field_module_id field_
 */
 Cmiss_field_node_group_id Cmiss_field_cast_node_group(Cmiss_field_id field);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Cast node group field back to its base field and return the field.  Otherwise
  * return NULL.
  *
@@ -83,7 +89,7 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
 	return (Cmiss_field_id)(group);
 }
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Destroy the reference to the node group.
  *
  * @param group_address  address to the handle to the node group field
@@ -91,7 +97,7 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
  */
 int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Get a handle to the master nodeset this node group is a subset of.
  *
  * @param node_group  Handle to node group field.
@@ -100,7 +106,7 @@ int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address
 Cmiss_nodeset_id Cmiss_field_node_group_get_master_nodeset(
 	Cmiss_field_node_group_id node_group);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Add specified node to node group.
  *
  * @param node_group  handle to target node group field.
@@ -110,7 +116,7 @@ Cmiss_nodeset_id Cmiss_field_node_group_get_master_nodeset(
 int Cmiss_field_node_group_add_node(Cmiss_field_node_group_id node_group,
 	Cmiss_node_id node);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Remove specified node from node group.
  *
  * @param node_group  handle to target node group field.
@@ -120,7 +126,7 @@ int Cmiss_field_node_group_add_node(Cmiss_field_node_group_id node_group,
 int Cmiss_field_node_group_remove_node(Cmiss_field_node_group_id node_group,
 	Cmiss_node_id node);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Remove all nodes in node group.
  *
  * @param node_group  handle to target node group field.
@@ -128,7 +134,7 @@ int Cmiss_field_node_group_remove_node(Cmiss_field_node_group_id node_group,
  */
 int Cmiss_field_node_group_clear(Cmiss_field_node_group_id node_group);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Check if the specified node is in node group.
  *
  * @param node_group  handle to target node group field.
@@ -137,7 +143,7 @@ int Cmiss_field_node_group_clear(Cmiss_field_node_group_id node_group);
 int Cmiss_field_node_group_contains_node(
 	Cmiss_field_node_group_id node_group, Cmiss_node_id node);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Check if node group does not contain any node.
  *
  * @param node_group  handle to target node group field.
@@ -146,7 +152,7 @@ int Cmiss_field_node_group_contains_node(
 int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group);
 
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Create a node iterator object for iterating through the nodes in the group
  * which are ordered from lowest to highest identifier. The iterator initially
  * points at the position before the first node, so the first call to
@@ -158,17 +164,23 @@ int Cmiss_field_node_group_is_empty(Cmiss_field_node_group_id node_group);
 Cmiss_node_iterator_id Cmiss_field_node_group_create_node_iterator(
 	Cmiss_field_node_group_id node_group);
 
-/*****************************************************************************//**
- * Creates a field where elements from the same mesh can be put into group.
+/***************************************************************************//**
+ * Creates an element group field which packages a Cmiss_mesh_group i.e. a
+ * subset of elements from a master mesh. As a field it evaluates to 1 for
+ * elements in the mesh group and 0 elsewhere, i.e. it is the predicate for the
+ * sub-domain, and this Boolean value can be combined in logical operations with
+ * other fields.
  *
  * @param field_module  Region field module which will own new field.
- * @param mesh  Handle to an element mesh
- * @return Newly created field
+ * @param mesh  Handle to a finite element mesh the element group is to be
+ * compatible with. If it is not a master mesh, the master is obtained from it.
+ * Mesh must be from the same region as field_module.
+ * @return  Newly created field, or NULL if failed.
  */
-Cmiss_field_id Cmiss_field_module_create_element_group(Cmiss_field_module_id field_module,
-	Cmiss_mesh_id mesh);
+Cmiss_field_id Cmiss_field_module_create_element_group(
+	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * If field can be cast to a Cmiss_field_element_group_id do so
  * and return the field.  Otherwise return NULL.
  * Caller is responsible for destroying the new reference.
@@ -178,7 +190,7 @@ Cmiss_field_id Cmiss_field_module_create_element_group(Cmiss_field_module_id fie
 */
 Cmiss_field_element_group_id Cmiss_field_cast_element_group(Cmiss_field_id field);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Cast element group field back to its base field and return the field.  Otherwise
  * return NULL.
  *
@@ -190,7 +202,7 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
 	return (Cmiss_field_id)(group);
 }
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Destroy the reference to the element group.
  *
  * @param element_group_address  address to the handle to the element group field
@@ -198,14 +210,14 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
  */
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 
-/*****************************************************************************//**
- * Get a handle to the 'dual' mesh of this element group, which provides most of
- * the methods for working with it.
+/***************************************************************************//**
+ * Get a handle to the 'dual' mesh group of this element group, which provides
+ * most of the methods for working with it.
  *
  * @param element_group  Handle to element group field.
- * @return  Handle to mesh. Caller is responsible for destroying this.
+ * @return  Handle to mesh group. Caller is responsible for destroying this.
  */
-Cmiss_mesh_id Cmiss_field_element_group_get_mesh(
+Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 	Cmiss_field_element_group_id element_group);
 
 #endif /* !defined (CMISS_FIELD_SUBOBJECT_GROUP_H) */

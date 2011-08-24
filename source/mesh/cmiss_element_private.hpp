@@ -53,7 +53,7 @@ struct FE_region;
 /** Internal use only
  * @return  handle to mesh wrapping element_group_field.
  */
-Cmiss_mesh_id Cmiss_mesh_create_from_element_group_internal(
+Cmiss_mesh_group_id Cmiss_mesh_create_from_element_group_internal(
 	Cmiss_field_element_group_id element_group_field);
 
 /** Internal use only

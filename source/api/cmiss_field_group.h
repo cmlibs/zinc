@@ -223,50 +223,60 @@ Cmiss_field_group_id Cmiss_field_group_get_subregion_group(Cmiss_field_group_id 
 	Cmiss_region_id subregion);
 
 /***************************************************************************//**
- * Create and return a handle to a node group for the specified nodeset in the
- * local region of the specified group. Fails if already exists.
- * Caller is responsible for destroying the returned node group field handle.
+ * Create and return a handle to a node group field compatible with the supplied
+ * nodeset, i.e. able to contain nodes from its master nodeset. The node group
+ * field is registered as a sub-object group for this group.
+ * Fails if a compatible node group field already exists.
+ * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to modify.
- * @param nodeset  Handle to nodeset to create node group for.
+ * @param nodeset  Handle to a nodeset the node group is to be compatible with.
+ * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to new node group field, or NULL on failure.
  */
 Cmiss_field_node_group_id Cmiss_field_group_create_node_group(
 	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
- * Find and return handle to node group for the specified nodeset in the local
- * region of the specified group, if one exists.
+ * Find and return handle to the sub-object node group compatible with the
+ * specified nodeset, if one exists for the group.
+ * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
- * @param nodeset  Handle to nodeset to get node group for.
+ * @param nodeset  Handle to a nodeset the node group is to be compatible with.
+ * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to node group field, or NULL if none.
  */
 Cmiss_field_node_group_id Cmiss_field_group_get_node_group(
 	Cmiss_field_group_id group, Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
- * Create and return a handle to an element group for the specified mesh in
- * the local region of the specified group. Fails if already exists.
- * Caller is responsible for destroying the returned element group field handle.
+ * Create and return a handle to an element group field compatible with the
+ * supplied mesh, i.e. able to contain elements from its master mesh. The
+ * element group field is registered as a sub-object group for this group.
+ * Fails if a compatible element group field already exists.
+ * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to modify.
- * @param mesh  Handle to mesh to create element group for.
+ * @param mesh  Handle to a mesh the element group is to be compatible with.
+ * If not already a master mesh, the master is obtained from it.
  * @return  Handle to new element group field, or NULL on failure.
  */
-Cmiss_field_element_group_id Cmiss_field_group_create_element_group(Cmiss_field_group_id group,
-	Cmiss_mesh_id mesh);
+Cmiss_field_element_group_id Cmiss_field_group_create_element_group(
+	Cmiss_field_group_id group, Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
- * Find and return handle to element group for the specified mesh in the
- * local region of the specified group, if one exists.
+ * Find and return handle to the sub-object element group compatible with the
+ * specified mesh, if one exists for the group.
+ * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
- * @param nodeset  Handle to mesh to get element group for.
+ * @param mesh  Handle to a mesh the element group is to be compatible with.
+ * If not already a master mesh, the master is obtained from it.
  * @return  Handle to element group field, or NULL if none.
- * */
-Cmiss_field_element_group_id Cmiss_field_group_get_element_group(Cmiss_field_group_id group,
-	Cmiss_mesh_id mesh);
+ */
+Cmiss_field_element_group_id Cmiss_field_group_get_element_group(
+	Cmiss_field_group_id group, Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
  * Get a subgroup of the given group for the specified domain.

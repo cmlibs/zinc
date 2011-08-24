@@ -3951,7 +3951,7 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 		if (!element_group)
 			element_group = Cmiss_field_group_create_element_group(selection_group, temp_mesh);
 		Cmiss_mesh_destroy(&temp_mesh);
-		Cmiss_mesh_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+		Cmiss_mesh_group_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
 		Cmiss_field_element_group_destroy(&element_group);
 		Cmiss_element_iterator_id iterator = CREATE_LIST_ITERATOR(FE_element)(element_list);
 		Cmiss_element_id element = 0;
@@ -3959,16 +3959,16 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 		{
 			if (add_flag)
 			{
-				Cmiss_mesh_add_element(mesh_group, element);
+				Cmiss_mesh_group_add_element(mesh_group, element);
 			}
 			else
 			{
-				Cmiss_mesh_remove_element(mesh_group, element);
+				Cmiss_mesh_group_remove_element(mesh_group, element);
 			}
 			Cmiss_element_destroy(&element);
 		}
 		Cmiss_element_iterator_destroy(&iterator);
-		Cmiss_mesh_destroy(&mesh_group);
+		Cmiss_mesh_group_destroy(&mesh_group);
 		Cmiss_field_group_destroy(&selection_group);
 		Cmiss_field_module_end_change(field_module);
 		Cmiss_field_module_destroy(&field_module);

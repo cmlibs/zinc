@@ -297,7 +297,7 @@ int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_grou
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
 }
 
-Cmiss_mesh_id Cmiss_field_element_group_get_mesh(
+Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 	Cmiss_field_element_group_id element_group)
 {
 	return Cmiss_mesh_create_from_element_group_internal(element_group);

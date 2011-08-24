@@ -41,6 +41,7 @@
 #ifndef __CMISS_ELEMENT_H__
 #define __CMISS_ELEMENT_H__
 
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
@@ -172,15 +173,6 @@ Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
  */
 int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
 
-/*****************************************************************************//**
- * Add specified element to group mesh, i.e. not a master mesh.
- *
- * @param mesh_group  Handle to group mesh to modify.
- * @param element  Handle to element to add. Must be from the master mesh.
- * @return  1 if element added, 0 if failed.
- */
-int Cmiss_mesh_add_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element);
-
 /***************************************************************************//**
  * Returns whether the element is from the mesh.
  *
@@ -284,8 +276,8 @@ int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
  * Note that group and element_group fields are valid conditional fields.
  *
  * @param mesh  Handle to the mesh to destroy elements from.
- * @param conditional_field  Field which if non-zero at the element centroid
- * indicates it is to be destroyed.
+ * @param conditional_field  Field which if non-zero in the element indicates it
+ * is to be destroyed.
  * @return  1 on success, 0 on failure.
  */
 int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
@@ -338,14 +330,6 @@ char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh);
 int Cmiss_mesh_get_size(Cmiss_mesh_id mesh);
 
 /***************************************************************************//**
- * Query whether mesh is a sub-group mesh so add/remove functions can be used.
- *
- * @param mesh  The mesh to query.
- * @return  1 if the mesh is a group mesh, 0 if it is not.
- */
-int Cmiss_mesh_is_group(Cmiss_mesh_id mesh);
-
-/***************************************************************************//**
  * Check if two mesh handles refer to the same object.
  *
  * @param mesh1  The first mesh to match.
@@ -354,35 +338,82 @@ int Cmiss_mesh_is_group(Cmiss_mesh_id mesh);
  */
 int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2);
 
-/*****************************************************************************//**
- * Remove all elements from group mesh, i.e. not a master mesh.
+/***************************************************************************//**
+ * If the mesh is a mesh group i.e. subset of elements from a master mesh,
+ * get the mesh group specific interface for add/remove functions.
+ * Caller is responsible for destroying the returned reference.
  *
- * @param mesh_group  Handle to group mesh to modify.
- * @return  1 if all elements removed, 0 if failed.
+ * @param field  The mesh to be cast.
+ * @return  Mesh group specific representation if the input mesh is of this
+ * type, otherwise returns NULL.
  */
-int Cmiss_mesh_remove_all_elements(Cmiss_mesh_id mesh_group);
+Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Destroys this handle to the mesh group and sets it to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param mesh_group_address  Address of handle to the mesh group to destroy.
+ */
+int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address);
+
+/***************************************************************************//**
+ * Cast mesh group back to its base mesh class.
+ * IMPORTANT NOTE: Returned mesh does not have incremented reference count and
+ * must not be destroyed. Use Cmiss_mesh_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the mesh_group.
+ * Use this function to call base-class API, e.g.:
+ * int size = Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(mesh_group);
+ *
+ * @param mesh_group  Handle to the mesh group to cast.
+ * @return  Non-accessed handle to the mesh or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_mesh_id Cmiss_mesh_group_base_cast(
+	Cmiss_mesh_group_id mesh_group)
+{
+	return (Cmiss_mesh_id)(mesh_group);
+}
 
 /*****************************************************************************//**
- * Remove specified element from group mesh, i.e. not a master mesh.
+ * Add specified element to mesh group.
  *
- * @param mesh_group  Handle to group mesh to modify.
+ * @param mesh_group  Handle to mesh group to modify.
+ * @param element  Handle to element to add. Must be from the group's master mesh.
+ * @return  1 if element added, 0 if failed.
+ */
+int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
+	Cmiss_element_id element);
+
+/*****************************************************************************//**
+ * Remove all elements from mesh group.
+ *
+ * @param mesh_group  Handle to mesh group to modify.
+ * @return  1 if all elements removed, 0 if failed.
+ */
+int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
+
+/*****************************************************************************//**
+ * Remove specified element from mesh group.
+ *
+ * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to remove.
  * @return  1 if element removed, 0 if failed.
  */
-int Cmiss_mesh_remove_element(Cmiss_mesh_id mesh_group, Cmiss_element_id element);
+int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
+	Cmiss_element_id element);
 
 /***************************************************************************//**
- * Remove all elements in the mesh for which the conditional field is true i.e.
- * non-zero valued in the element.
+ * Remove all elements from the mesh group for which the conditional field is
+ * true i.e. non-zero valued in the element.
  * Results are undefined if conditional field is not constant over element.
  * Note that group and element_group fields are valid conditional fields.
  *
- * @param mesh_group  Handle to the group mesh to remove elements from.
- * @param conditional_field  Field which if non-zero at the element centroid
- * indicates it is to be removed.
+ * @param mesh_group  Handle to the mesh group to remove elements from.
+ * @param conditional_field  Field which if non-zero in the element indicates it
+ * is to be removed.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_mesh_remove_elements_conditional(Cmiss_mesh_id mesh_group,
+int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
    Cmiss_field_id conditional_field);
 
 /***************************************************************************//**

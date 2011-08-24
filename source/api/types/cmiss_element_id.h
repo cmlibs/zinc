@@ -44,6 +44,9 @@
 	struct Cmiss_mesh;
 	typedef struct Cmiss_mesh *Cmiss_mesh_id;
 
+	struct Cmiss_mesh_group;
+	typedef struct Cmiss_mesh_group *Cmiss_mesh_group_id;
+
 /** Handle to a template for creating or defining fields over an element. */
 	struct Cmiss_element_template;
 	typedef struct Cmiss_element_template *Cmiss_element_template_id;
