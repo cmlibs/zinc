@@ -105,6 +105,11 @@ inline Computed_field *Computed_field_cast(
 	return (reinterpret_cast<Computed_field*>(node_group_field));
 }
 
+int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address)
+{
+	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(node_group_address));
+}
+
 int Cmiss_field_node_group_add_node(Cmiss_field_node_group_id node_group,
 		Cmiss_node_id node)
 {
@@ -202,11 +207,6 @@ Cmiss_node_iterator_id Cmiss_field_node_group_create_node_iterator(Cmiss_field_n
 	return iterator;
 }
 
-int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address)
-{
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(node_group_address));
-}
-
 Cmiss_nodeset_id Cmiss_field_node_group_get_master_nodeset(
 	Cmiss_field_node_group_id node_group)
 {
@@ -295,12 +295,6 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
-}
-
-Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
-	Cmiss_field_element_group_id element_group)
-{
-	return Cmiss_mesh_create_from_element_group_internal(element_group);
 }
 
 #if defined (USE_OPENCASCADE)

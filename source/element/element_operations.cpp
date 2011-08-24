@@ -449,9 +449,7 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
 {
 	if (!mesh)
 		return 0;
-	const int dimension = Cmiss_mesh_get_dimension(mesh);
-	struct LIST(FE_element) *element_list = FE_region_create_related_element_list_for_dimension(
-		Cmiss_mesh_get_FE_region_internal(mesh), dimension);
+	struct LIST(FE_element) *element_list = Cmiss_mesh_create_element_list_internal(mesh);
 	Cmiss_element_id element = 0;
 	Cmiss_field_cache_id field_cache = 0;
 	if (conditional_field)

@@ -44,7 +44,10 @@
 	struct Cmiss_nodeset;
 	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
 
-/** Handle to a template for creating or defining fields at a node. */
+	struct Cmiss_nodeset_group;
+	typedef struct Cmiss_nodeset_group *Cmiss_nodeset_group_id;
+
+	/** Handle to a template for creating or defining fields at a node. */
 	struct Cmiss_node_template;
 	typedef struct Cmiss_node_template *Cmiss_node_template_id;
 

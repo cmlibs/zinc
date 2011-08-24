@@ -382,8 +382,7 @@ namespace {
 			// don't want element_groups based on group region FE_region so get master:
 			master_mesh(Cmiss_mesh_get_master(mesh)),
 			dimension(Cmiss_mesh_get_dimension(master_mesh)),
-			object_list(FE_region_create_related_element_list_for_dimension(
-				Cmiss_mesh_get_FE_region_internal(master_mesh), dimension))
+			object_list(Cmiss_mesh_create_element_list_internal(master_mesh))
 		{
 		}
 
@@ -617,7 +616,7 @@ namespace {
 			Computed_field_subobject_group(),
 			// don't want node_groups based on group region FE_region so get master:
 			master_nodeset(Cmiss_nodeset_get_master(nodeset)),
-			object_list(FE_region_create_related_node_list(Cmiss_nodeset_get_master_FE_region_internal(master_nodeset)))
+			object_list(Cmiss_nodeset_create_node_list_internal(master_nodeset))
 		{
 		}
 
@@ -665,6 +664,24 @@ namespace {
 			return 0;
 		};
 
+		/** remove objects from the group if they are in the supplied list */
+		int removeObjectsInList(struct LIST(FE_node) *node_list)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
+			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_is_in_list, (void *)node_list, object_list);
+			const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
+			if (new_size != old_size)
+			{
+				if (new_size == 0)
+					change_detail.changeClear();
+				else
+					change_detail.changeRemove();
+				update();
+			}
+			return return_code;
+		}
+
 		virtual int clear()
 		{
 			if (NUMBER_IN_LIST(FE_node)(object_list))
@@ -696,6 +713,17 @@ namespace {
 			return CREATE_LIST_ITERATOR(FE_node)(object_list);
 		}
 
+		/** @return  non-accessed node with that identifier, or 0 if none */
+		inline Cmiss_node_id findNodeByIdentifier(int identifier)
+		{
+			return FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, object_list);
+		}
+
+		int getSize()
+		{
+			return NUMBER_IN_LIST(FE_node)(object_list);
+		}
+
 		virtual int isEmpty() const
 		{
 			if (NUMBER_IN_LIST(FE_node)(object_list))
@@ -706,14 +734,7 @@ namespace {
 
 		virtual int isIdentifierInList(int identifier)
 		{
-			if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, object_list))
-			{
-				return 1;
-			}
-			else
-			{
-				return 0;
-			}
+			return (0 != findNodeByIdentifier(identifier));
 		}
 
 		virtual Cmiss_field_change_detail *extract_change_detail()

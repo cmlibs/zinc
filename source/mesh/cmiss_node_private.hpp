@@ -46,18 +46,11 @@ extern "C" {
 #include "api/cmiss_node.h"
 }
 
-struct FE_region;
-
-/** Internal use only
- * @return non-accessed FE_region for this nodeset.
- */
-FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset);
-
 /** Internal use only.
- * Use this function to avoid using nodeset from group regions.
- * @return non-accessed master FE_region for this nodeset.
+ * Create a related node list to that in nodeset.
+ * @return  New node list.
  */
-FE_region *Cmiss_nodeset_get_master_FE_region_internal(Cmiss_nodeset_id nodeset);
+struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id nodeset);
 
 /** Internal use only
  * @return non-accessed region for this nodeset.

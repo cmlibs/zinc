@@ -42,6 +42,7 @@
 #ifndef __CMISS_NODE_H__
 #define __CMISS_NODE_H__
 
+#include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
 #include "api/types/cmiss_node_id.h"
@@ -130,7 +131,7 @@ int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
 int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
 /***************************************************************************//**
- * Create a blank template from which new nodes can be created in this mesh.
+ * Create a blank template from which new nodes can be created in this nodeset.
  * Used to describe how finite element fields are defined.
  * Also used for defining new fields on existing nodes.
  *
@@ -165,6 +166,15 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
  */
 Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
 	Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Destroy all nodes in nodeset, also removing them from any related groups.
+ * All handles to the destroyed nodes become invalid.
+ *
+ * @param nodeset  Handle to nodeset to destroy nodes from.
+ * @return  1 if all nodes destroyed, 0 if failed.
+ */
+int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
 
 /***************************************************************************//**
  * Destroy the node if it is in the nodeset. Removes node from any related
@@ -237,6 +247,83 @@ int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset);
  * @return  1 if the two nodesets match, 0 if not.
  */
 int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2);
+
+/***************************************************************************//**
+ * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
+ * get the nodeset group specific interface for add/remove functions.
+ * Caller is responsible for destroying the returned reference.
+ *
+ * @param field  The nodeset to be cast.
+ * @return  Nodeset group specific representation if the input nodeset is of
+ * this type, otherwise returns NULL.
+ */
+Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
+
+/***************************************************************************//**
+ * Destroys this handle to the nodeset group and sets it to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param nodeset_group_address  Address of nodeset group handle to destroy.
+ */
+int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address);
+
+/***************************************************************************//**
+ * Cast nodeset group back to its base nodeset class.
+ * IMPORTANT NOTE: Returned nodeset does not have incremented reference count
+ * and must not be destroyed. Use Cmiss_nodeset_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the nodeset_group.
+ * Use this function to call base-class API, e.g.:
+ * int size = Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(nodeset_group);
+ *
+ * @param nodeset_group  Handle to the nodeset group to cast.
+ * @return  Non-accessed handle to the nodeset or NULL if failed.
+ */
+CMISS_C_INLINE Cmiss_nodeset_id Cmiss_nodeset_group_base_cast(
+	Cmiss_nodeset_group_id nodeset_group)
+{
+	return (Cmiss_nodeset_id)(nodeset_group);
+}
+
+/***************************************************************************//**
+ * Add specified node to nodeset group.
+ *
+ * @param nodeset_group  Handle to nodeset group to modify.
+ * @param node  Handle to node to add. Must be from the group's master nodeset.
+ * @return  1 if node added, 0 if failed.
+ */
+int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
+	Cmiss_node_id node);
+
+/***************************************************************************//**
+ * Remove all nodes from nodeset group.
+ *
+ * @param nodeset_group  Handle to nodeset group to modify.
+ * @return  1 if all nodes removed, 0 if failed.
+ */
+int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
+
+/***************************************************************************//**
+ * Remove specified node from nodeset group.
+ *
+ * @param nodeset_group  Handle to nodeset group to modify.
+ * @param node  Handle to node to remove.
+ * @return  1 if node removed, 0 if failed.
+ */
+int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
+	Cmiss_node_id node);
+
+/***************************************************************************//**
+ * Remove all nodes from the nodeset group for which the conditional field is
+ * true i.e. non-zero valued in the node.
+ * Note that group and node_group fields are valid conditional fields.
+ *
+ * @param nodeset_group  Handle to the nodeset group to remove nodes from.
+ * @param conditional_field  Field which if non-zero in the node indicates it
+ * is to be removed.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_nodeset_group_remove_nodes_conditional(
+	Cmiss_nodeset_group_id nodeset_group, Cmiss_field_id conditional_field);
 
 /***************************************************************************//**
  * Destroys this handle to the node_iterator and sets it to NULL.

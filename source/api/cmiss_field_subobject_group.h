@@ -98,6 +98,16 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
 int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
 /***************************************************************************//**
+ * Get a handle to the 'dual' nodeset group of this node group, which provides
+ * most of the methods for working with it.
+ *
+ * @param node_group  Handle to node group field.
+ * @return  Handle to nodeset group. Caller is responsible for destroying this.
+ */
+Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
+	Cmiss_field_node_group_id node_group);
+
+/***************************************************************************//**
  * Get a handle to the master nodeset this node group is a subset of.
  *
  * @param node_group  Handle to node group field.

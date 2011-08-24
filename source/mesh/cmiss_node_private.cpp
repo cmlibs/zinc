@@ -42,6 +42,7 @@
 
 extern "C" {
 #include <stdarg.h>
+#include "api/cmiss_field_module.h"
 #include "api/cmiss_node.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -56,6 +57,7 @@ extern "C" {
 #include "mesh/cmiss_node_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 
 /*
 Global types
@@ -403,97 +405,68 @@ private:
 	}
 };
 
-/*
-Global functions
-----------------
-*/
+/*============================================================================*/
 
-Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
-	Cmiss_field_module_id field_module, const char *nodeset_name)
+struct Cmiss_nodeset
 {
-	FE_region *fe_region = NULL;
-	if (field_module && nodeset_name)
+protected:
+	FE_region *fe_region;
+	Cmiss_field_node_group_id group;
+	int access_count;
+
+	Cmiss_nodeset(Cmiss_field_node_group_id group) :
+		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
+			Computed_field_get_region(Cmiss_field_node_group_base_cast(group))))),
+		group(group),
+		access_count(1)
 	{
-		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-		const char *dotpos = strrchr(nodeset_name, '.');
-		const char *trimmed_nodeset_name = 0;
-		if (dotpos)
-		{
-			Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
-			char *group_name = duplicate_string(nodeset_name);
-			group_name[dotpos - nodeset_name] = '\0';
-			Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
-			if (child)
-			{
-				if (Cmiss_region_is_group(child))
-				{
-					region = child;
-					trimmed_nodeset_name = dotpos + 1;
-				}
-				Cmiss_region_destroy(&child);
-			}
-			DEALLOCATE(group_name);
-		}
-		else
-		{
-			trimmed_nodeset_name = nodeset_name;
-		}
-		if (trimmed_nodeset_name)
-		{
-			fe_region = Cmiss_region_get_FE_region(region);
-			if (0 == strcmp(trimmed_nodeset_name, "cmiss_nodes"))
-			{
-				ACCESS(FE_region)(fe_region);
-			}
-			else if (0 == strcmp(trimmed_nodeset_name, "cmiss_data"))
-			{
-				fe_region = ACCESS(FE_region)(FE_region_get_data_FE_region(fe_region));
-			}
-		}
+		// GRC Cmiss_field_node_group_access missing:
+		Cmiss_field_access(Cmiss_field_node_group_base_cast(group));
 	}
-	return reinterpret_cast<Cmiss_nodeset_id>(fe_region);
-}
 
-Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset)
-{
-	ACCESS(FE_region)(reinterpret_cast<FE_region *>(nodeset));
-	return nodeset;
-}
-
-int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address)
-{
-	return DEACCESS(FE_region)(reinterpret_cast<FE_region **>(nodeset_address));
-}
-
-int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
-{
-	return FE_region_contains_FE_node(reinterpret_cast<FE_region *>(nodeset), node);
-}
-
-Cmiss_node_template_id Cmiss_nodeset_create_node_template(
-	Cmiss_nodeset_id nodeset)
-{
-	if (nodeset)
+public:
+	Cmiss_nodeset(FE_region *fe_region_in) :
+		fe_region(ACCESS(FE_region)(fe_region_in)),
+		group(0),
+		access_count(1)
 	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-		return new Cmiss_node_template(fe_region);
 	}
-	return NULL;
-}
 
-Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
-	int identifier, Cmiss_node_template_id node_template)
-{
-	if (nodeset && node_template)
+	Cmiss_nodeset_id access()
 	{
-		FE_node *node = NULL;
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(Cmiss_nodeset_id &nodeset)
+	{
+		if (!nodeset)
+			return 0;
+		--(nodeset->access_count);
+		if (nodeset->access_count <= 0)
+			delete nodeset;
+		nodeset = 0;
+		return 1;
+	}
+
+	int containsNode(Cmiss_node_id node)
+	{
+		if (group)
+			return Computed_field_node_group_core_cast(group)->containsObject(node);
+		return FE_region_contains_FE_node(fe_region, node);
+	}
+
+	Cmiss_node_id createNode(int identifier,
+		Cmiss_node_template_id node_template)
+	{
+		Cmiss_node_id node = 0;
 		if (node_template->isFinalised())
 		{
-			FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-			FE_node *template_node = node_template->getTemplateNode();
+			Cmiss_node_id template_node = node_template->getTemplateNode();
 			node = ACCESS(FE_node)(FE_region_create_FE_node_copy(
 				fe_region, identifier, template_node));
+			if (group)
+				Computed_field_node_group_core_cast(group)->addObject(node);
 		}
 		else
 		{
@@ -502,139 +475,481 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
 		}
 		return node;
 	}
-	return NULL;
+
+	Cmiss_node_template_id createNodeTemplate()
+	{
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return new Cmiss_node_template(master_fe_region);
+	}
+
+	Cmiss_node_iterator_id createIterator()
+	{
+		if (group)
+			return Computed_field_node_group_core_cast(group)->createIterator();
+		return FE_region_create_node_iterator(fe_region);
+	}
+
+	int destroyAllNodes()
+	{
+		return destroyNodesConditional(/*conditional_field*/0);
+	}
+
+	int destroyNode(Cmiss_node_id node)
+	{
+		if (containsNode(node))
+		{
+			FE_region *master_fe_region = fe_region;
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+			return FE_region_remove_FE_node(master_fe_region, node);
+		}
+		return 0;
+	}
+
+	int destroyNodesConditional(Cmiss_field_id conditional_field)
+	{
+		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		int return_code = FE_region_remove_FE_node_list(master_fe_region, node_list);
+		DESTROY(LIST(FE_node))(&node_list);
+		return return_code;
+	}
+
+	Cmiss_node_id findNodeByIdentifier(int identifier) const
+	{
+		Cmiss_node_id node = 0;
+		if (group)
+		{
+			node = Computed_field_node_group_core_cast(group)->findNodeByIdentifier(identifier);
+		}
+		else
+		{
+			node = FE_region_get_FE_node_from_identifier(fe_region, identifier);
+		}
+		if (node)
+			ACCESS(FE_node)(node);
+		return node;
+	}
+
+	FE_region *getFeRegion() const { return fe_region; }
+
+	char *getName()
+	{
+		char *name = 0;
+		if (group)
+		{
+			name = Cmiss_field_get_name(Cmiss_field_node_group_base_cast(group));
+		}
+		else
+		{
+			int error = 0;
+			Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
+			if (Cmiss_region_is_group(region))
+			{
+				char *group_name = Cmiss_region_get_name(region);
+				append_string(&name, group_name, &error);
+				append_string(&name, ".", &error);
+				DEALLOCATE(group_name);
+			}
+			if (FE_region_is_data_FE_region(fe_region))
+			{
+				append_string(&name, "cmiss_data", &error);
+			}
+			else
+			{
+				append_string(&name, "cmiss_nodes", &error);
+			}
+		}
+		return name;
+	}
+
+	Cmiss_nodeset_id getMaster()
+	{
+		if (!isGroup())
+			return access();
+		FE_region *master_fe_region = fe_region;
+		if (FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region) && master_fe_region)
+			return new Cmiss_nodeset(master_fe_region);
+		return 0;
+	}
+
+	int getSize() const
+	{
+		if (group)
+			return Computed_field_node_group_core_cast(group)->getSize();
+		return FE_region_get_number_of_FE_nodes(fe_region);
+	}
+
+	int isGroup()
+	{
+		return (group || FE_region_is_group(fe_region));
+	}
+
+	int match(Cmiss_nodeset& other_nodeset)
+	{
+		return ((fe_region == other_nodeset.fe_region) &&
+			(group == other_nodeset.group));
+	}
+
+protected:
+	~Cmiss_nodeset()
+	{
+		if (group)
+			Cmiss_field_node_group_destroy(&group);
+		DEACCESS(FE_region)(&fe_region);
+	}
+
+	struct LIST(FE_node) *createNodeListWithCondition(Cmiss_field_id conditional_field)
+	{
+		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_node_iterator_id iterator = createIterator();
+		Cmiss_node_id node = 0;
+		struct LIST(FE_node) *node_list = FE_region_create_related_node_list(fe_region);
+		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		{
+			Cmiss_field_cache_set_node(cache, node);
+			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
+				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
+		}
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_field_module_destroy(&field_module);
+		return node_list;
+	}
+
+	bool isNodeCompatible(Cmiss_node_id node)
+	{
+		// GRC: not preventing nodes from cmiss_nodes and cmiss_data from being
+		// put in other's groups as currently expensive, O(logN).
+		// FE_region_add_FE_node checks; group fields do not
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		FE_region *node_fe_region = FE_node_get_FE_region(node);
+		return (node_fe_region == master_fe_region);
+	}
+
+};
+
+struct Cmiss_nodeset_group : public Cmiss_nodeset
+{
+public:
+
+	Cmiss_nodeset_group(Cmiss_field_node_group_id group) :
+		Cmiss_nodeset(group)
+	{
+	}
+
+	int addNode(Cmiss_node_id node)
+	{
+		int return_code = 0;
+		if (isNodeCompatible(node))
+		{
+			if (group)
+			{
+				return_code = Computed_field_node_group_core_cast(group)->addObject(node);
+			}
+			else if (FE_region_is_group(fe_region))
+			{
+				return_code = FE_region_add_FE_node(fe_region, node);
+			}
+		}
+		return return_code;
+	}
+
+	int removeAllNodes()
+	{
+		int return_code = 0;
+		if (group)
+		{
+			return_code = Computed_field_node_group_core_cast(group)->clear();
+		}
+		else if (FE_region_is_group(fe_region))
+		{
+			return removeNodesConditional(/*conditional_field*/0);
+		}
+		return 0;
+	}
+
+	int removeNode(Cmiss_node_id node)
+	{
+		int return_code = 0;
+		if (group)
+		{
+			return_code = Computed_field_node_group_core_cast(group)->removeObject(node);
+		}
+		else if (FE_region_is_group(fe_region))
+		{
+			return_code = FE_region_remove_FE_node(fe_region, node);
+		}
+		return return_code;
+	}
+
+	int removeNodesConditional(Cmiss_field_id conditional_field)
+	{
+		int return_code = 0;
+		if (isGroup())
+		{
+			struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
+			if (group)
+				return_code = Computed_field_node_group_core_cast(group)->removeObjectsInList(node_list);
+			else
+				return_code = FE_region_remove_FE_node_list(fe_region, node_list);
+			DESTROY(LIST(FE_node))(&node_list);
+		}
+		return return_code;
+	}
+
+};
+
+/*
+Global functions
+----------------
+*/
+
+Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
+	Cmiss_field_module_id field_module, const char *nodeset_name)
+{
+	Cmiss_nodeset_id nodeset = 0;
+	if (field_module && nodeset_name)
+	{
+		Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, nodeset_name);
+		if (field)
+		{
+			Cmiss_field_node_group_id node_group_field = Cmiss_field_cast_node_group(field);
+			if (node_group_field)
+			{
+				nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group_field));
+				Cmiss_field_node_group_destroy(&node_group_field);
+			}
+			Cmiss_field_destroy(&field);
+		}
+		if (!nodeset)
+		{
+			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+			const char *dotpos = strrchr(nodeset_name, '.');
+			const char *trimmed_nodeset_name = 0;
+			if (dotpos)
+			{
+				Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
+				char *group_name = duplicate_string(nodeset_name);
+				group_name[dotpos - nodeset_name] = '\0';
+				Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
+				if (child)
+				{
+					if (Cmiss_region_is_group(child))
+					{
+						region = child;
+						trimmed_nodeset_name = dotpos + 1;
+					}
+					Cmiss_region_destroy(&child);
+				}
+				DEALLOCATE(group_name);
+			}
+			else
+			{
+				trimmed_nodeset_name = nodeset_name;
+			}
+			if (trimmed_nodeset_name)
+			{
+				FE_region *fe_region = 0;
+				if (0 == strcmp(trimmed_nodeset_name, "cmiss_nodes"))
+				{
+					fe_region = Cmiss_region_get_FE_region(region);
+				}
+				else if (0 == strcmp(trimmed_nodeset_name, "cmiss_data"))
+				{
+					fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
+				}
+				if (fe_region)
+				{
+					nodeset = new Cmiss_nodeset(fe_region);
+				}
+			}
+		}
+	}
+	return nodeset;
+}
+
+Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+		return nodeset->access();
+	return 0;
+}
+
+int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address)
+{
+	if (nodeset_address)
+		return Cmiss_nodeset::deaccess(*nodeset_address);
+	return 0;
+}
+
+int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
+{
+	if (nodeset && node)
+		return nodeset->containsNode(node);
+	return 0;
+}
+
+Cmiss_node_template_id Cmiss_nodeset_create_node_template(
+	Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+		return nodeset->createNodeTemplate();
+	return 0;
+}
+
+Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
+	int identifier, Cmiss_node_template_id node_template)
+{
+	if (nodeset && node_template)
+		return nodeset->createNode(identifier, node_template);
+	return 0;
 }
 
 Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
 	Cmiss_nodeset_id nodeset)
 {
 	if (nodeset)
-	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		return FE_region_create_node_iterator(fe_region);
-	}
-	return NULL;
+		return nodeset->createIterator();
+	return 0;
 }
 
 Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	int identifier)
 {
-	Cmiss_node_id node = FE_region_get_FE_node_from_identifier(
-		reinterpret_cast<FE_region *>(nodeset), identifier);
-	if (node)
-		ACCESS(FE_node)(node);
-	return node;
+	if (nodeset)
+		return nodeset->findNodeByIdentifier(identifier);
+	return 0;
 }
 
 char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset)
 {
-	char *name = 0;
 	if (nodeset)
-	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		int error = 0;
-		Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
-		if (Cmiss_region_is_group(region))
-		{
-			char *group_name = Cmiss_region_get_name(region);
-			append_string(&name, group_name, &error);
-			append_string(&name, ".", &error);
-			DEALLOCATE(group_name);
-		}
-		if (FE_region_is_data_FE_region(fe_region))
-		{
-			append_string(&name, "cmiss_data", &error);
-		}
-		else
-		{
-			append_string(&name, "cmiss_nodes", &error);
-		}
-	}
-	return name;
+		return nodeset->getName();
+	return 0;
 }
 
 int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
 {
 	if (nodeset)
-	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		return FE_region_get_number_of_FE_nodes(fe_region);
-	}
+		return nodeset->getSize();
+	return 0;
+}
+
+int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+		nodeset->destroyAllNodes();
 	return 0;
 }
 
 int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
 {
-	int return_code = 0;
 	if (nodeset && node)
-	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return_code = FE_region_remove_FE_node(master_fe_region, node);
-	}
-
-	return return_code;
+		nodeset->destroyNode(node);
+	return 0;
 }
 
 int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
 	Cmiss_field_id conditional_field)
 {
-	int return_code = 0;
 	if (nodeset && conditional_field)
-	{
-		FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-		struct LIST(FE_node) *node_list =	FE_node_list_from_conditional_field(
-			fe_region, conditional_field, 0);
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return_code = FE_region_remove_FE_node_list(master_fe_region, node_list);
-		DESTROY(LIST(FE_node))(&node_list);
-	}
-
-	return return_code;
+		return nodeset->destroyNodesConditional(conditional_field);
+	return 0;
 }
 
 Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset)
 {
-	FE_region *fe_region = Cmiss_nodeset_get_master_FE_region_internal(nodeset);
-	return reinterpret_cast<Cmiss_nodeset_id>(ACCESS(FE_region)(fe_region));
+	if (nodeset)
+		return nodeset->getMaster();
+	return 0;
 }
 
 int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2)
 {
-	return (nodeset1 && (nodeset1 == nodeset2));
+	return (nodeset1 && nodeset2 && nodeset1->match(*nodeset2));
 }
 
-FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset)
+Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset)
 {
-	return reinterpret_cast<FE_region *>(nodeset);
+	if (nodeset && nodeset->isGroup())
+		return static_cast<Cmiss_nodeset_group_id>(nodeset->access());
+	return 0;
 }
 
-FE_region *Cmiss_nodeset_get_master_FE_region_internal(Cmiss_nodeset_id nodeset)
+int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address)
 {
-	FE_region *fe_region = reinterpret_cast<FE_region *>(nodeset);
-	FE_region_get_ultimate_master_FE_region(fe_region, &fe_region);
-	return fe_region;
+	if (nodeset_group_address)
+		return Cmiss_nodeset::deaccess(*(reinterpret_cast<Cmiss_nodeset_id*>(nodeset_group_address)));
+	return 0;
+}
+
+int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group, Cmiss_node_id node)
+{
+	if (nodeset_group && node)
+		return nodeset_group->addNode(node);
+	return 0;
+}
+
+int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group)
+{
+	if (nodeset_group)
+		return nodeset_group->removeAllNodes();
+	return 0;
+}
+
+int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group, Cmiss_node_id node)
+{
+	if (nodeset_group && node)
+		return nodeset_group->removeNode(node);
+	return 0;
+}
+
+int Cmiss_nodeset_group_remove_nodes_conditional(Cmiss_nodeset_group_id nodeset_group,
+	Cmiss_field_id conditional_field)
+{
+	if (nodeset_group && conditional_field)
+		return nodeset_group->removeNodesConditional(conditional_field);
+	return 0;
+}
+
+Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
+	Cmiss_field_node_group_id node_group)
+{
+	if (node_group)
+		return new Cmiss_nodeset_group(node_group);
+	return 0;
+}
+
+struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+		return FE_region_create_related_node_list(nodeset->getFeRegion());
+	return 0;
 }
 
 Cmiss_region_id Cmiss_nodeset_get_region_internal(Cmiss_nodeset_id nodeset)
 {
-	if (!nodeset)
-		return 0;
-	return FE_region_get_Cmiss_region(reinterpret_cast<FE_region *>(nodeset));
+	if (nodeset)
+		return FE_region_get_Cmiss_region(nodeset->getFeRegion());
+	return 0;
 }
 
 Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset)
 {
-	if (!nodeset)
-		return 0;
-	return FE_region_get_master_Cmiss_region(reinterpret_cast<FE_region *>(nodeset));
+	if (nodeset)
+		return FE_region_get_master_Cmiss_region(nodeset->getFeRegion());
+	return 0;
 }
 
 int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset)
 {
-	return FE_region_is_data_FE_region(reinterpret_cast<FE_region *>(nodeset));
+	if (nodeset)
+		return FE_region_is_data_FE_region(nodeset->getFeRegion());
+	return 0;
 }
 
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)

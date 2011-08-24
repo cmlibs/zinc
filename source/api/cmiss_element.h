@@ -249,7 +249,7 @@ Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
 int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Destroy all elements in mesh, also removing them from any related groups.
  * All handles to the destroyed element become invalid.
  *
@@ -353,7 +353,7 @@ Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
  * Destroys this handle to the mesh group and sets it to NULL.
  * Internally this just decrements the reference count.
  *
- * @param mesh_group_address  Address of handle to the mesh group to destroy.
+ * @param mesh_group_address  Address of mesh group handle to destroy.
  */
 int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address);
 
@@ -374,7 +374,7 @@ CMISS_C_INLINE Cmiss_mesh_id Cmiss_mesh_group_base_cast(
 	return (Cmiss_mesh_id)(mesh_group);
 }
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Add specified element to mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
@@ -384,7 +384,7 @@ CMISS_C_INLINE Cmiss_mesh_id Cmiss_mesh_group_base_cast(
 int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
 	Cmiss_element_id element);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Remove all elements from mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
@@ -392,7 +392,7 @@ int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
  */
 int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Remove specified element from mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.

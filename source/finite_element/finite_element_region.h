@@ -597,6 +597,14 @@ used by element fields of <fe_field>.
 struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 	int identifier, struct FE_node *source);
 
+/***************************************************************************//**
+ * For group FE_region only. Checks node is from master region and adds it
+ * to this region if not already in it.
+ *
+ * @return  1 if node added, otherwise 0.
+ */
+int FE_region_add_FE_node(struct FE_region *fe_region, struct FE_node *node);
+
 struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 	struct FE_node *node);
 /*******************************************************************************

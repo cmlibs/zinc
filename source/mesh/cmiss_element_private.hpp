@@ -48,18 +48,11 @@ extern "C" {
 #include "api/cmiss_field_subobject_group.h"
 }
 
-struct FE_region;
-
-/** Internal use only
- * @return  handle to mesh wrapping element_group_field.
+/** Internal use only.
+ * Create a related element list to that in mesh.
+ * @return  New element list.
  */
-Cmiss_mesh_group_id Cmiss_mesh_create_from_element_group_internal(
-	Cmiss_field_element_group_id element_group_field);
-
-/** Internal use only
- * @return non-accessed FE_region for this mesh.
- */
-FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh);
+struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id mesh);
 
 /** Internal use only.
  * @return non-accessed region for this mesh.

@@ -3697,6 +3697,28 @@ struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 	return (new_node);
 }
 
+int FE_region_add_FE_node(struct FE_region *fe_region, struct FE_node *node)
+{
+	int return_code = 0;
+	if (fe_region && fe_region->master_fe_region &&
+		(!fe_region->top_data_hack) && node)
+	{
+		if (!IS_OBJECT_IN_LIST(FE_node)(node, fe_region->fe_node_list))
+		{
+			if (FE_region_contains_FE_node(fe_region->master_fe_region, node))
+			{
+				if (ADD_OBJECT_TO_LIST(FE_node)(node, fe_region->fe_node_list))
+				{
+					FE_REGION_FE_NODE_CHANGE(fe_region, node,
+						CHANGE_LOG_OBJECT_ADDED(FE_node), node);
+					return_code = 1;
+				}
+			}
+		}
+	}
+	return return_code;
+}
+
 struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 	struct FE_node *node)
 /*******************************************************************************

@@ -783,8 +783,6 @@ public:
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->containsObject(element);
-		CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
 		int element_dimension = get_FE_element_dimension(element);
 		if (element_dimension == dimension)
 		{
@@ -970,11 +968,11 @@ protected:
 		Cmiss_element_id element = 0;
 		struct LIST(FE_element) *element_list =
 			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
-		while (0 != (element = Cmiss_element_iterator_next(iterator)))
+		while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
 		{
+			Cmiss_field_cache_set_element(cache, element);
 			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
-			Cmiss_element_destroy(&element);
 		}
 		Cmiss_field_cache_destroy(&cache);
 		Cmiss_field_module_destroy(&field_module);
@@ -1050,7 +1048,7 @@ public:
 	int removeElementsConditional(Cmiss_field_id conditional_field)
 	{
 		int return_code = 0;
-		if (group || FE_region_is_group(fe_region))
+		if (isGroup())
 		{
 			struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
 			if (group)
@@ -1312,18 +1310,18 @@ int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
 	return 0;
 }
 
-Cmiss_mesh_group_id Cmiss_mesh_create_from_element_group_internal(
-	Cmiss_field_element_group_id element_group_field)
+Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
+	Cmiss_field_element_group_id element_group)
 {
-	if (element_group_field)
-		return new Cmiss_mesh_group(element_group_field);
+	if (element_group)
+		return new Cmiss_mesh_group(element_group);
 	return 0;
 }
 
-FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh)
+struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id mesh)
 {
 	if (mesh)
-		return mesh->getFeRegion();
+		return FE_region_create_related_element_list_for_dimension(mesh->getFeRegion(), mesh->getDimension());
 	return 0;
 }
 
