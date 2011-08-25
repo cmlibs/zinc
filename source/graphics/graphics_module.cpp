@@ -319,7 +319,11 @@ int Cmiss_graphics_module_remove_member_regions_rendition(
 		for (pos = graphics_module->member_regions_list->begin();
 				pos != graphics_module->member_regions_list->end(); ++pos)
 		{
+			// clean up rendition between begin/end change so fields and other objects
+			// destroyed when rendition destroyed do not cause messages to be sent
+			Cmiss_region_begin_change(*pos);
 			Cmiss_region_deaccess_rendition(*pos);
+			Cmiss_region_end_change(*pos);
 		}
 		graphics_module->member_regions_list->clear();
 		return_code = 1;

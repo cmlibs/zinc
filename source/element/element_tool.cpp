@@ -83,8 +83,6 @@ extern "C" {
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -163,36 +161,30 @@ Module functions
 ----------------
 */
 
-static int Cmiss_field_group_destroy_all_elements(Cmiss_field_id field)
+static int Cmiss_field_group_destroy_all_elements(Cmiss_field_group_id group, void *dummy_void)
 {
+	USE_PARAMETER(dummy_void);
 	int return_code = 0;
-
-	if (field)
+	if (group)
 	{
-		Cmiss_field_group_id group = Cmiss_field_cast_group(field);
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
-		if (group)
+		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(Cmiss_field_group_base_cast(group));
+		for (int i = 1; i <= 3; i++)
 		{
-			for (int i = 1; i <= 3; i++)
+			Cmiss_mesh_id master_mesh =
+				Cmiss_field_module_find_mesh_by_dimension(field_module, /*dimension*/i);
+			Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+			Cmiss_mesh_destroy(&master_mesh);
+			if (element_group)
 			{
-				Cmiss_mesh_id master_mesh =
-					Cmiss_field_module_find_mesh_by_dimension(field_module, /*dimension*/i);
-				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
-				Cmiss_mesh_destroy(&master_mesh);
-				if (element_group)
-				{
-					Cmiss_mesh_group_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
-					Cmiss_mesh_destroy_all_elements(Cmiss_mesh_group_base_cast(mesh_group));
-					Cmiss_mesh_group_destroy(&mesh_group);
-					Cmiss_field_element_group_destroy(&element_group);
-				}
+				Cmiss_mesh_group_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+				Cmiss_mesh_destroy_all_elements(Cmiss_mesh_group_base_cast(mesh_group));
+				Cmiss_mesh_group_destroy(&mesh_group);
+				Cmiss_field_element_group_destroy(&element_group);
 			}
-			Cmiss_field_group_destroy(&group);
 		}
 		Cmiss_field_module_destroy(&field_module);
 		return_code = 1;
 	}
-
 	return return_code;
 }
 
@@ -201,21 +193,20 @@ int Element_tool_destroy_selected_elements(struct Element_tool *element_tool)
 	int return_code = 0;
 	if (element_tool->region)
 	{
+		return_code = 1;
 		Cmiss_rendition *root_rendition = Cmiss_region_get_rendition_internal(
 			element_tool->region);
-		Cmiss_field_group_id root_group = Cmiss_rendition_get_selection_group(root_rendition);
-		if (root_group)
+		Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(root_rendition);
+		if (selection_group)
 		{
-			Cmiss_field_group_for_each_child(root_group, Cmiss_field_group_destroy_all_elements,1);
-			Cmiss_field_group_destroy_all_elements(Cmiss_field_group_base_cast(root_group));
-			Cmiss_field_group_clear_region_tree_element(root_group);
+			return_code = Cmiss_field_group_for_each_group_hierarchical(selection_group,
+				Cmiss_field_group_destroy_all_elements, /*user_data*/(void *)0);
+			Cmiss_field_group_clear_region_tree_element(selection_group);
 			Cmiss_rendition_flush_tree_selections(root_rendition);
-			Cmiss_field_group_destroy(&root_group);
+			Cmiss_field_group_destroy(&selection_group);
 		}
-		return_code = 1;
 		Cmiss_rendition_destroy(&root_rendition);
 	}
-
 	return return_code;
 }
 
@@ -676,7 +667,6 @@ release.
 								if (mesh_group)
 								{
 									Cmiss_mesh_group_add_element(mesh_group, picked_element);
-									//Computed_field_changed(Cmiss_field_group_base_cast(sub_group)); // not sure this was ever needed
 									Cmiss_mesh_group_destroy(&mesh_group);
 								}
 								if (sub_group)
@@ -777,9 +767,8 @@ release.
 											{
 												if (pos->first != sub_region)
 												{
-													if (sub_region && sub_group)
+													if (sub_group)
 													{
-														Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 														Cmiss_field_group_destroy(&sub_group);
 													}
 													for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)
@@ -825,9 +814,8 @@ release.
 													Cmiss_field_module_destroy(&field_module);
 												}
 											}
-											if (sub_region && sub_group)
+											if (sub_group)
 											{
-												Computed_field_changed(Cmiss_field_group_base_cast(sub_group));
 												Cmiss_field_group_destroy(&sub_group);
 											}
 											for (iter = 0; iter < MAXIMUM_ELEMENT_XI_DIMENSIONS; iter++)

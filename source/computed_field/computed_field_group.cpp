@@ -207,7 +207,6 @@ private:
 public:
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
 	Region_field_map subregion_group_map;
-	Region_field_map_iterator child_group_pos;
 
 	Computed_field_group(Cmiss_region *region)
 		: Computed_field_group_base()
@@ -217,7 +216,6 @@ public:
 		, local_data_group(NULL)
 		, subregion_group_map()
 	{		//ACCESS(Cmiss_region)(region);
-		child_group_pos = subregion_group_map.begin();
 		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 			local_element_group[i] = NULL;
 	}
@@ -264,9 +262,7 @@ public:
 
 	int clear_region_tree_element();
 
-	Cmiss_field_id getFirstChild();
-
-	Cmiss_field_id getNextChild();
+	int for_each_group_hiearchical(Cmiss_field_group_iterator_function function, void *user_data);
 
 	int remove_empty_subregion_groups();
 
@@ -277,7 +273,7 @@ public:
 		Cmiss_field_hierarchical_group_change_detail *prior_change_detail =
 			new Cmiss_field_hierarchical_group_change_detail();
 		*prior_change_detail = change_detail;
-#ifdef GRC
+#ifdef DEBUG_CODE
 		{
 			Cmiss_region *region = Computed_field_get_region(field);
 			char *path = Cmiss_region_get_path(region);
@@ -285,7 +281,7 @@ public:
 				prior_change_detail->getLocalChange(), prior_change_detail->getNonLocalChange());
 			DEALLOCATE(path);
 		}
-#endif // GRC
+#endif // DEBUG_CODE
 		change_detail.clear();
 		return prior_change_detail;
 	}
@@ -478,31 +474,6 @@ int Computed_field_group::evaluate_cache_at_location(
 
 	return (return_code);
 } /* Computed_field_group::evaluate_cache_at_location */
-
-Cmiss_field_id Computed_field_group::getFirstChild()
-{
-	Cmiss_field_id child_field= NULL;
-	child_group_pos = subregion_group_map.begin();
-	if (child_group_pos !=subregion_group_map.end())
-	{
-		child_field = Cmiss_field_access(Cmiss_field_group_base_cast(child_group_pos->second));
-	}
-	return child_field;
-}
-
-Cmiss_field_id Computed_field_group::getNextChild()
-{
-	Cmiss_field_id child_field= NULL;
-	if (child_group_pos !=subregion_group_map.end())
-	{
-		child_group_pos++;
-		if (child_group_pos !=subregion_group_map.end())
-		{
-			child_field = Cmiss_field_access(Cmiss_field_group_base_cast(child_group_pos->second));
-		}
-	}
-	return child_field;
-}
 
 int Computed_field_group::isEmptyLocal() const
 {
@@ -968,8 +939,8 @@ Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id 
 		node_group = Cmiss_field_cast_node_group(node_group_field);
 		if (node_group)
 		{
-			Cmiss_nodeset_id check_master_nodeset = Cmiss_field_node_group_get_master_nodeset(node_group);
-			if (Cmiss_nodeset_match(check_master_nodeset, master_nodeset))
+			if (Cmiss_nodeset_match(master_nodeset,
+				Computed_field_node_group_core_cast(node_group)->getMasterNodeset()))
 			{
 				if (use_data)
 				{
@@ -985,7 +956,6 @@ Cmiss_field_node_group_id Computed_field_group::get_node_group(Cmiss_nodeset_id 
 				// wrong nodeset
 				Cmiss_field_node_group_destroy(&node_group);
 			}
-			Cmiss_nodeset_destroy(&check_master_nodeset);
 		}
 		Cmiss_field_destroy(&node_group_field);
 		Cmiss_field_module_destroy(&field_module);
@@ -1235,17 +1205,19 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 	Cmiss_field_group_id group_field = NULL;
 	if (!use_data && local_node_group)
 	{
-		Cmiss_field_node_group_id node_group =
-			Cmiss_field_cast_node_group(local_node_group);
-		return_code = Cmiss_field_node_group_clear(node_group);
+		Cmiss_field_node_group_id node_group = Cmiss_field_cast_node_group(local_node_group);
+		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+		return_code = Cmiss_nodeset_group_remove_all_nodes(nodeset_group);
+		Cmiss_nodeset_group_destroy(&nodeset_group);
 		Computed_field_changed(this->field);
 		Cmiss_field_node_group_destroy(&node_group);
 	}
 	if (use_data && local_data_group)
 	{
-		Cmiss_field_node_group_id data_group =
-			Cmiss_field_cast_node_group(local_data_group);
-		return_code = Cmiss_field_node_group_clear(data_group);
+		Cmiss_field_node_group_id data_group = Cmiss_field_cast_node_group(local_data_group);
+		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(data_group);
+		return_code = Cmiss_nodeset_group_remove_all_nodes(nodeset_group);
+		Cmiss_nodeset_group_destroy(&nodeset_group);
 		Computed_field_changed(this->field);
 		Cmiss_field_node_group_destroy(&data_group);
 	}
@@ -1303,6 +1275,34 @@ int Computed_field_group::clear_region_tree_element()
 		}
 	}
 	return (return_code);
+}
+
+int Computed_field_group::for_each_group_hiearchical(
+	Cmiss_field_group_iterator_function function, void *user_data)
+{
+	int return_code = 0;
+	if (field)
+	{
+		// ensure group is accessed while user function is called so not destroyed
+		Cmiss_field_id access_field = Cmiss_field_access(field);
+		return_code = function(reinterpret_cast<Cmiss_field_group_id>(field), user_data);
+		Cmiss_field_destroy(&access_field);
+		if (return_code)
+		{
+			for (Region_field_map_iterator child_group_iter = subregion_group_map.begin();
+				child_group_iter !=subregion_group_map.end(); ++child_group_iter)
+			{
+				Computed_field_group *child_group_core = Computed_field_group_core_cast(child_group_iter->second);
+				if ((!child_group_core) ||
+					(!child_group_core->for_each_group_hiearchical(function, user_data)))
+				{
+					return_code = 0;
+					break;
+				}
+			}
+		}
+	}
+	return return_code;
 }
 
 } //namespace
@@ -1555,36 +1555,17 @@ Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_grou
 	return field;
 }
 
-int Cmiss_field_group_for_each_child(Cmiss_field_group_id group,
-		int (*function)(Cmiss_field_id child_field), int recursive)
+int Cmiss_field_group_for_each_group_hierarchical(Cmiss_field_group_id group,
+	Cmiss_field_group_iterator_function function, void *user_data)
 {
 	int return_code = 0;
-	Cmiss_field_id group_field = Computed_field_cast(group);
-	if (group)
+	if (group && function)
 	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			Cmiss_field_id child_field = group_core->getFirstChild();
-			while (child_field)
-			{
-				if (child_field != group_field)
-				{
-					function(child_field);
-					if (recursive)
-					{
-						Cmiss_field_group_id child_group = Cmiss_field_cast_group(child_field);
-						Cmiss_field_destroy(&child_field);
-						Cmiss_field_group_for_each_child(child_group, function, recursive);
-						child_field = Computed_field_cast(child_group);
-					}
-				}
-				Cmiss_field_destroy(&child_field);
-				child_field = group_core->getNextChild();
-			}
+			return group_core->for_each_group_hiearchical(function, user_data);
 		}
-		return_code = 1;
 	}
 	return return_code;
 }
@@ -1600,7 +1581,6 @@ Computed_field *Cmiss_field_module_create_group(Cmiss_field_module_id field_modu
 
 	ENTER(Computed_field_create_group);
 	field = (Computed_field *)NULL;
-	// GRC original_field->manager check will soon be unnecessary
 	if (field_module)
 	{
 		Cmiss_region_id region = Cmiss_field_module_get_region(field_module);

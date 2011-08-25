@@ -2703,8 +2703,10 @@ int Cmiss_rendition_modify(struct Cmiss_rendition *destination,
 				Cmiss_graphic_set_rendition_for_list_private,
 				destination, temp_list_of_graphics);
 			/* replace the destination list of graphic with temp_list_of_graphics */
-			DESTROY(LIST(Cmiss_graphic))(&(destination->list_of_graphics));
+			struct LIST(Cmiss_graphic) *destroy_list_of_graphics = destination->list_of_graphics;
 			destination->list_of_graphics = temp_list_of_graphics;
+			/* destroy list afterwards to avoid manager messages halfway through change */
+			DESTROY(LIST(Cmiss_graphic))(&destroy_list_of_graphics);
 			/* inform the client of the change */
 			Cmiss_rendition_changed(destination);
 			return_code = 1;
@@ -3806,30 +3808,6 @@ int Cmiss_rendition_remove_selection_group(Cmiss_rendition_id rendition)
 	return return_code;
 }
 
-int Cmiss_field_node_group_add_node_iterator(Cmiss_node_id node,
-	void *node_group_void)
-{
-	Cmiss_field_node_group_id node_group = 
-		(Cmiss_field_node_group_id)node_group_void;
-	if (NULL != node_group)
-	{
-		Cmiss_field_node_group_add_node(node_group, node);
-	}
-	return 1;
-}
-
-int Cmiss_field_node_group_remove_node_iterator(Cmiss_node_id node,
-	void *node_group_void)
-{
-	Cmiss_field_node_group_id node_group =
-		(Cmiss_field_node_group_id)node_group_void;
-	if (NULL != node_group)
-	{
-		Cmiss_field_node_group_remove_node(node_group, node);
-	}
-	return 1;
-}
-
 int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition,
 		struct LIST(FE_node) *node_list, int add_flag, int use_data)
 {
@@ -3840,47 +3818,38 @@ int Cmiss_rendition_change_selection_from_node_list(Cmiss_rendition_id rendition
 	{
 		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition->region);
 		Cmiss_field_module_begin_change(field_module);
-		Cmiss_field_group_id sub_group =
-			Cmiss_rendition_get_or_create_selection_group(rendition);
-		if (sub_group)
+		Cmiss_field_group_id selection_group = Cmiss_rendition_get_or_create_selection_group(rendition);
+		Cmiss_nodeset_id temp_nodeset = Cmiss_field_module_find_nodeset_by_name(
+			field_module, use_data ? "cmiss_data" : "cmiss_nodes");
+		Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(selection_group, temp_nodeset);
+		if (!node_group)
+			node_group = Cmiss_field_group_create_node_group(selection_group, temp_nodeset);
+		Cmiss_nodeset_destroy(&temp_nodeset);
+		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+		Cmiss_field_node_group_destroy(&node_group);
+		Cmiss_node_iterator_id iterator = CREATE_LIST_ITERATOR(FE_node)(node_list);
+		Cmiss_node_id node = 0;
+		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 		{
-			Cmiss_field_node_group_id node_group = NULL;
-			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
-				field_module, use_data ? "cmiss_data" : "cmiss_nodes");
-			if (nodeset)
+			if (add_flag)
 			{
-				node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
-				if (!node_group)
-				{
-					node_group = Cmiss_field_group_create_node_group(sub_group, nodeset);
-				}
-				Cmiss_nodeset_destroy(&nodeset);
+				Cmiss_nodeset_group_add_node(nodeset_group, node);
 			}
-			if (node_group)
+			else
 			{
-				if (add_flag)
-				{
-					FOR_EACH_OBJECT_IN_LIST(FE_node)(
-						Cmiss_field_node_group_add_node_iterator,
-						(void *)node_group, node_list);
-				}
-				else
-				{
-					FOR_EACH_OBJECT_IN_LIST(FE_node)(
-						Cmiss_field_node_group_remove_node_iterator,
-						(void *)node_group, node_list);
-				}
-				Cmiss_field_node_group_destroy(&node_group);
+				Cmiss_nodeset_group_remove_node(nodeset_group, node);
 			}
-			Cmiss_field_group_destroy(&sub_group);
 		}
+		Cmiss_node_iterator_destroy(&iterator);
+		Cmiss_nodeset_group_destroy(&nodeset_group);
+		Cmiss_field_group_destroy(&selection_group);
 		Cmiss_field_module_end_change(field_module);
 		Cmiss_field_module_destroy(&field_module);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_rendition_add_selection_from_node_list */
+}
 
 int Cmiss_rendition_add_selection_from_node_list(Cmiss_rendition_id rendition,
 	struct LIST(FE_node) *node_list, int use_data)
@@ -3893,7 +3862,7 @@ Create a node list selection
 {
 	int return_code = 0;
 	return_code = Cmiss_rendition_change_selection_from_node_list(rendition,
-		node_list, /*add_or_remove_flag*/1, use_data);
+		node_list, /*add_flag*/1, use_data);
 	return return_code;
 }
 
@@ -3927,7 +3896,7 @@ int Cmiss_rendition_remove_selection_from_node_list(Cmiss_rendition_id rendition
 {
 	int return_code = 0;
 	if (Cmiss_rendition_change_selection_from_node_list(rendition,
-		node_list, /*add_or_remove_flag*/0, use_data))
+		node_list, /*add_flag*/0, use_data))
 	{
 		Cmiss_rendition_flush_tree_selections(rendition);
 		return_code = 1;
@@ -3955,7 +3924,7 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 		Cmiss_field_element_group_destroy(&element_group);
 		Cmiss_element_iterator_id iterator = CREATE_LIST_ITERATOR(FE_element)(element_list);
 		Cmiss_element_id element = 0;
-		while (0 != (element = Cmiss_element_iterator_next(iterator)))
+		while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
 		{
 			if (add_flag)
 			{
@@ -3965,7 +3934,6 @@ int Cmiss_rendition_change_selection_from_element_list_of_dimension(Cmiss_rendit
 			{
 				Cmiss_mesh_group_remove_element(mesh_group, element);
 			}
-			Cmiss_element_destroy(&element);
 		}
 		Cmiss_element_iterator_destroy(&iterator);
 		Cmiss_mesh_group_destroy(&mesh_group);

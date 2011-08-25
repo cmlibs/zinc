@@ -626,7 +626,7 @@ namespace {
 			Cmiss_nodeset_destroy(&master_nodeset);
 		}
 
-		Cmiss_nodeset_id get_master_nodeset()
+		Cmiss_nodeset_id getMasterNodeset()
 		{
 			return master_nodeset;
 		}

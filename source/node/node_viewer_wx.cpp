@@ -712,29 +712,22 @@ static void Node_viewer_Computed_field_change(
 			if (selection_group && changed_field_list && Computed_field_or_ancestor_satisfies_condition(
 				Cmiss_field_group_base_cast(selection_group), Computed_field_is_in_list, (void *)changed_field_list))
 			{
-				Cmiss_field_node_group_id node_group = NULL;
 				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_viewer->region);
-				Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
+				Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(
 					field_module, node_viewer->use_data ? "cmiss_data" : "cmiss_nodes");
 				Cmiss_field_module_destroy(&field_module);
-				if (nodeset)
+				Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(selection_group, master_nodeset);
+				Cmiss_nodeset_destroy(&master_nodeset);
+				Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+				Cmiss_field_node_group_destroy(&node_group);
+				/* make sure there is only one node selected in group */
+				if (1 == Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(nodeset_group)))
 				{
-					node_group = Cmiss_field_group_get_node_group(selection_group, nodeset);
-					Cmiss_nodeset_destroy(&nodeset);
-				}
-				if (node_group)
-				{
-					Cmiss_node_iterator_id iterator = Cmiss_field_node_group_create_node_iterator(node_group);
-					struct FE_node *node = NULL, *next_node = NULL;
-					if (iterator)
-					{
-						node = Cmiss_node_iterator_next(iterator);
-						if (node)
-							next_node = Cmiss_node_iterator_next(iterator);
-						Cmiss_node_iterator_destroy(&iterator);
-					}
-					/* make sure there is only one node selected in group */
-					if (node && !next_node && node != node_viewer->current_node)
+					Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(
+						Cmiss_nodeset_group_base_cast(nodeset_group));
+					Cmiss_node_id node = Cmiss_node_iterator_next_non_access(iterator);
+					Cmiss_node_iterator_destroy(&iterator);
+					if (node != node_viewer->current_node)
 					{
 						if (node_viewer->wx_node_viewer)
 						{
@@ -746,16 +739,8 @@ static void Node_viewer_Computed_field_change(
 							Node_viewer_update_collpane(node_viewer);
 						}
 					}
-					Cmiss_field_node_group_destroy(&node_group);
-					if (node)
-					{
-						Cmiss_node_destroy(&node);
-					}
-					if (next_node)
-					{
-						Cmiss_node_destroy(&next_node);
-					}
 				}
+				Cmiss_nodeset_group_destroy(&nodeset_group);
 			}
 			if (changed_field_list)
 				DESTROY(LIST(Computed_field))(&changed_field_list);
