@@ -1437,6 +1437,13 @@ struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region)
 		ACCESS(Cmiss_region)(region->parent) : NULL;
 }
 
+struct Cmiss_region *Cmiss_region_get_parent_internal(struct Cmiss_region *region)
+{
+	if (region)
+		return region->parent;
+	return 0;
+}
+
 struct Cmiss_region *Cmiss_region_get_first_child(struct Cmiss_region *region)
 {
 	return (region && region->first_child) ?

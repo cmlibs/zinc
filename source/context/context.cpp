@@ -111,25 +111,8 @@ int Cmiss_context_destroy(struct Context **context_address)
 				Cmiss_command_data_destroy(&context->default_command_data);
 			if (context->UI_module)
 				User_interface_module_destroy(&context->UI_module);
-			Cmiss_field_group_id root_selection_field_copy = NULL;
-			if (context->root_region)
-			{
-				Cmiss_rendition_id root_rendition = Cmiss_graphics_module_get_rendition(context->graphics_module, context->root_region);
-				if (root_rendition)
-				{
-					Cmiss_field_group_id root_selection_field = Cmiss_rendition_get_selection_group(root_rendition);
-					if (root_selection_field)
-					{
-						root_selection_field_copy = root_selection_field;
-						Cmiss_field_group_destroy(&root_selection_field);
-					}
-					Cmiss_rendition_destroy(&root_rendition);
-				}
-			}
 			if (context->graphics_module)
 				Cmiss_graphics_module_destroy(&context->graphics_module);
-			if (root_selection_field_copy)
-				Cmiss_field_group_destroy(&root_selection_field_copy);
 			if (context->root_region)
 			{
 				/* need the following due to circular references where field owned by region references region itself;

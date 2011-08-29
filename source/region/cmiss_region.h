@@ -265,6 +265,15 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
 struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region);
 
 /***************************************************************************//**
+ * Returns a non-accessed pointer to parent region of this region, if any.
+ * Internal only.
+ *
+ * @param region  The child region.
+ * @return  Non-accessed reference to parent region, or NULL if none.
+ */
+struct Cmiss_region *Cmiss_region_get_parent_internal(struct Cmiss_region *region);
+
+/***************************************************************************//**
  * Returns a reference to the first child region of this region.
  * 
  * @param region  The region whose first child is requested.

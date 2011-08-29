@@ -101,15 +101,6 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id g
 int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
 
 /***************************************************************************//**
- * Remove and destroy all empty subregion groups of this group.
- * Empty subgroups in use by other clients may remain in group after call.
- *
- * @param group  Handle to group field to modify.
- * @return  1 on success, 0 on failure.
- */
-int Cmiss_field_group_remove_empty_subregion_groups(Cmiss_field_group_id group);
-
-/***************************************************************************//**
  * Query if this group and all its subregion and sub-object groups are empty.
  *
  * @param group  Handle to group field to query.
@@ -141,6 +132,15 @@ int Cmiss_field_group_clear(Cmiss_field_group_id group);
  * @return  1 if group is successfully cleared locally, otherwise 0.
  */
 int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
+
+/***************************************************************************//**
+ * Remove and destroy all empty subregion and subobject groups of this group.
+ * Empty subgroups in use by other clients may remain after call.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
 
 /***************************************************************************//**
  * Add the local/owning region of this group field to the group, i.e. all local

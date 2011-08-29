@@ -193,7 +193,7 @@ static void Cmiss_selection_handler_callback(
 		const Cmiss_field_change_detail *source_change_detail = NULL;
 		if (selection_handler && selection_handler->rendition)
 		{
-			Cmiss_field_group_id group_field = Cmiss_rendition_get_internal_selection_group(selection_handler->rendition);
+			Cmiss_field_group_id group_field = Cmiss_rendition_get_selection_group(selection_handler->rendition);
 			if (group_field)
 			{
 				int change = Computed_field_manager_message_get_object_change_and_detail(
@@ -254,6 +254,7 @@ static void Cmiss_selection_handler_callback(
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
 				delete event;
+				Cmiss_field_group_destroy(&group_field);
 			}
 		}
 	}

@@ -223,7 +223,7 @@ public:
 	~Computed_field_group()
 	{
 		clear();
-		remove_empty_subregion_groups();
+		remove_empty_subgroups();
 		std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 		for (;it != domain_selection_group.end(); it++)
 		{
@@ -264,7 +264,7 @@ public:
 
 	int for_each_group_hiearchical(Cmiss_field_group_iterator_function function, void *user_data);
 
-	int remove_empty_subregion_groups();
+	int remove_empty_subgroups();
 
 	virtual Cmiss_field_change_detail *extract_change_detail()
 	{
@@ -1176,15 +1176,43 @@ void Computed_field_group::remove_child_group(struct Cmiss_region *child_region)
 	}
 }
 
-int Computed_field_group::remove_empty_subregion_groups()
+int Computed_field_group::remove_empty_subgroups()
 {
-	/* remove_empty_subgroups */
+	/* remove empty subobject groups */
+	if (local_node_group)
+	{
+		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_node_group->core);
+		if (group_base->isEmpty())
+		{
+			Cmiss_field_destroy(&local_node_group);
+		}
+	}
+	if (local_data_group)
+	{
+		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_data_group->core);
+		if (group_base->isEmpty())
+		{
+			Cmiss_field_destroy(&local_data_group);
+		}
+	}
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+	{
+		if (local_element_group[i])
+		{
+			Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_element_group[i]->core);
+			if (group_base->isEmpty())
+			{
+				Cmiss_field_destroy(&local_element_group[i]);
+			}
+		}
+	}
+	/* remove empty subregion group */
 	for (Region_field_map_iterator iter = subregion_group_map.begin();
 		iter != subregion_group_map.end();)
 	{
 		Cmiss_field_group_id subregion_group_field = iter->second;
 		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group_field);
-		group_core->remove_empty_subregion_groups();
+		group_core->remove_empty_subgroups();
 		if (group_core->isEmpty())
 		{
 			subregion_group_map.erase(iter++);
@@ -1509,7 +1537,7 @@ int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group)
 	return return_code;
 }
 
-int Cmiss_field_group_remove_empty_subregion_groups(Cmiss_field_group_id group)
+int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group)
 {
 	if (group)
 	{
@@ -1517,7 +1545,7 @@ int Cmiss_field_group_remove_empty_subregion_groups(Cmiss_field_group_id group)
 			Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			return group_core->remove_empty_subregion_groups();
+			return group_core->remove_empty_subgroups();
 		}
 	}
 	return 0;

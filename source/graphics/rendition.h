@@ -330,21 +330,12 @@ PROTOTYPE_ANY_OBJECT(Cmiss_rendition);
 int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition, 
 	struct GT_object *glyph, const char *cmiss_graphic_name);
 
-/***************************************************************************//**
- * Get the selection group of rendition. This function will not check either
- * the selection group is managed or not. This function is only intended to be
- * used internally for callback functions.
- *
- * @param cmiss_rendition  pointer to the cmiss_rendition.
- * @return Return selection group if successfully otherwise null.
- */
-Cmiss_field_group_id Cmiss_rendition_get_internal_selection_group(Cmiss_rendition_id rendition);
-
 Cmiss_field_group_id Cmiss_rendition_get_or_create_selection_group(Cmiss_rendition_id rendition);
 
+/***************************************************************************//**
+ * Remove selection groups from rendition tree if they are empty.
+ */
 void Cmiss_rendition_flush_tree_selections(Cmiss_rendition_id rendition);
-
-int Cmiss_rendition_remove_selection_group(Cmiss_rendition_id rendition);
 
 int Cmiss_rendition_create_node_list_selection(Cmiss_rendition_id rendition,
 	struct LIST(FE_node) *node_list);
