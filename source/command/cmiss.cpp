@@ -112,7 +112,7 @@ extern "C" {
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
-#include "computed_field/computed_field_window_projection.h"
+#include "computed_field/computed_field_scene_viewer_projection.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "context/context.h"
 #if defined (MOTIF_USER_INTERFACE)
@@ -21898,7 +21898,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (command_data->graphics_window_manager)
 			{
-				Computed_field_register_type_window_projection(
+				Computed_field_register_type_scene_viewer_projection(
 					command_data->computed_field_package,
 					command_data->graphics_window_manager);
 			}

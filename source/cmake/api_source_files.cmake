@@ -23,8 +23,10 @@ SET( API_HDRS
 	source/api/cmiss_field_image.h
 	source/api/cmiss_field_image_processing.h
 	source/api/cmiss_field_logical_operators.h
+	source/api/cmiss_field_matrix_operations.h
 	source/api/cmiss_field_module.h
 	source/api/cmiss_field_parameters.h
+	source/api/cmiss_field_scene_viewer_projection.h
 	source/api/cmiss_field_subobject_group.h
 	source/api/cmiss_field_trigonometry.h
 	source/api/cmiss_graphic.h

@@ -1006,7 +1006,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_value_index_ranges.cpp \
 	stream/cmiss_field_image_stream.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
-	computed_field/computed_field_window_projection.cpp
+	computed_field/computed_field_scene_viewer_projection.cpp
 ifeq ($(USE_ITK),true)
 COMPUTED_FIELD_SRCS += \
 	computed_field/computed_field_derivatives.cpp

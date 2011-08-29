@@ -1620,4 +1620,15 @@ Cmiss_field_image_id Scene_viewer_get_background_image_field(
 
 int Scene_viewer_set_background_image_field(
 	struct Scene_viewer *scene_viewer, Cmiss_field_image_id image_field);
+
+/***************************************************************************//**
+ * Gets matrix transforming coordinate system to
+ * CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL
+ * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
+ * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
+ * coordinates which reverse z so are left-handed.
+ */
+int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
+	enum Cmiss_graphics_coordinate_system coordinate_system,
+	gtMatrix *local_transformation_matrix, double *projection);
 #endif /* !defined (SCENE_VIEWER_H) */

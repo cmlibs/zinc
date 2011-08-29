@@ -1,9 +1,10 @@
 /*******************************************************************************
-FILE : computed_field_window_projection.h
+FILE : cmiss_field_scene_viewer_projection.h
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 29 Aug 2011
 
 DESCRIPTION :
+The public interface to the Cmiss_fields that perform matrix operations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -22,7 +23,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -40,51 +41,36 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H)
-#define COMPUTED_FIELD_WINDOW_PROJECTION_H
+#ifndef __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
+#define __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_graphics_coordinate_system.h"
 #include "api/types/cmiss_scene_viewer_id.h"
 
-enum Cmiss_field_window_projection_type
-{
-	NDC_PROJECTION,
-	TEXTURE_PROJECTION,
-	VIEWPORT_PROJECTION,
-	INVERSE_NDC_PROJECTION,
-	INVERSE_TEXTURE_PROJECTION,
-	INVERSE_VIEWPORT_PROJECTION
-};
-
-/* API functions are prefixed with Cmiss */
-#define Computed_field_create_window_projection Cmiss_field_module_create_window_projection
-
 /*****************************************************************************//**
- * Creates a field performing a window projection, returning the source field
- * with each component multiplied by the perspective transformation of the
- * supplied scene_viewer.
- * The <graphics_window_name> and <pane_number> are stored so that the command to
- * reproduce this field can be written out.
+ * Creates a field performing a window projection, returning the the perspective
+ * 4x4 transformation matrix of the supplied scene_viewer.
  * The manager for <field> is notified if the <scene_viewer> closes.
- * 
+ * Note CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
+ * of the rendition for the owning region of field, which is the cumulative
+ * transformation matrices back from the root region.
+ * See also projection field.
+ *
  * @param field_module  Region field module which will own new field.
- * @param source_field  Field supplying values to transform.
- * @param scene_viewer  Scene viewer to obtain projection transformation from.
+ * @param scene_viewer  handle to Cmiss_scene_viewer object.
+ * @param from_coordinate_system  The input coordinate system for the
+ * transformation.
+ * @param to_coordinate_system  The output coordinate system for the
+ * transformation.
+ *
  * @return Newly created field with 3 components.
  */
-struct Computed_field *Computed_field_create_window_projection(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
-	char *graphics_window_name, int pane_number,
-	enum Cmiss_field_window_projection_type projection_type);
+Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
+	Cmiss_field_module_id field_module,
+	Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_graphics_coordinate_system from_coordinate_system,
+	enum Cmiss_graphics_coordinate_system to_coordinate_system);
 
-int Computed_field_register_type_window_projection(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Graphics_window) *graphics_window_manager);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H) */
+#endif

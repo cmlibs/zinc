@@ -901,7 +901,9 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image_processing.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_logical_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_matrix_operations.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_parameters.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_scene_viewer_projection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h

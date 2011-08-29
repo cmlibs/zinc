@@ -1452,6 +1452,7 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_graphics(scene);
 #endif /* defined (OLD_CODE) */
 			DEALLOCATE(scene->name);
+
 			if (scene->list_of_rendition)
 			{
 				if (!scene->list_of_rendition->empty())
@@ -3647,7 +3648,6 @@ understood for the type of <interaction_volume> passed.
 							select_buffer_size += SELECT_BUFFER_SIZE_INCREMENT;
 						}
 						DEALLOCATE(select_buffer);
-
 					}
 				}
 			}
@@ -4873,6 +4873,7 @@ int Cmiss_scene_remove_rendition(Scene *scene, struct Cmiss_rendition *rendition
 		 * may have already been removed from its parent.
 		 * The following code may not be great performance wise but its safe.
 		 */
+		Cmiss_rendition_triggers_scene_region_change_callback(rendition, scene);
 		Rendition_set::iterator pos =
 			scene->list_of_rendition->begin();
 		while (pos != scene->list_of_rendition->end())
@@ -5033,4 +5034,24 @@ int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)
 		return_code = 0;
 	}
 	return return_code;
+}
+
+int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
+	struct Scene *scene, void *dummy_void)
+{
+	USE_PARAMETER(dummy_void);
+	if (scene)
+	{
+		if (scene->region)
+		{
+			Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(scene->region);
+			if (rendition)
+			{
+				Cmiss_rendition_triggers_scene_region_change_callback(rendition, scene);
+				Cmiss_rendition_destroy(&rendition);
+			}
+		}
+		return 1;
+	}
+	return 0;
 }

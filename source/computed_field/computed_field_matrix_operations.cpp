@@ -1874,6 +1874,12 @@ private:
 	char* get_command_string();
 
 	int evaluate(int number_of_derivatives);
+
+	int set_values_at_location(Field_location* location, const FE_value *values);
+
+	virtual int propagate_find_element_xi(const FE_value *values, int number_of_values,
+		struct FE_element **element_address, FE_value *xi,
+		FE_value time, Cmiss_mesh_id mesh);
 };
 
 int Computed_field_projection::evaluate(int number_of_derivatives)
@@ -2095,6 +2101,132 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_projection::get_command_string */
+
+int Computed_field_projection::set_values_at_location(
+   Field_location* location, const FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <location>.
+==============================================================================*/
+{
+	double d,result[4];
+	int indx[4],return_code;
+	FE_value source_values[3];
+
+	ENTER(Computed_field_window_projection::set_values_at_location);
+	if (field && location && values)
+	{
+		field->derivatives_valid = 0;
+		if (matrix_rows == matrix_columns)
+		{
+			double *projection_matrix = field->source_fields[1]->values;
+			double *lu_matrix = NULL;
+			lu_matrix = new double[matrix_rows * matrix_columns];
+			copy_matrix(4,4,projection_matrix,lu_matrix);
+			result[0] = (double)values[0];
+			result[1] = (double)values[1];
+			result[2] = (double)values[2];
+			result[3] = 1.0;
+			if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
+				LU_backsubstitute(4,lu_matrix,indx,result) &&
+				(0.0 != result[3]))
+			{
+				source_values[0] = (result[0] / result[3]);
+				source_values[1] = (result[1] / result[3]);
+				source_values[2] = (result[2] / result[3]);
+				return_code=Computed_field_set_values_at_location(
+					field->source_fields[0],location,source_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_projection::set_values_at_location.  "
+					"Could not invert field %s",field->name);
+				return_code=0;
+			}
+			delete[] lu_matrix;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_projection::set_values_at_location.  "
+				"Project matrix is not a square matrix.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_projection::set_values_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_window_projection::set_values_at_location */
+
+int Computed_field_projection::propagate_find_element_xi(
+	const FE_value *values, int number_of_values, struct FE_element **element_address,
+	FE_value *xi, FE_value time, Cmiss_mesh_id mesh)
+{
+	double d,result[4];
+	int indx[4],return_code;
+	FE_value source_values[3];
+
+	ENTER(Computed_field_window_projection::propagate_find_element_xi);
+	if (field && values && (number_of_values==field->number_of_components))
+	{
+		if (matrix_rows == matrix_columns)
+		{
+			double *projection_matrix = field->source_fields[1]->values;
+			double *lu_matrix = NULL;
+			lu_matrix = new double[matrix_rows * matrix_columns];
+			copy_matrix(matrix_rows,matrix_columns,projection_matrix,lu_matrix);
+			result[0] = (double)values[0];
+			result[1] = (double)values[1];
+			result[2] = (double)values[2];
+			result[3] = 1.0;
+			if (LU_decompose(4,lu_matrix,indx,&d,/*singular_tolerance*/1.0e-12) &&
+				LU_backsubstitute(4,lu_matrix,indx,result) &&
+				(0.0 != result[3]))
+			{
+				source_values[0] = (result[0] / result[3]);
+				source_values[1] = (result[1] / result[3]);
+				source_values[2] = (result[2] / result[3]);
+				return_code=Computed_field_find_element_xi(
+					field->source_fields[0], source_values, 3, time, element_address,
+					xi, mesh, /*propagate_field*/1,
+					/*find_nearest_location*/0);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_projection::propagate_find_element_xi.  "
+					"Could not invert field %s",field->name);
+				return_code=0;
+			}
+			delete[] lu_matrix;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_projection::propagate_find_element_xi.  "
+				"Project matrix is not a square matrix.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection::propagate_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_window_projection::propagate_find_element_xi */
 
 } //namespace
 

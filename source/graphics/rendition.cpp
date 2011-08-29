@@ -5,7 +5,6 @@ FILE : rendition.cpp
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
- * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  * http://www.mozilla.org/MPL/
@@ -84,6 +83,9 @@ extern "C" {
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_transformation, \
 	struct Cmiss_rendition *, gtMatrix *);
 
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_scene_region_change, \
+	struct Cmiss_rendition *, struct Cmiss_scene *);
+
 typedef std::list<Cmiss_selection_handler *> Selection_handler_list;
 
 struct Cmiss_rendition_callback_data
@@ -147,6 +149,7 @@ Structure for maintaining a graphical rendition of region.
 	const char *name_prefix;
 	/* callback list for transformation changes */
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)) *transformation_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_scene_region_change)) *scene_region_change_callback_list;
 	unsigned int position;
 	Cmiss_field_group_id selection_group;
 	int selection_removed; // flag set when selection_group cleared
@@ -157,6 +160,11 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_rendition_transformation, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_rendition_transformation, \
 	struct Cmiss_rendition *, gtMatrix *)
+
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_rendition_scene_region_change, void)
+
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_rendition_scene_region_change, \
+	struct Cmiss_rendition *, struct Cmiss_scene *)
 
 int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition)
 {
@@ -463,6 +471,8 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->position = 0;
 				cmiss_rendition->transformation_callback_list =
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)))();
+				cmiss_rendition->scene_region_change_callback_list =
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_scene_region_change)))();
 				cmiss_rendition->transformation_field = NULL;
 				cmiss_rendition->transformation_time_callback_flag = 0;
 				cmiss_rendition->name_prefix = Cmiss_region_get_path(cmiss_region);
@@ -605,7 +615,6 @@ static void Cmiss_rendition_FE_region_change(struct FE_region *fe_region,
 	}
 	LEAVE;
 } /* Cmiss_rendition_FE_region_change */
-
 static void Cmiss_rendition_data_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *rendition_void)
 {
@@ -1342,14 +1351,13 @@ gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
 				}
 				Cmiss_rendition_destroy(&parent_rendition);
 			}
-			Cmiss_region_destroy(&parent);
 		}
 		else
 		{
 			/* top level of transformation */
 			use_local_transformation = 1;
 		}
-
+		Cmiss_region_destroy(&parent);
 		/* allocate a gtMatrix for the top/first found transformation */
 		if (use_local_transformation && rendition->transformation &&
 			(ALLOCATE(transformation, gtMatrix, 1)))
@@ -2861,6 +2869,81 @@ int Cmiss_rendition_remove_transformation_callback(
 	return (return_code);
 } /* Cmiss_rendition_remove_transformation_callback */
 
+int Cmiss_rendition_add_total_transformation_callback(struct Cmiss_rendition *rendition,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_rendition_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_rendition_scene_region_change) *region_change_function,
+	void *user_data)
+{
+	int return_code = 1;
+	if (rendition && scene)
+	{
+		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
+
+		if ((scene_region != region) || parent)
+		{
+			struct Cmiss_rendition *parent_rendition = Cmiss_region_get_rendition_internal(parent);
+			if (parent_rendition)
+			{
+				return_code = Cmiss_rendition_add_total_transformation_callback(parent_rendition, scene, function,
+					region_change_function, user_data);
+				Cmiss_rendition_destroy(&parent_rendition);
+			}
+		}
+		if (return_code)
+			return_code = CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_rendition_transformation)(
+				rendition->transformation_callback_list, function, user_data);
+		if (scene_region == region)
+			return_code &= CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_rendition_scene_region_change)(
+				rendition->scene_region_change_callback_list, region_change_function, user_data);
+		Cmiss_region_destroy(&parent);
+		Cmiss_region_destroy(&scene_region);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
+
+int Cmiss_rendition_remove_total_transformation_callback(struct Cmiss_rendition *rendition,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_rendition_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_rendition_scene_region_change) *region_change_function,
+	void *user_data)
+{
+	int return_code = 1;
+	if (rendition && scene)
+	{
+		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
+		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
+
+		if ((scene_region != region) || parent)
+		{
+			struct Cmiss_rendition *parent_rendition = Cmiss_region_get_rendition_internal(parent);
+			if (parent_rendition)
+			{
+				return_code = Cmiss_rendition_remove_total_transformation_callback(parent_rendition, scene, function,
+					region_change_function, user_data);
+				Cmiss_rendition_destroy(&parent_rendition);
+			}
+		}
+		Cmiss_region_destroy(&parent);
+		Cmiss_region_destroy(&scene_region);
+		if (return_code)
+			return_code = CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_rendition_transformation)(
+				rendition->transformation_callback_list, function,user_data);
+		if (scene_region == region)
+			return_code &= CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_rendition_scene_region_change)(
+				rendition->scene_region_change_callback_list, region_change_function, user_data);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
 
 int Cmiss_rendition_has_transformation(struct Cmiss_rendition *rendition)
 {
@@ -3006,6 +3089,8 @@ int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 
 	return (return_code);
 } /* Cmiss_rendition_set_transformation */
+
+
 
 static int Cmiss_rendition_set_time_dependent_transformation(struct Time_object *time_object,
 	double current_time, void *rendition_void)
@@ -3374,6 +3459,18 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 	}
 }
 
+int Cmiss_rendition_triggers_scene_region_change_callback(
+	struct Cmiss_rendition *rendition, struct Scene *scene)
+{
+	if (rendition && rendition->scene_region_change_callback_list)
+	{
+		return CMISS_CALLBACK_LIST_CALL(Cmiss_rendition_scene_region_change)(
+			rendition->scene_region_change_callback_list, rendition,
+			scene);
+	}
+	return 0;
+}
+
 int Cmiss_rendition_remove_scene(struct Cmiss_rendition *rendition, struct Scene *scene)
 {
 	if (rendition && scene)
@@ -3381,6 +3478,12 @@ int Cmiss_rendition_remove_scene(struct Cmiss_rendition *rendition, struct Scene
 		if (rendition->list_of_scene &&
 			!rendition->list_of_scene->empty())
 		{
+			Cmiss_region_id scene_region = Cmiss_scene_get_region(scene);
+			if (scene_region == rendition->region)
+			{
+				Cmiss_rendition_triggers_scene_region_change_callback(rendition,	scene);
+			}
+			Cmiss_region_destroy(&scene_region);
 			rendition->list_of_scene->remove(scene);
 		}
 		return 1;
@@ -3444,6 +3547,11 @@ int DESTROY(Cmiss_rendition)(
 		{
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)))(
 				&(cmiss_rendition->transformation_callback_list));
+		}
+		if (cmiss_rendition->scene_region_change_callback_list)
+		{
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_scene_region_change)))(
+				&(cmiss_rendition->scene_region_change_callback_list));
 		}
 		if (cmiss_rendition->transformation)
 		{

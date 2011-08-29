@@ -73,6 +73,7 @@ SET( COMPUTED_FIELD_SRCS
 	source/computed_field/computed_field_image.cpp
 	source/computed_field/computed_field_integration.cpp
 	source/computed_field/computed_field_lookup.cpp
+	source/computed_field/computed_field_scene_viewer_projection.cpp
 	source/computed_field/computed_field_time.cpp
 	source/computed_field/computed_field_update.cpp
 	source/computed_field/computed_field_value_index_ranges.cpp
@@ -92,12 +93,12 @@ SET( COMPUTED_FIELD_HDRS
 	source/computed_field/computed_field_image.h
 	source/computed_field/computed_field_image_processing.h
 	source/computed_field/computed_field_integration.h
+	source/computed_field/computed_field_scene_viewer_projection.h
 	source/computed_field/computed_field_lookup.h
 	source/computed_field/computed_field_private.hpp
 	source/computed_field/computed_field_time.h
 	source/computed_field/computed_field_update.h
 	source/computed_field/computed_field_value_index_ranges.h
-	source/computed_field/computed_field_window_projection.h
 	source/stream/cmiss_field_image_stream.hpp )
 
 IF( USE_ITK )

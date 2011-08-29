@@ -357,6 +357,9 @@ int Cmiss_graphics_module_destroy(
 				graphics_module->graphics_filter_manager_callback_id,	graphics_module->graphics_filter_manager);
 			MANAGER_DEREGISTER(Cmiss_tessellation)(
 				graphics_module->tessellation_manager_callback_id,	graphics_module->tessellation_manager);
+			/* This will remove all callbacks used by the scene_viewer projection_field callback */
+			FOR_EACH_OBJECT_IN_MANAGER(Scene)(
+				Cmiss_scene_cleanup_top_rendition_scene_projection_callback, (void *)NULL, graphics_module->scene_manager);
 			if (graphics_module->member_regions_list)
 			{
 				Cmiss_graphics_module_remove_member_regions_rendition(graphics_module);

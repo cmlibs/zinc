@@ -62,6 +62,9 @@ typedef int(*Cmiss_rendition_callback)(struct Cmiss_rendition *rendition,
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_transformation, struct Cmiss_rendition *, \
 	gtMatrix *, void);
 
+DECLARE_CMISS_CALLBACK_TYPES(Cmiss_rendition_scene_region_change, struct Cmiss_rendition *, \
+	struct Cmiss_scene *, void);
+
 struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmiss_region,
 	struct Cmiss_graphics_module *graphics_module);
 
@@ -271,6 +274,28 @@ int Cmiss_rendition_add_transformation_callback(struct Cmiss_rendition *renditio
 int Cmiss_rendition_remove_transformation_callback(
 	struct Cmiss_rendition *rendition,
 	CMISS_CALLBACK_FUNCTION(Cmiss_rendition_transformation) *function, void *user_data);
+
+/***************************************************************************//**
+ * Add a hierarichical transformation callback. <region_change_function> will
+ * only be added to the top scene region to notify changes if scene region has
+ * changed.
+ */
+int Cmiss_rendition_add_total_transformation_callback(struct Cmiss_rendition *rendition,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_rendition_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_rendition_scene_region_change) *region_change_function,
+	void *user_data);
+
+/***************************************************************************//**
+ * Remove a hierarichical transformation callback. <region_change_function> will
+ * only be removed from the top scene region.
+ */
+int Cmiss_rendition_remove_total_transformation_callback(struct Cmiss_rendition *rendition,
+	Cmiss_scene_id scene, CMISS_CALLBACK_FUNCTION(Cmiss_rendition_transformation) *function,
+	CMISS_CALLBACK_FUNCTION(Cmiss_rendition_scene_region_change) *region_change_function,
+	void *user_data);
+
+int Cmiss_rendition_triggers_scene_region_change_callback(struct Cmiss_rendition *rendition,
+	struct Scene *scene);
 
 int Cmiss_rendition_has_transformation(struct Cmiss_rendition *rendition);
 

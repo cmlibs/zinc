@@ -45,7 +45,7 @@ IF( WX_USER_INTERFACE OR MOTIF_USER_INTERFACE OR GTK_USER_INTERFACE OR
 	SET( COMMAND_INTERFACE_HDRS source/command/command_window.h )
 
 	SET( COMPUTED_FIELD_INTERFACE_SRCS
-		source/computed_field/computed_field_window_projection.cpp )
+		source/computed_field/computed_field_scene_viewer_projection.cpp )
 
 	SET( GRAPHICS_INTERFACE_SRCS source/graphics/graphics_window.cpp )
 ENDIF( WX_USER_INTERFACE OR	MOTIF_USER_INTERFACE OR	GTK_USER_INTERFACE OR

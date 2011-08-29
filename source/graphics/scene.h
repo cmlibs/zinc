@@ -863,4 +863,10 @@ in the list of scene_objects in the path of our display heirarchy to the
 
 int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void);
 
+/***************************************************************************//**
+ * Clean up the callback used by scene_viewer_projection callback.
+ */
+int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
+	struct Scene *scene, void *dummy_void);
+
 #endif /* !defined (SCENE_H) */
