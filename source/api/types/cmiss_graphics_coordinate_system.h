@@ -81,10 +81,14 @@ enum Cmiss_graphics_coordinate_system
 	/*!< Undistorted normalised window coordinate system which varies from
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in top of window.*/
-	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9
+	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9,
 	/*!< Window coordinate system in pixel units with 0,0 at bottom, left of
 	 * bottom-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1.*/
+	CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT = 10
+	/*!< Window coordinate system in pixel units with 0,0 at top, left of
+	 * top-left pixel in display window, and depth ranging from far = -1 to
+	 * near = +1. Y coordinates are negative going down the window. */
 }; /* enum Cmiss_graphics_coordinate_system */
 
 /***************************************************************************//**

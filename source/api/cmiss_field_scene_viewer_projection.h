@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_field_scene_viewer_projection.h
-
-LAST MODIFIED : 29 Aug 2011
-
-DESCRIPTION :
-The public interface to the Cmiss_fields that perform matrix operations.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_field_scene_viewer_projection.h
+ *
+ * A field which extract a transformation matrix from a scene viewer for use in
+ * field expressions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -49,23 +47,26 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #include "api/types/cmiss_graphics_coordinate_system.h"
 #include "api/types/cmiss_scene_viewer_id.h"
 
-/*****************************************************************************//**
- * Creates a field performing a window projection, returning the the perspective
- * 4x4 transformation matrix of the supplied scene_viewer.
- * The manager for <field> is notified if the <scene_viewer> closes.
+/***************************************************************************//**
+ * Creates a field whose values are the 4x4 transformation matrix mapping
+ * coordinates between two graphics coordinate systems for a scene viewer.
+ * The matrix maps homogeneous coordinates (x,y,z,1) to (x',y',z',h') suitable
+ * for passing to a projection field. The values are continuously updated with
+ * changes to the scene_viewer and become invalid if the scene_viewer is
+ * destroyed.
  * Note CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
- * of the rendition for the owning region of field, which is the cumulative
- * transformation matrices back from the root region.
- * See also projection field.
+ * of the rendition for the owning region of field, which is transformed from
+ * world coordinates by the cumulative transformation matrices of all renditions
+ * down from the root region of the scene viewer's scene.
+ * @see Cmiss_field_module_create_projection.
  *
  * @param field_module  Region field module which will own new field.
- * @param scene_viewer  handle to Cmiss_scene_viewer object.
+ * @param scene_viewer  Handle to Cmiss_scene_viewer object.
  * @param from_coordinate_system  The input coordinate system for the
  * transformation.
  * @param to_coordinate_system  The output coordinate system for the
  * transformation.
- *
- * @return Newly created field with 3 components.
+ * @return  Newly created field with 16 components.
  */
 Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	Cmiss_field_module_id field_module,

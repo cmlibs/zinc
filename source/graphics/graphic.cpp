@@ -1850,13 +1850,7 @@ int Cmiss_graphic_set_coordinate_system(
 	if (graphic)
 	{
 		graphic->coordinate_system=coordinate_system;
-		if ((coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE ) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
-				(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT))
+		if (Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system))
 		{
 			graphic->overlay_flag = 1;
 			graphic->overlay_order = 1;
@@ -9678,62 +9672,6 @@ char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type)
 {
 	const char *type_string = Cmiss_graphic_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
-}
-
-class Cmiss_graphics_coordinate_system_conversion
-{
-public:
-    static const char *to_string(enum Cmiss_graphics_coordinate_system system)
-    {
-        const char *enum_string = 0;
-        switch (system)
-        {
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
-            enum_string = "LOCAL";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
-            enum_string = "WORLD";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-            enum_string = "NORMALISED_WINDOW_FILL";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-            enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-            enum_string = "NORMALISED_WINDOW_FIT_LEFT";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-            enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-            enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-            enum_string = "NORMALISED_WINDOW_FIT_TOP";
-            break;
-        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-            enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
-};
-
-enum Cmiss_graphics_coordinate_system	Cmiss_graphics_coordinate_system_enum_from_string(
-	const char *string)
-{
-	return string_to_enum<enum Cmiss_graphics_coordinate_system,
-		Cmiss_graphics_coordinate_system_conversion>(string);
-}
-
-char *Cmiss_graphics_coordinate_system_enum_to_string(
-	enum Cmiss_graphics_coordinate_system system)
-{
-	const char *system_string = Cmiss_graphics_coordinate_system_conversion::to_string(system);
-	return (system_string ? duplicate_string(system_string) : 0);
 }
 
 class Cmiss_graphics_render_type_conversion

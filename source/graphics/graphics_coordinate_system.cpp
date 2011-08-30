@@ -40,58 +40,75 @@
 extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private_cpp.hpp"
 #include "graphics/graphics_coordinate_system.hpp"
 
+class Cmiss_graphics_coordinate_system_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_graphics_coordinate_system system)
+    {
+        const char *enum_string = 0;
+        switch (system)
+        {
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
+            enum_string = "LOCAL";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
+            enum_string = "WORLD";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
+            enum_string = "NORMALISED_WINDOW_FILL";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+            enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+            enum_string = "NORMALISED_WINDOW_FIT_LEFT";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+            enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+            enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
+            enum_string = "NORMALISED_WINDOW_FIT_TOP";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+            enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
+            break;
+        case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+            enum_string = "WINDOW_PIXEL_TOP_LEFT";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
+enum Cmiss_graphics_coordinate_system	Cmiss_graphics_coordinate_system_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum Cmiss_graphics_coordinate_system,
+		Cmiss_graphics_coordinate_system_conversion>(string);
+}
+
+char *Cmiss_graphics_coordinate_system_enum_to_string(
+	enum Cmiss_graphics_coordinate_system coordinate_system)
+{
+	const char *system_string = Cmiss_graphics_coordinate_system_conversion::to_string(coordinate_system);
+	return (system_string ? duplicate_string(system_string) : 0);
+}
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphics_coordinate_system)
 {
-	const char *enumerator_string;
-	switch (enumerator_value)
-	{
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_WORLD:
-		{
-			enumerator_string = "world";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL:
-		{
-			enumerator_string = "local";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		{
-			enumerator_string = "normalised_window_fill";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		{
-			enumerator_string = "normalised_window_fit_centre";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		{
-			enumerator_string = "normalised_window_fit_left";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		{
-			enumerator_string = "normalised_window_fit_right";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		{
-			enumerator_string = "normalised_window_fit_bottom";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		{
-			enumerator_string = "normalised_window_fit_top";
-		} break;
-		case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		{
-			enumerator_string = "window_pixel_bottom_left";
-		} break;
-		default:
-		{
-			enumerator_string = 0;
-		}	break;
-	}
-	return (enumerator_string);
+	return Cmiss_graphics_coordinate_system_conversion::to_string(enumerator_value);
 }
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_graphics_coordinate_system)
@@ -118,6 +135,12 @@ int Cmiss_graphics_coordinate_system_get_viewport(
 		*right = viewport_width;
 		*bottom = 0.0;
 		*top = viewport_height;
+		break;
+	case CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		*left = 0.0;
+		*right = viewport_width;
+		*bottom = -viewport_height;
+		*top = 0.0;
 		break;
 	default:
 		if (viewport_width > viewport_height)
@@ -191,5 +214,6 @@ int Cmiss_graphics_coordinate_system_is_window_relative(
 		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT) ||
 		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP) ||
 		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM) ||
-		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT);
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT) ||
+		(coordinate_system == CMISS_GRAPHICS_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT);
 }
