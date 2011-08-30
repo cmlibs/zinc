@@ -736,7 +736,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, temp_string[40];
+	char *command_string;
 	int error;
 
 	ENTER(Computed_field_scene_viewer_projection::get_command_string);
@@ -747,16 +747,23 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_scene_viewer_projection_type_string, &error);
 		append_string(&command_string, " field ", &error);
-		append_string(&command_string, " window ", &error);
 		if (graphics_window_name)
+		{
+			append_string(&command_string, " window ", &error);
 			append_string(&command_string, graphics_window_name, &error);
+		}
 		if (pane_number > -1)
+		{
+			char temp_string[40];
 			sprintf(temp_string, " pane_number %d ", pane_number + 1);
-		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " from_coordinate_system %s to_coordinate_system %s ",
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(from_coordinate_system),
-			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(to_coordinate_system));
-		append_string(&command_string, temp_string, &error);
+			append_string(&command_string, temp_string, &error);
+		}
+		append_string(&command_string, " from_coordinate_system ", &error);
+		append_string(&command_string,
+			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(from_coordinate_system), &error);
+		append_string(&command_string, " to_coordinate_system ", &error);
+		append_string(&command_string,
+			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(to_coordinate_system), &error);
 	}
 	else
 	{
