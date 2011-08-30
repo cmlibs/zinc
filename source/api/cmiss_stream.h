@@ -182,7 +182,8 @@ CMISS_C_INLINE Cmiss_stream_resource_id Cmiss_stream_resource_file_base_cast(
  * Return the name set on the file resource.
  *
  * @param resource  The resource whose file name is requested.
- * @return  On success: allocated string containing field name.
+ * @return  On success: allocated string containing field name. Up to caller to
+ * free using Cmiss_deallocate().
  */
 char *Cmiss_stream_resource_file_get_name(Cmiss_stream_resource_file_id resource);
 

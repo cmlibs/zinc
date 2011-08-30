@@ -118,7 +118,8 @@ int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
  * Return an allocated string containing spectrum name.
  *
  * @param spectrum  handle to the cmiss spectrum.
- * @return  allocated string containing spectrum name, otherwise NULL.
+ * @return  allocated string containing spectrum name, otherwise NULL. Up to
+ * caller to free using Cmiss_deallocate().
  */
 char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
 

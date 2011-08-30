@@ -272,7 +272,8 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
  * Return the name of the field.
  *
  * @param field  The field whose name is requested.
- * @return  On success: allocated string containing field name.
+ * @return  On success: allocated string containing field name. Up to caller to
+ * free using Cmiss_deallocate().
  */
 char *Cmiss_field_get_name(Cmiss_field_id field);
 

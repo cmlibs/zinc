@@ -202,7 +202,8 @@ int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id mater
  * Return an allocated string containing material name.
  *
  * @param material  handle to the cmiss material.
- * @return  allocated string containing material name, otherwise NULL.
+ * @return  allocated string containing material name, otherwise NULL. Up to
+ * caller to free using Cmiss_deallocate().
  */
 char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
 

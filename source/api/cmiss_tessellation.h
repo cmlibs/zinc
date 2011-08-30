@@ -136,6 +136,7 @@ int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
  *
  * @param tessellation  handle to the cmiss tessellation.
  * @return  allocated string containing tessellation name, or NULL on failure.
+ * Up to caller to free using Cmiss_deallocate().
  */
 char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
 

@@ -69,7 +69,8 @@ int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
  * Return the name of the scene. 
  * 
  * @param scene  The scene whose name is requested.
- * @return  On success: allocated string containing scene name.
+ * @return  On success: allocated string containing scene name. Up to caller to
+ * free using Cmiss_deallocate().
  */
 char *Cmiss_scene_get_name(Cmiss_scene_id scene);
 

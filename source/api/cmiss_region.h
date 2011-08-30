@@ -125,7 +125,8 @@ int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
  * Returns the name of the region. 
  * 
  * @param region  The region whose name is requested.
- * @return  On success: allocated string containing region name.
+ * @return  On success: allocated string containing region name. Up to caller to
+ * free using Cmiss_deallocate().
  */
 char *Cmiss_region_get_name(Cmiss_region_id region);
 

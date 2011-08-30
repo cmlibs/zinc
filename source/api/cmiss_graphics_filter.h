@@ -120,6 +120,7 @@ int Cmiss_graphics_filter_evaluate_graphic(Cmiss_graphics_filter_id filter,
  *
  * @param graphics_filter  handle to the cmiss scene filter.
  * @return  allocated string containing graphics_filter name, or NULL on failure.
+ * Up to caller to free using Cmiss_deallocate().
  */
 char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
 
