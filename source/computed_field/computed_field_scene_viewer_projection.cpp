@@ -72,7 +72,7 @@ public:
 
 namespace {
 
-char computed_field_scene_viewer_projection_type_string[] = "scene_viewer_projection";
+char computed_field_scene_viewer_projection_type_string[] = "window_projection";
 
 void Computed_field_scene_viewer_projection_scene_viewer_callback(
 	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
@@ -1151,6 +1151,9 @@ already) and allows its contents to be modified.
 			const char *all_coordinate_systems_help = all_coordinate_systems.c_str();
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"A 16 component computed field which continuously update the transformation between "
+				"'from' and 'to' graphics_coordinate systems in the give pane of window.");
 			/* pane_number */
 			Option_table_add_entry(option_table,"pane_number",&pane_number,
 				NULL,set_int_positive);
@@ -1174,9 +1177,15 @@ already) and allows its contents to be modified.
 					if (CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID == from_coordinate_system)
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx define field ~ scene_viewer_projection:  Invalid coordinate system %s", from_coordinate_system_string);
+							"gfx define field ~ window_projection:  Invalid coordinate system %s", from_coordinate_system_string);
 						return_code = 0;
 					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx define field ~ window_projection:  Missing from_coordinate_system argument");
+					return_code = 0;
 				}
 				if (to_coordinate_system_string)
 				{
@@ -1185,9 +1194,15 @@ already) and allows its contents to be modified.
 					if (CMISS_GRAPHICS_COORDINATE_SYSTEM_INVALID == to_coordinate_system)
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx define field ~ scene_viewer_projection:  Invalid coordinate system %s", to_coordinate_system_string);
+							"gfx define field ~ window_projection:  Invalid coordinate system %s", to_coordinate_system_string);
 						return_code = 0;
 					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx define field ~ window_projection:  Missing to_coordinate_system argument");
+					return_code = 0;
 				}
 			}
 			if (return_code)

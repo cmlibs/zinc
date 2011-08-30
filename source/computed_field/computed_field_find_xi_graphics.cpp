@@ -48,6 +48,7 @@ extern "C" {
 }
 
 extern "C" {
+#include "api/cmiss_element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
@@ -253,14 +254,14 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh &&
+		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh
 		/* This special case actually only works for 2D elements */
 		&& (Cmiss_mesh_get_dimension(search_mesh) == 2)
-		&& (5 < Cmiss_mesh_get_size(search_mesh))
+		&& ((Cmiss_mesh_get_size(search_mesh) > 5))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field = field;
-		find_element_xi_data.values = values;
+		find_element_xi_data.values = const_cast<FE_value *>(values);
 		find_element_xi_data.number_of_values = number_of_values;
 		find_element_xi_data.found_number_of_xi = 0;
 		find_element_xi_data.found_derivatives = (FE_value *)NULL;
