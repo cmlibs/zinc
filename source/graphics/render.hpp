@@ -50,6 +50,7 @@ struct Texture;
 struct Graphical_material;
 struct Light;
 struct Light_model;
+class SubObjectGroupHighlightFunctor;
 
 /***************************************************************************//**
  * An interface class that defines how to implement a cmgui renderer.
@@ -195,6 +196,12 @@ public:
 
 	/** Override to return the current layer for layered renderers, starting at 0 */
 	virtual int get_current_layer() const
+	{
+		return 0;
+	}
+
+	/** functor that determines either a primitive is highlighted or not */
+	virtual int set_highlight_functor(SubObjectGroupHighlightFunctor *)
 	{
 		return 0;
 	}

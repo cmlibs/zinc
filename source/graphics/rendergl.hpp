@@ -40,9 +40,11 @@
  * ***** END LICENSE BLOCK ***** */
 #if !defined (RENDERGL_HPP)
 #define RENDERGL_HPP
-
+extern "C" {
 #include "graphics/graphics_object.h"
+}
 #include "graphics/render.hpp"
+#include "graphics/graphics_object_highlight.hpp"
 
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
@@ -67,6 +69,8 @@ public:
 
 	int current_layer, number_of_layers;
 
+	SubObjectGroupHighlightFunctor *highlight_functor;
+
 public:
 	Render_graphics_opengl(Graphics_buffer *graphics_buffer) :
 		graphics_buffer(graphics_buffer),
@@ -77,7 +81,8 @@ public:
 		viewport_width(1.0),
 		viewport_height(1.0),
 		current_layer(0),
-		number_of_layers(1)
+		number_of_layers(1),
+		highlight_functor(NULL)
 	{
 	}
 
@@ -112,6 +117,14 @@ public:
 	virtual int get_current_layer() const
 	{
 		return current_layer;
+	}
+
+	virtual int set_highlight_functor(SubObjectGroupHighlightFunctor *functor)
+	{
+		if (highlight_functor)
+			delete highlight_functor;
+		highlight_functor = functor;
+		return 1;
 	}
 }; /* class Render_graphics_opengl */
 

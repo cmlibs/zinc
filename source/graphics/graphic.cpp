@@ -723,59 +723,6 @@ static int Cmiss_graphic_uses_FE_element(
 } /* cmiss_graphic_uses_FE_element */
 
 /***************************************************************************//** 
- * Special version of FE_element_select_graphics for element_points, which
- * are calculated on the top_level_element in Xi_discretization_mode CELL_CORNERS.
- * @param element FE_element
- * @param selected_data_void void pointer to Cmiss_graphic_select_graphics_data
- * @return return 1 if successfully select element point
- */
-static int FE_element_select_graphics_element_points(struct FE_element *element,
-	void *select_data_void)
-
-{
-	int return_code;
-	struct CM_element_information cm;
-	struct FE_region *fe_region;
-	struct Cmiss_graphic *graphic;
-	struct Cmiss_graphic_select_graphics_data *select_data;
-
-	ENTER(FE_element_select_graphics_element_points);
-	if (element&&(select_data=
-		(struct Cmiss_graphic_select_graphics_data *)select_data_void)&&
-		(fe_region=select_data->fe_region)&&
-		(graphic=select_data->graphic)&&
-		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)&&
-		graphic->graphics_object)
-	{
-		/* special handling for cell_corners which are always calculated on
-			 top_level_elements */
-		get_FE_element_identifier(element, &cm);
-		if (((CM_ELEMENT == cm.type) &&
-			(XI_DISCRETIZATION_CELL_CORNERS==graphic->xi_discretization_mode)) ||
-			((XI_DISCRETIZATION_CELL_CORNERS!=graphic->xi_discretization_mode) &&
-				Cmiss_graphic_uses_FE_element(graphic,element,fe_region)))
-		{
-			return_code=
-				GT_object_select_graphic(select_data->graphic->graphics_object,
-					cm.number, (struct Multi_range *)NULL);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_select_graphics_element_points.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_select_graphics_element_points */
-
-/***************************************************************************//** 
  * Converts a finite element into a graphics object with the supplied graphic.
  * @param graphic The cmiss graphic
  * @param element FE_element
@@ -1505,120 +1452,6 @@ static int Cmiss_node_to_streamline(struct FE_node *node,
 
 	return (return_code);
 } /* node_to_streamline */
-
-/***************************************************************************//** 
- * If <graphic> is of type CMISS_GRAPHIC_ELEMENT_POINTS and has a graphics
- * object, determines from the identifier of <element_point_ranges>, whether it
- * applies to the graphic, and if so selects any ranges in it in the
- * graphics_object
- * @param element_point_ranges
- * @param selected_data_void void pointer to Cmiss_graphic_select_graphics_data
- * @return return 1 if successfully select element point
- */
-static int Element_point_ranges_select_in_graphics_object(
-	struct Element_point_ranges *element_point_ranges,void *select_data_void)
-{
-	int i,return_code;
-	struct CM_element_information cm;
-	struct Element_point_ranges_identifier element_point_ranges_identifier,
-		temp_element_point_ranges_identifier;
-	struct Cmiss_graphic_select_graphics_data *select_data;
-	struct FE_element *element,*top_level_element;
-	struct FE_region *fe_region;
-	struct Cmiss_graphic *graphic;
-	struct Multi_range *ranges;
-
-	ENTER(Element_point_ranges_select_in_graphics_object);
-	if (element_point_ranges&&(select_data=
-		(struct Cmiss_graphic_select_graphics_data *)select_data_void)&&
-		(fe_region=select_data->fe_region)&&
-		(graphic=select_data->graphic)&&
-		(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type)&&
-		graphic->graphics_object)
-	{
-		return_code=1;
-		if (Element_point_ranges_get_identifier(element_point_ranges,
-			&element_point_ranges_identifier) &&
-			(element = element_point_ranges_identifier.element) &&
-			get_FE_element_identifier(element, &cm))
-		{
-			/* do not select if graphics already selected for element */
-			if (!GT_object_is_graphic_selected(graphic->graphics_object, cm.number, &ranges))
-			{
-				/* special handling for cell_corners which are always calculated on
-					 top_level_elements */
-				if (((CM_ELEMENT == cm.type) &&
-					(XI_DISCRETIZATION_CELL_CORNERS==graphic->xi_discretization_mode)) ||
-					((XI_DISCRETIZATION_CELL_CORNERS!=graphic->xi_discretization_mode) &&
-						Cmiss_graphic_uses_FE_element(graphic, element, fe_region)))
-				{
-					int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-					Cmiss_graphic_get_top_level_number_in_xi(graphic,
-						MAXIMUM_ELEMENT_XI_DIMENSIONS, top_level_number_in_xi);
-					top_level_element=(struct FE_element *)NULL;
-					if (FE_region_get_FE_element_discretization(fe_region, element,
-						graphic->face,graphic->native_discretization_field,
-						top_level_number_in_xi,&top_level_element,
-						temp_element_point_ranges_identifier.number_in_xi))
-					{
-						temp_element_point_ranges_identifier.element=element;
-						temp_element_point_ranges_identifier.top_level_element=
-							top_level_element;
-						temp_element_point_ranges_identifier.xi_discretization_mode=
-							graphic->xi_discretization_mode;
-						/*???RC temporary, hopefully */
-						for (i=0;i<3;i++)
-						{
-							temp_element_point_ranges_identifier.exact_xi[i]=
-								graphic->seed_xi[i];
-						}
-						if (0==compare_Element_point_ranges_identifier(
-							&element_point_ranges_identifier,
-							&temp_element_point_ranges_identifier))
-						{
-							if (NULL != (ranges=CREATE(Multi_range)()))
-							{
-								if (!(Multi_range_copy(ranges,Element_point_ranges_get_ranges(
-									element_point_ranges))&&
-									GT_object_select_graphic(graphic->graphics_object, cm.number, ranges)))
-								{
-									display_message(ERROR_MESSAGE,
-										"Element_point_ranges_select_in_graphics_object.  "
-										"Could not select ranges");
-									DESTROY(Multi_range)(&ranges);
-									return_code=0;
-								}
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Element_point_ranges_select_in_graphics_object.  "
-							"Error getting discretization");
-						return_code=0;
-					}
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Element_point_ranges_select_in_graphics_object.  "
-				"Could not get identifier");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_select_in_graphics_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_select_in_graphics_object */
 
 int Cmiss_graphic_add_to_list(struct Cmiss_graphic *graphic,
 	int position,struct LIST(Cmiss_graphic) *list_of_graphic)
@@ -3170,6 +3003,248 @@ static int Cmiss_graphic_has_all_compulsory_attributes(struct Cmiss_graphic *gra
 	return return_code;
 }
 
+#if defined (USE_OPENCASCADE)
+SubObjectGroupHighlightFunctor * create_highlight_functor_cad_primitive(
+	struct Computed_field *group_field, Cmiss_field_cad_topology_id cad_topology_domain)
+{
+  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+	if (graphics_object && group_field)
+	{
+		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+
+		//Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
+		Cmiss_field_id cad_primitive_subgroup_field = Cmiss_field_group_get_subobject_group_for_domain(sub_group,
+			reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
+		Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
+		if (cad_primitive_subgroup_field)
+		{
+			cad_primitive_group =
+				Cmiss_field_cast_cad_primitive_group_template(cad_primitive_subgroup_field);
+			Cmiss_field_destroy(&cad_primitive_subgroup_field);
+			if (cad_primitive_group)
+			{
+				Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
+					Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
+					Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
+				highlight_functor =
+					new SubObjectGroupHighlightFunctor(group_core,
+					&Computed_field_subobject_group::isIdentifierInList);
+				Cmiss_field_id temporary_handle =
+					reinterpret_cast<Computed_field *>(cad_primitive_group);
+				Cmiss_field_destroy(&temporary_handle);
+			}
+		}
+		if (sub_group)
+		{
+			Cmiss_field_group_destroy(&sub_group);
+		}
+	}
+
+	return (highlight_functor);
+}
+#endif /* defined (USE_OPENCASCADE) */
+
+SubObjectGroupHighlightFunctor *create_highlight_functor_element(
+	struct Computed_field *group_field, Cmiss_mesh_id mesh)
+{
+  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+  if (group_field)
+  {
+    Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+	  if (Cmiss_field_group_contains_local_region(sub_group))
+	  {
+	  	highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
+	  	highlight_functor->setContainsAll(1);
+	  }
+	  else
+	  {
+	  	Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
+			if (element_group)
+			{
+				Computed_field_element_group *group_core =
+					Computed_field_element_group_core_cast(element_group);
+				highlight_functor =
+					new SubObjectGroupHighlightFunctor(group_core,
+					&Computed_field_subobject_group::isIdentifierInList);
+				Cmiss_field_element_group_destroy(&element_group);
+		}
+		}
+    if (sub_group)
+    {
+      Cmiss_field_group_destroy(&sub_group);
+    }
+  }
+
+  return (highlight_functor);
+}
+
+SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
+	struct Computed_field *group_field, Cmiss_nodeset_id nodeset)
+{
+  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+	if (group_field)
+	{
+	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
+	  if (Cmiss_field_group_contains_local_region(sub_group))
+	  {
+	  	highlight_functor = new SubObjectGroupHighlightFunctor(NULL, NULL);
+	  	highlight_functor->setContainsAll(1);
+	  }
+	  else
+	  {
+	  	Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
+	  	if (node_group)
+	  	{
+	  		Computed_field_node_group *group_core =
+	  			Computed_field_node_group_core_cast(node_group);
+	  		highlight_functor =	new SubObjectGroupHighlightFunctor(group_core,
+	  			&Computed_field_subobject_group::isIdentifierInList);
+	  		Cmiss_field_node_group_destroy(&node_group);
+	  	}
+	  }
+    if (sub_group)
+		{
+    	Cmiss_field_group_destroy(&sub_group);
+		}
+	}
+
+	return (highlight_functor);
+}
+
+int Cmiss_graphic_remove_renderer_highlight_functor(struct Cmiss_graphic *graphic,
+	Render_graphics *renderer)
+{
+	if (graphic && renderer)
+	{
+		renderer->set_highlight_functor(NULL);
+		return 1;
+	}
+	return 0;
+}
+
+int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, Render_graphics *renderer)
+{
+	int return_code = 0;
+
+		if (graphic && renderer && graphic->rendition)
+		{
+			Cmiss_field_id group_field =
+				Cmiss_rendition_get_selection_group_private_for_highlighting(graphic->rendition);
+			Cmiss_field_module_id field_module = NULL;
+			if (group_field &&
+				(NULL != (field_module = Cmiss_field_get_field_module(group_field))))
+			{
+				if ((GRAPHICS_SELECT_ON == graphic->select_mode) ||
+					(GRAPHICS_DRAW_SELECTED == graphic->select_mode))
+				{
+					switch (graphic->graphic_type)
+					{
+						case CMISS_GRAPHIC_DATA_POINTS:
+						{
+							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
+								field_module, "cmiss_data");
+							renderer->set_highlight_functor(create_highlight_functor_nodeset(
+								group_field, nodeset));
+							Cmiss_nodeset_destroy(&nodeset);
+						} break;
+						case CMISS_GRAPHIC_NODE_POINTS:
+						{
+							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
+								field_module, "cmiss_nodes");
+							renderer->set_highlight_functor(create_highlight_functor_nodeset(
+								group_field, nodeset));
+							Cmiss_nodeset_destroy(&nodeset);
+						} break;
+						case CMISS_GRAPHIC_CYLINDERS:
+						case CMISS_GRAPHIC_LINES:
+						{
+							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
+								field_module, /*dimension*/1);
+							renderer->set_highlight_functor(create_highlight_functor_element(
+								group_field, temp_mesh));
+							Cmiss_mesh_destroy(&temp_mesh);
+						} break;
+						case CMISS_GRAPHIC_SURFACES:
+#if defined(USE_OPENCASCADE)
+						{
+							// test here for domain of object coordinate_field
+							// if it is a cad_geometry do something about it
+							struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+							int return_code = Computed_field_get_domain( graphic->coordinate_field, domain_field_list );
+							if ( return_code )
+							{
+								// so test for topology domain
+								struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+									( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+								if ( cad_topology_field )
+								{
+									Cmiss_field_cad_topology_id cad_topology_domain =
+										Cmiss_field_cast_cad_topology(cad_topology_field);
+									renderer->set_highlight_functor(create_highlight_functor_cad_primitive(
+										group_field, cad_topology_domain));
+									Cmiss_field_destroy(&cad_topology_field);
+									DESTROY_LIST(Computed_field)(&domain_field_list);
+									break;
+								}
+							}
+							if ( domain_field_list )
+								DESTROY_LIST(Computed_field)(&domain_field_list);
+						}
+#else
+						{
+							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
+								field_module, /*dimension*/2);
+							renderer->set_highlight_functor(create_highlight_functor_element(
+								group_field, temp_mesh));
+							Cmiss_mesh_destroy(&temp_mesh);
+						} break;
+#endif /* defined(USE_OPENCASCADE) */
+						case CMISS_GRAPHIC_ISO_SURFACES:
+						{
+							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
+								field_module, /*dimension*/3);
+							renderer->set_highlight_functor(create_highlight_functor_element(
+								group_field, temp_mesh));
+							Cmiss_mesh_destroy(&temp_mesh);
+						} break;
+						case CMISS_GRAPHIC_ELEMENT_POINTS:
+						{
+							int use_element_type = (int)graphic->use_element_type;
+							if (use_element_type == 1)
+							{
+								use_element_type = 3;
+							}
+							else if (use_element_type == 3)
+							{
+								use_element_type = 1;
+							}
+							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
+								field_module, use_element_type);
+							renderer->set_highlight_functor(create_highlight_functor_element(
+								group_field, temp_mesh));
+							Cmiss_mesh_destroy(&temp_mesh);
+						} break;
+						case CMISS_GRAPHIC_POINT:
+						case CMISS_GRAPHIC_STREAMLINES:
+						{
+							/* no element to select by since go through several */
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"cmiss_graphic_to_graphics_object.  "
+								"Unknown graphic type");
+						} break;
+					}
+				}
+				Cmiss_field_module_destroy(&field_module);
+			}
+			return_code = 1;
+		}
+
+	return return_code;
+}
+
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
 {
@@ -3181,7 +3256,6 @@ int Cmiss_graphic_to_graphics_object(
 	int return_code;
 	struct FE_region *fe_region;
 	struct GT_glyph_set *glyph_set = NULL;
-	struct Cmiss_graphic_select_graphics_data select_data;
 
 	ENTER(Cmiss_graphic_to_graphics_object);
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
@@ -3717,153 +3791,6 @@ int Cmiss_graphic_to_graphics_object(
 					}
 				}
 			}
-
-			if (graphic->selected_graphics_changed)
-			{
-				if (graphic->graphics_object)
-				{
-
-					if ((GRAPHICS_SELECT_ON == graphic->select_mode) ||
-						(GRAPHICS_DRAW_SELECTED == graphic->select_mode))
-					{
-						switch (graphic->graphic_type)
-						{
-							case CMISS_GRAPHIC_DATA_POINTS:
-							{
-								Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
-									graphic_to_object_data->field_module, "cmiss_data");
-								GT_object_set_node_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, nodeset);
-								Cmiss_nodeset_destroy(&nodeset);
-							} break;
-							case CMISS_GRAPHIC_NODE_POINTS:
-							{
-								Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
-									graphic_to_object_data->field_module, "cmiss_nodes");
-								GT_object_set_node_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, nodeset);
-								Cmiss_nodeset_destroy(&nodeset);
-							} break;
-							case CMISS_GRAPHIC_CYLINDERS:
-							case CMISS_GRAPHIC_LINES:
-							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-									graphic_to_object_data->field_module, /*dimension*/1);
-								GT_object_set_element_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, temp_mesh);
-								Cmiss_mesh_destroy(&temp_mesh);
-							} break;
-							case CMISS_GRAPHIC_SURFACES:
-#if defined(USE_OPENCASCADE)
-							{
-								// test here for domain of object coordinate_field
-								// if it is a cad_geometry do something about it
-								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-								int return_code = Computed_field_get_domain( graphic->coordinate_field, domain_field_list );
-								if ( return_code )
-								{
-									// so test for topology domain
-									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-										( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-									if ( cad_topology_field )
-									{
-										Cmiss_field_cad_topology_id cad_topology_domain = 
-											Cmiss_field_cast_cad_topology(cad_topology_field);
-										GT_object_set_cad_primitive_highlight_functor(graphic->graphics_object,
-											(void *)graphic_to_object_data->group_field, cad_topology_domain);
-										Cmiss_field_destroy(&cad_topology_field);
-										DESTROY_LIST(Computed_field)(&domain_field_list);
-										break;
-									}
-								}
-								if ( domain_field_list )
-									DESTROY_LIST(Computed_field)(&domain_field_list);
-							}
-#else
-							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-									graphic_to_object_data->field_module, /*dimension*/2);
-								GT_object_set_element_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, temp_mesh);
-								Cmiss_mesh_destroy(&temp_mesh);
-							} break;
-#endif /* defined(USE_OPENCASCADE) */
-							case CMISS_GRAPHIC_ISO_SURFACES:
-							{
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-									graphic_to_object_data->field_module, /*dimension*/3);
-								GT_object_set_element_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, temp_mesh);
-								Cmiss_mesh_destroy(&temp_mesh);
-							} break;
-							case CMISS_GRAPHIC_ELEMENT_POINTS:
-							{
-								select_data.fe_region=fe_region;
-								select_data.graphic=graphic;
-								int highest_dimension = FE_region_get_highest_dimension(fe_region);
-								int use_element_type = (int)graphic->use_element_type;
-								if (use_element_type == 1)
-								{
-									use_element_type = 3;
-								}
-								else if (use_element_type == 3)
-								{
-									use_element_type = 1;
-								}
-								if (use_element_type > highest_dimension)
-								{
-									use_element_type = highest_dimension;
-								}
-								Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-									graphic_to_object_data->field_module, use_element_type);
-								if (graphic_to_object_data->group_field)
-								{
-									Cmiss_field_group_id group =  Cmiss_field_cast_group(graphic_to_object_data->group_field);
-									Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, temp_mesh);
-									if (element_group)
-									{
-										Cmiss_mesh_group_id mesh_group = Cmiss_field_element_group_get_mesh(element_group);
-										Cmiss_element_iterator_id iterator =
-											Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(mesh_group));
-										Cmiss_element_id element;
-										while (0 != (element = Cmiss_element_iterator_next(iterator)))
-										{
-											FE_element_select_graphics_element_points(element, (void *)&select_data);
-											Cmiss_element_destroy(&element);
-										}
-										Cmiss_element_iterator_destroy(&iterator);
-										Cmiss_mesh_group_destroy(&mesh_group);
-										Cmiss_field_element_group_destroy(&element_group);
-									}
-									Cmiss_field_group_destroy(&group);
-								}
-
-								/* select Element_point_ranges for glyph_sets not already
-									 selected as elements */
-								FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
-									Element_point_ranges_select_in_graphics_object,
-									(void *)&select_data,
-									graphic_to_object_data->selected_element_point_ranges_list);
-								GT_object_set_element_highlight_functor(graphic->graphics_object,
-									(void *)graphic_to_object_data->group_field, temp_mesh);
-								Cmiss_mesh_destroy(&temp_mesh);
-							} break;
-							case CMISS_GRAPHIC_POINT:
-							case CMISS_GRAPHIC_STREAMLINES:
-							{
-								/* no element to select by since go through several */
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"cmiss_graphic_to_graphics_object.  "
-									"Unknown graphic type");
-							} break;
-						}
-					}
-				}
-				graphic->selected_graphics_changed = 0;
-			}
 			Cmiss_graphics_filter_destroy(&filter);
 		}
 	}
@@ -3896,7 +3823,9 @@ int Cmiss_graphic_compile_visible_graphic(
 			{
 				if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic))
 				{
+					Cmiss_graphic_set_renderer_highlight_functor(graphic, renderer);
 					return_code = renderer->Graphics_object_compile(graphic->graphics_object);
+					Cmiss_graphic_remove_renderer_highlight_functor(graphic, renderer);
 				}
 				Cmiss_graphics_filter_destroy(&filter);
 			}
@@ -3958,7 +3887,6 @@ int Cmiss_graphic_execute_visible_graphic(
 				{
 					if (renderer->rendering_layer(graphic->overlay_flag))
 					{
-						//printf("     %i\n", graphic->position);
 						if (renderer->begin_coordinate_system(graphic->coordinate_system))
 						{
 #if defined (OPENGL_API)

@@ -443,5 +443,8 @@ Cmiss_graphic_id Cmiss_rendition_get_graphic_at_position(
  * @return  Returns 1 if rendition is found in region, otherwise 0.
  */
 int Cmiss_region_has_rendition(Cmiss_region_id cmiss_region);
+
+Cmiss_field_id Cmiss_rendition_get_selection_group_private_for_highlighting(
+	Cmiss_rendition_id rendition);
 #endif /* !defined (RENDITION_H) */
 

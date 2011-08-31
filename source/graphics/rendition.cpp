@@ -3760,6 +3760,20 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
 	return return_code;
 }
 
+Cmiss_field_id Cmiss_rendition_get_selection_group_private_for_highlighting(Cmiss_rendition_id rendition)
+{
+	Cmiss_field_id selection_group = 0;
+	if (rendition)
+	{
+		if (rendition->selection_group)
+		{
+			selection_group = Cmiss_field_group_base_cast(rendition->selection_group);
+		}
+	}
+	return selection_group;
+}
+
+
 Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rendition)
 {
 	Cmiss_field_group_id selection_group = 0;

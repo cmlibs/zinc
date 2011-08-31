@@ -1304,22 +1304,6 @@ DESCRIPTION :
 Clears the list of selected primitives and subobjects in <graphics_object>.
 ==============================================================================*/
 
-#if defined (USE_OPENCASCADE)
-struct Cmiss_field_cad_topology;
-int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_object,
-	void *group_field_void, struct Cmiss_field_cad_topology *cad_topology_domain);
-#endif /* defined (USE_OPENCASCADE) */
-
-struct Cmiss_mesh;
-
-int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
-    void *group_field_void, struct Cmiss_mesh *mesh);
-
-struct Cmiss_nodeset;
-
-int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
-	void *group_field_void, struct Cmiss_nodeset *nodeset);
-
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges);
 /*******************************************************************************

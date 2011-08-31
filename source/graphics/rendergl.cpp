@@ -3231,7 +3231,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										material, secondary_material, spectrum, 
 										interpolate_glyph_set->font,
 										//draw_selected,name_selected,selected_name_ranges,
-										draw_selected, object->highlight_functor,
+										draw_selected, renderer->highlight_functor,
 										renderer, glyph_set->object_name);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
@@ -3263,7 +3263,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									material, secondary_material, 
 									spectrum, glyph_set->font, 
 									//draw_selected,name_selected,selected_name_ranges,
-									draw_selected, object->highlight_functor,
+									draw_selected, renderer->highlight_functor,
 									renderer, glyph_set->object_name);
 								glyph_set=glyph_set->ptrnext;
 							}
@@ -3450,9 +3450,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line&&line_2)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(line->object_name);
+											name_selected=(renderer->highlight_functor)->call(line->object_name);
 										}
 										else
 										{
@@ -3491,9 +3491,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 //										selected_name_ranges=(struct Multi_range *)NULL;
 //										name_selected=GT_object_is_graphic_selected(object,
 //											line->object_name,&selected_name_ranges);
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(line->object_name);
+											name_selected=(renderer->highlight_functor)->call(line->object_name);
 										}
 										else
 										{
@@ -3540,9 +3540,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line&&line_2)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(line->object_name);
+											name_selected=(renderer->highlight_functor)->call(line->object_name);
 										}
 										else
 										{
@@ -3577,9 +3577,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(line->object_name);
+											name_selected=(renderer->highlight_functor)->call(line->object_name);
 										}
 										else
 										{
@@ -3749,9 +3749,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									line_index, 1, &object_name);
 	
 								/* work out if subobjects selected */
-								if (object->highlight_functor)
+								if (renderer->highlight_functor)
 								{
-									name_selected=(object->highlight_functor)->call(object_name);
+									name_selected=(renderer->highlight_functor)->call(object_name);
 								}
 								else
 								{
@@ -3905,9 +3905,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface&&surface_2)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(surface->object_name);
+											name_selected=(renderer->highlight_functor)->call(surface->object_name);
 										}
 										else
 										{
@@ -3987,9 +3987,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(surface->object_name);
+											name_selected=(renderer->highlight_functor)->call(surface->object_name);
 										}
 										else
 										{
@@ -4069,9 +4069,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface&&surface_2)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(surface->object_name);
+											name_selected=(renderer->highlight_functor)->call(surface->object_name);
 										}
 										else
 										{
@@ -4121,9 +4121,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (surface)
 									{
 										/* work out if subobjects selected */
-										if (object->highlight_functor)
+										if (renderer->highlight_functor)
 										{
-											name_selected=(object->highlight_functor)->call(surface->object_name);
+											name_selected=(renderer->highlight_functor)->call(surface->object_name);
 										}
 										else
 										{
@@ -4644,7 +4644,7 @@ static int Graphics_object_render_opengl(
 			{
 				if (graphics_object_item->selected_material)
 				{
-					if (graphics_object_item->highlight_functor)
+					if (renderer->highlight_functor)
 					{
 						renderer->Material_execute(
 							graphics_object_item->selected_material);

@@ -3811,7 +3811,6 @@ Allocates memory and assigns fields for a graphics object.
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
-			object->highlight_functor = NULL;
 			object->manager = NULL;
 			return_code = 1;
 			switch (object_type)
@@ -4026,8 +4025,6 @@ and sets <*object> to NULL.
 			{
 				DEACCESS(GT_object)(&(object->nextobject));
 			}
-			if (object->highlight_functor)
-			  delete object->highlight_functor;
 			DEALLOCATE(*object_ptr);
 			return_code=1;
 		}
@@ -6918,141 +6915,6 @@ Clears the list of selected primitives and subobjects in <graphics_object>.
 
 	return (return_code);
 } /* GT_object_clear_selected_graphic_list */
-
-#if defined (USE_OPENCASCADE)
-int GT_object_set_cad_primitive_highlight_functor(struct GT_object *graphics_object,
-	void *group_field_void, Cmiss_field_cad_topology_id cad_topology_domain)
-{
-	struct Computed_field *group_field =
-		(struct Computed_field *)group_field_void;
-	if (graphics_object && graphics_object->highlight_functor)
-	{
-		delete graphics_object->highlight_functor;
-		graphics_object->highlight_functor = NULL;
-	}
-	int return_code = 0;
-	if (graphics_object && group_field)
-	{
-		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-		
-		//Cmiss_field_id cad_primitive_group_field = Cmiss_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
-		Cmiss_field_id cad_primitive_subgroup_field = Cmiss_field_group_get_subobject_group_for_domain(sub_group,
-			reinterpret_cast<Cmiss_field_id>(cad_topology_domain));
-		Cmiss_field_cad_primitive_group_template_id cad_primitive_group = NULL;
-		if (cad_primitive_subgroup_field)
-		{
-			cad_primitive_group =
-				Cmiss_field_cast_cad_primitive_group_template(cad_primitive_subgroup_field);
-			Cmiss_field_destroy(&cad_primitive_subgroup_field);
-			if (cad_primitive_group)
-			{
-				Computed_field_sub_group_object<Cmiss_cad_identifier_id> *group_core =
-					Computed_field_sub_group_object_core_cast<Cmiss_cad_identifier_id,
-					Cmiss_field_cad_primitive_group_template_id>(cad_primitive_group);
-				graphics_object->highlight_functor =
-					new SubObjectGroupHighlightFunctor(group_core,
-					&Computed_field_subobject_group::isIdentifierInList);
-				Cmiss_field_id temporary_handle =
-					reinterpret_cast<Computed_field *>(cad_primitive_group);
-				Cmiss_field_destroy(&temporary_handle);
-			}
-		}
-		if (sub_group)
-		{
-			Cmiss_field_group_destroy(&sub_group);
-		}
-		return_code = 1;
-	}
-
-	return (return_code);
-}
-#endif /* defined (USE_OPENCASCADE) */
-
-int GT_object_set_element_highlight_functor(struct GT_object *graphics_object,
-    void *group_field_void, Cmiss_mesh_id mesh)
-{
-  struct Computed_field *group_field =
-    (struct Computed_field *)group_field_void;
-  if (graphics_object && graphics_object->highlight_functor)
-  {
-          delete graphics_object->highlight_functor;
-          graphics_object->highlight_functor = NULL;
-  }
-  int return_code = 0;
-  if (graphics_object && group_field)
-  {
-    Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-	  if (Cmiss_field_group_contains_local_region(sub_group))
-	  {
-	  	graphics_object->highlight_functor =
-	  		new SubObjectGroupHighlightFunctor(NULL, NULL);
-	  	graphics_object->highlight_functor->setContainsAll(1);
-	  }
-	  else
-	  {
-	  	Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(sub_group, mesh);
-			if (element_group)
-			{
-				Computed_field_element_group *group_core =
-					Computed_field_element_group_core_cast(element_group);
-				graphics_object->highlight_functor =
-					new SubObjectGroupHighlightFunctor(group_core,
-					&Computed_field_subobject_group::isIdentifierInList);
-				Cmiss_field_element_group_destroy(&element_group);
-		}
-		}
-    if (sub_group)
-    {
-      Cmiss_field_group_destroy(&sub_group);
-    }
-    return_code = 1;
-  }
-
-  return (return_code);
-}
-
-int GT_object_set_node_highlight_functor(struct GT_object *graphics_object,
-		void *group_field_void, Cmiss_nodeset_id nodeset)
-{
-	struct Computed_field *group_field =
-		(struct Computed_field *)group_field_void;
-	if (graphics_object && graphics_object->highlight_functor)
-	{
-          delete graphics_object->highlight_functor;
-          graphics_object->highlight_functor = NULL;
-	}
-	int return_code = 0;
-	if (graphics_object && group_field)
-	{
-	  Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
-	  if (Cmiss_field_group_contains_local_region(sub_group))
-	  {
-	  	graphics_object->highlight_functor =
-	  		new SubObjectGroupHighlightFunctor(NULL, NULL);
-	  	graphics_object->highlight_functor->setContainsAll(1);
-	  }
-	  else
-	  {
-	  	Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(sub_group, nodeset);
-	  	if (node_group)
-	  	{
-	  		Computed_field_node_group *group_core =
-	  			Computed_field_node_group_core_cast(node_group);
-	  		graphics_object->highlight_functor =
-	  			new SubObjectGroupHighlightFunctor(group_core,
-	  			&Computed_field_subobject_group::isIdentifierInList);
-	  		Cmiss_field_node_group_destroy(&node_group);
-	  	}
-	  }
-    if (sub_group)
-		{
-    	Cmiss_field_group_destroy(&sub_group);
-		}
-	  return_code = 1;
-	}
-
-	return (return_code);
-}
 
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges)
