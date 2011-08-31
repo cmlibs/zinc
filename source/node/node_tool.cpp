@@ -5465,6 +5465,7 @@ int Node_tool_execute_command(struct Node_tool *node_tool, const char *command_s
 	{
 		struct Parse_state *state = create_Parse_state(command_string);
 		return_code = Node_tool_execute_command_with_parse_state(node_tool, state);
+		destroy_Parse_state(&state);
 	}
 
 	return return_code;

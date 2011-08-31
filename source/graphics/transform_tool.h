@@ -102,4 +102,10 @@ DESCRIPTION :
 Creates a transform type Interactive_tool which control the transformation of
 scene_viewers.
 ==============================================================================*/
+
+int Transform_tool_execute_command(struct Interactive_tool *tool,
+	const char *command_string);
+
+int Transform_tool_execute_command_with_parse_state(struct Interactive_tool *tool,
+	struct Parse_state *state);
 #endif /* !defined (TRANSFORM_TOOL_H) */

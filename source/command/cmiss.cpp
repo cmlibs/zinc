@@ -16269,8 +16269,7 @@ DESCRIPTION :
 Executes a GFX TRANSFORM_TOOL command.
 ==============================================================================*/
 {
-	int free_spin_flag, return_code;
-	struct Option_table *option_table;
+	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Interactive_tool *transform_tool;
 
@@ -16279,24 +16278,17 @@ Executes a GFX TRANSFORM_TOOL command.
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void)
 		&& (transform_tool=command_data->transform_tool))
 	{
-		/* initialize defaults */
-		free_spin_flag = Interactive_tool_transform_get_free_spin(transform_tool);
-		option_table=CREATE(Option_table)();
-		/* free_spin/no_free_spin */
-		Option_table_add_switch(option_table,"free_spin","no_free_spin",&free_spin_flag);
-		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
+		return_code = Transform_tool_execute_command_with_parse_state(transform_tool, state);
+		if (return_code)
 		{
-			Interactive_tool_transform_set_free_spin(transform_tool, free_spin_flag);
 #if defined (WX_USER_INTERFACE)
 			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
 				Graphics_window_update_Interactive_tool,(void *)transform_tool,
 				command_data->graphics_window_manager);
 #endif /*(WX_USER_INTERFACE)*/
 			Cmiss_scene_viewer_package_update_Interactive_tool(
-				command_data->scene_viewer_package,
-				transform_tool);
-		} /* parse error,help */
-		DESTROY(Option_table)(&option_table);
+				command_data->scene_viewer_package,	transform_tool);
+		}
 	}
 	else
 	{

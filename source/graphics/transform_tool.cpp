@@ -621,3 +621,46 @@ scene_viewers.
 	return (interactive_tool);
 } /* create_Interactive_tool_transform */
 
+int Transform_tool_execute_command(struct Interactive_tool *tool,
+	const char *command_string)
+{
+	int return_code = 0;
+	if (command_string && tool)
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		return_code = Transform_tool_execute_command_with_parse_state(tool, state);
+		destroy_Parse_state(&state);
+	}
+
+	return return_code;
+}
+
+int Transform_tool_execute_command_with_parse_state(struct Interactive_tool *tool,
+	struct Parse_state *state)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+Executes a GFX TRANSFORM_TOOL command.
+==============================================================================*/
+{
+	int free_spin_flag, return_code = 0;
+	struct Option_table *option_table;
+
+	if (state && tool)
+	{
+		/* initialize defaults */
+		free_spin_flag = Interactive_tool_transform_get_free_spin(tool);
+		option_table=CREATE(Option_table)();
+		/* free_spin/no_free_spin */
+		Option_table_add_switch(option_table,"free_spin","no_free_spin",&free_spin_flag);
+		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
+		{
+			Interactive_tool_transform_set_free_spin(tool, free_spin_flag);
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
+	}
+
+	return (return_code);
+} /* execute_command_gfx_transform_tool */
+

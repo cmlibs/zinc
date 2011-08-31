@@ -51,6 +51,7 @@ content of the global selections and objects with text input.
 #include "general/list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
+#include "graphics/transform_tool.h"
 #include "interaction/interactive_tool.h"
 #include "interaction/interactive_tool_private.h"
 #include "node/node_tool.h"
@@ -775,6 +776,10 @@ int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive
 			struct Node_tool *node_tool =
 				(struct Node_tool *)(Interactive_tool_get_tool_data(interactive_tool));
 			return_code = Node_tool_execute_command(node_tool, command);
+		}
+		else if (Interactive_tool_is_Transform_tool(interactive_tool))
+		{
+			return_code = Transform_tool_execute_command(interactive_tool, command);
 		}
 	}
 
