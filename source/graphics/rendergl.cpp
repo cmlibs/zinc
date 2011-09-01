@@ -558,7 +558,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	struct Spectrum *spectrum, struct Graphics_font *font,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
-	Render_graphics_opengl *renderer, int object_name)
+	Render_graphics_opengl *renderer, int object_name, int *lighting_off)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -574,6 +574,9 @@ If <draw_selected> is set, then only those <names> in <selected_name_ranges>
 are drawn, otherwise only those names not there are drawn.
 If <some_selected> is true, <selected_name_ranges> indicates the points that
 are selected, or all points if <selected_name_ranges> is NULL.
+@param no_lighting  Flag giving current state of whether lighting is off.
+Enable or disable lighting and update as appropriate for point/line or surface
+glyphs to minimise state changes.
 ==============================================================================*/
 {
 	char **label;
@@ -642,9 +645,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				/* try to draw points and lines faster */
 				if (!glyph)
 				{
-					/* disable lighting so rendered in flat diffuse colour */
-					glPushAttrib(GL_ENABLE_BIT);
-					glDisable(GL_LIGHTING);
+					if (!*lighting_off)
+					{
+						/* disable lighting so rendered in flat diffuse colour */
+						glDisable(GL_LIGHTING);
+						*lighting_off = 1;
+					}
 					if ((object_name > 0) && highlight_functor)
 					{
 						name_selected=highlight_functor->call(object_name);
@@ -689,15 +695,15 @@ are selected, or all points if <selected_name_ranges> is NULL.
 							label++;
 						}
 					}					
-					/* restore previous lighting state */
-					glPopAttrib();
 				}
 				else if (0 == strcmp(glyph->name, "point"))
 				{
-					/* disable lighting so rendered in flat diffuse colour */
-					/*???RC glPushAttrib and glPopAttrib are *very* slow */
-					glPushAttrib(GL_ENABLE_BIT);
-					glDisable(GL_LIGHTING);
+					if (!*lighting_off)
+					{
+						/* disable lighting so rendered in flat diffuse colour */
+						glDisable(GL_LIGHTING);
+						*lighting_off = 1;
+					}
 					if (names||labels||highlight_functor)
 					{
 						/* cannot put glLoadName between glBegin and glEnd */
@@ -770,18 +776,18 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						}
 						glEnd();
 					}
-					/* restore previous lighting state */
-					glPopAttrib();
 				}
 				else if ((0 == strcmp(glyph->name, "line")) ||
 					(0 == strcmp(glyph->name, "mirror_line")))
 				{
 					GLfloat f0, f1;
 					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
-					/* disable lighting so rendered in flat diffuse colour */
-					/*???RC glPushAttrib and glPopAttrib are *very* slow */
-					glPushAttrib(GL_ENABLE_BIT);
-					glDisable(GL_LIGHTING);
+					if (!*lighting_off)
+					{
+						/* disable lighting so rendered in flat diffuse colour */
+						glDisable(GL_LIGHTING);
+						*lighting_off = 1;
+					}
 					if (names||labels||highlight_functor)
 					{
 						if ((object_name > 0) && highlight_functor)
@@ -882,15 +888,15 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						}
 						glEnd();
 					}
-					/* restore previous lighting state */
-					glPopAttrib();
 				}
 				else if (0==strcmp(glyph->name,"cross"))
 				{
-					/* disable lighting so rendered in flat diffuse colour */
-					/*???RC glPushAttrib and glPopAttrib are *very* slow */
-					glPushAttrib(GL_ENABLE_BIT);
-					glDisable(GL_LIGHTING);
+					if (!*lighting_off)
+					{
+						/* disable lighting so rendered in flat diffuse colour */
+						glDisable(GL_LIGHTING);
+						*lighting_off = 1;
+					}
 					if (names||labels||highlight_functor)
 					{
 						if ((object_name > 0) && highlight_functor)
@@ -1027,11 +1033,15 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						}
 						glEnd();
 					}
-					/* restore previous lighting state */
-					glPopAttrib();
 				}
 				else
 				{
+					if (*lighting_off)
+					{
+						/* enable lighting for general glyphs */
+						glEnable(GL_LIGHTING);
+						*lighting_off = 0;
+					}
 					int mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
 					const int number_of_glyphs = (mirror_mode) ? 2 : 1;
 					/* must push and pop the modelview matrix */
@@ -1132,10 +1142,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 					{
 						/* Default is to draw the label value at the origin */
 						name=names;
-						/* disable lighting so rendered in flat diffuse colour */
-						/*???RC glPushAttrib and glPopAttrib are *very* slow */
-						glPushAttrib(GL_ENABLE_BIT);
-						glDisable(GL_LIGHTING);
+						if (!*lighting_off)
+						{
+							/* disable lighting so rendered in flat diffuse colour */
+							glDisable(GL_LIGHTING);
+							*lighting_off = 1;
+						}
 						point=point_list;
 						datum=data;
 						if ((object_name > 0) && highlight_functor)
@@ -1180,8 +1192,6 @@ are selected, or all points if <selected_name_ranges> is NULL.
 							}
 							label++;
 						}
-						/* restore previous lighting state */
-						glPopAttrib();
 					}
 				}
 				if (names)
@@ -3183,7 +3193,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 					glyph_set = primitive_list1->gt_glyph_set.first;
 					if (glyph_set)
 					{
+						lighting_off = 0;
 #if defined (OPENGL_API)
+						// push enable bit as lighting is switched off and on depending on
+						// whether glyph is points or lines vs. surfaces, whether labels are drawn
+						glPushAttrib(GL_ENABLE_BIT);
 						/* store the transform attribute group to save current matrix mode
 							 and GL_NORMALIZE flag. */
 						glPushAttrib(GL_TRANSFORM_BIT);
@@ -3232,7 +3246,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										interpolate_glyph_set->font,
 										//draw_selected,name_selected,selected_name_ranges,
 										draw_selected, renderer->highlight_functor,
-										renderer, glyph_set->object_name);
+										renderer, glyph_set->object_name,
+										&lighting_off);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -3264,7 +3279,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									spectrum, glyph_set->font, 
 									//draw_selected,name_selected,selected_name_ranges,
 									draw_selected, renderer->highlight_functor,
-									renderer, glyph_set->object_name);
+									renderer, glyph_set->object_name,
+									&lighting_off);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}
@@ -3274,6 +3290,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							glPopName();
 						}
 						/* restore the transform attribute group */
+						glPopAttrib();
+						/* restore previous lighting state */
 						glPopAttrib();
 #endif /* defined (OPENGL_API) */
 						return_code=1;
