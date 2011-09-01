@@ -40,9 +40,11 @@ The functions for creating graphical objects from finite elements.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <limits.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
 extern "C" {
+#include "api/cmiss_differential_operator.h"
+#include "api/cmiss_element.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -2205,36 +2207,12 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	Cmiss_field_cache_id field_cache, struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
+	struct Computed_field *data_field,
+	Cmiss_mesh_id surface_mesh,
+	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,enum Cmiss_graphics_render_type render_type,
-	FE_value time)
-/*****************************************************************************//**
-Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
-using an array of <number_of_segments_in_xi1> by <number_of_segments_in_xi2>
-rectangles in xi space.  The spacing is constant in each of xi1 and xi2.
-The optional <texture_coordinate_field> is evaluated at each vertex for the
-corresonding texture coordinates.  If none is supplied then a length based
-algorithm is used instead.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the surface, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-- checks for collapsed elements (by looking for NULL faces)
-???DB.  30 July 2001.  Could be extended by
-1 Adding a "surface_normal" computed_field to
-	computed_field/computed_field_derivatives.  This would cache the type of
-	collapsing and the collapsed normal(s) and use xi to determine if on collapsed
-	face.
-2 Add a normal field to "gfx create surfaces" (would be passed down to here).
-This would allow the "collapsed normals" code to be shared and allow the user
-to specify normal.  I didn't do it because this is the only place that collapsed
-normals are used.
-???DB.  Always calculates texture coordinates.  Calculate as required ?  Finite
-	element graphical object ?
-==============================================================================*/
+	struct FE_element *top_level_element,
+	enum Cmiss_graphics_render_type render_type, FE_value time)
 {
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
@@ -2263,6 +2241,8 @@ normals are used.
 		(0 < coordinate_dimension) && (3 >= coordinate_dimension) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
+		Cmiss_differential_operator_id d_dxi1 = Cmiss_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 1);
+		Cmiss_differential_operator_id d_dxi2 = Cmiss_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 2);
 		modified_reverse_normals = reverse_normals;
 		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
 		if (reverse_winding)
@@ -2442,10 +2422,10 @@ normals are used.
 				return_code = Cmiss_field_cache_set_mesh_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
-				if (!(Cmiss_field_evaluate_chart_derivative(coordinate_field, field_cache,
-						/*chart_field*/NULL, /*order*/1, /*term*/1, coordinate_dimension, derivative_xi1) &&
-					Cmiss_field_evaluate_chart_derivative(coordinate_field, field_cache,
-						/*chart_field*/NULL, /*order*/1, /*term*/2, coordinate_dimension, derivative_xi2) &&
+				if (!(Cmiss_field_evaluate_derivative(coordinate_field,
+						d_dxi1, field_cache, coordinate_dimension, derivative_xi1) &&
+					Cmiss_field_evaluate_derivative(coordinate_field,
+						d_dxi2, field_cache, coordinate_dimension, derivative_xi2) &&
 					Cmiss_field_evaluate_real(coordinate_field, field_cache,
 						coordinate_dimension, coordinates)))
 				{
@@ -2462,10 +2442,10 @@ normals are used.
 				{
 					if (calculate_tangent_points)
 					{
-						if (!(Cmiss_field_evaluate_chart_derivative(texture_coordinate_field, field_cache,
-								/*chart_field*/NULL, /*order*/1, /*term*/1, texture_coordinate_dimension, texture_derivative_xi1) &&
-							Cmiss_field_evaluate_chart_derivative(texture_coordinate_field, field_cache,
-								/*chart_field*/NULL, /*order*/1, /*term*/2, texture_coordinate_dimension, texture_derivative_xi2) &&
+						if (!(Cmiss_field_evaluate_derivative(texture_coordinate_field,
+								d_dxi1, field_cache, texture_coordinate_dimension, texture_derivative_xi1) &&
+							Cmiss_field_evaluate_derivative(texture_coordinate_field,
+								d_dxi2, field_cache, texture_coordinate_dimension, texture_derivative_xi2) &&
 							Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
 								texture_coordinate_dimension, texture_values)))
 						{
@@ -2803,6 +2783,8 @@ normals are used.
 			display_message(ERROR_MESSAGE,
 				"create_GT_surface_from_FE_element.  Failed");
 		}
+		Cmiss_differential_operator_destroy(&d_dxi1);
+		Cmiss_differential_operator_destroy(&d_dxi2);
 	}
 	else
 	{

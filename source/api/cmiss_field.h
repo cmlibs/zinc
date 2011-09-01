@@ -42,6 +42,7 @@
 #ifndef __CMISS_FIELD_H__
 #define __CMISS_FIELD_H__
 
+#include "api/types/cmiss_differential_operator_id.h"
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
@@ -212,38 +213,29 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 	Cmiss_field_cache_id cache);
 
 /***************************************************************************//**
- * Evaluate derivatives of a real-valued field with respect to components of
- * an a mesh chart e.g. d/dxi1. Evaluates a single derivative term for
- * all field components. If chart field is omitted, assumes chart of element
- * location provided.
+ * Evaluate derivatives of a real-valued field.
  * CURRENT LIMITATIONS:
  * 1. Can only evaluate at an element location.
- * 2. Chart field must be NULL i.e. supports only default element chart.
- * 3. Only supports order = 1.
+ * 2. Differential operator must be obtained from mesh owning element. It is not
+ * yet possible to evaluate derivatives with respect to parent element chart.
  * NOTE:
  * It is currently more efficient to evaluate derivatives before field values
  * since values are cached simultaneously.
  *
  * @param field  The field to evaluate derivatives for. Must be real valued.
+ * @param differential_operator  The differential operator identifying which
+ * derivative to evaluate. Currently must be obtained from mesh owning element
+ * from element location in cache.
  * @param cache  Store of location to evaluate at and intermediate field values.
  * Only element locations are supported by this function.
- * @param chart_field  The chart field which derivatives are calculated with
- * respect to. Currently must be NULL to use default chart for element
- * location in cache.
- * @param order  The order of the derivative. Currently must be 1 i.e. first
- * derivatives.
- * @param term  The term of the derivative from 1 to number of derivative terms
- * for the order. For first derivatives w.r.t. a 2-D mesh chart there are 2
- * terms d/dxi1, d/dxi2, for a 3-D chart there are 3. For higher orders, when
- * supported, there will be N^order terms for N components.
- * @param number_of_values  Size of values array. Expect as many values as
- * number of components of field, but can give a larger array.
+ * @param number_of_values  Size of values array, must equal number of
+ * components of field.
  * @param values  Array of real values to evaluate derivatives into.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
-	Cmiss_field_cache_id cache, Cmiss_field_id chart_field, int order, int term,
-	int number_of_values, double *values);
+int Cmiss_field_evaluate_derivative(Cmiss_field_id field,
+	Cmiss_differential_operator_id differential_operator,
+	Cmiss_field_cache_id cache, int number_of_values, double *values);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field.

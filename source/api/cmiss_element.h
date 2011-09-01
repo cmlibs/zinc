@@ -42,6 +42,7 @@
 #define __CMISS_ELEMENT_H__
 
 #include "api/types/cmiss_c_inline.h"
+#include "api/types/cmiss_differential_operator_id.h"
 #include "api/types/cmiss_element_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
@@ -292,6 +293,22 @@ int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
  */
 Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	int identifier);
+
+/***************************************************************************//**
+ * Returns the differential operator giving a field derivative of the given
+ * order with respect to the mesh's chart. The term identifies which of the
+ * possible differential operator terms are available for the order and
+ * dimension of the mesh.
+ *
+ * @param mesh  Handle to the mesh to get differential operator from.
+ * @param order  The order of the derivative. Currently must be 1.
+ * @param term  Which of the (dimensions)^order differential operators is
+ * required, starting at 1. For order 1, corresponds to a chart axis.
+ * @return  Handle to differential operator, or NULL if failed. Caller is
+ * responsible for destroying the returned handle.
+ */
+Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
+	Cmiss_mesh_id mesh, int order, int term);
 
 /***************************************************************************//**
  * Returns the number of dimensions of the mesh.

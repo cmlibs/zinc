@@ -137,6 +137,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	Cmiss_field_module_id field_module;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region;
+	Cmiss_mesh_id surface_mesh; // mesh being converted into surface graphics
 	FE_value time;
 	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */

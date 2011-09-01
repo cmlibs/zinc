@@ -460,39 +460,30 @@ int get_surface_element_segmentation(struct FE_element *element,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
 	enum FE_element_shape_type *shape_type_address);
 
+/***************************************************************************//**
+ * Creates a <GT_surface> from the <coordinate_field> for the 2-D finite
+ * <element> using an array of <number_of_segments_in_xi1> by
+ * <number_of_segments_in_xi2> rectangles in xi space.  The spacing is constant
+ * in each of xi1 and xi2.
+ * The coordinate field is assumed to be rectangular cartesian.
+ * The optional <texture_coordinate_field> is evaluated at each vertex for the
+ * corresponding texture coordinates.  If none is supplied then a length based
+ * algorithm is used instead.
+ * The optional <data_field> is calculated as data over the surface, for later
+ * colouration by a spectrum.
+ * The optional <top_level_element> may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * @param surface_mesh  2-D surface mesh being converted to surface graphics.
+*/
 struct GT_surface *create_GT_surface_from_FE_element(
 	Cmiss_field_cache_id field_cache, struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
+	struct Computed_field *data_field, Cmiss_mesh_id surface_mesh,
+	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,enum Cmiss_graphics_render_type render_type,
-	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 2 May 2000
-
-DESCRIPTION :
-Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
-using an array of <number_of_segments_in_xi1> by <number_of_segments_in_xi2>
-rectangles in xi space.  The spacing is constant in each of xi1 and xi2.
-The optional <texture_coordinate_field> is evaluated at each vertex for the
-corresonding texture coordinates.  If none is supplied then a length based
-algorithm is used instead.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the surface, for later colouration by a spectrum.
-The optional <top_level_element> may be provided as a clue to Computed_fields
-to say which parent element they should be evaluated on as necessary.
-Notes:
-- the coordinate field is assumed to be rectangular cartesian.
-???DB.  Check for collapsed elements (repeated nodes) and treat accordingly -
-	discretise with triangles ?  Have done for one special case - bi-quadratic
-	with collapse along xi2=0.  Extend ?
-???DB.  Always calculates texture coordinates.  Calculate as required ?  Finite
-	element graphical object ?
-???DB.  18 September 1993.  Only the side with the normal pointing out is
-	textured correctly (even in TWOSIDE mode).  For 2-D finite elements which
-	are faces of 3-D finite elements make the normals point out of the element.
-==============================================================================*/
+	struct FE_element *top_level_element,
+	enum Cmiss_graphics_render_type render_type, FE_value time);
 
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,

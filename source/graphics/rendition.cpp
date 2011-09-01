@@ -1237,6 +1237,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.field_cache = Cmiss_field_module_create_cache(graphic_to_object_data.field_module);
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
+			graphic_to_object_data.surface_mesh = 0;
 			graphic_to_object_data.scene = scene;
 			graphic_to_object_data.time = time;
 			graphic_to_object_data.selected_element_point_ranges_list

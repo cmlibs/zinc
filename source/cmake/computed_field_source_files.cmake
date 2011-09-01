@@ -19,6 +19,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_trigonometry.cpp
 	source/computed_field/computed_field_vector_operations.cpp
 	source/computed_field/computed_field_wrappers.cpp 
+	source/computed_field/differential_operator.cpp
 	source/computed_field/field_cache.cpp
 	source/computed_field/field_ensemble.cpp
 	source/computed_field/field_module.cpp
@@ -46,6 +47,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_trigonometry.h
 	source/computed_field/computed_field_vector_operations.h
 	source/computed_field/computed_field_wrappers.h
+	source/computed_field/differential_operator.hpp
 	source/computed_field/field_cache.hpp
 	source/computed_field/field_ensemble.hpp
 	source/computed_field/field_module.hpp

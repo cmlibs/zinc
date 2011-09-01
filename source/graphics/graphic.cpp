@@ -886,6 +886,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic_to_object_data->field_cache, element,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->texture_coordinate_field, graphic->data_field,
+									graphic_to_object_data->surface_mesh,
 									number_in_xi[0], number_in_xi[1],
 									/*reverse_normals*/0, top_level_element,graphic->render_type,
 									graphic_to_object_data->time)))
@@ -3538,33 +3539,54 @@ int Cmiss_graphic_to_graphics_object(
 									}
 								} break;
 								case CMISS_GRAPHIC_SURFACES:
-#if defined(USE_OPENCASCADE)
 								{
-									// test here for domain of rc_coordinate_field
-									// if it is a cad_geometry do something about it
-									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
-									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-									int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
-									if ( return_code )
+									bool cad_surfaces = false;
+#if defined(USE_OPENCASCADE)
 									{
-										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
-										// so test for topology domain
-										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-										if ( cad_topology_field )
+										// test here for domain of rc_coordinate_field
+										// if it is a cad_geometry do something about it
+										//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
+										struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+										int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
+										if ( return_code )
 										{
-											//printf( "hurrah, we have a cad topology domain.\n" );
-											// if topology domain then draw item at location
-											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
-											DESTROY_LIST(Computed_field)(&domain_field_list);
-											break;
+											//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
+											// so test for topology domain
+											struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+												( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+											if ( cad_topology_field )
+											{
+												cad_surfaces = true;
+												//printf( "hurrah, we have a cad topology domain.\n" );
+												// if topology domain then draw item at location
+												return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
+												DESTROY_LIST(Computed_field)(&domain_field_list);
+												break;
+											}
 										}
+										if ( domain_field_list )
+											DESTROY_LIST(Computed_field)(&domain_field_list);
 									}
-									if ( domain_field_list )
-										DESTROY_LIST(Computed_field)(&domain_field_list);
-								}
 #endif /* defined(USE_OPENCASCADE) */
-								// Note: fall through to next case
+									if (!cad_surfaces)
+									{
+										graphic_to_object_data->surface_mesh =
+											Cmiss_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, 2);
+										Cmiss_element_iterator_id iterator =
+											Cmiss_mesh_create_element_iterator(graphic_to_object_data->surface_mesh);
+										Cmiss_element_id element = 0;
+										while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
+										{
+											if (!FE_element_to_graphics_object(element, graphic_to_object_data_void))
+											{
+												return_code = 0;
+												break;
+											}
+										}
+										Cmiss_element_iterator_destroy(&iterator);
+										Cmiss_mesh_destroy(&graphic_to_object_data->surface_mesh);
+									}
+								} break;
 								case CMISS_GRAPHIC_CYLINDERS:
 								case CMISS_GRAPHIC_ELEMENT_POINTS:
 								{

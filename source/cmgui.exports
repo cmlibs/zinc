@@ -85,6 +85,10 @@ Cmiss_scene_viewer_create_win32
 Cmiss_scene_viewer_win32_set_window_size
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+/* api/cmiss_differential_operator.h */
+Cmiss_differential_operator_access
+Cmiss_differential_operator_destroy
+
 Cmiss_field_access
 Cmiss_field_destroy
 Cmiss_field_assign_mesh_location
@@ -93,7 +97,7 @@ Cmiss_field_assign_string
 Cmiss_field_evaluate_mesh_location
 Cmiss_field_evaluate_real
 Cmiss_field_evaluate_string
-Cmiss_field_evaluate_chart_derivative
+Cmiss_field_evaluate_derivative
 Cmiss_field_get_attribute_integer
 Cmiss_field_set_attribute_integer
 Cmiss_field_get_name
@@ -376,6 +380,7 @@ Cmiss_mesh_destroy_all_elements
 Cmiss_mesh_destroy_element
 Cmiss_mesh_destroy_elements_conditional
 Cmiss_mesh_find_element_by_identifier
+Cmiss_mesh_get_chart_differential_operator
 Cmiss_mesh_get_dimension
 Cmiss_mesh_get_master
 Cmiss_mesh_get_name

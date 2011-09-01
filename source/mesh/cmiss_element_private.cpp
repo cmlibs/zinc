@@ -56,6 +56,7 @@ extern "C" {
 #include "mesh/cmiss_element_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/differential_operator.hpp"
 
 namespace {
 
@@ -884,6 +885,13 @@ public:
 
 	FE_region *getFeRegion() const { return fe_region; }
 
+	FE_region *getMasterFeRegion() const
+	{
+		FE_region *master_fe_region = fe_region;
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		return master_fe_region;
+	}
+
 	char *getName()
 	{
 		char *name = 0;
@@ -1231,6 +1239,14 @@ Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 {
 	if (mesh)
 		return mesh->findElementByIdentifier(identifier);
+	return 0;
+}
+
+Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
+	Cmiss_mesh_id mesh, int order, int term)
+{
+	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
+		return new Cmiss_differential_operator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
 	return 0;
 }
 

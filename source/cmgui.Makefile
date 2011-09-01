@@ -980,6 +980,7 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field_trigonometry.cpp \
 	computed_field/computed_field_vector_operations.cpp \
 	computed_field/computed_field_wrappers.cpp \
+	computed_field/differential_operator.cpp \
 	computed_field/field_cache.cpp \
 	computed_field/field_ensemble.cpp \
 	computed_field/field_location.cpp \

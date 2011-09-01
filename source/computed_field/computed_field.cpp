@@ -168,6 +168,7 @@ extern "C" {
 extern "C" {
 #include "computed_field/computed_field_set.h"
 }
+#include "computed_field/differential_operator.hpp"
 #include "computed_field/field_cache.hpp"
 extern "C" {
 #include "finite_element/finite_element.h"
@@ -2423,12 +2424,12 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 }
 
 // External API
-int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
-	Cmiss_field_cache_id cache, Cmiss_field_id chart_field, int order, int term,
-	int number_of_values, double *values)
+int Cmiss_field_evaluate_derivative(Cmiss_field_id field,
+	Cmiss_differential_operator_id differential_operator,
+	Cmiss_field_cache_id cache, int number_of_values, double *values)
 {
 	int return_code = 0;
-	if (field && cache && (NULL == chart_field) && (1 == order) &&
+	if (field && differential_operator && cache &&
 		(number_of_values >= field->number_of_components) && values)
 	{
 		Field_element_xi_location *element_xi_location =
@@ -2436,46 +2437,26 @@ int Cmiss_field_evaluate_chart_derivative(Cmiss_field_id field,
 		if (element_xi_location)
 		{
 			int element_dimension = element_xi_location->get_dimension();
-			if ((0 < term) && (term <= element_dimension))
+			if (element_dimension == differential_operator->getDimension())
 			{
 				int old_number_of_derivatives = element_xi_location->get_number_of_derivatives();
 				element_xi_location->set_number_of_derivatives(element_dimension);
-				return_code = Computed_field_evaluate_cache_at_location(field, element_xi_location);
-				element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
-				if (return_code)
+				if (Computed_field_evaluate_cache_at_location(field, element_xi_location))
 				{
 					if (field->derivatives_valid)
 					{
-						int term_offset = term - 1;
-						int i;
-						for (i = 0; i < field->number_of_components; i++)
+						FE_value *derivative = field->derivatives + (differential_operator->getTerm() - 1);
+						for (int i = 0; i < field->number_of_components; i++)
 						{
-							values[i] = field->derivatives[i*element_dimension + term_offset];
+							values[i] = *derivative;
+							derivative += element_dimension;
 						}
-					}
-					else
-					{
-						return_code = 0;
+						return_code = 1;
 					}
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_field_evaluate_chart_derivative.  Invalid term argument %d %d", term, element_dimension);
+				element_xi_location->set_number_of_derivatives(old_number_of_derivatives);
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_field_evaluate_chart_derivative.  Not an element location" );
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_evaluate_chart_derivative.  Invalid argument(s)");
-		return_code = 0;
 	}
 	return (return_code);
 }
