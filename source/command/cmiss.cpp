@@ -105,7 +105,9 @@ extern "C" {
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_matrix_operations.h"
-#include "computed_field/computed_field_region_operations.h"
+}
+#include "computed_field/computed_field_nodeset_operators.hpp"
+extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_time.h"
@@ -21880,11 +21882,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_matrix_operations(
 				command_data->computed_field_package);
-			if (command_data->root_region)
-			{
-				Computed_field_register_types_region_operations(
-					command_data->computed_field_package);
-			}
+			Computed_field_register_types_nodeset_operators(
+				command_data->computed_field_package);
 			Computed_field_register_types_vector_operations(
 				command_data->computed_field_package);
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)

@@ -1,10 +1,8 @@
-/*******************************************************************************
-FILE : computed_field_region_operations.h
-
-LAST MODIFIED : 7 January 2003
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_field_nodeset_operators.h
+ *
+ * Implements field operators that sum or process fields over a nodeset.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -22,7 +20,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -40,46 +38,38 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_REGION_OPERATIONS_H)
-#define COMPUTED_FIELD_REGION_OPERATIONS_H
+#if !defined (CMISS_FIELD_NODESET_OPERATORS_H)
+#define CMISS_FIELD_NODESET_OPERATORS_H
 
-#include "finite_element/finite_element.h"
-#include "region/cmiss_region.h"
-
-int Computed_field_register_types_region_operations(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 01 May 2006
-
-DESCRIPTION :
-==============================================================================*/
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 /*******************************************************************************
- * Creates a field which returns the sum of a source field's value over all
- * nodes in its region. Returned field has same number of components as source.
- * GRC: rename this field before exposing in external API
- * 
+ * Creates a field which computes the sum of the source field values over all
+ * nodes in the nodeset for which it is defined. Returned field has same number
+ * of components as the source field.
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum.
- * @param group  Optional sub-group of region to limit sum over.  
- * @return Newly created field
+ * @param nodeset  The set of nodes to sum field over.
+ * @return  Handle to newly created field.
  */
-struct Computed_field *Computed_field_create_region_sum(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, struct Cmiss_region *group);
+Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
 
 /*******************************************************************************
- * Creates a field which returns the mean of a source field's values over all
- * nodes in its region. Returned field has same number of components as source.
- * GRC: rename this field before exposing in external API
- * 
+ * Creates a field which computes the mean of the source field values over all
+ * nodes in the nodeset for which it is defined. Returned field has same number
+ * of components as the source field.
+ *
  * @param field_module  Region field module which will own new field.
- * @param source_field  Field to sum & average.
- * @param group  Optional sub-group of region to limit sum over.  
- * @return Newly created field
+ * @param source_field  Field to obtain mean value for.
+ * @param nodeset  The set of nodes to obtain mean over.
+ * @return  Handle to newly created field.
  */
-struct Computed_field *Computed_field_create_region_mean(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, struct Cmiss_region *group);
+Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
 
-#endif /* !defined (COMPUTED_FIELD_REGION_OPERATIONS_H) */
+#endif /* !defined (CMISS_FIELD_NODESET_OPERATORS_H) */

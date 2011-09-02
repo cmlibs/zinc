@@ -23,7 +23,7 @@ computed_field/computed_field_integration.cpp
 computed_field/computed_field_logical_operators.cpp
 computed_field/computed_field_lookup.cpp
 computed_field/computed_field_matrix_operations.cpp
-computed_field/computed_field_region_operations.cpp
+computed_field/computed_field_nodeset_operators.cpp
 computed_field/computed_field_set.cpp
 computed_field/computed_field_time.cpp
 computed_field/computed_field_trigonometry.cpp

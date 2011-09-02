@@ -25,6 +25,7 @@ SET( API_HDRS
 	source/api/cmiss_field_logical_operators.h
 	source/api/cmiss_field_matrix_operations.h
 	source/api/cmiss_field_module.h
+	source/api/cmiss_field_nodeset_operators.h
 	source/api/cmiss_field_parameters.h
 	source/api/cmiss_field_scene_viewer_projection.h
 	source/api/cmiss_field_subobject_group.h
