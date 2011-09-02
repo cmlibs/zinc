@@ -153,12 +153,11 @@ static void Cmiss_region_Computed_field_change(
 		if (change_summary & (MANAGER_CHANGE_RESULT(Computed_field) |
 			MANAGER_CHANGE_ADD(Computed_field)))
 		{
-			Cmiss_region *parent = Cmiss_region_get_parent(region);
+			Cmiss_region *parent = Cmiss_region_get_parent_internal(region);
 			if (parent)
 			{
 				Computed_field_manager_propagate_hierarchical_field_changes(
 					parent->fields->field_manager, message);
-				Cmiss_region_destroy(&parent);
 			}
 		}
 	}

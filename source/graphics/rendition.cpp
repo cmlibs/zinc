@@ -1327,7 +1327,7 @@ gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
 	if (rendition && scene)
 	{
 		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *parent = Cmiss_region_get_parent_internal(region);
 		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
 
 		if ((scene_region != region) || parent)
@@ -1358,7 +1358,6 @@ gtMatrix *Cmiss_rendition_get_total_transformation_on_scene(
 			/* top level of transformation */
 			use_local_transformation = 1;
 		}
-		Cmiss_region_destroy(&parent);
 		/* allocate a gtMatrix for the top/first found transformation */
 		if (use_local_transformation && rendition->transformation &&
 			(ALLOCATE(transformation, gtMatrix, 1)))
@@ -2879,7 +2878,7 @@ int Cmiss_rendition_add_total_transformation_callback(struct Cmiss_rendition *re
 	if (rendition && scene)
 	{
 		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *parent = Cmiss_region_get_parent_internal(region);
 		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
 
 		if ((scene_region != region) || parent)
@@ -2898,7 +2897,6 @@ int Cmiss_rendition_add_total_transformation_callback(struct Cmiss_rendition *re
 		if (scene_region == region)
 			return_code &= CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_rendition_scene_region_change)(
 				rendition->scene_region_change_callback_list, region_change_function, user_data);
-		Cmiss_region_destroy(&parent);
 		Cmiss_region_destroy(&scene_region);
 	}
 	else
@@ -2917,7 +2915,7 @@ int Cmiss_rendition_remove_total_transformation_callback(struct Cmiss_rendition 
 	if (rendition && scene)
 	{
 		struct Cmiss_region *region = Cmiss_rendition_get_region(rendition);
-		struct Cmiss_region *parent = Cmiss_region_get_parent(region);
+		struct Cmiss_region *parent = Cmiss_region_get_parent_internal(region);
 		struct Cmiss_region *scene_region = Cmiss_scene_get_region(scene);
 
 		if ((scene_region != region) || parent)
@@ -2930,7 +2928,6 @@ int Cmiss_rendition_remove_total_transformation_callback(struct Cmiss_rendition 
 				Cmiss_rendition_destroy(&parent_rendition);
 			}
 		}
-		Cmiss_region_destroy(&parent);
 		Cmiss_region_destroy(&scene_region);
 		if (return_code)
 			return_code = CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_rendition_transformation)(

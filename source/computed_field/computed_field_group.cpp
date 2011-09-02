@@ -767,9 +767,8 @@ Cmiss_field_group_id Computed_field_group::getSubRegionGroup(Cmiss_region_id sub
 	Cmiss_field_group_id subregion_group = NULL;
 	if (Cmiss_region_is_group(subregion))
 	{
-		Cmiss_region_id parent_region = Cmiss_region_get_parent(subregion);
+		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);
 		subregion_group = getSubRegionGroup(parent_region);
-		Cmiss_region_destroy(&parent_region);
 		return subregion_group;
 	}
 	if (region == subregion)
@@ -804,14 +803,13 @@ Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id 
 	Cmiss_field_group_id subregion_group = NULL;
 	if (Cmiss_region_is_group(subregion))
 	{
-		Cmiss_region_id parent_region = Cmiss_region_get_parent(subregion);
+		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);
 		subregion_group = createSubRegionGroup(parent_region);
-		Cmiss_region_destroy(&parent_region);
 		return subregion_group;
 	}
 	if (Cmiss_region_contains_subregion(region, subregion) && region != subregion)
 	{
-		Cmiss_region_id parent_region = Cmiss_region_get_parent(subregion);
+		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);
 		if (parent_region != region)
 		{
 			Cmiss_field_group_id temp = getSubRegionGroup(subregion);
@@ -856,8 +854,6 @@ Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id 
 			}
 			// else already exists: fail
 		}
-		if (parent_region)
-			Cmiss_region_destroy(&parent_region);
 	}
 	return subregion_group;
 }
