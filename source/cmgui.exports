@@ -296,6 +296,13 @@ Cmiss_field_module_create_acos
 Cmiss_field_module_create_atan
 Cmiss_field_module_create_atan2
 
+/* api/cmiss_field_vector_operators.h */
+Cmiss_field_module_create_cross_product
+Cmiss_field_module_create_cross_product_3d
+Cmiss_field_module_create_dot_product
+Cmiss_field_module_create_magnitude
+Cmiss_field_module_create_normalise
+
 /* api/cmiss_region.h */
 Cmiss_region_access
 Cmiss_region_destroy

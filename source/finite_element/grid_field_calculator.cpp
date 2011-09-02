@@ -59,7 +59,6 @@ extern "C" {
 #include "computed_field/computed_field_private.hpp" // only for Cmiss_field_module_set_replace_field()
 extern "C" {
 #include "computed_field/computed_field_update.h"
-#include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
 static char grid_field_calculator_uidh[] =
@@ -69,6 +68,7 @@ static char grid_field_calculator_uidh[] =
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
+#include "computed_field/computed_field_vector_operators.hpp"
 
 /*
 Module variables
@@ -456,12 +456,12 @@ Applies the computed field to the grid field.
 					{
 						Cmiss_field_module *field_module =
 							Cmiss_region_get_field_module(grid_calc->region);
-						source_field = Computed_field_create_dot_product(field_module,
+						source_field = Cmiss_field_module_create_dot_product(field_module,
 							curve_lookup[0], curve_lookup[1]);
 						if (3 == number_of_components)
 						{
 							Computed_field *source_field2 =
-								Computed_field_create_dot_product(field_module,
+								Cmiss_field_module_create_dot_product(field_module,
 									source_field, curve_lookup[2]);
 							REACCESS(Computed_field)(&source_field, source_field2);
 							DEACCESS(Computed_field)(&source_field2);

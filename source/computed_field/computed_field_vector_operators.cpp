@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : computed_field_vector_operations.c
-
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Implements a number of basic vector operations on computed fields.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : computed_field_vector_operators.cpp
+ *
+ * Implements a number of basic vector operations on computed fields.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -46,16 +43,16 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_vector_operators.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "computed_field/computed_field_vector_operations.h"
 }
 
-class Computed_field_vector_operations_package : public Computed_field_type_package
+class Computed_field_vector_operators_package : public Computed_field_type_package
 {
 };
 
@@ -234,7 +231,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_normalise(
+struct Computed_field *Cmiss_field_module_create_normalise(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
@@ -279,7 +276,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 } /* Computed_field_get_type_normalise */
 
 int define_Computed_field_type_normalise(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -295,7 +292,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_normalise);
-	USE_PARAMETER(computed_field_vector_operations_package_void);
+	USE_PARAMETER(computed_field_vector_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -327,7 +324,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_normalise(field_modify->get_field_module(),
+					Cmiss_field_module_create_normalise(field_modify->get_field_module(),
 						source_field));
 			}
 			if (!return_code)
@@ -673,7 +670,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_cross_product(
+struct Computed_field *Cmiss_field_module_create_cross_product(
 	struct Cmiss_field_module *field_module,
 	int dimension, struct Computed_field **source_fields)
 {
@@ -687,7 +684,7 @@ struct Computed_field *Computed_field_create_cross_product(
 				(source_fields[i]->number_of_components != dimension))
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_cross_product.  "
+					"Cmiss_field_module_create_cross_product.  "
 					"The number of components of the %s field does not match the dimension",
 					source_fields[i]->name);
 				return_code = 0;
@@ -703,14 +700,17 @@ struct Computed_field *Computed_field_create_cross_product(
 				new Computed_field_cross_product());
 		}
 	}	
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_cross_product.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (field);
+}
+
+Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two)
+{
+	Cmiss_field_id source_fields[2];
+	source_fields[0] = source_field_one;
+	source_fields[1] = source_field_two;
+	return Cmiss_field_module_create_cross_product(field_module, /*dimension*/3, source_fields);
 }
 
 int Computed_field_get_type_cross_product(struct Computed_field *field,
@@ -758,7 +758,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 } /* Computed_field_get_type_cross_product */
 
 int define_Computed_field_type_cross_product(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -777,7 +777,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_cross_product);
-	USE_PARAMETER(computed_field_vector_operations_package_void);
+	USE_PARAMETER(computed_field_vector_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
@@ -899,7 +899,7 @@ already) and allows its contents to be modified.
 						if (return_code)
 						{
 							return_code = field_modify->update_field_and_deaccess(
-								Computed_field_create_cross_product(field_modify->get_field_module(),
+								Cmiss_field_module_create_cross_product(field_modify->get_field_module(),
 									dimension, source_fields));
 						}
 						for (i = 0; i < number_of_source_fields; i++)
@@ -1140,7 +1140,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_dot_product(
+struct Computed_field *Cmiss_field_module_create_dot_product(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
@@ -1160,12 +1160,6 @@ struct Computed_field *Computed_field_create_dot_product(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_dot_product());
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_dot_product.  Invalid argument(s)");
-	}
-
 	return (field);
 }
 
@@ -1202,7 +1196,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 } /* Computed_field_get_type_dot_product */
 
 int define_Computed_field_type_dot_product(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1219,7 +1213,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_dot_product);
-	USE_PARAMETER(computed_field_vector_operations_package_void);
+	USE_PARAMETER(computed_field_vector_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -1262,7 +1256,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_dot_product(field_modify->get_field_module(),
+						Cmiss_field_module_create_dot_product(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1552,7 +1546,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_magnitude(
+struct Computed_field *Cmiss_field_module_create_magnitude(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
@@ -1597,7 +1591,7 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 } /* Computed_field_get_type_magnitude */
 
 int define_Computed_field_type_magnitude(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1613,7 +1607,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_magnitude);
-	USE_PARAMETER(computed_field_vector_operations_package_void);
+	USE_PARAMETER(computed_field_vector_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -1646,7 +1640,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_magnitude(field_modify->get_field_module(),
+					Cmiss_field_module_create_magnitude(field_modify->get_field_module(),
 						source_field));
 			}
 			if (!return_code)
@@ -1898,7 +1892,7 @@ by it is returned - otherwise an error is reported.
 } /* Computed_field_get_type_cubic_texture_coordinates */
 
 int define_Computed_field_type_cubic_texture_coordinates(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1914,7 +1908,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_cubic_texture_coordinates);
-	USE_PARAMETER(computed_field_vector_operations_package_void);
+	USE_PARAMETER(computed_field_vector_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -1980,7 +1974,7 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_cubic_texture_coordinates */
 
-int Computed_field_register_types_vector_operations(
+int Computed_field_register_types_vector_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -1989,41 +1983,41 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_vector_operations_package
-		*computed_field_vector_operations_package =
-		new Computed_field_vector_operations_package;
+	Computed_field_vector_operators_package
+		*computed_field_vector_operators_package =
+		new Computed_field_vector_operators_package;
 
-	ENTER(Computed_field_register_types_vector_operations);
+	ENTER(Computed_field_register_types_vector_operators);
 	if (computed_field_package)
 	{
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_magnitude_type_string,
 			define_Computed_field_type_magnitude,
-			computed_field_vector_operations_package);
+			computed_field_vector_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_normalise_type_string,
 			define_Computed_field_type_normalise,
-			computed_field_vector_operations_package);
+			computed_field_vector_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cross_product_type_string,
 			define_Computed_field_type_cross_product,
-			computed_field_vector_operations_package);
+			computed_field_vector_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_dot_product_type_string,
 			define_Computed_field_type_dot_product,
-			computed_field_vector_operations_package);
+			computed_field_vector_operators_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_cubic_texture_coordinates_type_string,
 			define_Computed_field_type_cubic_texture_coordinates,
-			computed_field_vector_operations_package);
+			computed_field_vector_operators_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_vector_operations.  Invalid argument(s)");
+			"Computed_field_register_types_vector_operators.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_vector_operations */
+} /* Computed_field_register_types_vector_operators */

@@ -107,13 +107,13 @@ extern "C" {
 }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
+#include "computed_field/computed_field_vector_operators.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_time.h"
 #include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
-#include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "context/context.h"
@@ -21884,7 +21884,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_nodeset_operators(
 				command_data->computed_field_package);
-			Computed_field_register_types_vector_operations(
+			Computed_field_register_types_vector_operators(
 				command_data->computed_field_package);
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 			if (command_data->graphics_window_manager)

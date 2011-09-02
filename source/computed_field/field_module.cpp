@@ -58,7 +58,6 @@ extern "C" {
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_trigonometry.h"
-#include "computed_field/computed_field_vector_operations.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element_region.h"
 #include "region/cmiss_region.h"
@@ -66,6 +65,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
+#include "computed_field/computed_field_vector_operators.hpp"
 
 /***************************************************************************//**
  * Object to pass into field create functions, supplying region field is to
@@ -364,7 +364,7 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 			Computed_field_register_types_nodeset_operators(package);
 			Computed_field_register_types_string_constant(package);
 			Computed_field_register_types_trigonometry(package);
-			Computed_field_register_types_vector_operations(package);
+			Computed_field_register_types_vector_operators(package);
 
 			// execute command
 			std::string fullCommand(field_name);

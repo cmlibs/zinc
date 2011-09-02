@@ -29,7 +29,7 @@ computed_field/computed_field_time.cpp
 computed_field/computed_field_trigonometry.cpp
 computed_field/computed_field_update.cpp
 computed_field/computed_field_value_index_ranges.cpp
-computed_field/computed_field_vector_operations.cpp
+computed_field/computed_field_vector_operators.cpp
 computed_field/computed_field_window_projection.cpp
 element/element_point_tool.cpp
 element/element_tool.cpp
