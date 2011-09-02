@@ -1237,6 +1237,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
 		return_code = Cmiss_nodeset_group_remove_all_nodes(nodeset_group);
 		Cmiss_nodeset_group_destroy(&nodeset_group);
+		check_subobject_group_dependency(local_node_group->core);
 		Computed_field_changed(this->field);
 		Cmiss_field_node_group_destroy(&node_group);
 	}
@@ -1246,6 +1247,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(data_group);
 		return_code = Cmiss_nodeset_group_remove_all_nodes(nodeset_group);
 		Cmiss_nodeset_group_destroy(&nodeset_group);
+		check_subobject_group_dependency(local_node_group->core);
 		Computed_field_changed(this->field);
 		Cmiss_field_node_group_destroy(&data_group);
 	}
@@ -1291,6 +1293,7 @@ int Computed_field_group::clear_region_tree_element()
 			Cmiss_field_element_group_id element_group =
 				Cmiss_field_cast_element_group(local_element_group[i]);
 			return_code = Computed_field_element_group_core_cast(element_group)->clear();
+			check_subobject_group_dependency(local_element_group[i]->core);
 			Computed_field_changed(this->field);
 			Cmiss_field_element_group_destroy(&element_group);
 		}
@@ -1780,7 +1783,6 @@ int Cmiss_field_group_clear_local(Cmiss_field_group_id group)
 	}
 	return 0;
 }
-
 
 int Cmiss_field_group_is_empty(Cmiss_field_group_id group)
 {
