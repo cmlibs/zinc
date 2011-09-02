@@ -3622,7 +3622,9 @@ Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 		(number_of_source_field_components == number_of_mesh_field_components) &&
 		Computed_field_has_numerical_components(source_field, NULL) &&
 		Computed_field_has_numerical_components(mesh_field, NULL) &&
-		(number_of_mesh_field_components >= Cmiss_mesh_get_dimension(mesh)))
+		(number_of_mesh_field_components >= Cmiss_mesh_get_dimension(mesh)) &&
+		(Cmiss_field_module_get_master_region_internal(field_module) ==
+			Cmiss_mesh_get_master_region_internal(mesh)))
 	{
 		Cmiss_field_id source_fields[2];
 		source_fields[0] = source_field;
