@@ -972,7 +972,7 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_group.cpp \
 	computed_field/computed_field_logical_operators.cpp \
-	computed_field/computed_field_matrix_operations.cpp \
+	computed_field/computed_field_matrix_operators.cpp \
 	computed_field/computed_field_nodeset_operators.cpp \
 	computed_field/computed_field_set.cpp \
 	computed_field/computed_field_string_constant.cpp \

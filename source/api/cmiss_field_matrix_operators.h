@@ -1,7 +1,11 @@
-/***************************************************************************//**
- * FILE : computed_field_matrix_operations.h
- *
- */
+/*******************************************************************************
+FILE : cmiss_field_matrix_operators.h
+
+LAST MODIFIED : 17 June 2011
+
+DESCRIPTION :
+The public interface to the Cmiss_fields that perform matrix operations.
+==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -19,7 +23,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2008
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -37,92 +41,108 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_MATRIX_OPERATIONS_H)
-#define COMPUTED_FIELD_MATRIX_OPERATIONS_H
+#ifndef __CMISS_FIELD_MATRIX_OPERATORS_H__
+#define __CMISS_FIELD_MATRIX_OPERATORS_H__
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_create_eigenvalues Cmiss_field_module_create_eigenvalues
-#define Computed_field_create_eigenvectors Cmiss_field_module_create_eigenvectors
-#define Computed_field_create_matrix_invert Cmiss_field_module_create_matrix_invert
-#define Computed_field_create_matrix_multiply Cmiss_field_module_create_matrix_multiply
-#define Computed_field_create_transpose Cmiss_field_module_create_transpose
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
-/***************************************************************************//**
+/**
  * Creates a field returning the N eigenvalues of symmetric N*N component source
  * field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-Computed_field *Computed_field_create_eigenvalues(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field);
+Cmiss_field_id Cmiss_field_module_create_eigenvalues(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the N, N-dimensional eigenvectors computed with the
  * source eigenvalues field. Sets the number of components equal to N*N, where
  * N is the number of components in the <eigenvalues_field>.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param eigenvalues_field  Eigenvalues type field.
  * @return Newly created field
  */
-Computed_field *Computed_field_create_eigenvectors(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *eigenvalues_field);
+Cmiss_field_id Cmiss_field_module_create_eigenvectors(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id eigenvalues_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the inverse of N*N symmetric matrix valued source
  * field.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-Computed_field *Computed_field_create_matrix_invert(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field);
+Cmiss_field_id Cmiss_field_module_create_matrix_invert(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the values resulting from matrix multiplication
  * <source_field1> x <source_field2>, with <number_of_rows> rows in both
  * <source_field1> and the result. From the <number_of_rows> the columns in
  * <source_field1>, rows in <source_field2> and then columns in <source_field2>
  * are implied and checked.
- * 
+ *
  * @param field_module  Region field module which will own new field.
  * @param number_of_rows  Number of rows N in source_field1 and result.
  * @param source_field1  N rows * M columns component matrix field 1.
  * @param source_field2  M rows * P columns component matrix field 2.
  * @return Newly created matrix with N*P components.
  */
-Computed_field *Computed_field_create_matrix_multiply(
-	struct Cmiss_field_module *field_module,
-	int number_of_rows, struct Computed_field *source_field1,
-	struct Computed_field *source_field2);
+Cmiss_field_id Cmiss_field_module_create_matrix_multiply(
+	Cmiss_field_module_id field_module,
+	int number_of_rows, Cmiss_field_id source_field1,
+	Cmiss_field_id source_field2);
 
 /***************************************************************************//**
+ * Creates a projection field returning the result of a matrix multiplication
+ * with perspective division on the source field vector. The source_field vector
+ * is expanded to a homogeneous coordinate by appending a component of value 1,
+ * which is multiplied by the projection_matrix_field, and the extra calculated
+ * value resulting from the unit component is used to divide through each of the
+ * other components to give a perspective projection in the resulting field.
+ * The projection_matrix_field must have have a multiple of
+ * (source_field->number_of_components + 1) components forming a matrix with
+ * that many columns and the resulting (number_of_components + 1) rows. The
+ * first values in the projection_matrix are across the first row, followed by
+ * the next row and so on.
+ * Hence a 4x4 matrix transforms a 3-component vector to a 3-component vector:
+ * [x'] = [m1  m2  m3  m4 ][x]
+ * [y'] = [m5  m6  m7  m8 ][y]
+ * [z'] = [m9  m10 m11 m12][z]
+ * [h'] = [m13 m14 m15 m16][1]
+ * The resulting field returns 3 components [x'/h', y'/h', z'/h']
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Source vector field to project.
+ * @param projection_matrix_field  Field supplying projection matrix.
+ * @return  Newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_projection(
+	Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field);
+
+/**
  * Creates a field returning the transpose of N*M matrix source_field.
  * The source_number_of_rows is specified; source_number_of_columns is computed
  * as source_field->number_of_components / <source_number_of_rows>;
- * this division must have no remainder. 
- * 
+ * this division must have no remainder.
+ *
  * @param field_module  Region field module which will own new field.
  * @param source_number_of_rows  Number of rows N in source_field.
  * @param source_field  N rows * M columns component matrix field.
  * @return Newly created M*N component transposed matrix field.
  */
-Computed_field *Computed_field_create_transpose(
-	struct Cmiss_field_module *field_module,
-	int source_number_of_rows, struct Computed_field *source_field);
+Cmiss_field_id Cmiss_field_module_create_transpose(
+	Cmiss_field_module_id field_module,
+	int source_number_of_rows, Cmiss_field_id source_field);
 
-int Computed_field_register_types_matrix_operations(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-#endif /* !defined (COMPUTED_FIELD_MATRIX_OPERATIONS_H) */
+#endif /* __CMISS_FIELD_MATRIX_OPERATORS_H__ */

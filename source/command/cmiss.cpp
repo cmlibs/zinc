@@ -104,8 +104,8 @@ extern "C" {
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
-#include "computed_field/computed_field_matrix_operations.h"
 }
+#include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
@@ -21880,7 +21880,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package, 
 					command_data->root_region);
 			}
-			Computed_field_register_types_matrix_operations(
+			Computed_field_register_types_matrix_operators(
 				command_data->computed_field_package);
 			Computed_field_register_types_nodeset_operators(
 				command_data->computed_field_package);

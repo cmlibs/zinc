@@ -260,7 +260,7 @@ Cmiss_field_module_create_less_than
 Cmiss_field_module_create_or
 Cmiss_field_module_create_xor
 
-/* api/cmiss_field_matrix_operations.h */
+/* api/cmiss_field_matrix_operators.h */
 Cmiss_field_module_create_eigenvalues
 Cmiss_field_module_create_eigenvectors
 Cmiss_field_module_create_matrix_invert

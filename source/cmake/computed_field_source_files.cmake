@@ -12,7 +12,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_function.cpp
 	source/computed_field/computed_field_group.cpp
 	source/computed_field/computed_field_logical_operators.cpp
-	source/computed_field/computed_field_matrix_operations.cpp
+	source/computed_field/computed_field_matrix_operators.cpp
 	source/computed_field/computed_field_nodeset_operators.cpp
 	source/computed_field/computed_field_subobject_group.cpp
 	source/computed_field/computed_field_string_constant.cpp
@@ -40,7 +40,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_group.h
 	source/computed_field/computed_field_group_base.hpp
 	source/computed_field/computed_field_logical_operators.h
-	source/computed_field/computed_field_matrix_operations.h
+	source/computed_field/computed_field_matrix_operators.hpp
 	source/computed_field/computed_field_nodeset_operators.hpp
 	source/computed_field/computed_field_subobject_group.hpp
 	source/computed_field/computed_field_string_constant.h

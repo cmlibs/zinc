@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : computed_field_matrix_operations.c
+ * FILE : computed_field_matrix_operators.c
  *
  * Implements a number of basic matrix operations on computed fields.
  */
@@ -40,10 +40,10 @@
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
 extern "C" {
-#include "api/cmiss_field_matrix_operations.h"
+#include "api/cmiss_field_matrix_operators.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_matrix_operations.h"
 }
+#include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
@@ -54,7 +54,7 @@ extern "C" {
 #include "graphics/quaternion.hpp"
 }
 
-class Computed_field_matrix_operations_package : public Computed_field_type_package
+class Computed_field_matrix_operators_package : public Computed_field_type_package
 {
 };
 
@@ -479,7 +479,7 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 
 } //namespace
 
-Computed_field *Computed_field_create_eigenvalues(
+Computed_field *Cmiss_field_module_create_eigenvalues(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
@@ -494,13 +494,6 @@ Computed_field *Computed_field_create_eigenvalues(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_eigenvalues());
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_eigenvalues.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -535,7 +528,7 @@ eigenvalues of is returned.
 } /* Computed_field_get_type_eigenvalues */
 
 int define_Computed_field_type_eigenvalues(struct Parse_state *state,
-	void *field_modify_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -551,7 +544,7 @@ contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvalues);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -582,7 +575,7 @@ contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_eigenvalues(field_modify->get_field_module(),
+					Cmiss_field_module_create_eigenvalues(field_modify->get_field_module(),
 						source_field));
 			}
 			DESTROY(Option_table)(&option_table);
@@ -814,7 +807,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_eigenvectors(
+Computed_field *Cmiss_field_module_create_eigenvectors(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *eigenvalues_field)
 {
@@ -831,13 +824,6 @@ Computed_field *Computed_field_create_eigenvectors(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_eigenvectors());
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_eigenvectors.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -872,7 +858,7 @@ returned.
 } /* Computed_field_get_type_eigenvectors */
 
 int define_Computed_field_type_eigenvectors(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -888,7 +874,7 @@ its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvectors);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -922,7 +908,7 @@ its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_eigenvectors(field_modify->get_field_module(),
+					Cmiss_field_module_create_eigenvectors(field_modify->get_field_module(),
 						source_field));
 			}
 			if (source_field)
@@ -1259,7 +1245,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_matrix_invert(
+Computed_field *Cmiss_field_module_create_matrix_invert(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
@@ -1273,11 +1259,6 @@ Computed_field *Computed_field_create_matrix_invert(
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_matrix_invert());
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_eigenvalues.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -1315,7 +1296,7 @@ matrix_invert of is returned.
 } /* Computed_field_get_type_matrix_invert */
 
 int define_Computed_field_type_matrix_invert(struct Parse_state *state,
-	void *field_modify_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1331,7 +1312,7 @@ contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_invert);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
@@ -1362,7 +1343,7 @@ contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_matrix_invert(field_modify->get_field_module(),
+					Cmiss_field_module_create_matrix_invert(field_modify->get_field_module(),
 						source_field));
 			}
 			DESTROY(Option_table)(&option_table);
@@ -1607,7 +1588,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_matrix_multiply(
+Computed_field *Cmiss_field_module_create_matrix_multiply(
 	struct Cmiss_field_module *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2)
@@ -1637,16 +1618,10 @@ Computed_field *Computed_field_create_matrix_multiply(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_matrix_multiply.  "
+				"Cmiss_field_module_create_matrix_multiply.  "
 				"Fields are of invalid size for multiplication");
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_matrix_multiply.  Invalid argument(s)");
-	}
-
 	return (field);
 }
 
@@ -1685,7 +1660,7 @@ If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
 } /* Computed_field_get_type_matrix_multiply */
 
 int define_Computed_field_type_matrix_multiply(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1703,7 +1678,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_matrix_multiply);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -1782,7 +1757,7 @@ already) and allows its contents to be modified.
 							if (return_code)
 							{
 								return_code = field_modify->update_field_and_deaccess(
-									Computed_field_create_matrix_multiply(field_modify->get_field_module(),
+									Cmiss_field_module_create_matrix_multiply(field_modify->get_field_module(),
 										number_of_rows, source_fields[0], source_fields[1]));
 							}
 							DESTROY(Option_table)(&option_table);
@@ -2261,11 +2236,6 @@ Cmiss_field_id Cmiss_field_module_create_projection(
 				projection_matrix_field->name);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_projection.  Invalid argument(s)");
-	}
 	return (field);
 }
 
@@ -2303,12 +2273,12 @@ int Computed_field_get_type_projection(struct Computed_field *field,
  * and allows its contents to be modified.
  */
 int define_Computed_field_type_projection(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operators_package_void)
 {
 	int return_code;
 
 	ENTER(define_Computed_field_type_projection);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	Computed_field_modify_data *field_modify =
 		reinterpret_cast<Computed_field_modify_data *>(field_modify_void);
 	if (state && field_modify)
@@ -2584,7 +2554,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_transpose(
+Computed_field *Cmiss_field_module_create_transpose(
 	struct Cmiss_field_module *field_module,
 	int source_number_of_rows, struct Computed_field *source_field)
 {
@@ -2599,12 +2569,6 @@ Computed_field *Computed_field_create_transpose(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_transpose(source_number_of_rows));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_transpose.  Invalid argument(s)");
-	}
-
 	return (field);
 }
 
@@ -2641,7 +2605,7 @@ If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 } /* Computed_field_get_type_transpose */
 
 int define_Computed_field_type_transpose(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -2658,7 +2622,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_transpose);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -2722,7 +2686,7 @@ already) and allows its contents to be modified.
 						if (return_code)
 						{
 							return_code = field_modify->update_field_and_deaccess(
-								Computed_field_create_transpose(field_modify->get_field_module(),
+								Cmiss_field_module_create_transpose(field_modify->get_field_module(),
 									source_number_of_rows, source_field));
 						}
 						DESTROY(Option_table)(&option_table);
@@ -2968,7 +2932,7 @@ transformation of is returned.
 } /* Computed_field_get_type_quaternion */
 
 int define_Computed_field_type_quaternion_to_matrix(struct Parse_state *state,
-	void *field_modify_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 Jun 2008
 
@@ -2983,7 +2947,7 @@ Converts a "quaternion" to a transformation matrix.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_quaternion_to_matrix);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -3267,7 +3231,7 @@ transformation of is returned.
 } /* Computed_field_get_type_quaternion */
 
 int define_Computed_field_type_matrix_to_quaternion(struct Parse_state *state,
-	void *field_modify_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 Jun 2008
 
@@ -3282,7 +3246,7 @@ Converts a transformation matrix to  a "quaternion".
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_to_quaternion);
-	USE_PARAMETER(computed_field_matrix_operations_package_void);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
@@ -3364,7 +3328,7 @@ Converts a transformation matrix to  a "quaternion".
 	return (return_code);
 } /* define_Computed_field_type_matrix_to_quaternion */
 
-int Computed_field_register_types_matrix_operations(
+int Computed_field_register_types_matrix_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -3373,61 +3337,61 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_matrix_operations_package
-		*computed_field_matrix_operations_package =
-		new Computed_field_matrix_operations_package;
+	Computed_field_matrix_operators_package
+		*computed_field_matrix_operators_package =
+		new Computed_field_matrix_operators_package;
 
-	ENTER(Computed_field_register_types_matrix_operations);
+	ENTER(Computed_field_register_types_matrix_operators);
 	if (computed_field_package)
 	{
 		return_code =
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvalues_type_string,
 				define_Computed_field_type_eigenvalues,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvectors_type_string,
 				define_Computed_field_type_eigenvectors,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_matrix_invert_type_string,
 				define_Computed_field_type_matrix_invert,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_matrix_multiply_type_string,
 				define_Computed_field_type_matrix_multiply,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_projection_type_string,
 				define_Computed_field_type_projection,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_transpose_type_string,
 				define_Computed_field_type_transpose,
-				computed_field_matrix_operations_package);
+				computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 			computed_field_quaternion_to_matrix_type_string,
 			define_Computed_field_type_quaternion_to_matrix,
-			computed_field_matrix_operations_package);
+			computed_field_matrix_operators_package);
 		return_code = 
 			Computed_field_package_add_type(computed_field_package,
 			computed_field_matrix_to_quaternion_type_string,
 			define_Computed_field_type_matrix_to_quaternion,
-			computed_field_matrix_operations_package);
+			computed_field_matrix_operators_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_matrix_operations.  Invalid argument(s)");
+			"Computed_field_register_types_matrix_operators.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_matrix_operations */
+} /* Computed_field_register_types_matrix_operators */
