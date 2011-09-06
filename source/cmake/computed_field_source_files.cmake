@@ -45,7 +45,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_subobject_group.hpp
 	source/computed_field/computed_field_string_constant.h
 	source/computed_field/computed_field_trigonometry.h
-	source/computed_field/computed_field_vector_operators.h
+	source/computed_field/computed_field_vector_operators.hpp
 	source/computed_field/computed_field_wrappers.h
 	source/computed_field/differential_operator.hpp
 	source/computed_field/field_cache.hpp
