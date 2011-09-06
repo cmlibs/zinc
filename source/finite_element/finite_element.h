@@ -933,9 +933,12 @@ in the <changed_element_list>, or in any elements using nodes from the
 /*******************************************************************************
  * Clears any embedded locations from nodes in node_list for fields in
  * field_list. This is to avoid circular dependencies which prevent clean-up.
+ * @param fe_region  Only clears embedded locations if node belongs to this
+ * fe_region. Handles case where nodes are transferred to global region on
+ * import so we don't want to clear their embedded locations.
  */
 int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
-	struct LIST(FE_field) *field_list);
+	struct LIST(FE_field) *field_list, struct FE_region *fe_region);
 
 struct FE_node_can_be_merged_data
 /*******************************************************************************

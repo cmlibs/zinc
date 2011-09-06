@@ -12964,7 +12964,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 				struct FE_element *element;
 
 				if (get_FE_nodal_element_xi_value(node,field,
-					component_number,version,type,&element,xi)&&element->shape)
+					component_number,version,type,&element,xi)&&element&&element->shape)
 				{
 					error=0;
 					switch (element->identifier.type)
@@ -13808,7 +13808,7 @@ in the <changed_element_list>, or in any elements using nodes from the
 } /* FE_node_is_embedded_in_changed_element */
 
 int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
-	struct LIST(FE_field) *field_list)
+	struct LIST(FE_field) *field_list, struct FE_region *fe_region)
 {
 	if (!field_list || !node_list)
 		return 0;
@@ -13824,8 +13824,11 @@ int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 			for (Cmiss_set_Cmiss_node::iterator node_iter = nodes->begin(); node_iter != nodes->end(); ++node_iter)
 			{
 				Cmiss_node *node = *node_iter;
-				set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
-					/*version*/0, FE_NODAL_VALUE, (struct FE_element *)0, xi);
+				if (node->fields && (node->fields->fe_region == fe_region))
+				{
+					set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
+						/*version*/0, FE_NODAL_VALUE, (struct FE_element *)0, xi);
+				}
 			}
 		}
 	}

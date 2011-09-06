@@ -1644,7 +1644,7 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 			{
 				FE_region_begin_change(fe_region);
 				// clear embedded locations to avoid circular dependencies which prevent cleanup
-				FE_node_list_clear_embedded_locations(fe_region->fe_node_list, fe_region->fe_field_list);
+				FE_node_list_clear_embedded_locations(fe_region->fe_node_list, fe_region->fe_field_list, fe_region);
 				FE_region_end_change(fe_region);
 			}
 			if (fe_region->data_fe_region)
@@ -7535,8 +7535,9 @@ into <node> an appropriate node field info from <fe_region>.
 	struct FE_region *fe_region, *master_fe_region;
 
 	ENTER(FE_node_merge_into_FE_region);
+
 	if (node &&
-		(current_node_field_info = FE_node_get_FE_node_field_info(node)) &&
+		(0 != (current_node_field_info = FE_node_get_FE_node_field_info(node))) &&
 		(data = (struct FE_node_merge_into_FE_region_data *)data_void) &&
 		(fe_region = data->fe_region))
 	{
@@ -7658,7 +7659,17 @@ into <node> an appropriate node field info from <fe_region>.
 				}
 			}
 			/* now the actual merge! */
-			if (!FE_region_merge_FE_node(data->fe_region, node))
+			FE_node *merged_node = FE_region_merge_FE_node(data->fe_region, node);
+			if (merged_node)
+			{
+				if (merged_node != node)
+				{
+					/* restore the old node field info so marked as belonging to fe_region
+					 * @see FE_node_list_clear_embedded_locations */
+					FE_node_set_FE_node_field_info(node, current_node_field_info);
+				}
+			}
+			else
 			{
 				return_code = 0;
 			}
