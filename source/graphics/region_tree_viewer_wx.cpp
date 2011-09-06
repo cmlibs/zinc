@@ -869,7 +869,7 @@ public:
 * 
 * @param region_tree_viewer scene editor to be modify
 */
-void Region_tree_viewer_wx_set_manager_in_field_choosers(struct Region_tree_viewer *region_tree_viewer)
+void Region_tree_viewer_wx_set_manager_in_choosers(struct Region_tree_viewer *region_tree_viewer)
 {
 	if (coordinate_field_chooser != NULL)
 			coordinate_field_chooser->set_manager(region_tree_viewer->field_manager);
@@ -895,6 +895,9 @@ void Region_tree_viewer_wx_set_manager_in_field_choosers(struct Region_tree_view
 			stream_vector_chooser->set_manager(region_tree_viewer->field_manager);
 	if (texture_coord_field_chooser != NULL)
 			texture_coord_field_chooser->set_manager(region_tree_viewer->field_manager);
+	if (seed_element_chooser != NULL)
+		seed_element_chooser->set_fe_region(Cmiss_region_get_FE_region(Cmiss_rendition_get_region(
+			region_tree_viewer->edit_rendition)));
 }
 
 int coordinate_field_callback(Computed_field *coordinate_field)
@@ -3896,7 +3899,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 		{
 			seed_element_panel->Show();
 			seedelementcheckbox->Show();
-			fe_region = Cmiss_region_get_FE_region(region_tree_viewer->root_region);
+			fe_region = Cmiss_region_get_FE_region(Cmiss_rendition_get_region(
+				region_tree_viewer->edit_rendition));
 			seed_element =
 				Cmiss_graphic_get_seed_element(graphic);
 			if (seed_element_chooser == NULL)
@@ -4625,7 +4629,7 @@ int Region_tree_viewer_revert_changes(Region_tree_viewer *region_tree_viewer)
 			region_tree_viewer->graphiclistbox->SetSelection(selection);
 			region_tree_viewer->lowersplitter->Show();
 			region_tree_viewer->wx_region_tree_viewer->
-				Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
+				Region_tree_viewer_wx_set_manager_in_choosers(region_tree_viewer);
 			Cmiss_graphic *temp_graphic = Cmiss_rendition_get_graphic_at_position(
 				region_tree_viewer->edit_rendition, selection+1);
 			region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_update_graphic_type(temp_graphic);
@@ -5262,7 +5266,7 @@ void Region_tree_viewer_set_graphic_widgets_for_rendition(Region_tree_viewer *re
 	if (region_tree_viewer && region_tree_viewer->rendition)
 	{
 		region_tree_viewer->wx_region_tree_viewer->
-			Region_tree_viewer_wx_set_manager_in_field_choosers(region_tree_viewer);
+			Region_tree_viewer_wx_set_manager_in_choosers(region_tree_viewer);
 		get_and_set_Cmiss_graphic_widgets((void *)region_tree_viewer);
 		region_tree_viewer->lowersplitter->Enable();
 		region_tree_viewer->lowersplitter->Show();

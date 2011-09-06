@@ -347,6 +347,20 @@ Changes the callback item of the text_choose_object_widget. \
 	return (return_code); 
 } /* TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(object_type) */
 
+int set_fe_region(FE_region *fe_region_in)
+{
+	int return_code = 1;
+	FE_region_remove_callback(fe_region,
+		wxFeElementTextChooser::object_change,
+		(void *)this);
+	fe_region = fe_region_in;
+	select_object((struct FE_element *)NULL);
+	FE_region_add_callback(fe_region,
+		wxFeElementTextChooser::object_change,
+		(void *)this);
+
+	return (return_code);
+}
 
 	struct FE_element *get_object()
 /***************************************************************************** \

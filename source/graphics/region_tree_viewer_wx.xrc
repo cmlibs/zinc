@@ -462,7 +462,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="SeedElementPanel">
-															<size>30,30</size>
+															<size>100,30</size>
 	 													</object>
 													</object>
 												</object>

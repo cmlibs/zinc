@@ -1257,14 +1257,13 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							element_point_ranges_identifier.exact_xi[i] =
 								graphic->seed_xi[i];
 						}
-						FE_element_get_xi_points(element,
+						if (FE_element_get_xi_points(element,
 							graphic->xi_discretization_mode, number_in_xi,
 							element_point_ranges_identifier.exact_xi,
 							graphic_to_object_data->rc_coordinate_field,
 							graphic->xi_point_density_field,
 							&number_of_xi_points, &xi_points,
-							graphic_to_object_data->time);
-						if (0 < number_of_xi_points)
+							graphic_to_object_data->time))
 						{
 							if (STREAM_LINE == graphic->streamline_type)
 							{
@@ -7810,11 +7809,6 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			Option_table_add_entry(option_table, "density",
 				&xi_point_density_field, &set_xi_point_density_field_data,
 				set_Computed_field_conditional);
-#ifdef FUTURE_CODE
-			/* discretization */
-			Option_table_add_entry(option_table,"discretization",
-				&(graphic->discretization),NULL, set_Element_discretization);
-#endif /* FUTURE_CODE */
 			/* discretization */
 			Option_table_add_entry(option_table,"discretization",
 				&(graphic->discretization),NULL, set_Element_discretization);
@@ -7836,12 +7830,10 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 			Option_table_add_entry(option_table,"material",&(graphic->material),
 				rendition_command_data->graphical_material_manager,
 				set_Graphical_material);
-#ifdef FUTURE_CODE
 			/* native_discretization */
 			Option_table_add_set_FE_field_from_FE_region(option_table,
 				"native_discretization", &(graphic->native_discretization_field),
 				Cmiss_region_get_FE_region(rendition_command_data->region));
-#endif /* FUTURE_CODE */
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
 			streamline_data_type = STREAM_NO_DATA;
 			streamline_data_type_string =
