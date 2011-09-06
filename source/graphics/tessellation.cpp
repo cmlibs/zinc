@@ -517,8 +517,9 @@ int Cmiss_tessellation_set_name(struct Cmiss_tessellation *tessellation, const c
 		bool restore_changed_object_to_lists = false;
 		if (tessellation->manager)
 		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation, name)(
-				name, tessellation->manager))
+			Cmiss_tessellation *existing_tessellation =
+				FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_tessellation, name)(name, tessellation->manager);
+			if (existing_tessellation && (existing_tessellation != tessellation))
 			{
 				display_message(ERROR_MESSAGE, "Cmiss_tessellation_set_name.  "
 					"tessellation named '%s' already exists.", name);
