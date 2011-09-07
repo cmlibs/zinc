@@ -913,7 +913,9 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 	SET( CMGUI_LIB_API_INSTALL_HDRS
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_context.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_differential_operator.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_element.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_fdio.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_alias.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_arithmetic_operators.h
@@ -925,12 +927,14 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image_processing.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_logical_operators.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_matrix_operators.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_nodeset_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_parameters.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_scene_viewer_projection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_vector_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_filter.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphics_material.h
@@ -938,16 +942,18 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_idle.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_interactive_tool.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_node.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_optimisation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_region.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_rendition.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_stream.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_selection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_stream.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_sequence.h )
 	IF( USE_OPENCASCADE )
 		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
 			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
@@ -956,6 +962,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 	SET( CMGUI_LIB_API_TYPES_INSTALL_HDRS
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_c_inline.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_context_id.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_differential_operator_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_element_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_alias_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_ensemble_id.h
