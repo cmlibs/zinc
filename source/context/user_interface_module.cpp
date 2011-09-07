@@ -420,7 +420,14 @@ struct User_interface_module *User_interface_module_create(
 		{
 			/* set up image library */
 #if defined (UNIX) /* switch (Operating_System) */
-			Open_image_environment(*(UI_module->argv));
+			if (UI_module->argv != 0)
+			{
+				Open_image_environment(*(UI_module->argv));
+			}
+			else
+			{
+				Open_image_environment("cmgui");
+			}
 #elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
 			/* SAB Passing a string to this function so that it
 				starts up, should get the correct thing from
