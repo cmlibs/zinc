@@ -141,7 +141,9 @@ specified on the command line, a file selection box is presented to the user.
 #endif /*defined (WX_USER_INTERFACE)*/
 									 )))
 					{
-						return_code = 0;
+						/* Cancelling dialog and returning an empty filename 
+						 * is not an error but we don't want to do any more work */
+						return 1;
 					}
 				}
 			}
