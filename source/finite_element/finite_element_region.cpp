@@ -7390,46 +7390,45 @@ of the FE_field for the new FE_region.
 	return (return_code);
 } /* FE_field_merge_into_FE_region */
 
+/***************************************************************************//**
+ * When a region containing objects with embedded element_xi values is merged
+ * into a global region, the elements -- often of unspecified shape -- need to
+ * be converted into their global namesakes.
+ * This structure contains global fe_regions from which those elements may
+ * come.
+ */
 struct FE_regions_merge_embedding_data
-/*******************************************************************************
-LAST MODIFIED : 29 November 2002
-
-DESCRIPTION :
-When a region containing objects with embedded element_xi values is merged
-into a global region, the elements -- often of unspecified shape -- need to be
-converted into their global namesakes. Since an element does not know the
-region it is in per-se, a slightly involved procedure is required to find
-its global equivalent by matching against the element's element_field_info.
-For now, only the root FE_region may contain elements, so only it is included
-in this structure. To ease the eventual full implementation, this structure is
-established and function FE_regions_merge_embedding_data_get_global_element
-used to extract the element; all that is required is filling in the details.
-==============================================================================*/
 {
-	struct FE_region *root_fe_region;
+	struct FE_region *global_root_fe_region;
+	struct FE_region *global_current_fe_region;
+	struct FE_region *source_current_fe_region;
 };
 
+/***************************************************************************//**
+ * Returns the global element equivalent for <element> using the information in
+ * the <embedding_data>.
+ * Note: currently only supports embedding in local or root FE_region.
+ * ???GRC: still determining how to use embedding in another region.
+ */
 static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 	struct FE_regions_merge_embedding_data *embedding_data,
 	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2002
-
-DESCRIPTION :
-Returns the global element equivalent for <element> using the information in
-the <embedding_data>.
-==============================================================================*/
 {
 	struct CM_element_information identifier;
 	struct FE_element *global_element;
 
 	ENTER(FE_regions_merge_embedding_data_get_global_element);
-	if (embedding_data && embedding_data->root_fe_region && element &&
-		get_FE_element_identifier(element, &identifier))
+	if (embedding_data && get_FE_element_identifier(element, &identifier))
 	{
+		FE_region *source_fe_region = FE_element_get_FE_region(element);
+		FE_region *global_fe_region = embedding_data->global_root_fe_region;
+		if (source_fe_region == embedding_data->source_current_fe_region)
+		{
+			global_fe_region = embedding_data->global_current_fe_region;
+		}
 		int dimension = get_FE_element_dimension(element);
 		global_element = FE_region_get_FE_element_from_identifier(
-			embedding_data->root_fe_region, dimension, identifier.number);
+			global_fe_region, dimension, identifier.number);
 	}
 	else
 	{
@@ -8175,6 +8174,8 @@ static int Cmiss_regions_merge_FE_regions_private(
 			}
 			else
 			{
+				embedding_data->global_current_fe_region = global_fe_region;
+				embedding_data->source_current_fe_region = fe_region;
 				return_code = FE_regions_merge(global_fe_region, fe_region, embedding_data);
 			}
 			if (!return_code)
@@ -8269,12 +8270,14 @@ FE_regions_merge would have to be changed.
 		Cmiss_region_begin_change(global_region);
 		/*???RC embedding data currently only allows embedding elements to be in
 			the root region */
-		embedding_data.root_fe_region = Cmiss_region_get_FE_region(global_region);
-		if (embedding_data.root_fe_region&&
-			(embedding_data.root_fe_region->top_data_hack))
+		embedding_data.global_root_fe_region = Cmiss_region_get_FE_region(global_region);
+		embedding_data.global_current_fe_region = 0;
+		embedding_data.source_current_fe_region = 0;
+		if (embedding_data.global_root_fe_region&&
+			(embedding_data.global_root_fe_region->top_data_hack))
 		{
-			embedding_data.root_fe_region =
-				embedding_data.root_fe_region->master_fe_region;
+			embedding_data.global_root_fe_region =
+				embedding_data.global_root_fe_region->master_fe_region;
 		}
 		/* merge existing regions before new regions to handle embedding cleanly */
 		/* ???GRC not a complete solution */

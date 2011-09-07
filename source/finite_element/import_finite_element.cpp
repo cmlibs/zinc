@@ -191,8 +191,8 @@ number_of_values in the array; the real values follow.
 #endif /* defined (OLD_CODE) */
 
 static int read_element_xi_value(struct IO_stream *input_file,
-	struct Cmiss_region *root_region, struct FE_element **element_address,
-	FE_value *xi)
+	struct Cmiss_region *root_region, struct Cmiss_region *current_region,
+	struct FE_element **element_address, FE_value *xi)
 /*******************************************************************************
 LAST MODIFIED : 27 May 2003
 
@@ -207,7 +207,7 @@ is in the root_region itself. The REGION_PATH must end in
 <xi> should have space for up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values.
 ==============================================================================*/
 {
-	char *element_type_string, *first_string, *location, *second_string, *separator_string;
+	char *location;
 	int dimension, k, return_code;
 	struct CM_element_information cm;
 	struct Cmiss_region *region;
@@ -222,19 +222,23 @@ is in the root_region itself. The REGION_PATH must end in
 			 two strings and determine if the second is a number, in which case the
 			 region path is omitted */
 		region = (struct Cmiss_region *)NULL;
-		first_string = (char *)NULL;
-		separator_string = (char *)NULL;
-		second_string = (char *)NULL;
-		if (IO_stream_read_string(input_file, "[^ \n\r]", &first_string) &&
-			IO_stream_read_string(input_file, "[ \n\r]", &separator_string) &&
-			IO_stream_read_string(input_file, "[^ \n\r]", &second_string))
+		char *whitespace_string = 0;
+		char *first_string = 0;
+		char *separator_string = 0;
+		char *second_string = 0;
+		IO_stream_read_string(input_file, "[ \n\r\t]", &whitespace_string);
+		if (IO_stream_read_string(input_file, "[^ \n\r\t]", &first_string) &&
+			IO_stream_read_string(input_file, "[ \n\r\t]", &separator_string) &&
+			IO_stream_read_string(input_file, "[^ \n\r\t]", &second_string))
 		{
-			element_type_string = (char *)NULL;
+			char *element_type_string = 0;
 			/* first determine the element_number, which is in the second_string
 				 if the region path has been omitted, otherwise next in the file */
 			if (1 == sscanf(second_string, " %d", &(cm.number)))
 			{
-				region = root_region;
+				// Note default changed from root_region to current_region's master
+				region = Cmiss_region_is_group(current_region) ?
+					Cmiss_region_get_parent_internal(current_region) : current_region;
 				element_type_string = first_string;
 			}
 			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
@@ -301,6 +305,7 @@ is in the root_region itself. The REGION_PATH must end in
 		DEALLOCATE(second_string);
 		DEALLOCATE(separator_string);
 		DEALLOCATE(first_string);
+		DEALLOCATE(whitespace_string);
 		if (return_code)
 		{
 			if (NULL != (fe_region = Cmiss_region_get_FE_region(region)))
@@ -931,6 +936,7 @@ for node and element fields.
 
 static int read_FE_field_values(struct IO_stream *input_file,
 	struct FE_region *fe_region, struct Cmiss_region *root_region,
+	struct Cmiss_region *current_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 29 October 2002
@@ -976,7 +982,7 @@ the <field_order_info>.
 								for (k = 0; (k < number_of_values) && return_code; k++)
 								{
 									if (!(read_element_xi_value(input_file, root_region,
-										&element, xi) &&
+										current_region, &element, xi) &&
 										set_FE_field_element_xi_value(field, k, element, xi)))
 									{
 										location = IO_stream_get_location_string(input_file);
@@ -1493,7 +1499,7 @@ from a previous call to this function.
 
 static struct FE_node *read_FE_node(struct IO_stream *input_file,
 	struct FE_node *template_node, struct FE_region *fe_region,
-	struct Cmiss_region *root_region,
+	struct Cmiss_region *root_region, struct Cmiss_region *current_region,
 	struct FE_field_order_info *field_order_info,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
@@ -1555,7 +1561,7 @@ Reads in a node from an <input_file>.
 										{
 											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (!(read_element_xi_value(input_file, root_region,
+												if (!(read_element_xi_value(input_file, root_region, current_region,
 													&element, xi) && set_FE_nodal_element_xi_value(node,
 														field, /*component_number*/k, /*version*/0,
 														FE_NODAL_VALUE, element, xi)))
@@ -3763,7 +3769,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							{	
 								/* read node */
 								if (NULL != (node = read_FE_node(input_file, template_node, fe_region,
-									region, field_order_info, time_index)))
+									region, read_region, field_order_info, time_index)))
 								{
 									ACCESS(FE_node)(node);
 									if (!FE_region_merge_FE_node(fe_region, node))
@@ -3854,7 +3860,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						if ((template_node || template_element) && field_order_info)
 						{
 							if (!read_FE_field_values(input_file, fe_region, region,
-								field_order_info))
+								read_region, field_order_info))
 							{
 								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
