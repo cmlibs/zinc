@@ -688,10 +688,18 @@ DESCRIPTION :
 					int highest_dimension = FE_region_get_highest_dimension(fe_region);
 					if (element_flag)
 					{
-						if (!FE_region_change_element_identifiers(fe_region,
-							highest_dimension, element_offset, sort_by_field, time))
+						if (highest_dimension > 0)
 						{
-							return_code = 0;
+							if (!FE_region_change_element_identifiers(fe_region,
+								highest_dimension, element_offset, sort_by_field, time))
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx change identifier:  No elements found in region %s",region_path);
 						}
 					}
 					if (face_flag && (highest_dimension > 2))
