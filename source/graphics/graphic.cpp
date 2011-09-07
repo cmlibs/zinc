@@ -3004,11 +3004,11 @@ static int Cmiss_graphic_has_all_compulsory_attributes(struct Cmiss_graphic *gra
 }
 
 #if defined (USE_OPENCASCADE)
-SubObjectGroupHighlightFunctor * create_highlight_functor_cad_primitive(
+SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
 	struct Computed_field *group_field, Cmiss_field_cad_topology_id cad_topology_domain)
 {
-  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
-	if (graphics_object && group_field)
+	SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+	if (group_field)
 	{
 		Cmiss_field_group_id sub_group = Cmiss_field_cast_group(group_field);
 
