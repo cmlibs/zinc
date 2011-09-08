@@ -8,7 +8,48 @@ This software is the cmgui part of CMISS.
 It is released under the Mozilla Public License v1.1
 
 Further information, help pages, a tracker and a wiki is available at 
-http://www.cmiss.org/cmgui/
+http://www.cmiss.org/cmgui/      
+
+v2.8.0
+
+API Changes:
+(New) Optimisation API
+(New) Graphics material API
+(New) Field evaluation and assignment API
+(New) Scene graphics filtering API
+(New) Cmgui Input/Output (Stream) APIs for regions and image field
+(New) Graphics tessellation API
+(New)API to support external wx main loop
+(New) Image field API
+(Break) Remove cmiss_timer API
+(Break) Remove texture API
+
+Added Features (some incomplete):
+1047 Merge scene and region hierarchies.
+1699 Print out antialiasing images using cmgui-wx
+1776 Region-capable selection and groups.
+1844 Implement fitting and optimisation.
+2549 FieldML 0.2 import.
+2624 Scene graphics filtering           
+2680 Added graphics coordinate system
+2683 Export points with wavefront format
+2684 Improve spectrum rainbow
+2749 Graphics tessellation objects and editor
+2775 Add xi discretization modes to streamlines
+2842 Read fieldML 0.4 format into Cmgui
+
+Bugs fixed:
+Fixed numerous occasional crashes.
+2769 gfx read elements generate option works for root region
+
+Improvemnets:
+2365 New mechanism for static graphics in scene
+2702 Hierarchical transformation
+2817 Visibility flag to work hierarchically
+3026 Improved performance when rendering element points
+
+Others:
+2529: Simplify changes for buulding third_party on different windows platforms
 
 v2.7.1 (In development)
 
