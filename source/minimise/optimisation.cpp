@@ -1,7 +1,8 @@
-/**
+/***************************************************************************//**
  * @file optimisation.cpp
  *
- * The private methods for the Cmiss_optimisation object.
+ * Implementation of Minimisation object for performing optimisation algorithm
+ * from description in Cmiss_optimisation.
  *
  * @see-also api/cmiss_optimisation.h
  *
@@ -66,6 +67,7 @@ extern "C" {
 	#include "time/time_keeper.h"
 	#include "user_interface/message.h"
 }
+#include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"
 #include "general/enumerator_private_cpp.hpp"
 #include "mesh/cmiss_element_private.hpp"
@@ -84,7 +86,8 @@ using namespace std;
 using NEWMAT::ColumnVector;
 using namespace ::OPTPP;
 
-static void* UserData = NULL;
+// global variable needed to pass minimisation object to Opt++ init functions.
+static void* GlobalVariableMinimisation = NULL;
 
 void display_chunked_message(std::string& message)
 {
@@ -96,124 +99,102 @@ void display_chunked_message(std::string& message)
 	}
 }
 
-typedef std::pair<ColumnVector*,class Minimisation*> UDP;
-
-struct Projection {
-	FE_value_tuple xi;
-	struct FE_element* element;
-};
-
-class Minimisation {
-
-public:
-	struct Cmiss_optimisation* optimisation;
-	Cmiss_field_module_id field_module;
-	Cmiss_field_cache_id field_cache;
-	FE_value current_time;
-	int total_dof;
-	int number_of_data_components,number_of_data_points;
-	int currentDataPointIndex;
-	std::map< const FE_node*, Projection > projections;
-
-	Minimisation(struct Cmiss_optimisation* optimisation) :
-		optimisation(optimisation)
-	{
-		field_module = Cmiss_region_get_field_module(Cmiss_mesh_get_master_region_internal(optimisation->feMesh));
-		field_cache = Cmiss_field_module_create_cache(field_module);
-		current_time = 0.0;
-		total_dof = 0;
-		number_of_data_components = 0;
-		number_of_data_points = 0;
-		dof_storage_array = static_cast<FE_value**> (NULL);
-		dof_initial_values = static_cast<FE_value*> (NULL);
-		Cmiss_field_module_begin_change(field_module);
-	};
-
-	~Minimisation();
-
-private:
-
-	FE_value **dof_storage_array;
-
-public:
-	// FIXME: andre tmp make public until function pointers sorted out.
-	FE_value *dof_initial_values;
-
-	int construct_dof_arrays();
-
-	int calculate_projection(Cmiss_node_id node);
-
-	inline void set_dof_value(int dof_index, FE_value new_value)
-	{
-		*dof_storage_array[dof_index] = new_value;
-	}
-
-	void list_dof_values();
-
-	void invalidate_independent_field_caches();
-
-	FE_value evaluate_objective_function();
-
-	void touch_constant_independent_fields();
-
-	void minimise_NSDGSL();
-	void minimise_QN();
-	void minimise_LSQN();
-
-	// FIXME: should allow for different types of projection calculations?
-	void calculate_data_projections();
-
-};
+int ObjectiveFieldData::prepareTerms()
+{
+	numTerms = field->core->get_number_of_sum_terms();
+	bufferSize = numComponents;
+	if (numTerms > 0)
+		bufferSize *= numTerms;
+	buffer = new FE_value[bufferSize];
+	return (0 != buffer);
+}
 
 Minimisation::~Minimisation()
-/*******************************************************************************
- LAST MODIFIED : 24 August 2006
-
- DESCRIPTION :
- Clear the type specific data used by this type.
- ==============================================================================*/
 {
-	ENTER(Minimisation::~Minimisation);
-
+	delete[] objectiveValues;
 	if (dof_storage_array) DEALLOCATE(dof_storage_array);
 	if (dof_initial_values) DEALLOCATE(dof_initial_values);
 	Cmiss_field_cache_destroy(&field_cache);
-	Cmiss_field_module_end_change(field_module);
 	Cmiss_field_module_destroy(&field_module);
-	LEAVE;
-} /* Minimisation::~Minimisation */
-
-int Minimisation::calculate_projection(Cmiss_node_id node)
-{
-	FE_value* values = 0;
-	ALLOCATE(values, FE_value, number_of_data_components);
-	Projection projection = projections[node];
-	Computed_field_evaluate_at_node(optimisation->dataField, node, current_time, values);
-	Computed_field_find_element_xi(optimisation->meshField,
-		values, number_of_data_components, current_time,
-		&(projection.element), projection.xi,
-		optimisation->feMesh, /*propagate_field*/0,
-		/*find_nearest_location*/1);
-	DEALLOCATE(values);
-	projections[node] = projection;
-	//std::cout << "Element: " << FE_element_get_cm_number(projection.element) << ";";
-	//std::cout << " xi: " << projection.xi[0] << "," << projection.xi[1] << ",";
-	//std::cout << projection.xi[2] << std::endl;
-	return 1;
+	for (FieldVector::iterator iter = independentFields.begin();
+		iter != independentFields.end(); ++iter)
+	{
+		Cmiss_field_destroy(&(*iter));
+	}
+	for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
+		iter != objectiveFields.end(); ++iter)
+	{
+		delete *iter;
+	}
 }
 
-void Minimisation::calculate_data_projections()
+int Minimisation::prepareOptimisation()
 {
-	Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(optimisation->dataNodeset);
-	Cmiss_node_id node = 0;
-	// FIXME: must be a better way to set the search region for the find_element_xi.
-	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	int return_code = 1;
+	if (optimisation.independentFields.size() != independentFields.size())
+		return_code = 0;
+	if (optimisation.objectiveFields.size() != objectiveFields.size())
+		return_code = 0;
+	return_code = return_code && construct_dof_arrays();
+	if (optimisation.method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
 	{
-		if (!calculate_projection(node))
-			break;
+		totalLeastSquaresTerms = 0;
+		for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
+			iter != objectiveFields.end(); ++iter)
+		{
+			ObjectiveFieldData *objective = *iter;
+			if (!objective->prepareTerms())
+			{
+				return_code = 0;
+				break;
+			}
+			totalLeastSquaresTerms += objective->bufferSize;
+		}
 	}
-	Cmiss_node_iterator_destroy(&iterator);
-	//std::cout << "Minimisation::calculate_data_projections" << std::endl;
+	if (!return_code)
+	{
+		display_message(ERROR_MESSAGE, "Minimisation::prepareOptimisation() Failed");
+	}
+	return return_code;
+}
+
+/***************************************************************************//**
+ * Ensures independent fields are marked as changed, so graphics update
+ */
+void Minimisation::touch_independent_fields()
+{
+	for (FieldList::iterator iter = optimisation.independentFields.begin();
+		iter != optimisation.independentFields.end(); ++iter)
+	{
+		Computed_field_changed(*iter);
+	}
+}
+
+int Minimisation::runOptimisation()
+{
+	Cmiss_field_module_begin_change(field_module);
+	// Minimise the objective function
+	int return_code = 0;
+	switch (optimisation.method)
+	{
+	case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
+		return_code = minimise_QN();
+		break;
+	case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
+		return_code = minimise_LSQN();
+		break;
+	default:
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation::runOptimisation. "
+			"Unknown minimisation method.");
+		break;
+	}
+	touch_independent_fields();
+	Cmiss_field_module_end_change(field_module);
+	if (!return_code)
+	{
+		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
+	}
+	return return_code;
 }
 
 /***************************************************************************//**
@@ -225,79 +206,75 @@ void Minimisation::calculate_data_projections()
 int Minimisation::construct_dof_arrays()
 {
 	int return_code = 1;
-	if (Computed_field_is_type_finite_element(optimisation->independentFields[0]))
+	delete[] dof_storage_array;
+	dof_storage_array = 0;
+	delete[] dof_initial_values;
+	dof_initial_values = 0;
+	for (FieldVector::iterator iter = independentFields.begin();
+		iter != independentFields.end(); ++iter)
 	{
-		// should only have one independent field
-		FE_field *fe_field;
-		Computed_field_get_type_finite_element(optimisation->independentFields[0], &fe_field);
-		int number_of_components = get_FE_field_number_of_components(fe_field);
-		Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
-		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-		Cmiss_node_id node = 0;
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		Cmiss_field *independentField = *iter;
+		int number_of_components = Cmiss_field_get_number_of_components(independentField);
+		if (Computed_field_is_type_finite_element(independentField))
 		{
-			if (FE_field_is_defined_at_node(fe_field, node))
+			// should only have one independent field
+			FE_field *fe_field;
+			Computed_field_get_type_finite_element(independentField, &fe_field);
+			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+			Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+			Cmiss_node_id node = 0;
+			while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
 			{
-				for (int component_number = 0; component_number < number_of_components; component_number++)
+				if (FE_field_is_defined_at_node(fe_field, node))
 				{
-					int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
-							fe_field, component_number);
-
-					// FIXME: tmp remove derivatives
-					//number_of_values = 1;
-
-					enum FE_nodal_value_type *nodal_value_types =
-						get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
-					if (nodal_value_types)
+					for (int component_number = 0; component_number < number_of_components; component_number++)
 					{
-						REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + number_of_values);
-						REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + number_of_values);
-						for (int i = 0; i < number_of_values; i++)
+						int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
+								fe_field, component_number);
+
+						// FIXME: tmp remove derivatives
+						//number_of_values = 1;
+
+						enum FE_nodal_value_type *nodal_value_types =
+							get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
+						if (nodal_value_types)
 						{
-							total_dof++;
-							// get value storage pointer
-							// FIXME: need to handle versions for the femur mesh?
-							get_FE_nodal_FE_value_storage(node, fe_field, component_number,
-								/*version_number*/0, /*nodal_value_type*/nodal_value_types[i],
-								current_time, &(dof_storage_array[total_dof - 1]));
-							// get initial value from value storage pointer
-							dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
-							/*cout << dof_storage_array[total_dof - 1] << "   "
-									<< dof_initial_values[total_dof - 1] << endl;*/
+							REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + number_of_values);
+							REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + number_of_values);
+							for (int i = 0; i < number_of_values; i++)
+							{
+								total_dof++;
+								// get value storage pointer
+								// FIXME: need to handle versions for the femur mesh?
+								get_FE_nodal_FE_value_storage(node, fe_field, component_number,
+									/*version_number*/0, /*nodal_value_type*/nodal_value_types[i],
+									current_time, &(dof_storage_array[total_dof - 1]));
+								// get initial value from value storage pointer
+								dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
+								/*cout << dof_storage_array[total_dof - 1] << "   "
+										<< dof_initial_values[total_dof - 1] << endl;*/
+							}
+							DEALLOCATE(nodal_value_types);
 						}
-						DEALLOCATE(nodal_value_types);
 					}
 				}
 			}
+			Cmiss_node_iterator_destroy(&iterator);
+			Cmiss_nodeset_destroy(&nodeset);
 		}
-		Cmiss_node_iterator_destroy(&iterator);
-		Cmiss_nodeset_destroy(&nodeset);
-	}
-	else if (optimisation->independentFieldsConstant)
-	{
-		// constant field(s) - could have many
-		size_t i;
-		for (i = 0; i < optimisation->independentFields.size(); i++)
+		else if (Computed_field_is_constant(independentField))
 		{
-			int number_of_components = Cmiss_field_get_number_of_components(
-				optimisation->independentFields[i]);
-			FE_value *constant_values_storage =
-				Computed_field_constant_get_values_storage(optimisation->independentFields[i]);
+			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independentField);
 			if (constant_values_storage)
 			{
-				// reallocate arrays
 				REALLOCATE(dof_storage_array, dof_storage_array,
 					FE_value *, total_dof + number_of_components);
 				REALLOCATE(dof_initial_values, dof_initial_values,
 					FE_value, total_dof + number_of_components);
 				for (int component_number = 0; component_number < number_of_components; component_number++)
 				{
-					// get value storage pointer
-					dof_storage_array[total_dof] =
-						constant_values_storage + component_number;
-					// get initial value from value storage pointer
-					dof_initial_values[total_dof] =
-						*dof_storage_array[total_dof];
+					dof_storage_array[total_dof] = constant_values_storage + component_number;
+					dof_initial_values[total_dof] = *dof_storage_array[total_dof];
 					/*cout << dof_storage_array[total_dof] << "   "
 							<< dof_initial_values[total_dof] << endl;*/
 					total_dof++;
@@ -305,255 +282,101 @@ int Minimisation::construct_dof_arrays()
 			}
 			else
 			{
-				char *field_name = Cmiss_field_get_name(optimisation->independentFields[i]);
+				char *field_name = Cmiss_field_get_name(independentField);
 				display_message(WARNING_MESSAGE, "Minimisation::construct_dof_arrays.  "
 					"Independent field '%s' is not a constant. Skipping.", field_name);
 				DEALLOCATE(field_name);
+				return_code = 0;
 			}
 		}
-	}
-	else
-	{
-		// should never get this far?
-		display_message(ERROR_MESSAGE,"Cmiss_optimisation::runOptimisation. "
+		else
+		{
+			display_message(ERROR_MESSAGE, "Cmiss_optimisation::construct_dof_arrays. "
 				"Invalid independent field type.");
-		return_code = 0;
+			return_code = 0;
+		}
 	}
-	return (return_code);
+	return return_code;
 }
 
-void Minimisation::list_dof_values()
-/*******************************************************************************
- LAST MODIFIED : 8 May 2007
-
- DESCRIPTION :
- Simple function to list the dof values. This is mainly for debugging purposes
- and may be removed later.
- ==============================================================================*/
-{
-	int i;
-
-	ENTER(Minimisation::list_dof_values);
-
-	for (i = 0; i < total_dof; i++) {
-		cout << "dof[" << i << "] = " << *dof_storage_array[i] << endl;
-	}
-
-	LEAVE;
-
-} /* Minimisation::list_dof_values */
-
-/** Must call this function after updating independent field DOFs to ensure
- * dependent field caches are fully recalculated with the DOF changes.
+/***************************************************************************//**
+ * Simple function to list the dof values. This is mainly for debugging purposes
+ * and may be removed later.
  */
-void Minimisation::invalidate_independent_field_caches()
+void Minimisation::list_dof_values()
 {
-	for (size_t j = 0; j < optimisation->independentFields.size(); ++j)
-	{
-		Cmiss_field_cache_invalidate_field(field_cache, optimisation->independentFields[j]);
+	for (int i = 0; i < total_dof; i++) {
+		cout << "dof[" << i << "] = " << *dof_storage_array[i] << endl;
 	}
 }
 
 /***************************************************************************//**
- * Evaluates the objective function value given the currents dof values.
+ * Must call this function after updating independent field DOFs to ensure
+ * dependent field caches are fully recalculated with the DOF changes.
  */
-FE_value Minimisation::evaluate_objective_function()
+void Minimisation::invalidate_independent_field_caches()
 {
-	invalidate_independent_field_caches();
-	FE_value objective_value[3];
-	Cmiss_field_evaluate_real(optimisation->objectiveField, field_cache,
-		/*number_of_values*/3, objective_value);
-	// GRC why do we need sqrt and / 3.0 in following ?
-	// DPN not sure, was in Duane's original code. Removing it makes little difference but probably more correct...
-	return (sqrt(objective_value[0] / 3.0));
-}
-
-void Minimisation::minimise_NSDGSL()
-/*******************************************************************************
- LAST MODIFIED : 8 May 2007
-
- DESCRIPTION :
- Calculates the normalised steepest decent vector and does a Golden section line
- search in the direction of the steepest decent vector to find the minimum along
- the line. This is repeated until the stopping criteria is met and overall
- minimum is found. The intention is to replace this minimisations function with
- the non-linear minimisation function in PetSc. This should be more efficient
- and may be parallelised.
- ==============================================================================*/
-{
-	int i, iteration, max_iterations, stop;
-	FE_value h, tol, lstol, line_size;
-	FE_value phi, LFa, LFb;
-	FE_value *dFdx, sum;
-	FE_value s0, s1, sa, sb, ds;
-	// pjb: temporarily removed declaration of F1 as it is not yet used,
-	// otherwise irix compilation will fail
-	//	FE_value F0, F1, Fa, Fb, Fi, Ff;
-	FE_value F0, Fa, Fb, Fi, Ff = 0.0;
-
-	ALLOCATE(dFdx,FE_value,total_dof);
-
-	ENTER(Minimisation::minimise_NSDGSL);
-
-	// Initialisation
-	h = 1E-5; // independent variable perturbation value
-	tol = 1E-5; // outside loop tolerance
-	lstol = 0.1 * tol; // inside loop (line search) tolerance
-	line_size = 0.5; // line size for line search
-	max_iterations = optimisation->maximumIterations; // for outside loop
-
-	phi = (1.0 + sqrt(5.0)) / 2.0;
-	LFa = 1.0 / (1.0 + phi);
-	LFb = 1 - LFa;
-
-	// initialise independent values to initial values
-	for (i = 0; i < total_dof; i++)
+	for (FieldVector::iterator iter = independentFields.begin();
+		iter != independentFields.end(); ++iter)
 	{
-		set_dof_value(i, dof_initial_values[i]);
+		Cmiss_field_cache_invalidate_field(field_cache, *iter);
 	}
-
-	iteration = 0;
-	ds = tol + 1.0;
-	stop = 0;
-	Fi = evaluate_objective_function();
-	// Outside loop searching for the overall minimum
-	while ((ds > tol) && (iteration < max_iterations) && (stop == 0))
-	{
-		iteration++;
-
-		// Construct dFdx, the steepest decent vector
-		F0 = evaluate_objective_function();
-		for (i = 0; i < total_dof; i++)
-		{
-			set_dof_value(i, dof_initial_values[i] - h);
-			Fa = F0 - evaluate_objective_function();
-			set_dof_value(i, dof_initial_values[i] + h);
-			Fb = evaluate_objective_function() - F0;
-			dFdx[i] = 0.5 * (Fb + Fa);
-			set_dof_value(i, dof_initial_values[i]);
-		}
-
-		// Normalise dFdx
-		sum = 0.0;
-		for (i = 0; i < total_dof; i++)
-		{
-			sum += dFdx[i] * dFdx[i];
-		}
-		sum = sqrt(sum);
-
-		if (sum == 0.0)
-		{
-			stop = 1;
-		}
-		else // Line search
-		{
-			for (i = 0; i < total_dof; i++)
-			{
-				dFdx[i] = dFdx[i] / sum;
-			}
-
-			s0 = 0;
-			F0 = evaluate_objective_function();
-
-			s1 = line_size;
-			for (i = 0; i < total_dof; i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * s1));
-			}
-			// F1 = evaluate_objective_function();
-
-			sa = s0 + LFa * (s1 - s0);
-			for (i = 0; i < total_dof; i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sa));
-			}
-			Fa = evaluate_objective_function();
-
-			sb = s0 + LFb * (s1 - s0);
-			for (i = 0; i < total_dof; i++)
-			{
-				set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sb));
-			}
-			Fb = evaluate_objective_function();
-
-			// Golden Section Line Search, searching for line minimum
-			while (((s1 - s0) > lstol) && (stop == 0))
-			{
-				if (Fb > Fa) {
-					s1 = sb;
-					// F1 = Fb;
-					sb = sa;
-					Fb = Fa;
-					sa = s0 + LFa * (s1 - s0);
-					for (i = 0; i < total_dof; i++)
-					{
-						set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sa));
-					}
-					Fa = evaluate_objective_function();
-					ds = sb;
-					Ff = Fb;
-				}
-				else
-				{
-					s0 = sa;
-					F0 = Fa;
-					sa = sb;
-					Fa = Fb;
-					sb = s0 + LFb * (s1 - s0);
-					for (i = 0; i < total_dof; i++)
-					{
-						set_dof_value(i, (dof_initial_values[i] - dFdx[i] * sb));
-					}
-					Fb = evaluate_objective_function();
-					ds = sa;
-					Ff = Fa;
-				}
-			} // Line Search
-
-			// Update dof
-			for (i = 0; i < total_dof; i++)
-			{
-				dof_initial_values[i] -= dFdx[i] * ds;
-				set_dof_value(i, dof_initial_values[i]);
-			}
-
-			// Precision of FE_value
-			if (fabs(Fi - Ff) < 1E-7) stop = 1;
-			Fi = Ff;
-		}
-		//cout << "Objective Value = " << evaluate_objective_function() << endl;
-	} // Outside loop
-
-	if (iteration >= max_iterations) cout << "Max number of iterations reached" << endl;
-	//list_dof_values();
-
-	DEALLOCATE(dFdx);
-
-	LEAVE;
 }
 
-void init_QN(int ndim, ColumnVector& x)
-/**
- * One time initialisation code required by the Opt++ quasi-Newton minimisation.
+/***************************************************************************//**
+ * Evaluates the scalar objective function value given the current DOF values.
+ * Equals sum of all objective field components.
  */
+int Minimisation::evaluate_objective_function(FE_value *valueAddress)
 {
-	// copy over the initial DOFs
+	int return_code = 1;
+	*valueAddress = 0.0;
+	invalidate_independent_field_caches();
+	int offset = 0;
+	for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
+		iter != objectiveFields.end(); ++iter)
+	{
+		ObjectiveFieldData *objective = *iter;
+		if (!Cmiss_field_evaluate_real(objective->field, field_cache,
+			objective->numComponents, objectiveValues + offset))
+		{
+			display_message(ERROR_MESSAGE, "Failed to evaluate objective field %s", objective->field->name);
+			return_code = 0;
+			break;
+		}
+		offset += objective->numComponents;
+	}
+	for (int i = 0; i < totalObjectiveFieldComponents; ++i)
+	{
+		*valueAddress += objectiveValues[i];
+	}
+	return return_code;
+}
+
+/***************************************************************************//**
+ * One time initialisation code required by the Opt++ quasi-Newton and least-
+ * squares quasi-Newton minimisation algorithms.
+ * Copies initial DOF values.
+ */
+static void init_dof_initial_values(int ndim, ColumnVector& x)
+{
 	int i;
-	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	Minimisation* minimisation = static_cast<Minimisation*> (GlobalVariableMinimisation);
+	FE_value *dof_initial_values = minimisation->get_dof_initial_values();
 	for (i = 0; i < ndim; i++)
 	{
-		x(i+1) = static_cast<double>(minimisation->dof_initial_values[i]);
+		x(i+1) = static_cast<double>(dof_initial_values[i]);
 	}
 }
 
-void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
-		int& result)
-/**
+/***************************************************************************//**
  * The objective function for the Opt++ quasi-Newton minimisation.
  */
+void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
+		int& result)
 {
 	int i;
-	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	Minimisation* minimisation = static_cast<Minimisation*> (GlobalVariableMinimisation);
 	// ColumnVector's index'd from 1...
 	for (i = 0; i < ndim; i++)
 	{
@@ -561,54 +384,37 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 	}
 	//minimisation->list_dof_values();
 
-	fx = static_cast<double> (minimisation->evaluate_objective_function());
+	FE_value objectiveFunctionValue = 0.0;
+	minimisation->evaluate_objective_function(&objectiveFunctionValue);
+	fx = static_cast<double>(objectiveFunctionValue);
 	//cout << "Objective Value = " << fx << endl;
 	result = NLPFunction;
 }
 
-/** ensures constant independent fields are marked as changed, so graphics update
- * FIXME: Should only need to do this once, after optimisation.
- */
-void Minimisation::touch_constant_independent_fields()
-{
-	if (optimisation->independentFieldsConstant)
-	{
-		for (size_t i = 0; i < optimisation->independentFields.size(); i++)
-		{
-			int number_of_components = Computed_field_get_number_of_components(optimisation->independentFields[i]);
-			FE_value *values = new FE_value[number_of_components];
-			Cmiss_field_evaluate_real(optimisation->independentFields[i], field_cache, number_of_components, values);
-			Cmiss_field_assign_real(optimisation->independentFields[i], field_cache, number_of_components, values);
-			delete [] values;
-		}
-	}
-}
-
-void Minimisation::minimise_QN()
-/**
+/***************************************************************************//**
  * Naive wrapper around a quasi-Newton minimisation.
  */
+int Minimisation::minimise_QN()
 {
 	char message[] = { "Solution from quasi-newton" };
-	ENTER(Minimisation::minimise_QN);
 	// need a handle on this object...
 	// FIXME: need to find and use "user data" in the Opt++ methods.
-	UserData = static_cast<void*> (this);
+	GlobalVariableMinimisation = static_cast<void*> (this);
 
-	FDNLF1 nlp(total_dof, objective_function_QN, init_QN);
+	FDNLF1 nlp(total_dof, objective_function_QN, init_dof_initial_values);
 	OptQNewton objfcn(&nlp);
 	objfcn.setSearchStrategy(LineSearch);
-	objfcn.setFcnTol(optimisation->functionTolerance);
-	objfcn.setGradTol(optimisation->gradientTolerance);
-	objfcn.setStepTol(optimisation->stepTolerance);
-	objfcn.setMaxIter(optimisation->maximumIterations);
-	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
-	objfcn.setMaxStep(optimisation->maximumStep);
-	objfcn.setMinStep(optimisation->minimumStep);
-	objfcn.setLineSearchTol(optimisation->linesearchTolerance);
-	objfcn.setMaxBacktrackIter(optimisation->maximumBacktrackIterations);
+	objfcn.setFcnTol(optimisation.functionTolerance);
+	objfcn.setGradTol(optimisation.gradientTolerance);
+	objfcn.setStepTol(optimisation.stepTolerance);
+	objfcn.setMaxIter(optimisation.maximumIterations);
+	objfcn.setMaxFeval(optimisation.maximumNumberFunctionEvaluations);
+	objfcn.setMaxStep(optimisation.maximumStep);
+	objfcn.setMinStep(optimisation.minimumStep);
+	objfcn.setLineSearchTol(optimisation.linesearchTolerance);
+	objfcn.setMaxBacktrackIter(optimisation.maximumBacktrackIterations);
 	/* @todo Add in support for trust region methods
-	objfcn.setTRSize(optimisation->trustRegionSize);
+	objfcn.setTRSize(optimisation.trustRegionSize);
 	*/
 
 	// create a string stream to store messages from Opt++ and set that for all output.
@@ -624,74 +430,24 @@ void Minimisation::minimise_QN()
 	int i;
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
-	touch_constant_independent_fields();
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
 	display_chunked_message(m);
-	LEAVE;
-}
-
-void init_LSQ(int ndim, ColumnVector& x)
-/**
- * One time initialisation code required by the Opt++ least-squares minimisation.
- */
-{
-	// copy over the initial DOFs
-	int i;
-	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
-	for (i = 0; i < ndim; i++)
-	{
-		x(i+1) = static_cast<double>(minimisation->dof_initial_values[i]);
-	}
-	// compute the initial data projections
-	minimisation->calculate_data_projections();
-}
-
-int calculate_LS_term(struct FE_node *node,void *user_data_void)
-{
-	UDP* ud = static_cast<UDP*>(user_data_void);
-	Minimisation *minimisation = ud->second;
-	int i,number_of_mesh_components = Computed_field_get_number_of_components(
-			minimisation->optimisation->meshField);
-	FE_value* actualValues = static_cast<FE_value*>(NULL);
-	FE_value* currentValues = static_cast<FE_value*>(NULL);
-	ALLOCATE(actualValues,FE_value,minimisation->number_of_data_components);
-	ALLOCATE(currentValues,FE_value,number_of_mesh_components);
-	Projection projection = minimisation->projections[node];
-	// FIXME: really should check return values!
-	Computed_field_evaluate_at_node(minimisation->optimisation->dataField, node,
-			minimisation->current_time, actualValues);
-	Computed_field_evaluate_in_element(minimisation->optimisation->meshField,projection.element,
-			projection.xi, minimisation->current_time, (struct FE_element*)NULL,
-			currentValues, (FE_value *)NULL);
-	for (i=0;i<number_of_mesh_components;i++)
-	{
-		//std::cout << "current: " << currentValues[i] << "; actual: " << actualValues[i] << std::endl;
-		double diff = (double)(currentValues[i] - actualValues[i]);
-		ud->first->element(minimisation->currentDataPointIndex) = diff;
-		//std::cout << "LS term " << minimisation->currentDataPointIndex << ": "
-		//		<< diff << std::endl;
-		minimisation->currentDataPointIndex ++;
-	}
-	//diff = sqrt(diff);
-	DEALLOCATE(actualValues);
-	DEALLOCATE(currentValues);
 	return 1;
 }
 
+/***************************************************************************//**
+ * The objective function for the Opt++ least-squares quasi-Newton minimisation.
+ */
 void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		int& result, void* iterationCounterVoid)
-/**
- * The objective function for the Opt++ quasi-Newton minimisation.
- */
 {
 	//int* iterationCounter = static_cast<int*>(iterationCounterVoid);
 	//std::cout << "objective function called " << ++(*iterationCounter) << " times." << std::endl;
 	USE_PARAMETER(iterationCounterVoid);
 	int i;
-	UDP ud;
-	Minimisation* minimisation = static_cast<Minimisation*> (UserData);
+	Minimisation* minimisation = static_cast<Minimisation*> (GlobalVariableMinimisation);
 	// ColumnVector's index'd from 1...
 	for (i = 0; i < ndim; i++)
 	{
@@ -699,48 +455,43 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	}
 	//minimisation->list_dof_values();
 	minimisation->invalidate_independent_field_caches();
-	//minimisation->calculate_data_projections();
-
-	// evaluate the least-squares terms
-	ud.first = &fx;
-	ud.second = minimisation;
-	minimisation->currentDataPointIndex = 0;
-	Cmiss_node_iterator_id iterator =
-			Cmiss_nodeset_create_node_iterator(minimisation->optimisation->dataNodeset);
-	Cmiss_node_id node = 0;
-	while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+	int return_code = 1;
+	Field_time_location location;
+	int termIndex = 0;
+	for (ObjectiveFieldDataVector::iterator iter = minimisation->objectiveFields.begin();
+		iter != minimisation->objectiveFields.end(); ++iter)
 	{
-		if (!calculate_LS_term(node, &ud))
+		ObjectiveFieldData *objective = *iter;
+		const int bufferSize = objective->bufferSize;
+		FE_value *buffer = objective->buffer;
+		if (objective->numTerms > 0)
+			return_code = objective->field->core->evaluate_sum_terms_at_location(&location, bufferSize, buffer);
+		else
+			return_code = Cmiss_field_evaluate_real(objective->field, minimisation->field_cache, objective->bufferSize, objective->buffer);
+		if (!return_code)
+		{
+			// GRC: should record failure properly
+			display_message(ERROR_MESSAGE, "Failed to evaluate least squares terms for objective field %s", objective->field->name);
 			break;
+		}
+		for (i = 0; i < bufferSize; ++i)
+			fx.element(termIndex++) = buffer[i];
 	}
-	Cmiss_node_iterator_destroy(&iterator);
-
-	//FE_region_for_each_FE_node(Cmiss_region_get_FE_region(minimisation->optimisation->dataRegion),
-	//		calculate_LS_term,&ud);
 	result = NLPFunction;
 }
 
-/**
- * Dummy for Opt++ least squares...
- */
-void update_model_dummy(int, int, ColumnVector) {}
-
-void Minimisation::minimise_LSQN()
-/*
+/***************************************************************************//**
  * Least-squares minimisation using Opt++
  */
+int Minimisation::minimise_LSQN()
 {
 	int iterationCounter = 0;
 	char message[] = { "Solution from newton least squares" };
-	ENTER(Minimisation::minimise_LSQN);
 	// need a handle on this object...
-	UserData = static_cast<void*> (this);
-	this->number_of_data_points = Cmiss_nodeset_get_size(optimisation->dataNodeset);
-	this->number_of_data_components = Computed_field_get_number_of_components(
-			this->optimisation->dataField);
-	LSQNLF nlp(total_dof, this->number_of_data_points * this->number_of_data_components,
-			objective_function_LSQ, init_LSQ, (OPTPP::INITCONFCN)NULL,
-			(void*)(&iterationCounter));
+	GlobalVariableMinimisation = static_cast<void*> (this);
+	LSQNLF nlp(total_dof, totalLeastSquaresTerms,
+		objective_function_LSQ, init_dof_initial_values, (OPTPP::INITCONFCN)NULL,
+		(void*)(&iterationCounter));
 	OptNewton objfcn(&nlp);
 	objfcn.setSearchStrategy(LineSearch);
 	// create a string stream to store messages from Opt++ and set that for all output.
@@ -748,17 +499,17 @@ void Minimisation::minimise_LSQN()
 	std::ostream optppMessageStream(&optppMessages);
 	if (!objfcn.setOutputFile(optppMessageStream))
 		cerr << "main: output file open failed" << endl;
-	objfcn.setFcnTol(optimisation->functionTolerance);
-	objfcn.setGradTol(optimisation->gradientTolerance);
-	objfcn.setStepTol(optimisation->stepTolerance);
-	objfcn.setMaxIter(optimisation->maximumIterations);
-	objfcn.setMaxFeval(optimisation->maximumNumberFunctionEvaluations);
-	objfcn.setMaxStep(optimisation->maximumStep);
-	objfcn.setMinStep(optimisation->minimumStep);
-	objfcn.setLineSearchTol(optimisation->linesearchTolerance);
-	objfcn.setMaxBacktrackIter(optimisation->maximumBacktrackIterations);
+	objfcn.setFcnTol(optimisation.functionTolerance);
+	objfcn.setGradTol(optimisation.gradientTolerance);
+	objfcn.setStepTol(optimisation.stepTolerance);
+	objfcn.setMaxIter(optimisation.maximumIterations);
+	objfcn.setMaxFeval(optimisation.maximumNumberFunctionEvaluations);
+	objfcn.setMaxStep(optimisation.maximumStep);
+	objfcn.setMinStep(optimisation.minimumStep);
+	objfcn.setLineSearchTol(optimisation.linesearchTolerance);
+	objfcn.setMaxBacktrackIter(optimisation.maximumBacktrackIterations);
 	/* @todo Add in support for trust region methods
-	objfcn.setTRSize(optimisation->trustRegionSize);
+	objfcn.setTRSize(optimisation.trustRegionSize);
 	*/
 	//nlp.setIsExpensive(false);
 	//nlp.setDebug();
@@ -768,52 +519,10 @@ void Minimisation::minimise_LSQN()
 	int i;
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
-	touch_constant_independent_fields();
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
 	display_chunked_message(m);
-	LEAVE;
-}
-
-
-/*=====================================================*/
-/*=====================================================*/
-/*=====================================================*/
-
-int Cmiss_optimisation::runOptimisation()
-{
-	int return_code = 1;
-
-	ENTER(Cmiss_optimisation::runOptimisation);
-	// FIXME: must be a better way to iterate over all the nodes in the mesh?
-	// Create minimisation object
-	Minimisation minimisation(this);
-	if (!minimisation.construct_dof_arrays())
-	{
-		// should never get this far?
-		return 0;
-	}
-
-	// Minimise the objective function
-	switch (this->method)
-	{
-	case CMISS_OPTIMISATION_METHOD_NSDGSL:
-		minimisation.minimise_NSDGSL();
-		break;
-	case CMISS_OPTIMISATION_METHOD_QUASI_NEWTON:
-		minimisation.minimise_QN();
-		break;
-	case CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
-		minimisation.minimise_LSQN();
-		break;
-	default:
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation::runOptimisation. "
-			"Unknown minimisation method.");
-		return_code = 0;
-		break;
-	}
-	LEAVE;
-	return (return_code);
+	return 1;
 }
 

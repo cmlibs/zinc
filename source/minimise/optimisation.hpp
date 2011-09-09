@@ -1,8 +1,8 @@
-/**
+/***************************************************************************//**
  * @file optimisation.hpp
  *
- * The private methods for the Cmiss_optimisation object. Required to allow creation
- * of optimisation objects.
+ * Minimisation object for performing optimisation algorithm from description
+ * in Cmiss_optimisation.
  *
  * @see-also api/cmiss_optimisation.h
  *
@@ -47,86 +47,124 @@
 #define OPTIMISATION_HPP_
 
 #include <vector>
+#include "minimise/cmiss_optimisation_private.hpp"
 
-extern "C"
+class ObjectiveFieldData
 {
-	#include "api/cmiss_optimisation.h"
-}
+public:
+	Cmiss_field_id field;
+	int numComponents;
+	int numTerms;
+	int bufferSize;
+	FE_value *buffer;
 
-typedef std::vector<Cmiss_field_id> FieldList;
+	ObjectiveFieldData(Cmiss_field_id objectiveField) :
+		field(Cmiss_field_access(objectiveField)),
+		numComponents(Cmiss_field_get_number_of_components(field)),
+		numTerms(0),
+		bufferSize(0),
+		buffer(0)
+	{
+	}
 
-struct Cmiss_optimisation
+	~ObjectiveFieldData()
+	{
+		Cmiss_field_destroy(&field);
+		delete[] buffer;
+	}
+
+	int prepareTerms();
+};
+
+typedef std::vector<Cmiss_field_id> FieldVector;
+typedef std::vector<ObjectiveFieldData*> ObjectiveFieldDataVector;
+
+class Minimisation
 {
 private:
-	~Cmiss_optimisation()
-	{
-		if (objectiveField) Cmiss_field_destroy(&objectiveField);
-		if (meshField) Cmiss_field_destroy(&meshField);
-		if (dataField) Cmiss_field_destroy(&dataField);
-		while (!independentFields.empty())
-		{
-			Cmiss_field_id f = independentFields.back();
-			independentFields.pop_back();
-			Cmiss_field_destroy(&f);
-		}
-		if (feMesh) Cmiss_mesh_destroy(&feMesh);
-		if (dataNodeset) Cmiss_nodeset_destroy(&dataNodeset);
-	}
+	Cmiss_optimisation& optimisation;
 
 public:
-	enum Cmiss_optimisation_method method;
-	Cmiss_field_id objectiveField;
-	Cmiss_field_id meshField;
-	Cmiss_field_id dataField;
-	FieldList independentFields;
-	bool independentFieldsConstant;
-	Cmiss_mesh_id feMesh;
-	Cmiss_nodeset_id dataNodeset;
-	// Opt++ stopping tolerances
-	double functionTolerance;
-	double gradientTolerance;
-	double stepTolerance;
-	int maximumIterations;
-	int maximumNumberFunctionEvaluations;
-	// Opt++ steplength control
-	double maximumStep;
-	double minimumStep;
-	// Opt++ globalisation strategy parameters
-	double linesearchTolerance;
-	int maximumBacktrackIterations;
-	double trustRegionSize;
+	Cmiss_field_module_id field_module;
+	Cmiss_field_cache_id field_cache;
+	FE_value current_time;
+	int total_dof;
+	ObjectiveFieldDataVector objectiveFields;
 
-	Cmiss_optimisation()
+private:
+	FE_value **dof_storage_array;
+	FE_value *dof_initial_values;
+	FieldVector independentFields;
+	int totalObjectiveFieldComponents;
+	int totalLeastSquaresTerms;
+	FE_value *objectiveValues;
+
+public:
+	Minimisation(Cmiss_optimisation& optimisation) :
+		optimisation(optimisation)
 	{
-		// initialise to default values
-		method = CMISS_OPTIMISATION_METHOD_QUASI_NEWTON;
-		objectiveField = NULL;
-		meshField = NULL;
-		dataField = NULL;
-		independentFieldsConstant = false;
-		feMesh = NULL;
-		dataNodeset = NULL;
-		functionTolerance = 1.49012e-8;
-		gradientTolerance = 6.05545e-6;
-		stepTolerance = 1.49012e-8;
-		maximumIterations = 100;
-		maximumNumberFunctionEvaluations = 1000;
-		maximumStep = 1.0e3;
-		minimumStep = 1.49012e-8;
-		linesearchTolerance = 1.e-4;
-		maximumBacktrackIterations = 5;
-		trustRegionSize = 0.1;
-	}
+		field_module = optimisation.fieldModule;
+		field_cache = Cmiss_field_module_create_cache(field_module);
+		current_time = 0.0;
+		total_dof = 0;
+		dof_storage_array = static_cast<FE_value**> (NULL);
+		dof_initial_values = static_cast<FE_value*> (NULL);
+		for (FieldList::iterator iter = optimisation.independentFields.begin();
+			iter != optimisation.independentFields.end(); ++iter)
+		{
+			Cmiss_field_access(*iter);
+			independentFields.push_back(*iter);
+		}
+		totalObjectiveFieldComponents = 0;
+		for (FieldList::iterator iter = optimisation.objectiveFields.begin();
+			iter != optimisation.objectiveFields.end(); ++iter)
+		{
+			Cmiss_field_id objectiveField = *iter;
+			totalObjectiveFieldComponents += Cmiss_field_get_number_of_components(objectiveField);
+			objectiveFields.push_back(new ObjectiveFieldData(objectiveField));
+		}
+		objectiveValues = new FE_value[totalObjectiveFieldComponents];
+		totalLeastSquaresTerms = 0;
+	};
 
-	static int destroy(Cmiss_optimisation_id &optimisation)
-	{
-		if (!optimisation) return 0;
-		delete optimisation;
-		optimisation = 0;
-		return 1;
-	}
+	~Minimisation();
 
+	/** Prepare data structures for optimisation
+	 * @return  1 on success, 0 on failure */
+	int prepareOptimisation();
+
+	/** Perform optimisation until ending condition met or error
+	 * Must have successfully called prepareOptimisation() first.
+	 * @return  1 on success, 0 on failure */
 	int runOptimisation();
+
+	FE_value *get_dof_initial_values()
+	{
+		return dof_initial_values;
+	}
+
+	inline void set_dof_value(int dof_index, FE_value new_value)
+	{
+		*dof_storage_array[dof_index] = new_value;
+	}
+
+	void list_dof_values();
+
+	void invalidate_independent_field_caches();
+
+	/** @return  1 on success, 0 on failure */
+	int evaluate_objective_function(FE_value *valueAddress);
+
+private:
+
+	int construct_dof_arrays();
+
+	void touch_independent_fields();
+
+	int minimise_QN();
+
+	int minimise_LSQN();
+
 };
 
 #endif /* OPTIMISATION_HPP_ */

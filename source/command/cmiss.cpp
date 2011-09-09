@@ -17821,7 +17821,6 @@ Executes a GFX command.
 {
 	int return_code;
 	struct Option_table *option_table;
-	struct Minimisation_package *minimisation_package;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(execute_command_gfx);
@@ -17831,9 +17830,6 @@ Executes a GFX command.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
-			minimisation_package = CREATE(Minimisation_package)(
-				command_data->default_time_keeper, command_data->computed_field_package,
-				command_data->root_region);
 			Option_table_add_entry(option_table, "change_identifier", NULL,
 				command_data_void, gfx_change_identifier);
 			Option_table_add_entry(option_table, "convert", NULL,
@@ -17880,7 +17876,7 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "list", NULL,
 				command_data_void, execute_command_gfx_list);
 			Option_table_add_entry(option_table, "minimise",
-				NULL, minimisation_package, gfx_minimise);
+				NULL, (void *)command_data->root_region, gfx_minimise);
 			Option_table_add_entry(option_table, "modify", NULL,
 				command_data_void, execute_command_gfx_modify);
 #if defined (SGI_MOVIE_FILE)
@@ -17922,7 +17918,6 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_write);
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
-			DESTROY(Minimisation_package)(&minimisation_package);
 		}
 		else
 		{

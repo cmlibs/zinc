@@ -41,6 +41,11 @@
 #if !defined (FIELD_MODULE_H)
 #define FIELD_MODULE_H
 
+extern "C"
+{
+	#include "api/cmiss_field_module.h"
+}
+
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.
  * Internally: Also used to set new field default arguments prior to create.
@@ -49,6 +54,13 @@
  * @return  Field module for the supplied region.
  */
 struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region);
+
+/***************************************************************************//**
+ * Candidate for external API.
+ * @return  1 if field is from this field_module, otherwise 0.
+ */
+int Cmiss_field_module_contains_field(Cmiss_field_module_id field_module,
+	Cmiss_field_id field);
 
 /***************************************************************************//**
  * Internal, non-accessing version of Cmiss_field_module_get_region.

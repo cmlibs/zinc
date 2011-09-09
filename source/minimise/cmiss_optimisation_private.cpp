@@ -45,37 +45,70 @@
 #include <cstdio>
 extern "C"
 {
-	#include "minimise/cmiss_optimisation_private.h"
 	#include "api/cmiss_field.h"
 	#include "api/cmiss_region.h"
 	#include "computed_field/computed_field.h"
 	#include "computed_field/computed_field_composite.h"
 	#include "computed_field/computed_field_finite_element.h"
 }
+#include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"
 
-Cmiss_optimisation_id Cmiss_optimisation_create_private(void)
+int Cmiss_optimisation::runOptimisation()
 {
-	return new Cmiss_optimisation();
+	int return_code = 1;
+	// check required attributes are set
+	if (method == CMISS_OPTIMISATION_METHOD_INVALID)
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Optimisation method invalid or not set.");
+		return_code = 0;
+	}
+	if (independentFields.size() < 1)
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Must set at least one independent field.");
+		return_code = 0;
+	}
+	if (objectiveFields.size() < 1)
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  Must set at least one objective field.");
+		return_code = 0;
+	}
+	if (return_code)
+	{
+		Minimisation minimisation(*this);
+		return_code = return_code && minimisation.prepareOptimisation();
+		return_code = return_code && minimisation.runOptimisation();
+	}
+	return return_code;
+}
+
+Cmiss_optimisation_id Cmiss_field_module_create_optimisation(Cmiss_field_module_id field_module)
+{
+	if (field_module)
+		return new Cmiss_optimisation(field_module);
+	return 0;
 }
 
 int Cmiss_optimisation_destroy(Cmiss_optimisation_id *optimisation_address)
 {
 	if (optimisation_address)
-		return Cmiss_optimisation::destroy(*optimisation_address);
+		return Cmiss_optimisation::deaccess(*optimisation_address);
 	return 0;
 }
 
 enum Cmiss_optimisation_method Cmiss_optimisation_get_method(Cmiss_optimisation_id optimisation)
 {
-	if (optimisation) return optimisation->method;
+	if (optimisation)
+		return optimisation->method;
 	return CMISS_OPTIMISATION_METHOD_INVALID;
 }
 
 int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 		enum Cmiss_optimisation_method method)
 {
-	if (optimisation)
+	if (optimisation && (
+		(method == CMISS_OPTIMISATION_METHOD_QUASI_NEWTON) ||
+		(method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)))
 	{
 		optimisation->method = method;
 		return 1;
@@ -100,7 +133,7 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 			return optimisation->maximumBacktrackIterations;
 			break;
 		default:
-			fprintf(stderr, "Invalid integer attribute\n");
+			break;
 		}
 	}
 	return 0;
@@ -109,7 +142,7 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 		enum Cmiss_optimisation_attribute attribute, int value)
 {
-	int code = 1;
+	int return_code = 1;
 	if (optimisation)
 	{
 		switch (attribute)
@@ -124,11 +157,11 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 			optimisation->maximumBacktrackIterations = value;
 			break;
 		default:
-			fprintf(stderr, "Invalid integer attribute\n");
-			code = 0;
+			return_code = 0;
+			break;
 		}
 	}
-	return code;
+	return return_code;
 }
 
 double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
@@ -160,7 +193,7 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 			return optimisation->trustRegionSize;
 			break;
 		default:
-			fprintf(stderr, "Invalid real attribute\n");
+			break;
 		}
 	}
 	return 0.0;
@@ -169,7 +202,7 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
 int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 		enum Cmiss_optimisation_attribute attribute, double value)
 {
-	int code = 1;
+	int return_code = 1;
 	if (optimisation)
 	{
 		switch (attribute)
@@ -196,208 +229,64 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 			optimisation->trustRegionSize = value;
 			break;
 		default:
-			fprintf(stderr, "Invalid real attribute\n");
-			code = 0;
+			return_code = 0;
+			break;
 		}
 	}
-	return code;
+	return return_code;
 }
 
-Cmiss_field_id Cmiss_optimisation_get_attribute_field(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute)
+int Cmiss_optimisation_access_next_independent_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address)
 {
-	if (optimisation)
-	{
-		switch (attribute)
-		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD:
-			return Cmiss_field_access(optimisation->objectiveField);
-			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MESH_FIELD:
-			return Cmiss_field_access(optimisation->meshField);
-			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_DATA_FIELD:
-			return Cmiss_field_access(optimisation->dataField);
-			break;
-		default:
-			fprintf(stderr, "Invalid field attribute\n");
-		}
-	}
-	return NULL;
-}
-
-int Cmiss_optimisation_set_attribute_field(Cmiss_optimisation_id optimisation,
-		enum Cmiss_optimisation_attribute attribute, Cmiss_field_id value)
-{
-	int code = 1;
-	if (optimisation && value)
-	{
-		switch (attribute)
-		{
-		case CMISS_OPTIMISATION_ATTRIBUTE_OBJECTIVE_FIELD:
-			if (optimisation->objectiveField) Cmiss_field_destroy(&(optimisation->objectiveField));
-			optimisation->objectiveField = Cmiss_field_access(value);
-			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_MESH_FIELD:
-			if (optimisation->meshField) Cmiss_field_destroy(&(optimisation->meshField));
-			optimisation->meshField = Cmiss_field_access(value);
-			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_DATA_FIELD:
-			if (optimisation->dataField) Cmiss_field_destroy(&(optimisation->dataField));
-			optimisation->dataField = Cmiss_field_access(value);
-			break;
-		default:
-			fprintf(stderr, "Invalid field attribute\n");
-			code = 0;
-		}
-	}
-	return code;
+	if (optimisation && field_address)
+		return optimisation->accessNextIndependentField(field_address);
+	return 0;
 }
 
 int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
-		Cmiss_field_id field)
+	Cmiss_field_id field)
 {
-	int code = 0;
 	if (optimisation && field)
-	{
-		if (optimisation->independentFieldsConstant && !Computed_field_is_constant(field))
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_optimisation_add_independent_field.  "
-					"All independent fields must be constant if any are.");
-			return 0;
-		}
-		if (Computed_field_is_type_finite_element(field) && (optimisation->independentFields.size() > 0))
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_optimisation_add_independent_field.  "
-					"Can only have one finite element type independent field.");
-			return 0;
-		}
-		FieldList::const_iterator iter;
-		bool found = false;
-		for (iter = optimisation->independentFields.begin(); iter != optimisation->independentFields.end(); ++iter)
-		{
-			if (*iter == field) found = true;
-		}
-		if (!found)
-		{
-			optimisation->independentFields.push_back(Cmiss_field_access(field));
-			if (Computed_field_is_constant(field)) optimisation->independentFieldsConstant = true;
-			code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_optimisation_add_independent_field.  "
-					"An independent field can only be added once.");
-			return 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_add_independent_field.  "
-							"Invalid arguments.");
-	}
-	return code;
+		return optimisation->addIndependentField(field);
+	return 0;
 }
 
-int Cmiss_optimisation_set_mesh(Cmiss_optimisation_id optimisation, Cmiss_mesh_id mesh)
+int Cmiss_optimisation_remove_independent_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id field)
 {
-	int code = 0;
-	if (optimisation && mesh)
-	{
-		if (optimisation->feMesh) Cmiss_mesh_destroy(&(optimisation->feMesh));
-		optimisation->feMesh = Cmiss_mesh_access(mesh);
-		code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_mesh.  "
-							"Invalid arguments.");
-	}
-	return code;
+	if (optimisation && field)
+		return optimisation->removeIndependentField(field);
+	return 0;
 }
 
-int Cmiss_optimisation_set_data_nodeset(Cmiss_optimisation_id optimisation, Cmiss_nodeset_id nodeset)
+int Cmiss_optimisation_access_next_objective_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address)
 {
-	int code = 0;
-	if (optimisation && nodeset)
-	{
-		if (optimisation->dataNodeset) Cmiss_nodeset_destroy(&(optimisation->dataNodeset));
-		optimisation->dataNodeset = Cmiss_nodeset_access(nodeset);
-		code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_set_data_nodeset.  "
-							"Invalid arguments.");
-	}
-	return code;
+	if (optimisation && field_address)
+		return optimisation->accessNextObjectiveField(field_address);
+	return 0;
+}
+
+int Cmiss_optimisation_add_objective_field(Cmiss_optimisation_id optimisation,
+	Cmiss_field_id field)
+{
+	if (optimisation && field)
+		return optimisation->addObjectiveField(field);
+	return 0;
+}
+
+int Cmiss_optimisation_remove_objective_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id field)
+{
+	if (optimisation && field)
+		return optimisation->removeObjectiveField(field);
+	return 0;
 }
 
 int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation)
 {
-	int code = 0;
 	if (optimisation)
-	{
-		code = 1;
-		// check required attributes are set
-		if (optimisation->feMesh == NULL)
-		{
-			code = 0;
-			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The FE mesh must be set.");
-		}
-		if (optimisation->independentFields.size() < 1)
-		{
-			code = 0;
-			display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. Must set at least one independent field.");
-		}
-		if ((optimisation->method == CMISS_OPTIMISATION_METHOD_QUASI_NEWTON) ||
-				(optimisation->method == CMISS_OPTIMISATION_METHOD_NSDGSL))
-		{
-			if (optimisation->objectiveField == NULL)
-			{
-				code = 0;
-				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The objective field must be set.");
-			}
-		}
-		if (optimisation->method == CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
-		{
-			if (optimisation->meshField == NULL)
-			{
-				code = 0;
-				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The mesh field must be set.");
-			}
-			if (optimisation->dataField == NULL)
-			{
-				code = 0;
-				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data field must be set.");
-			}
-			if (code)
-			{
-				int nM = Cmiss_field_get_number_of_components(optimisation->meshField);
-				int nD = Cmiss_field_get_number_of_components(optimisation->dataField);
-				if (nD < nM)
-				{
-					code = 0;
-					display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data field must have at least the same number "
-							"of components as the mesh field.");
-				}
-			}
-			if (optimisation->dataNodeset == NULL)
-			{
-				code = 0;
-				display_message(ERROR_MESSAGE,"Cmiss_optimisation_optimise. The data nodeset must be set.");
-			}
-		}
-		if (code != 0)
-		{
-			code = optimisation->runOptimisation();
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_optimisation_optimise.  "
-							"Invalid arguments.");
-	}
-	return code;
+		return optimisation->runOptimisation();
+	return 0;
 }
-

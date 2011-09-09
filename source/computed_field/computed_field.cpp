@@ -1586,7 +1586,7 @@ int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
 		Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
 		for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
 		{
-			Cmiss_field_check_invalid_cache(field);
+			Cmiss_field_check_invalid_cache(*iter);
 		}
 	}
 	return 1;

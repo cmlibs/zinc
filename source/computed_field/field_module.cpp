@@ -192,6 +192,17 @@ struct Computed_field *Cmiss_field_module_find_field_by_name(
 	return (field);
 }
 
+int Cmiss_field_module_contains_field(Cmiss_field_module_id field_module,
+	Cmiss_field_id field)
+{
+	if (field_module && field)
+	{
+		return (Cmiss_field_module_get_master_region_internal(field_module) ==
+			Computed_field_get_region(field));
+	}
+	return 0;
+}
+
 struct Cmiss_region *Cmiss_field_module_get_region_internal(
 	struct Cmiss_field_module *field_module)
 {

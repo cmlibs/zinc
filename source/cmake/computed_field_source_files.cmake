@@ -67,7 +67,6 @@ SET( COMPUTED_FIELD_SRCS
 	source/minimise/minimise.cpp
 	source/minimise/cmiss_optimisation_private.cpp
 	source/minimise/optimisation.cpp
-	source/computed_field/field_module_optimisation_private.cpp
 	source/computed_field/computed_field_alias.cpp
 	source/computed_field/computed_field_compose.cpp
 	source/computed_field/computed_field_curve.cpp
@@ -85,7 +84,7 @@ SET( COMPUTED_FIELD_HDRS
 	${COMPUTED_FIELD_CORE_HDRS}
 	${COMPUTED_FIELD_GRAPHICS_HDRS}
 	source/minimise/minimise.h
-	source/minimise/cmiss_optimisation_private.h
+	source/minimise/cmiss_optimisation_private.hpp
 	source/minimise/optimisation.hpp
 	source/computed_field/computed_field_alias.h
 	source/computed_field/computed_field_compose.h

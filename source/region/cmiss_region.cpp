@@ -221,6 +221,18 @@ Created with access_count of 1 so call DEACCESS to clean up.
 	return region_fields;
 } /* CREATE(Cmiss_region_fields) */
 
+/** call only when detaching Cmiss_region_fields from owning region */
+static void Cmiss_region_fields_end_callbacks(Cmiss_region_fields *region_fields)
+{
+	MANAGER_DEREGISTER(Computed_field)(
+		region_fields->field_manager_callback_id, region_fields->field_manager);
+	region_fields->field_manager_callback_id = NULL;
+	// remove link back from region_fields to this region
+	FE_region_remove_callback(region_fields->fe_region,
+		Cmiss_region_FE_region_change, (void *)region_fields->owning_region);
+	region_fields->owning_region = NULL;
+}
+
 int DESTROY(Cmiss_region_fields)(struct Cmiss_region_fields **region_fields_address)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
@@ -240,11 +252,7 @@ Frees the memory for the Cmiss_region_fields and sets
 		{
 			if (region_fields->owning_region)
 			{
-				MANAGER_DEREGISTER(Computed_field)(
-					region_fields->field_manager_callback_id, region_fields->field_manager);
-				region_fields->field_manager_callback_id = NULL;
-				FE_region_remove_callback(region_fields->fe_region,
-					Cmiss_region_FE_region_change, (void *)region_fields->owning_region);
+				Cmiss_region_fields_end_callbacks(region_fields);
 			}
 			DEACCESS(FE_region)(&region_fields->fe_region);
 			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
@@ -630,7 +638,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 		if (0 == region->access_count)
 		{
 			DESTROY(LIST(Any_object))(&(region->any_object_list));
-			
+
 			// destroy child list
 			Cmiss_region *next_child = region->first_child;
 			region->first_child = NULL;
@@ -646,25 +654,11 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 
 			REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
 			REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
-			
+
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
-
-			if (region->fields && (region->fields->owning_region == region) &&
-				(region->fields->access_count > 1))
-			{
-				// should be an assert
-				display_message(ERROR_MESSAGE,
-					"DESTROY(Cmiss_region).  Cmiss_region_fields owner destroyed early");
-				MANAGER_DEREGISTER(Computed_field)(
-					region->fields->field_manager_callback_id, region->fields->field_manager);
-				region->fields->field_manager_callback_id = NULL;
-				// remove link back from region_fields to this region
-				FE_region_remove_callback(region->fields->fe_region,
-					Cmiss_region_FE_region_change, (void *)region);
-				region->fields->owning_region = NULL;
-			}
-			DEACCESS(Cmiss_region_fields)(&region->fields);
+			if (region->fields)
+				DEACCESS(Cmiss_region_fields)(&region->fields);
 			if (region->name)
 			{
 				DEALLOCATE(region->name);
@@ -712,10 +706,10 @@ Call ONLY before deaccessing root_region in command_data.
 			Cmiss_region_detach_fields_hierarchical(child);
 			child = child->next_sibling;
 		}
-		// remove link back from region_fields to this region
+		// remove link back from region_fields to owning region
 		if (region->fields && (region->fields->owning_region == region))
 		{
-			region->fields->owning_region = NULL;
+			Cmiss_region_fields_end_callbacks(region->fields);
 		}
 		DEACCESS(Cmiss_region_fields)(&(region->fields));
 	}

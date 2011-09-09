@@ -995,7 +995,6 @@ COMPUTED_FIELD_SRCS = \
 	minimise/minimise.cpp \
 	minimise/cmiss_optimisation_private.cpp \
 	minimise/optimisation.cpp \
-	computed_field/field_module_optimisation_private.cpp \
 	computed_field/computed_field_alias.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_deformation.cpp \
