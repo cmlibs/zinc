@@ -3123,7 +3123,9 @@ int Computed_field_embedded::compare(Computed_field_core *other_core)
 
 int Computed_field_embedded::is_defined_at_location(Field_location* location)
 {
-	return evaluate_cache_at_location(location);
+	// can't just call method evaluate_cache_at_location as value cache may
+	// not be allocated yet.
+	return Computed_field_evaluate_cache_at_location(field, location);
 }
 
 int Computed_field_embedded::has_numerical_components()
@@ -5108,6 +5110,20 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 				Cmiss_field_destroy(&field);
 				Cmiss_field_module_destroy(&field_module);
 			}
+#ifdef FUTURE_CODE
+			else if (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field))
+			{
+				// propagate changes to computed field wrapper
+				// ???GRC not ready to put into trunk because it stops
+				// partial edits of graphics objects when only a few nodes change.
+				struct Computed_field *existing_wrapper =
+					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						Computed_field_wraps_fe_field, (void *)fe_field,
+						field_change_data->computed_field_manager);
+				if (existing_wrapper)
+					Computed_field_dependency_changed(existing_wrapper);
+			}
+#endif // FUTURE_CODE
 		}
 		else
 		{
@@ -5140,10 +5156,13 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 		int field_change_summary;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
 			&field_change_summary);
-		int check_field_wrappers =
-			(field_change_summary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)) || 
-			(field_change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
-			(field_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field));
+		int check_field_wrappers = field_change_summary & (
+#ifdef FUTURE_CODE
+			CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field) |
+#endif // FUTURE_CODE
+			CHANGE_LOG_OBJECT_ADDED(FE_field) |
+			CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
+			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
 		int add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
 		int add_xi_field = FE_region_need_add_xi_field(fe_region);
 		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
