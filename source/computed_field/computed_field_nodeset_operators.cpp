@@ -69,13 +69,13 @@ class Computed_field_nodeset_sum : public Computed_field_core
 {
 protected:
 	Cmiss_nodeset_id nodeset;
-	int number_of_values;
+	int number_of_terms;
 
 public:
 	Computed_field_nodeset_sum(Cmiss_nodeset_id nodeset_in) :
 		Computed_field_core(),
 		nodeset(Cmiss_nodeset_access(nodeset_in)),
-		number_of_values(0)
+		number_of_terms(0)
 	{
 	};
 
@@ -109,9 +109,19 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	virtual int supports_sum_terms() const
+	{
+		return 1;
+	}
+
+	virtual int get_number_of_sum_terms() const;
 	
 protected:
 	int evaluate_cache_at_location(Field_location* location);
+
+	virtual int evaluate_sum_terms_at_location(Field_location* location,
+		int number_of_values, FE_value *values);
 };
 
 Computed_field_nodeset_sum::~Computed_field_nodeset_sum()
@@ -162,12 +172,10 @@ int Computed_field_nodeset_sum::evaluate_cache_at_location(
 	ENTER(Computed_field_nodeset_sum::evaluate_cache_at_location);
 	if (field && location)
 	{
-		number_of_values = 0;
-		// initialise values
+		number_of_terms = 0;
 		const int number_of_components = field->number_of_components;
 		FE_value *values = field->values;
 		Cmiss_field_id source_field = field->source_fields[0];
-		FE_value *source_values = source_field->values;
 		FE_value current_time = location->get_time();
 		int i;
 		for (i = 0; i < number_of_components; i++)
@@ -183,14 +191,14 @@ int Computed_field_nodeset_sum::evaluate_cache_at_location(
 			{
 				for (i = 0 ; i < number_of_components ; i++)
 				{
-					values[i] += source_values[i];
+					values[i] += source_field->values[i];
 				}
-				++number_of_values;
+				++number_of_terms;
 			}
 		}
 		Cmiss_node_iterator_destroy(&iterator);
 		field->derivatives_valid = 0;
-		return_code = (number_of_values > 0);
+		return_code = (number_of_terms > 0);
 	}
 	else
 	{
@@ -202,6 +210,70 @@ int Computed_field_nodeset_sum::evaluate_cache_at_location(
 	LEAVE;
 
 	return (return_code);
+}
+
+int Computed_field_nodeset_sum::get_number_of_sum_terms() const
+{
+	int return_number_of_terms = 0;
+	if (field)
+	{
+		Cmiss_field_id source_field = field->source_fields[0];
+		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+		Cmiss_node_id node = 0;
+		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		{
+			Field_node_location nodal_location(node);
+			if (source_field->core->is_defined_at_location(&nodal_location))
+			{
+				++return_number_of_terms;
+			}
+		}
+		Cmiss_node_iterator_destroy(&iterator);
+	}
+	return return_number_of_terms;
+}
+
+int Computed_field_nodeset_sum::evaluate_sum_terms_at_location(
+	Field_location* location, int number_of_values, FE_value *values)
+{
+	int return_code = 0;
+	if (field && location && (0 < number_of_values) && values)
+	{
+		return_code = 1;
+		number_of_terms = 0;
+		const int number_of_components = field->number_of_components;
+		const int max_terms = number_of_values / number_of_components;
+		FE_value *value = values;
+		Cmiss_field_id source_field = field->source_fields[0];
+		FE_value current_time = location->get_time();
+		int i;
+		Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
+		Cmiss_node_id node = 0;
+		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		{
+			Field_node_location nodal_location(node, current_time);
+			if (Computed_field_evaluate_cache_at_location(source_field, &nodal_location))
+			{
+				if (number_of_terms >= max_terms)
+				{
+					return_code = 0;
+					break;
+				}
+				for (i = 0 ; i < number_of_components ; i++)
+				{
+					*value = source_field->values[i];
+					++value;
+				}
+				++number_of_terms;
+			}
+		}
+		Cmiss_node_iterator_destroy(&iterator);
+		if (number_of_terms*number_of_components != number_of_values)
+		{
+			return_code = 0;
+		}
+	}
+	return return_code;
 }
 
 /** Lists a description of the nodeset_sum inputs */
@@ -379,7 +451,11 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
+protected:
 	int evaluate_cache_at_location(Field_location* location);
+
+	virtual int evaluate_sum_terms_at_location(Field_location* location,
+		int number_of_values, FE_value *values);
 };
 
 Computed_field_core *Computed_field_nodeset_mean::copy()
@@ -402,15 +478,33 @@ int Computed_field_nodeset_mean::evaluate_cache_at_location(
 	int return_code = Computed_field_nodeset_sum::evaluate_cache_at_location(location);
 	if (return_code)
 	{
-		if (number_of_values > 0)
+		if (number_of_terms > 0)
 		{
+			FE_value scaling = 1.0 / (FE_value)number_of_terms;
 			for (int i = 0 ; i < field->number_of_components ; i++)
 			{
-				field->values[i] = field->values[i]/number_of_values;
+				field->values[i] *= scaling;
 			}
 		}
 	}
 	return (return_code);
+}
+
+int Computed_field_nodeset_mean::evaluate_sum_terms_at_location(
+	Field_location* location, int number_of_values, FE_value *values)
+{
+	int return_code = Computed_field_nodeset_sum::evaluate_sum_terms_at_location(
+		location, number_of_values, values);
+	if (return_code)
+	{
+		FE_value scaling = 1.0 / (FE_value)number_of_terms;
+		for (int i = 0 ; i < number_of_values ; i++)
+		{
+			values[i] *= scaling;
+		}
+	}
+	return (return_code);
+
 }
 
 } //namespace
