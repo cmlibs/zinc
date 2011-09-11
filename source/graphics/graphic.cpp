@@ -3143,16 +3143,24 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 						{
 							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 								field_module, "cmiss_data");
-							renderer->set_highlight_functor(create_highlight_functor_nodeset(
-								group_field, nodeset));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_nodeset(
+								group_field, nodeset);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_nodeset_destroy(&nodeset);
 						} break;
 						case CMISS_GRAPHIC_NODE_POINTS:
 						{
 							Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(
 								field_module, "cmiss_nodes");
-							renderer->set_highlight_functor(create_highlight_functor_nodeset(
-								group_field, nodeset));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_nodeset(
+								group_field, nodeset);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_nodeset_destroy(&nodeset);
 						} break;
 						case CMISS_GRAPHIC_CYLINDERS:
@@ -3160,8 +3168,12 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 						{
 							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 								field_module, /*dimension*/1);
-							renderer->set_highlight_functor(create_highlight_functor_element(
-								group_field, temp_mesh));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
+								group_field, temp_mesh);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_mesh_destroy(&temp_mesh);
 						} break;
 						case CMISS_GRAPHIC_SURFACES:
@@ -3180,9 +3192,13 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 								{
 									Cmiss_field_cad_topology_id cad_topology_domain =
 										Cmiss_field_cast_cad_topology(cad_topology_field);
-									renderer->set_highlight_functor(create_highlight_functor_cad_primitive(
-										group_field, cad_topology_domain));
-									Cmiss_field_destroy(&cad_topology_field);
+									SubObjectGroupHighlightFunctor *functor = create_highlight_functor_cad_primitive(
+										group_field, cad_topology_domain);
+									if (!(renderer->set_highlight_functor(functor)) && functor)
+									{
+										if (functor)
+											delete functor;
+									}
 									DESTROY_LIST(Computed_field)(&domain_field_list);
 									break;
 								}
@@ -3194,8 +3210,12 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 						{
 							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 								field_module, /*dimension*/2);
-							renderer->set_highlight_functor(create_highlight_functor_element(
-								group_field, temp_mesh));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
+								group_field, temp_mesh);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_mesh_destroy(&temp_mesh);
 						} break;
 #endif /* defined(USE_OPENCASCADE) */
@@ -3203,8 +3223,12 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 						{
 							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 								field_module, /*dimension*/3);
-							renderer->set_highlight_functor(create_highlight_functor_element(
-								group_field, temp_mesh));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
+								group_field, temp_mesh);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_mesh_destroy(&temp_mesh);
 						} break;
 						case CMISS_GRAPHIC_ELEMENT_POINTS:
@@ -3220,8 +3244,12 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 							}
 							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
 								field_module, use_element_type);
-							renderer->set_highlight_functor(create_highlight_functor_element(
-								group_field, temp_mesh));
+							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
+								group_field, temp_mesh);
+							if (!(renderer->set_highlight_functor(functor)) && functor)
+							{
+									delete functor;
+							}
 							Cmiss_mesh_destroy(&temp_mesh);
 						} break;
 						case CMISS_GRAPHIC_POINT:

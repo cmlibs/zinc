@@ -86,6 +86,14 @@ public:
 	{
 	}
 
+	virtual ~Render_graphics_opengl()
+	{
+		if (highlight_functor)
+		{
+			delete highlight_functor;
+		}
+	}
+
 	/***************************************************************************//**
 	 * @see Render_graphics::Graphics_object_compile
 	 */
