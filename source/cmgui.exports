@@ -475,19 +475,6 @@ Cmiss_time_keeper_frame_mode_enum_to_string
 Cmiss_time_keeper_attribute_enum_from_string
 Cmiss_time_keeper_attribute_enum_to_string
 
-/* Carey's internal exports which we should shift to using Cmiss_field_image */
-create_Cmgui_image_information
-Cmgui_image_information_add_file_name
-Cmgui_image_read
-Cmgui_image_get_number_of_bytes_per_component
-Cmgui_image_get_number_of_components
-Cmgui_image_get_width
-Cmgui_image_get_height
-Cmgui_image_convert_format
-Cmgui_image_dispatch
-destroy_Cmgui_image_information
-destroy_Cmgui_image
-
 /* Shane's experiment with Interaction volumes */
 create_Interaction_volume_centred_box
 create_Interaction_volume_ray_frustum
