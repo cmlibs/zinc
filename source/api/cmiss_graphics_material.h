@@ -260,25 +260,4 @@ int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
 Cmiss_field_image_id Cmiss_graphics_material_get_image_field(
 	Cmiss_graphics_material_id material, int image_number);
 
-/***************************************************************************//**
- * Deprecated function for getting generic CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_graphics_material_get_attribute_integer
- *
- * @param material  The material to query.
- * @return  Value of attribute CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED.
- */
-#define Cmiss_graphics_material_get_persistent(material) \
-	Cmiss_graphics_material_get_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED)
-
-/***************************************************************************//**
- * Deprecated function for setting attribute CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_graphics_material_set_attribute_integer
- *
- * @param material  The material to modify.
- * @param value  Non-zero for managed, 0 for not managed.
- * @return  1 on success, 0 on failure.
- */
-#define Cmiss_graphics_material_set_persistent(material, value) \
-	Cmiss_graphics_material_set_attribute_integer(material, CMISS_GRAPHICS_MATERIAL_ATTRIBUTE_IS_MANAGED, value)
-
 #endif

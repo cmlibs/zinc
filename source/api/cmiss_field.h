@@ -292,27 +292,6 @@ int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 Cmiss_field_id Cmiss_field_get_source_field(Cmiss_field_id field, int index);
 
 /***************************************************************************//**
- * Deprecated function for getting generic CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_field_get_attribute_integer
- *
- * @param field  The field to query.
- * @return  Value of attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- */
-#define Cmiss_field_get_persistent(field) \
-	Cmiss_field_get_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED)
-
-/***************************************************************************//**
- * Deprecated function for setting attribute CMISS_FIELD_ATTRIBUTE_IS_MANAGED.
- * @see Cmiss_field_set_attribute_integer
- *
- * @param field  The field to modify.
- * @param value  Non-zero for managed, 0 for not managed.
- * @return  1 on success, 0 on failure.
- */
-#define Cmiss_field_set_persistent(field, value) \
-	Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, value)
-
-/***************************************************************************//**
  * Returns a reference to the field module which owns this field.
  * 
  * @param field  The field to obtain field module for.
