@@ -430,11 +430,6 @@ Cmiss_element_shape_type_enum_to_string
 Cmiss_basis_function_type_enum_from_string
 Cmiss_basis_function_type_enum_to_string
 
-create_IO_stream_package
-destroy_IO_stream_package
-IO_stream_package_define_memory_block
-IO_stream_package_free_memory_block
-
 Cmiss_deallocate
 
 #if defined (CELL)
