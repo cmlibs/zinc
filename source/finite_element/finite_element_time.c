@@ -42,6 +42,7 @@ Representing time in finite elements.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
+#include "api/cmiss_time_sequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -1201,4 +1202,32 @@ int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
 		return 0;
 	/* basic implementation assumes object is accessed by region and caller */
 	return (fe_time_sequence->access_count <= 2);
+}
+
+Cmiss_time_sequence_id Cmiss_time_sequence_access(
+	Cmiss_time_sequence_id time_sequence)
+{
+	return (Cmiss_time_sequence_id)(ACCESS(FE_time_sequence)(
+		(struct FE_time_sequence *)time_sequence));
+}
+
+int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address)
+{
+	return DESTROY(FE_time_sequence)(
+		(struct FE_time_sequence **)time_sequence_address);
+}
+
+int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+	int time_index, double time)
+{
+	struct FE_time_sequence *fe_time_sequence;
+
+	fe_time_sequence = (struct FE_time_sequence *)time_sequence;
+	if (FE_time_sequence_is_in_use(fe_time_sequence))
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_time_sequence_set_value.  "
+			"Cannot modify time sequence while in use");
+		return 0;
+	}
+	return FE_time_sequence_set_time_and_index(fe_time_sequence, time_index, time);
 }

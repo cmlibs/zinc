@@ -2096,3 +2096,29 @@ struct Cmiss_region *Cmiss_region_get_child_with_FE_region(
 	}
 	return 0;
 }
+
+Cmiss_region_id Cmiss_region_access(Cmiss_region_id region)
+{
+	return (ACCESS(Cmiss_region)(region));
+}
+
+int Cmiss_region_destroy(Cmiss_region_id *region)
+/*******************************************************************************
+LAST MODIFIED : 3 January 2008
+
+DESCRIPTION :
+Destroys the <region> and sets the pointer to NULL.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_region_destroy);
+	return_code = 0;
+	if (region && *region)
+	{
+		return_code = DEACCESS(Cmiss_region)(region);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_destroy */

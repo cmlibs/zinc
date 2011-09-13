@@ -113,3 +113,14 @@ Destroys an idle callback, causing it to not be called any longer.
 
 	return (ret);
 }
+
+int Cmiss_idle_callback_destroy(Cmiss_idle_package_id pkg,
+	Cmiss_idle_callback_id *callback)
+{
+	return DESTROY(Idle_callback)(pkg, callback);
+}
+
+int Cmiss_idle_package_destroy(Cmiss_idle_package_id *pkg)
+{
+	return DESTROY(Idle_package)(pkg);
+}

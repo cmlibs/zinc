@@ -2,7 +2,6 @@
 # Defines CORE_FIELDS_LIB_SRCS
 
 SET( CORE_FIELDS_LIB_SRCS
-	source/api/cmiss_time_sequence.c
 	source/general/io_stream.cpp
 	source/general/statistics.c
 	source/mesh/cmiss_element_private.cpp

@@ -2,7 +2,6 @@
 # Defines GENERAL_LIB_SRCS
 
 SET( GENERAL_LIB_SRCS 
-	source/api/cmiss_core.c
 	source/command/parser.c
 	source/general/any_object.c
 	source/general/compare.c

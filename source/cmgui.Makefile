@@ -900,14 +900,6 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(MOVIE_FILE_LIB) $(FIELDML_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) \
 	$(SYSTEM_LIB) $(NETGEN_LIB) $(MINIMISE_LIB)
 
-API_SRCS = \
-	api/cmiss_core.c \
-	api/cmiss_idle.c \
-	api/cmiss_time_sequence.c
-ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-   API_SRCS += \
-	   api/cmiss_scene_viewer.c
-endif
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_curve.c \
@@ -1258,7 +1250,6 @@ NODE_INTERFACE_SRCS = \
 	node/node_viewer_widget.c
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 REGION_SRCS = \
-   api/cmiss_region.c \
    region/cmiss_region.cpp \
    stream/cmiss_region_stream.cpp \
    region/cmiss_region_write_info.c
@@ -1322,7 +1313,6 @@ VIEW_INTERFACE_SRCS = \
 
 # DB.  makedepend has problems if too many files
 SRCS_1 = \
-	$(API_SRCS) \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
@@ -1688,7 +1678,6 @@ SO_LIB_GENERAL_TARGET = lib$(SO_LIB_GENERAL)$(SO_LIB_SUFFIX)
 SO_LIB_GENERAL_EXTRA_ARGS = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
 
 LIB_GENERAL_SRCS = \
-	api/cmiss_core.c \
 	command/parser.c \
 	general/any_object.c \
 	general/compare.c \
@@ -1718,7 +1707,6 @@ ifeq ($(OPERATING_SYSTEM), win32)
 endif
 
 LIB_CORE_FIELDS_SRCS = \
-	api/cmiss_time_sequence.c \
 	general/io_stream.cpp \
 	general/statistics.c \
 	node/node_operations.c \

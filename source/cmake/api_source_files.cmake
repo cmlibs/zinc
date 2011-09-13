@@ -1,12 +1,6 @@
 
 # Defines API_SRCS
 
-SET( API_SRCS 
-	source/api/cmiss_core.c
-	source/api/cmiss_idle.c
-	source/api/cmiss_region.c
-	source/api/cmiss_scene_viewer.cpp
-	source/api/cmiss_time_sequence.c )
 SET( API_HDRS
 	source/api/cmiss_context.h
 	source/api/cmiss_core.h
@@ -90,8 +84,6 @@ IF( USE_OPENCASCADE )
 ENDIF( USE_OPENCASCADE )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	SET( API_SRCS ${API_SRCS}
-		source/api/cmiss_scene_viewer.cpp )
 	SET( API_HDRS ${API_HDRS}
 		source/api/cmiss_scene_viewer.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
