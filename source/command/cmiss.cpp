@@ -777,6 +777,26 @@ DESCRIPTION :
 	return (return_code);
 } /* gfx_change_identifier */
 
+/***************************************************************************//**
+ * Dummy modifier function explaining migration from old gfx create axes
+ * command.
+ */
+static int gfx_create_axes(struct Parse_state *state,
+	void *dummy_to_be_modified, void *dummy_user_data_void)
+{
+	USE_PARAMETER(state);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data_void);
+	display_message(WARNING_MESSAGE,
+		"The 'gfx create axes' command has been removed. These are now drawn as\n"
+		"'point' graphics in the scene editor using a predefined axes glyph. Command\n"
+		"'gfx draw NAME' still works if the glyph name matches the axes object, but\n"
+		"offset, scale and material must be re-set in the scene editor. Enter\n"
+		"'gfx list g_element REGION_PATH commands' to list the commands needed to\n"
+		"reproduce what is set in the scene editor. \n");
+	return 1;
+}
+
 static int gfx_create_colour_bar(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5728,6 +5748,8 @@ Executes a GFX CREATE command.
 			if (state->current_token)
 			{
 				option_table=CREATE(Option_table)();
+				Option_table_add_entry(option_table,"axes",NULL,
+					command_data_void,gfx_create_axes);
 #if defined (MOTIF_USER_INTERFACE)
 				Option_table_add_entry(option_table,"cmiss_connection",NULL,
 					command_data_void,gfx_create_cmiss);
