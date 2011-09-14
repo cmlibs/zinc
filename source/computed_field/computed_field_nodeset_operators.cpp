@@ -198,7 +198,7 @@ int Computed_field_nodeset_sum::evaluate_cache_at_location(
 		}
 		Cmiss_node_iterator_destroy(&iterator);
 		field->derivatives_valid = 0;
-		return_code = (number_of_terms > 0);
+		return_code = 1;
 	}
 	else
 	{
@@ -237,7 +237,7 @@ int Computed_field_nodeset_sum::evaluate_sum_terms_at_location(
 	Field_location* location, int number_of_values, FE_value *values)
 {
 	int return_code = 0;
-	if (field && location && (0 < number_of_values) && values)
+	if (field && location && (0 <= number_of_values) && values)
 	{
 		return_code = 1;
 		number_of_terms = 0;
@@ -486,6 +486,10 @@ int Computed_field_nodeset_mean::evaluate_cache_at_location(
 				field->values[i] *= scaling;
 			}
 		}
+		else
+		{
+			return_code = 0;
+		}
 	}
 	return (return_code);
 }
@@ -497,10 +501,17 @@ int Computed_field_nodeset_mean::evaluate_sum_terms_at_location(
 		location, number_of_values, values);
 	if (return_code)
 	{
-		FE_value scaling = 1.0 / (FE_value)number_of_terms;
-		for (int i = 0 ; i < number_of_values ; i++)
+		if (number_of_terms > 0)
 		{
-			values[i] *= scaling;
+			FE_value scaling = 1.0 / (FE_value)number_of_terms;
+			for (int i = 0 ; i < number_of_values ; i++)
+			{
+				values[i] *= scaling;
+			}
+		}
+		else
+		{
+			return_code = 0;
 		}
 	}
 	return (return_code);
