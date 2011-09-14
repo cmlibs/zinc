@@ -11624,6 +11624,150 @@ be specified at once.
 	return (return_code);
 } /* gfx_modify_element_group */
 
+
+/***************************************************************************//**
+ * Renames a field.
+ */
+static int gfx_modify_field_rename(struct Parse_state *state,
+	void *field_void, void *region_void)
+{
+	int return_code = 1;
+	ENTER(gfx_modify_field_rename);
+	Cmiss_field* field = (Cmiss_field*)field_void;
+	USE_PARAMETER(region_void);
+	if (state)
+	{
+		if (!state->current_token || (
+			strcmp(PARSER_HELP_STRING,state->current_token) &&
+			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+		{
+			if (state->current_token)
+			{
+				return_code = Cmiss_field_set_name(field, state->current_token);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Missing new field name");
+				display_parse_state_location(state);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			/* Help */
+			display_message(INFORMATION_MESSAGE, " NEW_FIELD_NAME");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_field_rename.  Invalid argument(s)");
+	}
+	LEAVE;
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Executes GFX MODIFY FIELD subcommands.
+ */
+static int gfx_modify_field_subcommands(struct Parse_state *state,
+	void *field_void, void *region_void)
+{
+	int return_code = 1;
+	ENTER(gfx_modify_field_subcommands);
+	if (state)
+	{
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, "rename",
+			field_void, region_void, gfx_modify_field_rename);
+		return_code = Option_table_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_field_subcommands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Executes a GFX MODIFY FIELD command.
+ */
+static int gfx_modify_field(struct Parse_state *state,
+	void *dummy_to_be_modified, void *command_data_void)
+{
+	int return_code = 1;
+	ENTER(gfx_modify_field);
+	USE_PARAMETER(dummy_to_be_modified);
+	Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
+	if (state && command_data)
+	{
+		const char *current_token = state->current_token;
+		if (current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				Cmiss_field_id field = 0;
+				Cmiss_region *region = 0;
+				char *region_path = NULL;
+				char *field_name = NULL;
+				if (Cmiss_region_get_partial_region_path(command_data->root_region,
+					current_token, &region, &region_path, &field_name))
+				{
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+					field = Cmiss_field_module_find_field_by_name(field_module, field_name);
+					Cmiss_field_module_destroy(&field_module);
+				}
+				if (field)
+				{
+					shift_Parse_state(state, 1);
+					return_code = gfx_modify_field_subcommands(state,
+						(void *)field, (void *)region);
+					Cmiss_field_destroy(&field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx modify field:  Invalid region path or field name '%s'", current_token);
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+				DEALLOCATE(region_path);
+				DEALLOCATE(field_name);
+			}
+			else
+			{
+				/* Write out the help */
+				Option_table *help_option_table = CREATE(Option_table)();
+				Option_table_add_entry(help_option_table,
+					"[REGION_PATH" CMISS_REGION_PATH_SEPARATOR_STRING "]FIELD_NAME",
+					(void *)NULL, (void *)command_data->root_region, gfx_modify_field_subcommands);
+				return_code = Option_table_parse(help_option_table,state);
+				DESTROY(Option_table)(&help_option_table);
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing region_path/field_name");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}
+
 static int gfx_modify_g_element(struct Parse_state *state,
 	void *help_mode,void *command_data_void)
 /*******************************************************************************
@@ -12814,6 +12958,9 @@ Executes a GFX MODIFY command.
 					command_data->environment_map_manager;
 				Option_table_add_entry(option_table,"environment_map",NULL, 
 					(&modify_environment_map_data),modify_Environment_map);
+				/* field */
+				Option_table_add_entry(option_table,"field",NULL,
+					(void *)command_data, gfx_modify_field);
 				/* flow_particles */
 				Option_table_add_entry(option_table,"flow_particles",NULL, 
 					(void *)command_data, gfx_modify_flow_particles);
@@ -14487,109 +14634,6 @@ Executes a GFX READ command.
 
 	return (return_code);
 } /* execute_command_gfx_read */
-
-/***************************************************************************//**
- * Renames a field.
- */
-static int gfx_rename_field(struct Parse_state *state,
-	void *dummy_to_be_modified, void *root_region_void)
-{
-	int return_code = 0;
-
-	ENTER(gfx_rename_field);
-	USE_PARAMETER(dummy_to_be_modified);
-	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
-	if (state && root_region)
-	{
-		char *new_name = NULL;
-		char *region_and_field_name = NULL;
-		Option_table *option_table = CREATE(Option_table)();
-		Option_table_add_string_entry(option_table, "from", &region_and_field_name, " [REGION_PATH/]FIELD_NAME");
-		Option_table_add_string_entry(option_table, "to", &new_name, " NEW_NAME");
-		return_code = Option_table_multi_parse(option_table, state);
-		DESTROY(Option_table)(&option_table);
-		if (return_code)
-		{
-			if (!new_name)
-			{
-				display_message(ERROR_MESSAGE, "gfx rename field.  Must specify a new name");
-				return_code = 0;
-			}
-			if (!region_and_field_name)
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx set order.  Must specify a [region_path/]field_name to be changed");
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				char *region_path = NULL;
-				char *field_name = NULL;
-				Cmiss_region *region = NULL;
-				if (Cmiss_region_get_partial_region_path(root_region,
-					region_and_field_name, &region, &region_path, &field_name))
-				{
-					Cmiss_field *field;
-					if (field_name &&
-						(field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-							field_name, Cmiss_region_get_Computed_field_manager(region))))
-					{
-						return_code = Cmiss_field_set_name(field, new_name);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Field does not exist: %s", region_and_field_name);
-						display_parse_state_location(state);
-						return_code = 0;
-					}
-					DEALLOCATE(region_path);
-					DEALLOCATE(field_name);
-				}
-			}
-		}
-		DEALLOCATE(new_name);
-		DEALLOCATE(region_and_field_name);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_rename_field.  Invalid argument(s)");
-	}
-	LEAVE;
-	return (return_code);
-}
-
-/***************************************************************************//**
- * Executes a GFX RENAME command.
- */
-static int execute_command_gfx_rename(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-{
-	int return_code;
-
-	ENTER(execute_command_gfx_rename);
-	USE_PARAMETER(dummy_to_be_modified);
-	struct Cmiss_command_data *command_data =
-		(struct Cmiss_command_data *)command_data_void;
-	if (state && command_data)
-	{
-		struct Option_table *option_table = CREATE(Option_table)();
-		Option_table_add_entry(option_table, "field",
-			NULL, (void *)command_data->root_region, gfx_rename_field);
-		return_code = Option_table_parse(option_table, state);
-		DESTROY(Option_table)(&option_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_rename.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -17916,8 +17960,6 @@ Executes a GFX command.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "read", NULL,
 				command_data_void, execute_command_gfx_read);
-			Option_table_add_entry(option_table, "rename", NULL,
-				command_data_void, execute_command_gfx_rename);
 			Option_table_add_entry(option_table, "select", NULL,
 				command_data_void, execute_command_gfx_select);
 			Option_table_add_entry(option_table, "set", NULL,
