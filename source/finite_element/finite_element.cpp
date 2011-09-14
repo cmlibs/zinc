@@ -18567,17 +18567,23 @@ headers have to change in output files.
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_field_components_match.  "
-											"Invalid standard node to element map");
+										if (differences_are_errors)
+										{
+											display_message(ERROR_MESSAGE,
+												"FE_element_field_components_match.  "
+												"Inconsistent indexes in standard node to element map");
+										}
 										return_code = 0;
 									}
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_components_match.  "
-										"Inconsistent scale factor sets");
+									if (differences_are_errors)
+									{
+										display_message(ERROR_MESSAGE,
+											"FE_element_field_components_match.  "
+											"Inconsistent scale factor sets");
+									}
 									return_code = 0;
 								}
 							}
