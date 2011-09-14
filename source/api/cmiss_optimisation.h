@@ -294,6 +294,9 @@ int Cmiss_optimisation_access_next_independent_field(
  * Add an independent field to the given optimisation problem description.
  * Valid independent fields are limited to constant and finite_element types.
  * The parameters of these fields are modified to minimise the objective fields.
+ * NOTE: Beware that many existing cubic Hermite meshes in EX format do not
+ * correctly share common value or derivative versions and thus will 'open up'
+ * during fitting/optimisation.
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued independent field to add to the optimisation object
@@ -337,11 +340,13 @@ int Cmiss_optimisation_access_next_objective_field(
 	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address);
 
 /***************************************************************************//**
- * Add an objective field to the given optimisation problem description.
+ * Add an objective field to the optimisation problem description.
  * Valid objective fields must be spatially constant. For least squares problems
- * the nodeset_sum field type is gives individual terms for better optimisation.
+ * field types which sum over a domain (e.g. nodeset_sum) are treated specially:
+ * squares of the individual terms being summed are optimised for.
  * The overall objective function becomes the sum of all components of all
- * objective fields.
+ * objective fields, or for least-squares solver, the sum of the squares of all
+ * summed terms, or components if the field is not performing summation.
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object

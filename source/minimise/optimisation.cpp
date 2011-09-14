@@ -230,7 +230,10 @@ int Minimisation::construct_dof_arrays()
 					for (int component_number = 0; component_number < number_of_components; component_number++)
 					{
 						int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
-								fe_field, component_number);
+							fe_field, component_number);
+						int number_of_versions = get_FE_node_field_component_number_of_derivatives(node,
+							fe_field, component_number);
+						int total_number_of_values = number_of_versions*number_of_values;
 
 						// FIXME: tmp remove derivatives
 						//number_of_values = 1;
@@ -239,20 +242,21 @@ int Minimisation::construct_dof_arrays()
 							get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
 						if (nodal_value_types)
 						{
-							REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + number_of_values);
-							REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + number_of_values);
-							for (int i = 0; i < number_of_values; i++)
+							REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + total_number_of_values);
+							REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + total_number_of_values);
+							for (int version_number = 0; version_number < number_of_versions; ++version_number)
 							{
-								total_dof++;
-								// get value storage pointer
-								// FIXME: need to handle versions for the femur mesh?
-								get_FE_nodal_FE_value_storage(node, fe_field, component_number,
-									/*version_number*/0, /*nodal_value_type*/nodal_value_types[i],
-									current_time, &(dof_storage_array[total_dof - 1]));
-								// get initial value from value storage pointer
-								dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
-								/*cout << dof_storage_array[total_dof - 1] << "   "
-										<< dof_initial_values[total_dof - 1] << endl;*/
+								for (int i = 0; i < number_of_values; i++)
+								{
+									total_dof++;
+									get_FE_nodal_FE_value_storage(node, fe_field, component_number,
+										version_number, /*nodal_value_type*/nodal_value_types[i],
+										current_time, &(dof_storage_array[total_dof - 1]));
+									// get initial value from value storage pointer
+									dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
+									/*cout << dof_storage_array[total_dof - 1] << "   "
+											<< dof_initial_values[total_dof - 1] << endl;*/
+								}
 							}
 							DEALLOCATE(nodal_value_types);
 						}
