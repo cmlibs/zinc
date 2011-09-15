@@ -39,8 +39,8 @@
 #include <map>
 #include <typeinfo>
 extern "C" {
-#include "api/cmiss_field_parameters.h"
 #include "computed_field/computed_field.h"
+#include "field_io/cmiss_field_parameters.h"
 }
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_ensemble.hpp"

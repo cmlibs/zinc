@@ -44,9 +44,9 @@
 
 #include "api/types/cmiss_c_inline.h"
 #include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_ensemble_id.h"
 #include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_field_parameters_id.h"
+#include "field_io/cmiss_field_ensemble_id.h"
+#include "field_io/cmiss_field_parameters_id.h"
 
 /***************************************************************************//**
  * Create a double-precision real-valued parameter set indexed by N ensembles.

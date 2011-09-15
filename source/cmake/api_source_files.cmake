@@ -11,7 +11,6 @@ SET( API_HDRS
 	source/api/cmiss_field_arithmetic_operators.h
 	source/api/cmiss_field_composite.h
 	source/api/cmiss_field_conditional.h
-	source/api/cmiss_field_ensemble.h
 	source/api/cmiss_field_finite_element.h
 	source/api/cmiss_field_group.h
 	source/api/cmiss_field_image.h
@@ -20,7 +19,6 @@ SET( API_HDRS
 	source/api/cmiss_field_matrix_operators.h
 	source/api/cmiss_field_module.h
 	source/api/cmiss_field_nodeset_operators.h
-	source/api/cmiss_field_parameters.h
 	source/api/cmiss_field_scene_viewer_projection.h
 	source/api/cmiss_field_subobject_group.h
 	source/api/cmiss_field_trigonometry.h
@@ -47,14 +45,12 @@ SET( API_HDRS
 	source/api/types/cmiss_context_id.h
 	source/api/types/cmiss_element_id.h
 	source/api/types/cmiss_field_alias_id.h
-	source/api/types/cmiss_field_ensemble_id.h
 	source/api/types/cmiss_field_finite_element_id.h
 	source/api/types/cmiss_field_group_id.h
 	source/api/types/cmiss_field_id.h
 	source/api/types/cmiss_field_image_id.h
 	source/api/types/cmiss_field_image_processing_id.h
 	source/api/types/cmiss_field_module_id.h
-	source/api/types/cmiss_field_parameters_id.h
 	source/api/types/cmiss_field_subobject_group_id.h
 	source/api/types/cmiss_graphic_id.h
 	source/api/types/cmiss_graphics_coordinate_system.h

@@ -920,7 +920,6 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_arithmetic_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_composite.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_conditional.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_ensemble.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_finite_element.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_image.h
@@ -929,7 +928,6 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_matrix_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_module.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_nodeset_operators.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_parameters.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_scene_viewer_projection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
@@ -964,14 +962,12 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_differential_operator_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_element_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_alias_id.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_ensemble_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_finite_element_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_group_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_image_processing_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_module_id.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_parameters_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_field_subobject_group_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphic_id.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/types/cmiss_graphics_coordinate_system.h

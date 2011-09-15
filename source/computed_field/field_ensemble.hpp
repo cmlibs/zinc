@@ -40,10 +40,10 @@
 #if !defined (FIELD_ENSEMBLE_HPP)
 #define FIELD_ENSEMBLE_HPP
 
-extern "C" {
-#include "api/cmiss_field_ensemble.h"
-}
 #include "computed_field/computed_field_private.hpp"
+extern "C" {
+#include "field_io/cmiss_field_ensemble.h"
+}
 #include "general/block_array.hpp"
 
 namespace Cmiss
