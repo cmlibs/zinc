@@ -43,9 +43,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cmath>
+#include <cstdlib>
 extern "C"
 {
-#include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "api/cmiss_field_logical_operators.h"
@@ -58,6 +59,7 @@ extern "C"
 #include "user_interface/message.h"
 }
 #include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 
 /*
  Global functions
@@ -542,4 +544,98 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
 	Cmiss_field_module_end_change(field_module);
 	Cmiss_field_module_destroy(&field_module);
 	return element_list;
+}
+
+int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh,
+	Cmiss_nodeset_id gauss_points_nodeset, int first_identifier,
+	Cmiss_field_stored_mesh_location_id gauss_location_field,
+	Cmiss_field_finite_element_id gauss_weight_field)
+{
+	const struct
+	{
+		FE_value location;                               FE_value weight;
+	} GaussPt[10] =
+	{
+		// 1 point
+		{ 0.5,                                           1.0 },
+		// 2 points
+		{ (-1.0/sqrt(3.0)+1.0)/2.0,                      0.5 },
+		{ (+1.0/sqrt(3.0)+1.0)/2.0,                      0.5 },
+		// 3 points
+		{ (-sqrt(0.6)+1.0)/2.0,                          5.0/18.0 },
+		{ 0.5, 4.0/9.0 },
+		{ (+sqrt(0.6)+1.0)/2.0,                          5.0/18.0 },
+		// 4 points
+		{ (-sqrt((3.0+2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0-sqrt(30.0))/72.0 },
+		{ (-sqrt((3.0-2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0+sqrt(30.0))/72.0 },
+		{ (+sqrt((3.0-2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0+sqrt(30.0))/72.0 },
+		{ (+sqrt((3.0+2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0-sqrt(30.0))/72.0 }
+	};
+	int return_code = 0;
+	Cmiss_region_id region = Cmiss_mesh_get_master_region_internal(mesh);
+	Cmiss_field_id gauss_location_field_base = Cmiss_field_stored_mesh_location_base_cast(gauss_location_field);
+	Cmiss_field_id gauss_weight_field_base = Cmiss_field_finite_element_base_cast(gauss_weight_field);
+	if (mesh && gauss_points_nodeset && (first_identifier >= 0) &&
+		(Cmiss_nodeset_get_master_region_internal(gauss_points_nodeset) == region) &&
+		gauss_location_field && gauss_weight_field &&
+		(Cmiss_field_get_number_of_components(gauss_location_field_base) == 1))
+	{
+		int dimension = Cmiss_mesh_get_dimension(mesh);
+		const int ptCount = 4; // currently fixed
+		const int ptOffset = 6; // valid for 4 Gauss points;
+		int number_of_gauss_points = 1;
+		for (int i = 0; i < dimension; i++)
+		{
+			number_of_gauss_points *= ptCount;
+		}
+		FE_value *gauss_locations = new FE_value[number_of_gauss_points*dimension];
+		FE_value *gauss_weights = new FE_value[number_of_gauss_points];
+		for (int g = 0; g < number_of_gauss_points; g++)
+		{
+			gauss_weights[g] = 1.0;
+			int shift_g = g;
+			for (int i =  0; i < dimension; i++)
+			{
+				int g1 = ptOffset + shift_g % ptCount;
+				gauss_locations[g*dimension + i] = GaussPt[g1].location;
+				gauss_weights[g] *= GaussPt[g1].weight;
+				shift_g /= ptCount;
+			}
+		}
+		return_code = 1;
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_module_begin_change(field_module);
+		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(gauss_points_nodeset);
+		if (!Cmiss_node_template_define_field(node_template, gauss_location_field_base))
+			return_code = 0;
+		if (!Cmiss_node_template_define_field(node_template, gauss_weight_field_base))
+			return_code = 0;
+		if (!Cmiss_node_template_finalise(node_template))
+			return_code = 0;
+		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
+		Cmiss_element_id element = 0;
+		int id = first_identifier;
+		while ((0 != (element = Cmiss_element_iterator_next_non_access(iterator))) && return_code)
+		{
+			for (int g = 0; g < number_of_gauss_points; g++)
+			{
+				// GRC not handling id in use.
+				Cmiss_node_id node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
+				Cmiss_field_cache_set_node(field_cache, node);
+				Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, gauss_locations + g*dimension);
+				Cmiss_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, gauss_weights + g);
+				Cmiss_node_destroy(&node);
+				id++;
+			}
+		}
+		Cmiss_element_iterator_destroy(&iterator);
+		Cmiss_node_template_destroy(&node_template);
+		Cmiss_field_cache_destroy(&field_cache);
+		Cmiss_field_module_end_change(field_module);
+		Cmiss_field_module_destroy(&field_module);
+		delete[] gauss_locations;
+		delete[] gauss_weights;
+	}
+	return return_code;
 }

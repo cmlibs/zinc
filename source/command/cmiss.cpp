@@ -1694,6 +1694,159 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 	return (return_code);
 } /* gfx_modify_flow_particles */
 
+/***************************************************************************//**
+ * Creates data points with embedded locations at Gauss points in a mesh.
+ */
+static int gfx_create_gauss_points(struct Parse_state *state,
+	void *dummy_to_be_modified, void *root_region_void)
+{
+	ENTER(gfx_create_gauss_points);
+	int return_code = 0;
+	USE_PARAMETER(dummy_to_be_modified);
+	Cmiss_region *root_region = reinterpret_cast<Cmiss_region *>(root_region_void);
+	if (state && root_region)
+	{
+		int first_identifier = 1;
+		char *gauss_location_field_name = 0;
+		char *gauss_weight_field_name = 0;
+		char *gauss_point_nodeset_name = 0;
+		char *mesh_name = 0;
+		Cmiss_region_id region = Cmiss_region_access(root_region);
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Creates points at Gauss point locations in the elements of the mesh. "
+			"Nodes are created in the gauss_point_nodeset starting from first_identifier, "
+			"and setting the element_xi gauss_location and real gauss_weight fields. "
+			"Currently limited to line/square/cube elements with 4 Gauss points per axis.");
+		Option_table_add_int_positive_entry(option_table, "first_identifier",
+			&first_identifier);
+		Option_table_add_string_entry(option_table, "gauss_location_field",
+			&gauss_location_field_name, " FIELD_NAME");
+		Option_table_add_string_entry(option_table, "gauss_point_nodeset", &gauss_point_nodeset_name,
+			" NODE_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_nodes|cmiss_data|none");
+		Option_table_add_string_entry(option_table, "gauss_weight_field",
+			&gauss_weight_field_name, " FIELD_NAME");
+		Option_table_add_string_entry(option_table, "mesh", &mesh_name,
+			" ELEMENT_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
+		Option_table_add_set_Cmiss_region(option_table, "region", root_region, &region);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
+		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			Cmiss_mesh_id mesh = 0;
+			if (mesh_name)
+			{
+				mesh = Cmiss_field_module_find_mesh_by_name(field_module, mesh_name);
+				if (!mesh)
+				{
+					display_message(ERROR_MESSAGE, "gfx create gauss_points:  Unknown mesh %s", mesh_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "gfx create gauss_points:  Must specify mesh");
+				return_code = 0;
+			}
+			Cmiss_nodeset_id gauss_points_nodeset = 0;
+			if (gauss_point_nodeset_name)
+			{
+				gauss_points_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, gauss_point_nodeset_name);
+				if (!gauss_points_nodeset)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx define field nodeset_sum:  Unable to find nodeset %s", gauss_point_nodeset_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx define field nodeset_sum:  Must specify gauss_point_nodeset");
+				return_code = 0;
+			}
+			Cmiss_field_stored_mesh_location_id gauss_location_field = 0;
+			if (gauss_location_field_name)
+			{
+				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, gauss_location_field_name);
+				if (field)
+				{
+					gauss_location_field = Cmiss_field_cast_stored_mesh_location(field);
+					Cmiss_field_destroy(&field);
+					if (!gauss_location_field)
+					{
+						display_message(ERROR_MESSAGE, "gfx create gauss_points:  Gauss location field %s is not element_xi valued", gauss_location_field_name);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "gfx create gauss_points:  No such field %s in region", gauss_location_field_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "gfx create gauss_points:  Must specify gauss_location_field");
+				return_code = 0;
+			}
+			Cmiss_field_finite_element_id gauss_weight_field = 0;
+			if (gauss_weight_field_name)
+			{
+				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, gauss_weight_field_name);
+				if (field)
+				{
+					gauss_weight_field = Cmiss_field_cast_finite_element(field);
+					Cmiss_field_destroy(&field);
+					if (!gauss_weight_field)
+					{
+						display_message(ERROR_MESSAGE, "gfx create gauss_points:  Gauss weight field %s is not scalar real finite_element", gauss_weight_field_name);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "gfx create gauss_points:  No such field %s in region", gauss_weight_field_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "gfx create gauss_points:  Must specify gauss_weight_field");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				return_code = Cmiss_mesh_create_gauss_points(mesh, gauss_points_nodeset,
+					first_identifier, gauss_location_field, gauss_weight_field);
+			}
+			Cmiss_field_finite_element_destroy(&gauss_weight_field);
+			Cmiss_field_stored_mesh_location_destroy(&gauss_location_field);
+			Cmiss_nodeset_destroy(&gauss_points_nodeset);
+			Cmiss_mesh_destroy(&mesh);
+			Cmiss_field_module_destroy(&field_module);
+		}
+		if (gauss_location_field_name)
+			DEALLOCATE(gauss_location_field_name);
+		if (gauss_weight_field_name)
+			DEALLOCATE(gauss_weight_field_name);
+		if (gauss_point_nodeset_name)
+			DEALLOCATE(gauss_point_nodeset_name);
+		if (mesh_name)
+			DEALLOCATE(mesh_name);
+		Cmiss_region_destroy(&region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_gauss_points.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}
+
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -5827,6 +5980,8 @@ Executes a GFX CREATE command.
 				Option_table_add_entry(option_table,"graphical_material_editor",NULL,
 					command_data_void,gfx_create_graphical_material_editor);
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+				Option_table_add_entry(option_table, "gauss_points", NULL,
+					(void *)command_data->root_region, gfx_create_gauss_points);
 #if defined (MOTIF_USER_INTERFACE)
 				Option_table_add_entry(option_table,"grid_field_calculator",NULL,
 					command_data_void,gfx_create_grid_field_calculator);
