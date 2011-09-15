@@ -192,7 +192,12 @@ public:
 		int return_code = 1;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (FE_field_get_FE_region(fe_field) != fe_region)
+		FE_region *compare_fe_region = fe_region;
+		if (FE_region_is_data_FE_region(fe_region))
+		{
+			 FE_region_get_immediate_master_FE_region(fe_region, &compare_fe_region);
+		}
+		if (FE_field_get_FE_region(fe_field) != compare_fe_region)
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_node_template_define_field.  "

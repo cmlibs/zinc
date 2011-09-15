@@ -3648,7 +3648,7 @@ struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 	new_node = (struct FE_node *)NULL;
 	if (fe_region && source && (-1 <= identifier))
 	{
-		if (fe_region->master_fe_region)
+		if (fe_region->master_fe_region && (!fe_region->top_data_hack))
 		{
 			FE_region_begin_change(fe_region);
 			new_node = FE_region_create_FE_node_copy(
@@ -3661,30 +3661,34 @@ struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
 			}
 			FE_region_end_change(fe_region);
 		}
-		else if (FE_node_get_FE_region(source) == fe_region)
+		else
 		{
-			number = identifier;
-			if (identifier < 0)
+			FE_region *source_fe_region = FE_node_get_FE_region(source);
+			if ((source_fe_region == fe_region) || (source_fe_region == fe_region->master_fe_region))
 			{
-				number = FE_region_get_next_FE_node_identifier(fe_region, 0);
-			}
-			new_node = CREATE(FE_node)(number, (struct FE_region *)NULL, source);
-			if (ADD_OBJECT_TO_LIST(FE_node)(new_node, fe_region->fe_node_list))
-			{
-				FE_REGION_FE_NODE_CHANGE(fe_region, new_node,
-					CHANGE_LOG_OBJECT_ADDED(FE_node), new_node);
+				number = identifier;
+				if (identifier < 0)
+				{
+					number = FE_region_get_next_FE_node_identifier(fe_region, 0);
+				}
+				new_node = CREATE(FE_node)(number, (struct FE_region *)NULL, source);
+				if (ADD_OBJECT_TO_LIST(FE_node)(new_node, fe_region->fe_node_list))
+				{
+					FE_REGION_FE_NODE_CHANGE(fe_region, new_node,
+						CHANGE_LOG_OBJECT_ADDED(FE_node), new_node);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_create_FE_node_copy.  node identifier in use.");
+					DESTROY(FE_node)(&new_node);
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_create_FE_node_copy.  node identifier in use.");
-				DESTROY(FE_node)(&new_node);
+				display_message(ERROR_MESSAGE, "FE_region_create_FE_node_copy.  "
+					"Source node is incompatible with region");
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_region_create_FE_node_copy.  "
-				"Source node is incompatible with region");
 		}
 	}
 	else
