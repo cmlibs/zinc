@@ -131,6 +131,7 @@ Minimisation::~Minimisation()
 int Minimisation::prepareOptimisation()
 {
 	int return_code = 1;
+	Cmiss_field_module_begin_change(field_module);
 	if (optimisation.independentFields.size() != independentFields.size())
 		return_code = 0;
 	if (optimisation.objectiveFields.size() != objectiveFields.size())
@@ -155,6 +156,7 @@ int Minimisation::prepareOptimisation()
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::prepareOptimisation() Failed");
 	}
+	Cmiss_field_module_end_change(field_module);
 	return return_code;
 }
 
@@ -206,10 +208,17 @@ int Minimisation::runOptimisation()
 int Minimisation::construct_dof_arrays()
 {
 	int return_code = 1;
-	delete[] dof_storage_array;
-	dof_storage_array = 0;
-	delete[] dof_initial_values;
-	dof_initial_values = 0;
+	if (dof_storage_array)
+	{
+		DEALLOCATE(dof_storage_array);
+		dof_storage_array = 0;
+	}
+	if (dof_initial_values)
+	{
+		DEALLOCATE(dof_initial_values);
+		dof_initial_values = 0;
+	}
+	total_dof = 0;
 	for (FieldVector::iterator iter = independentFields.begin();
 		iter != independentFields.end(); ++iter)
 	{
@@ -223,7 +232,7 @@ int Minimisation::construct_dof_arrays()
 			Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
 			Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
 			Cmiss_node_id node = 0;
-			while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+			while ((0 != (node = Cmiss_node_iterator_next_non_access(iterator))) && return_code)
 			{
 				if (FE_field_is_defined_at_node(fe_field, node))
 				{
@@ -231,7 +240,7 @@ int Minimisation::construct_dof_arrays()
 					{
 						int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
 							fe_field, component_number);
-						int number_of_versions = get_FE_node_field_component_number_of_derivatives(node,
+						int number_of_versions = get_FE_node_field_component_number_of_versions(node,
 							fe_field, component_number);
 						int total_number_of_values = number_of_versions*number_of_values;
 
@@ -242,20 +251,45 @@ int Minimisation::construct_dof_arrays()
 							get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
 						if (nodal_value_types)
 						{
-							REALLOCATE(dof_storage_array, dof_storage_array, FE_value *, total_dof + total_number_of_values);
-							REALLOCATE(dof_initial_values, dof_initial_values, FE_value, total_dof + total_number_of_values);
-							for (int version_number = 0; version_number < number_of_versions; ++version_number)
+							FE_value **temp_dof_storage_array;
+							if (REALLOCATE(temp_dof_storage_array, dof_storage_array, FE_value *, total_dof + total_number_of_values))
+							{
+								dof_storage_array = temp_dof_storage_array;
+							}
+							else
+							{
+								return_code = 0;
+							}
+							FE_value *temp_dof_initial_values;
+							if (REALLOCATE(temp_dof_initial_values, dof_initial_values, FE_value, total_dof + total_number_of_values))
+							{
+								dof_initial_values = temp_dof_initial_values;
+							}
+							else
+							{
+								return_code = 0;
+							}
+							for (int version_number = 0; (version_number < number_of_versions) && return_code; ++version_number)
 							{
 								for (int i = 0; i < number_of_values; i++)
 								{
-									total_dof++;
-									get_FE_nodal_FE_value_storage(node, fe_field, component_number,
+									if (get_FE_nodal_FE_value_storage(node, fe_field, component_number,
 										version_number, /*nodal_value_type*/nodal_value_types[i],
-										current_time, &(dof_storage_array[total_dof - 1]));
-									// get initial value from value storage pointer
-									dof_initial_values[total_dof - 1] = *dof_storage_array[total_dof - 1];
-									/*cout << dof_storage_array[total_dof - 1] << "   "
-											<< dof_initial_values[total_dof - 1] << endl;*/
+										current_time, &(dof_storage_array[total_dof])))
+									{
+										// get initial value from value storage pointer
+										dof_initial_values[total_dof] = *dof_storage_array[total_dof];
+										/*cout << dof_storage_array[total_dof - 1] << "   "
+												<< dof_initial_values[total_dof - 1] << endl;*/
+										total_dof++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE, "Cmiss_optimisation::construct_dof_arrays. "
+											"get_FE_nodal_FE_value_storage failed.");
+										return_code = 0;
+										break;
+									}
 								}
 							}
 							DEALLOCATE(nodal_value_types);
