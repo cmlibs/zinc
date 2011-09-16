@@ -65,7 +65,6 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Cmiss_graphics_render_type render_type,
 	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct Graphical_material *default_material,
 	struct MANAGER(GT_object) *object_list);
 /*******************************************************************************
 LAST MODIFIED : 6 December 2004

@@ -14698,7 +14698,6 @@ otherwise the wavefront obj file is read.
 							command_data->io_stream_package,
 							graphics_object_name, render_type, time, 
 							Material_package_get_material_manager(command_data->material_package),
-							Material_package_get_default_material(command_data->material_package),
 							command_data->glyph_manager);
 					}
 				}
