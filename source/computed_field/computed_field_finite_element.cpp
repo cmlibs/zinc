@@ -3219,7 +3219,7 @@ char *Computed_field_embedded::get_command_string()
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_create_embedded(
+Cmiss_field_id Cmiss_field_module_create_embedded(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_field_id embedded_location_field)
 {
@@ -3317,7 +3317,7 @@ and allows its contents to be modified.
 			if (embedded_location_field && source_field)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_create_embedded(field_modify->get_field_module(),
+					Cmiss_field_module_create_embedded(field_modify->get_field_module(),
 						source_field, embedded_location_field));
 			}
 			else

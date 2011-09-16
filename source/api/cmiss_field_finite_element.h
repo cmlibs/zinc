@@ -106,7 +106,7 @@ int Cmiss_field_finite_element_destroy(
  * find_mesh_location or stored mesh location fields.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_embedded(
+Cmiss_field_id Cmiss_field_module_create_embedded(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_field_id embedded_location_field);
 
