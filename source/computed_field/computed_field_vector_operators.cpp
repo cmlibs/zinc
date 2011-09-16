@@ -40,6 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <math.h>
+#include "api/cmiss_field_vector_operators.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
