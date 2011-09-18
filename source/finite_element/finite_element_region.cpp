@@ -6592,17 +6592,10 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 		{
 			return_code = 1;
 			// use highest dimension non-empty element list
-			int dimension;
-			struct LIST(FE_element) *element_list = NULL;
-			for (dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 1 <= dimension; --dimension)
-			{
-				struct LIST(FE_element) *element_list =
-					FE_region_get_element_list(fe_region, dimension);
-				if (NUMBER_IN_LIST(FE_element)(element_list))
-					break;
-			}
+			int dimension = FE_region_get_highest_dimension(fe_region);
 			if (dimension)
 			{
+				struct LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
 				FE_region_begin_change(master_fe_region);
 				smooth_element_data.time = time;
 				smooth_element_data.fe_field = fe_field;
