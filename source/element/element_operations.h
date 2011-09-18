@@ -116,9 +116,12 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
 /***************************************************************************//**
  * Create points in gauss_points_nodeset with embedded locations and weights
  * matching the gaussian quadrature points in all elements of mesh.
- * Currently limited to line/square/cube elements with 4 Gauss points per axis.
+ * Currently limited to line/square/cube elements with 1-4 Gauss points in each
+ * dimension.
  *
  * @param mesh  The mesh to create gauss points for.
+ * @param order  The 1-D polynomial order from 1 to 4, giving the number of
+ * Gauss points per element dimension.
  * @param gauss_points_nodeset  The nodeset to create gauss points in.
  * @param first_identifier  The minimum identifier to use for the gauss points.
  * @param gauss_location_field  Field to define at gauss points for storing
@@ -127,7 +130,7 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
  * real Gauss point weight.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh,
+int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 	Cmiss_nodeset_id gauss_points_nodeset, int first_identifier,
 	Cmiss_field_stored_mesh_location_id gauss_location_field,
 	Cmiss_field_finite_element_id gauss_weight_field);

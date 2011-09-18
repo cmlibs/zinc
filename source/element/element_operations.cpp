@@ -546,7 +546,7 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
 	return element_list;
 }
 
-int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh,
+int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 	Cmiss_nodeset_id gauss_points_nodeset, int first_identifier,
 	Cmiss_field_stored_mesh_location_id gauss_location_field,
 	Cmiss_field_finite_element_id gauss_weight_field)
@@ -571,22 +571,22 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh,
 		{ (+sqrt((3.0-2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0+sqrt(30.0))/72.0 },
 		{ (+sqrt((3.0+2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0-sqrt(30.0))/72.0 }
 	};
+	const int offset[] = { 0, 1, 3, 6 };
 	int return_code = 0;
 	Cmiss_region_id region = Cmiss_mesh_get_master_region_internal(mesh);
 	Cmiss_field_id gauss_location_field_base = Cmiss_field_stored_mesh_location_base_cast(gauss_location_field);
 	Cmiss_field_id gauss_weight_field_base = Cmiss_field_finite_element_base_cast(gauss_weight_field);
-	if (mesh && gauss_points_nodeset && (first_identifier >= 0) &&
+	if (mesh && (1 <= order) && (order <= 4) && gauss_points_nodeset && (first_identifier >= 0) &&
 		(Cmiss_nodeset_get_master_region_internal(gauss_points_nodeset) == region) &&
 		gauss_location_field && gauss_weight_field &&
 		(Cmiss_field_get_number_of_components(gauss_location_field_base) == 1))
 	{
 		int dimension = Cmiss_mesh_get_dimension(mesh);
-		const int ptCount = 4; // currently fixed
-		const int ptOffset = 6; // valid for 4 Gauss points;
+		const int order_offset = offset[order - 1];
 		int number_of_gauss_points = 1;
 		for (int i = 0; i < dimension; i++)
 		{
-			number_of_gauss_points *= ptCount;
+			number_of_gauss_points *= order;
 		}
 		FE_value *gauss_locations = new FE_value[number_of_gauss_points*dimension];
 		FE_value *gauss_weights = new FE_value[number_of_gauss_points];
@@ -596,10 +596,10 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh,
 			int shift_g = g;
 			for (int i =  0; i < dimension; i++)
 			{
-				int g1 = ptOffset + shift_g % ptCount;
+				int g1 = order_offset + shift_g % order;
 				gauss_locations[g*dimension + i] = GaussPt[g1].location;
 				gauss_weights[g] *= GaussPt[g1].weight;
-				shift_g /= ptCount;
+				shift_g /= order;
 			}
 		}
 		return_code = 1;

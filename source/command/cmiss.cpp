@@ -1711,14 +1711,16 @@ static int gfx_create_gauss_points(struct Parse_state *state,
 		char *gauss_weight_field_name = 0;
 		char *gauss_point_nodeset_name = 0;
 		char *mesh_name = 0;
+		int order = 4;
 		Cmiss_region_id region = Cmiss_region_access(root_region);
 		Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_help(option_table,
 			"Creates points at Gauss point locations in the elements of the mesh. "
 			"Nodes are created in the gauss_point_nodeset starting from first_identifier, "
 			"and setting the element_xi gauss_location and real gauss_weight fields. "
-			"Currently limited to line/square/cube elements with 4 Gauss points per axis.");
-		Option_table_add_int_positive_entry(option_table, "first_identifier",
+			"Currently limited to line/square/cube elements with order 1 to 4, giving "
+			"the number of Gauss points per element dimension.");
+		Option_table_add_int_non_negative_entry(option_table, "first_identifier",
 			&first_identifier);
 		Option_table_add_string_entry(option_table, "gauss_location_field",
 			&gauss_location_field_name, " FIELD_NAME");
@@ -1728,6 +1730,7 @@ static int gfx_create_gauss_points(struct Parse_state *state,
 			&gauss_weight_field_name, " FIELD_NAME");
 		Option_table_add_string_entry(option_table, "mesh", &mesh_name,
 			" ELEMENT_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
+		Option_table_add_int_positive_entry(option_table, "order", &order);
 		Option_table_add_set_Cmiss_region(option_table, "region", root_region, &region);
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
@@ -1818,7 +1821,7 @@ static int gfx_create_gauss_points(struct Parse_state *state,
 			}
 			if (return_code)
 			{
-				return_code = Cmiss_mesh_create_gauss_points(mesh, gauss_points_nodeset,
+				return_code = Cmiss_mesh_create_gauss_points(mesh, order, gauss_points_nodeset,
 					first_identifier, gauss_location_field, gauss_weight_field);
 			}
 			Cmiss_field_finite_element_destroy(&gauss_weight_field);
