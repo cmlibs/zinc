@@ -47,7 +47,19 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
 
-/**
+/***************************************************************************//**
+ * Creates a field returning the scalar real determinant of a square matrix
+ * source field. Only supports up to 3x3 matrix.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field supplying square matrix up to 3x3. May only have
+ * 1, 4 or 9 components.
+ * @return  Newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_determinant(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+
+/***************************************************************************//**
  * Creates a field returning the N eigenvalues of symmetric N*N component source
  * field.
  *
@@ -59,7 +71,7 @@ Cmiss_field_id Cmiss_field_module_create_eigenvalues(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
-/**
+/***************************************************************************//**
  * Creates a field returning the N, N-dimensional eigenvectors computed with the
  * source eigenvalues field. Sets the number of components equal to N*N, where
  * N is the number of components in the <eigenvalues_field>.
@@ -72,7 +84,7 @@ Cmiss_field_id Cmiss_field_module_create_eigenvectors(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id eigenvalues_field);
 
-/**
+/***************************************************************************//**
  * Creates a field returning the inverse of N*N symmetric matrix valued source
  * field.
  *
@@ -84,7 +96,7 @@ Cmiss_field_id Cmiss_field_module_create_matrix_invert(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
-/**
+/***************************************************************************//**
  * Creates a field returning the values resulting from matrix multiplication
  * <source_field1> x <source_field2>, with <number_of_rows> rows in both
  * <source_field1> and the result. From the <number_of_rows> the columns in
@@ -130,7 +142,7 @@ Cmiss_field_id Cmiss_field_module_create_projection(
 	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, Cmiss_field_id projection_matrix_field);
 
-/**
+/***************************************************************************//**
  * Creates a field returning the transpose of N*M matrix source_field.
  * The source_number_of_rows is specified; source_number_of_columns is computed
  * as source_field->number_of_components / <source_number_of_rows>;

@@ -261,6 +261,7 @@ Cmiss_field_module_create_or
 Cmiss_field_module_create_xor
 
 /* api/cmiss_field_matrix_operators.h */
+Cmiss_field_module_create_determinant
 Cmiss_field_module_create_eigenvalues
 Cmiss_field_module_create_eigenvectors
 Cmiss_field_module_create_matrix_invert

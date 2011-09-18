@@ -127,6 +127,204 @@ components, where n is a positive integer. If matrix is square, n is returned.
 
 namespace {
 
+char computed_field_determinant_type_string[] = "determinant";
+
+class Computed_field_determinant : public Computed_field_core
+{
+public:
+	Computed_field_determinant() : Computed_field_core()
+	{
+	};
+
+	virtual ~Computed_field_determinant() { }
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_determinant();
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_determinant_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		return (0 != dynamic_cast<Computed_field_determinant*>(other_field));
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_determinant::evaluate_cache_at_location(
+    Field_location* location)
+{
+	int return_code;
+
+	ENTER(Computed_field_determinant::evaluate_cache_at_location);
+	if (field && location)
+	{
+		if (0 == location->get_number_of_derivatives())
+		{
+			return_code = Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
+			if (return_code)
+			{
+				FE_value *source_values = field->source_fields[0]->values;
+				switch (field->source_fields[0]->number_of_components)
+				{
+				case 1:
+					field->values[0] = source_values[0];
+					break;
+				case 4:
+					field->values[0] = source_values[0]*source_values[3] - source_values[1]*source_values[2];
+					break;
+				case 9:
+					field->values[0] =
+						source_values[0]*(source_values[4]*source_values[8] - source_values[5]*source_values[7]) +
+						source_values[1]*(source_values[5]*source_values[6] - source_values[3]*source_values[8]) +
+						source_values[2]*(source_values[3]*source_values[7] - source_values[4]*source_values[6]);
+					break;
+				default:
+					return_code = 0;
+					break;
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_determinant::evaluate_cache_at_location.  "
+				"Cannot calculate derivatives of determinant");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_determinant::evaluate_cache_at_location.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_determinant::evaluate_cache_at_location */
+
+int Computed_field_determinant::list()
+{
+	int return_code = 0;
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+/** Returns allocated command string for reproducing field. Includes type. */
+char *Computed_field_determinant::get_command_string()
+{
+	char *command_string = 0;
+	if (field)
+	{
+		int error = 0;
+		append_string(&command_string, computed_field_determinant_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		append_string(&command_string, field->source_fields[0]->name, &error);
+	}
+	return (command_string);
+}
+
+} //namespace
+
+Cmiss_field_id Cmiss_field_module_create_determinant(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field)
+{
+	Cmiss_field_id field = 0;
+	if (field_module && source_field &&
+		Computed_field_is_square_matrix(source_field, (void *)NULL) &&
+		(Cmiss_field_get_number_of_components(source_field) <= 9))
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_determinant());
+	}
+	return (field);
+}
+
+/***************************************************************************//**
+ * Command modifier function which converts field into type 'determinant'
+ * (if it is not already) and allows its contents to be modified.
+ */
+int define_Computed_field_type_determinant(struct Parse_state *state,
+	void *field_modify_void, void *computed_field_matrix_operators_package_void)
+{
+	int return_code;
+
+	ENTER(define_Computed_field_type_determinant);
+	USE_PARAMETER(computed_field_matrix_operators_package_void);
+	Computed_field_modify_data *field_modify =
+		reinterpret_cast<Computed_field_modify_data*>(field_modify_void);
+	if (state && field_modify)
+	{
+		return_code = 1;
+		Cmiss_field_id source_field = 0;
+		if (NULL != field_modify->get_field())
+		{
+			Computed_field_determinant *determinant_core =
+				dynamic_cast<Computed_field_determinant*>(field_modify->get_field()->core);
+			if (determinant_core)
+			{
+				source_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
+			}
+		}
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Creates a field returning the scalar real determinant of a square matrix. "
+			"Only supports 1, 4 (2x2) and 9 (3x3) component source fields.");
+		struct Set_Computed_field_conditional_data set_source_field_data =
+		{
+			Computed_field_is_square_matrix,
+			/*user_data*/0,
+			field_modify->get_field_manager()
+		};
+		Option_table_add_entry(option_table, "field", &source_field,
+			&set_source_field_data, set_Computed_field_conditional);
+		return_code = Option_table_multi_parse(option_table, state);
+		if (return_code)
+		{
+			return_code = field_modify->update_field_and_deaccess(
+				Cmiss_field_module_create_determinant(field_modify->get_field_module(),
+					source_field));
+		}
+		DESTROY(Option_table)(&option_table);
+		if (source_field)
+		{
+			Cmiss_field_destroy(&source_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_determinant.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+namespace {
+
 char computed_field_eigenvalues_type_string[] = "eigenvalues";
 
 class Computed_field_eigenvalues : public Computed_field_core
@@ -3344,6 +3542,11 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_matrix_operators);
 	if (computed_field_package)
 	{
+		return_code =
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_determinant_type_string,
+				define_Computed_field_type_determinant,
+				computed_field_matrix_operators_package);
 		return_code =
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvalues_type_string,
