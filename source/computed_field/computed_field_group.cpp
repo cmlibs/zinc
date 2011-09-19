@@ -1243,7 +1243,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		Cmiss_nodeset_group_id nodeset_group = Cmiss_field_node_group_get_nodeset(data_group);
 		return_code = Cmiss_nodeset_group_remove_all_nodes(nodeset_group);
 		Cmiss_nodeset_group_destroy(&nodeset_group);
-		check_subobject_group_dependency(local_node_group->core);
+		check_subobject_group_dependency(local_data_group->core);
 		Computed_field_changed(this->field);
 		Cmiss_field_node_group_destroy(&data_group);
 	}
