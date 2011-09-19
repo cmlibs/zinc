@@ -236,11 +236,19 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	return return_code;
 }
 
-int Cmiss_optimisation_access_next_independent_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address)
+Cmiss_field_id Cmiss_optimisation_get_first_independent_field(
+	Cmiss_optimisation_id optimisation)
 {
-	if (optimisation && field_address)
-		return optimisation->accessNextIndependentField(field_address);
+	if (optimisation)
+		return optimisation->getFirstIndependentField();
+	return 0;
+}
+
+Cmiss_field_id Cmiss_optimisation_get_next_independent_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field)
+{
+	if (optimisation && ref_field)
+		return optimisation->getNextIndependentField(ref_field);
 	return 0;
 }
 
@@ -260,11 +268,19 @@ int Cmiss_optimisation_remove_independent_field(
 	return 0;
 }
 
-int Cmiss_optimisation_access_next_objective_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address)
+Cmiss_field_id Cmiss_optimisation_get_first_objective_field(
+	Cmiss_optimisation_id optimisation)
 {
-	if (optimisation && field_address)
-		return optimisation->accessNextObjectiveField(field_address);
+	if (optimisation)
+		return optimisation->getFirstObjectiveField();
+	return 0;
+}
+
+Cmiss_field_id Cmiss_optimisation_get_next_objective_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field)
+{
+	if (optimisation && ref_field)
+		return optimisation->getNextObjectiveField(ref_field);
 	return 0;
 }
 

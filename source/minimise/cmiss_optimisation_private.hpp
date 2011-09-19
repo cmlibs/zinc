@@ -127,28 +127,35 @@ public:
 		return 1;
 	}
 
-	int accessNextIndependentField(Cmiss_field_id *field_address) const
+	Cmiss_field_id getFirstIndependentField() const
 	{
+		Cmiss_field_id field = 0;
 		FieldList::const_iterator iter = independentFields.begin();
-		if (*field_address)
-		{
-			while (iter != independentFields.end())
-			{
-				if (*iter == *field_address)
-				{
-					Cmiss_field_destroy(field_address);
-					++iter;
-					break;
-				}
-				++iter;
-			}
-		}
 		if (iter != independentFields.end())
 		{
-			*field_address = Cmiss_field_access(*iter);
-			return 1;
+			field = Cmiss_field_access(*iter);
 		}
-		return 0;
+		return field;
+	}
+
+	Cmiss_field_id getNextIndependentField(Cmiss_field_id ref_field) const
+	{
+		Cmiss_field_id field = 0;
+		FieldList::const_iterator iter = independentFields.begin();
+		while (iter != independentFields.end())
+		{
+			if (*iter == ref_field)
+			{
+				++iter;
+				if (iter != independentFields.end())
+				{
+					field = Cmiss_field_access(*iter);
+				}
+				break;
+			}
+			++iter;
+		}
+		return field;
 	}
 
 	int addIndependentField(Cmiss_field_id field)
@@ -184,28 +191,35 @@ public:
 		return 0;
 	}
 
-	int accessNextObjectiveField(Cmiss_field_id *field_address) const
+	Cmiss_field_id getFirstObjectiveField() const
 	{
+		Cmiss_field_id field = 0;
 		FieldList::const_iterator iter = objectiveFields.begin();
-		if (*field_address)
-		{
-			while (iter != objectiveFields.end())
-			{
-				if (*iter == *field_address)
-				{
-					Cmiss_field_destroy(field_address);
-					++iter;
-					break;
-				}
-				++iter;
-			}
-		}
 		if (iter != objectiveFields.end())
 		{
-			*field_address = Cmiss_field_access(*iter);
-			return 1;
+			field = Cmiss_field_access(*iter);
 		}
-		return 0;
+		return field;
+	}
+
+	Cmiss_field_id getNextObjectiveField(Cmiss_field_id ref_field) const
+	{
+		Cmiss_field_id field = 0;
+		FieldList::const_iterator iter = objectiveFields.begin();
+		while (iter != objectiveFields.end())
+		{
+			if (*iter == ref_field)
+			{
+				++iter;
+				if (iter != objectiveFields.end())
+				{
+					field = Cmiss_field_access(*iter);
+				}
+				break;
+			}
+			++iter;
+		}
+		return field;
 	}
 
 	int addObjectiveField(Cmiss_field_id field)

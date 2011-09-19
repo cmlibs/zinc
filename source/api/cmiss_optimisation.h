@@ -268,27 +268,36 @@ int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	enum Cmiss_optimisation_attribute attribute, double value);
 
 /***************************************************************************//**
- * Get an independent field from the optimisation problem description. Updates
- * a NULL field handle to the first independent field, or an independent field
- * handle to the next one or NULL if no more. The old field handle is destroyed.
- * Use this function to iterate over the independent fields:
+ * Get the first independent field from the optimisation problem description.
+ * @see Cmiss_optimisation_get_next_independent_field
  *
- * Cmiss_field_id field = NULL;
- * while (Cmiss_optimisation_access_next_independent_field(optimisation, &field))
+ * @param optimisation  Handle to the optimisation object to query.
+ * @return  Handle to first independent field or NULL if none. Up to caller to
+ * destroy the returned handle.
+ */
+Cmiss_field_id Cmiss_optimisation_get_first_independent_field(
+	Cmiss_optimisation_id optimisation);
+
+/***************************************************************************//**
+ * Get the next independent field in the optimisation problem description after
+ * the supplied ref_field. Use to iterate over the independent fields, taking
+ * care to destroy all returned field handles exactly once:
+ *
+ * Cmiss_field_id field = Cmiss_optimisation_get_first_objective_field(optimisation);
+ * while (field)
  * {
+ *    Cmiss_field_id next_field = Cmiss_optimisation_get_next_objective_field(optimisation, field);
+ *    Cmiss_field_destroy(&field);
+ *    field = next_field;
  * }
  *
  * @param optimisation  Handle to the optimisation object to query.
- * @param field_address  Address of field to update to next. Field must be NULL
- * to advance to first, or a referencing handle to another independent field in
- * the problem. Old field handle is destroyed when updated. The updated field
- * handle must be destroyed if not passed to this function.
- * @return  1 if the next field is accessed, 0 if there is no other field, or
- * on failure including if field pointed to by field_address is not an
- * independent field of this optimisation object.
+ * @param ref_field  Handle to an independent field from the optimisation.
+ * @return  Handle to next independent field after ref_field or NULL if none.
+ * Up to caller to destroy the returned handle.
  */
-int Cmiss_optimisation_access_next_independent_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address);
+Cmiss_field_id Cmiss_optimisation_get_next_independent_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field);
 
 /***************************************************************************//**
  * Add an independent field to the given optimisation problem description.
@@ -317,27 +326,36 @@ int Cmiss_optimisation_remove_independent_field(
 	Cmiss_optimisation_id optimisation, Cmiss_field_id field);
 
 /***************************************************************************//**
- * Get an objective field from the optimisation problem description. Updates
- * a NULL field handle to the first objective field, or an objective field
- * handle to the next one or NULL if no more. The old field handle is destroyed.
- * Use this function to iterate over the objective fields:
+ * Get the first objective field from the optimisation problem description.
+ * @see Cmiss_optimisation_get_next_objective_field
  *
- * Cmiss_field_id field = NULL;
- * while (Cmiss_optimisation_access_next_objective_field(optimisation, &field))
+ * @param optimisation  Handle to the optimisation object to query.
+ * @return  Handle to first objective field or NULL if none. Up to caller to
+ * destroy the returned handle.
+ */
+Cmiss_field_id Cmiss_optimisation_get_first_objective_field(
+	Cmiss_optimisation_id optimisation);
+
+/***************************************************************************//**
+ * Get the next objective field in the optimisation problem description after
+ * the supplied ref_field. Use to iterate over the objective fields, taking
+ * care to destroy all returned field handles exactly once:
+ *
+ * Cmiss_field_id field = Cmiss_optimisation_get_first_objective_field(optimisation);
+ * while (field)
  * {
+ *    Cmiss_field_id next_field = Cmiss_optimisation_get_next_objective_field(optimisation, field);
+ *    Cmiss_field_destroy(&field);
+ *    field = next_field;
  * }
  *
  * @param optimisation  Handle to the optimisation object to query.
- * @param field_address  Address of field to update to next. Field must be NULL
- * to advance to first, or a referencing handle to another objective field in
- * the problem. Old field handle is destroyed when updated. The updated field
- * handle must be destroyed if not passed to this function.
- * @return  1 if the next field is accessed, 0 if there is no other field, or
- * on failure including if field pointed to by field_address is not an
- * objective field of this optimisation object.
+ * @param ref_field  Handle to an objective field from the optimisation.
+ * @return  Handle to next objective field after ref_field or NULL if none.
+ * Up to caller to destroy the returned handle.
  */
-int Cmiss_optimisation_access_next_objective_field(
-	Cmiss_optimisation_id optimisation, Cmiss_field_id *field_address);
+Cmiss_field_id Cmiss_optimisation_get_next_objective_field(
+	Cmiss_optimisation_id optimisation, Cmiss_field_id ref_field);
 
 /***************************************************************************//**
  * Add an objective field to the optimisation problem description.
