@@ -1,48 +1,46 @@
 CMGUI Scene Editor Window
 =========================
 
-.. _cylinders: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsUsingLinesAndCylinders
 .. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
 
 
-The scene editor is where you control how visualizations appear in the graphics window.  From this window you can select which graphical representations and settings are displayed.  You can add, remove, and edit visual elements such as lines, glyphs or surfaces; apply materials or spectra to graphical settings; and alter the order in which graphical representations are drawn.  The window itself is broken into three main panels - the scene objects list, graphical settings list, settings editor (Figure 1)
+The scene editor is used to control how visualizations appear in the graphics window. From this window you can:
 
-.. figure:: sceneEditor_Glyphs1.png
+- Toggle visibility for any part of the region tree.
+- Toggle visibility of any individual graphics setting for a region.
+- Add, remove, and edit graphics.
+- Alter the order in which graphical settings are drawn.
+
+The window itself is broken into four main areas; region tree, transformation controls, graphics list, and settings editor (Figure 1).
+
+.. figure:: sceneEditorWindow.png
    :figwidth: image
    :align: center
 
    **Figure 1: The scene editor.**
-   
-| 
-| 
 
-Scene object list
------------------
-
-| At the top of the scene objects list is a drop-down menu which usually contains the word *default*.  This is the scene selection menu, which you can use to swap between scenes.  The *default* scene is present when you load CMGUI, and is the default scene in which scene objects are created.  There are *up* and *down* buttons to the right of this menu, which allow you to change the order of the objects in the *scene object list*.  This is important when using transparent objects to ensure they are correctly rendered.
-
+|
 | 
 
-Below the *scene object list* is the *transformation* button.  This button will open up a set of controls that allow you to spatially manipulate the selected scene object.  From these controls you can scale, translate or rotate the object within the scene.
+Region tree
+-----------
 
-If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretization options for the selected object.  The discretization options allow you to change the level of detail objects are represented with in the graphics window (Figure 2).
+At the left hand side of the Scene Editor window is the region tree, where all regions are listed. Each region has a visibility toggle, controlled by clicking on the box alongside its name. All ticked regions will be visible in the graphics window, provided that they have some visible graphical settings. Regions may contain sub-regions, allowing powerful control over visibility of the parts of a complex model.
 
-.. figure:: general_settings_discretization.png
-   :figwidth: image
-   :align: center
 
-   **Figure 2: The general settings -** A) This is the general settings panel, showing the settings available.  B) A simple cube rendered in wire-frame to show the effect of the *element discretization*.  The three cubes have 2*2*2, 4*4*4 (default), and 10*10*10 discretizations from left to right.  C) The effect of *circle discretization* on the display of `cylinders`_.  These three cubes are rendered with cylinder edges, with the circle discretization set at 3, 6 (default), and 20 from left to right.
-   
-| 
+Alongside the region tree are the transformation settings, graphics list, and settings editor. These are used to control and edit the visualisations of the currently selected region in the region tree.
 
-Graphical settings list
------------------------
+NOTE:
+  Previous versions of cmgui Also had a "General Settings" section in this window, which was used to set the level of detail (discretization) of objects. This system has been replaced by the new tessellation object. You are now able to use different levels of detail for different graphics, allowing you to choose the most appropriate for each. The tessellation is set for each graphical setting using the settings editor.
 
-Below the transformation and general settings buttons is the *graphical settings list*.  This is where the visual representations (graphical settings) of the currently selected scene object are listed.  This panel allows creation, deletion, visibility switching (on or off) and re-ordering of these visual representations.
 
-| 
+Graphics list
+-------------
+
+Below the transformation and general settings buttons is the *graphics list*.  This is where the visual representations (graphical settings) of the currently selected region are listed.  This panel allows creation, deletion, visibility switching (on or off) and re-ordering of these visual representations.
+
 
 Settings editor
 ---------------
 
-Below the *graphical settings list* is the *settings editor* where each graphical setting can be edited.  When a graphical setting is selected from the list, all of its editable properties appear in this area.  The range of editable properties will vary depending on what sort of `graphical setting`_ is currently selected.
+Below the *graphics list* is the *settings editor* where each graphical setting can be edited.  When a graphical setting is selected from the list, all of its editable properties appear in this area.  The range of editable properties will vary depending on the type of `graphical setting`_ currently selected.

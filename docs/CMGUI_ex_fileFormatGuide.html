@@ -47,7 +47,7 @@
 <p>Cmgui EX files are human-readable text files which are usually created by export from cm or OpenCMISS. They can also be created by scripts or by hand. Due to their complexity, particularly in defining element interpolation, editing an existing file is usually the easiest way to create new data files by hand.</p>
 <p>The format has been around for many years and has several exacting rules which can catch the unwary:</p>
 <ol class="arabic simple">
-<li>Main blocks of the file begin with tokens such as &quot;Group name&quot;, &quot;Shape&quot;, &quot;#Fields&quot;, &quot;Node&quot;, &quot;Element&quot; which must be written in full with exact capitalisation. Within these blocks are further tokens indicating sub-blocks of data to be read, each with their own rigid rules.</li>
+<li>Main blocks of the file begin with tokens such as &quot;Group name&quot;, &quot;Shape&quot;, &quot;#Fields&quot;, &quot;Node&quot;, &quot;Element&quot; which must be written in full with exact capitalization. Within these blocks are further tokens indicating sub-blocks of data to be read, each with their own rigid rules.</li>
 <li>The characters used to separate tokens, identifiers, parameters and other data are quite inconsistent and could be white space, commas, colons, full stops (periods), equal signs and so on. In each case the precise character must be used. Whitespace separators generally includes any number of spaces, tabs, end of line and line feed characters. Non-whitespace separator characters can generally be surrounded by whitespace.</li>
 <li>All array indices start at 1, but scale factor index 0 has the special meaning of using unit scale factor value, 1.0.</li>
 <li>Node and element identifiers must be positive integers.</li>

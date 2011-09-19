@@ -23,7 +23,7 @@ Cmgui EX files are human-readable text files which are usually created by export
 
 The format has been around for many years and has several exacting rules which can catch the unwary:
 
-1. Main blocks of the file begin with tokens such as "Group name", "Shape", "#Fields", "Node", "Element" which must be written in full with exact capitalisation. Within these blocks are further tokens indicating sub-blocks of data to be read, each with their own rigid rules.
+1. Main blocks of the file begin with tokens such as "Group name", "Shape", "#Fields", "Node", "Element" which must be written in full with exact capitalization. Within these blocks are further tokens indicating sub-blocks of data to be read, each with their own rigid rules.
 
 2. The characters used to separate tokens, identifiers, parameters and other data are quite inconsistent and could be white space, commas, colons, full stops (periods), equal signs and so on. In each case the precise character must be used. Whitespace separators generally includes any number of spaces, tabs, end of line and line feed characters. Non-whitespace separator characters can generally be surrounded by whitespace.
 

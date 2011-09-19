@@ -13,11 +13,15 @@ Graphical settings in CMGUI
 General description of graphical settings
 -----------------------------------------
 
-Graphical settings are the building blocks used to create any visualization displayed in the CMGUI `graphics window`_.  They are created, edited, re-ordered and deleted from within the `scene editor`_, or via the command line.  All graphical settings have the following settings in common:
+Graphical settings are the building blocks used to create any visualization displayed in the CMGUI `graphics window`_. They are created, edited, re-ordered and deleted from within the `scene editor`_, or via the command line.  Most graphical settings have the following settings in common:
 
 * Name:  This allows you to set the name of the graphical setting.
 
-* Coordinate field:  This setting has a check box, which activates a drop-down menu showing a list of fields that can be selected as the coordinate field for the selected graphical setting.
+* Coordinate System: This setting can be used to render the graphical setting according to a range of different coordinate systems. This is useful for creating "static" overlays of data on visualizations.
+
+* Coordinate field: This setting has a check box, which activates a drop-down menu showing a list of fields that can be selected as the coordinate field for the selected graphical setting.
+
+* Tessellation: Tessellation settings are used to set the level of detail of an object. The only graphics which do not have a tessellation setting are node points, element points, and point).
 
 * Select mode: This drop-down menu allows you to select different selection behaviours for the graphical setting:
 
@@ -49,11 +53,13 @@ The eight types of graphical settings
   Node points are used to visualize nodes.  You can use `glyphs`_ to represent node points.  There are a range of built-in glyphs in CMGUI, and it is possible to create custom glyphs as well.  *Node points* graphical settings have the following settings in addition to the common ones listed above:
   
   * Glyph: this drop-down menu allows you to choose the glyph that will be rendered at the node points.
-  * Centre: this box allows you to offset the origin of the glyph in order to alter its placement at the node point.
+  * Offset: this box allows you to offset the origin of the glyph in order to alter its placement at the node point.
   * Base glyph size: This box allows you to enter a size (x,y,z) for the glyph in the same scale as the coordinate system for the region.
   * Orientation/Scale: This check box enables a drop-down menu that allows selection of the field that the glyphs will be oriented and scaled according to.
   * Scale factors:  This box allows you to enter how each dimension scales according to the orientation/scale field value.
   * Variable scale: This check box enables a drop-down menu that allows selection of the field that acts as the variable scale field.  For more information on this and other of the *node points* options, see the document on working with `glyphs`_.
+  * Label: use this drop-down menu allows you to add field-value labels to the glyphs.
+  
 
 
 * **data_points**
@@ -67,6 +73,7 @@ The eight types of graphical settings
 
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-directions.
+  * Tessellation: this drop-down menu allows you to choose a level of tessellation for the graphical setting. You can use the edit button beside the drop-down menu to create new tessellation settings.
   * Width: this allows you to specify the width of the lines in pixels.  This is a constant width that does not scale according to the zoom level.
 
 
@@ -86,7 +93,8 @@ The eight types of graphical settings
   
   * Exterior: This check box will automatically only render surfaces on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
-  * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces.  Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *element discretization* setting in the *General settings*.
+  * Tessellation: this drop-down menu allows you to choose a level of tessellation for the graphical setting. You can use the edit button beside the drop-down menu to create new tessellation settings. This setting replaces the old element discretization setting.
+  * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces.  Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *tessellation* setting.
   * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
 
 
@@ -120,6 +128,8 @@ The eight types of graphical settings
     * Face: This check box enables a drop-down menu that allows you to choose on which faces element points are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
     
   * Xi discretization mode: this drop down menu allows you to select the method by which element points are distributed across the element.
+  
+  * 
 
 * **streamlines**
   
