@@ -420,8 +420,8 @@ protected:
 	int access_count;
 
 	Cmiss_nodeset(Cmiss_field_node_group_id group) :
-		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
-			Computed_field_get_region(Cmiss_field_node_group_base_cast(group))))),
+		fe_region(ACCESS(FE_region)(
+			Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_region)),
 		group(group),
 		access_count(1)
 	{
@@ -632,6 +632,8 @@ protected:
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 		FE_region *node_fe_region = FE_node_get_FE_region(node);
+		if (FE_region_is_data_FE_region(master_fe_region))
+			node_fe_region = FE_region_get_data_FE_region(node_fe_region);
 		return (node_fe_region == master_fe_region);
 	}
 
