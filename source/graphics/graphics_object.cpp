@@ -3799,8 +3799,7 @@ Allocates memory and assigns fields for a graphics object.
 	if (name)
 	{
 		if (ALLOCATE(object, gtObject, 1) &&
-			(object->name = duplicate_string(name)) &&
-			(object->selected_graphic_list = CREATE(LIST(Selected_graphic))()))
+			(object->name = duplicate_string(name)))
 		{
 			object->select_mode=GRAPHICS_NO_SELECT;
 			object->times = (float *)NULL;
@@ -3880,7 +3879,6 @@ Allocates memory and assigns fields for a graphics object.
 					display_message(ERROR_MESSAGE,
 						"CREATE(GT_object).  Insufficient memory");
 				}
-				DESTROY(LIST(Selected_graphic))(&(object->selected_graphic_list));
 				DEALLOCATE(object->name);
 				DEALLOCATE(object);
 			}
@@ -3933,7 +3931,6 @@ and sets <*object> to NULL.
 		else
 		{
 			/* clean up times and primitives */
-			DESTROY(LIST(Selected_graphic))(&(object->selected_graphic_list));
 			for (i=object->number_of_times;0<i;i--)
 			{
 				GT_object_remove_primitives_at_time_number(object, i,
@@ -6887,140 +6884,6 @@ This function enables a custom, per compile, labelling for a graphics object
 
 	return (return_code);
 } /* GT_object_set_glyph_labels_function */
-
-int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 18 February 2000
-
-DESCRIPTION :
-Clears the list of selected primitives and subobjects in <graphics_object>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_object_clear_selected_graphic_list);
-	if (graphics_object)
-	{
-		return_code=REMOVE_ALL_OBJECTS_FROM_LIST(Selected_graphic)(
-			graphics_object->selected_graphic_list);
-		GT_object_changed(graphics_object);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_clear_selected_graphic_list.  Invalid graphics object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_clear_selected_graphic_list */
-
-int GT_object_select_graphic(struct GT_object *graphics_object,int number,
-	struct Multi_range *subranges)
-/*******************************************************************************
-LAST MODIFIED : 7 July 2000
-
-DESCRIPTION :
-Selects graphics with the object_name <number> in <graphics_object>, with
-optional <subranges> narrowing down the selection. Selected objects will be
-rendered with the selected/highlight material.
-Replaces any current selection with the same <number>.
-Iff the function is successful the <subranges> will be owned by the
-graphics_object.
-==============================================================================*/
-{
-	int return_code;
-	struct Selected_graphic *selected_graphic;
-
-	ENTER(GT_object_select_graphic);
-	return_code=0;
-	if (graphics_object&&(GRAPHICS_NO_SELECT != graphics_object->select_mode))
-	{
-		/* clear current selected_graphic for number */
-		selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-			number,graphics_object->selected_graphic_list);
-		if (selected_graphic)
-		{
-			REMOVE_OBJECT_FROM_LIST(Selected_graphic)(selected_graphic,
-				graphics_object->selected_graphic_list);
-		}
-		selected_graphic=CREATE(Selected_graphic)(number);
-		if (selected_graphic)
-		{
-			if (((!subranges)||Selected_graphic_set_subranges(selected_graphic,
-				subranges))&&ADD_OBJECT_TO_LIST(Selected_graphic)(selected_graphic,
-					graphics_object->selected_graphic_list))
-			{
-				GT_object_changed(graphics_object);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_object_select_graphic.  Error selecting graphic");
-				DESTROY(Selected_graphic)(&selected_graphic);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_object_select_graphic.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_select_graphic.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_select_graphic */
-
-int GT_object_is_graphic_selected(struct GT_object *graphics_object,int number,
-	struct Multi_range **subranges)
-/*******************************************************************************
-LAST MODIFIED : 18 February 2000
-
-DESCRIPTION :
-Returns true if graphics with the given <number> are selected in
-<graphics_object>, and if so, its selected subranges are returned with it. The
-returned subranges (which can be NULL if there are none) are for short-term
-viewing only as they belong the the Selected_graphic containing them.
-==============================================================================*/
-{
-	int return_code;
-	struct Selected_graphic *selected_graphic;
-
-	ENTER(GT_object_is_graphic_selected);
-	if (graphics_object&&subranges)
-	{
-		/* clear current selected_graphic for number */
-		selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-			number,graphics_object->selected_graphic_list);
-		if (selected_graphic)
-		{
-			return_code=1;
-			*subranges=Selected_graphic_get_subranges(selected_graphic);
-		}
-		else
-		{
-			return_code=0;
-			*subranges=(struct Multi_range *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_is_graphic_selected.  Invalid argument(s)");
-		return_code=0;
-		*subranges=(struct Multi_range *)NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_is_graphic_selected */
 
 struct Graphical_material *get_GT_object_default_material
 	(struct GT_object *graphics_object)

@@ -1296,40 +1296,6 @@ Sets the glyph_mirror_mode of the <graphics_object> to true or false.
 ???RC temporary until we have a separate struct Glyph.
 ==============================================================================*/
 
-int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2000
-
-DESCRIPTION :
-Clears the list of selected primitives and subobjects in <graphics_object>.
-==============================================================================*/
-
-int GT_object_select_graphic(struct GT_object *graphics_object,int number,
-	struct Multi_range *subranges);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2000
-
-DESCRIPTION :
-Selects graphics with the object_name <number> in <graphics_object>, with
-optional <subranges> narrowing down the selection. Selected objects will be
-rendered with the selected/highlight material.
-Replaces any current selection with the same <number>.
-Iff the function is successful the <subranges> will be owned by the
-graphics_object.
-==============================================================================*/
-
-int GT_object_is_graphic_selected(struct GT_object *graphics_object,int number,
-	struct Multi_range **subranges);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2000
-
-DESCRIPTION :
-Returns true if graphics with the given <number> are selected in
-<graphics_object>, and if so, its selected subranges are returned with it. The
-returned subranges (which can be NULL if there are none) are for short-term
-viewing only as they belong the the Selected_graphic containing them.
-==============================================================================*/
-
 struct Graphical_material *get_GT_object_default_material(
 	struct GT_object *graphics_object);
 /*******************************************************************************

@@ -3227,8 +3227,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									}
 									/* work out if subobjects selected  */
 									selected_name_ranges=(struct Multi_range *)NULL;
-									name_selected=GT_object_is_graphic_selected(object,
-										glyph_set->object_name,&selected_name_ranges);
 									draw_glyphsetGL(interpolate_glyph_set->number_of_points,
 										interpolate_glyph_set->point_list,
 										interpolate_glyph_set->axis1_list,
@@ -3244,7 +3242,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										/*label_density*/NULL,
 										material, secondary_material, spectrum, 
 										interpolate_glyph_set->font,
-										//draw_selected,name_selected,selected_name_ranges,
 										draw_selected, renderer->highlight_functor,
 										renderer, glyph_set->object_name,
 										&lighting_off);
@@ -3265,8 +3262,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								}
 								/* work out if subobjects selected  */
 								selected_name_ranges=(struct Multi_range *)NULL;
-								name_selected=GT_object_is_graphic_selected(object,
-									glyph_set->object_name,&selected_name_ranges);
 								draw_glyphsetGL(glyph_set->number_of_points,
 									glyph_set->point_list, glyph_set->axis1_list,
 									glyph_set->axis2_list, glyph_set->axis3_list,
@@ -3277,7 +3272,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									glyph_set->label_bounds, glyph_set->label_density_list,
 									material, secondary_material, 
 									spectrum, glyph_set->font, 
-									//draw_selected,name_selected,selected_name_ranges,
 									draw_selected, renderer->highlight_functor,
 									renderer, glyph_set->object_name,
 									&lighting_off);
@@ -3405,8 +3399,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						{
 							/* work out if subobjects selected */
 							selected_name_ranges=(struct Multi_range *)NULL;
-							name_selected=GT_object_is_graphic_selected(object,
-								voltex->object_name,&selected_name_ranges);
+							name_selected=0;
 							if ((name_selected&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
 							{
@@ -3506,9 +3499,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									while (line)
 									{
 										/* work out if subobjects selected */
-//										selected_name_ranges=(struct Multi_range *)NULL;
-//										name_selected=GT_object_is_graphic_selected(object,
-//											line->object_name,&selected_name_ranges);
 										if (renderer->highlight_functor)
 										{
 											name_selected=(renderer->highlight_functor)->call(line->object_name);
@@ -4237,8 +4227,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							}
 							/* work out if subobjects selected */
 							selected_name_ranges = (struct Multi_range *)NULL;
-							name_selected=GT_object_is_graphic_selected(object,
-								nurbs->object_name,&selected_name_ranges);
+							name_selected=0;
 							if ((name_selected&&draw_selected)||
 								((!name_selected)&&(!draw_selected)))
 							{

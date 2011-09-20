@@ -3303,36 +3303,480 @@ int Cmiss_graphic_to_graphics_object(
 		{
 			/* build only if changed... and complete */
 			if (Cmiss_graphics_filter_evaluate_graphic(filter, graphic) &&
-				graphic->graphics_changed && Cmiss_graphic_has_all_compulsory_attributes(graphic))
+				  Cmiss_graphic_has_all_compulsory_attributes(graphic))
 			{
-				Computed_field *coordinate_field = graphic->coordinate_field;
- 				if (coordinate_field)
+				if (graphic->graphics_changed)
 				{
-					/* RC coordinate_field to pass to FE_element_to_graphics_object */
-					if (NULL != (graphic_to_object_data->rc_coordinate_field=
-							Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
-						((!graphic->orientation_scale_field) ||
-							(graphic_to_object_data->wrapper_orientation_scale_field =
-								Computed_field_begin_wrap_orientation_scale_field(
-									graphic->orientation_scale_field,
-									graphic_to_object_data->rc_coordinate_field))) &&
-						((!graphic->stream_vector_field) ||
-							(graphic_to_object_data->wrapper_stream_vector_field =
-								Computed_field_begin_wrap_orientation_scale_field(
-									graphic->stream_vector_field,
-									graphic_to_object_data->rc_coordinate_field))))
+					Computed_field *coordinate_field = graphic->coordinate_field;
+					if (coordinate_field)
 					{
-#if defined (DEBUG_CODE)
-						/*???debug*/
-						if ((graphic_string = Cmiss_graphic_string(graphic,
-								GRAPHIC_STRING_COMPLETE_PLUS)) != NULL)
+						/* RC coordinate_field to pass to FE_element_to_graphics_object */
+						if (NULL != (graphic_to_object_data->rc_coordinate_field=
+							Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
+							((!graphic->orientation_scale_field) ||
+								(graphic_to_object_data->wrapper_orientation_scale_field =
+									Computed_field_begin_wrap_orientation_scale_field(
+										graphic->orientation_scale_field,
+										graphic_to_object_data->rc_coordinate_field))) &&
+										((!graphic->stream_vector_field) ||
+											(graphic_to_object_data->wrapper_stream_vector_field =
+												Computed_field_begin_wrap_orientation_scale_field(
+													graphic->stream_vector_field,
+													graphic_to_object_data->rc_coordinate_field))))
 						{
-							printf("> building %s\n", graphic_string);
-							DEALLOCATE(graphic_string);
-						}
+#if defined (DEBUG_CODE)
+							/*???debug*/
+							if ((graphic_string = Cmiss_graphic_string(graphic,
+								GRAPHIC_STRING_COMPLETE_PLUS)) != NULL)
+							{
+								printf("> building %s\n", graphic_string);
+								DEALLOCATE(graphic_string);
+							}
 #endif /* defined (DEBUG_CODE) */
-						Cmiss_graphic_get_top_level_number_in_xi(graphic,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
+							Cmiss_graphic_get_top_level_number_in_xi(graphic,
+								MAXIMUM_ELEMENT_XI_DIMENSIONS, graphic_to_object_data->top_level_number_in_xi);
+							graphic_to_object_data->existing_graphics =
+								(struct GT_object *)NULL;
+							/* work out the name the graphics object is to have */
+							Cmiss_graphic_get_name(graphic, &graphic_name);
+							if (graphic_to_object_data->name_prefix && graphic_name &&
+								ALLOCATE(graphics_object_name, char,
+									strlen(graphic_to_object_data->name_prefix) +
+									strlen(graphic_name) + 4))
+							{
+								sprintf(graphics_object_name, "%s.%s",
+									graphic_to_object_data->name_prefix, graphic_name);
+								if (graphic->graphics_object)
+								{
+									/* replace the graphics object name */
+									GT_object_set_name(graphic->graphics_object,
+										graphics_object_name);
+									if (GT_object_has_primitives_at_time(graphic->graphics_object,
+										time))
+									{
+#if defined (DEBUG_CODE)
+										/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
+#endif /* defined (DEBUG_CODE) */
+										GET_NAME(GT_object)(graphic->graphics_object, &existing_name);
+										graphic_to_object_data->existing_graphics =
+											CREATE(GT_object)(existing_name,
+												GT_object_get_type(graphic->graphics_object),
+												get_GT_object_default_material(graphic->graphics_object));
+										DEALLOCATE(existing_name);
+										GT_object_transfer_primitives_at_time(
+											graphic_to_object_data->existing_graphics,
+											graphic->graphics_object, time);
+									}
+								}
+								else
+								{
+									switch (graphic->graphic_type)
+									{
+										case CMISS_GRAPHIC_LINES:
+										{
+											graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
+										} break;
+										case CMISS_GRAPHIC_CYLINDERS:
+										case CMISS_GRAPHIC_SURFACES:
+										{
+											graphics_object_type = g_SURFACE;
+										} break;
+										case CMISS_GRAPHIC_ISO_SURFACES:
+										{
+											switch (dimension)
+											{
+												case 3:
+												{
+													//graphics_object_type = g_VOLTEX; // for old isosurfaces
+													graphics_object_type = g_SURFACE; // for new isosurfaces
+												} break;
+												case 2:
+												{
+													graphics_object_type = g_POLYLINE;
+												} break;
+												case 1:
+												{
+													display_message(ERROR_MESSAGE,
+														"Cmiss_graphic_to_graphics_object.  "
+														"iso_scalars of 1-D elements is not supported");
+													return_code = 0;
+												} break;
+												default:
+												{
+													display_message(ERROR_MESSAGE,
+														"Cmiss_graphic_to_graphics_object.  "
+														"Invalid dimension for iso_scalars");
+													return_code = 0;
+												} break;
+											}
+										} break;
+										case CMISS_GRAPHIC_NODE_POINTS:
+										case CMISS_GRAPHIC_DATA_POINTS:
+										case CMISS_GRAPHIC_ELEMENT_POINTS:
+										case CMISS_GRAPHIC_POINT:
+										{
+											graphics_object_type = g_GLYPH_SET;
+										} break;
+										case CMISS_GRAPHIC_STREAMLINES:
+										{
+											if (STREAM_LINE == graphic->streamline_type)
+											{
+												graphics_object_type = g_POLYLINE;
+											}
+											else
+											{
+												graphics_object_type = g_SURFACE;
+											}
+										} break;
+										default:
+										{
+											display_message(ERROR_MESSAGE,
+												"Cmiss_graphic_to_graphics_object.  "
+												"Unknown graphic type");
+											return_code = 0;
+										} break;
+									}
+									if (return_code)
+									{
+										graphic->graphics_object = CREATE(GT_object)(
+											graphics_object_name, graphics_object_type,
+											graphic->material);
+										GT_object_set_select_mode(graphic->graphics_object,
+											graphic->select_mode);
+										if (graphic->secondary_material)
+										{
+											set_GT_object_secondary_material(graphic->graphics_object,
+												graphic->secondary_material);
+										}
+										if (graphic->selected_material)
+										{
+											set_GT_object_selected_material(graphic->graphics_object,
+												graphic->selected_material);
+										}
+										ACCESS(GT_object)(graphic->graphics_object);
+									}
+								}
+								DEALLOCATE(graphics_object_name);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Cmiss_graphic_to_graphics_object.  "
+									"Unable to make graphics object name");
+								return_code = 0;
+							}
+							if (graphic_name)
+								DEALLOCATE(graphic_name);
+							if (graphic->data_field)
+							{
+								graphic_to_object_data->number_of_data_values =
+									Computed_field_get_number_of_components(graphic->data_field);
+								ALLOCATE(graphic_to_object_data->data_copy_buffer,
+									FE_value, graphic_to_object_data->number_of_data_values);
+							}
+							if (graphic->graphics_object)
+							{
+								graphic->selected_graphics_changed=1;
+								/* need graphic for FE_element_to_graphics_object routine */
+								graphic_to_object_data->graphic=graphic;
+								switch (graphic->graphic_type)
+								{
+									case CMISS_GRAPHIC_NODE_POINTS:
+									case CMISS_GRAPHIC_DATA_POINTS:
+									{
+										/* currently all nodes put together in a single GT_glyph_set,
+										so rebuild all even if editing a single node or element */
+										GT_object_remove_primitives_at_time(
+											graphic->graphics_object, time,
+											(GT_object_primitive_object_name_conditional_function *)NULL,
+											(void *)NULL);
+										base_size[0] = (FE_value)(graphic->glyph_size[0]);
+										base_size[1] = (FE_value)(graphic->glyph_size[1]);
+										base_size[2] = (FE_value)(graphic->glyph_size[2]);
+										offset[0] = (FE_value)(graphic->glyph_offset[0]);
+										offset[1] = (FE_value)(graphic->glyph_offset[1]);
+										offset[2] = (FE_value)(graphic->glyph_offset[2]);
+										scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
+										scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
+										scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
+										Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
+											(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
+										glyph_set = create_GT_glyph_set_from_nodeset(
+											nodeset, graphic_to_object_data->field_cache,
+											graphic_to_object_data->rc_coordinate_field,
+											graphic->glyph, base_size, offset, scale_factors,
+											graphic_to_object_data->time,
+											graphic_to_object_data->wrapper_orientation_scale_field,
+											graphic->variable_scale_field, graphic->data_field,
+											graphic->font, graphic->label_field,
+											graphic->label_density_field, graphic->visibility_field,
+											graphic->select_mode,graphic_to_object_data->group_field);
+										Cmiss_nodeset_destroy(&nodeset);
+										/* NOT an error if no glyph_set produced == empty group */
+										if (glyph_set)
+										{
+											if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
+												time,glyph_set))
+											{
+												DESTROY(GT_glyph_set)(&glyph_set);
+												return_code=0;
+											}
+										}
+									} break;
+									case CMISS_GRAPHIC_POINT:
+									{
+										Cmiss_graphic_to_point_object_at_time(
+											graphic, graphic_to_object_data->field_cache,
+											graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
+									} break;
+									case CMISS_GRAPHIC_LINES:
+									{
+#if defined(USE_OPENCASCADE)
+										// test here for domain of rc_coordinate_field
+										// if it is a cad_geometry do something about it
+										struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+										int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
+										if ( return_code )
+										{
+											// so test for topology domain
+											struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+												( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+											if ( cad_topology_field )
+											{
+												// if topology domain then draw item at location
+												return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
+												DESTROY_LIST(Computed_field)(&domain_field_list);
+												break;
+											}
+										}
+										if ( domain_field_list )
+											DESTROY_LIST(Computed_field)(&domain_field_list);
+#endif /* defined(USE_OPENCASCADE) */
+										GT_polyline_vertex_buffers *lines =
+											CREATE(GT_polyline_vertex_buffers)(
+												g_PLAIN, graphic->line_width);
+										if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+											graphic->graphics_object, lines))
+										{
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, /*dimension*/1,
+												FE_element_to_graphics_object, graphic_to_object_data_void);
+										}
+										else
+										{
+											//DESTROY(GT_polyline_vertex_buffers)(&lines);
+											return_code = 0;
+										}
+									} break;
+									case CMISS_GRAPHIC_SURFACES:
+									{
+										bool cad_surfaces = false;
+#if defined(USE_OPENCASCADE)
+										{
+											// test here for domain of rc_coordinate_field
+											// if it is a cad_geometry do something about it
+											//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
+											struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+											int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
+											if ( return_code )
+											{
+												//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
+												// so test for topology domain
+												struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+													( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+												if ( cad_topology_field )
+												{
+													cad_surfaces = true;
+													//printf( "hurrah, we have a cad topology domain.\n" );
+													// if topology domain then draw item at location
+													return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
+													DESTROY_LIST(Computed_field)(&domain_field_list);
+													break;
+												}
+											}
+											if ( domain_field_list )
+												DESTROY_LIST(Computed_field)(&domain_field_list);
+										}
+#endif /* defined(USE_OPENCASCADE) */
+										if (!cad_surfaces)
+										{
+											graphic_to_object_data->surface_mesh =
+												Cmiss_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, 2);
+											Cmiss_element_iterator_id iterator =
+												Cmiss_mesh_create_element_iterator(graphic_to_object_data->surface_mesh);
+											Cmiss_element_id element = 0;
+											while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
+											{
+												if (!FE_element_to_graphics_object(element, graphic_to_object_data_void))
+												{
+													return_code = 0;
+													break;
+												}
+											}
+											Cmiss_element_iterator_destroy(&iterator);
+											Cmiss_mesh_destroy(&graphic_to_object_data->surface_mesh);
+										}
+									} break;
+									case CMISS_GRAPHIC_CYLINDERS:
+									case CMISS_GRAPHIC_ELEMENT_POINTS:
+									{
+										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+											FE_element_to_graphics_object, graphic_to_object_data_void);
+									} break;
+									case CMISS_GRAPHIC_ISO_SURFACES:
+									{
+										if (0 < graphic->number_of_iso_values)
+										{
+											if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
+											{
+												graphic_to_object_data->iso_surface_specification =
+													Iso_surface_specification_create(
+														graphic->number_of_iso_values, graphic->iso_values,
+														graphic->first_iso_value, graphic->last_iso_value,
+														graphic_to_object_data->rc_coordinate_field,
+														graphic->data_field,
+														graphic->iso_scalar_field,
+														graphic->texture_coordinate_field);
+											}
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+												FE_element_to_graphics_object,
+												graphic_to_object_data_void);
+											if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
+											{
+												Iso_surface_specification_destroy(&graphic_to_object_data->iso_surface_specification);
+												/* Decimate */
+												if (graphic->decimation_threshold > 0.0)
+												{
+													GT_object_decimate_GT_surface(graphic->graphics_object,
+														graphic->decimation_threshold);
+												}
+											}
+											/* If the isosurface is a volume we can decimate and
+											then normalise, otherwise if it is a polyline
+											representing a isolines, skip over. */
+											if (g_VOLTEX == GT_object_get_type(graphic->graphics_object))
+											{
+												/* Decimate */
+												if (graphic->decimation_threshold > 0.0)
+												{
+													GT_object_decimate_GT_voltex(graphic->graphics_object,
+														graphic->decimation_threshold);
+												}
+												/* Normalise normals now that the entire mesh has been calculated */
+												GT_object_normalise_GT_voltex_normals(graphic->graphics_object);
+											}
+										}
+									} break;
+									case CMISS_GRAPHIC_STREAMLINES:
+									{
+										/* must always regenerate ALL streamlines since they can cross
+										into other elements */
+										if (graphic_to_object_data->existing_graphics)
+										{
+											DESTROY(GT_object)(
+												&(graphic_to_object_data->existing_graphics));
+										}
+										if (graphic->seed_element)
+										{
+											return_code = FE_element_to_graphics_object(
+												graphic->seed_element, graphic_to_object_data_void);
+										}
+										else if (graphic->seed_nodeset &&
+											graphic->seed_node_mesh_location_field)
+										{
+											Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(graphic->seed_nodeset);
+											Cmiss_node_id node = 0;
+											while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+											{
+												if (!Cmiss_node_to_streamline(node, graphic_to_object_data))
+												{
+													return_code = 0;
+													break;
+												}
+											}
+											Cmiss_node_iterator_destroy(&iterator);
+										}
+										else
+										{
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+												FE_element_to_graphics_object,
+												graphic_to_object_data_void);
+										}
+									} break;
+									default:
+									{
+										return_code = 0;
+									} break;
+								} /* end of switch */
+								if (return_code)
+								{
+									/* set the spectrum in the graphics object - if required */
+									if ((graphic->data_field)||
+										((CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type) &&
+											(STREAM_NO_DATA != graphic->streamline_data_type)))
+									{
+										set_GT_object_Spectrum(graphic->graphics_object,
+											(void *)(graphic->spectrum));
+									}
+									/* mark display list as needing updating */
+									graphic->graphics_changed = 0;
+									GT_object_changed(graphic->graphics_object);
+								}
+								else
+								{
+									graphic_string = Cmiss_graphic_string(graphic,
+										GRAPHIC_STRING_COMPLETE_PLUS);
+									display_message(ERROR_MESSAGE,
+										"cmiss_graphic_to_graphics_object.  "
+										"Could not build '%s'",graphic_string);
+									DEALLOCATE(graphic_string);
+									/* set return_code to 1, so rest of graphic can be built */
+									return_code = 1;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"cmiss_graphic_to_graphics_object.  "
+									"Could not create graphics object");
+								return_code = 0;
+							}
+							if (graphic_to_object_data->existing_graphics)
+							{
+								DESTROY(GT_object)(&(graphic_to_object_data->existing_graphics));
+							}
+							if (graphic->stream_vector_field)
+							{
+								Computed_field_clear_cache(
+									graphic_to_object_data->wrapper_stream_vector_field);
+								Computed_field_end_wrap(
+									&(graphic_to_object_data->wrapper_stream_vector_field));
+							}
+							if (graphic->orientation_scale_field)
+							{
+								Computed_field_end_wrap(
+									&(graphic_to_object_data->wrapper_orientation_scale_field));
+							}
+							Computed_field_clear_cache(graphic_to_object_data->rc_coordinate_field);
+							Computed_field_end_wrap(
+								&(graphic_to_object_data->rc_coordinate_field));
+							if (graphic->data_field)
+							{
+								graphic_to_object_data->number_of_data_values = 0;
+								DEALLOCATE(graphic_to_object_data->data_copy_buffer);
+								/* clear Computed_field caches so elements not accessed */
+								Computed_field_clear_cache(graphic->data_field);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"cmiss_graphic_to_graphics_object.  "
+								"Could not get rc_coordinate_field wrapper");
+							return_code = 0;
+						}
+					}
+					else if (graphic->graphic_type == CMISS_GRAPHIC_POINT)
+					{
 						graphic_to_object_data->existing_graphics =
 							(struct GT_object *)NULL;
 						/* work out the name the graphics object is to have */
@@ -3342,7 +3786,7 @@ int Cmiss_graphic_to_graphics_object(
 								strlen(graphic_to_object_data->name_prefix) +
 								strlen(graphic_name) + 4))
 						{
-							sprintf(graphics_object_name, "%s.%s",
+							sprintf(graphics_object_name, "%s_%s",
 								graphic_to_object_data->name_prefix, graphic_name);
 							if (graphic->graphics_object)
 							{
@@ -3350,11 +3794,8 @@ int Cmiss_graphic_to_graphics_object(
 								GT_object_set_name(graphic->graphics_object,
 									graphics_object_name);
 								if (GT_object_has_primitives_at_time(graphic->graphics_object,
-										time))
+									time))
 								{
-#if defined (DEBUG_CODE)
-									/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
-#endif /* defined (DEBUG_CODE) */
 									GET_NAME(GT_object)(graphic->graphics_object, &existing_name);
 									graphic_to_object_data->existing_graphics =
 										CREATE(GT_object)(existing_name,
@@ -3368,477 +3809,45 @@ int Cmiss_graphic_to_graphics_object(
 							}
 							else
 							{
-								switch (graphic->graphic_type)
+								graphics_object_type = g_GLYPH_SET;
+								graphic->graphics_object = CREATE(GT_object)(
+									graphics_object_name, graphics_object_type,
+									graphic->material);
+								GT_object_set_select_mode(graphic->graphics_object,
+									graphic->select_mode);
+								if (graphic->secondary_material)
 								{
-									case CMISS_GRAPHIC_LINES:
-									{
-										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
-									} break;
-									case CMISS_GRAPHIC_CYLINDERS:
-									case CMISS_GRAPHIC_SURFACES:
-									{
-										graphics_object_type = g_SURFACE;
-									} break;
-									case CMISS_GRAPHIC_ISO_SURFACES:
-									{
-										switch (dimension)
-										{
-											case 3:
-											{
-												//graphics_object_type = g_VOLTEX; // for old isosurfaces
-												graphics_object_type = g_SURFACE; // for new isosurfaces
-											} break;
-											case 2:
-											{
-												graphics_object_type = g_POLYLINE;
-											} break;
-											case 1:
-											{
-												display_message(ERROR_MESSAGE,
-													"Cmiss_graphic_to_graphics_object.  "
-													"iso_scalars of 1-D elements is not supported");
-												return_code = 0;
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"Cmiss_graphic_to_graphics_object.  "
-													"Invalid dimension for iso_scalars");
-												return_code = 0;
-											} break;
-										}
-									} break;
-									case CMISS_GRAPHIC_NODE_POINTS:
-									case CMISS_GRAPHIC_DATA_POINTS:
-									case CMISS_GRAPHIC_ELEMENT_POINTS:
-									case CMISS_GRAPHIC_POINT:
-									{
-										graphics_object_type = g_GLYPH_SET;
-									} break;
-									case CMISS_GRAPHIC_STREAMLINES:
-									{
-										if (STREAM_LINE == graphic->streamline_type)
-										{
-											graphics_object_type = g_POLYLINE;
-										}
-										else
-										{
-											graphics_object_type = g_SURFACE;
-										}
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"Cmiss_graphic_to_graphics_object.  "
-											"Unknown graphic type");
-										return_code = 0;
-									} break;
+									set_GT_object_secondary_material(graphic->graphics_object,
+										graphic->secondary_material);
 								}
-								if (return_code)
+								if (graphic->selected_material)
 								{
-									graphic->graphics_object = CREATE(GT_object)(
-										graphics_object_name, graphics_object_type,
-										graphic->material);
-									GT_object_set_select_mode(graphic->graphics_object,
-										graphic->select_mode);
-									if (graphic->secondary_material)
-									{
-										set_GT_object_secondary_material(graphic->graphics_object,
-											graphic->secondary_material);
-									}
-									if (graphic->selected_material)
-									{
-										set_GT_object_selected_material(graphic->graphics_object,
-											graphic->selected_material);
-									}
-									ACCESS(GT_object)(graphic->graphics_object);
+									set_GT_object_selected_material(graphic->graphics_object,
+										graphic->selected_material);
 								}
+								ACCESS(GT_object)(graphic->graphics_object);
 							}
-							DEALLOCATE(graphics_object_name);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Cmiss_graphic_to_graphics_object.  "
-								"Unable to make graphics object name");
-							return_code = 0;
-						}
-						if (graphic_name)
-							DEALLOCATE(graphic_name);
-						if (graphic->data_field)
-						{
-							graphic_to_object_data->number_of_data_values =
-								Computed_field_get_number_of_components(graphic->data_field);
-							ALLOCATE(graphic_to_object_data->data_copy_buffer,
-								FE_value, graphic_to_object_data->number_of_data_values);
-						}
-						if (graphic->graphics_object)
-						{
-							graphic->selected_graphics_changed=1;
-							/* need graphic for FE_element_to_graphics_object routine */
-							graphic_to_object_data->graphic=graphic;
-							switch (graphic->graphic_type)
+							if (Cmiss_graphic_to_point_object_at_time(
+								graphic, graphic_to_object_data->field_cache,
+								graphic_to_object_data->time, /*graphics_object_primitive_time*/time))
 							{
-								case CMISS_GRAPHIC_NODE_POINTS:
-								case CMISS_GRAPHIC_DATA_POINTS:
-								{
-									/* currently all nodes put together in a single GT_glyph_set,
-										so rebuild all even if editing a single node or element */
-									GT_object_remove_primitives_at_time(
-										graphic->graphics_object, time,
-										(GT_object_primitive_object_name_conditional_function *)NULL,
-										(void *)NULL);
-									base_size[0] = (FE_value)(graphic->glyph_size[0]);
-									base_size[1] = (FE_value)(graphic->glyph_size[1]);
-									base_size[2] = (FE_value)(graphic->glyph_size[2]);
-									offset[0] = (FE_value)(graphic->glyph_offset[0]);
-									offset[1] = (FE_value)(graphic->glyph_offset[1]);
-									offset[2] = (FE_value)(graphic->glyph_offset[2]);
-									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
-									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
-									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-									Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
-										(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
-									glyph_set = create_GT_glyph_set_from_nodeset(
-										nodeset, graphic_to_object_data->field_cache,
-										graphic_to_object_data->rc_coordinate_field,
-										graphic->glyph, base_size, offset, scale_factors,
-										graphic_to_object_data->time,
-										graphic_to_object_data->wrapper_orientation_scale_field,
-										graphic->variable_scale_field, graphic->data_field, 
-										graphic->font, graphic->label_field,
-										graphic->label_density_field, graphic->visibility_field,
-										graphic->select_mode,graphic_to_object_data->group_field);
-									Cmiss_nodeset_destroy(&nodeset);
-									/* NOT an error if no glyph_set produced == empty group */
-									if (glyph_set)
-									{
-										if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
-												time,glyph_set))
-										{
-											DESTROY(GT_glyph_set)(&glyph_set);
-											return_code=0;
-										}
-									}
-								} break;
-								case CMISS_GRAPHIC_POINT:
-								{
-									Cmiss_graphic_to_point_object_at_time(
-										graphic, graphic_to_object_data->field_cache,
-										graphic_to_object_data->time, /*graphics_object_primitive_time*/time);
-								} break;
-								case CMISS_GRAPHIC_LINES:
-								{
-#if defined(USE_OPENCASCADE)
-									// test here for domain of rc_coordinate_field
-									// if it is a cad_geometry do something about it
-									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-									int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
-									if ( return_code )
-									{
-										// so test for topology domain
-										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-											( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-										if ( cad_topology_field )
-										{
-											// if topology domain then draw item at location
-											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
-											DESTROY_LIST(Computed_field)(&domain_field_list);
-											break;
-										}
-									}
-									if ( domain_field_list )
-										DESTROY_LIST(Computed_field)(&domain_field_list);
-#endif /* defined(USE_OPENCASCADE) */
-									GT_polyline_vertex_buffers *lines =
-										CREATE(GT_polyline_vertex_buffers)(
-										g_PLAIN, graphic->line_width);
-									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-										graphic->graphics_object, lines))
-									{
-										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, /*dimension*/1,
-											FE_element_to_graphics_object, graphic_to_object_data_void);
-									}
-									else
-									{
-										//DESTROY(GT_polyline_vertex_buffers)(&lines);
-										return_code = 0;
-									}
-								} break;
-								case CMISS_GRAPHIC_SURFACES:
-								{
-									bool cad_surfaces = false;
-#if defined(USE_OPENCASCADE)
-									{
-										// test here for domain of rc_coordinate_field
-										// if it is a cad_geometry do something about it
-										//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
-										struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-										int return_code = Computed_field_get_domain( graphic_to_object_data->rc_coordinate_field, domain_field_list );
-										if ( return_code )
-										{
-											//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
-											// so test for topology domain
-											struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-												( Cmiss_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-											if ( cad_topology_field )
-											{
-												cad_surfaces = true;
-												//printf( "hurrah, we have a cad topology domain.\n" );
-												// if topology domain then draw item at location
-												return_code = Cad_shape_to_graphics_object( cad_topology_field, graphic_to_object_data );
-												DESTROY_LIST(Computed_field)(&domain_field_list);
-												break;
-											}
-										}
-										if ( domain_field_list )
-											DESTROY_LIST(Computed_field)(&domain_field_list);
-									}
-#endif /* defined(USE_OPENCASCADE) */
-									if (!cad_surfaces)
-									{
-										graphic_to_object_data->surface_mesh =
-											Cmiss_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, 2);
-										Cmiss_element_iterator_id iterator =
-											Cmiss_mesh_create_element_iterator(graphic_to_object_data->surface_mesh);
-										Cmiss_element_id element = 0;
-										while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
-										{
-											if (!FE_element_to_graphics_object(element, graphic_to_object_data_void))
-											{
-												return_code = 0;
-												break;
-											}
-										}
-										Cmiss_element_iterator_destroy(&iterator);
-										Cmiss_mesh_destroy(&graphic_to_object_data->surface_mesh);
-									}
-								} break;
-								case CMISS_GRAPHIC_CYLINDERS:
-								case CMISS_GRAPHIC_ELEMENT_POINTS:
-								{
-									return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
-										FE_element_to_graphics_object, graphic_to_object_data_void);
-								} break;
-								case CMISS_GRAPHIC_ISO_SURFACES:
-								{
-									if (0 < graphic->number_of_iso_values)
-									{
-										if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
-										{
-											graphic_to_object_data->iso_surface_specification =
-												Iso_surface_specification_create(
-													graphic->number_of_iso_values, graphic->iso_values,
-													graphic->first_iso_value, graphic->last_iso_value,
-													graphic_to_object_data->rc_coordinate_field,
-													graphic->data_field,
-													graphic->iso_scalar_field,
-													graphic->texture_coordinate_field);
-										}
-										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
-											FE_element_to_graphics_object,
-											graphic_to_object_data_void);
-										if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
-										{
-											Iso_surface_specification_destroy(&graphic_to_object_data->iso_surface_specification);
-											/* Decimate */
-											if (graphic->decimation_threshold > 0.0)
-											{
-												GT_object_decimate_GT_surface(graphic->graphics_object,
-													graphic->decimation_threshold);
-											}
-										}
-										/* If the isosurface is a volume we can decimate and
-											then normalise, otherwise if it is a polyline
-											representing a isolines, skip over. */
-										if (g_VOLTEX == GT_object_get_type(graphic->graphics_object))
-										{
-											/* Decimate */
-											if (graphic->decimation_threshold > 0.0)
-											{
-												GT_object_decimate_GT_voltex(graphic->graphics_object,
-													graphic->decimation_threshold);
-											}
-											/* Normalise normals now that the entire mesh has been calculated */
-											GT_object_normalise_GT_voltex_normals(graphic->graphics_object);
-										}
-									}
-								} break;
-								case CMISS_GRAPHIC_STREAMLINES:
-								{
-									/* must always regenerate ALL streamlines since they can cross
-										into other elements */
-									if (graphic_to_object_data->existing_graphics)
-									{
-										DESTROY(GT_object)(
-											&(graphic_to_object_data->existing_graphics));
-									}
-									if (graphic->seed_element)
-									{
-										return_code = FE_element_to_graphics_object(
-											graphic->seed_element, graphic_to_object_data_void);
-									}
-									else if (graphic->seed_nodeset &&
-										graphic->seed_node_mesh_location_field)
-									{
-										Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(graphic->seed_nodeset);
-										Cmiss_node_id node = 0;
-										while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
-										{
-											if (!Cmiss_node_to_streamline(node, graphic_to_object_data))
-											{
-												return_code = 0;
-												break;
-											}
-										}
-										Cmiss_node_iterator_destroy(&iterator);
-									}
-									else
-									{
-										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
-											FE_element_to_graphics_object,
-											graphic_to_object_data_void);
-									}
-								} break;
-								default:
-								{
-									return_code = 0;
-								} break;
-							} /* end of switch */
-							if (return_code)
-							{
-								/* set the spectrum in the graphics object - if required */
-								if ((graphic->data_field)||
-									((CMISS_GRAPHIC_STREAMLINES == graphic->graphic_type) &&
-										(STREAM_NO_DATA != graphic->streamline_data_type)))
-								{
-									set_GT_object_Spectrum(graphic->graphics_object,
-										(void *)(graphic->spectrum));
-								}
-								/* mark display list as needing updating */
 								graphic->graphics_changed = 0;
 								GT_object_changed(graphic->graphics_object);
 							}
-							else
-							{
-								graphic_string = Cmiss_graphic_string(graphic,
-									GRAPHIC_STRING_COMPLETE_PLUS);
-								display_message(ERROR_MESSAGE,
-									"cmiss_graphic_to_graphics_object.  "
-									"Could not build '%s'",graphic_string);
-								DEALLOCATE(graphic_string);
-								/* set return_code to 1, so rest of graphic can be built */
-								return_code = 1;
-							}
+							DEALLOCATE(graphics_object_name);
 						}
-						else
+						if (graphic_name)
 						{
-							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  "
-								"Could not create graphics object");
-							return_code = 0;
+							DEALLOCATE(graphic_name);
 						}
-						if (graphic_to_object_data->existing_graphics)
-						{
-							DESTROY(GT_object)(&(graphic_to_object_data->existing_graphics));
-						}
-						if (graphic->stream_vector_field)
-						{
-							Computed_field_clear_cache(
-								graphic_to_object_data->wrapper_stream_vector_field);
-							Computed_field_end_wrap(
-								&(graphic_to_object_data->wrapper_stream_vector_field));
-						}
-						if (graphic->orientation_scale_field)
-						{
-							Computed_field_end_wrap(
-								&(graphic_to_object_data->wrapper_orientation_scale_field));
-						}
-						Computed_field_clear_cache(graphic_to_object_data->rc_coordinate_field);
-						Computed_field_end_wrap(
-							&(graphic_to_object_data->rc_coordinate_field));
-						if (graphic->data_field)
-						{
-							graphic_to_object_data->number_of_data_values = 0;
-							DEALLOCATE(graphic_to_object_data->data_copy_buffer);
-							/* clear Computed_field caches so elements not accessed */
-							Computed_field_clear_cache(graphic->data_field);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"cmiss_graphic_to_graphics_object.  "
-							"Could not get rc_coordinate_field wrapper");
-						return_code = 0;
 					}
 				}
-				else if (graphic->graphic_type == CMISS_GRAPHIC_POINT)
-				{
-					graphic_to_object_data->existing_graphics =
-						(struct GT_object *)NULL;
-					/* work out the name the graphics object is to have */
-					Cmiss_graphic_get_name(graphic, &graphic_name);
-					if (graphic_to_object_data->name_prefix && graphic_name &&
-						ALLOCATE(graphics_object_name, char,
-							strlen(graphic_to_object_data->name_prefix) +
-							strlen(graphic_name) + 4))
-					{
-						sprintf(graphics_object_name, "%s_%s",
-							graphic_to_object_data->name_prefix, graphic_name);
-						if (graphic->graphics_object)
-						{
-							/* replace the graphics object name */
-							GT_object_set_name(graphic->graphics_object,
-								graphics_object_name);
-							if (GT_object_has_primitives_at_time(graphic->graphics_object,
-									time))
-							{
-								GET_NAME(GT_object)(graphic->graphics_object, &existing_name);
-								graphic_to_object_data->existing_graphics =
-									CREATE(GT_object)(existing_name,
-										GT_object_get_type(graphic->graphics_object),
-										get_GT_object_default_material(graphic->graphics_object));
-								DEALLOCATE(existing_name);
-								GT_object_transfer_primitives_at_time(
-									graphic_to_object_data->existing_graphics,
-									graphic->graphics_object, time);
-							}
-						}
-						else 
-						{
-							graphics_object_type = g_GLYPH_SET;
-							graphic->graphics_object = CREATE(GT_object)(
-								graphics_object_name, graphics_object_type,
-								graphic->material);
-							GT_object_set_select_mode(graphic->graphics_object,
-							graphic->select_mode);
-							if (graphic->secondary_material)
-							{
-								set_GT_object_secondary_material(graphic->graphics_object,
-									graphic->secondary_material);
-							}
-							if (graphic->selected_material)
-							{
-								set_GT_object_selected_material(graphic->graphics_object,
-									graphic->selected_material);
-							}
-							ACCESS(GT_object)(graphic->graphics_object);
-						}
-						if (Cmiss_graphic_to_point_object_at_time(
-							graphic, graphic_to_object_data->field_cache,
-							graphic_to_object_data->time, /*graphics_object_primitive_time*/time))
-						{
-							graphic->graphics_changed = 0;
-							GT_object_changed(graphic->graphics_object);
-						}
-						DEALLOCATE(graphics_object_name);
-					}
-					if (graphic_name)
-					{
-						DEALLOCATE(graphic_name);			
-					}
-				}
+ 				if (graphic->selected_graphics_changed)
+ 				{
+ 					if (graphic->graphics_object)
+ 						GT_object_changed(graphic->graphics_object);
+ 					graphic->selected_graphics_changed = 0;
+ 				}
 			}
 			Cmiss_graphics_filter_destroy(&filter);
 		}
@@ -4191,7 +4200,7 @@ int Cmiss_graphic_Computed_field_change(
 					case GRAPHICS_SELECT_ON:
 					{
 						/* for efficiency, just request update of selected graphics */
-						Cmiss_graphic_clear_graphics(graphic);
+						graphic->selected_graphics_changed = 1;
 						change_data->graphics_changed = 1;
 					} break;
 					case GRAPHICS_NO_SELECT:

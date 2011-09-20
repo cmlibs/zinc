@@ -392,7 +392,6 @@ Graphical object data structure.
 	struct GT_object *parentobject;
 	/* for selected primitives and subobjects */
 	enum Graphics_select_mode select_mode;
-	struct LIST(Selected_graphic) *selected_graphic_list;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
