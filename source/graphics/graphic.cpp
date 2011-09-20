@@ -5219,7 +5219,7 @@ int Cmiss_graphic_FE_region_change(
 			{
 				case CMISS_GRAPHIC_DATA_POINTS:
 				{
-					/* only affected by data_FE_region */
+					/* handled by Cmiss_graphic_data_FE_region_change */
 				} break;
 				case CMISS_GRAPHIC_NODE_POINTS:
 				{
@@ -5336,8 +5336,12 @@ int Cmiss_graphic_data_FE_region_change(
 			{
 				case CMISS_GRAPHIC_DATA_POINTS:
 				{
-					/* rebuild on any changes */
-					if ((0 < data->number_of_fe_node_changes) &&
+					// must ensure changes to fields on host elements/nodes force
+					// data_points to be rebuilt if using embedded fields referencing them:
+					if (((0 < data->number_of_fe_node_changes) ||
+						(data->fe_field_change_summary & (
+							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
+							CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))) &&
 						Cmiss_graphic_uses_changed_FE_field(graphic,
 							data->fe_field_changes))
 					{
