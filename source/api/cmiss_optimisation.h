@@ -359,12 +359,12 @@ Cmiss_field_id Cmiss_optimisation_get_next_objective_field(
 
 /***************************************************************************//**
  * Add an objective field to the optimisation problem description.
- * Valid objective fields must be spatially constant. For least squares problems
- * field types which sum over a domain (e.g. nodeset_sum) are treated specially:
- * squares of the individual terms being summed are optimised for.
+ * Valid objective fields must be spatially constant. The least squares solution
+ * method treats fields performing a sum of squares (nodeset_sum_squares,
+ * nodeset_mean_squares) specially, passing each term to the optimiser.
  * The overall objective function becomes the sum of all components of all
- * objective fields, or for least-squares solver, the sum of the squares of all
- * summed terms, or components if the field is not performing summation.
+ * objective fields, or for the least-squares method, the sum of the squares of
+ * all terms (or components if the objective field is not a sum of squares).
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object

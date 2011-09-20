@@ -262,22 +262,23 @@ public:
 
 	virtual int evaluate_cache_at_location(Field_location* location) = 0;
 
-	/** Override & return 1 for field types supporting the sum_terms API */
-	virtual int supports_sum_terms() const
+	/** Override & return 1 for field types supporting the sum_square_terms API */
+	virtual int supports_sum_square_terms() const
 	{
 		return 0;
 	}
 
-	/** Override for field types whose value is a sum of terms to get the
-	 * number of terms. Multiply by number of components to get number of values.
+	/** Override for field types whose value is a sum of squares to get the
+	 * number of terms summed. Multiply by number of components to get number of values.
 	 * Can be expensive. */
-	virtual int get_number_of_sum_terms() const
+	virtual int get_number_of_sum_square_terms() const
 	{
 		return 0;
 	}
 
-	/** Override for field types whose value is a sum to get individual terms */
-	virtual int evaluate_sum_terms_at_location(Field_location* /*location*/,
+	/** Override for field types whose value is a sum of squares to get the array of
+	 * individual terms PRIOR to being squared*/
+	virtual int evaluate_sum_square_terms_at_location(Field_location* /*location*/,
 		int /*number_of_values*/, FE_value* /* *values*/)
 	{
 		return 0;

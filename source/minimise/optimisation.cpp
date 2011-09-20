@@ -101,7 +101,7 @@ void display_chunked_message(std::string& message)
 
 int ObjectiveFieldData::prepareTerms()
 {
-	numTerms = field->core->get_number_of_sum_terms();
+	numTerms = field->core->get_number_of_sum_square_terms();
 	bufferSize = numComponents;
 	if (numTerms > 0)
 		bufferSize *= numTerms;
@@ -503,7 +503,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		const int bufferSize = objective->bufferSize;
 		FE_value *buffer = objective->buffer;
 		if (objective->numTerms > 0)
-			return_code = objective->field->core->evaluate_sum_terms_at_location(&location, bufferSize, buffer);
+			return_code = objective->field->core->evaluate_sum_square_terms_at_location(&location, bufferSize, buffer);
 		else
 			return_code = Cmiss_field_evaluate_real(objective->field, minimisation->field_cache, objective->bufferSize, objective->buffer);
 		if (!return_code)

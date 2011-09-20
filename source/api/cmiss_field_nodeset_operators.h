@@ -45,9 +45,9 @@
 #include "api/types/cmiss_field_module_id.h"
 
 /*******************************************************************************
- * Creates a field which computes the sum of the source field values over all
- * nodes in the nodeset for which it is defined. Returned field has same number
- * of components as the source field.
+ * Creates a field which computes the sum of each source field component over
+ * all nodes in the nodeset for which it is defined. Returned field has same
+ * number of components as the source field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum.
@@ -59,16 +59,51 @@ Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
 	Cmiss_nodeset_id nodeset);
 
 /*******************************************************************************
- * Creates a field which computes the mean of the source field values over all
- * nodes in the nodeset for which it is defined. Returned field has same number
- * of components as the source field.
+ * Creates a field which computes the mean of each source field component over
+ * all nodes in the nodeset for which it is defined. Returned field has same
+ * number of components as the source field.
  *
  * @param field_module  Region field module which will own new field.
- * @param source_field  Field to obtain mean value for.
+ * @param source_field  Field to obtain mean component values for.
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
+
+/*******************************************************************************
+ * Creates a field which computes the sum of the squares of each source field
+ * component over all nodes in the nodeset for which it is defined. Returned
+ * field has same number of components as the source field.
+ * This field type supports least-squares optimisation by giving individual
+ * terms being squared and summed.
+ * @see Cmiss_optimisation_add_objective_field
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to sum squared component values of.
+ * @param nodeset  The set of nodes to sum field over.
+ * @return  Handle to newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_nodeset_id nodeset);
+
+/*******************************************************************************
+ * Creates a field which computes the mean of the squares of each source field
+ * component over all nodes in the nodeset for which it is defined. Returned
+ * field has same number of components as the source field.
+ * This field type supports least-squares optimisation by giving individual
+ * terms being squared and summed, each divided by the square root of the number
+ * of terms.
+ * @see Cmiss_optimisation_add_objective_field
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to obtain mean squared component values for.
+ * @param nodeset  The set of nodes to obtain mean over.
+ * @return  Handle to newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	Cmiss_nodeset_id nodeset);
 

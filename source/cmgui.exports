@@ -272,6 +272,8 @@ Cmiss_field_module_create_transpose
 /* api/cmiss_field_nodeset_operators.h */
 Cmiss_field_module_create_nodeset_sum
 Cmiss_field_module_create_nodeset_mean
+Cmiss_field_module_create_nodeset_sum_squares
+Cmiss_field_module_create_nodeset_mean_squares
 
 /* api/cmiss_field_scene_viewer_projection.h */
 Cmiss_field_module_create_scene_viewer_projection
