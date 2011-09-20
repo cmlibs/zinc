@@ -103,7 +103,7 @@ public:
 	Minimisation(Cmiss_optimisation& optimisation) :
 		optimisation(optimisation)
 	{
-		field_module = optimisation.fieldModule;
+		field_module = Cmiss_field_module_access(optimisation.fieldModule);
 		field_cache = Cmiss_field_module_create_cache(field_module);
 		current_time = 0.0;
 		total_dof = 0;
