@@ -493,7 +493,7 @@ int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms_at_location(
 	{
 		if (number_of_terms > 0)
 		{
-			FE_value scaling = 1.0 / sqrt(number_of_terms);
+			FE_value scaling = 1.0 / sqrt((FE_value)number_of_terms);
 			for (int i = 0 ; i < number_of_values ; i++)
 			{
 				values[i] *= scaling;
