@@ -61,20 +61,21 @@
 enum Cmiss_optimisation_method
 {
 	CMISS_OPTIMISATION_METHOD_INVALID = 0,
-	/*!< invalid or unspecified optimisation method.
+	/*!< Invalid or unspecified optimisation method.
 	 */
 	CMISS_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
-	/*!< The default optimisation method. Suitable for most problems with a
-	 * small set of independent parameters.
-	 * Given a scalar valued objective field, finds the set of component values for the specified
-	 * independent field(s) which minimises the objective field value.
+	/*!< The default optimisation method. Suitable for most problems with a small
+	 * set of independent parameters.
+	 * Given a scalar valued objective function (scalar sum of all objective
+	 * fields' components), finds the set of DOFs for the independent field(s)
+	 * which minimises the objective function value.
 	 */
 	CMISS_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
 	/*!< A least squares method better suited to larger problems.
-	 * Finds the set of independent field(s) component values which minimises the error. The error
-	 * is defined in a least-squares sense as the difference in the DATA_FIELD value a each of the
-	 * data points in the <data_nodeset> and the value of the MESH_FIELD at the corresponding projection
-	 * location in the <mesh>.
+	 * Finds the set of independent field(s) DOF values which minimises the
+	 * squares of the objective components supplied. Works specially with fields
+	 * giving sum-of-squares e.g. nodeset_sum_squares, nodeset_mean_squares to
+	 * supply individual terms before squaring to the optimiser.
 	 */
 };
 
