@@ -7690,7 +7690,7 @@ int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id mater
 }
 
 int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
-	enum Cmiss_graphics_material_attribute attribute, double *values)
+	enum Cmiss_graphics_material_attribute attribute, const double *values)
 {
 	struct Colour colour;
 	int return_code = 0;
