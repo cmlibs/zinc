@@ -175,7 +175,7 @@ Cmiss_graphic_id Cmiss_rendition_get_previous_graphic(Cmiss_rendition_id renditi
  * @param rendition  The handle to the rendition
  * @return  Returns the number of graphic in rendition.
  */
-int Cmiss_rendition_get_number_of_graphic(Cmiss_rendition_id rendition);
+int Cmiss_rendition_get_number_of_graphics(Cmiss_rendition_id rendition);
 
 /***************************************************************************//**
  * Get and return an accessed handle to the selection group of rendition.

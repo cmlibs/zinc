@@ -2316,7 +2316,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 
 		if 	(region_tree_viewer->edit_rendition)
 		{
-			if (Cmiss_rendition_get_number_of_graphic(
+			if (Cmiss_rendition_get_number_of_graphics(
 						region_tree_viewer->edit_rendition) >
 				(position = Cmiss_rendition_get_graphic_position(
 					region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic)))
@@ -4337,7 +4337,7 @@ void TreeControlSelectionChanged(wxTreeEvent &event)
 			Region_tree_viewer_set_graphic_widgets_for_rendition(region_tree_viewer);
 			if (region_tree_viewer->sceneediting)
 			{
-				if (!Cmiss_rendition_get_number_of_graphic(rendition))
+				if (!Cmiss_rendition_get_number_of_graphics(rendition))
 				{
 					region_tree_viewer->sceneediting->Hide();
 				}
@@ -4749,12 +4749,12 @@ void Region_tree_viewer_set_active_rendition(
 		region_tree_viewer->graphiclistbox->Clear();
 		if (region_tree_viewer->edit_rendition)
 		{
-			if (Cmiss_rendition_get_number_of_graphic(
+			if (Cmiss_rendition_get_number_of_graphics(
 				region_tree_viewer->edit_rendition) > 0)
 			{
 				for_each_graphic_in_Cmiss_rendition(region_tree_viewer->edit_rendition,
 					Region_tree_viewer_add_graphic, (void *) region_tree_viewer);
-				int num = Cmiss_rendition_get_number_of_graphic(
+				int num = Cmiss_rendition_get_number_of_graphics(
 					region_tree_viewer->edit_rendition);
 				Cmiss_graphic *temp_graphic = NULL;
 				if (num > previous_selection)

@@ -1222,7 +1222,7 @@ static int Cmiss_rendition_build_graphics_objects(
 	ENTER(Cmiss_rendition_build_graphics_objects);
 	if (rendition)
 	{
-		if ((Cmiss_rendition_get_number_of_graphic(rendition) > 0))
+		if ((Cmiss_rendition_get_number_of_graphics(rendition) > 0))
 		{
 			// use begin/end cache to avoid field manager messages being sent when
 			// field wrappers are created and destroyed
@@ -2646,7 +2646,7 @@ int for_each_graphic_in_Cmiss_rendition(
 	return (return_code);
 }
 
-int Cmiss_rendition_get_number_of_graphic(struct Cmiss_rendition *rendition)
+int Cmiss_rendition_get_number_of_graphics(struct Cmiss_rendition *rendition)
 {
 	int number_of_graphic;
 
