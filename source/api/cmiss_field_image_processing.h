@@ -162,7 +162,7 @@ WARNING: To be deprecated.
 Cmiss_field_id Cmiss_field_module_create_connected_threshold_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
   double lower_threshold, double upper_threshold, double replace_value,
-	int num_seed_points, int dimension, double *seed_points);
+	int num_seed_points, int dimension, const double *seed_points);
 
 int Cmiss_field_get_type_connected_threshold_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
@@ -247,7 +247,7 @@ WARNING: To be deprecated.
 Cmiss_field_id Cmiss_field_module_create_fast_marching_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double stopping_value, int num_seed_points, int dimension,
-	double *seed_points, double *seed_values, int *output_size);
+	const double *seed_points, const double *seed_values, const int *output_size);
 
 int Cmiss_field_get_type_fast_marching_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *stopping_value,
@@ -296,8 +296,8 @@ WARNING: To be deprecated.
  */
 Cmiss_field_id Cmiss_field_module_create_histogram_image_filter(
 	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	int *numberOfBins, double marginalScale,
-	double *histogramMinimum, double *histogramMaximum);
+	const int *numberOfBins, double marginalScale,
+	const double *histogramMinimum, const double *histogramMaximum);
 
 int Cmiss_field_get_type_histogram_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, int **numberOfBins, double *marginalScale,

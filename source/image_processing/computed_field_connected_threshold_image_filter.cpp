@@ -77,7 +77,7 @@ public:
 	// Need something to represent index
 
 	Computed_field_connected_threshold_image_filter(Computed_field *source_field,
-		double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, double *seed_points);
+		double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, const double *seed_points);
 
 	~Computed_field_connected_threshold_image_filter()
 	{
@@ -232,7 +232,7 @@ and generate the outputImage.
 
 Computed_field_connected_threshold_image_filter::Computed_field_connected_threshold_image_filter(
 	Computed_field *source_field, double lower_threshold, double upper_threshold,
-	double replace_value, int num_seed_points, double *seed_points_in) :
+	double replace_value, int num_seed_points, const double *seed_points_in) :
 	Computed_field_ImageFilter(source_field),
 	lower_threshold(lower_threshold), upper_threshold(upper_threshold), 
   replace_value(replace_value), num_seed_points(num_seed_points)
@@ -369,7 +369,7 @@ struct Computed_field *Cmiss_field_module_create_connected_threshold_image_filte
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value,
-	int num_seed_points, int dimension, double *seed_points)
+	int num_seed_points, int dimension, const double *seed_points)
 {
 	Computed_field *field = NULL;
 	USE_PARAMETER(dimension);

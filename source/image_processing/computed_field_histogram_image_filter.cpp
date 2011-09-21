@@ -78,7 +78,7 @@ public:
 	int totalPixels;
        
 	Computed_field_histogram_image_filter(Computed_field *source_field,
-		int *numberOfBins, double marginalScale, double *histogramMinimumIn, double *histogramMaximumIn);
+		const int *numberOfBins, double marginalScale, const double *histogramMinimumIn, const double *histogramMaximumIn);
 
 	~Computed_field_histogram_image_filter()
 	{
@@ -859,8 +859,8 @@ Evaluate the fields cache at the location
 } /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
 
 Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
-	Computed_field *source_field, int *numberOfBinsIn, double marginalScale,
-	double *histogramMinimumIn, double *histogramMaximumIn) : 
+	Computed_field *source_field, const int *numberOfBinsIn, double marginalScale,
+	const double *histogramMinimumIn, const double *histogramMaximumIn) :
 	Computed_field_ImageFilter(source_field), marginalScale(marginalScale)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
@@ -919,8 +919,8 @@ void Computed_field_histogram_image_filter::create_functor()
 
 struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int *numberOfBins, double marginalScale,
-	double *histogramMinimum, double *histogramMaximum)
+	struct Computed_field *source_field, const int *numberOfBins, double marginalScale,
+	const double *histogramMinimum, const double *histogramMaximum)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))

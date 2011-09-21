@@ -77,8 +77,8 @@ public:
 	// Need something to represent index
 
 	Computed_field_fast_marching_image_filter(Computed_field *source_field,
-		double stopping_value, int num_seed_points, double *seed_points, 
-    double *seed_values, int *output_size);
+		double stopping_value, int num_seed_points, const double *seed_points,
+		const double *seed_values, const int *output_size);
 
 	~Computed_field_fast_marching_image_filter()
 	{
@@ -315,7 +315,7 @@ and generate the outputImage.
 
 Computed_field_fast_marching_image_filter::Computed_field_fast_marching_image_filter(
 	Computed_field *source_field, double stopping_value, int num_seed_points,
-	double *seed_points_in, double *seed_values_in, int *output_size_in) :
+	const double *seed_points_in, const double *seed_values_in, const int *output_size_in) :
 	Computed_field_ImageFilter(source_field),
 	stopping_value(stopping_value), num_seed_points(num_seed_points)
 /*******************************************************************************
@@ -481,8 +481,8 @@ Returns allocated command string for reproducing field. Includes type.
 struct Computed_field *Cmiss_field_module_create_fast_marching_image_filter(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double stopping_value,
-  int num_seed_points, int dimension, double *seed_points, double *seed_values, 
-  int *output_size)
+  int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
+  const int *output_size)
 {
 	Computed_field *field = NULL;
 	USE_PARAMETER(dimension);

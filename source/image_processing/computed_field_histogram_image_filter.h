@@ -65,8 +65,8 @@ DESCRIPTION :
  */
 struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
 	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field, int *numberOfBins, double marginalScale,
-	double *histogramMinimum, double *histogramMaximum);
+	struct Computed_field *source_field, const int *numberOfBins, double marginalScale,
+	const double *histogramMinimum, const double *histogramMaximum);
 
 int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,
