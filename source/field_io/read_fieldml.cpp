@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : read_fieldml.cpp
  * 
- * Functions for importing regions and fields from FieldML 0.2+ documents.
+ * Functions for importing regions and fields from FieldML 0.4+ documents.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -1764,6 +1764,27 @@ int FieldMLReader::parse()
 }
 
 } // anonymous namespace
+
+int is_FieldML_file(const char *filename)
+{
+	int return_code = 0;
+	FILE *stream = fopen(filename, "r");
+	if (stream)
+	{
+		char block[200];
+		size_t size = fread((void *)block, sizeof(char), sizeof(block), stream);
+		if (size > 0)
+		{
+			block[size-1] = '\0';
+			if (NULL != strstr(block, "<Fieldml"))
+			{
+				return_code = 1;
+			}
+		}
+		fclose(stream);
+	}
+	return return_code;
+}
 
 int parse_fieldml_file(struct Cmiss_region *region, const char *filename)
 {

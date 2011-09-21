@@ -56,7 +56,6 @@ merge incompatible data will leave the global region in a compromised state.
  * Determines whether the named file is FieldML 0.1 format by the quick and
  * dirty method of finding a <regionml> tag near the beginning. 
  * @return 1 if file is FieldML 0.1 format, 0 if not. 
- * of given name is FieldML
  */
 int is_fieldml_01_file(const char *filename);
 

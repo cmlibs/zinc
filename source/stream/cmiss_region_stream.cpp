@@ -42,13 +42,17 @@
 
 extern "C" {
 #include "api/cmiss_region.h"
+#include "field_io/read_fieldml.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
+#include "finite_element/read_fieldml_01.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 }
 #include "stream/cmiss_region_stream.hpp"
+
+namespace {
 
 int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memory_buffer,
 	const unsigned int memory_buffer_size, struct FE_import_time_index *time_index)
@@ -78,6 +82,39 @@ int Cmiss_region_read_from_memory(struct Cmiss_region *region, const void *memor
 	LEAVE;
 
 	return(return_code);
+}
+
+/** attempts to determine type of file: EX or FieldML */
+int Cmiss_region_read_field_file_of_name(struct Cmiss_region *region, const char *file_name,
+	struct IO_stream_package *io_stream_package,
+	struct FE_import_time_index *time_index)
+{
+	int return_code = 0;
+	// Only supporting FieldML 0.1 until it requires maintenance
+	// Users can always read into an old cmgui and save in EX format
+	if (is_fieldml_01_file(file_name))
+	{
+		if (time_index)
+		{
+			display_message(WARNING_MESSAGE, "Cmiss_region_read. Time not supported by FieldML 0.1 reader");
+		}
+		return_code = parse_fieldml_01_file(region, file_name);
+	}
+	else if (is_FieldML_file(file_name))
+	{
+		if (time_index)
+		{
+			display_message(WARNING_MESSAGE, "Cmiss_region_read. Time not supported by FieldML reader");
+		}
+		return_code = parse_fieldml_file(region, file_name);
+	}
+	else
+	{
+		return_code = read_exregion_file_of_name(region, file_name, io_stream_package, time_index);
+	}
+	return return_code;
+}
+
 }
 
 int Cmiss_region_read(Cmiss_region_id region,
@@ -134,7 +171,7 @@ int Cmiss_region_read(Cmiss_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!read_exregion_file_of_name(temp_region,file_name,io_stream_package, stream_time_index))
+						if (!Cmiss_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index))
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "Cmiss_region_read. Cannot read file %s", file_name);
@@ -185,9 +222,9 @@ int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name)
 			Cmiss_region_create_stream_information(region);
 		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
 			stream_information, file_name);
-	  return_code = Cmiss_region_read(region, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+		return_code = Cmiss_region_read(region, stream_information);
+		Cmiss_stream_resource_destroy(&resource);
+		Cmiss_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
