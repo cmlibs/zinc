@@ -178,6 +178,10 @@ enum Cmiss_optimisation_attribute
 	 * larger value.
 	 *
 	 */
+	CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT = 11,
+	/*<! Flags the display (!=0) of output from Opt++ when running an optimisation problem; or hides (==0) the display
+	 * output from the user.
+	 */
 };
 
 /*

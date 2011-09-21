@@ -132,6 +132,9 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			return optimisation->maximumBacktrackIterations;
 			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT:
+			return optimisation->displayOutput;
+			break;
 		default:
 			break;
 		}
@@ -155,6 +158,9 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			optimisation->maximumBacktrackIterations = value;
+			break;
+		case CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT:
+			optimisation->displayOutput = value;
 			break;
 		default:
 			return_code = 0;

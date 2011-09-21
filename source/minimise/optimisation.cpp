@@ -471,7 +471,7 @@ int Minimisation::minimise_QN()
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
-	display_chunked_message(m);
+	if (this->optimisation.displayOutput) display_chunked_message(m);
 	return 1;
 }
 
@@ -560,7 +560,7 @@ int Minimisation::minimise_LSQN()
 	//list_dof_values();
 	// write out messages?
 	std::string m = optppMessages.str();
-	display_chunked_message(m);
+	if (this->optimisation.displayOutput) display_chunked_message(m);
 	return 1;
 }
 
