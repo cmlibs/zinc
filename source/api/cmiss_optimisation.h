@@ -228,6 +228,25 @@ int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 		enum Cmiss_optimisation_method method);
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_optimisation_method Cmiss_optimisation_method_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param format  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_optimisation_method_enum_to_string(enum Cmiss_optimisation_method method);
+
+/***************************************************************************//**
  * Get an integer or Boolean attribute of the optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -271,6 +290,26 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
  */
 int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	enum Cmiss_optimisation_attribute attribute, double value);
+
+/***************************************************************************//**
+ * Convert a short attribute name into an enum if the attribute name matches
+ * any of the members in the enum.
+ *
+ * @param attribute_name  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_optimisation_attribute Cmiss_optimisation_attribute_enum_from_string(
+	const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param attribute  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_optimisation_attribute_enum_to_string(
+	enum Cmiss_optimisation_attribute attribute);
 
 /***************************************************************************//**
  * Get the first independent field from the optimisation problem description.
