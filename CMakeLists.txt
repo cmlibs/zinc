@@ -39,6 +39,9 @@
 # The FATAL_ERROR is needed if using cmake < 2.4
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.1 FATAL_ERROR ) 
 
+# This is the project name and shows up in ides
+PROJECT( cmgui_project )
+
 # If you want to look at the debug messages uncomment the next line or define
 # it on the command line
 #SET( CMAKE_DEBUG TRUE )
@@ -72,9 +75,6 @@ MACRO( DBG_MSG MSG_CONTENT )
 		MESSAGE( STATUS "${MSG_CONTENT}" )
 	ENDIF( DEFINED CMAKE_DEBUG )
 ENDMACRO( DBG_MSG MSG_CONTENT )
-
-# This is the project name and shows up in ides
-PROJECT( cmgui_project )
 
 SET( CMGUI_MAJOR_VERSION "2" )
 SET( CMGUI_MINOR_VERSION "7" )
@@ -129,6 +129,8 @@ ELSE( EXISTS "${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/InsightToolkit" )
 ENDIF( EXISTS "${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/InsightToolkit" )
 CACHE_VAR_WITH_DEFAULT( ITK_DIR "${ITK_DIR}"
 	PATH "Where are the ITK libraries installed" )
+CACHE_VAR_WITH_DEFAULT( PNG_DIR "${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/cmake" 
+	PATH "Where is the png CMake config file installed?" )
 
 # Locate dependent libraries
 # I think I can get away with just this set
@@ -149,13 +151,13 @@ FIND_PACKAGE( NETGEN QUIET )
 FIND_PACKAGE( GLEW QUIET )
 
 # Could have dependencies
-FIND_PACKAGE( OCE QUIET NO_MODULE)
-FIND_PACKAGE( OpenCASCADE QUIET NO_MODULE)
+FIND_PACKAGE( OCE QUIET NO_MODULE )
+FIND_PACKAGE( OpenCASCADE QUIET NO_MODULE )
 FIND_PACKAGE( ImageMagick QUIET COMPONENTS MagickCore )
 FIND_PACKAGE( ITK QUIET )
 #FIND_PACKAGE( GDCM QUIET )
 SET( PNG_NAMES png12_static libpng12_static )
-FIND_PACKAGE( PNG QUIET )
+FIND_PACKAGE( PNG QUIET NO_MODULE )
 FIND_PACKAGE( TIFF QUIET )
 FIND_PACKAGE( perl_interpreter QUIET HINTS ${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/cmake )
 FIND_PACKAGE( PCRE QUIET HINTS ${CMGUI_THIRD_PARTY_INSTALL_PREFIX}/lib/cmake )
@@ -550,11 +552,12 @@ IF( CMGUI_USE_TIFF )
 ENDIF( CMGUI_USE_TIFF )
 
 IF( CMGUI_USE_PNG )
-	FIND_PACKAGE( PNG REQUIRED )
+	FIND_PACKAGE( PNG REQUIRED NO_MODULE )
 	SET( USE_PNG TRUE )
 	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${PNG_LIBRARIES} )
-	DBG_MSG( STATUS "PNG LIBS: ${PNG_LIBRARIES}" )
 	SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} )
+	SET( DEPENDENT_CONFIGS
+		"${DEPENDENT_CONFIGS}\nINCLUDE(${PNG_DIR}/png-config.cmake)" )
 ENDIF( CMGUI_USE_PNG )
 
 IF( CMGUI_USE_PCRE )
@@ -995,7 +998,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 	ENDIF( USE_OPENCASCADE )
 
 	# Install headers for cmgui_general
-	SET( GENERAL_LIB_API_INSTALL_HDRS	${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h )
+	SET( GENERAL_LIB_API_INSTALL_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h )
 
 	# Install headers for cmgui_core_fields
 	SET( CORE_FIELDS_LIB_API_INSTALL_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_element.h
