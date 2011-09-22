@@ -98,17 +98,19 @@ private:
 	int totalObjectiveFieldComponents;
 	int totalLeastSquaresTerms;
 	FE_value *objectiveValues;
+	std::ostream optppMessageStream;
 
 public:
 	Minimisation(Cmiss_optimisation& optimisation) :
-		optimisation(optimisation)
+		optimisation(optimisation),
+		field_module(Cmiss_field_module_access(optimisation.fieldModule)),
+		field_cache(Cmiss_field_module_create_cache(field_module)),
+		current_time(0.0),
+		total_dof(0),
+		dof_storage_array(0),
+		dof_initial_values(0),
+		optppMessageStream(&optimisation.solution_report)
 	{
-		field_module = Cmiss_field_module_access(optimisation.fieldModule);
-		field_cache = Cmiss_field_module_create_cache(field_module);
-		current_time = 0.0;
-		total_dof = 0;
-		dof_storage_array = static_cast<FE_value**> (NULL);
-		dof_initial_values = static_cast<FE_value*> (NULL);
 		for (FieldList::iterator iter = optimisation.independentFields.begin();
 			iter != optimisation.independentFields.end(); ++iter)
 		{

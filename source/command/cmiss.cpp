@@ -21110,7 +21110,7 @@ for editing and entering. If there is no command_window, does nothing.
 } /* cmiss_set_command */
 
 #if defined(USE_CMGUI_COMMAND_WINDOW)
-static int display_error_message(char *message,void *command_window_void)
+static int display_error_message(const char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
 
@@ -21140,7 +21140,7 @@ Display a cmgui error message.
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 
 #if defined(USE_CMGUI_COMMAND_WINDOW)
-static int display_information_message(char *message,void *command_window_void)
+static int display_information_message(const char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
 
@@ -21167,7 +21167,7 @@ Display a cmgui information message.
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 
 #if defined(USE_CMGUI_COMMAND_WINDOW)
-static int display_warning_message(char *message,void *command_window_void)
+static int display_warning_message(const char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
 

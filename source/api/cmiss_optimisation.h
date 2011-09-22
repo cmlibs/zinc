@@ -22,7 +22,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005-2010
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -176,11 +176,6 @@ enum Cmiss_optimisation_attribute
 	 *
 	 * If your problem is quadratic or close to it, you may want to initialise the size of the trust region to a
 	 * larger value.
-	 *
-	 */
-	CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT = 11,
-	/*<! Flags the display (!=0) of output from Opt++ when running an optimisation problem; or hides (==0) the display
-	 * output from the user.
 	 */
 };
 
@@ -427,6 +422,15 @@ int Cmiss_optimisation_add_objective_field(Cmiss_optimisation_id optimisation,
  */
 int Cmiss_optimisation_remove_objective_field(
 	Cmiss_optimisation_id optimisation, Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Get a textual report on the last solution.
+ *
+ * @param optimisation  Handle to the optimisation object to query.
+ * @return  Allocated string containing report which user must free using
+ * Cmiss_deallocate, or NULL on error or if haven't performed optimisation yet.
+ */
+char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation);
 
 /***************************************************************************//**
  * Perform the optimisation described by the provided optimisation object.

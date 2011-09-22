@@ -47,6 +47,7 @@
 #define __CMISS_OPTIMISATION_PRIVATE_HPP__
 
 #include <list>
+#include <sstream>
 extern "C"
 {
 	#include "api/cmiss_optimisation.h"
@@ -81,7 +82,6 @@ public:
 	double functionTolerance;
 	double gradientTolerance;
 	double stepTolerance;
-	int displayOutput;
 	int maximumIterations;
 	int maximumNumberFunctionEvaluations;
 	// Opt++ steplength control
@@ -91,6 +91,7 @@ public:
 	double linesearchTolerance;
 	int maximumBacktrackIterations;
 	double trustRegionSize;
+	std::stringbuf solution_report; // solution details output by Opt++ during and after solution
 	int access_count;
 
 	Cmiss_optimisation(Cmiss_field_module_id field_module) :
@@ -102,7 +103,6 @@ public:
 		functionTolerance = 1.49012e-8;
 		gradientTolerance = 6.05545e-6;
 		stepTolerance = 1.49012e-8;
-		displayOutput = 1;
 		maximumIterations = 100;
 		maximumNumberFunctionEvaluations = 1000;
 		maximumStep = 1.0e3;
@@ -254,6 +254,8 @@ public:
 		}
 		return 0;
 	}
+
+	char *getSolutionReport();
 
 	int runOptimisation();
 };

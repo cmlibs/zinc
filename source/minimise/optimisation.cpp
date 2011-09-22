@@ -74,7 +74,6 @@ extern "C" {
 #include "computed_field/field_module.hpp"
 #include <iostream>
 #include <sstream>
-#include <map>
 using namespace std;
 
 // OPT++ includes and namespaces
@@ -88,16 +87,6 @@ using namespace ::OPTPP;
 
 // global variable needed to pass minimisation object to Opt++ init functions.
 static void* GlobalVariableMinimisation = NULL;
-
-void display_chunked_message(std::string& message)
-{
-	unsigned int i,chunkSize=512;
-	for (i=0;i<message.length();i+=chunkSize)
-	{
-		std::string m = message.substr(i,chunkSize);
-		display_message(INFORMATION_MESSAGE,"%s",m.c_str());
-	}
-}
 
 int ObjectiveFieldData::prepareTerms()
 {
@@ -455,9 +444,7 @@ int Minimisation::minimise_QN()
 	objfcn.setTRSize(optimisation.trustRegionSize);
 	*/
 
-	// create a string stream to store messages from Opt++ and set that for all output.
-	std::stringbuf optppMessages;
-	std::ostream optppMessageStream(&optppMessages);
+	// send Opt++ log text to string buffer
 	if (!objfcn.setOutputFile(optppMessageStream))
 		cerr << "main: output file open failed" << endl;
 	objfcn.optimize();
@@ -469,9 +456,6 @@ int Minimisation::minimise_QN()
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
 	//list_dof_values();
-	// write out messages?
-	std::string m = optppMessages.str();
-	if (this->optimisation.displayOutput) display_chunked_message(m);
 	return 1;
 }
 
@@ -532,9 +516,7 @@ int Minimisation::minimise_LSQN()
 		(void*)(&iterationCounter));
 	OptNewton objfcn(&nlp);
 	objfcn.setSearchStrategy(LineSearch);
-	// create a string stream to store messages from Opt++ and set that for all output.
-	std::stringbuf optppMessages;
-	std::ostream optppMessageStream(&optppMessages);
+	// send Opt++ log text to string buffer
 	if (!objfcn.setOutputFile(optppMessageStream))
 		cerr << "main: output file open failed" << endl;
 	objfcn.setFcnTol(optimisation.functionTolerance);
@@ -558,9 +540,6 @@ int Minimisation::minimise_LSQN()
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
 	//list_dof_values();
-	// write out messages?
-	std::string m = optppMessages.str();
-	if (this->optimisation.displayOutput) display_chunked_message(m);
 	return 1;
 }
 

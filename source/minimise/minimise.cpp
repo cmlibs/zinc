@@ -98,7 +98,7 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 	{
 		enum Cmiss_optimisation_method optimisation_method = CMISS_OPTIMISATION_METHOD_QUASI_NEWTON;
 		int maxIters = 100; // default value
-		char hideOutput = 0; // show output by default
+		int showReport = 1; // output solution report by default
 		const char *optimisation_method_string = 0;
 		Multiple_strings independentFieldNames;
 		Multiple_strings objectiveFieldNames;
@@ -114,9 +114,6 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 		   function evaluations) */
 		Option_table_add_entry(option_table, "maximum_iterations", &maxIters,
 			NULL, set_int_positive);
-		/* flag whether to show or hide the optimisation output */
-		Option_table_add_entry(option_table,"hide_output",
-			&hideOutput,NULL,set_char_flag);
 		/* method */
 		optimisation_method_string =
 			ENUMERATOR_STRING(Cmiss_optimisation_method)(optimisation_method);
@@ -136,6 +133,8 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 			&objectiveFieldNames, "FIELD_NAME [& FIELD_NAME [& ...]]");
 		/* region */
 		Option_table_add_set_Cmiss_region(option_table, "region", root_region, &region);
+		/* flag whether to show or hide the optimisation output */
+		Option_table_add_switch(option_table, "show_output", "hide_output", &showReport);
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code)
 		{
@@ -178,15 +177,18 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 				display_message(ERROR_MESSAGE, "gfx minimise:  Invalid maximum_iterations %d", maxIters);
 				return_code = 0;
 			}
-			if (hideOutput && !Cmiss_optimisation_set_attribute_integer(optimisation,
-				CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT, 0))
-			{
-				display_message(ERROR_MESSAGE, "gfx minimise:  Invalid hide_output %c", hideOutput);
-				return_code = 0;
-			}
 			if (return_code)
 			{
 				return_code = Cmiss_optimisation_optimise(optimisation);
+				if (showReport)
+				{
+					char *report = Cmiss_optimisation_get_solution_report(optimisation);
+					if (report)
+					{
+						display_message_string(INFORMATION_MESSAGE, report);
+						DEALLOCATE(report);
+					}
+				}
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE, "gfx minimise.  Optimisation failed.");

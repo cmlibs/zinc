@@ -51,14 +51,22 @@ extern "C"
 	#include "computed_field/computed_field_composite.h"
 	#include "computed_field/computed_field_finite_element.h"
 	#include "general/mystring.h"
+	#include "general/debug.h"
 }
 #include "general/enumerator_conversion.hpp"
 #include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"
 
+char *Cmiss_optimisation::getSolutionReport()
+{
+	std::string temp = solution_report.str();
+	return duplicate_string(temp.c_str());
+}
+
 int Cmiss_optimisation::runOptimisation()
 {
 	int return_code = 1;
+	solution_report.str("");
 	// check required attributes are set
 	if (method == CMISS_OPTIMISATION_METHOD_INVALID)
 	{
@@ -169,9 +177,6 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			return optimisation->maximumBacktrackIterations;
 			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT:
-			return optimisation->displayOutput;
-			break;
 		default:
 			break;
 		}
@@ -195,9 +200,6 @@ int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 			break;
 		case CMISS_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS:
 			optimisation->maximumBacktrackIterations = value;
-			break;
-		case CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT:
-			optimisation->displayOutput = value;
 			break;
 		default:
 			return_code = 0;
@@ -317,9 +319,6 @@ public:
         	case CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
         		enum_string = "TRUST_REGION_SIZE";
         		break;
-        	case CMISS_OPTIMISATION_ATTRIBUTE_DISPLAY_OUTPUT:
-        		enum_string = "DISPLAY_OUTPUT";
-        		break;
         	default:
         		break;
         }
@@ -402,6 +401,13 @@ int Cmiss_optimisation_remove_objective_field(
 {
 	if (optimisation && field)
 		return optimisation->removeObjectiveField(field);
+	return 0;
+}
+
+char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation)
+{
+	if (optimisation)
+		return optimisation->getSolutionReport();
 	return 0;
 }
 

@@ -60,7 +60,7 @@ The different message types.
 	WARNING_MESSAGE
 }; /* enum Message_type */
 
-typedef int (Display_message_function)(char *,void *);
+typedef int (Display_message_function)(const char *,void *);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -81,6 +81,13 @@ DESCRIPTION :
 A function for setting the <display_message_function> to be used for displaying
 a message of the specified <message_type>.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Displays the string as a message of the specified <message_type>.
+ * Unlike display_message(), not limited to fixed buffer size.
+ */
+int display_message_string(enum Message_type message_type,
+	const char *the_string);
 
 int display_message(enum Message_type message_type,const char *format, ... );
 /*******************************************************************************

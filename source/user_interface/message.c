@@ -46,6 +46,7 @@ Declaration of functions for displaying messages.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #if defined (WIN32_USER_INTERFACE)
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
@@ -121,6 +122,119 @@ a message of the specified <message_type>.
 	return (return_code);
 } /* set_display_message_function */
 
+int display_message_string(enum Message_type message_type,
+	const char *the_string)
+{
+	int return_code = 0;
+
+	ENTER(display_message_large_string);
+	if (!the_string)
+		return 0;
+	switch (message_type)
+	{
+		case ERROR_MESSAGE:
+		{
+			if (display_error_message_function)
+			{
+				return_code=(*display_error_message_function)(the_string,
+					display_error_message_data);
+			}
+			else
+			{
+#if defined (WIN32_USER_INTERFACE)
+/*				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "ERROR: %s: GetLastError returned %u\n", 
+						the_string, dw);
+					
+					MessageBox(NULL, szBuf, "Error", MB_OK); 
+				} 
+				return_code = 1;*/
+				return_code=printf("ERROR: %s\n",the_string);
+#else /* defined (WIN32_USER_INTERFACE) */
+				return_code=printf("ERROR: %s\n",the_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+			}
+		} break;
+		case INFORMATION_MESSAGE:
+		{
+			if (display_information_message_function)
+			{
+				return_code=(*display_information_message_function)(the_string,
+					display_information_message_data);
+			}
+			else
+			{
+				/* make sure we don't interpret % characters by printing the string */
+#if defined (WIN32_USER_INTERFACE)
+/*				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "%s\n", 
+						the_string, dw);
+					
+					MessageBox(NULL, szBuf, "Information", MB_OK); 
+				} 
+				return_code = 1;*/
+				return_code=printf("%s",the_string);
+#else /* defined (WIN32_USER_INTERFACE) */
+				return_code=printf("%s",the_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+			}
+		} break;
+		case WARNING_MESSAGE:
+		{
+			if (display_warning_message_function)
+			{
+				return_code=(*display_warning_message_function)(the_string,
+					display_warning_message_data);
+			}
+			else
+			{
+#if defined (WIN32_USER_INTERFACE)
+/*				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "WARNING: %s: GetLastError returned %u\n", 
+						the_string, dw);
+					
+					MessageBox(NULL, szBuf, "Warning", MB_OK); 
+				} 
+				return_code = 1;*/
+				return_code=printf("WARNING: %s\n",the_string);
+#else /* defined (WIN32_USER_INTERFACE) */
+				return_code=printf("WARNING: %s\n",the_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+			}
+		} break;
+		default:
+		{
+#if defined (WIN32_USER_INTERFACE)
+/*			{ 
+				CHAR szBuf[80]; 
+				DWORD dw = GetLastError(); 
+
+				sprintf(szBuf, "UNKNOWN: %s: GetLastError returned %u\n", 
+					the_string, dw);
+
+				MessageBox(NULL, szBuf, "Error", MB_OK); 
+			} 
+			return_code = 1;*/
+			return_code=printf("UNKNOWN: %s\n",the_string);
+#else /* defined (WIN32_USER_INTERFACE) */
+			return_code=printf("UNKNOWN: %s\n",the_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int display_message(enum Message_type message_type,const char *format, ... )
 /*******************************************************************************
 LAST MODIFIED : 15 September 2008
@@ -152,105 +266,9 @@ form of arguments is used.
 			return_code=printf("ERROR: %s\n",error_string);
 		}
 	}
-	switch (message_type)
+	if (!display_message_string(message_type, message_string))
 	{
-		case ERROR_MESSAGE:
-		{
-			if (display_error_message_function)
-			{
-				return_code=(*display_error_message_function)(message_string,
-					display_error_message_data);
-			}
-			else
-			{
-#if defined (WIN32_USER_INTERFACE)
-/*				{ 
-					CHAR szBuf[80]; 
-					DWORD dw = GetLastError(); 
-					
-					sprintf(szBuf, "ERROR: %s: GetLastError returned %u\n", 
-						message_string, dw); 
-					
-					MessageBox(NULL, szBuf, "Error", MB_OK); 
-				} 
-				return_code = 1;*/
-				return_code=printf("ERROR: %s\n",message_string);
-#else /* defined (WIN32_USER_INTERFACE) */
-				return_code=printf("ERROR: %s\n",message_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-			}
-		} break;
-		case INFORMATION_MESSAGE:
-		{
-			if (display_information_message_function)
-			{
-				return_code=(*display_information_message_function)(message_string,
-					display_information_message_data);
-			}
-			else
-			{
-				/* make sure we don't interpret % characters by printing the string */
-#if defined (WIN32_USER_INTERFACE)
-/*				{ 
-					CHAR szBuf[80]; 
-					DWORD dw = GetLastError(); 
-					
-					sprintf(szBuf, "%s\n", 
-						message_string, dw); 
-					
-					MessageBox(NULL, szBuf, "Information", MB_OK); 
-				} 
-				return_code = 1;*/
-				return_code=printf("%s",message_string);
-#else /* defined (WIN32_USER_INTERFACE) */
-				return_code=printf("%s",message_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-			}
-		} break;
-		case WARNING_MESSAGE:
-		{
-			if (display_warning_message_function)
-			{
-				return_code=(*display_warning_message_function)(message_string,
-					display_warning_message_data);
-			}
-			else
-			{
-#if defined (WIN32_USER_INTERFACE)
-/*				{ 
-					CHAR szBuf[80]; 
-					DWORD dw = GetLastError(); 
-					
-					sprintf(szBuf, "WARNING: %s: GetLastError returned %u\n", 
-						message_string, dw); 
-					
-					MessageBox(NULL, szBuf, "Warning", MB_OK); 
-				} 
-				return_code = 1;*/
-				return_code=printf("WARNING: %s\n",message_string);
-#else /* defined (WIN32_USER_INTERFACE) */
-				return_code=printf("WARNING: %s\n",message_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-			}
-		} break;
-		default:
-		{
-#if defined (WIN32_USER_INTERFACE)
-/*			{ 
-				CHAR szBuf[80]; 
-				DWORD dw = GetLastError(); 
-
-				sprintf(szBuf, "UNKNOWN: %s: GetLastError returned %u\n", 
-					message_string, dw); 
-
-				MessageBox(NULL, szBuf, "Error", MB_OK); 
-			} 
-			return_code = 1;*/
-			return_code=printf("UNKNOWN: %s\n",message_string);
-#else /* defined (WIN32_USER_INTERFACE) */
-			return_code=printf("UNKNOWN: %s\n",message_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-		} break;
+		return_code = 0;
 	}
 	va_end(ap);
 	LEAVE;
