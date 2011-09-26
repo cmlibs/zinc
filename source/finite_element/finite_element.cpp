@@ -322,14 +322,15 @@ DESCRIPTION :
 {
 	/* the unique number that identifies the node in CMISS */
 	int cm_node_identifier;
-	/* the fields defined at the node */
-	struct FE_node_field_info *fields;
-	/* the global values and derivatives for the fields defined at the node */
-	Value_storage *values_storage;
 
 	/* the number of structures that point to this node.  The node cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
+
+	/* the fields defined at the node */
+	struct FE_node_field_info *fields;
+	/* the global values and derivatives for the fields defined at the node */
+	Value_storage *values_storage;
 
 	inline FE_node *access()
 	{
