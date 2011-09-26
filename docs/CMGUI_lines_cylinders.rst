@@ -20,7 +20,7 @@ If you wish to create these lines in the graphics window, use the go to the file
 
 | 
 
-Two default scene settings are important for lines and cylinders.  Under *General settings* in the scene editor, *element discretization* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders (Figure 2).
+Two default scene settings are important for lines and cylinders. In the scene editor, the selected *tessellation* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders (Figure 2).
 
 | 
 
