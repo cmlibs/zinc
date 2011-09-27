@@ -251,6 +251,8 @@ bool OpenCascadeImporter::labelTraversal( Handle_TDocStd_Document xdeDoc, const 
 			}
 		}
 	}
+	if (original_name)
+		DEALLOCATE(original_name);
 	free(name);
 
 	return addedShape;
@@ -512,7 +514,9 @@ char *Get_default_cad_subregion_name(Cmiss_region_id region)
 
 	if (n > 0 && n < 250 && (existing_region == NULL))
 	{
-		char *name = duplicate_string(name_buffer);
+		char *name = (char *)malloc(sizeof(char) * (n+1));
+		name = strncpy(name_buffer, name_buffer, n+1);
+		name[n] = '\0';
 		return name;
 	}
 
@@ -655,7 +659,7 @@ bool OpenCascadeImporter::addShapeToRegion(const TopoDS_Shape& shape, Cmiss_regi
 		const char default_cad_field_name[] = "cad_field";
 		next_name = Next_cad_field_name_in_series(field_module, default_cad_field_name);
 	}
-	free(temp_name);
+	DEALLOCATE(temp_name);
 	append_string(&top_name, next_name, &status);
 	//append_string(&top_name, "_top", &status);
 	Cmiss_field_set_name(cad_topology_field, top_name);
