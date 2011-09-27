@@ -611,8 +611,6 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 			return_code = 0;
 		if (!Cmiss_node_template_define_field(node_template, gauss_weight_field_base))
 			return_code = 0;
-		if (!Cmiss_node_template_finalise(node_template))
-			return_code = 0;
 		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
 		Cmiss_element_id element = 0;
 		int id = first_identifier;

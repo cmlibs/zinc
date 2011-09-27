@@ -593,7 +593,7 @@ public:
 		return return_code;
 	}
 
-	int finalise()
+	int validate()
 	{
 		if (template_element)
 			return 1;
@@ -601,7 +601,7 @@ public:
 		if (!shape_is_set)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_finalise.  Element shape has not been set");
+				"Cmiss_element_template_validate.  Element shape has not been set");
 			return_code = 0;
 		}
 		for (unsigned int i = 0; i < fields.size(); i++)
@@ -610,7 +610,7 @@ public:
 			{
 				char *field_name = NULL;
 				GET_NAME(FE_field)(fields[i]->getFeField(), &field_name);
-				display_message(ERROR_MESSAGE, "Cmiss_element_template_finalise.  "
+				display_message(ERROR_MESSAGE, "Cmiss_element_template_validate.  "
 					"Field %s definition is invalid or incomplete", field_name);
 				DEALLOCATE(field_name);
 				return_code = 0;
@@ -646,18 +646,16 @@ public:
 			if (!template_element)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template_finalise.  Failed to create template element");
+					"Cmiss_element_template_validate.  Failed to create template element");
 				return_code = 0;
 			}
 		}
 		return return_code;
 	}
 
-	int isFinalised() const { return (NULL != template_element); }
-
 	Cmiss_node_id getNode(int local_node_index)
 	{
-		if (isFinalised())
+		if (validate())
 		{
 			Cmiss_node_id node = NULL;
 			if (get_FE_element_node(getTemplateElement(), local_node_index - 1, &node))
@@ -668,7 +666,7 @@ public:
 
 	int setNode(int local_node_index, Cmiss_node_id node)
 	{
-		if (isFinalised())
+		if (validate())
 		{
 			return set_FE_element_node(getTemplateElement(), local_node_index - 1, node);
 		}
@@ -678,7 +676,7 @@ public:
 	int mergeIntoElement(Cmiss_element_id element)
 	{
 		int return_code = 0;
-		if (isFinalised())
+		if (validate())
 		{
 			if (shape_type == CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 			{
@@ -802,7 +800,7 @@ public:
 		Cmiss_element_template_id element_template)
 	{
 		FE_element *element = NULL;
-		if (element_template->isFinalised())
+		if (element_template->validate())
 		{
 			FE_element *template_element = element_template->getTemplateElement();
 			element = ACCESS(FE_element)(FE_region_create_FE_element_copy(
@@ -813,7 +811,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_mesh_create_element.  Element template is not finalised");
+				"Cmiss_mesh_create_element.  Element template is not valid");
 		}
 		return element;
 	}
@@ -1445,14 +1443,6 @@ int Cmiss_element_template_define_field_simple_nodal(
 		return element_template->defineFieldSimpleNodal(
 			field, component_number, basis, number_of_nodes, local_node_indexes);
 	}
-	return 0;
-}
-
-int Cmiss_element_template_finalise(
-	Cmiss_element_template_id element_template)
-{
-	if (element_template)
-		return element_template->finalise();
 	return 0;
 }
 

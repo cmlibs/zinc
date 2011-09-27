@@ -355,7 +355,6 @@ int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
  * Defines the field on the node_template with just a single node value per
  * field component with no time variation.
  * Per-component derivatives and multiple versions can be added subsequently.
- * Finalised state is removed by this call.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define. May be finite_element, stored_string or
@@ -367,7 +366,7 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 
 /***************************************************************************//**
  * Adds storage for the supplied derivative type for the component/s of the
- * field in the node template. Finalised state is removed by this call.
+ * field in the node template.
  * Must have first called Cmiss_node_template_define_field for field.
  *
  * @param node_template  Node template to modify.
@@ -386,7 +385,6 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
  * Defines variation of all nodal values/derivatives * versions with the
  * supplied time sequence for all components of the field in the node template.
  * Hence there will be as many of each parameter as times in the time sequence.
- * Finalised state is removed by this call.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define versions for. May be finite_element type
@@ -403,8 +401,7 @@ int Cmiss_node_template_define_time_sequence(
 
 /***************************************************************************//**
  * Adds storage for multiple versions of nodal values and derivatives for the
- * component/s of the field in the node template. Finalised state is removed by
- * this call.
+ * component/s of the field in the node template.
  * Must have first called Cmiss_node_template_define_field for field.
  *
  * @param node_template  Node template to modify.
@@ -418,17 +415,6 @@ int Cmiss_node_template_define_time_sequence(
  */
 int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number, int number_of_versions);
-
-/***************************************************************************//**
- * Checks the definition of node fields and prepares the node template for
- * creating new nodes or merging into existing nodes. This function must be
- * successfully called before using the template for these tasks.
- * Finalise state is removed by functions which modify the node template.
- *
- * @param node_template  Node template to finalise.
- * @return  1 if finalised successfully, 0 if field definitions are invalid.
- */
-int Cmiss_node_template_finalise(Cmiss_node_template_id node_template);
 
 /*******************************************************************************
  * Returns a new handle to the node with reference count incremented.

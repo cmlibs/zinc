@@ -329,7 +329,7 @@ public:
 		return node_field->defineVersions(component_number, number_of_versions);
 	}
 
-	int finalise()
+	int validate()
 	{
 		if (template_node)
 			return 1;
@@ -346,25 +346,23 @@ public:
 		if (!template_node)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_finalise.  Failed to create template node");
+				"Cmiss_node_template_validate.  Failed to create template node");
 			return 0;
 		}
 		return 1;
 	}
 
-	int isFinalised() const { return (NULL != template_node); }
-
 	int mergeIntoNode(Cmiss_node_id node)
 	{
 		int return_code = 0;
-		if (isFinalised())
+		if (validate())
 		{
 			return_code = FE_region_merge_FE_node_existing(fe_region, node, template_node);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_merge.  Node template is not finalised");
+				"Cmiss_node_merge.  Node template is not valid");
 		}
 		return return_code;
 	}
@@ -465,7 +463,7 @@ public:
 		Cmiss_node_template_id node_template)
 	{
 		Cmiss_node_id node = 0;
-		if (node_template->isFinalised())
+		if (node_template->validate())
 		{
 			Cmiss_node_id template_node = node_template->getTemplateNode();
 			node = ACCESS(FE_node)(FE_region_create_FE_node_copy(
@@ -476,7 +474,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_nodeset_create_node.  Node template is not finalised");
+				"Cmiss_nodeset_create_node.  Node template is not valid");
 		}
 		return node;
 	}
@@ -1006,13 +1004,6 @@ int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	{
 		return node_template->defineVersions(field, component_number, number_of_versions);
 	}
-	return 0;
-}
-
-int Cmiss_node_template_finalise(Cmiss_node_template_id node_template)
-{
-	if (node_template)
-		return node_template->finalise();
 	return 0;
 }
 

@@ -941,8 +941,7 @@ int FieldMLReader::readMeshes()
 			}
 			if (shape_type != last_shape_type)
 			{
-				if (!(Cmiss_element_template_set_shape_type(element_template, shape_type) &&
-					(Cmiss_element_template_finalise(element_template))))
+				if (!(Cmiss_element_template_set_shape_type(element_template, shape_type)))
 				{
 					return_code = 0;
 					break;
@@ -1229,7 +1228,6 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		fmlNodesType = fmlNodeEnsembleType;
 		// create the nodes
 		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(nodes);
-		return_code = Cmiss_node_template_finalise(node_template);
 		Cmiss_ensemble_iterator_id nodesIterator = Cmiss_field_ensemble_get_first_entry(nodesEnsemble);
 		while (return_code)
 		{
@@ -1257,7 +1255,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	{
 		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(nodes);
 		Cmiss_node_template_define_field(node_template, field);
-		return_code = Cmiss_node_template_finalise(node_template);
+		return_code = 1;
 		Cmiss_ensemble_index_id index = Cmiss_field_real_parameters_create_index(node_parameters);
 		// GRC inefficient to iterate over sparse parameters this way
 		Cmiss_ensemble_iterator_id nodesIterator = Cmiss_field_ensemble_get_first_entry(nodesEnsemble);
@@ -1390,10 +1388,6 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 					return_code = 0;
 					break;
 				}
-			}
-			if (!Cmiss_element_template_finalise(element_template))
-			{
-				return_code = 0;
 			}
 		}
 		if (!return_code)

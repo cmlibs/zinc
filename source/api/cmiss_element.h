@@ -527,8 +527,8 @@ enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
  * of known; when this is set in the template it does not override the shape
  * of any elements it is merged into. Beware that face mappings are lost if
  * shape changes are merged into global elements.
- * Shape must be set before template can be finalised.
- * Finalised state is removed on changing shape.
+ * Shape must be set before the template can set local nodes, create new elements
+ * and merge into existing elements.
  *
  * @param element_template  Element template to modify.
  * @param shape_type  Enumerator of standard element shapes.
@@ -563,7 +563,6 @@ int Cmiss_element_template_set_number_of_nodes(
  * element_template. Only Lagrange, simplex and constant basis function types
  * may be used with this function, i.e. where only a simple node value is
  * mapped. Shape must be set before calling this function.
- * Finalised state is removed on defining fields.
  *
  * @param element_template  Element template to modify.
  * @param field  The field to define. Must be finite_element type.
@@ -587,18 +586,9 @@ int Cmiss_element_template_define_field_simple_nodal(
 	const int *local_node_indexes);
 
 /***************************************************************************//**
- * Checks the definition of element fields and if all are complete and valid
- * prepares the element template for setting local nodes, creating new elements
- * and merging into existing elements.
- *
- * @param element_template  Element template to finalise.
- * @return  1 if finalised successfully, 0 if field definitions are invalid.
- */
-int Cmiss_element_template_finalise(Cmiss_element_template_id element_template);
-
-/***************************************************************************//**
  * Gets the global node at a given local node index in the element_template.
- * May only be called after a successful Cmiss_element_template_finalise call.
+ * May only be called after the definition of element fields are complete and
+ * valid.
  *
  * @param element_template  Element template to query.
  * @param local_node_index  The index from 1 to number of nodes in template.
@@ -609,7 +599,8 @@ Cmiss_node_id Cmiss_element_template_get_node(
 
 /***************************************************************************//**
  * Sets the global node at a given local node index in the element_template.
- * May only be called after a successful Cmiss_element_template_finalise call.
+ * May only be called after the definition of element fields are complete and
+ * valid.
  *
  * @param element_template  Element template to modify.
  * @param local_node_index  The index from 1 to number of nodes in template.
