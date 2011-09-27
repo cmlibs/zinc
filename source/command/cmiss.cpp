@@ -8919,6 +8919,10 @@ static int execute_command_gfx_import(struct Parse_state *state,
 				printf( "Failed to create RGB spectrum\n" );
 			}
 		}
+		else
+		{
+			ACCESS(Spectrum)(rgb_spectrum);
+		}
 		// as
 		Option_table_add_entry(option_table, "as", &graphics_object_name,
 			(void *)1, set_name );
@@ -8982,6 +8986,10 @@ static int execute_command_gfx_import(struct Parse_state *state,
 		if (region_path)
 		{
 			DEALLOCATE(region_path);
+		}
+		if (rgb_spectrum)
+		{
+			DEACCESS(Spectrum)(&rgb_spectrum);
 		}
 		DEALLOCATE(graphics_object_name);
 		DEACCESS(Graphical_material)(&material);
