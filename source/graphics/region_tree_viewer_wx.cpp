@@ -4821,6 +4821,8 @@ void Region_tree_viewer_set_active_rendition(
 		REACCESS(Cmiss_rendition)(&region_tree_viewer->rendition, NULL);
 		REACCESS(Cmiss_rendition)(&region_tree_viewer->edit_rendition, NULL);
 		REACCESS(Cmiss_graphic)(&region_tree_viewer->current_graphic, NULL);
+		region_tree_viewer->field_manager = NULL;
+		region_tree_viewer->wx_region_tree_viewer->Region_tree_viewer_wx_set_manager_in_choosers(region_tree_viewer);
 	}
 }
 

@@ -214,6 +214,7 @@ Called by the
 			Manager *temp_manager(new Manager(new_manager));
 			if (temp_manager != manager)
 			{
+				if (manager && manager_callback_id)
 				 manager->deregister_callback(manager_callback_id);
 				 manager = temp_manager;
 				 if (build_items())
