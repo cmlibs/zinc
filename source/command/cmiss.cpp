@@ -9074,7 +9074,7 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 	int number_of_values_confirmed;
 	FE_value coordinates[3];
 	float coord1, coord2, coord3;
-	int initial_identifier = FE_region_get_last_FE_nodes_idenifier(fe_region);
+	int initial_identifier = FE_region_get_last_FE_node_identifier(fe_region);
 	int i = 0;
 	for (vertex_iter = vertex_set.begin(); vertex_iter!=vertex_set.end(); ++vertex_iter)
 	{
@@ -12245,7 +12245,7 @@ use node_manager and node_selection.
 				  			if (!conditional_field)
 				  			{
 				  				display_message(ERROR_MESSAGE,
-				  					"gfx_destroy_elements:  conditional field cannot be found");
+				  					"gfx modify ngroup:  conditional field cannot be found");
 				  				return_code = 0;
 				  			}
 				  		}

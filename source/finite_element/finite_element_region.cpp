@@ -2108,8 +2108,8 @@ message if not already in the middle of changes.
 				}
 			}
 		}
-		/* FE_region_remove_FE_node_list may not work on list in FE_region */
-		fe_node_list = CREATE(LIST(FE_node))();
+		/* FE_region_remove_FE_node_list can't iterate over FE_region's own list, so must copy */
+		fe_node_list = FE_region_create_related_node_list(remove_from_fe_region);
 		if (COPY_LIST(FE_node)(fe_node_list, fe_region->fe_node_list))
 		{
 			if (!FE_region_remove_FE_node_list(remove_from_fe_region, fe_node_list))
@@ -4252,12 +4252,12 @@ A true return code is only obtained if all nodes from <node_list> are removed.
 	return (return_code);
 } /* FE_region_remove_FE_node_list */
 
-int FE_region_get_last_FE_nodes_idenifier(struct FE_region *fe_region)
+int FE_region_get_last_FE_node_identifier(struct FE_region *fe_region)
 {
 	int number_of_nodes, i, identifier;
 	struct FE_region *master_fe_region;
 
-	ENTER(FE_region_get_last_FE_nodes_idenifier);
+	ENTER(FE_region_get_last_FE_node_identifier);
 	if (fe_region)
 	{
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
@@ -4278,13 +4278,13 @@ int FE_region_get_last_FE_nodes_idenifier(struct FE_region *fe_region)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_last_FE_nodes_idenifier.  Invalid argument(s)");
+			"FE_region_get_last_FE_node_identifier.  Invalid argument(s)");
 		identifier = 0;
 	}
 	LEAVE;
 
 	return (identifier);
-} /* FE_region_get_last_FE_nodes_idenifier */
+} /* FE_region_get_last_FE_node_identifier */
 
 int FE_region_get_number_of_FE_nodes(struct FE_region *fe_region)
 /*******************************************************************************

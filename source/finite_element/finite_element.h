@@ -2873,7 +2873,7 @@ int list_FE_element(struct FE_element *element);
 PROTOTYPE_LIST_FUNCTIONS(FE_element);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
-	struct CM_element_information *);
+	const struct CM_element_information *);
 
 PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator);
 

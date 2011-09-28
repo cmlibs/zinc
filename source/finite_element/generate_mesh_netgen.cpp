@@ -345,7 +345,7 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
    const int number_of_nodes = Ng_GetNP(mesh);
    FE_value coordinates[3];
    double coor_tmp[3];
-	 int initial_identifier = FE_region_get_last_FE_nodes_idenifier(fe_region)+1;
+	 int initial_identifier = FE_region_get_last_FE_node_identifier(fe_region)+1;
    int i;
    for (i = 0; i < number_of_nodes; i++)
    {

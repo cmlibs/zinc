@@ -58,6 +58,7 @@ Functions for manipulating finite element structures.
 #include <cstdio>
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
+#include "general/list_btree_private.hpp"
 extern "C" {
 #include <math.h>
 #include "command/parser.h"
@@ -342,8 +343,14 @@ DESCRIPTION :
 	{
 		return DEACCESS(FE_node)(node_address);
 	}
+
+	inline int get_identifier() const
+	{
+		return cm_node_identifier;
+	}
 }; /* struct FE_node */
 
+#ifdef NODE_STL_CONTAINER
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
  * objects by identifier with Cmiss_set.
@@ -362,7 +369,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<FE_node> by cm_node_identifier */
+/** functor for ordering Cmiss_set<FE_node *> by cm_node_identifier */
 struct FE_node_compare_number
 {
 	bool operator() (const FE_node* node1, const FE_node* node2) const
@@ -372,6 +379,20 @@ struct FE_node_compare_number
 };
 
 typedef Cmiss_set<Cmiss_node *,FE_node_compare_number> Cmiss_set_Cmiss_node;
+
+struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
+{
+	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
+		Cmiss_set_Cmiss_node::ext_iterator(container)
+	{
+	}
+};
+#endif // NODE_STL_CONTAINER
+
+/** can tweak this to vary performance */
+const int CMISS_NODE_BTREE_ORDER = 5;
+
+typedef Cmiss_btree<Cmiss_node,int,CMISS_NODE_BTREE_ORDER> Cmiss_set_Cmiss_node;
 
 struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 {
@@ -839,6 +860,8 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 {
+	// @todo: can replace with just an integer identifier now that elements of
+	// different dimension are in separate lists
 	/* unique identifier of element in region as CM_element_type, number */
 	struct CM_element_information identifier;
 
@@ -873,8 +896,14 @@ variables.
 	{
 		return DEACCESS(FE_element)(element_address);
 	}
+
+	inline const CM_element_information *get_identifier() const
+	{
+		return &identifier;
+	}
 }; /* struct FE_element */
 
+#ifdef ELEMENT_STL_CONTAINER
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
  * objects by identifier with Cmiss_set.
@@ -893,7 +922,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<FE_element> by struct CM_element_information */
+/** functor for ordering Cmiss_set<FE_element *> by struct CM_element_information */
 struct FE_element_compare_identifier
 {
 	bool operator() (const FE_element* element1, const FE_element* element2) const
@@ -907,6 +936,31 @@ struct FE_element_compare_identifier
 };
 
 typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_Cmiss_element;
+
+struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
+{
+	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
+		Cmiss_set_Cmiss_element::ext_iterator(container)
+	{
+	}
+};
+#endif
+
+struct Cmiss_element_identifier_less
+{
+	bool operator() (const CM_element_information *identifier1, const CM_element_information *identifier2) const
+	{
+		// @todo can remove type comparison now that elements of different dimension are in separate lists
+		if (identifier1->type == identifier2->type)
+			return (identifier1->number < identifier2->number);
+		return (identifier1->type < identifier2->type);
+	}
+};
+
+/** can tweak this to vary performance */
+const int CMISS_ELEMENT_BTREE_ORDER = 5;
+
+typedef Cmiss_btree<Cmiss_element,const CM_element_information *,CMISS_ELEMENT_BTREE_ORDER,Cmiss_element_identifier_less> Cmiss_set_Cmiss_element;
 
 struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
 {
@@ -4628,52 +4682,6 @@ in <fe_field_change_log>.
 } /* FE_node_field_info_log_FE_field_changes */
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
-
-#ifdef OLD_CODE
-// not used by STL set; see FE_element_compare_identifier
-static int compare_CM_element_information(
-	struct CM_element_information *cmiss_1,
-	struct CM_element_information *cmiss_2)
-/*******************************************************************************
-LAST MODIFIED : 17 April 1999
-
-DESCRIPTION :
-Returns -1 if cmiss_1 < cmiss_2, 0 if cmiss_1 = cmiss_2 and 1 if cmiss_1 >
-cmiss_2.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(compare_CM_element_information);
-	if (cmiss_1&&cmiss_2)
-	{
-		if (cmiss_1->type==cmiss_2->type )
-		{
-			if (cmiss_1->number==cmiss_2->number)
-				return_code=0;
-			else if (cmiss_1->number < cmiss_2->number)
-				return_code=-1;
-			else
-				return_code =1;
-		}
-		else
-		{
-			if (cmiss_1->type<cmiss_2->type )
-				return_code=-1;
-			else
-				return_code =1;
-		}
-
-	}
-	else
-	{
-		return_code=1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_CM_element_information */
-#endif /* OLD_CODE */
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_element)
 
@@ -9258,7 +9266,7 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 				default:
 				{
 					return_code=0;
-				}
+				} break;
 			}
 			if (number_of_values != field->number_of_values)
 			{
@@ -13822,9 +13830,10 @@ int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 		if ((ELEMENT_XI_VALUE == field->value_type) &&
 			(GENERAL_FE_FIELD == field->fe_field_type))
 		{
-			for (Cmiss_set_Cmiss_node::iterator node_iter = nodes->begin(); node_iter != nodes->end(); ++node_iter)
+			Cmiss_node_iterator node_iter(nodes);
+			Cmiss_node_id node = 0;
+			while (0 != (node = node_iter.next_non_access()))
 			{
-				Cmiss_node *node = *node_iter;
 				if (node->fields && (node->fields->fe_region == fe_region))
 				{
 					set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
@@ -16973,10 +16982,10 @@ int list_FE_node(struct FE_node *node)
 }
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_node)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_node,cm_node_identifier,int)
-DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
-DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator)
+DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_node)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_node,cm_node_identifier,int)
+DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator)
 
 int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address)
 {
@@ -24722,10 +24731,10 @@ Frees the memory for the element, sets <*element_address> to NULL.
 
 DECLARE_OBJECT_FUNCTIONS(FE_element)
 
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_element)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_element,identifier,struct CM_element_information *)
-DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
-DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator)
+DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_element)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,const CM_element_information *)
+DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator)
 
 int Cmiss_element_iterator_destroy(Cmiss_element_iterator_id *element_iterator_address)
 {
