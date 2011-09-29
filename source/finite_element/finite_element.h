@@ -1542,6 +1542,11 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator);
 Cmiss_node_id Cmiss_node_iterator_next_non_access(
 	Cmiss_node_iterator_id node_iterator);
 
+/***************************************************************************//**
+ * List statistics about btree efficiency for node list.
+ */
+void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list);
+
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_node);
 
 struct Linear_combination_of_global_values
@@ -2886,6 +2891,11 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator);
  */
 Cmiss_element_id Cmiss_element_iterator_next_non_access(
 	Cmiss_element_iterator_id element_iterator);
+
+/***************************************************************************//**
+ * List statistics about btree efficiency for element list.
+ */
+void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_element);
 

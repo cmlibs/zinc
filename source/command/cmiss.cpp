@@ -107,6 +107,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
+#include "computed_field/computed_field_subobject_group_internal.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
@@ -9696,7 +9697,59 @@ Executes a GFX LIST ALL_COMMANDS.
 
 	return (return_code);
 }/* gfx_list_all_commands */
-	 
+
+/***************************************************************************//**
+ * List statistical information about packing in node/element btree structures.
+ */
+static int gfx_list_btree_statistics(struct Parse_state *state,
+	void *dummy_to_be_modified, void *root_region_void)
+{
+	int return_code = 0;
+	USE_PARAMETER(dummy_to_be_modified);
+	Cmiss_region *root_region = (struct Cmiss_region *)root_region_void;
+	if (state && root_region)
+	{
+		Cmiss_region *region = Cmiss_region_access(root_region);
+		Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"List statistics about btree structures storing a region's nodes and elements.");
+		Option_table_add_set_Cmiss_region(option_table,
+			"region", root_region, &region);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		if (return_code)
+		{
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			FE_region *fe_region = Cmiss_region_get_FE_region(region);
+			FE_region_list_btree_statistics(fe_region);
+			Cmiss_field_iterator_id iterator = Cmiss_field_module_create_field_iterator(field_module);
+			Cmiss_field_id field = 0;
+			while (0 != (field = Cmiss_field_iterator_next(iterator)))
+			{
+				Cmiss_field_node_group_id node_group = Cmiss_field_cast_node_group(field);
+				Cmiss_field_element_group_id element_group = Cmiss_field_cast_element_group(field);
+				if (node_group || element_group)
+				{
+					char *name = Cmiss_field_get_name(field);
+					display_message(INFORMATION_MESSAGE, "%s group: %s\n", node_group ? "Node" : "Element", name);
+					if (node_group)
+						Cmiss_field_node_group_list_btree_statistics(node_group);
+					else
+						Cmiss_field_element_group_list_btree_statistics(element_group);
+					Cmiss_field_node_group_destroy(&node_group);
+					Cmiss_field_element_group_destroy(&element_group);
+					DEALLOCATE(name);
+				}
+				Cmiss_field_destroy(&field);
+			}
+			Cmiss_field_iterator_destroy(&iterator);
+			Cmiss_field_module_destroy(&field_module);
+		}
+		Cmiss_region_destroy(&region);
+	}
+	return (return_code);
+}
+
 static int gfx_list_environment_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11422,6 +11475,9 @@ Executes a GFX LIST command.
 			/* all_commands */
 			Option_table_add_entry(option_table, "all_commands", NULL,
 				command_data_void, gfx_list_all_commands);
+			/* btree_statistics */
+			Option_table_add_entry(option_table, "btree_statistics", NULL,
+				(void *)command_data->root_region, gfx_list_btree_statistics);
 #if defined (USE_OPENCASCADE)
 			/* cad */
 			Option_table_add_entry(option_table, "cad", NULL,

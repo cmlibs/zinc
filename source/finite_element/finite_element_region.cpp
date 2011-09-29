@@ -8483,3 +8483,30 @@ struct LIST(FE_node) *FE_region_create_related_node_list(struct FE_region *fe_re
 	}
 	return fe_node_list;
 }
+
+void FE_region_list_btree_statistics(struct FE_region *fe_region)
+{
+	if (fe_region)
+	{
+		if (0 < NUMBER_IN_LIST(FE_node)(fe_region->fe_node_list))
+		{
+			display_message(INFORMATION_MESSAGE, "Nodes:\n");
+			FE_node_list_write_btree_statistics(fe_region->fe_node_list);
+		}
+		for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
+		{
+			LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
+			if (0 < NUMBER_IN_LIST(FE_element)(element_list))
+			{
+				display_message(INFORMATION_MESSAGE, "%d-D elements:\n",dimension);
+				FE_element_list_write_btree_statistics(element_list);
+			}
+		}
+		if (fe_region->data_fe_region &&
+			(0 < NUMBER_IN_LIST(FE_node)(fe_region->data_fe_region->fe_node_list)))
+		{
+			display_message(INFORMATION_MESSAGE, "Data:\n");
+			FE_node_list_write_btree_statistics(fe_region->data_fe_region->fe_node_list);
+		}
+	}
+}

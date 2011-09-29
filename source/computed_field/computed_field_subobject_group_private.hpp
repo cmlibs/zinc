@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : computed_field_subobject_group.hpp
+ * FILE : computed_field_subobject_group_private.hpp
  * 
  * Implements region sub object groups, e.g. node group, element group.
  */
@@ -527,6 +527,11 @@ namespace {
 			return &change_detail;
 		}
 
+		void write_btree_statistics() const
+		{
+			FE_element_list_write_btree_statistics(object_list);
+		}
+
 	private:
 
 		Computed_field_core* copy()
@@ -751,6 +756,11 @@ namespace {
 		virtual const Cmiss_field_change_detail *get_change_detail() const
 		{
 			return &change_detail;
+		}
+
+		void write_btree_statistics() const
+		{
+			FE_node_list_write_btree_statistics(object_list);
 		}
 
 	private:

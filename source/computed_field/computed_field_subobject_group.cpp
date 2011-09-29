@@ -50,7 +50,8 @@ extern "C" {
 #endif /* defined (USE_OPENCASCADE) */
 }
 
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/computed_field_subobject_group_internal.hpp"
+#include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 extern "C" {
@@ -184,6 +185,26 @@ Computed_field *Cmiss_field_module_create_element_group(Cmiss_field_module_id fi
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address)
 {
 	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(element_group_address));
+}
+
+void Cmiss_field_node_group_list_btree_statistics(
+	Cmiss_field_node_group_id node_group)
+{
+	Computed_field_node_group *node_group_core = Computed_field_node_group_core_cast(node_group);
+	if (node_group_core)
+	{
+		node_group_core->write_btree_statistics();
+	}
+}
+
+void Cmiss_field_element_group_list_btree_statistics(
+	Cmiss_field_element_group_id element_group)
+{
+	Computed_field_element_group *element_group_core = Computed_field_element_group_core_cast(element_group);
+	if (element_group_core)
+	{
+		element_group_core->write_btree_statistics();
+	}
 }
 
 #if defined (USE_OPENCASCADE)

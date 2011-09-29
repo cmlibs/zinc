@@ -42,7 +42,8 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_logical_operators.h
 	source/computed_field/computed_field_matrix_operators.hpp
 	source/computed_field/computed_field_nodeset_operators.hpp
-	source/computed_field/computed_field_subobject_group.hpp
+	source/computed_field/computed_field_subobject_group_private.hpp
+	source/computed_field/computed_field_subobject_group_internal.hpp
 	source/computed_field/computed_field_string_constant.h
 	source/computed_field/computed_field_trigonometry.h
 	source/computed_field/computed_field_vector_operators.hpp

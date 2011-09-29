@@ -61,7 +61,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "time/time.h"
 }
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/computed_field_subobject_group_private.hpp"
 #if defined (WX_USER_INTERFACE)
 #include <wx/collpane.h>
 #include "wx/wx.h"

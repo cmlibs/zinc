@@ -1336,4 +1336,9 @@ struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
 
 struct LIST(FE_node) *FE_region_create_related_node_list(struct FE_region *fe_region);
 
+/***************************************************************************//**
+ * List statistics about btree structures storing a region's nodes and elements.
+ */
+void FE_region_list_btree_statistics(struct FE_region *fe_region);
+
 #endif /* !defined (FINITE_ELEMENT_REGION_H) */

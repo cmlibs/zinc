@@ -337,6 +337,29 @@ PROTOTYPE_INDEXED_LIST_BTREE_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 	} \
 }
 
+#define LIST_BTREE_STATISTICS(object_type,list) \
+{ \
+	CMISS_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMISS_BTREE(object_type) *>(list); \
+	int stem_count = 0; \
+	int leaf_count = 0; \
+	int min_leaf_depth = 0; \
+	int max_leaf_depth = 0; \
+	double mean_leaf_depth = 0.0; \
+	double mean_stem_occupancy = 0.0; \
+	double mean_leaf_occupancy = 0.0; \
+	cmiss_btree->get_statistics(stem_count, leaf_count, \
+		min_leaf_depth, max_leaf_depth, mean_leaf_depth, \
+		mean_stem_occupancy, mean_leaf_occupancy); \
+	display_message(INFORMATION_MESSAGE, "  Size = %d\n", cmiss_btree->size()); \
+	display_message(INFORMATION_MESSAGE, "  Stem count = %d\n", stem_count); \
+	display_message(INFORMATION_MESSAGE, "  Leaf count = %d\n", leaf_count); \
+	display_message(INFORMATION_MESSAGE, "  Min leaf depth = %d\n", min_leaf_depth); \
+	display_message(INFORMATION_MESSAGE, "  Max leaf depth = %d\n", max_leaf_depth); \
+	display_message(INFORMATION_MESSAGE, "  Mean leaf depth = %g\n", mean_leaf_depth); \
+	display_message(INFORMATION_MESSAGE, "  Mean stem occupancy = %g\n", mean_stem_occupancy); \
+	display_message(INFORMATION_MESSAGE, "  Mean leaf occupancy = %g\n", mean_leaf_occupancy); \
+}
+
 /* prototypes for private headers, eg. finite_element_private.h */
 #define PROTOTYPE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
 PROTOTYPE_INDEXED_LIST_BTREE_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, identifier); \

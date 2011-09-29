@@ -84,7 +84,7 @@ extern "C" {
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/computed_field_subobject_group_private.hpp"
 /*
 Global variables
 ----------------

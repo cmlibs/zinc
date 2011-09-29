@@ -390,7 +390,7 @@ struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 #endif // NODE_STL_CONTAINER
 
 /** can tweak this to vary performance */
-const int CMISS_NODE_BTREE_ORDER = 5;
+const int CMISS_NODE_BTREE_ORDER = 10;
 
 typedef Cmiss_btree<Cmiss_node,int,CMISS_NODE_BTREE_ORDER> Cmiss_set_Cmiss_node;
 
@@ -958,7 +958,7 @@ struct Cmiss_element_identifier_less
 };
 
 /** can tweak this to vary performance */
-const int CMISS_ELEMENT_BTREE_ORDER = 5;
+const int CMISS_ELEMENT_BTREE_ORDER = 10;
 
 typedef Cmiss_btree<Cmiss_element,const CM_element_information *,CMISS_ELEMENT_BTREE_ORDER,Cmiss_element_identifier_less> Cmiss_set_Cmiss_element;
 
@@ -17010,6 +17010,11 @@ Cmiss_node_id Cmiss_node_iterator_next_non_access(Cmiss_node_iterator_id node_it
 	return 0;
 }
 
+void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list)
+{
+	LIST_BTREE_STATISTICS(FE_node,node_list);
+}
+
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
 
 struct Linear_combination_of_global_values
@@ -24757,6 +24762,11 @@ Cmiss_element_id Cmiss_element_iterator_next_non_access(Cmiss_element_iterator_i
 	if (element_iterator)
 		return element_iterator->next_non_access();
 	return 0;
+}
+
+void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list)
+{
+	LIST_BTREE_STATISTICS(FE_element,element_list);
 }
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)

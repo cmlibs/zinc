@@ -84,7 +84,7 @@ extern "C" {
 #include "graphics/graphics_coordinate_system.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/tessellation.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/computed_field_subobject_group_private.hpp"
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"
 #	include "cad/computed_field_cad_topology.h"
