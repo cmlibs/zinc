@@ -287,8 +287,8 @@ Changes the chosen object in the choose_object_widget.
 	} /* Enumerator_chooser::set_object */
 
 	int set_conditional_function(
-		typename Enumerator::Conditional_function *conditional_function,
-		void *conditional_function_user_data, typename Enumerator::Enumerator_type new_value)
+		typename Enumerator::Conditional_function *in_conditional_function,
+		void *in_conditional_function_user_data, typename Enumerator::Enumerator_type new_value)
 /*****************************************************************************
 LAST MODIFIED : 10 March 2007
 
@@ -299,8 +299,8 @@ selection of objects. Also allows new_object to be set simultaneously.
 	{
 		int return_code;
 
-		conditional_function = conditional_function;
-		conditional_function_user_data = conditional_function_user_data;
+		conditional_function = in_conditional_function;
+		conditional_function_user_data = in_conditional_function_user_data;
 		if (build_items())
 		{
 			return_code=chooser->build_main_menu(

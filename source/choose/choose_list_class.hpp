@@ -206,8 +206,8 @@ Changes the chosen object in the choose_object_widget.
 	} /* List_chooser::set_object */
 
 	int set_conditional_function(
-		typename List::List_conditional_function *conditional_function,
-		void *conditional_function_user_data, Object *new_object)
+		typename List::List_conditional_function *in_conditional_function,
+		void *in_conditional_function_user_data, Object *new_object)
 /*****************************************************************************
 LAST MODIFIED : 9 June 2000
 
@@ -218,8 +218,8 @@ selection of objects. Also allows new_object to be set simultaneously.
 	{
 		int return_code;
 
-		conditional_function = conditional_function;
-		conditional_function_user_data = conditional_function_user_data;
+		conditional_function = in_conditional_function;
+		conditional_function_user_data = in_conditional_function_user_data;
 		if (build_items())
 		{
 			return_code=chooser->build_main_menu(
