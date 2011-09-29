@@ -43,6 +43,9 @@
 	struct Cmiss_field;
 	typedef struct Cmiss_field *Cmiss_field_id;
 
+	struct Cmiss_field_iterator;
+	typedef struct Cmiss_field_iterator * Cmiss_field_iterator_id;
+
 	struct Cmiss_field_cache;
 	typedef struct Cmiss_field_cache *Cmiss_field_cache_id;
 

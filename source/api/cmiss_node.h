@@ -160,6 +160,8 @@ Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
  * which are ordered from lowest to highest identifier. The iterator initially
  * points at the position before the first node, so the first call to
  * Cmiss_node_iterator_next() returns the first node and advances the iterator.
+ * Iterator becomes invalid if nodeset is modified or any of its nodes are
+ * given new identifiers.
  *
  * @param nodeset  Handle to the nodeset to iterate over.
  * @return  Handle to node_iterator at position before first, or NULL if error.

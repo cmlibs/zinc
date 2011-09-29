@@ -116,6 +116,8 @@ Cmiss_field_cache_set_mesh_location
 Cmiss_field_cache_set_field_real
 Cmiss_field_cache_set_node
 Cmiss_field_cache_set_time
+Cmiss_field_iterator_destroy
+Cmiss_field_iterator_next
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy
@@ -124,6 +126,7 @@ Cmiss_field_module_end_change
 Cmiss_field_module_find_field_by_name
 Cmiss_field_module_define_field
 Cmiss_field_module_create_field
+Cmiss_field_module_create_field_iterator
 Cmiss_field_module_define_all_faces
 
 /* api/cmiss_field_arithmetic_operators.h */

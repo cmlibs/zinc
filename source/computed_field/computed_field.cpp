@@ -836,6 +836,29 @@ DECLARE_INDEXED_LIST_STL_FUNCTIONS(Computed_field)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Computed_field,name,const char *)
 
+int Cmiss_field_iterator_destroy(Cmiss_field_iterator_id *field_iterator_address)
+{
+	if (!field_iterator_address)
+		return 0;
+	delete *field_iterator_address;
+	*field_iterator_address = 0;
+	return 1;
+}
+
+Cmiss_field_id Cmiss_field_iterator_next(Cmiss_field_iterator_id field_iterator)
+{
+	if (field_iterator)
+		return field_iterator->next();
+	return 0;
+}
+
+Cmiss_field_id Cmiss_field_iterator_next_non_access(Cmiss_field_iterator_id field_iterator)
+{
+	if (field_iterator)
+		return field_iterator->next_non_access();
+	return 0;
+}
+
 /***************************************************************************//**
  * Copy the type specific parts of <source> field to <destination>, namely the
  * number_of_components, the source_fields, the soure_values and the core.
@@ -1150,6 +1173,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 } /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
 
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(Computed_field,Cmiss_field_iterator)
 
 DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
 
@@ -1180,6 +1204,14 @@ char *Computed_field_manager_get_unique_field_name(
 	}
 	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
 	return field_name;
+}
+
+Cmiss_field_iterator_id Computed_field_manager_create_iterator(
+	struct MANAGER(Computed_field) *manager)
+{
+	if (manager)
+		return CREATE_LIST_ITERATOR(Computed_field)(manager->object_list);
+	return 0;
 }
 
 static int Computed_field_add_to_manager_private(struct Computed_field *field,

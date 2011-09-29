@@ -437,6 +437,15 @@ Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_modul
 	return (return_field);
 }
 
+Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
+	Cmiss_field_module_id field_module)
+{
+	if (!field_module)
+		return 0;
+	MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(field_module->region);
+	return Computed_field_manager_create_iterator(manager);
+}
+
 Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
 	Cmiss_field_module_id field_module, int number_of_times, double *times)
 {

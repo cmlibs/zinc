@@ -425,4 +425,21 @@ int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node);
  */
 int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time);
 
+/***************************************************************************//**
+ * Destroys this handle to the field_iterator and sets it to NULL.
+ *
+ * @param field_iterator_address  Address of handle to field_iterator to destroy.
+ */
+int Cmiss_field_iterator_destroy(Cmiss_field_iterator_id *field_iterator_address);
+
+/***************************************************************************//**
+ * Returns a handle to the next field in the container being iterated over then
+ * advances the iterator position. The caller is required to destroy the
+ * returned field handle.
+ *
+ * @param field_iterator  Field iterator to query and advance.
+ * @return  Handle to the next field, or NULL if none remaining.
+ */
+Cmiss_field_id Cmiss_field_iterator_next(Cmiss_field_iterator_id field_iterator);
+
 #endif /* __CMISS_FIELD_H__ */

@@ -547,6 +547,14 @@ struct Computed_field_compare_name
 
 typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Cmiss_field;
 
+struct Cmiss_field_iterator : public Cmiss_set_Cmiss_field::ext_iterator
+{
+	Cmiss_field_iterator(Cmiss_set_Cmiss_field *container) :
+		Cmiss_set_Cmiss_field::ext_iterator(container)
+	{
+	}
+};
+
 /*
 Computed field functions
 ------------------------
@@ -565,6 +573,12 @@ Functions used only internally to computed fields or the region that owns them.
 char *Computed_field_manager_get_unique_field_name(
 	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
 	const char *separator="", int first_number=-1);
+
+/***************************************************************************//**
+ * Create an iterator for the objects in the manager.
+ */
+Cmiss_field_iterator_id Computed_field_manager_create_iterator(
+	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
  * Creates a new computed field with the supplied content and for the region

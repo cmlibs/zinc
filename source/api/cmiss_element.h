@@ -227,6 +227,8 @@ Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
  * initially points at the position before the first element, so the first call
  * to Cmiss_element_iterator_next() returns the first element and advances the
  * iterator.
+ * Iterator becomes invalid if mesh is modified or any of its elements are
+ * given new identifiers.
  *
  * @param mesh  Handle to the mesh whose elements are to be iterated over.
  * @return  Handle to element_iterator at position before first, or NULL if

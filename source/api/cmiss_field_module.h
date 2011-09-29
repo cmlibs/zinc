@@ -148,6 +148,22 @@ Cmiss_field_id Cmiss_field_module_create_field(Cmiss_field_module_id field_modul
 	const char* field_name, const char *command_string);
 
 /***************************************************************************//**
+ * Create a field iterator object for iterating through the fields in the field
+ * module, in alphabetical order of name. The iterator initially points at the
+ * position before the first field, so the first call to
+ * Cmiss_field_iterator_next() returns the first field and advances the
+ * iterator.
+ * Iterator becomes invalid if fields are added, removed or renamed while in use.
+ *
+ * @param field_module  Handle to the field_module whose fields are to be
+ * iterated over.
+ * @return  Handle to field_iterator at position before first, or NULL if
+ * error.
+ */
+Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
+	Cmiss_field_module_id field_module);
+
+/***************************************************************************//**
  * Defines, for all elements of all meshes in field module, face elements of
  * dimension one lower in the associated face mesh, and all their faces
  * recursively down to 1 dimensional lines.
