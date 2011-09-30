@@ -63,6 +63,7 @@ extern "C" {
 #include "computed_field/computed_field_finite_element.h"
 }
 #include "computed_field/field_module.hpp"
+#include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
 
 #if defined (DEBUG_CODE)
@@ -3684,6 +3685,41 @@ Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
 		Cmiss_mesh_access(mesh);
 	}
 	return mesh;
+}
+
+class Cmiss_field_find_mesh_location_search_mode_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_field_find_mesh_location_search_mode mode)
+    {
+    	const char *enum_string = 0;
+    	switch (mode)
+    	{
+    		case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
+    			enum_string = "FIND_EXACT";
+    			break;
+    		case CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
+    			enum_string = "FIND_NEAREST";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
+enum Cmiss_field_find_mesh_location_search_mode
+	Cmiss_field_find_mesh_location_search_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum Cmiss_field_find_mesh_location_search_mode,
+		Cmiss_field_find_mesh_location_search_mode_conversion>(string);
+}
+
+char *Cmiss_field_find_mesh_location_search_mode_enum_to_string(
+	enum Cmiss_field_find_mesh_location_search_mode mode)
+{
+	const char *mode_string = Cmiss_field_find_mesh_location_search_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
 enum Cmiss_field_find_mesh_location_search_mode

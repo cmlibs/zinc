@@ -190,6 +190,26 @@ enum Cmiss_field_find_mesh_location_search_mode
 };
 
 /***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_find_mesh_location_search_mode
+	Cmiss_field_find_mesh_location_search_mode_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param format  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_find_mesh_location_search_mode_enum_to_string(
+	enum Cmiss_field_find_mesh_location_search_mode mode);
+
+/***************************************************************************//**
  * Gets the search mode for the find_mesh_location field: whether finding
  * location with exact or nearest value.
  *
