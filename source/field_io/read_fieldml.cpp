@@ -112,7 +112,8 @@ const BasisType libraryBases[] =
 	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE, CMISS_BASIS_FUNCTION_QUADRATIC_LAGRANGE } },
 	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE, CMISS_BASIS_FUNCTION_CUBIC_LAGRANGE } },
 	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX } },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX } }
+	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX, CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX } },
+	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX, CMISS_BASIS_FUNCTION_LINEAR_LAGRANGE } },
 	// GRC add Hermite!
 	// GRC add zienkiewicz ordering, swizzle
 };
@@ -278,13 +279,13 @@ private:
 int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
 	int min, int max, int stride)
 {
-#if 0 // GRC
+#ifdef DEBUG_CODE
 	{
 		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
 		display_message(INFORMATION_MESSAGE, "Cmiss_field_ensemble_add_identifier_range: Ensemble %s min %d max %d (stride %d)\n", name, min, max, stride);
 		DEALLOCATE(name);
 	}
-#endif
+#endif // DEBUG_CODE
 	if ((!ensemble) || (max < min) || (stride < 1))
 	{
 		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
@@ -295,11 +296,11 @@ int Cmiss_field_ensemble_add_identifier_range(Cmiss_field_ensemble_id ensemble,
 	}
 	for (FmlEnsembleValue identifier = min; identifier <= max; identifier += stride)
 	{
-#if 0 // GRC
+#ifdef DEBUG_CODE
 		char *name = Cmiss_field_get_name(Cmiss_field_ensemble_base_cast(ensemble));
 		display_message(INFORMATION_MESSAGE, "Read FieldML:  Ensemble %s identifier %d (%d:%d)\n", name, identifier, min, max);
 		DEALLOCATE(name);
-#endif
+#endif // DEBUG_CODE
 		Cmiss_ensemble_iterator_id iterator =
 			Cmiss_field_ensemble_find_or_create_entry(ensemble, identifier);
 		if (!iterator)
@@ -605,7 +606,7 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 	if (innerCount*valueBufferSize != denseLength)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Record length %d does not fit %d sparse indexes and a multiple of %d dense values for parameters %s data source %s",
-			recordLength, sparseIndexCount, denseLength, totalDenseSize, name, getName(fmlDataSource).c_str());
+			recordLength, sparseIndexCount, denseLength, name, getName(fmlDataSource).c_str());
 		return_code = 0;
 	}
 	else if ((0 == sparseIndexCount) && (totalDenseSize != recordCount*denseLength))
@@ -627,9 +628,9 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 	}
 	for (int record = 0; (record < recordCount) && return_code; ++record)
 	{
-#if 0 // GRC debug
+#ifdef DEBUG_CODE
 			display_message(INFORMATION_MESSAGE, "Record %d\n", record+1);
-#endif
+#endif // DEBUG_CODE
 		if (0 < sparseIndexCount)
 		{
 			// read the next set of sparse indexes
@@ -643,9 +644,9 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 			}
 			for (int i = 0; i < sparseIndexCount; i++)
 			{
-#if 0 // GRC debug
+#ifdef DEBUG_CODE
 				display_message(INFORMATION_MESSAGE, "Index %d = ", indexBuffer[0]);
-#endif
+#endif // DEBUG_CODE
 				// should make convenience function for these three calls
 				Cmiss_ensemble_iterator_id entry =
 					Cmiss_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], indexBuffer[i]);
@@ -665,7 +666,7 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 				return_code = 0;
 				break;
 			}
-#if 0 // GRC debug
+#ifdef DEBUG_CODE
 			display_message(INFORMATION_MESSAGE, "  Inner %d:", inner+1);
 			for (int j = 0; j < valueBufferSize; j++)
 			{
@@ -675,7 +676,7 @@ int FieldMLReader::readSemiDenseParameters(FmlObjectHandle fmlParameters,
 					display_message(INFORMATION_MESSAGE, " %d", integerValueBuffer[j]);
 			}
 			display_message(INFORMATION_MESSAGE, "\n");
-#endif
+#endif // DEBUG_CODE
 			for (int i = firstDenseIteratorIndex; i < denseIndexCount; i++)
 			{
 				Cmiss_ensemble_index_set_entry(index, denseIterators[i]);
@@ -924,9 +925,9 @@ int FieldMLReader::readMeshes()
 			while (true)
 			{
 				int length = Fieldml_CopyMeshElementShape(fmlSession, fmlMeshType, elementNumber, /*allowDefault*/1, shapeName, shapeNameLength);
-#if 0 // GRC debug
+#ifdef DEBUG_CODE
 				display_message(INFORMATION_MESSAGE, "Element %d shape '%s'\n", elementNumber, shapeName);
-#endif
+#endif // DEBUG_CODE
 				if (length < (shapeNameLength - 1))
 					break;
 				shapeNameLength *= 2;
@@ -1168,7 +1169,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mes
 	Cmiss_element_basis_id element_basis = Cmiss_mesh_create_element_basis(mesh, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
 	{
-		for (int dimension = 2; dimension < meshDimension; dimension++)
+		for (int dimension = 2; dimension <= meshDimension; dimension++)
 		{
 			Cmiss_element_basis_set_function_type(element_basis, dimension,
 				libraryBases[basis_index].functionType[dimension - 1]);
