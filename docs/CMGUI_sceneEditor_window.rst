@@ -1,7 +1,7 @@
 CMGUI Scene Editor Window
 =========================
 
-.. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
+.. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphicalSettings
 
 
 The scene editor is used to control how visualizations appear in the graphics window. From this window you can:
