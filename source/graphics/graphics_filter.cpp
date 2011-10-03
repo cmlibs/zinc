@@ -879,6 +879,9 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		}
 		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table," define an operator_or filter, multiple filters defined earlier "
+			"can be added or removed. This filter will perform a boolean \"or\" check on the filters provided. "
+			"Graphics that match any of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
 		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
@@ -942,6 +945,9 @@ int gfx_define_graphics_filter_operator_and(struct Parse_state *state, void *gra
 		}
 		filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		struct Option_table *option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table," define an operator_and filter, multiple filters defined earlier "
+			"can be added or removed. This filter will perform a boolean \"and\" check on the filters provided. "
+			"Only graphics that match all of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
 		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
@@ -1462,7 +1468,7 @@ public:
         const char *enum_string = 0;
         switch (attribute)
         {
-        case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+        case CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED:
             enum_string = "IS_MANAGED";
             break;
         case 	CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_INVERSE:
