@@ -55,7 +55,6 @@ extern "C" {
 #include "time/time_keeper.h"
 #include "user_interface/message.h"
 }
-#include <algorithm>
 #include <list>
 
 struct Startup_material_definition
@@ -1182,14 +1181,6 @@ int Cmiss_graphics_module_enable_renditions(
 	ENTER(Cmiss_region_add_rendition);
 	if (cmiss_region && graphics_module)
 	{
-		std::list<struct Cmiss_region *>::iterator iter;
-		iter = std::find(graphics_module->member_regions_list->begin(),
-			graphics_module->member_regions_list->end(), cmiss_region);
-		if (iter != graphics_module->member_regions_list->end())
-		{
-			return 1;
-		}
-
 		return_code = Cmiss_graphics_module_create_rendition(
 			graphics_module, cmiss_region);
 		if (return_code)
@@ -1274,7 +1265,6 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
 	struct Cmiss_rendition *rendition = NULL;
 	if (graphics_module && region)
 	{
-		Cmiss_graphics_module_enable_renditions(graphics_module, region);
 		rendition = Cmiss_region_get_rendition_internal(region);
 		if (!rendition)
 		{

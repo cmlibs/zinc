@@ -650,8 +650,6 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 	ENTER(DESTROY(Computed_field));
 	if (field_address&&(field= *field_address))
 	{
-		char *temp_name = duplicate_string(field->name);
-		printf("destroy field %s \n", temp_name);
 		if (0 >= field->access_count)
 		{
 			/* Only DEALLOCATE the command_string if it is different to the name */
@@ -679,8 +677,6 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 				"DESTROY(Computed_field).  Positive access_count");
 			return_code=0;
 		}
-		printf("destroyed field %s\n", temp_name);
-		DEALLOCATE(temp_name);
 	}
 	else
 	{
@@ -771,7 +767,6 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field)
 
 int Cmiss_field_destroy(Cmiss_field_id *field_address)
 {
-	//printf("AccessCount %d: Cmiss_field_destroy: %s\n", (*field_address)->access_count, (*field_address)->name);
 	return (DEACCESS(Computed_field)(field_address));
 }
 
