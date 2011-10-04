@@ -917,7 +917,7 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 				return_code = 0;
 			}
 		}
-		else
+		else if (return_code)
 		{
 			display_message(ERROR_MESSAGE,
 				"gfx define graphics_filter operator_or:  Cannot change filter type.");
@@ -983,11 +983,10 @@ int gfx_define_graphics_filter_operator_and(struct Parse_state *state, void *gra
 				return_code = 0;
 			}
 		}
-		else
+		else if (return_code)
 		{
 			display_message(ERROR_MESSAGE,
 				"gfx define graphics_filter operator_and:  Cannot change filter type.");
-			display_parse_state_location(state);
 			return_code = 0;
 		}
 		DESTROY(Option_table)(&option_table);
