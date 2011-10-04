@@ -883,7 +883,7 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 			"can be added or removed. This filter will perform a boolean \"or\" check on the filters provided. "
 			"Graphics that match any of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table, NULL, filter_data,
+		Option_table_add_entry(option_table, "FILTERS", filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR )
@@ -949,7 +949,7 @@ int gfx_define_graphics_filter_operator_and(struct Parse_state *state, void *gra
 			"can be added or removed. This filter will perform a boolean \"and\" check on the filters provided. "
 			"Only graphics that match all of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table, NULL, filter_data,
+		Option_table_add_entry(option_table,  "FILTERS", filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND)
