@@ -844,6 +844,11 @@ int set_Cmiss_graphics_filter_source_data(struct Parse_state *state,
 					}
 				}
 			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, "FILTER_NAMES");
+				return_code = 1;
+			}
 		}
 		else
 		{
@@ -874,37 +879,35 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 		}
 		else
 		{
-			graphics_filter = Cmiss_graphics_module_create_filter_operator_or(
-				filter_data->graphics_module);
-			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
+			filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR;
 		}
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_help(option_table," define an operator_or filter, multiple filters defined earlier "
 			"can be added or removed. This filter will perform a boolean \"or\" check on the filters provided. "
 			"Graphics that match any of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table, "FILTERS", filter_data,
+		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
-		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR )
+		if (return_code && (filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_OR))
 		{
+			if (!graphics_filter)
+			{
+				graphics_filter = Cmiss_graphics_module_create_filter_operator_or(filter_data->graphics_module);
+				*graphics_filter_handle = graphics_filter;
+			}
 			Cmiss_graphics_filter_operator_id operator_filter = Cmiss_graphics_filter_cast_operator(graphics_filter);
 			if (operator_filter)
 			{
-				if (add_filter)
+				for (int i = 0; i < filter_data->number_of_filters; i++)
 				{
-					for (int i = 0; i < filter_data->number_of_filters; i++)
+					if (add_filter)
 					{
 						Cmiss_graphics_filter_operator_append_operand(operator_filter, filter_data->source_filters[i]);
-						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
 					}
-				}
-				else
-				{
-					for (int i = 0; i < filter_data->number_of_filters; i++)
+					else
 					{
 						Cmiss_graphics_filter_operator_remove_operand(operator_filter, filter_data->source_filters[i]);
-						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
 					}
 				}
 				Cmiss_graphics_filter_operator_destroy(&operator_filter);
@@ -916,13 +919,11 @@ int gfx_define_graphics_filter_operator_or(struct Parse_state *state, void *grap
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,
+				"gfx define graphics_filter operator_or:  Cannot change filter type.");
 			return_code = 0;
 		}
 		DESTROY(Option_table)(&option_table);
-		if (filter_data->source_filters)
-			DEALLOCATE(filter_data->source_filters);
-		if (graphics_filter)
-			*graphics_filter_handle = graphics_filter;
 	}
 
 	return return_code;
@@ -938,39 +939,41 @@ int gfx_define_graphics_filter_operator_and(struct Parse_state *state, void *gra
 	{
 		Cmiss_graphics_filter_id *graphics_filter_handle = (Cmiss_graphics_filter_id *)graphics_filter_handle_void; // can be null
 		Cmiss_graphics_filter_id graphics_filter = *graphics_filter_handle;
-		if (!graphics_filter)
+		if (graphics_filter)
 		{
-			graphics_filter = Cmiss_graphics_module_create_filter_operator_and(
-				filter_data->graphics_module);
+			filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
 		}
-		filter_type = Cmiss_graphics_filter_get_type(graphics_filter);
+		else
+		{
+			filter_type = CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND;
+		}
 		struct Option_table *option_table = CREATE(Option_table)();
 		Option_table_add_help(option_table," define an operator_and filter, multiple filters defined earlier "
 			"can be added or removed. This filter will perform a boolean \"and\" check on the filters provided. "
 			"Only graphics that match all of the filters will be shown.");
 		Option_table_add_switch(option_table,"add_filters","remove_filters",&add_filter);
-		Option_table_add_entry(option_table,  "FILTERS", filter_data,
+		Option_table_add_entry(option_table, NULL, filter_data,
 			NULL, set_Cmiss_graphics_filter_source_data);
 		return_code = Option_table_multi_parse(option_table, state);
-		if (return_code && filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND)
+		if (return_code && (filter_type == CMISS_GRAPHICS_FILTER_TYPE_OPERATOR_AND))
 		{
+			if (!graphics_filter)
+			{
+				graphics_filter = Cmiss_graphics_module_create_filter_operator_and(filter_data->graphics_module);
+				*graphics_filter_handle = graphics_filter;
+			}
 			Cmiss_graphics_filter_operator_id operator_filter = Cmiss_graphics_filter_cast_operator(graphics_filter);
 			if (operator_filter)
 			{
-				if (add_filter)
+				for (int i = 0; i < filter_data->number_of_filters; i++)
 				{
-					for (int i = 0; i < filter_data->number_of_filters; i++)
+					if (add_filter)
 					{
 						Cmiss_graphics_filter_operator_append_operand(operator_filter, filter_data->source_filters[i]);
-						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
 					}
-				}
-				else
-				{
-					for (int i = 0; i < filter_data->number_of_filters; i++)
+					else
 					{
 						Cmiss_graphics_filter_operator_remove_operand(operator_filter, filter_data->source_filters[i]);
-						Cmiss_graphics_filter_destroy(&filter_data->source_filters[i]);
 					}
 				}
 				Cmiss_graphics_filter_operator_destroy(&operator_filter);
@@ -982,13 +985,12 @@ int gfx_define_graphics_filter_operator_and(struct Parse_state *state, void *gra
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,
+				"gfx define graphics_filter operator_and:  Cannot change filter type.");
+			display_parse_state_location(state);
 			return_code = 0;
 		}
 		DESTROY(Option_table)(&option_table);
-		if (filter_data->source_filters)
-			DEALLOCATE(filter_data->source_filters);
-		if (graphics_filter)
-			*graphics_filter_handle = graphics_filter;
 	}
 
 	return return_code;
@@ -1119,7 +1121,6 @@ int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void
 	void *graphics_module_void)
 {
 	int return_code = 1;
-	Cmiss_graphics_filter *graphics_filter = NULL;
 	Cmiss_graphics_module *graphics_module = (Cmiss_graphics_module *)graphics_module_void;
 	Cmiss_region *root_region = (Cmiss_region *)root_region_void;
 	if (state && graphics_module && root_region)
@@ -1127,6 +1128,12 @@ int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void
 		const char *current_token = state->current_token;
 		if (current_token)
 		{
+			Cmiss_graphics_filter *graphics_filter = NULL;
+			struct Define_graphics_filter_data filter_data;
+			filter_data.graphics_module = graphics_module;
+			filter_data.root_region = root_region;
+			filter_data.number_of_filters = 0;
+			filter_data.source_filters = NULL;
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
@@ -1134,36 +1141,36 @@ int gfx_define_graphics_filter(struct Parse_state *state, void *root_region_void
 					Cmiss_graphics_module_get_filter_manager(graphics_module);
 				MANAGER_BEGIN_CACHE(Cmiss_graphics_filter)(graphics_filter_manager);
 				graphics_filter = Cmiss_graphics_module_find_filter_by_name(graphics_module, current_token);
+				bool existing_filter = (graphics_filter != 0);
 				shift_Parse_state(state,1);
-				Cmiss_graphics_filter **graphics_filter_address = &graphics_filter;
-				struct Define_graphics_filter_data filter_data;
-				filter_data.graphics_module = graphics_module;
-				filter_data.root_region = root_region;
-				filter_data.number_of_filters = 0;
-				filter_data.source_filters = NULL;
-				if (!graphics_filter)
+				return_code = gfx_define_graphics_filter_contents(state, (void *)&graphics_filter, (void*)&filter_data);
+				if (return_code)
 				{
-					return_code = gfx_define_graphics_filter_contents(state, (void *)graphics_filter_address, (void*)&filter_data);
-					graphics_filter = *graphics_filter_address;
-					Cmiss_graphics_filter_set_name(graphics_filter, current_token);
 					Cmiss_graphics_filter_set_attribute_integer(graphics_filter, CMISS_GRAPHICS_FILTER_ATTRIBUTE_IS_MANAGED, 1);
+					if (!existing_filter)
+						Cmiss_graphics_filter_set_name(graphics_filter, current_token);
 				}
-				else
-				{
-					return_code = gfx_define_graphics_filter_contents(state, (void *)graphics_filter_address, (void*)&filter_data);
-				}
-				Cmiss_graphics_filter_destroy(&graphics_filter);
 				MANAGER_END_CACHE(Cmiss_graphics_filter)(graphics_filter_manager);
 			}
 			else
 			{
 				Option_table *option_table = CREATE(Option_table)();
 				Option_table_add_entry(option_table, "GRAPHICS_FILTER_NAME",
-					/*graphics_filter*/(void *)&graphics_filter, root_region_void,
+					/*graphics_filter*/(void *)&graphics_filter, (void*)&filter_data,
 					gfx_define_graphics_filter_contents);
 				return_code = Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
+			if (filter_data.source_filters)
+			{
+				for (int i = 0; i < filter_data.number_of_filters; i++)
+				{
+					Cmiss_graphics_filter_destroy(&filter_data.source_filters[i]);
+				}
+				DEALLOCATE(filter_data.source_filters);
+			}
+			if (graphics_filter)
+				Cmiss_graphics_filter_destroy(&graphics_filter);
 		}
 		else
 		{

@@ -113,9 +113,12 @@ public:
 
 	bool setName(const char *name_in)
 	{
+		char *new_name = duplicate_string(name_in);
+		if (!new_name)
+			return false;
 		if (name)
 			DEALLOCATE(name);
-		name = duplicate_string(name_in);
+		name = new_name;
 		return true;
 	}
 
