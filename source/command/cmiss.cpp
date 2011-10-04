@@ -22001,6 +22001,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		
 		command_data->default_light_model=
 			Cmiss_graphics_module_get_default_light_model(command_data->graphics_module);
+		// ensure we have a default tessellation
+		Cmiss_tessellation_id default_tessellation = Cmiss_graphics_module_get_default_tessellation(command_data->graphics_module);
+		Cmiss_tessellation_destroy(&default_tessellation);
 
 		/* environment map manager */
 		command_data->environment_map_manager=CREATE(MANAGER(Environment_map))();
