@@ -142,10 +142,16 @@ The eight types of graphics
   
   * Stream vector: This drop-down box allows you to select the vector that is being visualized by the streamlines.
   
+  * Seed element: This setting has a check box which when ticked allows you to specify a single element to seed a streamline from.
+  
+  * Xi discretization mode: This drop-down box allows you to set the point in xi-space from which streamlines are seeded. The setting of *exact_xi* for example will always seed the streamline at the exact centre of the element's xi-space.
+  
   * Reverse: Checking this box reverses the streamline.
   
   * Seed element: Checking this box allows you to select the single element number from which the streamline will be seeded.
   
   * Xi: Entering three comma-separated values (between 0 and 1) allows you to set the xi location within elements from which streamlines will be seeded.
 
- 
+* **point**
+
+  Point graphics are used to add a single glyph to the scene. This is the graphical setting that is used to replace the old axis creation, for example.

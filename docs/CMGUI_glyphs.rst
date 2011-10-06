@@ -35,7 +35,7 @@ Glyphs are graphical objects that are used to represent information at points wi
 Adding glyphs to a mesh
 -----------------------
 
-Glyphs are added and edited from within the scene editor. When you select a region in the scene editor, you can create a new graphic for placing glyphs at your points of interest. Glyphs can be added at node points, data points, or element points. Element points are points through the interior of an element at a controllable layout and density.
+Glyphs are added and edited from within the scene editor. When you select a region in the scene editor, you can create a new graphic for placing glyphs at your points of interest. Glyphs can be added at point, node points, data points, or element points. Element points are points through the interior of an element at a controllable layout and density.
 
 
 Unscaled glyphs
@@ -149,10 +149,10 @@ Additional tricks with glyphs
 -----------------------------
 
 
-Adjusting the glyph centre
+Adjusting the glyph offset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All glyphs have a default origin; this is the point which is positioned at the chosen point within the graphical representation. This can be edited by entering values in the *centre* value box in the settings editor. This appears next to the glyph drop-down menu.
+All glyphs have a default origin; this is the point which is positioned at the chosen point within the graphical representation. This can be edited by entering values in the *offset* value box in the settings editor. This appears next to the glyph drop-down menu.
 
 By default, glyphs have a 0,0,0 coordinate point (origin) that is logically positioned according to the purpose of the glyph. For directional glyphs, the "long axis" is always the x axis. Spheres, cubes and cylinders have their origin positioned in the spatial centre of a bounding unit cube. Directional glyphs such as arrows have their origin at the base of the arrow, and axis glyphs have their origin at the intersection of the axes.
 
@@ -163,7 +163,7 @@ By default, glyphs have a 0,0,0 coordinate point (origin) that is logically posi
    **Figure 6: Origins of various glyph types within their bounding cubes.**  Origin of each glyph family is indicated by a red dot.
 
 
-Using the *centre* value box, you can adjust the origin of your selected glyph so that it is positioned differently. This could be used for example to make an elongated spheroid that points away from the origin, by entering -0.5,0,0 in the centre value box, and setting the base size of the sphere glyph to 1,0.3,0.3.
+Using the *offset* value box, you can adjust the position of your selected glyph.
 
 
 Using custom glyphs
