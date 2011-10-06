@@ -1,12 +1,12 @@
-CMGUI Spectrum Editor Window
+cmgui Spectrum Editor Window
 ============================
 
-.. _graphical settings: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
+.. _graphics: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphics
 .. _example a7: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html
 .. _example ak: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ak/index.html
-.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
+.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingcmguiTheSceneEditorWindow
 
-The spectrum editor window is where you define spectra to be applied to graphical elements or objects in the graphics window.  Spectra are used to visualize continuous data ranges within models using colour ranges, and can be applied to the `graphical settings`_ that have been used to create your visualization.  The window is divided into three basic areas; the spectrum list, the preview panel, and the settings editor (Figure 1).
+The spectrum editor window is where you define spectra to be applied to graphical elements or objects in the graphics window.  Spectra are used to visualize continuous data ranges within models using colour ranges, and can be applied to the `graphics`_ that have been used to create your visualization.  The window is divided into three basic areas; the spectrum list, the preview panel, and the settings editor (Figure 1).
 
 .. figure:: spectrum_editor_window.png
    :figwidth: image
@@ -16,7 +16,7 @@ The spectrum editor window is where you define spectra to be applied to graphica
 
 | 
 
-It is useful to step through `example a7`_ to get a feel for the use of spectra in CMGUI.  This example uses a mesh containing a number of fields that can be usefully visualized using spectra.
+It is useful to step through `example a7`_ to get a feel for the use of spectra in cmgui.  This example uses a mesh containing a number of fields that can be usefully visualized using spectra.
 
 
 Spectrum List
@@ -38,7 +38,7 @@ Settings Editor
 
 The settings editor is where each spectrum is set up.  It contains a number of controls.
 
-* **Spectrum component list:**  The top of this list has four buttons; *Add*, *Delete*, *Up*, and *Down*.  Below these buttons is a list of the components that make up the selected spectrum.  Spectra in CMGUI can be made up of multiple components; these can be added, deleted or re-ordered using this list.  Using these "sub-spectra" you are able to create spectra that have different colour ranges for different parts of the data range they cover, or spectra that have different colour ranges for different dimensions.
+* **Spectrum component list:**  The top of this list has four buttons; *Add*, *Delete*, *Up*, and *Down*.  Below these buttons is a list of the components that make up the selected spectrum.  Spectra in cmgui can be made up of multiple components; these can be added, deleted or re-ordered using this list.  Using these "sub-spectra" you are able to create spectra that have different colour ranges for different parts of the data range they cover, or spectra that have different colour ranges for different dimensions.
 
 * **Data component:** This text box allows you to enter which data component of a multi-component field the spectrum will colour according to.
 

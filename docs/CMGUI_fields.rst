@@ -5,7 +5,7 @@ CMGUI Fields
 .. |sub1|  unicode:: U+02081 .. SUBSCRIPT ONE
 .. |sub2|  unicode:: U+02082 .. SUBSCRIPT TWO
 .. |sub3|  unicode:: U+02083 .. SUBSCRIPT THREE
-.. _graphical settings: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
+.. _graphics: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
 .. _glyphs: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs
 .. _surfaces: http://www.cmiss.org/cmgui/wiki/VisualizingElementFieldsUsingSurfaces
 .. _manifolds: http://en.wikipedia.org/wiki/Manifold
@@ -98,6 +98,6 @@ These types of fields can be created via ``gfx define field`` commands or throug
 Fields and visualization
 ------------------------
 
-When creating visualizations, you need to choose which field controls which part of a graphics object.  Coordinates in one, two or three dimensions can be used to create spatial representations.  Texture coordinate fields can be used to position textures.  Orientation or data fields can be used to position glyphs or colour objects such as surfaces.  CMGUI allows an enormous amount of flexibility in how fields can be visualized.  Further information on visualizations is available in other documents such as those detailing `graphical settings`_, `glyphs`_, or `surfaces`_.
+When creating visualizations, you need to choose which field controls which part of a graphics object.  Coordinates in one, two or three dimensions can be used to create spatial representations.  Texture coordinate fields can be used to position textures.  Orientation or data fields can be used to position glyphs or colour objects such as surfaces.  CMGUI allows an enormous amount of flexibility in how fields can be visualized.  Further information on visualizations is available in other documents such as those detailing `graphics`_, `glyphs`_, or `surfaces`_.
 
 

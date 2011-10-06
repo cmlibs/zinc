@@ -35,7 +35,7 @@ Glyphs are graphical objects that are used to represent information at points wi
 Adding glyphs to a mesh
 -----------------------
 
-Glyphs are added and edited from within the scene editor. When you select a region in the scene editor, you can create a new graphical setting for placing glyphs at your points of interest. Glyphs can be added at node points, data points, or element points. Element points are points through the interior of an element at a controllable layout and density.
+Glyphs are added and edited from within the scene editor. When you select a region in the scene editor, you can create a new graphic for placing glyphs at your points of interest. Glyphs can be added at node points, data points, or element points. Element points are points through the interior of an element at a controllable layout and density.
 
 
 Unscaled glyphs
@@ -43,7 +43,7 @@ Unscaled glyphs
 
 The simplest use of a glyph is to visually mark a point, with no direction or scale information. Unscaled glyphs are simply glyphs for which you have not selected an *orientation/scale* field. This means that they simply appear at the points you specify, at the default orientation, and with the specified the base size. The default base size is 1*1*1. If you want to run through this example, load up `example a1`_ in cmgui and run the entire com file.
 
-Open the *scene editor* and make sure cube is selected in the *scene object list*. You will notice that there are three items in the *graphical settings list*: *lines*, *node_points*, and *surfaces*. Select the node_points graphical settings item. You will see in the settings below that these node_points already have glyphs associated with them - in the *Glyph* drop-down menu, the glyphs currently used to display the nodes are *point* glyphs. These are the default glyph, and are by default a single white pixel. Figure 2 shows the scene editor window, with the three areas labelled.
+Open the *scene editor* and make sure cube is selected in the *scene object list*. You will notice that there are three items in the *graphics list*: *lines*, *node_points*, and *surfaces*. Select the node_points graphics item. You will see in the settings below that these node_points already have glyphs associated with them - in the *Glyph* drop-down menu, the glyphs currently used to display the nodes are *point* glyphs. These are the default glyph, and are by default a single white pixel. Figure 2 shows the scene editor window, with the three areas labelled.
 
 .. figure:: sceneEditor_Glyphs1.png
    :figwidth: image
@@ -117,7 +117,7 @@ Using the fibre field
 ~~~~~~~~~~~~~~~~~~~~~
 
 A special case of three vector glyphs is when you choose a *fibre field* for the *scale/orientation* field.
-This option automatically creates a three vector "fibre axes" field from it together with the coordinate field used by that graphical setting. This is equivalent to defining a field using the command ``gfx define field NAME fibre_axes``
+This option automatically creates a three vector "fibre axes" field from it together with the coordinate field used by that graphic. This is equivalent to defining a field using the command ``gfx define field NAME fibre_axes``
  
  
 Variable scale glyphs
