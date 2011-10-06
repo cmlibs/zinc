@@ -1,5 +1,5 @@
-Graphical settings in CMGUI
-===========================
+graphics in CMGUI
+=================
 
 .. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheGraphicsWindow
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheSceneEditorWindow
@@ -10,50 +10,43 @@ Graphical settings in CMGUI
 .. _example ao: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ao/index.html
 .. _curl: http://www.math.umn.edu/~nykamp/m2374/readings/divcurl/
 
-General description of graphical settings
------------------------------------------
+General description of graphics
+-------------------------------
 
-Graphical settings are the building blocks used to create any visualization displayed in the CMGUI `graphics window`_. They are created, edited, re-ordered and deleted from within the `scene editor`_, or via the command line. Most graphical settings have the following settings in common:
+graphics are the building blocks used to create any visualization displayed in the CMGUI `graphics window`_. They are created, edited, re-ordered and deleted from within the `scene editor`_, or via the command line. Most graphics have the following settings in common:
 
-* Name:  This allows you to set the name of the graphical setting.
+* Name:  This allows you to set the name of the graphic.
 
-* Coordinate System: This setting can be used to render the graphical setting according to a range of different coordinate systems. This is useful for creating "static" overlays of data on visualizations.
+* Coordinate System: This setting can be used to render the graphic according to a range of different coordinate systems. This is useful for creating "static" overlays of data on visualizations.
 
-* Coordinate field: This setting has a check box, which activates a drop-down menu showing a list of fields that can be selected as the coordinate field for the selected graphical setting.
+* Coordinate field: This setting has a drop-down menu showing a list of fields that can be selected as the coordinate field for the selected graphic.
 
 * Tessellation: Tessellation settings are used to set the level of detail of an object. This replaces the discretization settings from old versions of cmgui.
 
 NOTE:
   The only graphics which do not have a tessellation setting are *node points*, *data points*, and *point*.
 
-* Select mode: This drop-down menu allows you to select different selection behaviours for the graphical setting:
+* Select mode: This drop-down menu allows you to select different selection behaviours for the graphic:
 
-  * select_on - The default setting; graphical settings are able to be selected and selected items are highlighted by rendering in the *default_selected* material.
-  * no_select - No selection or highlighting of the graphical setting.
+  * select_on - The default setting; graphics are able to be selected and selected items are highlighted by rendering in the *default_selected* material.
+  * no_select - No selection or highlighting of the graphic.
   * draw_selected - only selected items are drawn.
   * draw_unselected - only unselected items are drawn.
 
-* Material: This drop-down menu allows you to select which material should be used to render the graphical setting. Materials are defined and edited in the `material editor window`_.
+* Material: This drop-down menu allows you to select which material should be used to render the graphic. Materials are defined and edited in the `material editor window`_.
 
-* Data: This setting has a check box which activates a drop-down menu. This menu allows you to select which field will be mapped on to the graphical setting, allowing you to colour the graphical setting according to the values of some field for example. The check box also activates the *spectrum* drop-down menu.
+* Data: This setting has a drop-down menu, allowing you to select which field will be mapped on to the graphic. This enables you to colour the graphic according to the values of some field, for example. The check box also activates the *spectrum* drop-down menu.
 
 * Spectrum: This drop-down menu is used to select which spectrum is to be used to colour the graphical element according to the field selected in the *data* setting. Spectra are edited in the `spectrum editor window`_.
 
-* Selected material: This drop-down menu allows you to set which material will be used to render parts of the graphical setting which are selected.
+* Selected material: This drop-down menu allows you to set which material will be used to render parts of the graphic which are selected.
 
-
-.. figure:: video here
-   :figwidth: image
-   :align: center
-
- The different types of graphical settings, demonstrated using the simple cube mesh.
-
-The eight types of graphical settings
--------------------------------------
+The eight types of graphics
+---------------------------
 
 * **node_points**
   
-  Node points are used to visualize nodes. You can use `glyphs`_ to represent node points. There are a range of built-in glyphs in CMGUI, and it is possible to create custom glyphs as well. *Node points* graphical settings have the following settings in addition to the common ones listed above:
+  Node points are used to visualize nodes. You can use `glyphs`_ to represent node points. There are a range of built-in glyphs in CMGUI, and it is possible to create custom glyphs as well. *Node points* graphics have the following settings in addition to the common ones listed above:
   
   * Glyph: this drop-down menu allows you to choose the glyph that will be rendered at the node points.
   * Offset: this box allows you to offset the origin of the glyph in order to alter its placement with respect to the node point.
@@ -88,7 +81,7 @@ The eight types of graphical settings
   * Constant radius: This allows you to set the radius of the cylinders, in the units of the coordinate system.
   * Scalar radius: This check box will activate a drop-down menu allowing you to select which field will be used to scale the radius of the cylinders. It will also activate a text box in which you can enter the scale factor, or how the scale field will scale the radius.
   * Circle discretization: This sets the number of sides used to render the cylinders in the 3D window.
-  * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
+  * Texture coordinates: This drop-down menu allows you to select which field will be used to position any textures applied by the material setting.
 
 * **surfaces**
 
@@ -97,7 +90,7 @@ The eight types of graphical settings
   * Exterior: This check box will automatically only render surfaces on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values. You can select xi=0 or 1 for each of the three xi-axes.
   * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces. Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *tessellation* setting.
-  * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
+  * Texture coordinates: This drop-down menu allows you to select which field will be used to position any textures applied by the material setting.
 
 
 * **iso_surfaces**
@@ -118,7 +111,7 @@ The eight types of graphical settings
     * Sequence: This radio button activates three text boxes that allow you to enter a sequence of evenly spaced values to draw iso-surfaces at. The *Number* box allows you to enter the number of iso-surfaces you want. The *First* and *Last* boxes allow you to enter the starting and ending values of the iso-surfaces. The sequence will automatically space the number of surfaces between these two values.
     
   * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces. Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the chosen *tessellation* object.
-  * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
+  * Texture coordinates: This drop-down menu allows you to select which field will be used to position any textures applied by the material setting.
 
 * **element_points**
   
@@ -135,7 +128,7 @@ The eight types of graphical settings
 
 * **streamlines**
   
-  Streamlines are a special graphical setting for visualizing *vector* fields - for example, a fluid flow solution. They can be used to visualize 3, 6 or 9 component vector fields within a 3 dimensional element. In `example ao`_, streamlines are used to show the fibre and sheet directions in the heart. Streamlines will align along their length according to the first vector of a vector field, and across their "width" (eg the width of the *ribbon* or *rectangle* streamline types) to the second vector. For single vector (3 component) vector fields, the width of the streamlines will align to the curl_ of the vector.
+  Streamlines are a special graphic for visualizing *vector* fields - for example, a fluid flow solution. They can be used to visualize 3, 6 or 9 component vector fields within a 3 dimensional element. In `example ao`_, streamlines are used to show the fibre and sheet directions in the heart. Streamlines will align along their length according to the first vector of a vector field, and across their "width" (eg the width of the *ribbon* or *rectangle* streamline types) to the second vector. For single vector (3 component) vector fields, the width of the streamlines will align to the curl_ of the vector.
   
   Note that streamlines can be quite expensive to compute; changes to streamline settings in the `scene editor`_ can take several seconds to appear in the 3D window, especially for complex scenes.
 

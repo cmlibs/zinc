@@ -30,7 +30,7 @@ At the left hand side of the Scene Editor window is the region tree, where all r
 Alongside the region tree are the transformation settings, graphics list, and settings editor. These are used to control and edit the visualisations of the currently selected region in the region tree.
 
 NOTE:
-  Previous versions of cmgui also had a "General Settings" section in this window, which was used to set the level of detail (discretization) of objects. This system has been replaced by the new tessellation object. You are now able to use different levels of detail for different graphics, allowing you to choose the most appropriate for each. The tessellation is set for each graphical setting using the settings editor.
+  Previous versions of cmgui also had a "General Settings" section in this window, which was used to set the level of detail (discretization) of objects. This system has been replaced by the new tessellation object. You are now able to use different levels of detail for different graphics, allowing you to choose the most appropriate for each. This also allows you to change the detail levels of a number of graphics by simply altering a single tessellation object that has been applied to them all. The tessellation is set for each graphical setting using the settings editor.
 
 
 Graphics list
