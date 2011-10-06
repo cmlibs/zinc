@@ -125,8 +125,6 @@ Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  * Enable the internal user interface in cmgui.
  *
  * @param context  Handle to a cmiss_context object.
- * @param in_argc  Number of arguments.
- * @param in_argv  Arguments.
  * @param user_interface_instance  a void pointer to user provided interface
  *   instance. Only wx_user_interface is supported at this moment.
  *   For wx_user_interface, this void pointer should point to a wxApp.
@@ -136,14 +134,14 @@ Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  *  @see Cmiss_context_process_idle_event
  * @return  1 if successfully initialized user interface, otherwise 0.
  */
-#if !defined (WIN32_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 int Cmiss_context_enable_user_interface(Cmiss_context_id context,
-	int in_argc, const char *in_argv[], void *user_interface_instance);
+	void *user_interface_instance);
 #else
 int Cmiss_context_enable_user_interface(
-	Cmiss_context_id context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance,
-	LPSTR command_line,int initial_main_window_state, void *user_interface_instance);
+	Cmiss_context_id context, HINSTANCE current_instance,
+	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
+	void *user_interface_instance);
 #endif
 
 /***************************************************************************//**

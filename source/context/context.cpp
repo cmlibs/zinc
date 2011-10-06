@@ -279,7 +279,7 @@ struct Cmiss_command_data *Cmiss_context_get_default_command_interpreter(struct 
 
 	return command_data;
 }
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface_module *Cmiss_context_create_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[],
 	void *user_interface_instance)
@@ -302,7 +302,7 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 			if (user_interface_instance)
 				Event_dispatcher_set_wx_instance(Cmiss_context_get_default_event_dispatcher(context), user_interface_instance);
 #endif
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv, (NULL!=user_interface_instance));
 #else
@@ -507,23 +507,21 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
 	return curve_manager;
 }
 
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
-int Cmiss_context_enable_user_interface(Cmiss_context_id context,
-	int in_argc, const char *in_argv[], void *user_interface_instance)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
+int Cmiss_context_enable_user_interface(Cmiss_context_id context, void *user_interface_instance)
 #else
 int Cmiss_context_enable_user_interface(
-	Cmiss_context_id context, int in_argc, const char *in_argv[],
-	HINSTANCE current_instance, HINSTANCE previous_instance,
+	Cmiss_context_id context, HINSTANCE current_instance, HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state, void *user_interface_instance)
 #endif
 {
 	int return_code = 0;
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 	struct User_interface_module *UI_module = Cmiss_context_create_user_interface(
-		context, in_argc, in_argv, user_interface_instance);
+		context, 0, 0, user_interface_instance);
 #else
 	struct User_interface_module *UI_module=  Cmiss_context_create_user_interface(
-		context, in_argc, in_argv, current_instance, previous_instance,
+		context, 0, 0, current_instance, previous_instance,
 		command_line, initial_main_window_state, user_interface_instance);
 #endif
 	if (UI_module)

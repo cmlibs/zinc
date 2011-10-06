@@ -110,7 +110,7 @@ struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
  * @return  user_interface_module if successfully create the user interface, 
  *    otherwise NULL.
  */
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface_module *Cmiss_context_create_user_interface(
 	struct Context *context, int in_argc, const char *in_argv[], void *user_interface_instance);
 #else
