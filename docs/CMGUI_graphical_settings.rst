@@ -1,11 +1,11 @@
 Graphical settings in CMGUI
 ===========================
 
-.. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheGraphicsWindow
-.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
+.. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheGraphicsWindow
+.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheSceneEditorWindow
 .. _glyphs: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs
-.. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
-.. _spectrum editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUISpectrumEditor
+.. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCmguiMaterialEditor
+.. _spectrum editor window: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheSpectrumEditorWindow
 .. _example a7: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html
 .. _example ao: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ao/index.html
 .. _curl: http://www.math.umn.edu/~nykamp/m2374/readings/divcurl/
@@ -154,6 +154,5 @@ The eight types of graphical settings
   * Seed element: Checking this box allows you to select the single element number from which the streamline will be seeded.
   
   * Xi: Entering three comma-separated values (between 0 and 1) allows you to set the xi location within elements from which streamlines will be seeded.
-  
-  
 
+ 
