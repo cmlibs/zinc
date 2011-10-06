@@ -2,7 +2,7 @@ Visualizing element fields using lines and cylinders
 ====================================================
 
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheSceneEditorWindow
-.. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphicalSettings
+.. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphics
 .. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCmguiMaterialEditor
 .. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
 .. _example a4: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html

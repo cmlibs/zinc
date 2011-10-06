@@ -2,7 +2,7 @@ Visualizing element fields using surfaces
 =========================================
 
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheSceneEditorWindow
-.. _graphical settings: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphicalSettings
+.. _graphical settings: http://www.cmiss.org/cmgui/wiki/UsingCmguiGraphics
 .. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCmguiTheGraphicsWindow
 
 

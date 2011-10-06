@@ -2,7 +2,7 @@ Visualizing element fields using iso-surfaces
 =============================================
 
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
-.. _graphical settings: http://www.cmiss.org/cmgui/wiki/CMGUIGraphicalSettings
+.. _graphical settings: http://www.cmiss.org/cmgui/wiki/CMGUIGraphics
 .. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheGraphicsWindow
 .. _example a7: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html
 .. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
