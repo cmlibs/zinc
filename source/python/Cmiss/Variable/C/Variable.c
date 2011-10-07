@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable.h"
+#include "api/zn_variable.h"
 #include "computed_variable/computed_variable.h"
 
 staticforward PyTypeObject CmissVariableType;

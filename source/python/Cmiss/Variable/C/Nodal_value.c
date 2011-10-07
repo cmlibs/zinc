@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable_finite_element.h"
+#include "api/zn_variable_finite_element.h"
 
 static PyObject*
 CmissVariableNodalvalue_new(PyObject* self, PyObject* args)

@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_function_matrix_sum.h"
+#include "api/zn_function_matrix_sum.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix::Sum		PACKAGE = Cmiss::Function::Matrix::Sum		PREFIX = Cmiss_function_matrix_sum_

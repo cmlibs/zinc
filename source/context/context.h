@@ -45,7 +45,7 @@
 #define Context Cmiss_context
 struct Context;
 
-#include "api/cmiss_context.h"
+#include "api/zn_context.h"
 #include "command/cmiss.h"
 #include "context/user_interface_module.h"
 

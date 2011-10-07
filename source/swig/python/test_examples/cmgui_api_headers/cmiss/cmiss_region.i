@@ -4,7 +4,7 @@ FILE : cmiss_region.i
 LAST MODIFIED : 8 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api header api/cmiss_region
+Swig interface file for wrapping api header api/zn_region
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -47,8 +47,8 @@ Swig interface file for wrapping api header api/cmiss_region
 %array_functions(float, float_array);
 
 %{
-#include "api/cmiss_region.h"
+#include "api/zn_region.h"
 %}
 
-%include "api/cmiss_region.h"
+%include "api/zn_region.h"
 

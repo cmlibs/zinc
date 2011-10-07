@@ -1,6 +1,6 @@
 #include <Python.h>
-#include "api/cmiss_core.h"
-#include "api/cmiss_value.h"
+#include "api/zn_core.h"
+#include "api/zn_value.h"
 #include "computed_variable/computed_value.h"
 
 staticforward PyTypeObject CmissValueType;

@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_function_integral.h"
+#include "api/zn_function_integral.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Integral  PACKAGE = Cmiss::Function::Integral  PREFIX = Cmiss_function_integral_

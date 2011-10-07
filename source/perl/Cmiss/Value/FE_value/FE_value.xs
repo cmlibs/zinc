@@ -2,8 +2,8 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/cmiss_value.h"
-#include "api/cmiss_value_fe_value.h"
+#include "api/zn_value.h"
+#include "api/zn_value_fe_value.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Value::FE_value		PACKAGE = Cmiss::Value::FE_value		PREFIX = Cmiss_value_FE_value_

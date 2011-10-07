@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_value.h"
-#include "api/cmiss_value_derivative_matrix.h"
+#include "api/zn_value.h"
+#include "api/zn_value_derivative_matrix.h"
 #include "computed_variable/computed_value_derivative_matrix.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "general/debug.h"

@@ -41,7 +41,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "api/cmiss_stream.h"
+#include "api/zn_stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 }

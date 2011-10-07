@@ -48,7 +48,7 @@
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
-#include "api/cmiss_scene.h"
+#include "api/zn_scene.h"
 #include "general/any_object.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
@@ -67,7 +67,7 @@
 #include "time/time_keeper.h"
 /* #include "graphics/texture.h" */
 #if defined(USE_OPENCASCADE)
-#	include "api/cmiss_field_cad.h"
+#	include "api/zn_field_cad.h"
 #endif /* defined(USE_OPENCASCADE) */
 
 /*
@@ -112,7 +112,7 @@ DECLARE_LIST_TYPES(Scene_picked_object);
 /* 
 The Cmiss_scene which is Public is currently the same object as the 
 cmgui internal Scene.  The Public interface is contained in 
-api/cmiss_scene.h however most of the functions come directly from
+api/zn_scene.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the 
 struct Scene is declared to be the same as Cmiss_scene here
 and the functions given their public names.

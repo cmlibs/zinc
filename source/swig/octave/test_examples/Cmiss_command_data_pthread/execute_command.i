@@ -55,8 +55,8 @@ extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv
 /*Cmiss node functions*/
 /*Cmiss element functions*/
 
-#include "api/cmiss_command_data.h"
-#include "api/cmiss_region.h"
+#include "api/zn_command_data.h"
+#include "api/zn_region.h"
 
 %}
 %inline %{

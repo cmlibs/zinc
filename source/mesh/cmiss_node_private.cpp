@@ -42,8 +42,8 @@
 
 extern "C" {
 #include <stdarg.h>
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_node.h"
+#include "api/zn_field_module.h"
+#include "api/zn_node.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"

@@ -50,7 +50,7 @@ Spectrum structures and support code.
 #include "general/manager.h"
 #include "general/object.h"
 #include "command/parser.h"
-#include "api/cmiss_graphics_module.h"
+#include "api/zn_graphics_module.h"
 
 struct Cmiss_graphics_material;
 struct Spectrum_settings;

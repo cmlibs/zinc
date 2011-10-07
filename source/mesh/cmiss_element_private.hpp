@@ -43,9 +43,9 @@
 #define CMISS_ELEMENT_PRIVATE_HPP
 
 extern "C" {
-#include "api/cmiss_element.h"
-#include "api/cmiss_region.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_element.h"
+#include "api/zn_region.h"
+#include "api/zn_field_subobject_group.h"
 }
 
 /** Internal use only.

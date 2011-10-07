@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_TYPES_COMPOSITE_HPP__
 
 extern "C" {
-#include "api/cmiss_field_composite.h"
+#include "api/zn_field_composite.h"
 }
 #include "api++/CmissField.hpp"
 

@@ -48,7 +48,7 @@ represent curves in three xi-directions;
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
 #define AUXILIARY_GRAPHICS_TYPES_H
 
-#include "api/types/cmiss_graphics_render_type.h"
+#include "api/types/zn_graphics_render_type.h"
 #include "general/enumerator.h"
 
 /* Define this here rather than include the interface header and therefore Motif */

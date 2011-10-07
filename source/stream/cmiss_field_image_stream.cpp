@@ -41,7 +41,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "api/cmiss_field_image.h"
+#include "api/zn_field_image.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"
 #include "general/mystring.h"

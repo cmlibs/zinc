@@ -43,8 +43,8 @@ Implements a number of basic component wise operations on computed fields.
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <math.h>
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_finite_element.h"
+#include "api/zn_field_module.h"
+#include "api/zn_field_finite_element.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"

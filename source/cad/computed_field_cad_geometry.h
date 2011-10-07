@@ -43,7 +43,7 @@
 #define COMPUTED_FIELD_CAD_GEOMETRY_H
 
 extern "C" {
-#include "api/cmiss_field.h"
+#include "api/zn_field.h"
 }
 #include "cad/geometricshape.h"
 

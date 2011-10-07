@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable_coordinates.h"
+#include "api/zn_variable_coordinates.h"
 
 static PyObject*
 CmissVariableProlate_Spheroidal_To_Rectangular_Cartesian_new(PyObject* self, PyObject* args)

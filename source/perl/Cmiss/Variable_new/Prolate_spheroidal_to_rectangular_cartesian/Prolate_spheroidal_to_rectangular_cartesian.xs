@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_variable_new_coordinates.h"
+#include "api/zn_variable_new_coordinates.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Prolate_spheroidal_to_rectangular_cartesian  PACKAGE = Cmiss::Variable_new::Prolate_spheroidal_to_rectangular_cartesian  PREFIX = Cmiss_variable_new_prolate_spheroidal_to_rectangular_cartesian_

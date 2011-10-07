@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_variable_new_derivative.h"
+#include "api/zn_variable_new_derivative.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Derivative  PACKAGE = Cmiss::Variable_new::Derivative  PREFIX = Cmiss_variable_new_derivative_

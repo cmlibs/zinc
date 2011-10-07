@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_value_matrix.h"
+#include "api/zn_value_matrix.h"
 #include "computed_variable/computed_value.h"
 #include "typemap.h"
 

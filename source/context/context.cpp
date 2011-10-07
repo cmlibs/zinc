@@ -41,8 +41,8 @@
 
 extern "C" {
 #include "time/time_keeper.h"
-#include "api/cmiss_field_group.h"
-#include "api/cmiss_graphics_module.h"
+#include "api/zn_field_group.h"
+#include "api/zn_graphics_module.h"
 #include "command/cmiss.h"
 #include "context/context.h"
 #include "curve/curve.h"

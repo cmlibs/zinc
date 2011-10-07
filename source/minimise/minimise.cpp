@@ -42,9 +42,9 @@
 extern "C" {
 #include <stdio.h>
 #include <math.h>
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_optimisation.h"
+#include "api/zn_field.h"
+#include "api/zn_field_module.h"
+#include "api/zn_optimisation.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"

@@ -43,7 +43,7 @@
 #define COMPUTED_FIELD_SUBOBJECT_GROUP_INTERNAL_HPP
 
 extern "C" {
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_field_subobject_group.h"
 }
 
 /***************************************************************************//**

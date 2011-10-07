@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable_composite.h"
+#include "api/zn_variable_composite.h"
 
 static PyObject*
 CmissVariableComposite_new(PyObject* self, PyObject* args)

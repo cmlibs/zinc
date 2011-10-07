@@ -40,13 +40,13 @@
 * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <stdlib.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_node.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_element.h"
+#include "api/zn_node.h"
+#include "api/zn_field_module.h"
+#include "api/zn_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 }
 

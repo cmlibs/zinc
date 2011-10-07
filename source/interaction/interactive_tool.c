@@ -46,7 +46,7 @@ content of the global selections and objects with text input.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include "api/cmiss_interactive_tool.h"
+#include "api/zn_interactive_tool.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"

@@ -4,7 +4,7 @@ FILE : cmiss_command_data.i
 LAST MODIFIED : 22 December 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api functions in api/cmiss_command_data
+Swig interface file for wrapping api functions in api/zn_command_data
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -46,7 +46,7 @@ Swig interface file for wrapping api functions in api/cmiss_command_data
 struct Cmiss_command_data;
 
 %{
-#include "api/cmiss_command_data.h"
+#include "api/zn_command_data.h"
 /* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
@@ -91,7 +91,7 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(
       	}
 %}
  	
-/*%include "api/cmiss_command_data.h"*/
+/*%include "api/zn_command_data.h"*/
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 

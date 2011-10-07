@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_variable_coordinates.h"
+#include "api/zn_variable_coordinates.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Spheroidal_coordinates_focus  PACKAGE = Cmiss::Variable::Spheroidal_coordinates_focus  PREFIX = Cmiss_variable_spheroidal_coordinates_focus_

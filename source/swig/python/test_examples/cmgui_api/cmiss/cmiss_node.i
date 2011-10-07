@@ -4,7 +4,7 @@ FILE : cmiss_node.i
 LAST MODIFIED : 2 December 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api functions in api/cmiss_node
+Swig interface file for wrapping api functions in api/zn_node
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

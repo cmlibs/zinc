@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_variable_new_vector.h"
+#include "api/zn_variable_new_vector.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Vector		PACKAGE = Cmiss::Variable_new::Vector		PREFIX = Cmiss_variable_new_vector_

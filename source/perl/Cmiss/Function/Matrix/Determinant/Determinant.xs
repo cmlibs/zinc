@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_function_matrix_determinant.h"
+#include "api/zn_function_matrix_determinant.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix::Determinant		PACKAGE = Cmiss::Function::Matrix::Determinant		PREFIX = Cmiss_function_matrix_determinant_

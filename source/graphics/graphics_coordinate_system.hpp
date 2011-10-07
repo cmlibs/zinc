@@ -41,7 +41,7 @@
 #define GRAPHICS_COORDINATE_SYSTEM_HPP
 
 extern "C" {
-#include "api/types/cmiss_graphics_coordinate_system.h"
+#include "api/types/zn_graphics_coordinate_system.h"
 #include "general/enumerator.h"
 }
 

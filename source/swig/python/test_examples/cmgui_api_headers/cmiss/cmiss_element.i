@@ -4,7 +4,7 @@ FILE : cmiss_element.i
 LAST MODIFIED : 8 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api header api/cmiss_element
+Swig interface file for wrapping api header api/zn_element
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,10 +45,10 @@ Swig interface file for wrapping api header api/cmiss_element
 %module element
 
 %{
-#include "api/cmiss_element.h"
+#include "api/zn_element.h"
 
 %}
 
-%include "api/cmiss_element.h"
+%include "api/zn_element.h"
 
  	

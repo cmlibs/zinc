@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_function.h"
-#include "api/cmiss_function_variable.h"
+#include "api/zn_function.h"
+#include "api/zn_function_variable.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function_variable		PACKAGE = Cmiss::Function_variable		PREFIX = Cmiss_function_variable_

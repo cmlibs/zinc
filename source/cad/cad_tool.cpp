@@ -45,12 +45,12 @@ Interactive tool for selecting cad primitives with a mouse and other devices.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
-#include "api/cmiss_rendition.h"
+#include "api/zn_rendition.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_field_subobject_group.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
@@ -68,7 +68,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 #include "cad/cad_tool.h"
 #include "cad/element_identifier.h"
 #include "cad/computed_field_cad_topology.h"

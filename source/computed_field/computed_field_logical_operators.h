@@ -44,8 +44,8 @@ Implements logical operations on computed fields.
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_logical_operators.h"
+#include "api/zn_field.h"
+#include "api/zn_field_logical_operators.h"
 
 #define Computed_field_create_greater_than Cmiss_field_module_create_greater_than
 #define Computed_field_create_less_than Cmiss_field_module_create_less_than

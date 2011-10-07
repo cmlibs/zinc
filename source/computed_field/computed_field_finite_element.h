@@ -44,7 +44,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "api/cmiss_field_finite_element.h"
+#include "api/zn_field_finite_element.h"
 
 /*
 Global types

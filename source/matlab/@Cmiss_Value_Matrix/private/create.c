@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "api/cmiss_value_matrix.h"
+#include "api/zn_value_matrix.h"
 #include "types.h"
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,

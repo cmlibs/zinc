@@ -42,7 +42,7 @@ Representing time in finite elements.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
-#include "api/cmiss_time_sequence.h"
+#include "api/zn_time_sequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"

@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_function_linear_span.h"
+#include "api/zn_function_linear_span.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Linear_span  PACKAGE = Cmiss::Function::Linear_span  PREFIX = Cmiss_function_linear_span_

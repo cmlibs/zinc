@@ -47,7 +47,7 @@ the scene viewer get the contained Cmiss_scene_viewer object and use its api.
 #include <stdarg.h>
 #include <gtk/gtk.h>
 #include "general/debug.h"
-#include "api/cmiss_scene_viewer.h"
+#include "api/zn_scene_viewer.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 #include "gtk/gtk_cmiss_scene_viewer.h"

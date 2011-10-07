@@ -3,7 +3,7 @@
  *
  * The Cmiss_optimisation object.
  *
- * @see-also api/cmiss_optimisation.h
+ * @see-also api/zn_optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -45,8 +45,8 @@
 #include <cstdio>
 extern "C"
 {
-	#include "api/cmiss_field.h"
-	#include "api/cmiss_region.h"
+	#include "api/zn_field.h"
+	#include "api/zn_region.h"
 	#include "computed_field/computed_field.h"
 	#include "computed_field/computed_field_composite.h"
 	#include "computed_field/computed_field_finite_element.h"

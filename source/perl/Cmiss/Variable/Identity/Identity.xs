@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_variable_identity.h"
+#include "api/zn_variable_identity.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Identity  PACKAGE = Cmiss::Variable::Identity  PREFIX = Cmiss_variable_identity_

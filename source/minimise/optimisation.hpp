@@ -4,7 +4,7 @@
  * Minimisation object for performing optimisation algorithm from description
  * in Cmiss_optimisation.
  *
- * @see-also api/cmiss_optimisation.h
+ * @see-also api/zn_optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****

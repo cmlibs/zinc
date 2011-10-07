@@ -43,12 +43,12 @@
 #include <string>
 #include <vector>
 extern "C" {
-#include "api/cmiss_element.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_finite_element.h"
-#include "api/cmiss_node.h"
-#include "api/cmiss_region.h"
+#include "api/zn_element.h"
+#include "api/zn_field.h"
+#include "api/zn_field_module.h"
+#include "api/zn_field_finite_element.h"
+#include "api/zn_node.h"
+#include "api/zn_region.h"
 #include "field_io/cmiss_field_ensemble.h"
 #include "field_io/cmiss_field_parameters.h"
 #include "field_io/read_fieldml.h"

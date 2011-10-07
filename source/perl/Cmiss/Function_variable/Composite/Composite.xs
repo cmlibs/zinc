@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_function_variable_composite.h"
+#include "api/zn_function_variable_composite.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function_variable::Composite  PACKAGE = Cmiss::Function_variable::Composite  PREFIX = Cmiss_function_variable_composite_

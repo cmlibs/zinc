@@ -48,11 +48,11 @@ extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "api/cmiss_element.h"
-#include "api/cmiss_graphic.h"
-#include "api/cmiss_graphics_filter.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
+#include "api/zn_element.h"
+#include "api/zn_graphic.h"
+#include "api/zn_graphics_filter.h"
+#include "api/zn_field_subobject_group.h"
+#include "api/zn_node.h"
 #include "general/debug.h"
 #include "general/enumerator_private_cpp.hpp"
 #include "general/indexed_list_private.h"

@@ -49,7 +49,7 @@ the scene viewer get the contained Cmiss_scene_viewer object and use its api.
 
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
-#include "api/cmiss_scene_viewer.h"
+#include "api/zn_scene_viewer.h"
 
 
 #if GTK_MAJOR_VERSION >= 2

@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_function.h"
+#include "api/zn_function.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function		PACKAGE = Cmiss::Function		PREFIX = Cmiss_function_

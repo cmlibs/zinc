@@ -41,9 +41,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_field_module.h"
+#include "api/zn_element.h"
+#include "api/zn_field_subobject_group.h"
+#include "api/zn_field_module.h"
 #include "element/element_operations.h"
 #include "general/debug.h"
 #include "general/mystring.h"

@@ -45,8 +45,8 @@ Implements a number of basic component wise operators on computed fields.
 #define COMPUTED_FIELD_ARITHMETIC_OPERATORS_H
 
 #include "general/value.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_arithmetic_operators.h"
+#include "api/zn_field.h"
+#include "api/zn_field_arithmetic_operators.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_create_sum_components Cmiss_field_module_create_sum_components

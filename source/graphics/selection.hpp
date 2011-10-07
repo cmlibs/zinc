@@ -38,7 +38,7 @@
 #define SELECTION_HPP
 
 extern "C" {
-#include "api/cmiss_selection.h"
+#include "api/zn_selection.h"
 }
 
 struct Cmiss_selection_event;

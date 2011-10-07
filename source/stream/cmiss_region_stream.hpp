@@ -44,7 +44,7 @@
 #define CMISS_REGION_STREAM_HPP
 
 extern "C" {
-#include "api/cmiss_region.h"
+#include "api/zn_region.h"
 }
 #include "stream/cmiss_stream_private.hpp"
 

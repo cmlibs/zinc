@@ -1,4 +1,4 @@
-api/cmiss_scene_viewer.cpp
+api/zn_scene_viewer.cpp
 choose/choose_scene.cpp
 comfile/comfile.cpp
 command/cmiss.cpp

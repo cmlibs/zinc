@@ -4,7 +4,7 @@ FILE : cmiss_scene_viewer.i
 LAST MODIFIED : 22 December 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api functions in api/cmiss_command_data
+Swig interface file for wrapping api functions in api/zn_command_data
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -51,14 +51,14 @@ Swig interface file for wrapping api functions in api/cmiss_command_data
 %module MODULE_PREFIX(scene_viewer)
 
 %{
-//#include "api/cmiss_scene_viewer.h"
+//#include "api/zn_scene_viewer.h"
 typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
 extern int Cmiss_scene_viewer_write_image_to_file(struct Cmiss_scene_viewer *scene_viewer, 
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height, 
 	int preferred_antialias, int 	preferred_transparency_layers);
 %}
 
-//%include "api/cmiss_scene_viewer.h"
+//%include "api/zn_scene_viewer.h"
 extern int Cmiss_scene_viewer_write_image_to_file(struct Cmiss_scene_viewer *scene_viewer, 
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height, 
 	int preferred_antialias, int 	preferred_transparency_layers);

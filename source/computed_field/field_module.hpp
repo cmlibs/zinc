@@ -43,7 +43,7 @@
 
 extern "C"
 {
-	#include "api/cmiss_field_module.h"
+	#include "api/zn_field_module.h"
 }
 
 /***************************************************************************//**

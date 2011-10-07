@@ -6,7 +6,7 @@
 
 #include <Quantity_Color.hxx>
 
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 #include "cad/cad_element.h"
 
 struct Cmiss_cad_identifier

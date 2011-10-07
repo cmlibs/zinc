@@ -1,6 +1,6 @@
 #include <Python.h>
-#include "api/cmiss_value.h"
-#include "api/cmiss_value_derivative_matrix.h"
+#include "api/zn_value.h"
+#include "api/zn_value_derivative_matrix.h"
 
 /* Module Methods */
 

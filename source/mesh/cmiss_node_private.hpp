@@ -43,7 +43,7 @@
 #define CMISS_NODE_PRIVATE_HPP
 
 extern "C" {
-#include "api/cmiss_node.h"
+#include "api/zn_node.h"
 }
 
 /** Internal use only.

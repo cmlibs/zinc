@@ -43,7 +43,7 @@
 #define COMPUTED_FIELD_SUBOBJECT_GROUP_HPP
 extern "C" {
 #include <stdlib.h>
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

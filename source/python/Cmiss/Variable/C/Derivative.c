@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable_derivative.h"
+#include "api/zn_variable_derivative.h"
 
 static PyObject*
 CmissVariableDerivative_new(PyObject* self, PyObject* args)

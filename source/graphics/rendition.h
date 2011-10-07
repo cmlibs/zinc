@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (RENDITION_H)
 #define RENDITION_H
 
-#include "api/cmiss_rendition.h"
+#include "api/zn_rendition.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
 #include "general/any_object_prototype.h"

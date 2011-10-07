@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/cmiss_variable_coordinates.h"
+#include "api/zn_variable_coordinates.h"
 
 static PyObject*
 CmissVariableCoordinates_new(PyObject* self, PyObject* args)

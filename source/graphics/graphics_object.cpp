@@ -56,8 +56,8 @@ gtObject/gtWindow management routines.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_field.h"
+#include "api/zn_field_subobject_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
@@ -77,7 +77,7 @@ extern "C" {
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
 #if defined (USE_OPENCASCADE)
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 }
 #include "graphics/rendergl.hpp"

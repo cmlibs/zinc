@@ -10,7 +10,7 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 
 extern "C" {
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 }
 #include "cad/element_identifier.h"
 

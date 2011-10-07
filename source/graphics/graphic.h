@@ -40,7 +40,7 @@
 #if !defined (CMISS_GRAPHIC_H)
 #define CMISS_GRAPHIC_H
 
-#include "api/cmiss_graphic.h"
+#include "api/zn_graphic.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"

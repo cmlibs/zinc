@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_TYPES_IMAGE_HPP__
 
 extern "C" {
-#include "api/cmiss_field_image.h"
+#include "api/zn_field_image.h"
 }
 #include "api++/CmissField.hpp"
 

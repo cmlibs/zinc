@@ -48,9 +48,9 @@ Swig interface file for wrapping the Cmiss_command_data_execute_command
 %array_functions(float, float_array);
 
 %{
-#include "api/cmiss_region.h"
+#include "api/zn_region.h"
 %}
 
 
-%include "api/cmiss_region.h"
+%include "api/zn_region.h"
 

@@ -40,7 +40,7 @@
 
 #include <list>
 extern "C" {
-#include "api/cmiss_rendition.h"
+#include "api/zn_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/manager_private.h"

@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYDILATEFILTER_H)
 #define COMPUTED_FIELD_BINARYDILATEFILTER_H
 
-#include "api/cmiss_field.h"
+#include "api/zn_field.h"
 
 int Computed_field_register_types_binary_dilate_image_filter(
 	struct Computed_field_package *computed_field_package);

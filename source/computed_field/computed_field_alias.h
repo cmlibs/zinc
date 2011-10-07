@@ -43,7 +43,7 @@
 #if !defined (COMPUTED_FIELD_ALIAS_H)
 #define COMPUTED_FIELD_ALIAS_H
 
-#include "api/cmiss_field_alias.h"
+#include "api/zn_field_alias.h"
 
 /*****************************************************************************//**
  * Sets up command data for alias field.

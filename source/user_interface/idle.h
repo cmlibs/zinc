@@ -45,7 +45,7 @@ The private interface to idle callback functions of cmgui.
 #define __IDLE_H__
 
 #include "event_dispatcher.h"
-#include "api/cmiss_idle.h"
+#include "api/zn_idle.h"
 
 #ifdef __cplusplus
 extern "C" {

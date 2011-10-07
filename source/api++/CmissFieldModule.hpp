@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_MODULE_HPP__
 
 extern "C" {
-#include "api/cmiss_field_module.h"
+#include "api/zn_field_module.h"
 }
 #include "api++/CmissField.hpp"
 #include "api++/CmissFieldTypesArithmeticOperators.hpp"

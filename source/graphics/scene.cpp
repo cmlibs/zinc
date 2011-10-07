@@ -52,9 +52,9 @@
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#include "api/cmiss_scene.h"
-#include "api/cmiss_graphics_filter.h"
-#include "api/cmiss_rendition.h"
+#include "api/zn_scene.h"
+#include "api/zn_graphics_filter.h"
+#include "api/zn_rendition.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"

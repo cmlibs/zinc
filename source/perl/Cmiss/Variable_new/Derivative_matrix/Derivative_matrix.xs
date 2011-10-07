@@ -2,7 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/cmiss_variable_new_derivative_matrix.h"
+#include "api/zn_variable_new_derivative_matrix.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Derivative_matrix PACKAGE = Cmiss::Variable_new::Derivative_matrix PREFIX = Cmiss_variable_new_Derivative_matrix_

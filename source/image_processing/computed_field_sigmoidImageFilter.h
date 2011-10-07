@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H)
 #define COMPUTED_FIELD_SIGMOIDIMAGEFILTER_H
 
-#include "api/cmiss_field.h"
+#include "api/zn_field.h"
 
 int Computed_field_register_types_sigmoid_image_filter(
 	struct Computed_field_package *computed_field_package);

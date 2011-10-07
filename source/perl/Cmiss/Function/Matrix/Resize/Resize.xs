@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/cmiss_function_matrix_resize.h"
+#include "api/zn_function_matrix_resize.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix::Resize		PACKAGE = Cmiss::Function::Matrix::Resize		PREFIX = Cmiss_function_matrix_resize_

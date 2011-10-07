@@ -59,15 +59,15 @@
 #include <Xm/List.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
-#include "api/cmiss_context.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_graphics_module.h"
-#include "api/cmiss_region.h"
-#include "api/cmiss_rendition.h"
-#include "api/cmiss_scene.h"
-#include "api/cmiss_scene_viewer.h"
-#include "api/cmiss_stream.h"
+#include "api/zn_context.h"
+#include "api/zn_field_module.h"
+#include "api/zn_field_subobject_group.h"
+#include "api/zn_graphics_module.h"
+#include "api/zn_region.h"
+#include "api/zn_rendition.h"
+#include "api/zn_scene.h"
+#include "api/zn_scene_viewer.h"
+#include "api/zn_stream.h"
 #if defined (CELL)
 #include "cell/cell_interface.h"
 #include "cell/cell_window.h"

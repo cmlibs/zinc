@@ -41,9 +41,9 @@
 #define FIELD_CACHE_HPP
 
 extern "C" {
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_region.h"
+#include "api/zn_field.h"
+#include "api/zn_field_module.h"
+#include "api/zn_region.h"
 }
 #include "computed_field/field_location.hpp"
 

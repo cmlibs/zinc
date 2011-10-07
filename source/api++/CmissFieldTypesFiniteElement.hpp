@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_TYPES_FINITE_ELEMENT_HPP__
 
 extern "C" {
-#include "api/cmiss_field_finite_element.h"
+#include "api/zn_field_finite_element.h"
 }
 #include "api++/CmissField.hpp"
 

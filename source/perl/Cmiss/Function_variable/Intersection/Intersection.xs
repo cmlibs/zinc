@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/cmiss_function_variable_intersection.h"
+#include "api/zn_function_variable_intersection.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function_variable::Intersection  PACKAGE = Cmiss::Function_variable::Intersection  PREFIX = Cmiss_function_variable_intersection_

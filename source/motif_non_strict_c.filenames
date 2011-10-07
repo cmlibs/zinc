@@ -1,5 +1,5 @@
-api/cmiss_region.c
-api/cmiss_texture.c
+api/zn_region.c
+api/zn_texture.c
 choose/choose_computed_field.c
 choose/choose_curve.c
 choose/choose_enumerator.c

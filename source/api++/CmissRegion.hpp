@@ -40,7 +40,7 @@
 #define __CMISS_REGION_HPP__
 
 extern "C" {
-#include "api/cmiss_region.h"
+#include "api/zn_region.h"
 }
 
 namespace Cmiss

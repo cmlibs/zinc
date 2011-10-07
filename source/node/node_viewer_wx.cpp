@@ -48,7 +48,7 @@ this dialog.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#include "api/cmiss_field_subobject_group.h"
+#include "api/zn_field_subobject_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.h"

@@ -1,6 +1,6 @@
 #include "mex.h"
-#include "api/cmiss_core.h"
-#include "api/cmiss_value.h"
+#include "api/zn_core.h"
+#include "api/zn_value.h"
 #include "types.h"
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs,

@@ -2,8 +2,8 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/cmiss_function.h"
-#include "api/cmiss_function_composite.h"
+#include "api/zn_function.h"
+#include "api/zn_function_composite.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Composite PACKAGE = Cmiss::Function::Composite PREFIX = Cmiss_function_Composite_

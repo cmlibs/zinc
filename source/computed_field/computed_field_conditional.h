@@ -45,8 +45,8 @@ Implements computed fields which conditionally calculate their inputs.
 #define COMPUTED_FIELD_CONDITIONAL_H
 
 #include "general/value.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_conditional.h"
+#include "api/zn_field.h"
+#include "api/zn_field_conditional.h"
 
 #define Computed_field_create_if Cmiss_field_module_create_if
 

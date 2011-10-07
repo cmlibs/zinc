@@ -63,8 +63,8 @@ return to direct rendering, as described with these routines.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
-#include "api/cmiss_field_module.h"
-#include "api/cmiss_graphics_material.h"
+#include "api/zn_field_module.h"
+#include "api/zn_graphics_material.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"

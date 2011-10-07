@@ -44,7 +44,7 @@
 #define TESSELLATION_HPP
 
 extern "C" {
-#include "api/cmiss_tessellation.h"
+#include "api/zn_tessellation.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

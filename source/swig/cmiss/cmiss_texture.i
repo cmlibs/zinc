@@ -4,7 +4,7 @@ FILE : cmiss_texture.i
 LAST MODIFIED  12 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api/cmiss_texture.h
+Swig interface file for wrapping api/zn_texture.h
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -51,7 +51,7 @@ Swig interface file for wrapping api/cmiss_texture.h
 %module MODULE_PREFIX(texture)
 
 %{
-#include "api/cmiss_texture.h"
+#include "api/zn_texture.h"
 %}
 
-%include "api/cmiss_texture.h"
+%include "api/zn_texture.h"

@@ -7,7 +7,7 @@
 #include <Quantity_Color.hxx>
 
 extern "C" {
-#include "api/cmiss_field_cad.h"
+#include "api/zn_field_cad.h"
 }
 
 #include "point.h"
