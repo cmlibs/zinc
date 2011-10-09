@@ -26,6 +26,7 @@ SET( API_HDRS
 	source/api/cmiss_graphic.h
 	source/api/cmiss_graphics_filter.h
 	source/api/cmiss_graphics_material.h
+	source/api/cmiss_graphics_module.h
 	source/api/cmiss_idle.h
 	source/api/cmiss_interactive_tool.h
 	source/api/cmiss_optimisation.h
@@ -33,7 +34,6 @@ SET( API_HDRS
 	source/api/cmiss_region.h
 	source/api/cmiss_rendition.h
 	source/api/cmiss_scene.h
-	source/api/cmiss_scene_viewer.h
 	source/api/cmiss_selection.h
 	source/api/cmiss_spectrum.h
 	source/api/cmiss_stream.h
@@ -64,7 +64,6 @@ SET( API_HDRS
 	source/api/types/cmiss_region_id.h
 	source/api/types/cmiss_rendition_id.h
 	source/api/types/cmiss_scene_id.h
-	source/api/types/cmiss_scene_viewer_id.h
 	source/api/types/cmiss_selection_id.h
 	source/api/types/cmiss_spectrum_id.h
 	source/api/types/cmiss_stream_id.h
@@ -81,6 +80,7 @@ ENDIF( USE_OPENCASCADE )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( API_HDRS ${API_HDRS}
-		source/api/cmiss_scene_viewer.h )
+		source/api/cmiss_scene_viewer.h
+		source/api/types/cmiss_scene_viewer_id.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 

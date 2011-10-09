@@ -19,7 +19,6 @@ SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/finite_element_private.h
 	source/finite_element/finite_element_region.h
 	source/finite_element/finite_element_region_private.h
-	source/finite_element/export_finite_element.h
 	source/finite_element/finite_element.h
 	source/finite_element/finite_element_basis.h
 	source/finite_element/finite_element_time.h
