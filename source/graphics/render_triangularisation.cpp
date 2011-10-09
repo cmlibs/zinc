@@ -39,7 +39,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "api/zn_rendition.h"
+#include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/rendition.h"

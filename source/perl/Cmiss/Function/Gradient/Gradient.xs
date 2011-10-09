@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_gradient.h"
+#include "api/cmiss_function_gradient.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Gradient  PACKAGE = Cmiss::Function::Gradient  PREFIX = Cmiss_function_gradient_

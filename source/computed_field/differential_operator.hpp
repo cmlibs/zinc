@@ -43,7 +43,7 @@
 #define DIFFERENTIAL_OPERATOR_HPP
 
 extern "C" {
-#include "api/zn_differential_operator.h"
+#include "api/cmiss_differential_operator.h"
 #include "finite_element/finite_element_region.h"
 }
 

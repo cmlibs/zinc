@@ -40,7 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 #include <cmath>
 extern "C" {
-#include "api/zn_field_matrix_operators.h"
+#include "api/cmiss_field_matrix_operators.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_matrix_operators.hpp"

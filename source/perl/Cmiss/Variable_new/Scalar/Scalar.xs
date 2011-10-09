@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/zn_variable_new_scalar.h"
+#include "api/cmiss_variable_new_scalar.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Scalar		PACKAGE = Cmiss::Variable_new::Scalar		PREFIX = Cmiss_variable_new_scalar_

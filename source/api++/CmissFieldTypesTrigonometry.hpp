@@ -40,11 +40,11 @@
 #define __CMISS_FIELD_TYPES_TRIGONOMETRY_HPP__
 
 extern "C" {
-#include "api/zn_field_trigonometry.h"
+#include "api/cmiss_field_trigonometry.h"
 }
 #include "api++/CmissField.hpp"
 
-// following should be defined in api/zn_field_trigonometry.h:
+// following should be defined in api/cmiss_field_trigonometry.h:
 struct Cmiss_field_sin;
 typedef struct Cmiss_field_sin *Cmiss_field_sin_id;
 

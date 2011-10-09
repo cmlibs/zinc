@@ -49,7 +49,7 @@ struct Cmiss_command_data;
 %array_functions(float, float_array);
 
 %{
-#include "api/zn_command_data.h"
+#include "api/cmiss_command_data.h"
 
 /* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 

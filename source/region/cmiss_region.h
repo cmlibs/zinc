@@ -42,7 +42,7 @@
 #if !defined (CMISS_REGION_H)
 #define CMISS_REGION_H
 
-#include "api/zn_region.h"
+#include "api/cmiss_region.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"

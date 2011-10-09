@@ -1,7 +1,7 @@
 #include <Python.h>
-#include "api/zn_finite_element.h"
-#include "api/zn_value.h"
-#include "api/zn_value_element_xi.h"
+#include "api/cmiss_finite_element.h"
+#include "api/cmiss_value.h"
+#include "api/cmiss_value_element_xi.h"
 
 static PyObject*
 CmissValueElementxi_new(PyObject* self, PyObject* args)

@@ -46,8 +46,8 @@ Swig interface file for wrapping the Cmiss_element
 %module cmiss_element
 
 %{
-#include "api/zn_element.h"
+#include "api/cmiss_element.h"
 %}
 
-%include "api/zn_element.h"
+%include "api/cmiss_element.h"
 

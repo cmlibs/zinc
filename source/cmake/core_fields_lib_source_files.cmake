@@ -12,9 +12,9 @@ SET( CORE_FIELDS_LIB_SRCS
 	${REGION_SRCS} )
 
 SET( CORE_FIELDS_LIB_HDRS
-	source/api/zn_element.h
-	source/api/zn_node.h
-	source/api/zn_time_sequence.h
+	source/api/cmiss_element.h
+	source/api/cmiss_node.h
+	source/api/cmiss_time_sequence.h
 	source/general/io_stream.h
 	source/general/statistics.h
 	source/mesh/cmiss_element_private.hpp

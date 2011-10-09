@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_HPP__
 
 extern "C" {
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 }
 
 namespace Cmiss

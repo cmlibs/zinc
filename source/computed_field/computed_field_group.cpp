@@ -49,12 +49,12 @@ extern "C" {
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
-#include "api/zn_field_group.h"
-#include "api/zn_field_subobject_group.h"
-#include "api/zn_rendition.h"
+#include "api/cmiss_field_group.h"
+#include "api/cmiss_field_subobject_group.h"
+#include "api/cmiss_rendition.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/rendition.h"
-#include "api/zn_field_cad.h"
+#include "api/cmiss_field_cad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

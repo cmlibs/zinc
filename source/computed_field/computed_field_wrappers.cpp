@@ -45,7 +45,7 @@ fibre_axes out of a fibre field.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
-#include "api/zn_field_module.h"
+#include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_fibres.h"

@@ -44,8 +44,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H
 
-#include "api/zn_field.h"
-#include "api/zn_field_image_processing.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_image_processing.h"
 
 
 int Computed_field_register_types_discrete_gaussian_image_filter(

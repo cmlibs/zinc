@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/zn_function_matrix_divide_by_scalar.h"
+#include "api/cmiss_function_matrix_divide_by_scalar.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix::Divide_by_scalar		PACKAGE = Cmiss::Function::Matrix::Divide_by_scalar		PREFIX = Cmiss_function_matrix_divide_by_scalar_

@@ -122,16 +122,16 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-	const char *application_name;
-	char **argv;
-	const char *class_name;
-	int *argc_address;
-#else /* defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)) */
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 	HINSTANCE instance;
 	HWND main_window;
 	int main_window_state,widget_spacing;
 	LPSTR command_line;
+#else /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
+	const char *application_name;
+	char **argv;
+	const char *class_name;
+	int *argc_address;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	Cursor busy_cursor;
@@ -1518,7 +1518,7 @@ Visual *default_visual;
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
 	const char *application_name, int external_entry)
@@ -1662,7 +1662,7 @@ Open the <user_interface>.
 	struct User_interface *user_interface;
 
 	ENTER(CREATE(User_interface));
-#if !defined (WX_USER_INTERFACE) && (defined (WIN32_USER_INTERFACE) || defined (_MSC_VER))
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 	USE_PARAMETER(previous_instance);
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
@@ -1681,16 +1681,16 @@ Open the <user_interface>.
 			(struct Event_dispatcher_timeout_callback *)NULL;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
-		user_interface->argc_address = argc_address;
-		user_interface->argv=argv;
-		user_interface->application_name=application_name;
-		user_interface->class_name=class_name;
-#else /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 		user_interface->instance=current_instance;
 		user_interface->main_window=(HWND)NULL;
 		user_interface->main_window_state=initial_main_window_state;
 		user_interface->command_line=command_line;
+#else /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
+		user_interface->argc_address= argc_address;
+		user_interface->argv=argv;
+		user_interface->application_name=application_name;
+		user_interface->class_name=class_name;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (GTK_USER_INTERFACE)
 		user_interface->main_window = (GtkWidget *)NULL;
@@ -1928,7 +1928,7 @@ Open the <user_interface>.
 			user_interface = (struct User_interface *)NULL;
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if !defined (WX_USER_INTERFACE) && (defined (WIN32_USER_INTERFACE) || defined (_MSC_VER))
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 #if defined (WX_USER_INTERFACE)

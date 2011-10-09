@@ -40,7 +40,7 @@
 #define __CMISS_GRAPHICS_MODULE_HPP__
 
 extern "C" {
-#include "api/zn_graphics_module.h"
+#include "api/cmiss_graphics_module.h"
 }
 #include "api++/CmissMaterial.hpp"
 

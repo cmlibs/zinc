@@ -47,7 +47,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "api/zn_spectrum.h"
+#include "api/cmiss_spectrum.h"
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"

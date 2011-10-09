@@ -48,7 +48,7 @@ extern "C" {
 }
 
 extern "C" {
-#include "api/zn_element.h"
+#include "api/cmiss_element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"

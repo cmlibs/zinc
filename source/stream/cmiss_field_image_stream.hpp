@@ -44,8 +44,8 @@
 #define CMISS_REGION_STREAM_HPP
 
 extern "C" {
-#include "api/zn_field.h"
-#include "api/zn_field_image.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_image.h"
 #include "general/image_utilities.h"
 }
 #include "stream/cmiss_stream_private.hpp"

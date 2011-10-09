@@ -1,4 +1,4 @@
-api/zn_texture.c
+api/cmiss_texture.c
 choose/choose_gt_object.c
 colour/colour_editor.c
 comfile/comfile_window.c

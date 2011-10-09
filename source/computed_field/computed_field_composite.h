@@ -46,8 +46,8 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_COMPOSITE_H)
 #define COMPUTED_FIELD_COMPOSITE_H
 
-#include "api/zn_field.h"
-#include "api/zn_field_composite.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_composite.h"
 
 #define Computed_field_create_constant Cmiss_field_module_create_constant
 #define Computed_field_create_identity Cmiss_field_module_create_identity

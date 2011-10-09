@@ -40,11 +40,11 @@
 #define __CMISS_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
 
 extern "C" {
-#include "api/zn_field_arithmetic_operators.h"
+#include "api/cmiss_field_arithmetic_operators.h"
 }
 #include "api++/CmissField.hpp"
 
-// following should be defined in api/zn_field_arithmetic_operators.h:
+// following should be defined in api/cmiss_field_arithmetic_operators.h:
 struct Cmiss_field_add;
 typedef struct Cmiss_field_add *Cmiss_field_add_id;
 

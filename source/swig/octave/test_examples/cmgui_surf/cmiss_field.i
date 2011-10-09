@@ -48,7 +48,7 @@ Swig interface file for wrapping the Cmiss_command_data_execute_command
 %array_functions(float, float_array);
 
 %{
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 //typedef struct Cmiss_field *Cmiss_field_id;
 //typedef struct Cmiss_node *Cmiss_node_id;
 

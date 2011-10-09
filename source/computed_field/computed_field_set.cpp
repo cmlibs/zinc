@@ -41,7 +41,7 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
-#include "api/zn_field_module.h"
+#include "api/cmiss_field_module.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"

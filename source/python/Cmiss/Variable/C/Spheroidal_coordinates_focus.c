@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/zn_variable_coordinates.h"
+#include "api/cmiss_variable_coordinates.h"
 
 static PyObject*
 CmissVariableSpheroidal_Coordinates_Focus_new(PyObject* self, PyObject* args)

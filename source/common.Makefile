@@ -264,7 +264,7 @@ ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),ia64)
       TARGET_TYPE_DEFINES = -DO64
       # To work around errors of the form:
-      # /home/hunter/gui/cmgui/source/api/zn_core.c:60: relocation truncated to fit: PCREL21B display_message
+      # /home/hunter/gui/cmgui/source/api/cmiss_core.c:60: relocation truncated to fit: PCREL21B display_message
       LINK += -Wl,-relax
    endif
 endif # SYSNAME == Linux
@@ -445,7 +445,7 @@ ifeq ($(SYSNAME),Darwin)
    ifeq ($(MACHNAME),ia64)
       TARGET_TYPE_DEFINES = -DO64
       # To work around errors of the form:
-      # /home/hunter/gui/cmgui/source/api/zn_core.c:60: relocation truncated to fit: PCREL21B display_message
+      # /home/hunter/gui/cmgui/source/api/cmiss_core.c:60: relocation truncated to fit: PCREL21B display_message
       LINK += -Wl,-relax
    endif
 endif # SYSNAME == Darwin

@@ -43,7 +43,7 @@
 #define GRAPHICS_FILTER_HPP
 
 extern "C" {
-#include "api/zn_scene.h"
+#include "api/cmiss_scene.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

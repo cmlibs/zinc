@@ -40,7 +40,7 @@
 #define __CMISS_GRAPHICS_MATERIAL_HPP__
 
 extern "C" {
-#include "api/zn_graphics_material.h"
+#include "api/cmiss_graphics_material.h"
 }
 
 namespace Cmiss

@@ -47,7 +47,7 @@
 #include <stdio.h>
 #include <string.h>
 extern "C" {
-#include "api/zn_stream.h"
+#include "api/cmiss_stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 }

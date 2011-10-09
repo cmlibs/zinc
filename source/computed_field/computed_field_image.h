@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_IMAGE_H)
 #define COMPUTED_FIELD_IMAGE_H
 
-#include "api/zn_field_image.h"
+#include "api/cmiss_field_image.h"
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 

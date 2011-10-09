@@ -43,8 +43,8 @@
 #define COMPUTED_FIELD_CAD_TOPOLOGY_H
 
 extern "C" {
-#include "api/zn_field.h"
-#include "api/zn_field_cad.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_cad.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 }

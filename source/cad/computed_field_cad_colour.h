@@ -43,7 +43,7 @@
 #define CAD_COMPUTED_FIELD_CAD_COLOUR_H_
 
 extern "C" {
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 }
 #include "cad/geometricshape.h"
 

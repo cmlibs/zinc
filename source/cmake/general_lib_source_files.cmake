@@ -16,7 +16,7 @@ SET( GENERAL_LIB_SRCS
 	source/user_interface/message.c )
 
 SET( GENERAL_LIB_HDRS 
-	source/api/zn_core.h
+	source/api/cmiss_core.h
 	source/command/parser.h
 	source/general/any_object.h
 	source/general/compare.h

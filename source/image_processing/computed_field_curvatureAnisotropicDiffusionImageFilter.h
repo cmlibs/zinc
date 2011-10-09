@@ -44,7 +44,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER_H)
 #define COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER_H
 
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 
 int Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
 	struct Computed_field_package *computed_field_package);

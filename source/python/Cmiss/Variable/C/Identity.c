@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "api/zn_variable_identity.h"
+#include "api/cmiss_variable_identity.h"
 
 static PyObject*
 CmissVariableIdentity_new(PyObject* self, PyObject* args)

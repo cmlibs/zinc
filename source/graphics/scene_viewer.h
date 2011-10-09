@@ -52,7 +52,7 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
-#include "api/zn_scene_viewer.h"
+#include "api/cmiss_scene_viewer.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
@@ -76,7 +76,7 @@ struct Cmiss_scene_viewer_package;
 /* 
 The Cmiss_scene_viewer which is Public is currently the same object as the 
 cmgui internal Scene_viewer.  The Public interface is contained in 
-api/zn_scene_viewer.h however most of the functions come directly from
+api/cmiss_scene_viewer.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the 
 struct Scene_viewer is declared to be the same as Cmiss_scene_viewer here
 and the functions given their public names.

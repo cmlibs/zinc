@@ -2,8 +2,8 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/zn_scene_viewer.h"
-#include "api/zn_core.h"
+#include "api/cmiss_scene_viewer.h"
+#include "api/cmiss_core.h"
 #include "gtk/gtk_cmiss_scene_viewer.h"
 
 #include "PerlGtkCmissSceneViewerInt.h"

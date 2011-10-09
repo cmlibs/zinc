@@ -47,7 +47,7 @@ Swig interface file for wrapping the Cmiss_command_data_execute_command
 struct Cmiss_command_data;
 
 %{
-#include "api/zn_command_data.h"
+#include "api/cmiss_command_data.h"
 /* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
@@ -92,7 +92,7 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(
       	}
 %}
  	
-/*%include "api/zn_command_data.h"*/
+/*%include "api/cmiss_command_data.h"*/
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 

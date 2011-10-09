@@ -40,8 +40,8 @@
  * ***** END LICENSE BLOCK ***** */
 #include <string>
 extern "C" {
-#include "api/zn_field.h"
-#include "api/zn_field_module.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
 #include "command/parser.h"
 }
 #include "computed_field/computed_field_private.hpp"

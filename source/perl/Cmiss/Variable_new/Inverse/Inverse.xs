@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_variable_new_inverse.h"
+#include "api/cmiss_variable_new_inverse.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Inverse  PACKAGE = Cmiss::Variable_new::Inverse  PREFIX = Cmiss_variable_new_inverse_

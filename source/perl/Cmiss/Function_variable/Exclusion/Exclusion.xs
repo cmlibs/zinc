@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_variable_exclusion.h"
+#include "api/cmiss_function_variable_exclusion.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function_variable::Exclusion  PACKAGE = Cmiss::Function_variable::Exclusion  PREFIX = Cmiss_function_variable_exclusion_

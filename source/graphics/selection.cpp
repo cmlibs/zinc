@@ -35,7 +35,7 @@
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <cstdlib>
-#include "api/zn_field_group.h"
+#include "api/cmiss_field_group.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"

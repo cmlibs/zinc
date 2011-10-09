@@ -66,7 +66,7 @@ if a value is already known.
 #if !defined (COMPUTED_FIELD_H)
 #define COMPUTED_FIELD_H
 
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 #include "command/parser.h"
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
@@ -84,7 +84,7 @@ struct Cmiss_region;
 /*
 The Cmiss_computed_field which is Public is currently the same object as the
 cmgui internal Computed_field.  The Public interface is contained in
-api/zn_field.h however most of the functions come directly from
+api/cmiss_field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 functions are given their public names.
 */

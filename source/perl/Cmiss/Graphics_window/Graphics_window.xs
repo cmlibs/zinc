@@ -2,8 +2,8 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/zn_context.h"
-#include "api/zn_scene_viewer.h"
+#include "api/cmiss_context.h"
+#include "api/cmiss_scene_viewer.h"
 #include "perl/Cmiss/typemap.h"
 #include "perl/Cmiss/Scene_viewer/typemap.h"
 

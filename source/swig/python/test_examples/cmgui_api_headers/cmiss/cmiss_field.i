@@ -4,7 +4,7 @@ FILE : cmiss_field.i
 LAST MODIFIED  8 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api/zn_field_x headers
+Swig interface file for wrapping api/cmiss_field_x headers
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -48,24 +48,24 @@ Swig interface file for wrapping api/zn_field_x headers
 %array_functions(double, double_array);
 
 %{
-#include "api/zn_field.h"
-#include "api/zn_field_image_processing.h"
-#include "api/zn_field_arithmetic_operators.h"
-#include "api/zn_field_logical_operators.h"
-#include "api/zn_field_image.h"
-#include "api/zn_field_composite.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_image_processing.h"
+#include "api/cmiss_field_arithmetic_operators.h"
+#include "api/cmiss_field_logical_operators.h"
+#include "api/cmiss_field_image.h"
+#include "api/cmiss_field_composite.h"
 
 extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
 %}
 
-/*%include "api/zn_field.h"	*/
-%include "api/zn_field_image_processing.h"
-%include "api/zn_field_arithmetic_operators.h"
-%include "api/zn_field_logical_operators.h"
-%include "api/zn_field_image.h"
-%include "api/zn_field_composite.h"
+/*%include "api/cmiss_field.h"	*/
+%include "api/cmiss_field_image_processing.h"
+%include "api/cmiss_field_arithmetic_operators.h"
+%include "api/cmiss_field_logical_operators.h"
+%include "api/cmiss_field_image.h"
+%include "api/cmiss_field_composite.h"
 
 extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,

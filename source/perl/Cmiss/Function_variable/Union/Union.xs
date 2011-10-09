@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_variable_union.h"
+#include "api/cmiss_function_variable_union.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function_variable::Union  PACKAGE = Cmiss::Function_variable::Union  PREFIX = Cmiss_function_variable_union_

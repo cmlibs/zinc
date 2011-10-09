@@ -74,7 +74,7 @@ Used to be gtypes.h
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-#include "api/zn_graphic.h"
+#include "api/cmiss_graphic.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -85,7 +85,7 @@ Used to be gtypes.h
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
 //extern "C" {
-#include "api/zn_field_cad.h"
+#include "api/cmiss_field_cad.h"
 //}
 #endif /* defined (USE_OPENCASCADE) */
 

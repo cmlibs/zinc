@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_derivative.h"
+#include "api/cmiss_function_derivative.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Derivative  PACKAGE = Cmiss::Function::Derivative  PREFIX = Cmiss_function_derivative_

@@ -38,7 +38,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 #include "finite_element/finite_element.h"
 #include "region/cmiss_region.h"
 }

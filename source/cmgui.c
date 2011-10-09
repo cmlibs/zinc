@@ -138,7 +138,7 @@ Main program for the CMISS Graphical User Interface
 	context = Cmiss_context_create("default");
 	if (context)
 	{
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv, NULL);
 #else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv, current_instance,

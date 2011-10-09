@@ -4,7 +4,7 @@
  * Implementation of Minimisation object for performing optimisation algorithm
  * from description in Cmiss_optimisation.
  *
- * @see-also api/zn_optimisation.h
+ * @see-also api/cmiss_optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -46,8 +46,8 @@
 extern "C" {
 	#include <stdio.h>
 	#include <math.h>
-	#include "api/zn_field.h"
-	#include "api/zn_field_module.h"
+	#include "api/cmiss_field.h"
+	#include "api/cmiss_field_module.h"
 	#include "computed_field/computed_field.h"
 	#include "computed_field/computed_field_composite.h"
 	#include "computed_field/computed_field_set.h"

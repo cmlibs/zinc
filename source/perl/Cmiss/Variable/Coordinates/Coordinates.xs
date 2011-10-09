@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_variable_coordinates.h"
+#include "api/cmiss_variable_coordinates.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Coordinates  PACKAGE = Cmiss::Variable::Coordinates  PREFIX = Cmiss_variable_coordinates_

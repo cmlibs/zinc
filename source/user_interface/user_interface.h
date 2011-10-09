@@ -195,7 +195,7 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
-#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
+#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
 	const char *application_name, int external_entry);

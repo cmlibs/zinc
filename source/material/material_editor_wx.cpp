@@ -51,7 +51,7 @@ extern "C" {
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
-#include "api/zn_graphics_material.h"
+#include "api/cmiss_graphics_material.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"

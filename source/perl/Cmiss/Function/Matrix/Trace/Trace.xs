@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/zn_function_matrix_trace.h"
+#include "api/cmiss_function_matrix_trace.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix::Trace		PACKAGE = Cmiss::Function::Matrix::Trace		PREFIX = Cmiss_function_matrix_trace_

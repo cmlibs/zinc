@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/zn_function_matrix.h"
+#include "api/cmiss_function_matrix.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Matrix		PACKAGE = Cmiss::Function::Matrix		PREFIX = Cmiss_function_matrix_

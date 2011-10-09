@@ -45,7 +45,7 @@
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_node_private.hpp"
 extern "C" {
-#include "api/zn_field_nodeset_operators.h"
+#include "api/cmiss_field_nodeset_operators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"

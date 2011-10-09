@@ -13,9 +13,9 @@ Provides the wxWidgets interface to manipulate spectrum settings.
 extern "C" {
 #include <stdio.h>
 #include <math.h>
-#include "api/zn_scene.h"
-#include "api/zn_graphics_module.h"
-#include "api/zn_rendition.h"
+#include "api/cmiss_scene.h"
+#include "api/cmiss_graphics_module.h"
+#include "api/cmiss_rendition.h"
 #include "command/parser.h"
 #include "general/debug.h"
 #include "graphics/rendition.h"

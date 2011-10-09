@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "api/zn_variable_new_matrix.h"
+#include "api/cmiss_variable_new_matrix.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable_new::Matrix		PACKAGE = Cmiss::Variable_new::Matrix		PREFIX = Cmiss_variable_new_matrix_

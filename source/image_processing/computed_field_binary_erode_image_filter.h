@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYERODEFILTER_H)
 #define COMPUTED_FIELD_BINARYERODEFILTER_H
 
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 
 int Computed_field_register_types_binary_erode_image_filter(
 	struct Computed_field_package *computed_field_package);

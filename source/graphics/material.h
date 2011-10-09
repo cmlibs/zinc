@@ -45,13 +45,13 @@ The data structures used for representing graphical materials.
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
 #include "general/list.h"
-#include "api/zn_field.h"
+#include "api/cmiss_field.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "api/zn_graphics_module.h"
+#include "api/cmiss_graphics_module.h"
 
 /*
 Global constants

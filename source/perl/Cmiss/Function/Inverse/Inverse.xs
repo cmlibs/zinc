@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_inverse.h"
+#include "api/cmiss_function_inverse.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Inverse  PACKAGE = Cmiss::Function::Inverse  PREFIX = Cmiss_function_inverse_

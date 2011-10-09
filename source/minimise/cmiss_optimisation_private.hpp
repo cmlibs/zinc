@@ -4,7 +4,7 @@
  * The private methods for the Cmiss_optimisation object. Required to allow creation
  * of optimisation objects.
  *
- * @see-also api/zn_optimisation.h
+ * @see-also api/cmiss_optimisation.h
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -50,7 +50,7 @@
 #include <sstream>
 extern "C"
 {
-	#include "api/zn_optimisation.h"
+	#include "api/cmiss_optimisation.h"
 }
 #include "computed_field/field_module.hpp"
 

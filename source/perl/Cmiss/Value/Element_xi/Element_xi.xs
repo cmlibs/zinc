@@ -3,8 +3,8 @@
 #include "XSUB.h"
 
 #include <stdlib.h>
-#include "api/zn_value.h"
-#include "api/zn_value_element_xi.h"
+#include "api/cmiss_value.h"
+#include "api/cmiss_value_element_xi.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Value::Element_xi		PACKAGE = Cmiss::Value::Element_xi		PREFIX = Cmiss_value_element_xi_

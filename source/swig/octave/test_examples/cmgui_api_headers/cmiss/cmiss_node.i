@@ -46,8 +46,8 @@ Swig interface file for wrapping Cmiss_node
 %module cmiss_node
 
 %{
-#include "api/zn_node.h"
+#include "api/cmiss_node.h"
 %}
 
-%include "api/zn_node.h"
+%include "api/cmiss_node.h"
 

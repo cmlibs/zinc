@@ -40,7 +40,7 @@
 #define __CMISS_FIELD_TYPES_GROUP_HPP__
 
 extern "C" {
-#include "api/zn_field_group.h"
+#include "api/cmiss_field_group.h"
 }
 #include "api++/CmissField.hpp"
 #include "api++/CmissRegion.hpp"

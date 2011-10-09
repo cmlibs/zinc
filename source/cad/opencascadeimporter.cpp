@@ -87,7 +87,7 @@
 #include <BRepBndLib.hxx>
 
 extern "C" {
-#include "api/zn_field_module.h"
+#include "api/cmiss_field_module.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 }

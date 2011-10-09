@@ -42,7 +42,7 @@
 #include <stdlib.h>
 
 extern "C" {
-#include "api/zn_rendition.h"
+#include "api/cmiss_rendition.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/rendition.h"

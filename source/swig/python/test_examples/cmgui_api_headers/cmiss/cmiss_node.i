@@ -4,7 +4,7 @@ FILE : cmiss_node.i
 LAST MODIFIED : 8 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api header api/zn_node
+Swig interface file for wrapping api header api/cmiss_node
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,9 +45,9 @@ Swig interface file for wrapping api header api/zn_node
 %module node
 
 %{
-#include "api/zn_node.h"
+#include "api/cmiss_node.h"
 
 %}
 
-%include "api/zn_node.h"
+%include "api/cmiss_node.h"
 

@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "api/zn_function_finite_element.h"
+#include "api/cmiss_function_finite_element.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Element  PACKAGE = Cmiss::Function::Element  PREFIX = Cmiss_function_element_

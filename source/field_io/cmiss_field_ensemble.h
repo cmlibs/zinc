@@ -41,10 +41,10 @@
 #if !defined (CMISS_FIELD_ENSEMBLE_H)
 #define CMISS_FIELD_ENSEMBLE_H
 
-#include "api/types/zn_c_inline.h"
-#include "api/types/zn_field_id.h"
+#include "api/types/cmiss_c_inline.h"
+#include "api/types/cmiss_field_id.h"
 #include "field_io/cmiss_field_ensemble_id.h"
-#include "api/types/zn_field_module_id.h"
+#include "api/types/cmiss_field_module_id.h"
 
 Cmiss_field_id Cmiss_field_module_create_ensemble(Cmiss_field_module_id field_module);
 

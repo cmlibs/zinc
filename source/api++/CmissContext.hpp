@@ -41,7 +41,7 @@
 #define __CMISS_CONTEXT_HPP__
 
 extern "C" {
-#include "api/zn_context.h"
+#include "api/cmiss_context.h"
 }
 
 namespace Cmiss
