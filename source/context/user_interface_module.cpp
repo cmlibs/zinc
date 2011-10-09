@@ -81,7 +81,7 @@ DESCRIPTION :
 } User_settings;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface_module *User_interface_module_create(
 	struct Context *context, int in_argc, const char *in_argv[],
 	int external_entry)
@@ -248,7 +248,7 @@ struct User_interface_module *User_interface_module_create(
 			{
 				if (!command_line_options.no_display_flag)
 				{
-#if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
+#if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 					if (NULL == (UI_module->user_interface = CREATE(User_interface)
 							(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
 								"cmgui", external_entry)))
