@@ -1377,6 +1377,7 @@ from the default versions of these functions.
 		scene->list_of_lights=CREATE(LIST(Light))();
 		scene->list_of_rendition = NULL;
 		scene->manager_change_status = MANAGER_CHANGE_NONE(Scene);
+		scene->is_managed_flag = false;
 #if defined (OLD_CODE)
 		/*???RC temporary; have root_region and data_root_region until Scenes are
 			incorporated into the regions themselves */
