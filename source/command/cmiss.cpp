@@ -21571,22 +21571,25 @@ int Cmiss_command_data_process_command_line(int argc, const char *argv[],
 	command_line_options->visual_id_number = 0;
 	command_line_options->command_file_name = NULL;
 	
-	if (NULL != (state = create_Parse_state_from_tokens(argc, argv)))
+	if (argc >  0 && argv != NULL)
 	{
-		option_table = CREATE(Option_table)();
-		Option_table_add_entry(option_table, argv[0], NULL,
-			(void *)command_line_options, read_cmgui_command_line_options);
-		if (!Option_table_parse(option_table, state))
+		if (NULL != (state = create_Parse_state_from_tokens(argc, argv)))
 		{
-			command_line_options->write_help_flag = (char)1;
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table, argv[0], NULL,
+				(void *)command_line_options, read_cmgui_command_line_options);
+			if (!Option_table_parse(option_table, state))
+			{
+				command_line_options->write_help_flag = (char)1;
+				return_code = 0;
+			}
+			DESTROY(Option_table)(&option_table);
+			destroy_Parse_state(&state);
+		}
+		else
+		{
 			return_code = 0;
 		}
-		DESTROY(Option_table)(&option_table);
-		destroy_Parse_state(&state);
-	}
-	else
-	{
-		return_code = 0;
 	}
 
 	return return_code;
@@ -21821,23 +21824,26 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_line_options.server_mode_flag = (char)server_mode;
 		command_line_options.visual_id_number = visual_id;
 		command_line_options.command_file_name = comfile_name;
-	
-		if (NULL != (state = create_Parse_state_from_tokens(UI_module->argc, (const char **)(UI_module->argv))))
+
+		if (UI_module->argc > 0 && UI_module->argv)
 		{
-			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table, UI_module->argv[0], NULL,
-				(void *)&command_line_options, read_cmgui_command_line_options);
-			if (!Option_table_parse(option_table, state))
+			if (NULL != (state = create_Parse_state_from_tokens(UI_module->argc, (const char **)(UI_module->argv))))
 			{
-				write_help = 1;
+				option_table = CREATE(Option_table)();
+				Option_table_add_entry(option_table, UI_module->argv[0], NULL,
+				(void *)&command_line_options, read_cmgui_command_line_options);
+				if (!Option_table_parse(option_table, state))
+				{
+					write_help = 1;
+					return_code = 0;
+				}
+				DESTROY(Option_table)(&option_table);
+				destroy_Parse_state(&state);
+			}
+			else
+			{
 				return_code = 0;
 			}
-			DESTROY(Option_table)(&option_table);
-			destroy_Parse_state(&state);
-		}
-		else
-		{
-			return_code = 0;
 		}
 		/* copy command line options to local vars for use and easy clean-up */
 		batch_mode = (int)command_line_options.batch_mode_flag;
