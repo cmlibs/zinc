@@ -71,7 +71,6 @@ The eight types of graphics
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values. You can select xi=0 or 1 for each of the three xi-directions.
   * Width: this allows you to specify the width of the lines in pixels. This is a constant width that does not scale according to the zoom level.
 
-
 * **cylinders**
   
   Cylinders are used to visualize the same things as lines. They are shaded cylinders of a specified radius. They have the following specific settings:

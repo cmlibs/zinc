@@ -5,7 +5,6 @@ Visualizing fields at points using glyphs
 .. _large_strain: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/large_strain/index.html
 .. _biplane: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/biplane/index.html
 
-
 Glyphs are graphical objects that are used to represent information at points within a model. These glyphs can be coloured, scaled, and oriented according to the values of chosen fields. Glyphs might be used for something as simple as showing node locations (Figure 1), or something more complex such as showing the strain at points within a deformed mesh. cmgui has a range of glyphs available, for representing different types of point data. This document will explain how to position, scale and orient glyphs in a variety of ways.
 
 .. figure:: glyphs_variety.png
@@ -50,7 +49,6 @@ Open the *scene editor* and make sure cube is selected in the *scene object list
    :align: center
    
    **Figure 2: The scene editor.**
-   
 
 Use the drop-down menu to select another type of glyph for the node points: select *sphere*. In the graphics window, large orange spheres will appear at the corners (node points) of the cube. As the cube in this example is 1*1*1 and the default size of the glyphs is also 1*1*1, the glyphs will be far too large to be useful. For unscaled glyphs, you control the size by entering your desired size in the *Base glyph size* text-box, which will currently contain 1*1*1 (x*y*z dimensions). Change this to 0.1*0.1*0.1. If you enter a single value in the base glyph size box, it will use this value for all three dimensions. After changing the glyphs to these dimensions, you will notice that the spheres have shrunk to a more practical size (Figure 3). For unscaled glyphs, the final size is determined entirely by the *Base glyph size*.
 
