@@ -535,12 +535,18 @@ Cmiss_context_get_default_scene_viewer_package
 Cmiss_context_get_default_IO_stream_package
 Cmiss_context_process_idle_event
 
+Cmiss_scene_access
 Cmiss_scene_destroy
+Cmiss_scene_attribute_enum_from_string
+Cmiss_scene_attribute_enum_to_string
+Cmiss_scene_get_attribute_integer
+Cmiss_scene_set_attribute_integer
 Cmiss_scene_get_filter
 Cmiss_scene_set_filter
 Cmiss_scene_get_name
 Cmiss_scene_set_name
 Cmiss_scene_set_region
+
 
 /* cmiss_graphics_filter.h */
 Cmiss_graphics_module_create_filter_graphic_name

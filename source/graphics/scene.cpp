@@ -65,6 +65,7 @@ extern "C" {
 #include "general/compare.h"
 #include "general/debug.h"
 }
+#include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private_cpp.hpp"
 extern "C" {
 #include "general/indexed_list_private.h"
@@ -242,9 +243,9 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* keep pointer to this scene's manager since can pass on manager change */
 	/* messages if member manager changes occur (eg. materials) */
 	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Scene) *scene_manager;
+	struct MANAGER(Scene) *manager;
 	int manager_change_status;
-
+	bool is_managed_flag;
 	/* list of objects in the scene (plus visibility flag) */
 	enum Scene_change_status change_status;
 
@@ -267,7 +268,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 }; /* struct Scene */
 
 FULL_DECLARE_LIST_TYPE(Scene);
-FULL_DECLARE_MANAGER_TYPE(Scene);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Scene, Cmiss_graphics_module, void *);
 
 struct Scene_picked_object
 /*******************************************************************************
@@ -404,7 +405,7 @@ Private to the Scene and Scene_objects
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->change_status);
 #endif /* defined (DEBUG_CODE) */
-		if (scene->scene_manager)
+		if (scene->manager)
 		{
 			return_code = Scene_refresh( scene );
 		}
@@ -459,7 +460,7 @@ Private to the Scene and Scene_objects.
 		/*???debug*/
 		printf("Scene %s changed %i\n",scene->name,scene->change_status);
 #endif /* defined (DEBUG_CODE) */
-		if (scene->scene_manager)
+		if (scene->manager)
 		{
 			return_code = Scene_refresh( scene );
 		}
@@ -1352,8 +1353,8 @@ struct Scene *CREATE(Scene)(void)
 LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Scene now has pointer to its scene_manager, and it uses manager modify
-messages to inform its clients of changes. The pointer to the scene_manager
+Scene now has pointer to its manager, and it uses manager modify
+messages to inform its clients of changes. The pointer to the manager
 is set and unset by the add/remove object from manager routines, overwritten
 from the default versions of these functions.
 ==============================================================================*/
@@ -1368,13 +1369,14 @@ from the default versions of these functions.
 		scene->name = NULL;
 		scene->change_status=SCENE_NO_CHANGE;
 		scene->access_count = 1;
-		scene->scene_manager=(struct MANAGER(Scene) *)NULL;
+		scene->manager=(struct MANAGER(Scene) *)NULL;
 		/* fields, elements, nodes and data */
 		scene->region = NULL;
 		scene->light_manager=(struct MANAGER(Light) *)NULL;
 		scene->light_manager_callback_id=(void *)NULL;
 		scene->list_of_lights=CREATE(LIST(Light))();
 		scene->list_of_rendition = NULL;
+		scene->manager_change_status = MANAGER_CHANGE_NONE(Scene);
 #if defined (OLD_CODE)
 		/*???RC temporary; have root_region and data_root_region until Scenes are
 			incorporated into the regions themselves */
@@ -1553,7 +1555,7 @@ final message to be sent to clients.
 			/* once cache has run out, inform clients of all changes to date */
 			if (0 == scene->cache)
 			{
-				if (scene->scene_manager)
+				if (scene->manager)
 				{
 					Scene_refresh(scene);
 				}
@@ -1577,11 +1579,79 @@ final message to be sent to clients.
 	return (return_code);
 } /* Scene_end_cache */
 
-DECLARE_OBJECT_FUNCTIONS(Scene)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene)
 DECLARE_LIST_FUNCTIONS(Scene)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Scene,name)
+
+DECLARE_ACCESS_OBJECT_FUNCTION(Scene)
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Scene)
+{
+	int return_code;
+	struct Scene *object;
+
+	ENTER(DEACCESS(Scene));
+	if (object_address && (object = *object_address))
+	{
+		(object->access_count)--;
+		if (object->access_count <= 0)
+		{
+			return_code = DESTROY(Scene)(object_address);
+		}
+		else if ((!object->is_managed_flag) && (object->manager) &&
+			((1 == object->access_count) || ((2 == object->access_count) &&
+				(MANAGER_CHANGE_NONE(Scene) != object->manager_change_status))))
+		{
+			return_code =
+				REMOVE_OBJECT_FROM_MANAGER(Scene)(object, object->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*object_address = (struct Scene *)NULL;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DEACCESS(Scene) */
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Scene)
+{
+	int return_code;
+
+	ENTER(REACCESS(Scene));
+	if (object_address)
+	{
+		return_code = 1;
+		if (new_object)
+		{
+			/* access the new object */
+			(new_object->access_count)++;
+		}
+		if (*object_address)
+		{
+			/* deaccess the current object */
+			DEACCESS(Scene)(object_address);
+		}
+		/* point to the new object */
+		*object_address = new_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"REACCESS(Scene).  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* REACCESS(Scene) */
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
 {
@@ -1684,7 +1754,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			destination->list_of_lights=temp_list_of_lights;
 			DESTROY(LIST(Scene_object))(&(destination->scene_object_list));
 			destination->scene_object_list=temp_scene_object_list;
-			/* NOTE: MUST NOT COPY SCENE_MANAGER! */
+			/* NOTE: MUST NOT COPY MANAGER! */
 			destination->compile_status = GRAPHICS_NOT_COMPILED;
 			return_code=1;
 		}
@@ -1761,12 +1831,12 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Scene,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Scene,scene_manager)
+DECLARE_MANAGER_FUNCTIONS(Scene,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene,scene_manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Scene,name,const char *,scene_manager)
+	Scene,name,const char *,manager)
 
 #if defined (USE_SCENE_OBJECT)
 int for_each_Scene_object_in_Scene(struct Scene *scene,
@@ -4217,7 +4287,7 @@ int define_Scene_contents(struct Parse_state *state, void *scene_void,
 int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
 	void *define_scene_data_void)
 {
-	int return_code;
+	int return_code = 1;
 	const char *current_token;
 	struct Option_table *option_table;
 	struct Define_scene_data *define_scene_data;
@@ -4233,41 +4303,25 @@ int define_Scene(struct Parse_state *state, void *dummy_to_be_modified,
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				return_code = 1;
-				Cmiss_scene *scene = FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(
-					current_token, define_scene_data->scene_manager);
+				MANAGER(Scene) *scene_manager = define_scene_data->scene_manager;
+				MANAGER_BEGIN_CACHE(Scene)(scene_manager);
+				Cmiss_scene_id scene =
+					Cmiss_graphics_module_find_scene_by_name(define_scene_data->graphics_module, current_token);
+				if (!scene)
+				{
+					scene = Cmiss_graphics_module_create_scene(define_scene_data->graphics_module);
+					Cmiss_scene_set_name(scene, current_token);
+				}
+				shift_Parse_state(state,1);
 				if (scene)
 				{
-					shift_Parse_state(state,1);
+					// set managed state for all tessellations created or edited otherwise
+					// cleaned up at end of command.
+					Cmiss_scene_set_attribute_integer(scene, CMISS_SCENE_ATTRIBUTE_IS_MANAGED, 1);
 					return_code = define_Scene_contents(state, (void *)scene, define_scene_data_void);
 				}
-				else
-				{
-					scene = CREATE(Cmiss_scene)();
-					if ((!Cmiss_scene_set_region(scene, define_scene_data->root_region)) ||
-						(!Cmiss_scene_set_name(scene, current_token)))
-					{
-						return_code = 0;
-					}
-					shift_Parse_state(state,1);
-					if (state->current_token)
-					{
-						if (!define_Scene_contents(state, (void *)scene, define_scene_data_void))
-						{
-							return_code = 0;
-						}
-					}
-					if (return_code)
-					{
-						ADD_OBJECT_TO_MANAGER(Scene)(scene, define_scene_data->scene_manager);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx define scene:  scene not created due to errors");
-					}
-					DEACCESS(Scene)(&scene);
-				}
+				Cmiss_scene_destroy(&scene);
+				MANAGER_END_CACHE(Scene)(scene_manager);
 			}
 			else
 			{
@@ -4569,10 +4623,10 @@ int Cmiss_scene_set_name(struct Scene *scene, const char *name)
 	ENTER(Cmiss_scene_set_name);
 	if (scene && name)
 	{
-		if (scene->scene_manager)
+		if (scene->manager)
 		{
 			return_code = MANAGER_MODIFY_IDENTIFIER(Scene, name)
-				(scene, name, scene->scene_manager);
+				(scene, name, scene->manager);
 		}
 		else
 		{
@@ -4625,6 +4679,12 @@ struct Cmiss_region *Cmiss_scene_get_region(Scene *scene)
 
 	return region;
 }
+
+Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene)
+{
+	return ACCESS(Scene)(scene);
+}
+
 
 int Cmiss_scene_destroy(Cmiss_scene **scene_address)
 {
@@ -4813,7 +4873,7 @@ int Scene_rendition_changed(
 		{
 			scene->build = 1;
 			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
+			if (scene->manager)
 			{
 				return_code = Scene_refresh( scene );
 			}
@@ -4994,7 +5054,7 @@ int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter
 		{
 			scene->build = 1;
 			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
+			if (scene->manager)
 			{
 				Scene_refresh(scene);
 			}
@@ -5021,7 +5081,7 @@ int Cmiss_scene_graphics_filter_change(struct Scene *scene,	void *message_void)
 		{
 			scene->build = 1;
 			scene->change_status = SCENE_CHANGE;
-			if (scene->scene_manager)
+			if (scene->manager)
 			{
 				Scene_refresh(scene);
 			}
@@ -5054,4 +5114,86 @@ int Cmiss_scene_cleanup_top_rendition_scene_projection_callback(
 		return 1;
 	}
 	return 0;
+}
+
+int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
+	enum Cmiss_scene_attribute attribute)
+{
+	int value = 0;
+	if (scene)
+	{
+		switch (attribute)
+		{
+		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
+			value = (int)scene->is_managed_flag;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_scene_get_attribute_integer.  Invalid attribute");
+			break;
+		}
+	}
+	return value;
+}
+
+int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
+	enum Cmiss_scene_attribute attribute, int value)
+{
+	int return_code = 0;
+	if (scene)
+	{
+		return_code = 1;
+		int old_value = Cmiss_scene_get_attribute_integer(scene, attribute);
+		enum MANAGER_CHANGE(Cmiss_scene) change =
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_scene);
+		switch (attribute)
+		{
+		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
+			scene->is_managed_flag = (value != 0);
+			change = MANAGER_CHANGE_NOT_RESULT(Cmiss_scene);
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_scene_set_attribute_integer.  Invalid attribute");
+			return_code = 0;
+			break;
+		}
+		if (Cmiss_scene_get_attribute_integer(scene, attribute) != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(Cmiss_scene)(scene, change);
+		}
+	}
+	return return_code;
+}
+
+class Cmiss_scene_attribute_conversion
+{
+public:
+    static const char *to_string(enum Cmiss_scene_attribute attribute)
+    {
+    	const char *enum_string = 0;
+    	switch (attribute)
+    	{
+    		case CMISS_SCENE_ATTRIBUTE_IS_MANAGED:
+    			enum_string = "IS_MANAGED";
+    			break;
+    		default:
+    			break;
+    	}
+    	return enum_string;
+    }
+};
+
+enum Cmiss_scene_attribute
+	Cmiss_scene_attribute_enum_from_string(const char  *string)
+{
+	return string_to_enum<enum Cmiss_scene_attribute,
+		Cmiss_scene_attribute_conversion>(string);
+}
+
+char *Cmiss_scene_attribute_enum_to_string(
+	enum Cmiss_scene_attribute attribute)
+{
+	const char *attribute_string = Cmiss_scene_attribute_conversion::to_string(attribute);
+	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

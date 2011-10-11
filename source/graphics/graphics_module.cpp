@@ -930,13 +930,9 @@ struct Scene *Cmiss_graphics_module_create_scene(
 		if (NULL != (scene = CREATE(Scene)()))
 		{
 			Cmiss_scene_set_name(scene, temp_string);
-			if (ADD_OBJECT_TO_MANAGER(Scene)(scene, scene_manager))
+			if (!ADD_OBJECT_TO_MANAGER(Scene)(scene, scene_manager))
 			{
-				ACCESS(Scene)(scene);
-			}
-			else
-			{
-				DESTROY(Scene)(&scene);
+				DEACCESS(Scene)(&scene);
 			}
 		}
 		DEALLOCATE(temp_string);
@@ -961,6 +957,8 @@ struct Scene *Cmiss_graphics_module_get_default_scene(
 				Cmiss_scene_set_filter(graphics_module->default_scene, filter);
 				Cmiss_graphics_filter_destroy(&filter);
 				Cmiss_scene_set_name(graphics_module->default_scene, "default");
+				Cmiss_scene_set_attribute_integer(
+					graphics_module->default_scene, CMISS_SCENE_ATTRIBUTE_IS_MANAGED, 1);
 				struct MANAGER(Scene) *scene_manager =
 					Cmiss_graphics_module_get_scene_manager(graphics_module);
 				if (!ADD_OBJECT_TO_MANAGER(Scene)(graphics_module->default_scene,
