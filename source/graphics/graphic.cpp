@@ -4541,7 +4541,7 @@ int Cmiss_graphic_set_glyph_parameters(
 	int return_code;
 
 	ENTER(Cmiss_graphic_set_glyph_parameters);
-	if (graphic && ((glyph && glyph_offset && glyph_size &&
+	if (graphic && ((glyph_offset && glyph_size &&
 		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type) ||
@@ -4561,21 +4561,22 @@ int Cmiss_graphic_set_glyph_parameters(
 		{
 			GT_object_add_callback(graphic->glyph, Cmiss_graphic_glyph_change,
 					(void *)graphic);
-			graphic->glyph_scaling_mode = glyph_scaling_mode;
-			graphic->glyph_offset[0] = glyph_offset[0];
-			graphic->glyph_offset[1] = glyph_offset[1];
-			graphic->glyph_offset[2] = glyph_offset[2];
-			graphic->glyph_size[0] = glyph_size[0];
-			graphic->glyph_size[1] = glyph_size[1];
-			graphic->glyph_size[2] = glyph_size[2];
-			REACCESS(Computed_field)(&(graphic->orientation_scale_field),
-				orientation_scale_field);
-			graphic->glyph_scale_factors[0]=glyph_scale_factors[0];
-			graphic->glyph_scale_factors[1]=glyph_scale_factors[1];
-			graphic->glyph_scale_factors[2]=glyph_scale_factors[2];
-			REACCESS(Computed_field)(&(graphic->variable_scale_field),
-				variable_scale_field);
 		}
+		graphic->glyph_scaling_mode = glyph_scaling_mode;
+		graphic->glyph_offset[0] = glyph_offset[0];
+		graphic->glyph_offset[1] = glyph_offset[1];
+		graphic->glyph_offset[2] = glyph_offset[2];
+		graphic->glyph_size[0] = glyph_size[0];
+		graphic->glyph_size[1] = glyph_size[1];
+		graphic->glyph_size[2] = glyph_size[2];
+		REACCESS(Computed_field)(&(graphic->orientation_scale_field),
+			orientation_scale_field);
+		graphic->glyph_scale_factors[0]=glyph_scale_factors[0];
+		graphic->glyph_scale_factors[1]=glyph_scale_factors[1];
+		graphic->glyph_scale_factors[2]=glyph_scale_factors[2];
+		REACCESS(Computed_field)(&(graphic->variable_scale_field),
+			variable_scale_field);
+
 		return_code=1;
 	}
 	else
@@ -5000,10 +5001,10 @@ int Cmiss_graphic_copy_without_graphics_object(
 			}
 		}
 		/* for node_points, data_points and element_points only */
-		if (source->glyph && ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
+		if ((CMISS_GRAPHIC_NODE_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_DATA_POINTS==source->graphic_type)||
 			(CMISS_GRAPHIC_ELEMENT_POINTS==source->graphic_type)||
-			(CMISS_GRAPHIC_POINT==source->graphic_type)))
+			(CMISS_GRAPHIC_POINT==source->graphic_type))
 		{
 			Cmiss_graphic_set_glyph_parameters(destination,
 				source->glyph, source->glyph_scaling_mode,
