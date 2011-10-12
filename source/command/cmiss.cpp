@@ -22381,7 +22381,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 							}
 #if defined(USE_CMGUI_COMMAND_WINDOW)
 						}
-						else
+						else if (!UI_module->external)
 						{
 							if (NULL != (command_window = CREATE(Command_window)(command_data->execute_command,
 										command_data->user_interface)))

@@ -99,6 +99,7 @@ struct User_interface_module
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	int external;
 };
 
 /***************************************************************************//**

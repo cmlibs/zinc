@@ -526,6 +526,7 @@ int Cmiss_context_enable_user_interface(
 #endif
 	if (UI_module)
 	{
+		UI_module->external = 1;
 		return_code = 1;
 		User_interface_module_destroy(&UI_module);
 	}

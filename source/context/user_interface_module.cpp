@@ -222,6 +222,7 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->access_count = 1;
 		UI_module->argc = in_argc;
 		UI_module->argv = NULL;
+		UI_module->external = 0;
 		UI_module->unmodified_argv = NULL;
 		UI_module->cleanup_argc = in_argc;
 		UI_module->cleanup_argv = NULL;
