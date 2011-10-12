@@ -1719,8 +1719,8 @@ static int gfx_create_gauss_points(struct Parse_state *state,
 			"Creates points at Gauss point locations in the elements of the mesh. "
 			"Nodes are created in the gauss_point_nodeset starting from first_identifier, "
 			"and setting the element_xi gauss_location and real gauss_weight fields. "
-			"Currently limited to line/square/cube elements with order 1 to 4, giving "
-			"the number of Gauss points per element dimension.");
+			"Supports all main element shapes, with polynomial order up to 4. Order gives "
+			"the number of Gauss points per element dimension for line/square/cube shapes.");
 		Option_table_add_int_non_negative_entry(option_table, "first_identifier",
 			&first_identifier);
 		Option_table_add_string_entry(option_table, "gauss_location_field",

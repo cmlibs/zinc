@@ -293,7 +293,9 @@ the non-master FE_region is attached in the region's any_object_list.
 	ENTER(Cmiss_region_fields_begin_change);
 	if (region && region->fields)
 	{
-		FE_region_begin_change(Cmiss_region_get_FE_region(region));
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		FE_region_begin_change(fe_region);
+		FE_region_begin_change(FE_region_get_data_FE_region(fe_region));
 		MANAGER_BEGIN_CACHE(Computed_field)(region->fields->field_manager);
 		return_code = 1;
 	}
@@ -322,7 +324,9 @@ the non-master FE_region is attached in the region's any_object_list.
 	ENTER(Cmiss_region_fields_end_change);
 	if (region && region->fields)
 	{
-		FE_region_end_change(Cmiss_region_get_FE_region(region));
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		FE_region_end_change(fe_region);
+		FE_region_end_change(FE_region_get_data_FE_region(fe_region));
 		MANAGER_END_CACHE(Computed_field)(region->fields->field_manager);
 		return_code = 1;
 	}

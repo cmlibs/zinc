@@ -572,12 +572,75 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 		{ (+sqrt((3.0+2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0-sqrt(30.0))/72.0 }
 	};
 	const int offset[] = { 0, 1, 3, 6 };
+
+	const struct
+	{
+		FE_value location[2];                               FE_value weight;
+	} TriangleGaussPt[14] =
+	{
+		// order 1 = 1 point
+		{ { 1.0/3.0, 1.0/3.0 },                             0.5 },
+		// order 2 = 3 points
+		{ { 1.0/6.0, 1.0/6.0 },                             1.0/6.0 },
+		{ { 2.0/3.0, 1.0/6.0 },                             1.0/6.0 },
+		{ { 1.0/6.0, 2.0/3.0 },                             1.0/6.0 },
+		// order 3 = 4 points
+		{ { 1.0/5.0, 1.0/5.0 },                             25.0 / 96.0 },
+		{ { 3.0/5.0, 1.0/5.0 },                             25.0 / 96.0 },
+		{ { 1.0/5.0, 3.0/5.0 },                             25.0 / 96.0 },
+		{ { 1.0/3.0, 1.0/3.0 },                             -27.0 / 96.0 },
+		// order 4 = 6 points
+		{ { 0.091576213509771, 0.091576213509771 },         0.109951743655322*0.5 },
+		{ { 0.816847572980459, 0.091576213509771 },         0.109951743655322*0.5 },
+		{ { 0.091576213509771, 0.816847572980459 },         0.109951743655322*0.5 },
+		{ { 0.445948490915965, 0.108103018168070 },         0.223381589678011*0.5 },
+		{ { 0.108103018168070, 0.445948490915965 },         0.223381589678011*0.5 },
+		{ { 0.445948490915965, 0.445948490915965 },         0.223381589678011*0.5 }
+	};
+	const int triangleOffset[] = { 0, 1, 4, 8 };
+	const int triangleCount[] = { 1, 3, 4, 6 };
+
+	const struct
+	{
+		FE_value location[3];                                          FE_value weight;
+	} TetrahedronGaussPt[21] =
+	{
+		// order 1 = 1 point
+		{ { 0.25, 0.25, 0.25 },                                        1.0/6.0 },
+		// order 2 = 4 points
+		{ { 0.138196601125011, 0.138196601125011, 0.138196601125011 }, 0.25/6.0 },
+		{ { 0.585410196624969, 0.138196601125011, 0.138196601125011 }, 0.25/6.0 },
+		{ { 0.138196601125011, 0.585410196624969, 0.138196601125011 }, 0.25/6.0 },
+		{ { 0.138196601125011, 0.138196601125011, 0.585410196624969 }, 0.25/6.0 },
+		// order 3 = 5 points
+		{ { 1.0/6.0, 1.0/6.0, 1.0/6.0 },                               0.45/6.0 },
+		{ { 1.0/2.0, 1.0/6.0, 1.0/6.0 },                               0.45/6.0 },
+		{ { 1.0/6.0, 1.0/2.0, 1.0/6.0 },                               0.45/6.0 },
+		{ { 1.0/6.0, 1.0/6.0, 1.0/2.0 },                               0.45/6.0 },
+		{ { 0.25, 0.25, 0.25 },                                        -0.8/6.0 },
+		// order 4 = 11 points
+		{ { 0.071428571428571, 0.071428571428571, 0.071428571428571 }, 0.007622222222222 },
+		{ { 0.785714285714286, 0.071428571428571, 0.071428571428571 }, 0.007622222222222 },
+		{ { 0.071428571428571, 0.785714285714286, 0.071428571428571 }, 0.007622222222222 },
+		{ { 0.071428571428571, 0.071428571428571, 0.785714285714286 }, 0.007622222222222 },
+		{ { 0.399403576166799, 0.100596423833201, 0.100596423833201 }, 0.024888888888889 },
+		{ { 0.100596423833201, 0.399403576166799, 0.100596423833201 }, 0.024888888888889 },
+		{ { 0.399403576166799, 0.399403576166799, 0.100596423833201 }, 0.024888888888889 },
+		{ { 0.100596423833201, 0.100596423833201, 0.399403576166799 }, 0.024888888888889 },
+		{ { 0.399403576166799, 0.100596423833201, 0.399403576166799 }, 0.024888888888889 },
+		{ { 0.100596423833201, 0.399403576166799, 0.399403576166799 }, 0.024888888888889 },
+		{ { 0.25, 0.25, 0.25 },                                        -0.013155555555556 }
+	};
+	const int tetrahedronOffset[] = { 0, 1, 5, 10 };
+	const int tetrahedronCount[] = { 1, 4, 5, 11 };
+
 	int return_code = 0;
-	Cmiss_region_id region = Cmiss_mesh_get_master_region_internal(mesh);
+	Cmiss_region_id nodeset_region = Cmiss_nodeset_get_region_internal(gauss_points_nodeset);
+	Cmiss_region_id master_region = Cmiss_mesh_get_master_region_internal(mesh);
 	Cmiss_field_id gauss_location_field_base = Cmiss_field_stored_mesh_location_base_cast(gauss_location_field);
 	Cmiss_field_id gauss_weight_field_base = Cmiss_field_finite_element_base_cast(gauss_weight_field);
 	if (mesh && (1 <= order) && (order <= 4) && gauss_points_nodeset && (first_identifier >= 0) &&
-		(Cmiss_nodeset_get_master_region_internal(gauss_points_nodeset) == region) &&
+		(Cmiss_nodeset_get_master_region_internal(gauss_points_nodeset) == master_region) &&
 		gauss_location_field && gauss_weight_field &&
 		(Cmiss_field_get_number_of_components(gauss_location_field_base) == 1))
 	{
@@ -594,7 +657,7 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 		{
 			gauss_weights[g] = 1.0;
 			int shift_g = g;
-			for (int i =  0; i < dimension; i++)
+			for (int i = 0; i < dimension; i++)
 			{
 				int g1 = order_offset + shift_g % order;
 				gauss_locations[g*dimension + i] = GaussPt[g1].location;
@@ -603,7 +666,7 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 			}
 		}
 		return_code = 1;
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(nodeset_region);
 		Cmiss_field_module_begin_change(field_module);
 		Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
 		Cmiss_node_template_id node_template = Cmiss_nodeset_create_node_template(gauss_points_nodeset);
@@ -614,19 +677,142 @@ int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
 		Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
 		Cmiss_element_id element = 0;
 		int id = first_identifier;
+		bool first_unknown_shape = true;
+		Cmiss_nodeset_id master_gauss_points_nodeset = Cmiss_nodeset_get_master(gauss_points_nodeset);
 		while ((0 != (element = Cmiss_element_iterator_next_non_access(iterator))) && return_code)
 		{
-			for (int g = 0; g < number_of_gauss_points; g++)
+			Cmiss_element_shape_type shape_type = Cmiss_element_get_shape_type(element);
+			switch (shape_type)
 			{
-				// GRC not handling id in use.
-				Cmiss_node_id node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
-				Cmiss_field_cache_set_node(field_cache, node);
-				Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, gauss_locations + g*dimension);
-				Cmiss_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, gauss_weights + g);
-				Cmiss_node_destroy(&node);
-				id++;
+			case CMISS_ELEMENT_SHAPE_LINE:
+			case CMISS_ELEMENT_SHAPE_SQUARE:
+			case CMISS_ELEMENT_SHAPE_CUBE:
+				{
+					for (int g = 0; g < number_of_gauss_points; g++)
+					{
+						Cmiss_node_id node = 0;
+						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						{
+							Cmiss_node_destroy(&node);
+							++id;
+						}
+						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						Cmiss_field_cache_set_node(field_cache, node);
+						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, gauss_locations + g*dimension);
+						Cmiss_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, gauss_weights + g);
+						Cmiss_node_destroy(&node);
+						id++;
+					}
+				} break;
+			case CMISS_ELEMENT_SHAPE_TRIANGLE:
+				{
+					const int tri_count = triangleCount[order - 1];
+					const int tri_offset = triangleOffset[order - 1];
+					for (int g = 0; g < tri_count; g++)
+					{
+						Cmiss_node_id node = 0;
+						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						{
+							Cmiss_node_destroy(&node);
+							++id;
+						}
+						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						Cmiss_field_cache_set_node(field_cache, node);
+						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+							dimension, TriangleGaussPt[g + tri_offset].location);
+						Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+							/*number_of_values*/1, &(TriangleGaussPt[g + tri_offset].weight));
+						Cmiss_node_destroy(&node);
+						id++;
+					}
+				} break;
+			case CMISS_ELEMENT_SHAPE_TETRAHEDRON:
+				{
+					const int tet_count = tetrahedronCount[order - 1];
+					const int tet_offset = tetrahedronOffset[order - 1];
+					for (int g = 0; g < tet_count; g++)
+					{
+						Cmiss_node_id node = 0;
+						while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+						{
+							Cmiss_node_destroy(&node);
+							++id;
+						}
+						node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
+						Cmiss_field_cache_set_node(field_cache, node);
+						Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+							dimension, TetrahedronGaussPt[g + tet_offset].location);
+						Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+							/*number_of_values*/1, &(TetrahedronGaussPt[g + tet_offset].weight));
+						Cmiss_node_destroy(&node);
+						id++;
+					}
+				} break;
+			case CMISS_ELEMENT_SHAPE_WEDGE12:
+			case CMISS_ELEMENT_SHAPE_WEDGE13:
+			case CMISS_ELEMENT_SHAPE_WEDGE23:
+				{
+					const int tri_count = triangleCount[order - 1];
+					const int tri_offset = triangleOffset[order - 1];
+					int line_axis, tri_axis1, tri_axis2;
+					if (shape_type == CMISS_ELEMENT_SHAPE_WEDGE12)
+					{
+						line_axis = 2;
+						tri_axis1 = 0;
+						tri_axis2 = 1;
+					}
+					else if (shape_type == CMISS_ELEMENT_SHAPE_WEDGE13)
+					{
+						line_axis = 1;
+						tri_axis1 = 0;
+						tri_axis2 = 2;
+					}
+					else // (shape_type == CMISS_ELEMENT_SHAPE_WEDGE23)
+					{
+						line_axis = 0;
+						tri_axis1 = 1;
+						tri_axis2 = 2;
+					}
+					FE_value xi_location[3];
+					for (int h = 0; h < order; h++)
+					{
+						xi_location[line_axis] = GaussPt[order_offset + h].location;
+						FE_value line_weight = GaussPt[order_offset + h].weight;
+						for (int g = 0; g < tri_count; g++)
+						{
+							Cmiss_node_id node = 0;
+							while ((0 != (node = Cmiss_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
+							{
+								Cmiss_node_destroy(&node);
+								++id;
+							}
+							node = Cmiss_nodeset_create_node(gauss_points_nodeset, id, node_template);
+							Cmiss_field_cache_set_node(field_cache, node);
+							xi_location[tri_axis1] = TriangleGaussPt[g + tri_offset].location[0];
+							xi_location[tri_axis2] = TriangleGaussPt[g + tri_offset].location[1];
+							Cmiss_field_assign_mesh_location(gauss_location_field_base, field_cache, element,
+								dimension, xi_location);
+							FE_value total_weight = line_weight*TriangleGaussPt[g + tri_offset].weight;
+							Cmiss_field_assign_real(gauss_weight_field_base, field_cache,
+								/*number_of_values*/1, &total_weight);
+							Cmiss_node_destroy(&node);
+							id++;
+						}
+					}
+				} break;
+			default:
+				{
+					if (first_unknown_shape)
+					{
+						display_message(INFORMATION_MESSAGE, "gfx create gauss_points:  "
+							"Unknown shape type %d encountered first for element %d. Ignoring.",
+							shape_type, Cmiss_element_get_identifier(element));
+						first_unknown_shape = 0;
+					}
+				} break;
 			}
 		}
+		Cmiss_nodeset_destroy(&master_gauss_points_nodeset);
 		Cmiss_element_iterator_destroy(&iterator);
 		Cmiss_node_template_destroy(&node_template);
 		Cmiss_field_cache_destroy(&field_cache);

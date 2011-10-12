@@ -5344,6 +5344,9 @@ int Cmiss_graphic_data_FE_region_change(
 			switch (graphic->graphic_type)
 			{
 				case CMISS_GRAPHIC_DATA_POINTS:
+				case CMISS_GRAPHIC_ELEMENT_POINTS:
+				case CMISS_GRAPHIC_NODE_POINTS:
+				case CMISS_GRAPHIC_POINT:
 				{
 					// must ensure changes to fields on host elements/nodes force
 					// data_points to be rebuilt if using embedded fields referencing them:
