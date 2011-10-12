@@ -5901,21 +5901,19 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 					variable_scale_field = (struct Computed_field *)NULL;
 					glyph = (GT_object *)NULL;
 					glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
-					if (graphic->glyph)
-					{
-						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
-							&orientation_scale_field, glyph_scale_factors,
-							&variable_scale_field);
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
 						ACCESS(GT_object)(glyph);
-						if (orientation_scale_field)
-						{
-							ACCESS(Computed_field)(orientation_scale_field);
-						}
-						if (variable_scale_field)
-						{
-							ACCESS(Computed_field)(variable_scale_field);
-						}
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
 					}
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
 					number_of_components = 3;
@@ -6066,24 +6064,13 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 						{
 							REACCESS(Graphics_font)(&graphic->font, new_font);
 						}
-						if (glyph)
-						{
-							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
-								glyph_scaling_mode_string, &glyph_scaling_mode);
-							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
-								orientation_scale_field,glyph_scale_factors,
-								variable_scale_field);
-						}
-						else
-						{
-							if (graphic->glyph)
-							{
-								GT_object_remove_callback(graphic->glyph,
-									Cmiss_graphic_glyph_change, (void *)graphic);
-								DEACCESS(GT_object)(&graphic->glyph);
-							}
-						}
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
+
 						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
@@ -6186,21 +6173,19 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
 					glyph = (GT_object *)NULL;
-					if (graphic->glyph)
-					{
-						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
-							&orientation_scale_field, glyph_scale_factors,
-							&variable_scale_field);
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
 						ACCESS(GT_object)(glyph);
-						if (orientation_scale_field)
-						{
-							ACCESS(Computed_field)(orientation_scale_field);
-						}
-						if (variable_scale_field)
-						{
-							ACCESS(Computed_field)(variable_scale_field);
-						}
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
 					}
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
 					number_of_components = 3;
@@ -6351,24 +6336,12 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 						{
 							REACCESS(Graphics_font)(&graphic->font, new_font);
 						}
-						if (glyph)
-						{
-							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
-								glyph_scaling_mode_string, &glyph_scaling_mode);
-							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
-								orientation_scale_field,glyph_scale_factors,
-								variable_scale_field);
-						}
-						else
-						{
-							if (graphic->glyph)
-							{
-								GT_object_remove_callback(graphic->glyph,
-									Cmiss_graphic_glyph_change, (void *)graphic);
-								DEACCESS(GT_object)(&graphic->glyph);
-							}
-						}
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
 						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
@@ -6468,36 +6441,25 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 				if (graphic)
 				{
 					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
-					/* Overlay disabled
-					if (graphic->overlay_flag)
-					{
-						overlay_flag = graphic->overlay_order;
-					}
-					else
-					{
-						overlay_flag = 0;
-					}
-					*/
 					font_name = (char *)NULL;
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
 					glyph = (GT_object *)NULL;
-					if (graphic->glyph)
-					{
-						Cmiss_graphic_get_glyph_parameters(graphic,
-							&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
-							&orientation_scale_field, glyph_scale_factors,
-							&variable_scale_field);
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
 						ACCESS(GT_object)(glyph);
-						if (orientation_scale_field)
-						{
-							ACCESS(Computed_field)(orientation_scale_field);
-						}
-						if (variable_scale_field)
-						{
-							ACCESS(Computed_field)(variable_scale_field);
-						}
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
 					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
+
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
 					number_of_components = 3;
 					visibility = graphic->visibility_flag;
@@ -6650,24 +6612,12 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 							graphic->overlay_order = overlay_flag;
 						}
 						*/
-						if (glyph)
-						{
-							STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
-								glyph_scaling_mode_string, &glyph_scaling_mode);
-							Cmiss_graphic_set_glyph_parameters(graphic,
-								glyph, glyph_scaling_mode, glyph_offset, glyph_size,
-								orientation_scale_field,glyph_scale_factors,
-								variable_scale_field);
-						}
-						else
-						{
-							if (graphic->glyph)
-							{
-								GT_object_remove_callback(graphic->glyph,
-									Cmiss_graphic_glyph_change, (void *)graphic);
-								DEACCESS(GT_object)(&graphic->glyph);
-							}
-						}
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
 						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 							&coordinate_system);
 						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
@@ -7442,21 +7392,19 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 			variable_scale_field = (struct Computed_field *)NULL;
 			xi_point_density_field = (struct Computed_field *)NULL;
 			glyph = (GT_object *)NULL;
-			if (graphic->glyph)
-			{
-				Cmiss_graphic_get_glyph_parameters(graphic,
-					&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
-					&orientation_scale_field, glyph_scale_factors,
-					&variable_scale_field);
+			Cmiss_graphic_get_glyph_parameters(graphic,
+				&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+				&orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
+			if (glyph)
 				ACCESS(GT_object)(glyph);
-				if (orientation_scale_field)
-				{
-					ACCESS(Computed_field)(orientation_scale_field);
-				}
-				if (variable_scale_field)
-				{
-					ACCESS(Computed_field)(variable_scale_field);
-				}
+			if (orientation_scale_field)
+			{
+				ACCESS(Computed_field)(orientation_scale_field);
+			}
+			if (variable_scale_field)
+			{
+				ACCESS(Computed_field)(variable_scale_field);
 			}
 			Cmiss_graphic_get_xi_discretization(graphic,
 				&xi_discretization_mode, &xi_point_density_field);
@@ -7677,24 +7625,12 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 				{
 					DEALLOCATE(font_name);
 				}
-				if (glyph)
-				{
-					STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
-						glyph_scaling_mode_string, &glyph_scaling_mode);
-					Cmiss_graphic_set_glyph_parameters(graphic,
-						glyph, glyph_scaling_mode, glyph_offset, glyph_size,
-						orientation_scale_field,glyph_scale_factors,
-						variable_scale_field);
-				}
-				else
-				{
-					if (graphic->glyph)
-					{
-						GT_object_remove_callback(graphic->glyph,
-							Cmiss_graphic_glyph_change, (void *)graphic);
-						DEACCESS(GT_object)(&graphic->glyph);
-					}
-				}
+				STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+					glyph_scaling_mode_string, &glyph_scaling_mode);
+				Cmiss_graphic_set_glyph_parameters(graphic,
+					glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+					orientation_scale_field,glyph_scale_factors,
+					variable_scale_field);
 				STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
 					&coordinate_system);
 				Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
