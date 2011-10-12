@@ -1446,7 +1446,7 @@ $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_NAME_STRING "\"CMISS\(cmgui\)\"
 	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_VERSION_STRING "\"$(CMISS_VERSION_STRING)\"
 	sed 's/"//;s/./#define CMISS_DATE_STRING "&/;s/.$$/&\"/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
-	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_COPYRIGHT_STRING "\"Copyright 1996-2009, Auckland UniServices Ltd.\"
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_COPYRIGHT_STRING "\"Copyright 1996-2011, Auckland UniServices Ltd.\"
 	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_SVN_REVISION_STRING "\"$(SVN_REVISION)\"
 	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h  "#define CMISS_BUILD_STRING "\"$(INSTRUCTION) $(SYSNAME) $(INTERFACE_BUILD_NAME) $(OPTIMISATION_STRING)\"
 
