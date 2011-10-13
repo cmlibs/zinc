@@ -928,14 +928,12 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_selection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_spectrum.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_status.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_stream.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_tessellation.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_keeper.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_sequence.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_core.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_element.h
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_node.h )
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_time_sequence.h )
 	IF( USE_OPENCASCADE )
 		SET( CMGUI_LIB_API_INSTALL_HDRS ${CMGUI_LIB_API_INSTALL_HDRS}
 			${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_cad.h )
