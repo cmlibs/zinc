@@ -1452,8 +1452,8 @@ $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $(INTERPRETER_LIB)
 	@set -x; \
-	cat $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $*.c > $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).c ;
-	$(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).c;
+	cat $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $*.cpp > $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).cpp ;
+	$(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).cpp;
 
 # We want to limit the dynamic symbols in the final executable so that
 # dlopen routines can't access symbols we don't want them to */
