@@ -446,7 +446,8 @@ int Cmiss_node_destroy(Cmiss_node_id *node_address);
  * nodeset.
  *
  * @param node  The node to query.
- * @return  The integer identifier of the node, or -1 if node is invalid.
+ * @return  The non-negative integer identifier of the node, or a negative
+ * value if node is invalid.
  */
 int Cmiss_node_get_identifier(Cmiss_node_id node);
 

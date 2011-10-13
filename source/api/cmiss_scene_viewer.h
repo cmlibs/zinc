@@ -1153,7 +1153,8 @@ Returns a count of the number of scene viewer redraws.
  * Get a handle to the currently active interactive tool of scene viewer.
  *
  * @param scene_viewer  handle to Cmiss_scene_viewer object.
- * @return  1 if successfully get and return an interactive_tool, otherwise NULL.
+ * @return  Handle to current interactive_tool on success, or NULL if none or
+ * invalid argument.
  */
 Cmiss_interactive_tool_id Cmiss_scene_viewer_get_current_interactive_tool(
 	Cmiss_scene_viewer_id scene_viewer);

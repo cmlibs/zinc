@@ -298,8 +298,7 @@ int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 /***************************************************************************//**
  * Check whether the time keeper is playing.
  * @param time_keeper  Handle to time keeper.
- * @return   Status CMISS_OK if successfully called and time keeper is playing,
- * any other value on failure.
+ * @return  1 if time keeper is playing, 0 if not or invalid argument.
  */
 int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
 

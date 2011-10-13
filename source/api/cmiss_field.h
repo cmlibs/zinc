@@ -183,8 +183,8 @@ int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
  * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
  * that it equals or exceeds the dimension of the returned element.
  * @param chart_coordinates  Array to evaluate chart coordinate location into.
- * @return  Handle to element on success, NULL on failure. Caller is responsible
- * for destroying handle.
+ * @return  Handle to element on success, NULL on failure including if field is
+ * not defined at cache location. Caller is responsible for destroying handle.
  */
 Cmiss_element_id Cmiss_field_evaluate_mesh_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, int number_of_chart_coordinates,
@@ -198,7 +198,8 @@ Cmiss_element_id Cmiss_field_evaluate_mesh_location(Cmiss_field_id field,
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
  * @param values  Array of real values to evaluate into.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMISS_OK on success, any other value on failure including if
+ * field is not defined at cache location.
  */
 int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int number_of_values, double *values);
@@ -210,7 +211,8 @@ int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
  *
  * @param field  The field to evaluate.
  * @param cache  Store of location to evaluate at and intermediate field values.
- * @return  Allocated string value, or NULL if failed.
+ * @return  Allocated string value, or NULL on failure including if field is
+ * not defined at cache location.
  */
 char *Cmiss_field_evaluate_string(Cmiss_field_id field,
 	Cmiss_field_cache_id cache);
@@ -234,7 +236,8 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
  * @param number_of_values  Size of values array, must equal number of
  * components of field.
  * @param values  Array of real values to evaluate derivatives into.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * @return  Status CMISS_OK on success, any other value on failure including
+ * if field is not defined at cache location.
  */
 int Cmiss_field_evaluate_derivative(Cmiss_field_id field,
 	Cmiss_differential_operator_id differential_operator,

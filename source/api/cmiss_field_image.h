@@ -369,7 +369,7 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
  * directly.
  *
  * @param image_field  The field image to be read into.
- * @paran file_name  name of the file to read from.
+ * @param file_name  name of the file to read from.
  *
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
@@ -403,7 +403,7 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
  * Convenient function to write the image into a file with the provided name.
  *
  * @param image_field  The image_field which stores the image.
- * @paran file_name  name of the file to write to..
+ * @param file_name  name of the file to write to..
  *
  * @return  Status CMISS_OK if data is successfully written out, any other value
  * on failure.

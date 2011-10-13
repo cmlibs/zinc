@@ -271,7 +271,7 @@ int Cmiss_graphics_filter_operator_append_operand(
 /*******************************************************************************
  * Get the first operand filter in the operator filter's list of operands.
  * @param operator_filter  The operator filter to be iterated over.
- * @return  1 on success, 0 on failure.
+ * @return  Handle to the first operand, or NULL if none or invalid argument.
  */
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
 	Cmiss_graphics_filter_operator_id operator_filter);
@@ -282,7 +282,7 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_first_operand(
  *
  * @param operator_filter  The operator filter to be iterated over.
  * @param ref_operand  The filter to be referenced
- * @return  1 on success, 0 on failure.
+ * @return  Handle to the next operand, or NULL if none or invalid argument.
  */
 Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_get_next_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,

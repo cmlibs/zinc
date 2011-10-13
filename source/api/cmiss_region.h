@@ -315,7 +315,7 @@ Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
  * @see Cmiss_stream_information_id
  *
  * @param region  The region to read the resources in stream_information into.
- * @paran stream_information Handle to the Cmiss_stream_information containing
+ * @param stream_information Handle to the Cmiss_stream_information containing
  * 		information to read file into.
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
@@ -328,7 +328,7 @@ int Cmiss_region_read(Cmiss_region_id region,
  * directly.
  *
  * @param region  The region to be read into
- * @paran file_name  name of the file to read from.
+ * @param file_name  name of the file to read from.
  *
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
@@ -339,7 +339,7 @@ int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
  * Write region data using the data provided in the Cmiss_io_stream object.
  *
  * @param region  The region to be written out.
- * @paran stream_information Handle to the Cmiss_stream_information containing
+ * @param stream_information Handle to the Cmiss_stream_information containing
  * 		information to read file into.
  *
  * @return  Status CMISS_OK if data is successfully written out, any other value
@@ -352,7 +352,7 @@ int Cmiss_region_write(Cmiss_region_id region,
  * Convenient function to write the region into a file with the provided name.
  *
  * @param region  The region to be written out.
- * @paran file_name  name of the file to write to..
+ * @param file_name  name of the file to write to..
  *
  * @return  Status CMISS_OK if data is successfully written out, any other value
  * otherwise.

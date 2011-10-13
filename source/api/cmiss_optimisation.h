@@ -440,8 +440,8 @@ char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation)
  * Perform the optimisation described by the provided optimisation object.
  *
  * @param optimisation Handle to the Cmiss optimisation object.
- * @return Status CMISS_OK if optimisation completed sucessfully; any other value
- * on failure.
+ * @return Status CMISS_OK if optimisation completed successfully (stopping
+ * criteria satisfied), and any other value on failure.
  */
 int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation);
 

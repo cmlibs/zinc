@@ -649,7 +649,8 @@ int Cmiss_element_get_dimension(Cmiss_element_id element);
  * mesh.
  *
  * @param element  The element to query.
- * @return  The integer identifier of the element, or -1 if element is invalid.
+ * @return  The non-negative integer identifier of the element, or a negative
+ * value if element is invalid.
  */
 int Cmiss_element_get_identifier(Cmiss_element_id element);
 
