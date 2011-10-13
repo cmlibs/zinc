@@ -53,6 +53,8 @@ ENDIF( WX_USER_INTERFACE OR	MOTIF_USER_INTERFACE OR	GTK_USER_INTERFACE OR
 
 # Wx
 IF( WX_USER_INTERFACE )
+	SET( USER_INTERFACE_HDRS ${USER_INTERFACE_HDRS}
+		source/user_interface/user_interface_wx.hpp )
 	SET( COMFILE_INTERFACE_SRCS source/comfile/comfile_window_wx.cpp )
 	SET( COMFILE_INTERFACE_HDRS
 		source/comfile/comfile_window_wx.h

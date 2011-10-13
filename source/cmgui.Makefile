@@ -1413,8 +1413,8 @@ endif # $(MEMORYCHECK) != true
 
 UNEMAP_OBJS = $(UNEMAP_SRCS:.c=.$(OBJ_SUFFIX))
 
-MAIN_SRC = cmgui.c
-MAIN_OBJ = $(MAIN_SRC:.c=.$(OBJ_SUFFIX))
+MAIN_SRC = cmgui.cpp
+MAIN_OBJ = $(MAIN_SRC:.cpp=.$(OBJ_SUFFIX))
 
 clean :
 	-rm -r $(OBJECT_PATH)
@@ -1440,7 +1440,7 @@ $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
-	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h;	  
+	echo '/* This is a generated file.  Do not edit.  Edit cmgui.cpp or cmgui.imake instead */' > $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h;	  
 	date > date.h
 
 	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_NAME_STRING "\"CMISS\(cmgui\)\"

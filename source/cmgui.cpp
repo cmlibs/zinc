@@ -43,9 +43,12 @@ DESCRIPTION :
 /*SAB I have concatenated the correct version file for each version
   externally in the shell with cat #include "version.h"*/
 #if defined (BUILD_WITH_CMAKE)
+#include "configure/cmgui_configure.h"
 #include "configure/version.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
+extern "C"
+{
 #include "command/cmiss.h"
 #include "context/context.h"
 #include "context/user_interface_module.h"
@@ -55,12 +58,21 @@ DESCRIPTION :
 #include "unemap_application/unemap_command.h"
 #include "command/cmiss_unemap_link.h"
 #endif /* defined (UNEMAP) */
+}
 
-#if defined (WX_USER_INTERFACE) && defined (DARWIN)
-#include <ApplicationServices/ApplicationServices.h>
+#if defined (WX_USER_INTERFACE)
+# include "user_interface/user_interface_wx.hpp"
+# if defined (DARWIN)
+#  include <ApplicationServices/ApplicationServices.h>
+# endif
 #endif
 #include <libxml/catalog.h>
 #include <libxml/xmlschemastypes.h>
+
+#if defined (WX_USER_INTERFACE)
+#include <wx/wx.h>
+#include <wx/apptrait.h>
+#endif
 
 /*
 Global functions
@@ -89,7 +101,8 @@ Main program for the CMISS Graphical User Interface
 	int return_code = 0;
 #if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 	int argc = 1, i;
-	char **argv, *p, *q;
+	const char **argv;
+	char *p, *q;
 #endif /* defined (WIN32_USER_INTERFACE) */
 	struct Context *context = NULL;
 	struct User_interface_module *UI_module = NULL;
@@ -109,7 +122,7 @@ Main program for the CMISS Graphical User Interface
 		argc++;
 	}
 
-	argv = malloc(sizeof(*argv) * argc);
+	argv = (const char **)malloc(sizeof(*argv) * argc);
 
 	argv[0] = "cmgui";
 
@@ -182,4 +195,40 @@ Main program for the CMISS Graphical User Interface
 	
 	return (return_code);
 } /* main */
+
+#if defined (WX_USER_INTERFACE)
+bool wxCmguiApp::OnInit()
+{
+	return (true);
+}
+
+wxAppTraits * wxCmguiApp::CreateTraits()
+{
+	return new wxGUIAppTraits;
+}
+
+void wxCmguiApp::OnIdle(wxIdleEvent& event)
+{
+	if (event_dispatcher)
+	{
+		if (Event_dispatcher_process_idle_event(event_dispatcher))
+		{
+			event.RequestMore();
+		}
+	}
+}
+
+void wxCmguiApp::SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
+{
+	event_dispatcher = event_dispatcher_in;
+}
+
+
+BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
+	EVT_IDLE(wxCmguiApp::OnIdle)
+END_EVENT_TABLE()
+
+IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
+
+#endif /*defined (WX_USER_INTERFACE)*/
 

@@ -74,7 +74,7 @@ SET( FIELD_IO_SRCS
 SET( FIELD_IO_HDRS
 	source/field_io/read_fieldml.h )
 
-SET( MAIN_SRCS source/cmgui.c )
+SET( MAIN_SRCS source/cmgui.cpp )
 
 SET( MESH_SRCS 
 	source/mesh/cmiss_element_private.cpp

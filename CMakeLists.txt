@@ -308,6 +308,7 @@ DBG_MSG( "FieldML libraries ${FIELDML_LIBRARIES}" )
 
 # xml2
 SET( USE_LIBXML2 TRUE )
+SET( DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} LIBXML_STATIC )
 # Libxml2 libraries are pulled in by fieldml, check the fieldml interface
 # libraries for the libxml2 location.
 GET_TARGET_PROPERTY( LIBXML2_LIBRARIES fieldml IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE )

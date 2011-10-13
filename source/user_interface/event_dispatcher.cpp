@@ -68,6 +68,7 @@ extern "C" {
 extern "C" {
 #include "user_interface/user_interface.h"
 }
+#include "user_interface/user_interface_wx.hpp"
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 extern "C" {
 //#define WINDOWS_LEAN_AND_MEAN
@@ -1134,67 +1135,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Event_dispatcher_do_idle_event */
-
-
-class wxCmguiApp : public wxApp
-{
-	Event_dispatcher *event_dispatcher;
-
-public:
-	wxCmguiApp() : wxApp()
-	{
-		event_dispatcher = static_cast<Event_dispatcher *>(NULL);
-	}
-
-    virtual bool OnInit()
-	{
-		return (true);
-	}
-
-	virtual ~wxCmguiApp()
-	{
-	}
-	
-	virtual wxAppTraits * CreateTraits()
-	{
-		return new wxGUIAppTraits;
-	}
-
-	void OnIdle(wxIdleEvent& event)
-	{
-		if (event_dispatcher)
-		{
-			if (Event_dispatcher_do_idle_event(event_dispatcher))
-			{
-				event.RequestMore();
-			}
-		}
-	}
-
-	void SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
-	{
-		event_dispatcher = event_dispatcher_in;
-	}
-
-#if defined (__WXDEBUG__)
-	 void OnAssertFailure(const wxChar *file, int line, const wxChar* func, const wxChar* cond, const wxChar *msg)
-	 {
-		USE_PARAMETER(file);
-		USE_PARAMETER(line);
-		USE_PARAMETER(func);
-		USE_PARAMETER(cond);
-		USE_PARAMETER(msg);
-	 }
-#endif /* defined (__WXDEBUG__) */
-
-   DECLARE_EVENT_TABLE();
-};	
-
-IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
-
-BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
-	EVT_IDLE(wxCmguiApp::OnIdle)
-END_EVENT_TABLE()
 
 #if defined (UNIX) && !defined (DARWIN)
 void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a)
