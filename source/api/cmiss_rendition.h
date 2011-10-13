@@ -65,7 +65,8 @@ Cmiss_rendition_id Cmiss_rendition_access(Cmiss_rendition_id rendition);
  * Internally this just decrements the reference count.
  *
  * @param rendition Pointer to the handle to the rendition.
- * @return  Returns 1 if successfully remove rendition, otherwise 0.
+ * @return  status CMISS_OK if successfully remove rendition, any other value on
+ * failure.
  */
 int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
 
@@ -79,7 +80,7 @@ int Cmiss_rendition_destroy(Cmiss_rendition_id * rendition);
  * at once.
  *
  * @param rendition  The handle to the rendition.
- * @return  Returns 1 if successfully cache the rendition, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition);
 
@@ -121,7 +122,7 @@ Cmiss_selection_handler_id Cmiss_rendition_create_selection_handler(
  * at once.
  *
  * @param rendition  The handle to the rendition.
- * @return  Returns 1 if successfully end the cache on the rendition, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
 
@@ -136,7 +137,7 @@ int Cmiss_rendition_end_change(Cmiss_rendition_id rendition);
  *
  * @param rendition  Handle to a cmiss_rendition object.
  * @param command  Command to be executed.
- * @return  1 if command completed successfully, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
 	const char *command_string);
@@ -199,7 +200,7 @@ Cmiss_field_group_id Cmiss_rendition_get_selection_group(Cmiss_rendition_id rend
  *
  * @param cmiss_rendition  pointer to the cmiss_rendition.
  * @param selection_field  selection field to be set for this group.
- * @return Return 1 if succesfully set selection group otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
 	Cmiss_field_group_id selection_field);
@@ -219,7 +220,7 @@ int Cmiss_rendition_get_visibility_flag(Cmiss_rendition_id rendition);
  *
  * @param rendition  The handle to the rendition.
  * @param visibility_flag  integer value to be set for the value of visibility flag.
- * @return  1 if successful, otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_set_visibility_flag(Cmiss_rendition_id rendition,
 	int visibility_flag);
@@ -232,7 +233,7 @@ int Cmiss_rendition_set_visibility_flag(Cmiss_rendition_id rendition,
  * @param graphic  Cmiss_graphic to be moved.
  * @param ref_graphic  <graphic> will be moved into the current position of this
  * 		Cmiss_graphic
- * @return  1 if successful, otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic);
@@ -245,7 +246,8 @@ int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
  *   from.
  * @param graphic  The handle to a cmiss graphic object which will be removed
  *   from the rendition.
- * @return  Returns 1 if successfully remove graphic from rendition, otherwise 0.
+ * @return  Status CMISS_OK if successfully remove graphic from rendition,
+ * any other value on failure.
  */
 int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic);

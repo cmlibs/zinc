@@ -118,6 +118,7 @@ Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset);
  * Internally this just decrements the reference count.
  *
  * @param nodeset_address  Address of handle to the nodeset to destroy.
+ *  @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address);
 
@@ -174,7 +175,7 @@ Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
  * All handles to the destroyed nodes become invalid.
  *
  * @param nodeset  Handle to nodeset to destroy nodes from.
- * @return  1 if all nodes destroyed, 0 if failed.
+ * @return  Status CMISS_OK if all nodes destroyed, any other value if failed.
  */
 int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
 
@@ -184,7 +185,7 @@ int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset);
  *
  * @param nodeset  Handle to the nodeset whose node is to be destroyed.
  * @param node  The node to destroy.
- * @return  1 if node is successfully destroyed, 0 if error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
 
@@ -198,7 +199,7 @@ int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node);
  * @param nodeset  Handle to the nodeset to destroy nodes from.
  * @param conditional_field  Field which if non-zero at any node indicates it
  * is to be destroyed.
- * @return  The number of nodes destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
     Cmiss_field_id conditional_field);
@@ -266,6 +267,7 @@ Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset);
  * Internally this just decrements the reference count.
  *
  * @param nodeset_group_address  Address of nodeset group handle to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address);
 
@@ -291,7 +293,7 @@ CMISS_C_INLINE Cmiss_nodeset_id Cmiss_nodeset_group_base_cast(
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to add. Must be from the group's master nodeset.
- * @return  1 if node added, 0 if failed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
@@ -300,7 +302,7 @@ int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group,
  * Remove all nodes from nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
- * @return  1 if all nodes removed, 0 if failed.
+ * @return  Status CMISS_OK if all nodes removed, any other value if failed.
  */
 int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
 
@@ -309,7 +311,7 @@ int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group);
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to remove.
- * @return  1 if node removed, 0 if failed.
+ * @return  Status CMISS_OK if node is removed, any other value if failed.
  */
 int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
 	Cmiss_node_id node);
@@ -322,7 +324,7 @@ int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group,
  * @param nodeset_group  Handle to the nodeset group to remove nodes from.
  * @param conditional_field  Field which if non-zero in the node indicates it
  * is to be removed.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_nodeset_group_remove_nodes_conditional(
 	Cmiss_nodeset_group_id nodeset_group, Cmiss_field_id conditional_field);
@@ -331,6 +333,7 @@ int Cmiss_nodeset_group_remove_nodes_conditional(
  * Destroys this handle to the node_iterator and sets it to NULL.
  *
  * @param node_iterator_address  Address of handle to node_iterator to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address);
 
@@ -350,6 +353,7 @@ Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator);
  *
  * @param node_template_address  Address of handle to node_template
  * to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
 
@@ -361,7 +365,7 @@ int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address);
  * @param node_template  Node template to modify.
  * @param field  The field to define. May be finite_element, stored_string or
  * stored_mesh_location type only.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 	Cmiss_field_id field);
@@ -377,7 +381,7 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
  * @param component_number  The component from 1 to the number of field
  * components, or -1 to define the derivative for all components.
  * @param derivative_type  The type of nodal derivative to define.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number,
@@ -396,6 +400,7 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
  * @param node_field_creator  Optionally defines different versions and/or
  * derivative types. If it is NULL then a single nodal value for each component
  * will be defined.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_template_define_time_sequence(
 	Cmiss_node_template_id node_template, Cmiss_field_id field,
@@ -413,7 +418,7 @@ int Cmiss_node_template_define_time_sequence(
  * components, or -1 to define the number of versions for all components.
  * @param number_of_versions  The number of versions of each value & derivative
  * stored for the component/s, at least 1 (the default).
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number, int number_of_versions);
@@ -432,6 +437,7 @@ Cmiss_node_id Cmiss_node_access(Cmiss_node_id node);
  * Internally this just decrements the reference count.
  *
  * @param node_address  Address of handle to the node to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_destroy(Cmiss_node_id *node_address);
 
@@ -449,7 +455,7 @@ int Cmiss_node_get_identifier(Cmiss_node_id node);
  *
  * @param node  The node to modify.
  * @param node_template  Template containing node field descriptions.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template);
 

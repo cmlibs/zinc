@@ -101,8 +101,8 @@ int Cmiss_scene_get_attribute_integer(Cmiss_scene_id scene,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this scene object.
+ * @return  status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this scene object.
  */
 int Cmiss_scene_set_attribute_integer(Cmiss_scene_id scene,
 	enum Cmiss_scene_attribute attribute, int value);
@@ -119,6 +119,10 @@ Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene);
 /*******************************************************************************
 * Destroys this reference to the scene (and sets it to NULL).
 * Internally this just decrements the reference count.
+*
+* @param scene_address  The address to the handle of the scene to be destroyed.
+* @return  Status CMISS_OK if scene is successfully destroyed, any other value
+* on failure.
 */
 int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
 
@@ -128,7 +132,7 @@ int Cmiss_scene_destroy(Cmiss_scene_id *scene_address);
  *
  * @param scene Handle to the scene to be edited
  * @param root_region Handle to the region to be set in the scene.
- * @return If successfully set region for scene returns 1, otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_scene_set_region(Cmiss_scene_id scene, Cmiss_region_id root_region);
 
@@ -146,7 +150,7 @@ char *Cmiss_scene_get_name(Cmiss_scene_id scene);
  *
  * @param scene  The scene whose name is requested.
  * @param name  New name for scene.
- * @return  On success: Set name for scene.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_scene_set_name(Cmiss_scene_id scene, const char *name);
 
@@ -164,7 +168,7 @@ Cmiss_graphics_filter_id Cmiss_scene_get_filter(Cmiss_scene_id scene);
  *
  * @param scene  Scene to set filter for.
  * @param filter  Filter to be set for scene.
- * @return  1 if filters successfully cleared, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_scene_set_filter(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
 

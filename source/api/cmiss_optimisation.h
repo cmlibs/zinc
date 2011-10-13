@@ -199,7 +199,7 @@ Cmiss_optimisation_id Cmiss_field_module_create_optimisation(
  * Destroys reference to the optimisation object and sets pointer/handle to NULL.
  *
  * @param optimisation_address  Address of optimisation object reference.
- * @return  1 on success, 0 if invalid arguments.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_optimisation_destroy(Cmiss_optimisation_id *optimisation_address);
 
@@ -217,7 +217,7 @@ enum Cmiss_optimisation_method Cmiss_optimisation_get_method(
  *
  * @param optimisation  Handle to the optimisation object.
  * @param method  The optimisation method to use.
- * @return  1 if method successfully set, 0 if failed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_optimisation_set_method(Cmiss_optimisation_id optimisation,
 		enum Cmiss_optimisation_method method);
@@ -258,8 +258,8 @@ int Cmiss_optimisation_get_attribute_integer(Cmiss_optimisation_id optimisation,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this optimisation object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this optimisation object.
  */
 int Cmiss_optimisation_set_attribute_integer(Cmiss_optimisation_id optimisation,
 	enum Cmiss_optimisation_attribute attribute, int value);
@@ -280,8 +280,8 @@ double Cmiss_optimisation_get_attribute_real(Cmiss_optimisation_id optimisation,
  * @param optimisation  Handle to the optimisation object.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this optimisation object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this optimisation object.
  */
 int Cmiss_optimisation_set_attribute_real(Cmiss_optimisation_id optimisation,
 	enum Cmiss_optimisation_attribute attribute, double value);
@@ -349,7 +349,8 @@ Cmiss_field_id Cmiss_optimisation_get_next_independent_field(
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued independent field to add to the optimisation object
  * (accessed internally so safe for caller to destroy locally).
- * @return  1 if field successfully added, 0 if failed or already added.
+ * @return  Status CMISS_OK if field successfully added, any other value if
+ * failed or already added.
  */
 int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
 	Cmiss_field_id field);
@@ -359,7 +360,8 @@ int Cmiss_optimisation_add_independent_field(Cmiss_optimisation_id optimisation,
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  The independent field to remove.
- * @return  1 if field successfully removed, 0 if failed or field not found.
+ * @return  Status CMISS_OK if field successfully removed, any other value if
+ * failed or field not found.
  */
 int Cmiss_optimisation_remove_independent_field(
 	Cmiss_optimisation_id optimisation, Cmiss_field_id field);
@@ -408,7 +410,8 @@ Cmiss_field_id Cmiss_optimisation_get_next_objective_field(
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object
  * (accessed internally so safe for caller to destroy locally).
- * @return  1 if field successfully added, 0 if failed or already added.
+ * @return  Status CMISS_OK if field successfully added, any other value if
+ * failed or already added.
  */
 int Cmiss_optimisation_add_objective_field(Cmiss_optimisation_id optimisation,
 	Cmiss_field_id field);
@@ -418,7 +421,8 @@ int Cmiss_optimisation_add_objective_field(Cmiss_optimisation_id optimisation,
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  The objective field to remove.
- * @return  1 if field successfully removed, 0 if failed or field not found.
+ * @return   Status CMISS_OK if field successfully removed, any other value if
+ * failed or field not found.
  */
 int Cmiss_optimisation_remove_objective_field(
 	Cmiss_optimisation_id optimisation, Cmiss_field_id field);
@@ -436,7 +440,8 @@ char *Cmiss_optimisation_get_solution_report(Cmiss_optimisation_id optimisation)
  * Perform the optimisation described by the provided optimisation object.
  *
  * @param optimisation Handle to the Cmiss optimisation object.
- * @return 1 if optimisation completed sucessfully; 0 otherwise.
+ * @return Status CMISS_OK if optimisation completed sucessfully; any other value
+ * on failure.
  */
 int Cmiss_optimisation_optimise(Cmiss_optimisation_id optimisation);
 

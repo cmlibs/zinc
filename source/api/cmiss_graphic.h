@@ -65,8 +65,8 @@ Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
  * Destroys the graphic and sets the pointer to NULL.
  *
  * @param graphic  The pointer to the handle of the graphic
- * @return  If successfully destroy graphic returns 1,
- *   otherwise 0
+ * @return  Status CMISS_OK if successfully destroy graphic, otherwise any
+ * other value.
  */
 int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
 
@@ -75,7 +75,7 @@ int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic);
  *
  * @param graphic  The graphic to be edited.
  * @param coordinate_field  The cmiss_field to be use as the coordinate field.
- * @return  1 if coordinate field successfully set, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id coordinate_field);
@@ -85,7 +85,7 @@ int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  *
  * @param graphic  The graphic to be edit
  * @param material  The material to be set to graphic as the default material
- * @return  If successfully set material for graphic returns 1, otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
 
@@ -94,7 +94,7 @@ int Cmiss_graphic_set_material(Cmiss_graphic_id graphic, Cmiss_graphics_material
  *
  * @param graphic  The graphic to be edit
  * @param material  The material to be set to graphic as the selected material
- * @return  If successfully set material for graphic returns 1, otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_selected_material(
 	Cmiss_graphic_id graphic, Cmiss_graphics_material_id material);
@@ -108,8 +108,7 @@ int Cmiss_graphic_set_selected_material(
  * @param graphic  The graphic to be edit
  * @param texture_coordiante_field  The cmiss_field to be set as the texture
  *   texture coordinate field.
- * @return  If successfully set texture_coordinate_field for graphic returns 1, 
- *   otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
 	Cmiss_field_id texture_coordiante_field);
@@ -130,7 +129,7 @@ Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
  * @param graphic  The graphic to be edit
  * @param tessellation  The tessellation object to be set for graphic
  *
- * @return  tessellation for graphic or NULL if none.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_tessellation(
 		Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
@@ -151,8 +150,7 @@ enum Cmiss_graphics_render_type Cmiss_graphic_get_render_type(
  * @param graphic  The handle to the graphic to be edit
  * @param render_type  type of rendering for this graphic, please see the 
  *   render_type definition for more information.
- * @return  If successfully set render_type for graphic returns 1, 
- *   otherwise 0
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_render_type(
 	Cmiss_graphic_id graphic, enum Cmiss_graphics_render_type render_type);
@@ -170,7 +168,7 @@ int Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
  *
  * @param graphic  The graphic to modify.
  * @param visibility_flag  1 to set, 0 to clear.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
 	int visibility_flag);
@@ -181,7 +179,7 @@ int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to modify.
  * @param coordinate_system  enumerator describing coordinate system to be set
  * 		for graphic.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
 	enum Cmiss_graphics_coordinate_system coordinate_system);

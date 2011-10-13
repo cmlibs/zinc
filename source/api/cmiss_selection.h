@@ -75,7 +75,7 @@ Cmiss_selection_handler_id Cmiss_selection_handler_access(
  * Internally this just decrements the reference count.
  *
  * @param selection_handler  Handle to the cmiss selection_handler.
- * @return  0 on failure, 1 on success.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler);
 
@@ -84,7 +84,7 @@ int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handle
  * remove the callback function from the seleciton handler.
  *
  * @param selection_handler  Handle to the cmiss selection_handler.
- * @return  0 on failure, 1 on success.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_handler);
 
@@ -97,7 +97,7 @@ int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_
  * @param function  function to be called when event is triggered.
  * @param user_data_in  Void pointer to an user object. User is responsible for
  *   the life time of such object.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id selection_handler,
 		Cmiss_selection_handler_callback_function function, void *user_data_in);
@@ -130,7 +130,7 @@ int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id selectio
  *
  * @param selection_event  Handle to the cmiss_selection_event.
  * @param hierarchical_flag  flag to be set.
- * @return  0 on failure, 1 on success.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selection_handler,
 	int hierarchical_flag);

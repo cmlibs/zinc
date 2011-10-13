@@ -47,6 +47,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
+#include "api/cmiss_status.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -143,9 +144,9 @@ int Cmiss_nodeset_assign_field_from_source(
 			while (return_code && (0 != (node = Cmiss_node_iterator_next(iterator))))
 			{
 				Cmiss_field_cache_set_node(field_cache, node);
-				if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, field_cache))
+				if ((!conditional_field) || (CMISS_OK == Cmiss_field_evaluate_boolean(conditional_field, field_cache)))
 				{
-					if (Cmiss_field_is_defined_at_location(destination_field, field_cache))
+					if ((CMISS_OK == Cmiss_field_is_defined_at_location(destination_field, field_cache)))
 					{
 						switch (value_type)
 						{
@@ -156,8 +157,8 @@ int Cmiss_nodeset_assign_field_from_source(
 									source_field, field_cache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 								if (element)
 								{
-									if (Cmiss_field_assign_mesh_location(destination_field, field_cache,
-										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi))
+									if ((CMISS_OK == Cmiss_field_assign_mesh_location(destination_field, field_cache,
+										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)))
 									{
 										++success_count;
 									}
@@ -166,8 +167,8 @@ int Cmiss_nodeset_assign_field_from_source(
 							} break;
 						case CMISS_FIELD_VALUE_TYPE_REAL:
 							{
-								if (Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values) &&
-									Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values))
+								if ((CMISS_OK == Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values)) &&
+									(CMISS_OK == Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values)))
 								{
 									++success_count;
 								}
@@ -177,7 +178,7 @@ int Cmiss_nodeset_assign_field_from_source(
 								char *string_value = Cmiss_field_evaluate_string(source_field, field_cache);
 								if (string_value)
 								{
-									if (Cmiss_field_assign_string(destination_field, field_cache, string_value))
+									if ((CMISS_OK == Cmiss_field_assign_string(destination_field, field_cache, string_value)))
 									{
 										++success_count;
 									}

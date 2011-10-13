@@ -171,6 +171,7 @@ Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh);
  * Internally this just decrements the reference count.
  *
  * @param mesh_address  Address of handle to the mesh to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
 
@@ -247,7 +248,7 @@ Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
  * automatically generate, starting from 1. Fails if supplied identifier already
  * used by an existing element.
  * @param element_template  Template for element shape and fields.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
 	Cmiss_element_template_id element_template);
@@ -257,7 +258,7 @@ int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
  * All handles to the destroyed element become invalid.
  *
  * @param mesh  Handle to mesh to destroy elements from.
- * @return  1 if all elements destroyed, 0 if failed.
+ * @return  Status CMISS_OK if all elements destroyed, any other value if failed.
  */
 int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
 
@@ -267,7 +268,8 @@ int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh);
  *
  * @param mesh  Handle to the mesh whose element is to be destroyed.
  * @param element  The element to destroy.
- * @return  1 if element is successfully destroyed, 0 if error.
+ * @return  Status CMISS_OK if element is successfully destroyed, any other
+ * value if failed.
  */
 int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
 
@@ -281,7 +283,7 @@ int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element);
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be destroyed.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
    Cmiss_field_id conditional_field);
@@ -373,6 +375,7 @@ Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh);
  * Internally this just decrements the reference count.
  *
  * @param mesh_group_address  Address of mesh group handle to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address);
 
@@ -398,7 +401,7 @@ CMISS_C_INLINE Cmiss_mesh_id Cmiss_mesh_group_base_cast(
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to add. Must be from the group's master mesh.
- * @return  1 if element added, 0 if failed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
 	Cmiss_element_id element);
@@ -407,7 +410,7 @@ int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group,
  * Remove all elements from mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
- * @return  1 if all elements removed, 0 if failed.
+ * @return  Status CMISS_OK if all elements removed, any other value if failed.
  */
 int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
 
@@ -416,7 +419,7 @@ int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group);
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to remove.
- * @return  1 if element removed, 0 if failed.
+ * @return  Status CMISS_OK if element removed, any other value if failed.
  */
 int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
 	Cmiss_element_id element);
@@ -430,7 +433,7 @@ int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group,
  * @param mesh_group  Handle to the mesh group to remove elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be removed.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
    Cmiss_field_id conditional_field);
@@ -440,6 +443,7 @@ int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
  * Internally this just decrements the reference count.
  *
  * @param element_basis_address  Address of handle to element_basis to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address);
 
@@ -469,7 +473,7 @@ enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
  * @param chart_component  The chart component to set the function for from 1 to
  * dimension.
  * @param basis_type  The basis type to use on the chosen chart component.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
 	int chart_component, enum Cmiss_basis_function_type function_type);
@@ -488,6 +492,7 @@ int Cmiss_element_basis_get_number_of_nodes(
  *
  * @param element_iterator_address  Address of handle to element_iterator to
  * destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_iterator_destroy(
 	Cmiss_element_iterator_id *element_iterator_address);
@@ -509,6 +514,7 @@ Cmiss_element_id Cmiss_element_iterator_next(
  *
  * @param element_template_address  Address of handle to element_template
  * to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_template_destroy(
 	Cmiss_element_template_id *element_template_address);
@@ -534,7 +540,7 @@ enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
  *
  * @param element_template  Element template to modify.
  * @param shape_type  Enumerator of standard element shapes.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_template,
 	enum Cmiss_element_shape_type shape_type);
@@ -555,7 +561,7 @@ int Cmiss_element_template_get_number_of_nodes(
  *
  * @param element_template  Element template to modify.
  * @param number_of_nodes  The number of nodes.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_template_set_number_of_nodes(
 	Cmiss_element_template_id element_template, int number_of_nodes);
@@ -579,7 +585,7 @@ int Cmiss_element_template_set_number_of_nodes(
  * the number of nodes set for the element_template. Local nodes are ordered
  * by lowest xi coordinate varying fastest, e.g. for biquadratic Lagrange:
  * xi = (0,0), (0.5,0), (1,0), (0,0.5), (0.5,0.5) ...
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_template_define_field_simple_nodal(
 	Cmiss_element_template_id element_template,
@@ -607,7 +613,7 @@ Cmiss_node_id Cmiss_element_template_get_node(
  * @param element_template  Element template to modify.
  * @param local_node_index  The index from 1 to number of nodes in template.
  * @param node  The global node to set at that index.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
 	int local_node_index, Cmiss_node_id node);
@@ -626,6 +632,7 @@ Cmiss_element_id Cmiss_element_access(Cmiss_element_id element);
  * Internally this just decrements the reference count.
  *
  * @param element_address  Address of handle to the element to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_destroy(Cmiss_element_id *element_address);
 
@@ -665,7 +672,7 @@ enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
  *
  * @param element  The element to modify.
  * @param element_template  Template containing element field definitions.
- * @return  1 on success, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_element_merge(Cmiss_element_id element,
 	Cmiss_element_template_id element_template);

@@ -83,7 +83,7 @@ Cmiss_graphics_module_id Cmiss_graphics_module_access(
  *
  * @param graphics_module_address  Address of the graphics module handle to be
  * destroyed. 
- * @return  1 if handle is destroyed, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);
@@ -129,7 +129,7 @@ Cmiss_rendition_id Cmiss_graphics_module_get_rendition(
  *
  * @param graphics_module  The module requires for region to enable rendition.
  * @param region  The region at which the rendition will be enabled for.
-  * @return  1 if succesfully enable renditions, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_module_enable_renditions(
 	Cmiss_graphics_module_id graphics_module, Cmiss_region_id region);
@@ -181,8 +181,8 @@ Cmiss_tessellation_id Cmiss_graphics_module_create_tessellation(
  * by graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
- * @return  1 if successfully create a list of standard materials into graphics
- *    module, otherwise 0.
+ * @return  Status CMISS_OK if successfully create a list of standard materials
+ * into graphics module, any other value on failure.
  */
 int Cmiss_graphics_module_define_standard_materials(
 	struct Cmiss_graphics_module *graphics_module);

@@ -1,8 +1,8 @@
 /***************************************************************************//**
- * FILE : cmiss_differential_operator.h
- * 
- * Public interface to differential operator objects used to specify which
- * field derivative to evaluate.
+ * FILE : cmiss_status.h
+ *
+ * The public interface to Cmiss_status.
+ *
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,32 +39,26 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_DIFFERENTIAL_OPERATOR_H__
-#define __CMISS_DIFFERENTIAL_OPERATOR_H__
 
-#include "api/types/cmiss_differential_operator_id.h"
+#ifndef __CMISS_STATUS_H__
+#define __CMISS_STATUS_H__
 
-/***************************************************************************//**
- * Returns a new reference to the differential operator with reference count
- * incremented. Caller is responsible for destroying the new reference.
- * 
- * @param differential_operator  The differential operator to obtain a new
- * reference to.
- * @return  New differential operator reference with incremented reference
- * count.
- */
-Cmiss_differential_operator_id Cmiss_differential_operator_access(
-	Cmiss_differential_operator_id differential_operator);
 
-/***************************************************************************//**
- * Destroys reference to the differential operator and sets pointer/handle to
- * NULL. Internally this just decrements the reference count.
+/*****************************************************************************//**
+ * Generic status codes returned by API functions to indicate success or error.
  *
- * @param differential_operator_address  Address of differential operator
- * reference.
- * @return  Status CMISS_OK on success, any other value on failure.
+ * WARNING: Planned future binary compatiblity break.
+ * At a future date we will change value of CMISS_OK to 0, and
+ * introduce negative-valued error codes e.g. 'CMISS_ERROR_ARGUMENT',
+ * to bring the CMGUI Zinc API in to line with common C API conventions.
+ * To maintain your source compatibility through this break please ensure
+ * all code checking integer status codes returned by functions compare
+ * against enum CMISS_OK, NOT its current literal value
+ *
  */
-int Cmiss_differential_operator_destroy(
-	Cmiss_differential_operator_id *differential_operator_address);
+enum Cmiss_status
+{
+	CMISS_OK = 1 /*!< value to be returned on success */
+};
 
-#endif /* __CMISS_DIFFERENTIAL_OPERATOR_H__ */
+#endif

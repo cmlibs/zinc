@@ -134,17 +134,6 @@ Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_mo
 Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, double *weights);
 
-int Cmiss_field_get_type_sum_components(Cmiss_field_id field,
-	Cmiss_field_id *source_field, double **weights);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type FIELD_SUM_COMPONENTS, the 
-<source_field> and <weights> used by it are returned.
-WARNING: to be deprecated.
-==============================================================================*/
-
 /*****************************************************************************//**
  * Creates a field where the field components are the natural logarithm 
  * of each component in the source field.

@@ -71,7 +71,7 @@ Cmiss_time_sequence_id Cmiss_time_sequence_access(
  * Internally this just decrements the reference count.
  *
  * @param time_sequence_address  Address of time sequence reference.
- * @return  1 on success, 0 if invalid arguments.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
 
@@ -83,7 +83,7 @@ int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
  * @param time_sequence  The time sequence to modify.
  * @param time_index  The index of the time to set, starting at 0.
  * @param time  The time to set.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
 	int time_index, double time);

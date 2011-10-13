@@ -93,7 +93,8 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_node_group_base_cast(Cmiss_field_node_
  * Destroy the reference to the node group.
  *
  * @param group_address  address to the handle to the node group field
- * @return  1 if successfully destroy the node group, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroy the node group,
+ * any other value on failure.
  */
 int Cmiss_field_node_group_destroy(Cmiss_field_node_group_id *node_group_address);
 
@@ -149,7 +150,8 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_element_group_base_cast(Cmiss_field_el
  * Destroy the reference to the element group.
  *
  * @param element_group_address  address to the handle to the element group field
- * @return  1 if successfully destroy the element group, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroy the element group,
+ * any other value on failure.
  */
 int Cmiss_field_element_group_destroy(Cmiss_field_element_group_id *element_group_address);
 

@@ -126,7 +126,8 @@ Cmiss_graphics_material_id Cmiss_graphics_material_access(Cmiss_graphics_materia
  *
  * @param material  address to the handle to the "to be destroyed"
  *   cmiss material.
- * @return  1 if successfully destroy material, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroy material, any other value on
+ * failure.
  */
 int Cmiss_graphics_material_destroy(Cmiss_graphics_material_id *material);
 
@@ -147,8 +148,8 @@ int Cmiss_graphics_material_get_attribute_integer(Cmiss_graphics_material_id mat
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this material object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_integer(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, int value);
@@ -169,8 +170,8 @@ double Cmiss_graphics_material_get_attribute_real(Cmiss_graphics_material_id mat
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this material object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, double value);
@@ -181,7 +182,7 @@ int Cmiss_graphics_material_set_attribute_real(Cmiss_graphics_material_id materi
  *
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the vectors attribute to get.
- * @return  Values of the attribute.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, double *values);
@@ -192,8 +193,8 @@ int Cmiss_graphics_material_get_attribute_real3(Cmiss_graphics_material_id mater
  *
  * @param material  Handle to the cmiss material.
  * @param attribute  The identifier of the vectors attribute to get.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this material object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this material object.
  */
 int Cmiss_graphics_material_set_attribute_real3(Cmiss_graphics_material_id material,
 	enum Cmiss_graphics_material_attribute attribute, const double *values);
@@ -212,7 +213,8 @@ char *Cmiss_graphics_material_get_name(Cmiss_graphics_material_id material);
  *
  * @param material  The handle to the cmiss material.
  * @param name  name to be set to the material
- * @return  1 if successfully set/change name for material, otherwise 0.
+ * @return  Status CMISS_OK if successfully set/change name for material,
+ * any other value on failure.
  */
 int Cmiss_graphics_material_set_name(
 	Cmiss_graphics_material_id material, const char *name);
@@ -227,7 +229,7 @@ int Cmiss_graphics_material_set_name(
  *
  * @param material  Handle to a Cmiss_graphics_material object.
  * @param command  Command to be executed.
- * @return  1 if command completed successfully, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
 	const char *command_string);
@@ -242,7 +244,7 @@ int Cmiss_graphics_material_execute_command(Cmiss_graphics_material_id material,
  * @param field  handle to a general cmiss field.
  * @param image_number  integer to identify which image field to be set in
  * 		material.
- * @return  1 if successfully set an image field, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_material_set_image_field(Cmiss_graphics_material_id material,
 	int image_number, Cmiss_field_image_id image_field);

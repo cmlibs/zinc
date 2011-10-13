@@ -202,7 +202,8 @@ Cmiss_time_keeper_id Cmiss_time_keeper_access(Cmiss_time_keeper_id time_keeper);
  * Internally this just decrements the reference count.
  *
  * @param time_keeper_address  The address to the handle to time keeper
- * @return  1 if successfully destroy(deaccess) the time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroy the time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address);
 
@@ -222,8 +223,8 @@ double Cmiss_time_keeper_get_attribute_real(Cmiss_time_keeper_id time_keeper,
  * @param time_keeper  Handle to the cmiss time_keeper.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this time_keeper object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this time_keeper object.
  */
 int Cmiss_time_keeper_set_attribute_real(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_attribute attribute, double value);
@@ -265,8 +266,8 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
  *
  * @param time_keeper  Handle to time keeper.
  * @param frame_mode  Enumerator to set the frame mode of the time keeper.
- * @return  1 if successfully set the time keeper to play every frame, otherwise 
- *    0.
+ * @return  Status CMISS_OK if successfully set the time keeper to play every
+ * frame, any other value on failure.
  */
 int Cmiss_time_keeper_set_frame_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_frame_mode frame_mode);
@@ -288,7 +289,8 @@ enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
  * @param time_keeper  Handle to time keeper.
  * @param Cmiss_time_keeper_play_direction  Enumerator to tell time keeper which
  *    direction it should play.
- * @return  1 if successfully set the frame mode of time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully set the frame mode of time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_play_direction play_direction);
@@ -296,7 +298,8 @@ int Cmiss_time_keeper_play(Cmiss_time_keeper_id time_keeper,
 /***************************************************************************//**
  * Check whether the time keeper is playing.
  * @param time_keeper  Handle to time keeper.
- * @return  1 if successfully called and time keeper is playing, otherwise 0.
+ * @return   Status CMISS_OK if successfully called and time keeper is playing,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
 
@@ -304,7 +307,8 @@ int Cmiss_time_keeper_is_playing(Cmiss_time_keeper_id time_keeper);
  * Stops the time keeper from playing.
  *
  * @param time_keeper  Handle to time keeper.
- * @return  1 if successfully to stop the time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully to stop the time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_stop(Cmiss_time_keeper_id time_keeper);
 
@@ -325,7 +329,8 @@ enum Cmiss_time_keeper_repeat_mode Cmiss_time_keeper_get_repeat_mode(
  * @param time_keeper  Handle to time keeper.
  * @param Cmiss_time_keeper_repeat_mode  enumerator to tell time keeper which
  *    repeat mode it should be playing.
- * @return  1 if successfully set the repeat mode of time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully set the repeat mode of time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 	enum Cmiss_time_keeper_repeat_mode repeat_mode);
@@ -339,7 +344,8 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
  * 
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
- * @return  1 if successfully set time notifier to time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully set time notifier to time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper, 
 	Cmiss_time_notifier_id time_notifier);
@@ -349,7 +355,8 @@ int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper,
  * access count of the time notifier. 
  * @param time_keeper  Handle to time keeper.
  * @param time_notifier  Handle to time notifier.
- * @return  1 if successfully set time notifier to time keeper, otherwise 0.
+ * @return  Status CMISS_OK if successfully set time notifier to time keeper,
+ * any other value on failure.
  */
 int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper, 
 	Cmiss_time_notifier_id time_notifier);

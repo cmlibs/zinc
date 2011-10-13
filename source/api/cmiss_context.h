@@ -78,8 +78,8 @@ Cmiss_context_id Cmiss_context_access(Cmiss_context_id context);
  * Destroy a context.
  *
  * @param context_address  The address to the handle of the context
- *    to be destroyed Cmiss_context.
- * @return  1 if successfully destroy Cmiss_context otherwise 0.
+ *    to be destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_context_destroy(Cmiss_context_id *context_address);
 
@@ -117,7 +117,7 @@ Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
  * 
  * @see Cmiss_region_create_region
  * @param context  Handle to a cmiss_context object.
- * @return  Reference to newly created region if successful, otherwise 0.
+ * @return  Reference to newly created region if successful, otherwise NULL.
  */
 Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
@@ -131,8 +131,8 @@ Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  *   Only use this if you want to provide your own main loop to cmgui, if not
  *   set this to NULL. If a valid instance is provided, cmgui will use it
  *   as the main instance and create time event with it.
- *  @see Cmiss_context_process_idle_event
- * @return  1 if successfully initialized user interface, otherwise 0.
+ * @see Cmiss_context_process_idle_event
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 int Cmiss_context_enable_user_interface(Cmiss_context_id context,
@@ -150,8 +150,8 @@ int Cmiss_context_enable_user_interface(
  *
  * @param context  Handle to a cmiss_context object.
  * @param command  Command to be executed.
- * @return  1 if command completed successfully, otherwise 0.
- */
+ * @return  Status CMISS_OK on success, any other value on failure.
+*/
 int Cmiss_context_execute_command(Cmiss_context_id context, 
 	const char *command);
 
@@ -161,7 +161,7 @@ int Cmiss_context_execute_command(Cmiss_context_id context,
  * User interface must be enabled before this function can be called successfully.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  The scene viewer if successfully called otherwise NULL.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_context_run_main_loop(Cmiss_context_id context);
 
@@ -192,7 +192,7 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
  * This function does not trigger any time event.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  1 if successfully initialized user interface, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_context_process_idle_event(Cmiss_context_id context);
 #endif /* __CMISS_CONTEXT_H__ */

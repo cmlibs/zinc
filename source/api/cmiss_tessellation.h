@@ -105,6 +105,10 @@ Cmiss_tessellation_id Cmiss_tessellation_access(Cmiss_tessellation_id tessellati
 /*******************************************************************************
  * Destroys this reference to the tessellation (and sets it to NULL).
  * Internally this just decrements the reference count.
+ *
+ * @param tessellation_address  The address to the handle of the tessellation
+ *    to be destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_tessellation_destroy(Cmiss_tessellation_id *tessellation_address);
 
@@ -125,8 +129,8 @@ int Cmiss_tessellation_get_attribute_integer(Cmiss_tessellation_id tessellation,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this tessellation object.
+ * @return  status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this tessellation object.
  */
 int Cmiss_tessellation_set_attribute_integer(Cmiss_tessellation_id tessellation,
 	enum Cmiss_tessellation_attribute attribute, int value);
@@ -145,7 +149,8 @@ char *Cmiss_tessellation_get_name(Cmiss_tessellation_id tessellation);
  *
  * @param tessellation  The handle to cmiss tessellation.
  * @param name  name to be set to the tessellation
- * @return  1 if successfully set/change name for tessellation, otherwise 0.
+ * @return  status CMISS_OK if successfully set/change name for tessellation,
+ * any other value on failure.
  */
 int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *name);
 
@@ -158,7 +163,7 @@ int Cmiss_tessellation_set_name(Cmiss_tessellation_id tessellation, const char *
  * @param size  The size of the minimum_divisions array to fill. Values for
  * dimensions beyond the size set use the last divisions value.
  * @param minimum_divisions  Array to receive numbers of divisions.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
 	int size, int *minimum_divisions);
@@ -174,7 +179,7 @@ int Cmiss_tessellation_get_minimum_divisions(Cmiss_tessellation_id tessellation,
  * @param size  The size of the minimum_divisions array, >= 1.
  * @param minimum_divisions  Array of number of divisions (>=1) for each
  * dimension, with the last number in array applying to all higher dimensions.
- * @return  1 if successfully set, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
 	int size, const int *minimum_divisions);
@@ -188,7 +193,7 @@ int Cmiss_tessellation_set_minimum_divisions(Cmiss_tessellation_id tessellation,
  * @param size  The size of the refinement_factors array to fill. Values for
  * dimensions beyond the size set use the last refinement value.
  * @param refinement_factors  Array to receive refinement factors.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation,
 	int size, int *refinement_factors);
@@ -207,7 +212,7 @@ int Cmiss_tessellation_get_refinement_factors(Cmiss_tessellation_id tessellation
  * @param refinement_factors  Array of number of fine subdivisions (>=1) per
  * minimum_division for each dimension, with the last number in array
  * applying to all higher dimensions.
- * @return  1 if successfully set, 0 on error.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_tessellation_set_refinement_factors(Cmiss_tessellation_id tessellation,
 	int size, const int *refinement_factors);

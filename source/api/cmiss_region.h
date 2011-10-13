@@ -69,8 +69,12 @@ Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
 /*******************************************************************************
  * Destroys this handle to the region, and sets it to NULL.
  * Internally this just decrements the reference count.
+ *
+ * @param region_address  The address to the handle of the region
+ *    to be destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_region_destroy(Cmiss_region_id *region);
+int Cmiss_region_destroy(Cmiss_region_id *region_address);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for this region only. Call this
@@ -82,7 +86,7 @@ int Cmiss_region_destroy(Cmiss_region_id *region);
  * is no need to call Cmiss_field_module_begin_change/end_change as well.
  *
  * @param region  The region to begin change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_begin_change(Cmiss_region_id region);
 
@@ -94,7 +98,7 @@ int Cmiss_region_begin_change(Cmiss_region_id region);
  * Important: Do not pair with Cmiss_region_begin_hierarchical_change.
  *
  * @param region  The region to end change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_end_change(Cmiss_region_id region);
 
@@ -105,7 +109,7 @@ int Cmiss_region_end_change(Cmiss_region_id region);
  * Important: Do not pair with non-hierarchical Cmiss_region_end_change.
  *
  * @param region  The root of the region tree to begin change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
 
@@ -117,7 +121,7 @@ int Cmiss_region_begin_hierarchical_change(Cmiss_region_id region);
  * Important: Do not pair with non-hierarchical Cmiss_region_begin_change.
  *
  * @param region  The root of the region tree to end change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_end_hierarchical_change(Cmiss_region_id region);
 
@@ -139,7 +143,7 @@ char *Cmiss_region_get_name(Cmiss_region_id region);
  * 
  * @param region  The region to be named.
  * @param name  The new name for the region.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_set_name(Cmiss_region_id region, const char *name);
 
@@ -197,7 +201,7 @@ void Cmiss_region_reaccess_next_sibling(Cmiss_region_id *region_address);
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to add.
- * @return  1 on success, 0 on failure. 
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child);
 
@@ -211,7 +215,7 @@ int Cmiss_region_append_child(Cmiss_region_id region, Cmiss_region_id new_child)
  *
  * @param region  The intended parent region of new_child.
  * @param new_child  The child to append.
- * @return  1 on success, 0 on failure. 
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_insert_child_before(Cmiss_region_id region,
 	Cmiss_region_id new_child, Cmiss_region_id ref_child);
@@ -222,7 +226,7 @@ int Cmiss_region_insert_child_before(Cmiss_region_id region,
  *
  * @param region  The current parent region of old_child.
  * @param old_child  The child to remove.
- * @return  1 on success, 0 on failure. 
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_region_remove_child(Cmiss_region_id region,
 	Cmiss_region_id old_child);
@@ -313,8 +317,8 @@ Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region,
  * @param region  The region to read the resources in stream_information into.
  * @paran stream_information Handle to the Cmiss_stream_information containing
  * 		information to read file into.
- * @return  1 if data successfully read and merged into specified region,
- * 	0 otherwise.
+ * @return  Status CMISS_OK if data successfully read and merged into specified
+ * region, any other value on failure.
  */
 int Cmiss_region_read(Cmiss_region_id region,
 	Cmiss_stream_information_id stream_information);
@@ -326,8 +330,8 @@ int Cmiss_region_read(Cmiss_region_id region,
  * @param region  The region to be read into
  * @paran file_name  name of the file to read from.
  *
- * @return  1 if data successfully read and merged into specified region,
- * 	0 otherwise.
+ * @return  Status CMISS_OK if data successfully read and merged into specified
+ * region, any other value on failure.
  */
 int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
 
@@ -338,7 +342,8 @@ int Cmiss_region_read_file(Cmiss_region_id region, const char *file_name);
  * @paran stream_information Handle to the Cmiss_stream_information containing
  * 		information to read file into.
  *
- * @return  1 if data is successfully written out, 0 otherwise.
+ * @return  Status CMISS_OK if data is successfully written out, any other value
+ * on failure.
  */
 int Cmiss_region_write(Cmiss_region_id region,
 	Cmiss_stream_information_id stream_information);
@@ -349,7 +354,8 @@ int Cmiss_region_write(Cmiss_region_id region,
  * @param region  The region to be written out.
  * @paran file_name  name of the file to write to..
  *
- * @return  1 if data is successfully written out, 0 otherwise.
+ * @return  Status CMISS_OK if data is successfully written out, any other value
+ * otherwise.
  */
 int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name);
 
@@ -424,7 +430,8 @@ CMISS_C_INLINE Cmiss_stream_information_id Cmiss_stream_information_region_base_
  *
  * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK if the operation is successful, any other value on
+ * failure.
  */
 int Cmiss_stream_information_region_destroy(
 	Cmiss_stream_information_region_id *stream_information_address);
@@ -459,8 +466,9 @@ double Cmiss_stream_information_region_get_attribute_real(
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this Cmiss_stream_information_region.
+ * @return  status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this
+ * Cmiss_stream_information_region.
  */
 int Cmiss_stream_information_region_set_attribute_real(
 	Cmiss_stream_information_region_id stream_information,
@@ -501,8 +509,9 @@ double Cmiss_stream_information_region_get_resource_attribute_real(
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this Cmiss_stream_information_region.
+ * @return   status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this
+ * Cmiss_stream_information_region.
  */
 int Cmiss_stream_information_region_set_resource_attribute_real(
 	Cmiss_stream_information_region_id stream_information,

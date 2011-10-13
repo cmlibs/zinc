@@ -62,7 +62,8 @@ typedef int (*Cmiss_time_notifier_callback)(Cmiss_time_notifier_id time_notifier
  * Internally this just decrements the reference count.
  *
  * @param time_notifier_address  The address to the handle to time notifier
- * @return  1 if successfully destroy(deaccess) the time notifier, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroy(deaccess) the time notifier,
+ * any other value on failure.
  */
 int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address);
 
@@ -73,7 +74,8 @@ int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address);
  * @param time_notifier  Handle to time notifier.
  * @param Cmiss_time_notifier_callback  callback function to be set.
  * @param user_data  Data to be past into the callback routine.
- * @return  1 if successfully add callback, otherwise 0.
+ * @return  Status CMISS_OK if successfully add callback,
+ * any other value on failure.
  */
 int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
 	Cmiss_time_notifier_callback callback, void *user_data);
@@ -84,7 +86,8 @@ int Cmiss_time_notifier_add_callback(Cmiss_time_notifier_id time_notifier,
  * @param time_notifier  Handle to time notifier.
  * @param Cmiss_time_notifier_callback  callback function to be .
  * @param user_data  Data that was added to the callback.
- * @return  1 if successfully add callback, otherwise 0.
+ * @return  Status CMISS_OK if successfully remove callback, any other value
+ * on failure.
  */
 int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
   Cmiss_time_notifier_callback callback, void *user_data);
@@ -102,8 +105,8 @@ int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
  * @param time_notifier  Handle to time notifier.
  * @param frequency  The number of times which time notifier will receive
  *    callback per unit of time in the time keeper.
- * @return  1 if successfully set the update frequency to the value provided,
- *    otherwise 0.
+ * @return  Status CMISS_OK if successfully set the update frequency to the value
+ * provided, any other value on failure.
  */
 int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifier,
 	double frequency);
@@ -115,8 +118,8 @@ int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifi
  *
  * @param time_notifier  Handle to time notifier.
  * @param offset  This set the time that notifier will receive callback.
- * @return  1 if successfully set the update frequency to the value provided,
- *    otherwise 0.
+ * @return  Status CMISS_OK if successfully set the update frequency to the value
+ * provided, any other value on failure.
  */
 int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_notifier,
 	double time_offset);

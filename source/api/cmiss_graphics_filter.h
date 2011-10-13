@@ -101,6 +101,10 @@ Cmiss_graphics_filter_id Cmiss_graphics_filter_access(Cmiss_graphics_filter_id f
 /*******************************************************************************
  * Destroys this reference to the filter (and sets it to NULL).
  * Internally this just decrements the reference count.
+ *
+ * @param filter_address  The address to the handle of the filter
+ *    to be destroyed.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_destroy(Cmiss_graphics_filter_id *filter_address);
 
@@ -129,7 +133,7 @@ char *Cmiss_graphics_filter_get_name(Cmiss_graphics_filter_id filter);
  *
  * @param filter  The filter to modify.
  * @param name  name to be set to the scene filter
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_set_name(Cmiss_graphics_filter_id filter,
 	const char *name);
@@ -205,8 +209,8 @@ int Cmiss_graphics_filter_get_attribute_integer(Cmiss_graphics_filter_id filter,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this graphics_filter object.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this graphics_filter object.
  */
 int Cmiss_graphics_filter_set_attribute_integer(Cmiss_graphics_filter_id filter,
 	enum Cmiss_graphics_filter_attribute attribute, int value);
@@ -246,7 +250,7 @@ CMISS_C_INLINE Cmiss_graphics_filter_id Cmiss_graphics_filter_operator_base_cast
  * Internally this just decrements the reference count.
  *
  * @param operator_filter_address  Address of handle to the operator filter.
- * @return  1 if successfully destroyed the and filter, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_operator_destroy(
 	Cmiss_graphics_filter_operator_id *operator_filter_address);
@@ -258,7 +262,7 @@ int Cmiss_graphics_filter_operator_destroy(
  *
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The filter to be added
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_operator_append_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,
@@ -301,7 +305,7 @@ int Cmiss_graphics_filter_operator_get_operand_is_active(
  * @param operator_filter  The operator filter providing a list of filters.
  * @param operand  The filter to be set.
  * @param is_active  Value to set: non-zero to mark as active, 0 for inactive.
- * @return  1 if successfully set, 0 otherwise.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_operator_set_operand_is_active(
 	Cmiss_graphics_filter_operator_id operator_filter,
@@ -315,7 +319,7 @@ int Cmiss_graphics_filter_operator_set_operand_is_active(
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The operand filter to be inserted.
  * @param ref_operand  The reference filter to insert before.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_operator_insert_operand_before(
 	Cmiss_graphics_filter_operator_id operator_filter,
@@ -326,7 +330,7 @@ int Cmiss_graphics_filter_operator_insert_operand_before(
  *
  * @param operator_filter  The operator filter to be modified.
  * @param operand  The filter to be removed.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_graphics_filter_operator_remove_operand(
 	Cmiss_graphics_filter_operator_id operator_filter,

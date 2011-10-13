@@ -87,7 +87,8 @@ Cmiss_spectrum_id Cmiss_spectrum_access(Cmiss_spectrum_id spectrum);
  *
  * @param spectrum  address to the handle to the "to be destroyed"
  *   cmiss spectrum.
- * @return  1 if successfully destroy spectrum, otherwise 0.
+ * @return  status CMISS_OK if successfully destroy spectrum, any other value
+ * on failure.
  */
 int Cmiss_spectrum_destroy(Cmiss_spectrum_id *spectrum);
 
@@ -108,8 +109,8 @@ int Cmiss_spectrum_get_attribute_integer(Cmiss_spectrum_id spectrum,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or able to be set for this spectrum object.
+ * @return  status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or able to be set for this spectrum object.
  */
 int Cmiss_spectrum_set_attribute_integer(Cmiss_spectrum_id spectrum,
 	enum Cmiss_spectrum_attribute attribute, int value);
@@ -128,7 +129,8 @@ char *Cmiss_spectrum_get_name(Cmiss_spectrum_id spectrum);
  *
  * @param spectrum  The handle to cmiss grpahical spectrum.
  * @param name  name to be set to the spectrum
- * @return  1 if successfully set/change name for spectrum, otherwise 0.
+ * @return  status CMISS_OK if successfully set/change name for spectrum,
+ * any other value on failure.
  */
 int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
 
@@ -142,7 +144,7 @@ int Cmiss_spectrum_set_name(Cmiss_spectrum_id spectrum, const char *name);
  *
  * @param spectrum  Handle to a cmiss_spectrum object.
  * @param command  Command to be executed.
- * @return  1 if command completed successfully, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_spectrum_execute_command(Cmiss_spectrum_id spectrum,
 	const char *command_string);

@@ -96,7 +96,8 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_group_base_cast(Cmiss_field_group_id g
  * Internally this just decrements the reference count.
  *
  * @param group_address  Address of handle to the group field.
- * @return  1 if successfully destroyed the group handle, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroyed the group handle,
+ * 		any other value on failure.
  */
 int Cmiss_field_group_destroy(Cmiss_field_group_id *group_address);
 
@@ -121,7 +122,8 @@ int Cmiss_field_group_is_empty_local(Cmiss_field_group_id group);
  * destroy them if possible.
  *
  * @param group  Handle to group field to modify.
- * @return  1 if group and its child groups cleared successfully, otherwise 0.
+ * @return  Status CMISS_OK if group and its child groups cleared successfully,
+ * 		any other value on failure.
  */
 int Cmiss_field_group_clear(Cmiss_field_group_id group);
 
@@ -129,7 +131,8 @@ int Cmiss_field_group_clear(Cmiss_field_group_id group);
  * Remove all local objects from group, but leave subregion subgroups intact.
  *
  * @param group  Handle to group field to modify.
- * @return  1 if group is successfully cleared locally, otherwise 0.
+ * @return  Status CMISS_OK if group is successfully cleared locally,
+ * 		any other value on failure.
  */
 int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
 
@@ -138,7 +141,7 @@ int Cmiss_field_group_clear_local(Cmiss_field_group_id group);
  * Empty subgroups in use by other clients may remain after call.
  *
  * @param group  Handle to group field to modify.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
 
@@ -148,7 +151,7 @@ int Cmiss_field_group_remove_empty_subgroups(Cmiss_field_group_id group);
  * This function is not hierarchical: subregions are not added.
  *
  * @param group  Handle to group field to modify.
- * @return  1 if this region is successfully added, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_group_add_local_region(Cmiss_field_group_id group);
 
@@ -170,7 +173,8 @@ int Cmiss_field_group_contains_local_region(Cmiss_field_group_id group);
  *
  * @param group  Handle to group field to modify.
  * @param region  Handle to region to be added.
- * @return  1 if successfully add region into group, otherwise 0.
+ * @return  Status CMISS_OK if successfully add region into group, any other
+ * 		value on failure.
  */
 int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id region);
 
@@ -181,7 +185,8 @@ int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id reg
  *
  * @param group  Handle to group field to modify.
  * @param region  Handle to region to be removed.
- * @return  1 if region successfully removed from group, otherwise 0.
+ * @return  Status CMISS_OK if region successfully removed from group, any other
+ * 		value on failure.
  */
 int Cmiss_field_group_remove_region(Cmiss_field_group_id group, Cmiss_region_id region);
 

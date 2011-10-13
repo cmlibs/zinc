@@ -91,6 +91,10 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_finite_element_base_cast(
 /*******************************************************************************
  * Destroys this reference to the finite_element field (and sets it to NULL).
  * Internally this just decrements the reference count.
+ *
+ * @param finite_element_field_address  Address of handle to the field to
+ * 		destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_finite_element_destroy(
 	Cmiss_field_finite_element_id *finite_element_field_address);
@@ -161,6 +165,10 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_find_mesh_location_base_cast(
 /*******************************************************************************
  * Destroys this reference to the find_mesh_location field and sets it to NULL.
  * Internally this just decrements the reference count.
+ *
+ * @param find_mesh_location_field_address  Address of handle to the field to
+ * 		destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_find_mesh_location_destroy(
 	Cmiss_field_find_mesh_location_id *find_mesh_location_field_address);
@@ -226,7 +234,7 @@ enum Cmiss_field_find_mesh_location_search_mode
  *
  * @param find_mesh_location_field  The field to modify.
  * @param search_mode  The search mode to set.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_find_mesh_location_set_search_mode(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field,
@@ -272,6 +280,10 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_stored_mesh_location_base_cast(
 /*******************************************************************************
  * Destroys this reference to the stored_mesh_location field (and sets it to
  * NULL). Internally this just decrements the reference count.
+ *
+ * @param stored_mesh_location_field_address  Address of handle to the field to
+ * 		destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_stored_mesh_location_destroy(
 	Cmiss_field_stored_mesh_location_id *stored_mesh_location_field_address);
@@ -315,6 +327,10 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_stored_string_base_cast(
 /*******************************************************************************
  * Destroys this reference to the stored_string field (and sets it to NULL).
  * Internally this just decrements the reference count.
+ *
+ * @param stored_string_field_address  Address of handle to the field to
+ * 		destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_stored_string_destroy(
 	Cmiss_field_stored_string_id *stored_string_field_address);

@@ -308,7 +308,8 @@ CMISS_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id i
  * Internally this just decrements the reference count.
  *
  * @param image_address  Address of handle to the image field.
- * @return  1 if successfully destroyed the image handle, otherwise 0.
+ * @return  Status CMISS_OK if successfully destroyed the image handle,
+ * any other value on failure.
  */
 int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
 
@@ -338,8 +339,8 @@ double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
  * @param stream_information  Handle to the cmiss stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this image.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this image.
  */
 int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
 	enum Cmiss_field_image_attribute attribute, double value);
@@ -357,7 +358,8 @@ int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
  * @param stream_information  Information about the supplied formatted image data.
  * At a minimum it should specify either a filename or a memory block
  * reference.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK if the operation is successful, any other value on
+ * failure.
  */
 int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information);
@@ -369,8 +371,8 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
  * @param image_field  The field image to be read into.
  * @paran file_name  name of the file to read from.
  *
- * @return  1 if data successfully read and merged into specified region,
- * 	0 otherwise.
+ * @return  Status CMISS_OK if data successfully read and merged into specified
+ * region, any other value on failure.
  */
 int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *file_name);
 
@@ -391,7 +393,8 @@ int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *fi
  * @param image_field The image field.
  * @param stream_information  Information specifying the required format
  * for the returned formatted image data.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK if the operation is successful, any other value
+ * on failure.
  */
 int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	Cmiss_stream_information_id stream_information);
@@ -402,7 +405,8 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
  * @param image_field  The image_field which stores the image.
  * @paran file_name  name of the file to write to..
  *
- * @return  1 if data is successfully written out, 0 otherwise.
+ * @return  Status CMISS_OK if data is successfully written out, any other value
+ * on failure.
  */
 int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
 	const char *file_name);
@@ -422,7 +426,7 @@ enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
  * @param image_field  The image field.
  * @param combine_mode  Enumerator describing how the image is combined with the
  * 		material.
- * @return  Returns 1 if successfully set the combine mode.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_combine_mode combine_mode);
@@ -443,7 +447,7 @@ enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_
  * @param image_field  The image field.
  * @param compression_mode  Enumerator describing how the image is combined with the
  * 		material.
- * @return  Returns 1 if successfully set the compression mode.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_hardware_compression_mode compression_mode);
@@ -464,7 +468,7 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
  * @param image_field  The image field.
  * @param filter_mode  Enumerator describing how the graphics hardware rasterises
  *   the texture onto the screen.
- * @return  Returns 1 if successfully set the filter_mode.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_filter_mode filter_mode);
@@ -523,7 +527,7 @@ Cmiss_stream_information_id Cmiss_field_image_create_stream_information(
  *
  * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_stream_information_image_destroy(
 	Cmiss_stream_information_image_id *stream_information_address);
@@ -565,8 +569,10 @@ CMISS_C_INLINE Cmiss_stream_information_id
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this stream_information_image.
+ *
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ *	failed or attribute not valid or unable to be set for this
+ * 	stream_information_image.
  */
 int Cmiss_stream_information_image_set_attribute_integer(
 	Cmiss_stream_information_image_id stream_information,
@@ -578,14 +584,14 @@ int Cmiss_stream_information_image_set_attribute_integer(
  * @param stream_information  Handle to the cmiss stream_information_image.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * or unable to be set for this stream_information_image.
+ * @return   Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid or unable to be set for this
+ * stream_information_image.
  */
 int Cmiss_stream_information_image_set_attribute_real(
 	Cmiss_stream_information_image_id stream_information,
 	enum Cmiss_stream_information_image_attribute attribute,
 	double value);
-
 
 /*****************************************************************************//**
  * Specifies the format for binary data to be read/written using this
@@ -593,7 +599,7 @@ int Cmiss_stream_information_image_set_attribute_real(
  *
  * @param stream_information  The storage information object.
  * @param file_format  The image file format.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_stream_information_image_set_file_format(
 	Cmiss_stream_information_image_id stream_information,
@@ -605,7 +611,7 @@ int Cmiss_stream_information_image_set_file_format(
  *
  * @param stream_information  The storage information object.
  * @param pixel_format  The pixel_format of the formatted data.
- * @return Returns 1 if the operation is successful, 0 if it is not.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_stream_information_image_set_pixel_format(
 	Cmiss_stream_information_image_id stream_information,

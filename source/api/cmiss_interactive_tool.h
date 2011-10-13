@@ -49,7 +49,7 @@
  *
  * @param interactive_tool  Handle to a Cmiss_interactive_tool object.
  * @param command  Command to be executed.
- * @return  1 if command completed successfully, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive_tool,
 	const char *command);
@@ -59,7 +59,7 @@ int Cmiss_interactive_tool_execute_command(Cmiss_interactive_tool_id interactive
  *
  * @param interactive_tool  address to the handle to the "to be destroyed"
  *   cmiss interactive_tool.
- * @return  1 if successfully destroy interactive_tool, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_interactive_tool_destroy(Cmiss_interactive_tool_id *interactive_tool);
 

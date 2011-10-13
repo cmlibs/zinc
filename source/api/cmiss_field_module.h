@@ -75,7 +75,7 @@ Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_modu
  * Internally this just decrements the reference count.
  *
  * @param field_module_address  Address of field module reference.
- * @return  1 on success, 0 if invalid arguments.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
 
@@ -89,7 +89,7 @@ int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
  *
  * @see Cmiss_region_begin_change
  * @param field_module  The field_module to begin change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
 
@@ -100,7 +100,7 @@ int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
  * cached change messages are sent out to clients.
  *
  * @param field_module  The field_module to end change cache on.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
 
@@ -125,7 +125,7 @@ Cmiss_field_id Cmiss_field_module_find_field_by_name(
  * @param field_module  Handle to the field module to use.
  * @param field_name  The name of the field to define.
  * @param command  Command to be executed (excluding the field name).
- * @return  1 if command completed successfully, otherwise 0.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 	const char* field_name, const char *command_string);
@@ -170,7 +170,7 @@ Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
  *
  * @param field_module  Handle to the field_module owning the meshes to define
  * faces for.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
 

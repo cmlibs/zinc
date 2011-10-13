@@ -121,6 +121,9 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
 /***************************************************************************//**
  * Destroys this reference to the field (and sets it to NULL).
  * Internally this just decrements the reference count.
+ *
+ * @param field_address  address to the handle to field.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
@@ -134,7 +137,7 @@ int Cmiss_field_destroy(Cmiss_field_id *field_address);
  * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
  * that it equals or exceeds the dimension of the element.
  * @param chart_coordinates  Array containing chart coordinate location to set.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
 	Cmiss_field_cache_id cache, Cmiss_element_id element,
@@ -154,7 +157,7 @@ int Cmiss_field_assign_mesh_location(Cmiss_field_id field,
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
  * @param values  Array of real values to assign to field.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int number_of_values, const double *values);
@@ -167,7 +170,7 @@ int Cmiss_field_assign_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
  * @param field  The field to assign a string value to.
  * @param cache  Store of location to assign at and intermediate field values.
  * @param string_value  The string value to assign to field.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_assign_string(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	const char *string_value);
@@ -195,7 +198,7 @@ Cmiss_element_id Cmiss_field_evaluate_mesh_location(Cmiss_field_id field,
  * @param number_of_values  Size of values array. Checked that it equals or
  * exceeds the number of components of field.
  * @param values  Array of real values to evaluate into.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_evaluate_real(Cmiss_field_id field, Cmiss_field_cache_id cache,
 	int number_of_values, double *values);
@@ -231,7 +234,7 @@ char *Cmiss_field_evaluate_string(Cmiss_field_id field,
  * @param number_of_values  Size of values array, must equal number of
  * components of field.
  * @param values  Array of real values to evaluate derivatives into.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_evaluate_derivative(Cmiss_field_id field,
 	Cmiss_differential_operator_id differential_operator,
@@ -254,8 +257,8 @@ int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  1 if attribute successfully set, 0 if failed or attribute not valid
- * for this field.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid for this field.
  */
 int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 	enum Cmiss_field_attribute attribute, int value);
@@ -275,7 +278,7 @@ char *Cmiss_field_get_name(Cmiss_field_id field);
  *
  * @param field  The field to be named.
  * @param name  The new name for the field.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 
@@ -352,6 +355,9 @@ Cmiss_field_cache_id Cmiss_field_cache_access(Cmiss_field_cache_id cache);
 /*******************************************************************************
  * Destroys this reference to the field cache, and sets it to NULL.
  * Internally this just decrements the reference count.
+ *
+ * @param cache_address  Address of handle to field cache to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
 
@@ -363,7 +369,7 @@ int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address);
  *
  * @param cache  The field cache to set the location in.
  * @param element  The element to set. Must belong to same region as cache.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_set_element(Cmiss_field_cache_id cache,
 	Cmiss_element_id element);
@@ -382,7 +388,7 @@ int Cmiss_field_cache_set_element(Cmiss_field_cache_id cache,
  * @param chart_coordinates  Location in element chart. Value is not checked;
  * caller is responsible for supplying locations within the bounds of the
  * element shape.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
 	Cmiss_element_id element, int number_of_chart_coordinates,
@@ -399,7 +405,7 @@ int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
  * @param number_of_values  The size of the values array: number of field
  * components.
  * @param values  The field values to set.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
 	Cmiss_field_id reference_field, int number_of_values, const double *values);
@@ -412,7 +418,7 @@ int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
  * @param cache  The field cache to set the location in.
  * @param node  The node to set as spatial location. Must belong to same region
  * as cache.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node);
 
@@ -421,7 +427,7 @@ int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node);
  *
  * @param cache  The field cache to set the location in.
  * @param time  The time value to be set.
- * @return  1 on success, 0 on failure.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time);
 
@@ -429,6 +435,7 @@ int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time);
  * Destroys this handle to the field_iterator and sets it to NULL.
  *
  * @param field_iterator_address  Address of handle to field_iterator to destroy.
+ * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_iterator_destroy(Cmiss_field_iterator_id *field_iterator_address);
 
