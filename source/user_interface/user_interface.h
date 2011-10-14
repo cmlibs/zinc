@@ -198,11 +198,11 @@ Switchs from the busy cursor to the default cursor for all shells except the
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
-	const char *application_name, int external_entry);
+	const char *application_name);
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
-	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher, int external_entry);
+	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher);
 #endif /* !defined (WIN32_USER_INTERFACE && !defined (_MSC_VER)) */
 /*******************************************************************************
 LAST MODIFIED : 20 June 2002

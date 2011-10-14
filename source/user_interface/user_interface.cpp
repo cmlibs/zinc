@@ -98,10 +98,6 @@ extern "C" {
 #endif
 }
 #endif /* defined (GTK_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-#include <wx/wx.h>
-#include <wx/xrc/xmlres.h>
-#endif /* defined (GTK_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 #include <carbon/carbon.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
@@ -171,7 +167,6 @@ DESCRIPTION :
 	gint max_priority;
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
-	int external_entry;
 	struct Event_dispatcher *event_dispatcher;
 	struct Machine_information *local_machine_info;
 	struct Shell_list_item *shell_list;
@@ -1521,11 +1516,11 @@ Visual *default_visual;
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, const char *class_name, 
-	const char *application_name, int external_entry)
+	const char *application_name)
 #else /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
-	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher, int external_entry)
+	int *argc_address, char **argv, struct Event_dispatcher *event_dispatcher)
 #endif /* !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER) */
 /*******************************************************************************
 LAST MODIFIED : 10 October 2003
@@ -1534,7 +1529,6 @@ DESCRIPTION :
 Open the <user_interface>.
 ==============================================================================*/
 {
-	USE_PARAMETER(external_entry);
 #if defined (MOTIF_USER_INTERFACE)
 	char bitmap_data;
 	int screen_number;
@@ -1667,7 +1661,6 @@ Open the <user_interface>.
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
-		user_interface->external_entry = external_entry;
 #if defined (MOTIF_USER_INTERFACE)
 		user_interface->application_context=(XtAppContext)NULL;
 		user_interface->application_shell=(Widget)NULL;
@@ -1931,20 +1924,6 @@ Open the <user_interface>.
 #if !defined (WX_USER_INTERFACE) && (defined (WIN32_USER_INTERFACE) || defined (_MSC_VER))
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) || defined (_MSC_VER) */
-#if defined (WX_USER_INTERFACE)
-		if (user_interface->external_entry || wxEntryStart(*argc_address, argv))
-		{
-			wxXmlResource::Get()->InitAllHandlers();
-			/* Should do this as soon after wxEntry as possible */
-		}
-		else
-		{
-			 display_message(ERROR_MESSAGE,
-					"CREATE(User_interface).  Unable to initialise wxCmguiApp");
-			 DEALLOCATE(user_interface);
-			 user_interface = (struct User_interface *)NULL;
-		}
-#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		/* Initialize i18n support */
 		gtk_set_locale ();
@@ -2090,10 +2069,6 @@ DESCRIPTION :
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-		if (!user_interface->external_entry)
-			wxEntryCleanup();
-#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		if (user_interface->main_window)
 		{

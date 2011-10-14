@@ -304,12 +304,11 @@ struct User_interface_module *Cmiss_context_create_user_interface(
 #endif
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 			context->UI_module = User_interface_module_create(
-				context, in_argc, in_argv, (NULL!=user_interface_instance));
+				context, in_argc, in_argv);
 #else
 			context->UI_module = User_interface_module_create(
 				context, in_argc, in_argv, current_instance,
-				previous_instance, command_line, initial_main_window_state,
-				(NULL!= user_interface_instance));
+				previous_instance, command_line, initial_main_window_state);
 #endif
 			if (context->UI_module && context->UI_module->default_time_keeper &&
 				context->graphics_module)

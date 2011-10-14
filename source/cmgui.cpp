@@ -72,12 +72,49 @@ extern "C"
 #if defined (WX_USER_INTERFACE)
 #include <wx/wx.h>
 #include <wx/apptrait.h>
+#include <wx/xrc/xmlres.h>
 #endif
 
 /*
 Global functions
 ----------------
 */
+
+#if defined (WX_USER_INTERFACE)
+
+bool wxCmguiApp::OnInit()
+{
+	return (true);
+}
+
+wxAppTraits * wxCmguiApp::CreateTraits()
+{
+	return new wxGUIAppTraits;
+}
+
+void wxCmguiApp::OnIdle(wxIdleEvent& event)
+{
+	if (event_dispatcher)
+	{
+		if (Event_dispatcher_process_idle_event(event_dispatcher))
+		{
+			event.RequestMore();
+		}
+	}
+}
+
+void wxCmguiApp::SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
+{
+	event_dispatcher = event_dispatcher_in;
+}
+
+BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
+	EVT_IDLE(wxCmguiApp::OnIdle)
+END_EVENT_TABLE()
+
+IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
+
+#endif /*defined (WX_USER_INTERFACE)*/
 
 #if !defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER)
 int main(int argc,const char *argv[])
@@ -149,8 +186,50 @@ Main program for the CMISS Graphical User Interface
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
 #endif
 	context = Cmiss_context_create("default");
+#if defined (WX_USER_INTERFACE)
+	int wx_entry_started = 0;
+#endif
 	if (context)
 	{
+#if defined (WX_USER_INTERFACE)
+		struct Event_dispatcher *event_dispatcher = Cmiss_context_get_default_event_dispatcher(context);
+		char **temp_argv= NULL;
+		int temp_argc = argc;
+		if (argc > 0)
+		{
+			ALLOCATE(temp_argv, char *, argc);
+			for (int i = 0; i < argc; i++)
+			{
+				temp_argv[i] = duplicate_string(argv[i]);
+			}
+		}
+		if (event_dispatcher && wxEntryStart(temp_argc, temp_argv))
+		{
+			wx_entry_started = 1;
+			wxXmlResource::Get()->InitAllHandlers();
+			wxCmguiApp &app = wxGetApp();
+			if (&app)
+			{
+				app.SetEventDispatcher(event_dispatcher);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"initialiseWxApp.  wxCmguiApp not initialised.");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"initialiseWxApp.  Invalid arguments.");
+		}
+		for (int i = 0; i < argc; i++)
+		{
+			DEALLOCATE(temp_argv[i]);
+		}
+		if (temp_argv)
+			DEALLOCATE(temp_argv);
+#endif
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv, NULL);
 #else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
@@ -159,29 +238,6 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		if (UI_module)
 		{
-#if defined (WX_USER_INTERFACE)
-			if (UI_module->event_dispatcher)
-			{
-				if (wxTheApp)
-				{
-					wxCmguiApp *cmguiApp = dynamic_cast<wxCmguiApp *>(wxTheApp);
-					if (cmguiApp)
-					{
-						cmguiApp->SetEventDispatcher(UI_module->event_dispatcher);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"initialiseWxApp.  wxCmguiApp not initialised.");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"initialiseWxApp.  Invalid arguments.");
-			}
-#endif
 			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
 			{
 				Cmiss_command_data_set_cmgui_string(command_data, CMISS_NAME_STRING, 
@@ -202,6 +258,10 @@ Main program for the CMISS Graphical User Interface
 			return_code = 1;
 		}
 		Cmiss_context_destroy(&context);
+#if defined (WX_USER_INTERFACE)
+		if (wx_entry_started)
+			wxEntryCleanup();
+#endif
 		/* FieldML does not cleanup the global varaibles xmlSchematypes and
 		 * xmlCatalog at this moment, so we clean it up here instead*/
 		xmlCatalogCleanup();
@@ -218,40 +278,3 @@ Main program for the CMISS Graphical User Interface
 	
 	return (return_code);
 } /* main */
-
-#if defined (WX_USER_INTERFACE)
-
-bool wxCmguiApp::OnInit()
-{
-	return (true);
-}
-
-wxAppTraits * wxCmguiApp::CreateTraits()
-{
-	return new wxGUIAppTraits;
-}
-
-void wxCmguiApp::OnIdle(wxIdleEvent& event)
-{
-	if (event_dispatcher)
-	{
-		if (Event_dispatcher_process_idle_event(event_dispatcher))
-		{
-			event.RequestMore();
-		}
-	}
-}
-
-void wxCmguiApp::SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
-{
-	event_dispatcher = event_dispatcher_in;
-}
-
-BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
-	EVT_IDLE(wxCmguiApp::OnIdle)
-END_EVENT_TABLE()
-
-IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
-
-#endif /*defined (WX_USER_INTERFACE)*/
-
