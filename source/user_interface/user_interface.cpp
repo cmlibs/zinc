@@ -1936,7 +1936,6 @@ Open the <user_interface>.
 		{
 			wxXmlResource::Get()->InitAllHandlers();
 			/* Should do this as soon after wxEntry as possible */
-			Event_dispatcher_initialise_wx_app(event_dispatcher);
 		}
 		else
 		{

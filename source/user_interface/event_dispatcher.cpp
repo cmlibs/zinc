@@ -68,7 +68,6 @@ extern "C" {
 extern "C" {
 #include "user_interface/user_interface.h"
 }
-#include "user_interface/user_interface_wx.hpp"
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 extern "C" {
 //#define WINDOWS_LEAN_AND_MEAN
@@ -1266,49 +1265,6 @@ Destroys a Event_dispatcher object
 
 	return (return_code);
 } /* DESTROY(Event_dispatcher) */
-
-#if defined (WX_USER_INTERFACE)
-int Event_dispatcher_initialise_wx_app(struct Event_dispatcher *event_dispatcher)
-/*******************************************************************************
-LAST MODIFIED : 30 April 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	 int return_code;
-
-	ENTER(Event_dispatcher_initialise_wx_app);
-
-	if (event_dispatcher)
-	{
-		if (wxTheApp)
-		{
-			wxCmguiApp *cmguiApp = dynamic_cast<wxCmguiApp *>(wxTheApp);
-			if (cmguiApp)
-			{
-				cmguiApp->SetEventDispatcher(event_dispatcher);
-			}
-			return_code = 1;
-		}
-		else
-		{
-
-			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_initialise_wx_app.  wxCmguiApp not initialised.");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_initialise_wx_app.  Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_initialise_wx_app */
-#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_descriptor_callback(

@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmgui.c
+FILE : cmgui.cpp
 
 LAST MODIFIED : 7 January 2003
 
@@ -22,7 +22,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2005-2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -159,6 +159,29 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		if (UI_module)
 		{
+#if defined (WX_USER_INTERFACE)
+			if (UI_module->event_dispatcher)
+			{
+				if (wxTheApp)
+				{
+					wxCmguiApp *cmguiApp = dynamic_cast<wxCmguiApp *>(wxTheApp);
+					if (cmguiApp)
+					{
+						cmguiApp->SetEventDispatcher(UI_module->event_dispatcher);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"initialiseWxApp.  wxCmguiApp not initialised.");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"initialiseWxApp.  Invalid arguments.");
+			}
+#endif
 			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
 			{
 				Cmiss_command_data_set_cmgui_string(command_data, CMISS_NAME_STRING, 
@@ -197,6 +220,7 @@ Main program for the CMISS Graphical User Interface
 } /* main */
 
 #if defined (WX_USER_INTERFACE)
+
 bool wxCmguiApp::OnInit()
 {
 	return (true);
@@ -222,7 +246,6 @@ void wxCmguiApp::SetEventDispatcher(Event_dispatcher *event_dispatcher_in)
 {
 	event_dispatcher = event_dispatcher_in;
 }
-
 
 BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
 	EVT_IDLE(wxCmguiApp::OnIdle)
