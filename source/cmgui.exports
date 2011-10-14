@@ -383,12 +383,12 @@ Cmiss_nodal_value_type_enum_from_string
 Cmiss_nodal_value_type_enum_to_string
 
 /* api/cmiss_element.h */
+Cmiss_field_module_create_element_basis
 Cmiss_field_module_find_mesh_by_dimension
 Cmiss_field_module_find_mesh_by_name
 Cmiss_mesh_access
 Cmiss_mesh_destroy
 Cmiss_mesh_contains_element
-Cmiss_mesh_create_element_basis
 Cmiss_mesh_create_element_template
 Cmiss_mesh_create_element
 Cmiss_mesh_create_element_iterator

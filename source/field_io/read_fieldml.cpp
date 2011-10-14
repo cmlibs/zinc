@@ -977,6 +977,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mes
 		return iter->second;
 	}
 
+	USE_PARAMETER(mesh); // GRC should remove altogether
 	std::string evaluatorName = getName(fmlEvaluator);
 	FmlObjectHandle fmlEvaluatorType = Fieldml_GetValueType(fmlSession, fmlEvaluator);
 	if ((FHT_REFERENCE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlEvaluator)) ||
@@ -1166,7 +1167,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(Cmiss_mesh_id mes
 	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
 	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
 
-	Cmiss_element_basis_id element_basis = Cmiss_mesh_create_element_basis(mesh, libraryBases[basis_index].functionType[0]);
+	Cmiss_element_basis_id element_basis = Cmiss_field_module_create_element_basis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
 	{
 		for (int dimension = 2; dimension <= meshDimension; dimension++)

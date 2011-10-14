@@ -128,6 +128,20 @@ char *Cmiss_basis_function_type_enum_to_string(
 	enum Cmiss_basis_function_type type);
 
 /***************************************************************************//**
+ * Creates an element_basis object for describing element basis functions.
+ *
+ * @param field_module  Handle to a field module. Note the returned basis can be
+ * used to define fields in any field module of the region tree.
+ * @param dimension  The dimension of element chart the basis is for.
+ * @param function_type  The basis function type to use in each dimension
+ * i.e. basis function is initially homogeneous.
+ * @return  Handle to element_basis, or NULL if error.
+ */
+Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
+	Cmiss_field_module_id field_module, int dimension,
+	enum Cmiss_basis_function_type function_type);
+
+/***************************************************************************//**
  * Get a handle to the default mesh of a given dimension. Cmgui is currently
  * limited to 1 mesh of each dimension from 1 to 3. These meshes have default
  * names of "cmiss_mesh_Nd", where "N" is the dimension.
@@ -184,18 +198,6 @@ int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address);
  */
 int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh,
 	Cmiss_element_id element);
-
-/***************************************************************************//**
- * Creates an element_basis object for describing element basis functions.
- * The basis has the same number of dimensions as the mesh.
- *
- * @param mesh  Handle to a mesh from which to obtain basis.
- * @param function_type  The basis function type to use in each dimension
- * i.e. basis function is initially homogeneous.
- * @return  Handle to element_basis, or NULL if error.
- */
-Cmiss_element_basis_id Cmiss_mesh_create_element_basis(Cmiss_mesh_id mesh,
-	enum Cmiss_basis_function_type function_type);
 
 /***************************************************************************//**
  * Create a blank template from which new elements can be created in this mesh.

@@ -816,13 +816,6 @@ public:
 		return element;
 	}
 
-	Cmiss_element_basis_id createElementBasis(enum Cmiss_basis_function_type function_type)
-	{
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new Cmiss_element_basis(master_fe_region, dimension, function_type);
-	}
-
 	Cmiss_element_template_id createElementTemplate()
 	{
 		FE_region *master_fe_region = fe_region;
@@ -1073,6 +1066,22 @@ Global functions
 ----------------
 */
 
+Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
+	Cmiss_field_module_id field_module, int dimension,
+	enum Cmiss_basis_function_type function_type)
+{
+	if (field_module && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		Cmiss_region *region = Cmiss_field_module_get_master_region_internal(field_module);
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		if (fe_region)
+		{
+			return new Cmiss_element_basis(fe_region, dimension, function_type);
+		}
+	}
+	return 0;
+}
+
 Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
 	Cmiss_field_module_id field_module, int dimension)
 {
@@ -1162,14 +1171,6 @@ int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
 {
 	if (mesh)
 		return mesh->containsElement(element);
-	return 0;
-}
-
-Cmiss_element_basis_id Cmiss_mesh_create_element_basis(Cmiss_mesh_id mesh,
-	enum Cmiss_basis_function_type function_type)
-{
-	if (mesh)
-		return mesh->createElementBasis(function_type);
 	return 0;
 }
 
