@@ -193,14 +193,15 @@ Main program for the CMISS Graphical User Interface
 	{
 #if defined (WX_USER_INTERFACE)
 		struct Event_dispatcher *event_dispatcher = Cmiss_context_get_default_event_dispatcher(context);
-		char **temp_argv= NULL;
-		int temp_argc = argc;
-		if (argc > 0)
+		char **temp_argv = NULL, **cleanup_argv = NULL;
+		int temp_argc = argc, cleanup_argc = argc;
+		if (cleanup_argc > 0)
 		{
-			ALLOCATE(temp_argv, char *, argc);
-			for (int i = 0; i < argc; i++)
+			ALLOCATE(temp_argv, char *, cleanup_argc);
+			ALLOCATE(cleanup_argv, char *, cleanup_argc);
+			for (int i = 0; i < cleanup_argc; i++)
 			{
-				temp_argv[i] = duplicate_string(argv[i]);
+				cleanup_argv[i] = temp_argv[i] = duplicate_string(argv[i]);
 			}
 		}
 		if (event_dispatcher && wxEntryStart(temp_argc, temp_argv))
@@ -223,12 +224,15 @@ Main program for the CMISS Graphical User Interface
 			display_message(ERROR_MESSAGE,
 				"initialiseWxApp.  Invalid arguments.");
 		}
-		for (int i = 0; i < argc; i++)
+		if (cleanup_argv)
 		{
-			DEALLOCATE(temp_argv[i]);
-		}
-		if (temp_argv)
+			for (int i = 0; i < cleanup_argc; i++)
+			{
+				DEALLOCATE(cleanup_argv[i]);
+			}
 			DEALLOCATE(temp_argv);
+			DEALLOCATE(cleanup_argv);
+		}
 #endif
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv, NULL);
