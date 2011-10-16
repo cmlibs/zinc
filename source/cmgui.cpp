@@ -191,49 +191,6 @@ Main program for the CMISS Graphical User Interface
 #endif
 	if (context)
 	{
-#if defined (WX_USER_INTERFACE)
-		struct Event_dispatcher *event_dispatcher = Cmiss_context_get_default_event_dispatcher(context);
-		char **temp_argv = NULL, **cleanup_argv = NULL;
-		int temp_argc = argc, cleanup_argc = argc;
-		if (cleanup_argc > 0)
-		{
-			ALLOCATE(temp_argv, char *, cleanup_argc);
-			ALLOCATE(cleanup_argv, char *, cleanup_argc);
-			for (int i = 0; i < cleanup_argc; i++)
-			{
-				cleanup_argv[i] = temp_argv[i] = duplicate_string(argv[i]);
-			}
-		}
-		if (event_dispatcher && wxEntryStart(temp_argc, temp_argv))
-		{
-			wx_entry_started = 1;
-			wxXmlResource::Get()->InitAllHandlers();
-			wxCmguiApp &app = wxGetApp();
-			if (&app)
-			{
-				app.SetEventDispatcher(event_dispatcher);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"initialiseWxApp.  wxCmguiApp not initialised.");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"initialiseWxApp.  Invalid arguments.");
-		}
-		if (cleanup_argv)
-		{
-			for (int i = 0; i < cleanup_argc; i++)
-			{
-				DEALLOCATE(cleanup_argv[i]);
-			}
-			DEALLOCATE(temp_argv);
-			DEALLOCATE(cleanup_argv);
-		}
-#endif
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 		UI_module = Cmiss_context_create_user_interface(context, argc, argv, NULL);
 #else /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
@@ -242,6 +199,51 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE)  && !defined (_MSC_VER)*/
 		if (UI_module)
 		{
+#if defined (WX_USER_INTERFACE)
+			if (UI_module->user_interface)
+			{
+				char **temp_argv = NULL, **cleanup_argv = NULL;
+				int temp_argc = argc, cleanup_argc = argc;
+				if (cleanup_argc > 0)
+				{
+					ALLOCATE(temp_argv, char *, cleanup_argc);
+					ALLOCATE(cleanup_argv, char *, cleanup_argc);
+					for (int i = 0; i < cleanup_argc; i++)
+					{
+						cleanup_argv[i] = temp_argv[i] = duplicate_string(argv[i]);
+					}
+				}
+				if (wxEntryStart(temp_argc, temp_argv))
+				{
+					wx_entry_started = 1;
+					wxXmlResource::Get()->InitAllHandlers();
+					wxCmguiApp &app = wxGetApp();
+					if (&app)
+					{
+						app.SetEventDispatcher(UI_module->event_dispatcher);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"initialiseWxApp.  wxCmguiApp not initialised.");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"initialiseWxApp.  Invalid arguments.");
+				}
+				if (cleanup_argv)
+				{
+					for (int i = 0; i < cleanup_argc; i++)
+					{
+						DEALLOCATE(cleanup_argv[i]);
+					}
+					DEALLOCATE(temp_argv);
+					DEALLOCATE(cleanup_argv);
+				}
+			}
+#endif
 			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
 			{
 				Cmiss_command_data_set_cmgui_string(command_data, CMISS_NAME_STRING, 
