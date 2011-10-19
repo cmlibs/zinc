@@ -1335,7 +1335,7 @@ public:
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer
 		 , int *attrib_list):
-	wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
+	wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
 		 wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
 		 , attrib_list),
 		graphics_buffer(graphics_buffer), parent(parent)
@@ -1939,6 +1939,7 @@ DESCRIPTION :
 #endif /* defined (UNIX) */
 				if (!buffer->package->wxSharedContext)
 				{
+
 					 wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(500,500));
 					 wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(450,450));
 					 wxTestingBuffer *testingbuffer;
