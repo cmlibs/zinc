@@ -42,6 +42,7 @@
 extern "C" {
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_module.h"
+#include "api/cmiss_time_sequence.h"
 #include "command/parser.h"
 }
 #include "computed_field/computed_field_private.hpp"
