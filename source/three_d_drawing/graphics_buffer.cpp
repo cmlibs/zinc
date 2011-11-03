@@ -1510,10 +1510,10 @@ class wxTestingBuffer : public wxGLCanvas
 	 wxGLContext *sharedContext;
 
 public:
-	 wxTestingBuffer(wxPanel *parent, Graphics_buffer *graphics_buffer, wxGLContext* sharedContext, int *attrib_array):
-			wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
-				 wxFULL_REPAINT_ON_RESIZE, "GLCanvas", attrib_array),
-			parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
+	wxTestingBuffer(wxPanel *parent, Graphics_buffer *graphics_buffer, wxGLContext* sharedContext, int *attrib_array)
+		: wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
+			wxFULL_REPAINT_ON_RESIZE, "GLCanvas", attrib_array)
+		, parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
 	 {
 	 };
 
@@ -1939,29 +1939,26 @@ DESCRIPTION :
 #endif /* defined (UNIX) */
 				if (!buffer->package->wxSharedContext)
 				{
-
-					 wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(500,500));
-					 wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(450,450));
-					 wxTestingBuffer *testingbuffer;
-					 struct Graphics_buffer *temp_buffer;
-					 temp_buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
-					 temp_buffer->type= GRAPHICS_BUFFER_WX_TYPE;
-					 temp_buffer->parent = temp;
-					 temp_buffer->attrib_list = NULL;
-					 testingbuffer = new wxTestingBuffer(temp, temp_buffer,
-							graphics_buffer_package->wxSharedContext,
-							buffer->attrib_list);
-					 frame->Show(true);
-					 testingbuffer->Set_wx_SharedContext();
-					 frame->Show(false);
-					 DESTROY(Graphics_buffer)(&temp_buffer);
+					wxFrame *frame = new wxFrame(parent, -1, "temporary");
+					wxPanel *temp = new wxPanel(frame);
+					wxTestingBuffer *testingbuffer;
+					struct Graphics_buffer *temp_buffer;
+					temp_buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
+					temp_buffer->type= GRAPHICS_BUFFER_WX_TYPE;
+					temp_buffer->parent = temp;
+					temp_buffer->attrib_list = NULL;
+					testingbuffer = new wxTestingBuffer(temp, temp_buffer,
+						graphics_buffer_package->wxSharedContext,
+						buffer->attrib_list);
+					testingbuffer->Set_wx_SharedContext();
+					frame->Show(false);
+					DESTROY(Graphics_buffer)(&temp_buffer);
 				}
 				buffer->canvas = new wxGraphicsBuffer(parent,
-					 graphics_buffer_package->wxSharedContext,
-					 buffer, buffer->attrib_list);
+					graphics_buffer_package->wxSharedContext,
+					buffer, buffer->attrib_list);
 				wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-				topsizer->Add(buffer->canvas,
-					 wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
+				topsizer->Add(buffer->canvas, wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
 				parent->SetSizer(topsizer);
 		 }
 	}
