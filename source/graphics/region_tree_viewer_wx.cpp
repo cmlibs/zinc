@@ -3336,7 +3336,6 @@ void SetGraphic(Cmiss_graphic *graphic)
 				}
 				if (iso_values)
 				{
-					iso_scalar_chooser->set_object(iso_scalar_field);
 					isovaluelistradiobutton->SetValue(true);
 					isoscalartextctrl->Enable();
 					isovaluesequencenumbertextctrl->Disable();
@@ -3370,6 +3369,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 					sprintf(temp_string,"%g", last_iso_value);
 					isovaluesequencelasttextctrl->SetValue(temp_string);
 				}
+				iso_scalar_chooser->set_object(iso_scalar_field);
 			}
 		else
 			{			
