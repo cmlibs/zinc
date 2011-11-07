@@ -113,10 +113,22 @@ public:
 		non_local_change = CMISS_FIELD_GROUP_CLEAR;
 	}
 
+	/** Inform local group has been added, but wasn't before */
+	void changeAddLocal()
+	{
+		local_change = CMISS_FIELD_GROUP_ADD;
+	}
+
 	/** Inform local group has been cleared, but wasn't before */
 	void changeClearLocal()
 	{
 		local_change = CMISS_FIELD_GROUP_CLEAR;
+	}
+
+	/** Inform local group has been replaced, but wasn't before */
+	void changeReplaceLocal()
+	{
+		local_change = CMISS_FIELD_GROUP_REPLACE;
 	}
 
 	/** Inform local group has been cleared, but wasn't before */
@@ -543,6 +555,7 @@ int Computed_field_group::clearLocal()
 			Cmiss_field_destroy(&local_element_group[i]);
 		}
 	}
+	change_detail.changeClearLocal();
 	Computed_field_changed(this->field);
 	Cmiss_field_module_end_change(field_module);
 	Cmiss_field_module_destroy(&field_module);
@@ -740,7 +753,12 @@ int Computed_field_group::removeRegion(Cmiss_region_id region)
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
-		group_core->contains_all = 0;
+		if (group_core->contains_all)
+		{
+			group_core->contains_all = 0;
+			group_core->change_detail.changeClearLocal();
+		}
+		Computed_field_changed(Cmiss_field_group_base_cast(subgroup));
 		Cmiss_field_group_destroy(&subgroup);
 	}
 	Computed_field_changed(this->field);
@@ -1265,6 +1283,10 @@ int Computed_field_group::addLocalRegion()
 {
 	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
 	Cmiss_field_module_begin_change(field_module);
+	if (isEmpty())
+		change_detail.changeAddLocal();
+	else
+		change_detail.changeReplaceLocal();
 	clearLocal();
 	contains_all = 1;
 	Computed_field_changed(this->field);
