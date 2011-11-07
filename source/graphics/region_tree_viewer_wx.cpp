@@ -2364,7 +2364,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		if (region_tree_viewer->current_graphic)
 		{
 			graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
-			Cmiss_graphic_get_name(region_tree_viewer->current_graphic,
+			Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic,
 				&name);
 			nametextfield = XRCCTRL(*this, "NameTextField", wxTextCtrl);
 			temp = nametextfield->GetValue();
@@ -4837,7 +4837,7 @@ static int get_and_set_Cmiss_graphic_widgets(void *region_tree_viewer_void)
 	if (region_tree_viewer->current_graphic)
 	{
 		const char *name;
-		Cmiss_graphic_get_name(region_tree_viewer->current_graphic,
+		Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic,
 				&name);
 		wxTextCtrl *nametextfield = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "NameTextField", wxTextCtrl);
 		nametextfield->SetValue(name);

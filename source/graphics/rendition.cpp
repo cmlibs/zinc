@@ -1897,6 +1897,21 @@ struct Cmiss_graphic *first_graphic_in_Cmiss_rendition_that(
 	return (graphic);
 } /* first_graphic_in_Cmiss_rendition_that */
 
+
+Cmiss_graphic_id Cmiss_rendition_find_graphic_by_name(Cmiss_rendition_id rendition,
+	const char *graphic_name)
+{
+	if (rendition && graphic_name)
+	{
+		Cmiss_graphic_id graphic = FIRST_OBJECT_IN_LIST_THAT(Cmiss_graphic)(
+			Cmiss_graphic_same_name, (void *)graphic_name, rendition->list_of_graphics);
+		if (graphic)
+			return Cmiss_graphic_access(graphic);
+	}
+
+	return NULL;
+}
+
 int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position)
 {

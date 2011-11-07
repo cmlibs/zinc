@@ -577,6 +577,7 @@ Cmiss_rendition_create_graphic
 Cmiss_rendition_create_selection_handler
 Cmiss_rendition_end_change
 Cmiss_rendition_execute_command
+Cmiss_rendition_find_graphic_by_name
 Cmiss_rendition_get_first_graphic
 Cmiss_rendition_get_next_graphic
 Cmiss_rendition_get_previous_graphic
@@ -590,6 +591,8 @@ Cmiss_rendition_remove_graphic
 
 Cmiss_graphic_access
 Cmiss_graphic_destroy
+Cmiss_field_get_name
+Cmiss_field_set_name
 Cmiss_graphic_set_material
 Cmiss_graphic_set_selected_material
 Cmiss_graphic_get_tessellation

@@ -143,6 +143,18 @@ int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition,
 	const char *command_string);
 
 /***************************************************************************//**
+ * Returns the graphic of the specified name from the rendition. Beware that
+ * graphics in the same rendition may have the same name and this function will
+ * only return the first graphic found with the specified name;
+ *
+ * @param rendition  Rendition in which to find the graphic.
+ * @param graphic_name  The name of the graphic to find.
+ * @return  New reference to graphic of specified name, or NULL if not found.
+ */
+Cmiss_graphic_id Cmiss_rendition_find_graphic_by_name(Cmiss_rendition_id rendition,
+	const char *graphic_name);
+
+/***************************************************************************//**
  * Get the first graphic on the graphics list of <rendition>.
 
  * @param rendition  Handle to a cmiss_rendition object.

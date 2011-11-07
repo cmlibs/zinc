@@ -211,4 +211,24 @@ enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
  */
 char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
 
+/***************************************************************************//**
+ * Return the name of the graphic. Graphic does not have a name until user has
+ * set it.
+ *
+ * @param graphic  The graphic whose name is requested.
+ * @return  On success: allocated string containing graphic name. Up to caller to
+ * free using Cmiss_deallocate().
+ */
+char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
+
+/***************************************************************************//**
+ * Set the name of the graphic. Unlike other containers, rendition can contains
+ * multiple graphics with the same name.
+ *
+ * @param graphic  The graphic to be named.
+ * @param name  The new name for the graphic.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
+
 #endif /*__CMISS_GRAPHIC_H__*/

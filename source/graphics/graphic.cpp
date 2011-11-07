@@ -355,6 +355,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 	struct Cmiss_graphic *graphic;
 
 	ENTER(CREATE(Cmiss_graphic));
+
 	if ((CMISS_GRAPHIC_NODE_POINTS==graphic_type)||
 		(CMISS_GRAPHIC_DATA_POINTS==graphic_type)||
 		(CMISS_GRAPHIC_LINES==graphic_type)||
@@ -2112,12 +2113,23 @@ int Cmiss_graphic_set_selected_material(
 	return (return_code);
 }
 
-int Cmiss_graphic_get_name(struct Cmiss_graphic *graphic,
+char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic)
+{
+	char *name = NULL;
+	if (graphic && graphic->name)
+	{
+		name = duplicate_string(graphic->name);
+	}
+
+	return name;
+} /* Cmiss_graphic_get_name_internal */
+
+int Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic,
 	const char **name_ptr)
 {
 	int return_code;
 	char *temp_ptr = NULL;
-	ENTER(Cmiss_graphic_get_name);
+	ENTER(Cmiss_graphic_get_name_internal);
 	if (graphic&&name_ptr)
 	{
 		if (graphic->name)
@@ -2131,7 +2143,7 @@ int Cmiss_graphic_get_name(struct Cmiss_graphic *graphic,
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_get_name.  Could not allocate space for name");
+					"Cmiss_graphic_get_name_internal.  Could not allocate space for name");
 				return_code=0;
 			}
 		}
@@ -2147,7 +2159,7 @@ int Cmiss_graphic_get_name(struct Cmiss_graphic *graphic,
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_get_name.  Could not allocate space for position name");
+					"Cmiss_graphic_get_name_internal.  Could not allocate space for position name");
 				return_code=0;
 			}
 			
@@ -2156,13 +2168,13 @@ int Cmiss_graphic_get_name(struct Cmiss_graphic *graphic,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_name.  Invalid argument(s)");
+			"Cmiss_graphic_get_name_internal.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_graphic_get_name */
+} /* Cmiss_graphic_get_name_internal */
 
 int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 {
@@ -3338,7 +3350,7 @@ int Cmiss_graphic_to_graphics_object(
 							graphic_to_object_data->existing_graphics =
 								(struct GT_object *)NULL;
 							/* work out the name the graphics object is to have */
-							Cmiss_graphic_get_name(graphic, &graphic_name);
+							Cmiss_graphic_get_name_internal(graphic, &graphic_name);
 							if (graphic_to_object_data->name_prefix && graphic_name &&
 								ALLOCATE(graphics_object_name, char,
 									strlen(graphic_to_object_data->name_prefix) +
@@ -3780,7 +3792,7 @@ int Cmiss_graphic_to_graphics_object(
 						graphic_to_object_data->existing_graphics =
 							(struct GT_object *)NULL;
 						/* work out the name the graphics object is to have */
-						Cmiss_graphic_get_name(graphic, &graphic_name);
+						Cmiss_graphic_get_name_internal(graphic, &graphic_name);
 						if (graphic_to_object_data->name_prefix && graphic_name &&
 							ALLOCATE(graphics_object_name, char,
 								strlen(graphic_to_object_data->name_prefix) +
@@ -5827,6 +5839,20 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 
 	return (return_code);
 } /* Cmiss_graphic_same_geometry */
+
+int Cmiss_graphic_same_name(struct Cmiss_graphic *graphic,
+	void *name_void)
+{
+	int return_code = 0;
+	char *name;
+
+	if (graphic && graphic->name && (NULL != (name =(char *)name_void)))
+	{
+		return_code = (0==strcmp(graphic->name, name));
+	}
+
+	return (return_code);
+} /* Cmiss_graphic_same_name_or_geometry */
 
 int Cmiss_graphic_same_name_or_geometry(struct Cmiss_graphic *graphic,
 	void *second_graphic_void)

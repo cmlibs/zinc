@@ -705,6 +705,13 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 	void *second_graphic_void);
 
 /***************************************************************************//**
+ * Cmiss_graphic list conditional function returning 1 if graphic has the
+ * name.
+ */
+int Cmiss_graphic_same_name(struct Cmiss_graphic *graphic,
+	void *name_void);
+
+/***************************************************************************//**
  * Cmiss_graphic list conditional function returning 1 if the two
  * graphics have the same name or describe EXACTLY the same geometry.
  */
@@ -841,13 +848,8 @@ int Cmiss_graphic_same_non_trivial_with_graphics_object(
 int Cmiss_graphic_set_volume_texture(struct Cmiss_graphic *graphic,
 	struct VT_volume_texture *volume_texture);
 
-int Cmiss_graphic_get_name(struct Cmiss_graphic *graphic,
+int Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic,
 	const char **name_ptr);
-
-/***************************************************************************//**
- * Sets the <name> used by <graphic>.
- */
-int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name);
 
 int Cmiss_graphic_time_change(
 	struct Cmiss_graphic *graphic,void *dummy_void);
