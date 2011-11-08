@@ -5479,9 +5479,17 @@ int gfx_modify_rendition_surfaces(struct Parse_state *state,
 			if (NULL != (modify_rendition_data =
 				(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_SURFACES,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_SURFACES,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
@@ -5916,9 +5924,17 @@ int gfx_modify_rendition_node_points(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_NODE_POINTS,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_NODE_POINTS,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
@@ -6189,9 +6205,17 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_DATA_POINTS,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_DATA_POINTS,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
@@ -6461,9 +6485,17 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_POINT,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_POINT,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
@@ -6729,9 +6761,17 @@ int gfx_modify_rendition_lines(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_LINES,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_LINES,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
@@ -6909,9 +6949,17 @@ int gfx_modify_rendition_cylinders(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_CYLINDERS,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_CYLINDERS,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
@@ -7116,9 +7164,17 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 			if (NULL != (modify_rendition_data=
 					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-					rendition_command_data->rendition, CMISS_GRAPHIC_ISO_SURFACES,
-					modify_rendition_data->graphic);
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_ISO_SURFACES,
+						modify_rendition_data->graphic);
+				}
 				if (graphic)
 				{
 					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
@@ -7406,9 +7462,17 @@ int gfx_modify_rendition_element_points(struct Parse_state *state,
 		(modify_rendition_data=
 			(struct Modify_rendition_data *)modify_rendition_data_void))
 	{
-		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-			rendition_command_data->rendition, CMISS_GRAPHIC_ELEMENT_POINTS,
-			modify_rendition_data->graphic);
+		Cmiss_graphic *graphic = NULL;
+		if (modify_rendition_data->modify_this_graphic)
+		{
+			graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+		}
+		else
+		{
+			graphic = get_graphic_for_gfx_modify(
+				rendition_command_data->rendition, CMISS_GRAPHIC_ELEMENT_POINTS,
+				modify_rendition_data->graphic);
+		}
 		if (graphic)
 		{
 			coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
@@ -7733,9 +7797,17 @@ int gfx_modify_rendition_streamlines(struct Parse_state *state,
 		(modify_rendition_data =
 			(struct Modify_rendition_data *)modify_rendition_data_void))
 	{
-		Cmiss_graphic *graphic = get_graphic_for_gfx_modify(
-			rendition_command_data->rendition, CMISS_GRAPHIC_STREAMLINES,
-			modify_rendition_data->graphic);
+		Cmiss_graphic *graphic = NULL;
+		if (modify_rendition_data->modify_this_graphic)
+		{
+			graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+		}
+		else
+		{
+			graphic = get_graphic_for_gfx_modify(
+				rendition_command_data->rendition, CMISS_GRAPHIC_STREAMLINES,
+				modify_rendition_data->graphic);
+		}
 		if (graphic)
 		{
 			xi_point_density_field = (struct Computed_field *)NULL;
@@ -9295,85 +9367,6 @@ int Cmiss_graphic_set_customised_graphics_object(
 
 	return (return_code);
 }
-/* Overlay disabled
-int Cmiss_graphic_enable_overlay(struct Cmiss_graphic *graphic, int flag)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_enable_overlay);
-	if (graphic)
-	{
-		graphic->overlay_flag = flag;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"Cmiss_graphic_enable_overlay.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphic_is_overlay(struct Cmiss_graphic *graphic)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_is_overlay);
-	if (graphic)
-	{
-		return_code = graphic->overlay_flag;
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"Cmiss_graphic_is_overlay.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphic_set_overlay_order(struct Cmiss_graphic *graphic, int order)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_set_overlay_order);
-	if (graphic)
-	{
-		graphic->overlay_order = order;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"Cmiss_graphic_set_overlay.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return return_code;
-}
-
-int Cmiss_graphic_get_overlay_order(struct Cmiss_graphic *graphic)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphic_get_overlay_order);
-	if (graphic)
-	{
-		return_code = graphic->overlay_order;
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"Cmiss_graphic_get_overlay_order.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return return_code;
-}
-*/
 
 int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 {
@@ -9656,4 +9649,82 @@ char *Cmiss_graphics_render_type_enum_to_string(
 {
 	const char *type_string = Cmiss_graphics_render_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
+{
+	int return_code = 0;
+	Cmiss_rendition_id owning_rendition = NULL;
+
+	if (graphic && command_string && (NULL != (owning_rendition = graphic->rendition)))
+	{
+		struct Parse_state *state = create_Parse_state(command_string);
+		struct Modify_rendition_data modify_rendition_data;
+		modify_rendition_data.delete_flag = 0;
+		modify_rendition_data.position = -1;
+		modify_rendition_data.graphic = Cmiss_graphic_access(graphic);
+		modify_rendition_data.modify_this_graphic = 1;
+		struct Rendition_command_data rendition_command_data;
+		Cmiss_rendition_fill_rendition_command_data(owning_rendition, &rendition_command_data);
+    switch (graphic->graphic_type)
+    {
+    	case CMISS_GRAPHIC_NODE_POINTS:
+    		return_code = gfx_modify_rendition_node_points(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_DATA_POINTS:
+    		return_code = gfx_modify_rendition_data_points(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_LINES:
+    		return_code = gfx_modify_rendition_lines(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_CYLINDERS:
+    		return_code = gfx_modify_rendition_cylinders(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_SURFACES:
+    		return_code = gfx_modify_rendition_surfaces(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_ISO_SURFACES:
+    		return_code = gfx_modify_rendition_iso_surfaces(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_ELEMENT_POINTS:
+    		return_code = gfx_modify_rendition_element_points(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_STREAMLINES:
+    		return_code = gfx_modify_rendition_streamlines(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	case CMISS_GRAPHIC_POINT:
+    		return_code = gfx_modify_rendition_point(
+    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+    		break;
+    	default:
+        break;
+    }
+		destroy_Parse_state(&state);
+		if (modify_rendition_data.graphic)
+		{
+			Cmiss_graphic_destroy(&(modify_rendition_data.graphic));
+		}
+		if (rendition_command_data.default_font)
+		{
+			DEACCESS(Graphics_font)(&rendition_command_data.default_font);
+		}
+		if (rendition_command_data.default_spectrum)
+		{
+			DEACCESS(Spectrum)(&rendition_command_data.default_spectrum);
+		}
+		if (rendition_command_data.root_region)
+		{
+			Cmiss_region_destroy(&(rendition_command_data.root_region));
+		}
+	}
+
+	return return_code;
 }

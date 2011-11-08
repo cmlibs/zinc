@@ -173,6 +173,7 @@ Structure modified by g_element modify routines.
 	char delete_flag;
 	int position;
 	struct Cmiss_graphic *graphic;
+	int modify_this_graphic;
 }; /* struct Modify_graphic_data */
 
 /***************************************************************************//**

@@ -4062,6 +4062,43 @@ Cmiss_rendition *Cmiss_rendition_access(Cmiss_rendition_id rendition)
 	return (ACCESS(Cmiss_rendition)(rendition));
 }
 
+int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
+	struct Rendition_command_data *rendition_command_data)
+{
+	int return_code = 0;
+	if (rendition)
+	{
+		rendition_command_data->graphics_module = rendition->graphics_module;
+		struct Material_package *material_package =
+			Cmiss_graphics_module_get_material_package(rendition->graphics_module);
+		rendition_command_data->rendition = rendition;
+		rendition_command_data->default_material =
+			Material_package_get_default_material(material_package);
+		rendition_command_data->graphics_font_package =
+			Cmiss_graphics_module_get_font_package(rendition->graphics_module);
+		rendition_command_data->default_font =
+			Cmiss_graphics_module_get_default_font(rendition->graphics_module);
+		rendition_command_data->glyph_manager =
+			Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module);
+		rendition_command_data->computed_field_manager =
+			 Cmiss_region_get_Computed_field_manager(rendition->region);
+		rendition_command_data->region = rendition->region;
+		rendition_command_data->root_region = Cmiss_region_get_root(rendition->region);
+		rendition_command_data->graphical_material_manager =
+			Cmiss_graphics_module_get_material_manager(rendition->graphics_module);
+		rendition_command_data->spectrum_manager =
+			Cmiss_graphics_module_get_spectrum_manager(rendition->graphics_module);
+		rendition_command_data->default_spectrum =
+				Cmiss_graphics_module_get_default_spectrum(rendition->graphics_module);
+		if (material_package)
+		{
+			DEACCESS(Material_package)(&material_package);
+		}
+		return_code = 1;
+	}
+	return return_code;
+}
+
 int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struct Parse_state *state)
 {
 	int return_code = 0;
@@ -4075,6 +4112,7 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			modify_rendition_data.delete_flag = 0;
 			modify_rendition_data.position = -1;
 			modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
+			modify_rendition_data.modify_this_graphic = 0;
 			int previous_state_index;
 			if (state && (previous_state_index = state->current_index))
 			{
@@ -4108,28 +4146,8 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			}
 
 			struct Rendition_command_data rendition_command_data;
-			struct Material_package *material_package =
-				Cmiss_graphics_module_get_material_package(graphics_module);
-			rendition_command_data.graphics_module = graphics_module;
-			rendition_command_data.rendition = rendition;
-			rendition_command_data.default_material =
-				Material_package_get_default_material(material_package);
-			rendition_command_data.graphics_font_package =
-				Cmiss_graphics_module_get_font_package(graphics_module);
-			rendition_command_data.default_font =
-				Cmiss_graphics_module_get_default_font(graphics_module);
-			rendition_command_data.glyph_manager =
-				Cmiss_graphics_module_get_default_glyph_manager(graphics_module);
-			rendition_command_data.computed_field_manager =
-				 Cmiss_region_get_Computed_field_manager(rendition->region);
-			rendition_command_data.region = rendition->region;
-			rendition_command_data.root_region = Cmiss_region_get_root(rendition->region);
-			rendition_command_data.graphical_material_manager =
-				Cmiss_graphics_module_get_material_manager(graphics_module);
-			rendition_command_data.spectrum_manager =
-				Cmiss_graphics_module_get_spectrum_manager(graphics_module);
-			rendition_command_data.default_spectrum =
-					Cmiss_graphics_module_get_default_spectrum(graphics_module);
+			Cmiss_rendition_fill_rendition_command_data(rendition,
+				&rendition_command_data);
 
 			option_table = CREATE(Option_table)();
 			/* cylinders */
@@ -4184,10 +4202,6 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struc
 			if (modify_rendition_data.graphic)
 			{
 				DEACCESS(Cmiss_graphic)(&(modify_rendition_data.graphic));
-			}
-			if (material_package)
-			{
-				DEACCESS(Material_package)(&material_package);
 			}
 			if (rendition_command_data.default_font)
 			{
@@ -4415,5 +4429,24 @@ int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
 			return_code = Cmiss_rendition_add_graphic(rendition, current_graphic, position);
 		DEACCESS(Cmiss_graphic)(&current_graphic);
 	}
+	return return_code;
+}
+
+int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition)
+{
+	int return_code = 0;
+	if (rendition)
+	{
+		return_code = 1;
+		Cmiss_graphic_id graphic = NULL;
+		while (return_code && (NULL != (graphic=
+			first_graphic_in_Cmiss_rendition_that(rendition,
+				(LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *)NULL,
+				(void *)NULL))))
+		{
+			return_code = Cmiss_rendition_remove_graphic(rendition, graphic);
+		}
+	}
+
 	return return_code;
 }

@@ -446,5 +446,11 @@ int Cmiss_region_has_rendition(Cmiss_region_id cmiss_region);
 
 Cmiss_field_id Cmiss_rendition_get_selection_group_private_for_highlighting(
 	Cmiss_rendition_id rendition);
+
+int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
+	struct Rendition_command_data *rendition_command_data);
+
+int Cmiss_region_modify_rendition(struct Cmiss_region *region,
+	struct Cmiss_graphic *graphic, int delete_flag, int position);
 #endif /* !defined (RENDITION_H) */
 

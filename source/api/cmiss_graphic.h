@@ -231,4 +231,18 @@ char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
  */
 int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
 
+/***************************************************************************//**
+ * It takes the same string of command as gfx modify g_element <region_name>
+ * <graphic_type> does. User can use this to quickly modify graphics. Make sure
+ * coordinates field is specified.
+ *
+ * NOTE: This function may be removed in the future once more API functions are
+ * made available to the users.
+ *
+ * @param graphic  Handle to a cmiss_graphic object.
+ * @param command  Command to be executed.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string);
+
 #endif /*__CMISS_GRAPHIC_H__*/

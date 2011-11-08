@@ -251,6 +251,16 @@ int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic, Cmiss_graphic_id ref_graphic);
 
 /***************************************************************************//**
+ * Removes all graphics from the rendition.
+ *
+ * @param rendition  The handle to the rendition of which the graphic is removed
+ *   from.
+ * @return  Status CMISS_OK if successfully remove all graphics from rendition,
+ * any other value on failure.
+ */
+int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition);
+
+/***************************************************************************//**
  * Removes <graphic> from <rendition> and decrements the position
  * of all subsequent graphics.
  *
@@ -263,4 +273,5 @@ int Cmiss_rendition_move_graphic_before(Cmiss_rendition_id rendition,
  */
 int Cmiss_rendition_remove_graphic(Cmiss_rendition_id rendition,
 	Cmiss_graphic_id graphic);
+
 #endif /* __CMISS_RENDITION_H__ */
