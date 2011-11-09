@@ -1329,7 +1329,7 @@ class wxGraphicsBuffer : public wxGLCanvas
 {
 	Graphics_buffer *graphics_buffer;
 	wxPanel *parent;
-
+	int key_code;
 public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
@@ -1338,7 +1338,7 @@ public:
 	wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
 		 wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
 		 , attrib_list),
-		graphics_buffer(graphics_buffer), parent(parent)
+		graphics_buffer(graphics_buffer), parent(parent), key_code(0)
 	{
 	};
 
@@ -1388,20 +1388,35 @@ public:
 		/* Do nothing, to avoid flashing on MSW */
 	}
 
+	void OnKeyUp( wxKeyEvent& event )
+	{
+		key_code = 0;
+		event.Skip();
+	}
+
+	void OnKeyDown( wxKeyEvent& event )
+	{
+		key_code = event.GetKeyCode();
+		event.Skip();
+	}
+
 	void OnMouse( wxMouseEvent& event )
 	{
 		int input_modifier, return_code;
 		struct Graphics_buffer_input input;
 
 		return_code = 1;
-
+		if (event.Entering())
+		{
+			key_code = 0;
+			this->SetFocus();
+		}
 		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
 		input.button_number = 0;
-		input.key_code = 0;
+		input.key_code = key_code;
 		input.position_x = event.GetX();
 		input.position_y = event.GetY();
 		input_modifier = 0;
-
 		if (event.ShiftDown())
 		{
 			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
@@ -1494,12 +1509,12 @@ public:
    DECLARE_EVENT_TABLE();
 };
 
-
-
 BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
     EVT_SIZE(wxGraphicsBuffer::OnSize)
     EVT_PAINT(wxGraphicsBuffer::OnPaint)
     EVT_ERASE_BACKGROUND(wxGraphicsBuffer::OnEraseBackground)
+    EVT_KEY_UP(wxGraphicsBuffer::OnKeyUp)
+    EVT_KEY_DOWN(wxGraphicsBuffer::OnKeyDown)
     EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
 END_EVENT_TABLE()
 
