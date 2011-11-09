@@ -2430,19 +2430,13 @@ int Event_dispatcher_set_wx_instance(struct Event_dispatcher *event_dispatcher,
 			wxTheApp->SetInstance(external_app);
 			return 1;
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_set_wx_instance.  wx instance is not initialised.");
-			return 0;
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Event_dispatcher_set_wx_instance.  Invalid arguments.");
-		return 0;
 	}
+	return 0;
 }
 #endif
 
