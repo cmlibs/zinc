@@ -1329,7 +1329,7 @@ class wxGraphicsBuffer : public wxGLCanvas
 {
 	Graphics_buffer *graphics_buffer;
 	wxPanel *parent;
-	int key_code;
+	int key_code, cursor_x, cursor_y;
 public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
@@ -1338,7 +1338,8 @@ public:
 	wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, parent->GetSize(),
 		 wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
 		 , attrib_list),
-		graphics_buffer(graphics_buffer), parent(parent), key_code(0)
+		graphics_buffer(graphics_buffer), parent(parent), key_code(0), cursor_x(-1),
+		cursor_y(-1)
 	{
 	};
 
@@ -1388,15 +1389,62 @@ public:
 		/* Do nothing, to avoid flashing on MSW */
 	}
 
+	void OnKeyEvent(struct Graphics_buffer_input *input)
+	{
+		input->button_number = 0;
+		input->position_x = cursor_x;
+		input->position_y = cursor_y;
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+			graphics_buffer->input_callback_list, graphics_buffer, input);
+	}
+
 	void OnKeyUp( wxKeyEvent& event )
 	{
+		struct Graphics_buffer_input input;
+		input.type = GRAPHICS_BUFFER_KEY_RELEASE;
 		key_code = 0;
+		input.key_code = key_code;
+		int input_modifier = 0;
+		if (event.ShiftDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (event.ControlDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (event.AltDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
+		OnKeyEvent(&input);
 		event.Skip();
 	}
 
 	void OnKeyDown( wxKeyEvent& event )
 	{
+		struct Graphics_buffer_input input;
+		input.type = GRAPHICS_BUFFER_KEY_PRESS;
 		key_code = event.GetKeyCode();
+		input.key_code = key_code;
+		int input_modifier = 0;
+		if (event.ShiftDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (event.ControlDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (event.AltDown())
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+			(input_modifier);
+		OnKeyEvent(&input);
 		event.Skip();
 	}
 
@@ -1414,9 +1462,14 @@ public:
 		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
 		input.button_number = 0;
 		input.key_code = key_code;
-		input.position_x = event.GetX();
-		input.position_y = event.GetY();
+		cursor_x = input.position_x = event.GetX();
+		cursor_y = input.position_y = event.GetY();
 		input_modifier = 0;
+		if (event.Leaving())
+		{
+			cursor_x = input.position_x = -1;
+			cursor_y = input.position_y = -1;
+		}
 		if (event.ShiftDown())
 		{
 			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
