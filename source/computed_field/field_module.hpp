@@ -81,15 +81,6 @@ struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
 	struct Cmiss_field_module *field_module);
 
 /***************************************************************************//**
- * Gets the region this field module can create fields for.
- *
- * @param field_module  The field module to query.
- * @return  Accessed handle to owning region for field_module.
- */
-struct Cmiss_region *Cmiss_field_module_get_region(
-	struct Cmiss_field_module *field_module);
-
-/***************************************************************************//**
  * Sets the name (or name stem if non-unique) of the next field to be created
  * with this field_module.
  *

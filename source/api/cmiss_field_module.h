@@ -41,6 +41,7 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
+#include "api/types/cmiss_region_id.h"
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_module_id.h"
 
@@ -173,5 +174,13 @@ Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
  * @return  Status CMISS_OK on success, any other value on failure.
  */
 int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
+
+/***************************************************************************//**
+ * Gets the region this field module can create fields for.
+ *
+ * @param field_module  The field module to query.
+ * @return  Accessed handle to owning region for field_module.
+ */
+Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id field_module);
 
 #endif /* __CMISS_FIELD_MODULE_H__ */
