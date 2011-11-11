@@ -292,4 +292,12 @@ Cmiss_field_element_group_id Cmiss_field_group_get_element_group(
  */
 Cmiss_field_id Cmiss_field_group_get_subobject_group_for_domain(Cmiss_field_group_id group, Cmiss_field_id domain);
 
+/***************************************************************************//**
+ * Return the first non-empty subregion group in the group tree including itself.
+ *
+ * @param group  the group field
+ * @returns  the first non-empty subregion group field, NULL otherwise.
+ */
+Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
+	Cmiss_field_group_id group);
 #endif /* !defined (CMISS_FIELD_GROUP_H) */

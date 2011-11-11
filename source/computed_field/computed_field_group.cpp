@@ -270,6 +270,8 @@ public:
 
 	Cmiss_field_group_id createSubRegionGroup(Cmiss_region_id subregion);
 
+	Cmiss_field_group_id getFirstNonEmptyGroup();
+
 	int clear_region_tree_node(int use_data);
 
 	int clear_region_tree_element();
@@ -874,6 +876,29 @@ Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id 
 		}
 	}
 	return subregion_group;
+}
+
+Cmiss_field_group_id Computed_field_group::getFirstNonEmptyGroup()
+{
+	if (!isEmptyLocal())
+	{
+		return Cmiss_field_cast_group(this->getField());
+	}
+	if (!subregion_group_map.empty())
+	{
+		Cmiss_field_group_id subregion_group = 0;
+		Region_field_map_iterator iter;
+		for (Region_field_map_iterator iter = subregion_group_map.begin();
+			iter != subregion_group_map.end(); iter++)
+		{
+			Cmiss_field_group_id temp = iter->second;
+			Computed_field_group *group_core = Computed_field_group_core_cast(temp);
+			subregion_group = group_core->getFirstNonEmptyGroup();
+			if (subregion_group)
+				return subregion_group;
+		}
+	}
+	return 0;
 }
 
 char *Computed_field_group::get_standard_node_group_name(Cmiss_nodeset_id master_nodeset)
@@ -1895,6 +1920,21 @@ int Cmiss_field_group_add_region(Cmiss_field_group_id group, Cmiss_region_id reg
 		if (group_core)
 		{
 			return group_core->addRegion(region);
+		}
+	}
+	return 0;
+}
+
+Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
+	Cmiss_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->getFirstNonEmptyGroup();
 		}
 	}
 	return 0;
