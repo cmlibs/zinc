@@ -4338,6 +4338,7 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 	{
 		if (NULL != (graphic=CREATE(Cmiss_graphic)(graphic_type)))
 		{
+			Cmiss_rendition_set_graphic_defaults(rendition, graphic);
 			Cmiss_rendition_add_graphic(rendition, graphic, -1);
 		}
 	}

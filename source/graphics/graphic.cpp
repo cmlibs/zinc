@@ -6528,7 +6528,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 						(void *)1,set_name);
 					/* centre */
 					Option_table_add_entry(option_table,"centre",glyph_offset,
-						&(number_of_components),set_reversed_float_vector);
+						&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
