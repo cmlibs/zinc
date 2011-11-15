@@ -981,28 +981,30 @@ COMPUTED_FIELD_CORE_SRCS =\
 	graphics/quaternion.cpp
 COMPUTED_FIELD_GRAPHICS_SRCS = \
 	computed_field/computed_field_find_xi_graphics.cpp
+COMPUTED_FIELD_EXTENDED_SRCS = \
+	computed_field/computed_field_alias.cpp \
+	computed_field/computed_field_deformation.cpp \
+	computed_field/computed_field_integration.cpp \
+	computed_field/computed_field_lookup.cpp \
+	computed_field/computed_field_value_index_ranges.cpp
+ifeq ($(USE_ITK),true)
+COMPUTED_FIELD_EXTENDED_SRCS += \
+	computed_field/computed_field_derivatives.cpp
+endif # $(USE_ITK) == true
 COMPUTED_FIELD_SRCS = \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
 	minimise/minimise.cpp \
 	minimise/cmiss_optimisation_private.cpp \
 	minimise/optimisation.cpp \
-	computed_field/computed_field_alias.cpp \
 	computed_field/computed_field_curve.cpp \
-	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_image.cpp \
-	computed_field/computed_field_integration.cpp \
-	computed_field/computed_field_lookup.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_update.cpp \
-	computed_field/computed_field_value_index_ranges.cpp \
+	$(COMPUTED_FIELD_EXTENDED_SRCS) \
 	stream/cmiss_field_image_stream.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_scene_viewer_projection.cpp
-ifeq ($(USE_ITK),true)
-COMPUTED_FIELD_SRCS += \
-	computed_field/computed_field_derivatives.cpp
-endif # $(USE_ITK) == true
 ifeq ($(USE_OPENCASCADE),true)
 OCC_SRCS += cad/occpartfactory.cpp \
 	cad/graphicimporter.cpp \
@@ -1054,6 +1056,7 @@ FIELD_IO_SRCS = \
 FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.cpp \
 	finite_element/finite_element.cpp \
+	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_basis.cpp \
 	finite_element/finite_element_discretization.cpp \
 	finite_element/finite_element_helper.cpp \
@@ -1071,7 +1074,6 @@ FINITE_ELEMENT_SRCS = \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(FINITE_ELEMENT_GRAPHICS_SRCS) \
 	finite_element/export_cm_files.c \
-	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_conversion.cpp \
 	finite_element/finite_element_to_iges.c \
 	finite_element/snake.c
@@ -1699,7 +1701,7 @@ SO_LIB_CORE_FIELDS = cmgui_core_fields
 SO_LIB_CORE_FIELDS_BASE = lib$(SO_LIB_CORE_FIELDS)
 SO_LIB_CORE_FIELDS_SONAME = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
 SO_LIB_CORE_FIELDS_TARGET = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
-SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(FIELDML_LIB) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
+SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(FIELDML_LIB) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a  $(ITK_LIB)
 ifeq ($(OPERATING_SYSTEM), win32)
   ifneq ($(COMPILER),msvc)
     SO_LIB_CORE_FIELDS_EXTRA_ARGS += -Wl,--export-all-symbols 
@@ -1707,6 +1709,7 @@ ifeq ($(OPERATING_SYSTEM), win32)
 endif
 
 LIB_CORE_FIELDS_SRCS = \
+	general/indexed_multi_range.c \
 	general/io_stream.cpp \
 	general/statistics.c \
 	node/node_operations.c \
@@ -1715,6 +1718,8 @@ LIB_CORE_FIELDS_SRCS = \
 	$(MESH_SRCS) \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(COMPUTED_FIELD_CORE_SRCS) \
+	$(COMPUTED_FIELD_EXTENDED_SRCS) \
+	$(IMAGE_PROCESSING_SRCS) \
 	$(FIELD_IO_SRCS) \
 	$(REGION_SRCS)
 

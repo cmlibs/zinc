@@ -48,19 +48,45 @@ extern "C" {
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 extern "C" {
+#include "computed_field/computed_field_alias.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
+#include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_conditional.h"
 #include "computed_field/computed_field_coordinate.h"
+#include "computed_field/computed_field_deformation.h"
+#if defined (USE_ITK)
+#include "computed_field/computed_field_derivatives.h"
+#endif
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_format_output.h"
 #include "computed_field/computed_field_function.h"
+#include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
+#include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_trigonometry.h"
+#include "image_processing/computed_field_image_resample.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element_region.h"
+#if defined (USE_ITK)
+#include "image_processing/computed_field_threshold_image_filter.h"
+#include "image_processing/computed_field_binary_threshold_image_filter.h"
+#include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
+#include "image_processing/computed_field_meanImageFilter.h"
+#include "image_processing/computed_field_sigmoidImageFilter.h"
+#include "image_processing/computed_field_discrete_gaussian_image_filter.h"
+#include "image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h"
+#include "image_processing/computed_field_derivativeImageFilter.h"
+#include "image_processing/computed_field_rescaleIntensityImageFilter.h"
+#include "image_processing/computed_field_connected_threshold_image_filter.h"
+#include "image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h"
+#include "image_processing/computed_field_histogram_image_filter.h"
+#include "image_processing/computed_field_fast_marching_image_filter.h"
+#include "image_processing/computed_field_binary_dilate_image_filter.h"
+#include "image_processing/computed_field_binary_erode_image_filter.h"
+#endif
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 }
@@ -363,21 +389,46 @@ int Cmiss_field_module_define_field(Cmiss_field_module_id field_module,
 		 * that do not depend on data external to region */
 		if (package)
 		{
+			Computed_field_register_type_alias(package, field_module->region);
 			Computed_field_register_types_arithmetic_operators(package);
+			Computed_field_register_types_compose(package, field_module->region);
 			Computed_field_register_types_composite(package);
 			Computed_field_register_types_conditional(package);
 			Computed_field_register_types_coordinate(package);
+			Computed_field_register_types_deformation(package);
+#if defined (USE_ITK)
+			Computed_field_register_types_derivatives(package);
+#endif
 			Computed_field_register_types_fibres(package);
 			Computed_field_register_types_finite_element(package);
 			Computed_field_register_types_format_output(package);
-			Computed_field_register_types_function(package);
+			Computed_field_register_types_function(package);	
+			Computed_field_register_types_image_resample(package);
+			Computed_field_register_type_integration(package, field_module->region);
 			Computed_field_register_types_logical_operators(package);
+			Computed_field_register_types_lookup(package, field_module->region);
 			Computed_field_register_types_matrix_operators(package);
 			Computed_field_register_types_nodeset_operators(package);
 			Computed_field_register_types_string_constant(package);
 			Computed_field_register_types_trigonometry(package);
 			Computed_field_register_types_vector_operators(package);
-
+#if defined (USE_ITK)
+			Computed_field_register_types_threshold_image_filter(package);
+			Computed_field_register_types_binary_threshold_image_filter(package);
+			Computed_field_register_types_canny_edge_detection_image_filter(package);
+			Computed_field_register_types_mean_image_filter(package);
+			Computed_field_register_types_sigmoid_image_filter(package);
+			Computed_field_register_types_discrete_gaussian_image_filter(package);
+			Computed_field_register_types_histogram_image_filter(package);
+			Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(package);
+			Computed_field_register_types_derivative_image_filter(package);
+			Computed_field_register_types_rescale_intensity_image_filter(package);
+			Computed_field_register_types_connected_threshold_image_filter(package);
+			Computed_field_register_types_gradient_magnitude_recursive_gaussian_image_filter(package);
+			Computed_field_register_types_fast_marching_image_filter(package);
+			Computed_field_register_types_binary_dilate_image_filter(package);
+			Computed_field_register_types_binary_erode_image_filter(package);
+#endif /* defined (USE_ITK) */
 			// execute command
 			std::string fullCommand(field_name);
 			fullCommand += " ";
