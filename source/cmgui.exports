@@ -296,6 +296,10 @@ Cmiss_field_cast_element_group
 Cmiss_field_element_group_destroy
 Cmiss_field_element_group_get_mesh
 
+/* api/cmiss_field_time.h */
+Cmiss_field_module_create_time_lookup
+Cmiss_field_module_create_time_value
+
 /* api/cmiss_field_trigonometry.h */
 Cmiss_field_module_create_sin
 Cmiss_field_module_create_cos

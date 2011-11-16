@@ -43,6 +43,7 @@ Implements a number of basic component wise operations on computed fields.
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include <math.h>
+#include "api/cmiss_field_time.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
@@ -370,7 +371,7 @@ int Computed_field_time_lookup::propagate_find_element_xi(
 
 } //namespace
 
-struct Computed_field *Computed_field_create_time_lookup(
+Cmiss_field_id Cmiss_field_module_create_time_lookup(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *time_field)
 {
@@ -391,7 +392,7 @@ struct Computed_field *Computed_field_create_time_lookup(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_time_lookup.  Invalid argument(s)");
+			"Cmiss_field_module_create_time_lookup.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -493,7 +494,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_time_lookup(field_modify->get_field_module(),
+						Cmiss_field_module_create_time_lookup(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -746,7 +747,7 @@ Always has multiple times.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_time_value(
+Cmiss_field_id Cmiss_field_module_create_time_value(
 	struct Cmiss_field_module *field_module, struct Time_keeper *time_keeper)
 {
 	struct Computed_field *field = NULL;
@@ -762,7 +763,7 @@ struct Computed_field *Computed_field_create_time_value(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_time_value.  Invalid argument(s)");
+			"Cmiss_field_module_create_time_value.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -801,7 +802,7 @@ already) and allows its contents to be modified.
 		strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
 			return_code = field_modify->update_field_and_deaccess(
-				Computed_field_create_time_value(field_modify->get_field_module(),
+				Cmiss_field_module_create_time_value(field_modify->get_field_module(),
 					computed_field_time_package->time_keeper));
 		}
 		else

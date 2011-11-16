@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : computed_field_time.h
+FILE : cmiss_field_time.h
 
-LAST MODIFIED : 19 September 2003
+LAST MODIFIED : 16 Nov 2011
 
 DESCRIPTION :
-Implements computed fields that control the time behaviour.
+Implements cmiss fields that is controlled by time.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -23,7 +23,7 @@ Implements computed fields that control the time behaviour.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -41,19 +41,34 @@ Implements computed fields that control the time behaviour.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_TIME_H)
-#define COMPUTED_FIELD_TIME_H
+#if !defined (CMISS_FIELD_TIME_H)
+#define CMISS_FIELD_TIME_H
 
-#include "api/cmiss_field_image.h"
-#include "time/time_keeper.h"
+#include "api/types/cmiss_field_id.h"
+#include "api/types/cmiss_field_module_id.h"
+#include "api/types/cmiss_time_keeper_id.h"
 
-int Computed_field_register_types_time(
-	struct Computed_field_package *computed_field_package,
-	struct Time_keeper *time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2003
+/***************************************************************************//**
+ * Creates a field whose value equals <source_field>, calculated at the time
+ * value given by <time_field> instead of the current time from the timekeeper.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to evaluate.
+ * @param time_field  Field providing time value to evaluate at.
+ * @return  Handle to a new time lookup field on success, NULL on failure.
+ */
+Cmiss_field_id Cmiss_field_module_create_time_lookup(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
+	Cmiss_field_id time_field);
 
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a field which returns the current time from the supplied time keeper.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param time_keeper  Cmiss_time_keeper object.
+ * @return  Handle to a new time value field on success, NULL on failure.
+ */
+Cmiss_field_id Cmiss_field_module_create_time_value(
+	Cmiss_field_module_id field_module, Cmiss_time_keeper_id time_keeper);
 
-#endif /* !defined (COMPUTED_FIELD_TIME_H) */
+#endif /* !defined (CMISS_FIELD_TIME_H) */
