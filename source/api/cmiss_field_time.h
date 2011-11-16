@@ -49,8 +49,8 @@ Implements cmiss fields that is controlled by time.
 #include "api/types/cmiss_time_keeper_id.h"
 
 /***************************************************************************//**
- * Creates a field whose value equals <source_field>, calculated at the time
- * value given by <time_field> instead of the current time from the timekeeper.
+ * Creates a field whose value equals the source_field evaluated at the time
+ * given by time_field, overriding any time prescribed for field evaluation.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.
