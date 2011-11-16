@@ -1037,12 +1037,76 @@ int Cmiss_tessellation_has_fixed_divisions(struct Cmiss_tessellation *tessellati
 	return 0;
 }
 
+int Cmiss_rendition_set_minimum_graphic_defaults(struct Cmiss_rendition *rendition,
+	struct Cmiss_graphic *graphic)
+{
+	int return_code = 1;
+	if (rendition && graphic)
+	{
+		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
+
+		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
+			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&
+			(graphic_type != CMISS_GRAPHIC_STREAMLINES))
+		{
+			Cmiss_tessellation *tessellation = Cmiss_graphics_module_get_default_tessellation(rendition->graphics_module);
+			Cmiss_graphic_set_tessellation(graphic, tessellation);
+			DEACCESS(Cmiss_tessellation)(&tessellation);
+		}
+
+		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
+		{
+			Graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
+			Cmiss_graphic_set_label_field(graphic, (Cmiss_field *)NULL, font);
+			DEACCESS(Graphics_font)(&font);
+		}
+
+		// default to point glyph for fastest possible display
+		if ((graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
+			(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
+			(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
+			(graphic_type == CMISS_GRAPHIC_POINT))
+		{
+			GT_object *glyph;
+			Graphic_glyph_scaling_mode glyph_scaling_mode;
+			Triple glyph_centre,glyph_scale_factors,glyph_size;
+			Computed_field *orientation_scale_field, *variable_scale_field; ;
+			Cmiss_graphic_get_glyph_parameters(graphic,
+				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
+				&orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
+			if (!glyph)
+			{
+				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
+					Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
+			}
+			Cmiss_graphic_set_glyph_parameters(graphic,glyph,
+				glyph_scaling_mode, glyph_centre, glyph_size,
+				orientation_scale_field, glyph_scale_factors,
+				variable_scale_field);
+		}
+
+		struct Material_package *material_package = Cmiss_graphics_module_get_material_package(rendition->graphics_module);
+		Cmiss_graphic_set_material(graphic, Material_package_get_default_material(material_package));
+		Cmiss_graphic_set_selected_material(graphic, Material_package_get_default_selected_material(material_package));
+		DEACCESS(Material_package)(&material_package);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_rendition_set_minimum_graphic_defaults.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
+
 int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 	struct Cmiss_graphic *graphic)
 {
 	int return_code = 1;
 	if (rendition && graphic)
 	{
+		Cmiss_rendition_set_minimum_graphic_defaults(rendition, graphic);
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
 		Cmiss_graphic_set_coordinate_field(graphic, Cmiss_rendition_get_default_coordinate_field(rendition));
@@ -1090,43 +1154,6 @@ int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 				Cmiss_graphic_set_circle_discretization(graphic, rendition->circle_discretization);
 			}
 		}
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-		{
-			Graphics_font *font = Cmiss_graphics_module_get_default_font(rendition->graphics_module);
-			Cmiss_graphic_set_label_field(graphic, (Cmiss_field *)NULL, font);
-			DEACCESS(Graphics_font)(&font);
-		}
-
-		// default to point glyph for fastest possible display
-		if ((graphic_type == CMISS_GRAPHIC_NODE_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_DATA_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-			(graphic_type == CMISS_GRAPHIC_POINT))
-		{
-			GT_object *glyph;
-			Graphic_glyph_scaling_mode glyph_scaling_mode;
-			Triple glyph_centre,glyph_scale_factors,glyph_size;
-			Computed_field *orientation_scale_field, *variable_scale_field; ;
-			Cmiss_graphic_get_glyph_parameters(graphic,
-				&glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
-				&orientation_scale_field, glyph_scale_factors,
-				&variable_scale_field);
-			if (!glyph)
-			{
-				glyph = FIND_BY_IDENTIFIER_IN_MANAGER(GT_object,name)("point",
-					Cmiss_graphics_module_get_default_glyph_manager(rendition->graphics_module));
-			}
-			Cmiss_graphic_set_glyph_parameters(graphic,glyph,
-				glyph_scaling_mode, glyph_centre, glyph_size,
-				orientation_scale_field, glyph_scale_factors,
-				variable_scale_field);
-		}
-
-		struct Material_package *material_package = Cmiss_graphics_module_get_material_package(rendition->graphics_module);
-		Cmiss_graphic_set_material(graphic, Material_package_get_default_material(material_package));
-		Cmiss_graphic_set_selected_material(graphic, Material_package_get_default_selected_material(material_package));
-		DEACCESS(Material_package)(&material_package);
 	}
 	else
 	{
@@ -4338,7 +4365,7 @@ Cmiss_graphic_id Cmiss_rendition_create_graphic(Cmiss_rendition_id rendition,
 	{
 		if (NULL != (graphic=CREATE(Cmiss_graphic)(graphic_type)))
 		{
-			Cmiss_rendition_set_graphic_defaults(rendition, graphic);
+			Cmiss_rendition_set_minimum_graphic_defaults(rendition, graphic);
 			Cmiss_rendition_add_graphic(rendition, graphic, -1);
 		}
 	}
