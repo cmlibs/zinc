@@ -114,10 +114,6 @@ The object for the model calculation dialog
 Module variables
 ----------------
 */
-#if defined (MOTIF_USER_INTERFACE)
-static int cell_calculate_dialog_hierarchy_open=0;
-static MrmHierarchy cell_calculate_dialog_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /* The built-in model routines */
 static int number_of_built_in_models = 3;

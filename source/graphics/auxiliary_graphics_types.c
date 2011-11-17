@@ -211,84 +211,7 @@ A modifier function for setting exterior flag and face number.
 	return (return_code);
 } /* set_exterior */
 
-int read_circle_discretization_defaults(int *default_value,
-	struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 11 December 1998
-
-DESCRIPTION :
-Reads that maximum and default number of line segments used to approximate
-a circle. Minimum is always 2, but this does not look much like a circle!
-???RC Changed so that does not report error if no user_interface - just returns
-the defaults of 6 and 64. This is bad - should be able to read defaults without
-any x application - incl. for compatibility with win32.
-==============================================================================*/
-{
-	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNdefaultCircleDiscretization "defaultCircleDiscretization"
-#define XmCDefaultCircleDiscretization "DefaultCircleDiscretization"
-#define XmNmaximumCircleDiscretization "maximumCircleDiscretization"
-#define XmCMaximumCircleDiscretization "MaximumCircleDiscretization"
-	static int resources_read=0; /* flag so resources only read once */
-	static struct Discretization
-	{
-		int default_value;
-	} discretization;
-	static XtResource resources[]=
-	{
-		{
-			XmNdefaultCircleDiscretization,
-			XmCDefaultCircleDiscretization,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Discretization,default_value),
-			XmRString,
-			"6"
-		}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-	ENTER(read_circle_discretization_defaults);
-#if !defined (MOTIF_USER_INTERFACE)
-	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
-	if (default_value)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (!resources_read)
-		{
-			if (user_interface)
-			{
-				/* retrieve the settings */
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-					&discretization,resources,XtNumber(resources),NULL);
-				resources_read=1;
-			}
-			else
-			{
-				discretization.default_value=6;
-			}
-		}
-		*default_value=discretization.default_value;
-#else /* defined (MOTIF_USER_INTERFACE) */
-		*default_value=6;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_circle_discretization_defaults.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_circle_discretization_defaults */
-
-int check_Circle_discretization(int *circle_discretization,
-	struct User_interface *user_interface)
+int check_Circle_discretization(int *circle_discretization)
 /*******************************************************************************
 LAST MODIFIED : 11 December 1998
 
@@ -300,28 +223,24 @@ read_Circle_discretization_defaults().
 ==============================================================================*/
 {
 	int return_code;
-	int default_value,initial_value;
+	int initial_value;
 
 	ENTER(check_Circle_discretization);
 	if (circle_discretization)
 	{
-		if (0 != (return_code=read_circle_discretization_defaults(&default_value,
-			user_interface)))
+		initial_value = *circle_discretization;
+		if (2 > *circle_discretization)
 		{
-			initial_value = *circle_discretization;
-			if (2 > *circle_discretization)
-			{
-				*circle_discretization=2;
-			}
-			if (*circle_discretization != initial_value)
-			{
-				display_message(WARNING_MESSAGE,
-					"Circle discretization values must be at least 2\n"
-					"%d changed to %d",initial_value,
-					*circle_discretization);
-			}
-			return_code=1;
+			*circle_discretization=2;
 		}
+		if (*circle_discretization != initial_value)
+		{
+			display_message(WARNING_MESSAGE,
+				"Circle discretization values must be at least 2\n"
+				"%d changed to %d",initial_value,
+				*circle_discretization);
+		}
+		return_code=1;
 	}
 	else
 	{
@@ -364,8 +283,7 @@ A modifier function for setting number of segments used to draw circles.
 					if (1==sscanf(current_token,"%d",circle_discretization))
 					{
 						shift_Parse_state(state,1);
-						return_code=check_Circle_discretization(circle_discretization,
-							user_interface);
+						return_code=check_Circle_discretization(circle_discretization);
 					}
 					else
 					{
@@ -423,86 +341,8 @@ A modifier function for setting number of segments used to draw circles.
 	return (return_code);
 } /* set_Circle_discretization */
 
-int read_element_discretization_defaults(int *default_value,
-	struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 11 December 1998
-
-DESCRIPTION :
-Reads that maximum and default number of line segments used to approximate
-element curves. Minimum is always 1.
-???RC Changed so that does not report error if no user_interface - just returns
-the defaults of 4 and 50. This is bad - should be able to read defaults without
-any x application - incl. for compatibility with win32.
-==============================================================================*/
-{
-	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNdefaultElementDiscretization "defaultElementDiscretization"
-#define XmCDefaultElementDiscretization "DefaultElementDiscretization"
-#define XmNmaximumElementDiscretization "maximumElementDiscretization"
-#define XmCMaximumElementDiscretization "MaximumElementDiscretization"
-	static int resources_read=0; /* flag so resources only read once */
-	static struct Discretization
-	{
-		int default_value;
-	} discretization;
-	static XtResource resources[]=
-	{
-		{
-			XmNdefaultElementDiscretization,
-			XmCDefaultElementDiscretization,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Discretization,default_value),
-			XmRString,
-			"4"
-		}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-	ENTER(read_element_discretization_defaults);
-#if !defined (MOTIF_USER_INTERFACE)
-	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
-	if (default_value)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (!resources_read)
-		{
-			/* Some functions call this without the user_interface, 
-			   we want those to use the values that may have already been read. */
-			if (user_interface)
-			{
-				/* retrieve the settings */
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-					&discretization,resources,XtNumber(resources),NULL);
-				resources_read=1;
-			}
-			else
-			{
-				discretization.default_value=4;
-			}
-		}
-		*default_value=discretization.default_value;
-#else /* defined (MOTIF_USER_INTERFACE) */
-		*default_value=4;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_element_discretization_defaults.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_element_discretization_defaults */
-
 int check_Element_discretization(struct Element_discretization
-	*element_discretization,struct User_interface *user_interface)
+	*element_discretization)
 /*******************************************************************************
 LAST MODIFIED : 11 December 1998
 
@@ -517,45 +357,40 @@ read_Element_discretization_defaults().
 {
 	int discretization_change,return_code;
 	struct Element_discretization initial;
-	int default_value;
 
 	ENTER(check_Element_discretization);
 	if (element_discretization)
 	{
-		if (0 != (return_code=read_element_discretization_defaults(&default_value,
-			user_interface)))
+		discretization_change=0;
+		initial.number_in_xi1=element_discretization->number_in_xi1;
+		initial.number_in_xi2=element_discretization->number_in_xi2;
+		initial.number_in_xi3=element_discretization->number_in_xi3;
+		if (1 > element_discretization->number_in_xi1)
 		{
-			discretization_change=0;
-			initial.number_in_xi1=element_discretization->number_in_xi1;
-			initial.number_in_xi2=element_discretization->number_in_xi2;
-			initial.number_in_xi3=element_discretization->number_in_xi3;
-			if (1 > element_discretization->number_in_xi1)
-			{
-				element_discretization->number_in_xi1=1;
-				discretization_change=1;
-			}
-			if (1 > element_discretization->number_in_xi2)
-			{
-				element_discretization->number_in_xi2=1;
-				discretization_change=1;
-			}
-			if (1 > element_discretization->number_in_xi3)
-			{
-				element_discretization->number_in_xi3=1;
-				discretization_change=1;
-			}
-			if (discretization_change)
-			{
-				display_message(WARNING_MESSAGE,
-					"Element discretization values must be at least 1\n"
-					"%d*%d*%d changed to %d*%d*%d",
-					initial.number_in_xi1,initial.number_in_xi2,initial.number_in_xi3,
-					element_discretization->number_in_xi1,
-					element_discretization->number_in_xi2,
-					element_discretization->number_in_xi3);
-			}
-			return_code=1;
+			element_discretization->number_in_xi1=1;
+			discretization_change=1;
 		}
+		if (1 > element_discretization->number_in_xi2)
+		{
+			element_discretization->number_in_xi2=1;
+			discretization_change=1;
+		}
+		if (1 > element_discretization->number_in_xi3)
+		{
+			element_discretization->number_in_xi3=1;
+			discretization_change=1;
+		}
+		if (discretization_change)
+		{
+			display_message(WARNING_MESSAGE,
+				"Element discretization values must be at least 1\n"
+				"%d*%d*%d changed to %d*%d*%d",
+				initial.number_in_xi1,initial.number_in_xi2,initial.number_in_xi3,
+				element_discretization->number_in_xi1,
+				element_discretization->number_in_xi2,
+				element_discretization->number_in_xi3);
+		}
+		return_code=1;
 	}
 	else
 	{
@@ -620,8 +455,7 @@ A modifier function for setting discretization in each element direction.
 								element_discretization->number_in_xi2;
 						}
 						shift_Parse_state(state,1);
-						return_code=check_Element_discretization(element_discretization,
-							user_interface);
+						return_code=check_Element_discretization(element_discretization);
 					}
 					else
 					{

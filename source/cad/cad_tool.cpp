@@ -448,39 +448,6 @@ format for passing to an Interactive_toolbar.
 } /* Cad_tool_bring_up_interactive_tool_dialog */
 #endif /* defined (OPENGL_API) */
 
-static struct Cmgui_image *Cad_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, void *cad_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
-==============================================================================*/
-{
-	struct Cmgui_image *image = NULL;
-	struct Cad_tool *cad_tool;
-
-	ENTER(Cad_tool_get_icon);
-	if ((cad_tool=(struct Cad_tool *)cad_tool_void))
-	{
-		USE_PARAMETER(foreground);
-		USE_PARAMETER(background);
-		USE_PARAMETER(cad_tool);
-		display_message(WARNING_MESSAGE, "Cad_tool_get_icon.  "
-			"Not implemented for this user interface.");
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cad_tool_get_icon.  Invalid argument(s)");
-		image = (struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Cad_tool_get_icon */
-
 #if defined (OPENGL_API)
 static int Cad_tool_destroy_cad_tool(void **cad_tool_void)
 /*******************************************************************************
@@ -787,7 +754,6 @@ Creates an Cad_tool with Interactive_tool in <interactive_tool_manager>.
 				"cad_tool","Cad tool",
 				Interactive_tool_element_type_string,
 				Cad_tool_interactive_event_handler,
-				Cad_tool_get_icon,
 				Cad_tool_bring_up_interactive_tool_dialog,
 				Cad_tool_reset,
  				Cad_tool_destroy_cad_tool,
@@ -798,7 +764,6 @@ Creates an Cad_tool with Interactive_tool in <interactive_tool_manager>.
 				"cad_tool","Cad tool",
 				Interactive_tool_element_type_string,
 				(Interactive_event_handler*)NULL,
-				Cad_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function*)NULL,
 				(Interactive_tool_reset_function*)NULL,				
 				(Interactive_tool_destroy_tool_data_function *)NULL,
@@ -984,9 +949,6 @@ DESCRIPTION :
 Returns flag controlling whether face & 2-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Cad_tool_set_select_surfaces_enabled);
@@ -1049,9 +1011,6 @@ DESCRIPTION :
 Returns flag controlling whether line & 1-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Cad_tool_set_select_lines_enabled);
@@ -1117,9 +1076,6 @@ Sets the command_field to be looked up in a web browser when the element is clic
 on in the <cad_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int field_set;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Cad_tool_set_command_field);

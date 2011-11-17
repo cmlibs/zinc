@@ -200,26 +200,6 @@ DESCRIPTION :
 A modifier function for setting exterior flag and face number.
 ==============================================================================*/
 
-int read_circle_discretization_defaults(int *default_value,
-	struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2004
-
-DESCRIPTION :
-Reads the default number of line segments used to approximate
-a circle. Minimum is always 2, but this does not look much like a circle!
-==============================================================================*/
-
-int check_Circle_discretization(int *circle_discretization,
-	struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 2 June 1998
-
-DESCRIPTION :
-Ensures the <circle_discretization> is within the bounds of the minimum of 2
-and the maximum read in from the defaults.
-==============================================================================*/
-
 int set_Circle_discretization(struct Parse_state *state,
 	void *circle_discretization_void,void *user_interface_void);
 /*******************************************************************************
@@ -227,30 +207,6 @@ LAST MODIFIED : 2 June 1998
 
 DESCRIPTION :
 A modifier function for setting number of segments used to draw circles.
-==============================================================================*/
-
-int read_element_discretization_defaults(int *default_value,
-	struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2004
-
-DESCRIPTION :
-Reads the default number of line segments used to approximate
-element curves. Minimum is always 1.
-???RC. Actually uses points = 1 greater than number of segments so minimum is
-2 - this is due to change.
-==============================================================================*/
-
-int check_Element_discretization(struct Element_discretization
-	*element_discretization,struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 2 June 1998
-
-DESCRIPTION :
-Ensures the <element_discretization> is within the bounds of the minimum of 1
-and the maximum read in from the defaults.
-???DB.  Changed the lower bound to 1 because also used for elements.
-???DB.  Need to make consistent.
 ==============================================================================*/
 
 int set_Element_discretization(struct Parse_state *state,

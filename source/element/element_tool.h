@@ -97,14 +97,6 @@ DESCRIPTION :
 Pops up a dialog for editing settings of the Element_tool.
 ==============================================================================*/
 
-int Element_tool_pop_down_dialog(struct Element_tool *element_tool);
-/*******************************************************************************
-LAST MODIFIED : 20 June 2001
-
-DESCRIPTION :
-Hides the dialog for editing settings of the Element_tool.
-==============================================================================*/
-
 int Element_tool_get_select_elements_enabled(struct Element_tool *element_tool);
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000

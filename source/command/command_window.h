@@ -62,9 +62,9 @@ Global constants
 #define CMGUI_COMMAND_PROPERTY "_CMGUI_COMMAND"
 #define CMGUI_RESPONSE_PROPERTY "_CMGUI_RESPONSE"
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 #define USE_CMGUI_COMMAND_WINDOW
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 /*
 Global types
@@ -127,16 +127,6 @@ to be edited and entered. Used eg. by the comfile window to place a command in
 responce to a single mouse click on it.
 Does not override the command prompt.
 ==============================================================================*/
-
-#if defined (MOTIF_USER_INTERFACE)
-Widget Command_window_get_message_pane(struct Command_window *command_window);
-/*******************************************************************************
-LAST MODIFIED : 28 February 2002
-
-DESCRIPTION :
-Returns the message pane widget.
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int write_command_window(const char *message,struct Command_window *command_window);
 /*******************************************************************************

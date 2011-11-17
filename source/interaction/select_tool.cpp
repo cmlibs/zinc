@@ -378,7 +378,6 @@ Creates an Select_tool with Interactive_tool in
 				"select_tool","Select tool",
 				Interactive_tool_select_type_string,
 				Select_tool_interactive_event_handler,
-				Select_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
 				(Interactive_tool_reset_function *)NULL,
 				(Interactive_tool_destroy_tool_data_function *)NULL,

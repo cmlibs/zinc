@@ -55,9 +55,6 @@
 #endif /* !defined (WIN32_SYSTEM) */
 #include <math.h>
 #include <time.h>
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/List.h>
-#endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
 #include "api/cmiss_context.h"
 #include "api/cmiss_field_module.h"
@@ -73,9 +70,6 @@ extern "C" {
 #include "cell/cell_window.h"
 #endif /* defined (CELL) */
 #include "comfile/comfile.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "comfile/comfile_window.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 #include "comfile/comfile_window_wx.h"
 #endif /* defined (WX_USER_INTERFACE) */
@@ -118,14 +112,8 @@ extern "C" {
 #include "computed_field/computed_field_scene_viewer_projection.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "context/context.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "element/element_creator.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "element/element_operations.h"
 #include "element/element_point_tool.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "element/element_point_viewer.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 #include "element/element_point_viewer_wx.h"
 #endif /* defined (WX_USER_INTERFACE) */
@@ -144,9 +132,6 @@ extern "C" {
 #include "finite_element/finite_element_to_iges.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_streamlines.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "finite_element/grid_field_calculator.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/import_finite_element.h"
 #include "finite_element/read_fieldml_01.h"
 #include "finite_element/snake.h"
@@ -169,12 +154,6 @@ extern "C" {
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "graphics/movie_graphics.h"
-#if defined (NEW_ALIAS)
-#include "graphics/renderalias.h"
-#endif /* defined (NEW_ALIAS) */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "graphics/graphic.h"
 #include "graphics/graphics_module.h"
 #include "graphics/rendition.h"
@@ -191,16 +170,10 @@ extern "C" {
 #include "graphics/graphics_filter.hpp"
 #include "graphics/tessellation.hpp"
 extern "C" {
-#if defined (MOTIF_USER_INTERFACE)
-#include "graphics/scene_editor.h"
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 #include "graphics/region_tree_viewer_wx.h"
 #endif /* switch(USER_INTERFACE)*/
 #include "graphics/spectrum.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "graphics/spectrum_editor.h"
-#include "graphics/spectrum_editor_dialog.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 #include "graphics/spectrum_editor_wx.h"
 #include "graphics/spectrum_editor_dialog_wx.h"
@@ -232,56 +205,34 @@ extern "C" {
 #include "image_processing/computed_field_binary_dilate_image_filter.h"
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif /* defined (USE_ITK) */
-#if defined (MOTIF_USER_INTERFACE)
-#include "interaction/interactive_tool.h"
-#include "interaction/select_tool.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
 #endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (HAPTIC)
 #include "io_devices/haptic_input_module.h"
 #endif /* defined (HAPTIC) */
-#if defined (MOTIF_USER_INTERFACE)
-#include "io_devices/input_module_dialog.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (LINK_CMISS)
 #include "link/cmiss.h"
 #endif /* defined (LINK_CMISS) */
-#if defined (MOTIF_USER_INTERFACE)
-#include "material/material_editor_dialog.h"
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 #include "material/material_editor_wx.h"
 #endif /* defined (SWITCH_USER_INTERFACE) */
 #include "minimise/minimise.h"
 #include "node/node_operations.h"
 #include "node/node_tool.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "node/node_viewer.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 #include "node/node_viewer_wx.h"
 #endif /* defined (WX_USER_INTERFACE) */
 #include "region/cmiss_region.h"
 #include "selection/any_object_selection.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "three_d_drawing/movie_extensions.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "three_d_drawing/graphics_buffer.h"
 #include "graphics/font.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "time/time_editor_dialog.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "time/time_keeper.h"
 #include "user_interface/filedir.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "curve/curve.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "curve/curve_editor_dialog.h"
-#include "view/coord_trans.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (USE_PERL_INTERPRETER)
 #include "perl_interpreter.h"
 #endif /* defined (USE_PERL_INTERPRETER) */
@@ -337,9 +288,6 @@ DESCRIPTION :
 #endif /* defined (USE_OPENCASCADE) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Node_tool *data_tool,*node_tool;
-#if defined (MOTIF_USER_INTERFACE)
-	struct Select_tool *select_tool;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Interactive_tool *transform_tool;
 #if defined (USE_PERL_INTERPRETER)
 	struct Interpreter *interpreter;
@@ -349,9 +297,9 @@ DESCRIPTION :
 #endif /* defined (SELECT_DESCRIPTORS) */
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct MANAGER(GT_object) *glyph_manager;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 	struct Cmiss_region *root_region;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
@@ -373,18 +321,11 @@ DESCRIPTION :
 	struct Light_model *default_light_model;
 	struct Material_package *material_package;
 	struct Graphics_font *default_font;
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-	struct MANAGER(Movie_graphics) *movie_graphics_manager;
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-#if defined (MOTIF_USER_INTERFACE)
-	struct Prompt_window *prompt_window;
-	struct Projection_window *projection_window;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	/* global list of selected objects */
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -393,24 +334,15 @@ DESCRIPTION :
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 	struct Emoter_dialog *emoter_slider_dialog;
-#if defined (MOTIF_USER_INTERFACE)
-	Widget curve_editor_dialog,data_grabber_dialog,
-		grid_field_calculator_dialog,input_module_dialog,
-		sync_2d_3d_dialog;
-	struct Node_viewer *data_viewer,*node_viewer;
-	struct Element_point_viewer *element_point_viewer;
-	struct Element_creator *element_creator;
-	struct Time_editor_dialog *time_editor_dialog;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	struct Material_editor *material_editor;
 	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
 #endif /* defined (UNEMAP) */
@@ -424,9 +356,6 @@ LAST MODIFIED : 12 December 1996+
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Pixel background_colour,foreground_colour;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	char *examples_directory,*help_directory,*help_url,*startup_comfile;
 } User_settings;
 
@@ -561,13 +490,13 @@ Changes the command prompt provided to the user.
 	ENTER(set_command_prompt);
 	if (prompt && command_data)
 	{
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			return_code = Command_window_set_command_prompt(command_data->command_window,
 				prompt);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		if (command_data->command_console)
 		{
 			return_code = Console_set_command_prompt(command_data->command_console,
@@ -963,7 +892,7 @@ with tick marks and labels for showing the scale of a spectrum.
 	return (return_code);
 } /* gfx_create_colour_bar */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -974,83 +903,18 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	const char *current_token;
-	char *initial_region_path;
-	struct Cmiss_command_data *command_data;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	USE_PARAMETER(dummy_to_be_modified);
 	ENTER(gfx_create_element_creator);
-#if defined (MOTIF_USER_INTERFACE)
-
-	if (state)
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-			{
-				if (command_data->element_creator)
-				{
-					return_code = Element_creator_bring_window_to_front(
-						command_data->element_creator);
-				}
-				else
-				{
-					initial_region_path = Cmiss_region_get_root_region_path();
-					if (CREATE(Element_creator)(&(command_data->element_creator),
-						command_data->root_region, initial_region_path,
-						command_data->element_selection, command_data->node_selection,
-						command_data->user_interface))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						return_code = 0;
-					}
-					DEALLOCATE(initial_region_path);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_element_creator.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_element_creator.  Missing state");
-		return_code=0;
-	}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
 	USE_PARAMETER(state);
 	USE_PARAMETER(command_data_void);
 	display_message(INFORMATION_MESSAGE,"\ncommand has been removed from the cmgui-wx.\n"
 		"please use gfx modify window (NAME) node ? for further instruction for creating elements\n"
 		"or directly create new elements using the node tool");
 		return_code=0;
-#endif /*defined (WX_USER_INTERFACE) */
 	LEAVE;
 	return (return_code);
 } /* gfx_create_element_creator */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 
 struct Interpreter_command_element_selection_callback_data
 {
@@ -1182,106 +1046,6 @@ Executes a GFX CREATE GROUP command.
 
 	return (return_code);
 } /* gfx_create_group */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_create_environment_map(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 2 October 1996
-
-DESCRIPTION :
-Executes a GFX CREATE ENVIRONMENT_MAP command.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Environment_map *environment_map;
-	struct Modify_environment_map_data modify_environment_map_data;
-
-	ENTER(gfx_create_environment_map);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (!FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,name)(
-						current_token,command_data->environment_map_manager))
-					{
-						if (environment_map=CREATE(Environment_map)(current_token))
-						{
-							shift_Parse_state(state,1);
-							if (state->current_token)
-							{
-								modify_environment_map_data.graphical_material_manager=
-									Material_package_get_material_manager(command_data->material_package);
-								modify_environment_map_data.environment_map_manager=
-									command_data->environment_map_manager;
-								return_code=modify_Environment_map(state,
-									(void *)environment_map,
-									(void *)(&modify_environment_map_data));
-							}
-							else
-							{
-								return_code=1;
-							}
-							ADD_OBJECT_TO_MANAGER(Environment_map)(environment_map,
-								command_data->environment_map_manager);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_create_environment_map.  Error creating environment_map");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Environment map already exists: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					modify_environment_map_data.graphical_material_manager=
-						Material_package_get_material_manager(command_data->material_package);
-					modify_environment_map_data.environment_map_manager=
-						command_data->environment_map_manager;
-					return_code=modify_Environment_map(state,
-						(void *)NULL,(void *)(&modify_environment_map_data));
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_environment_map.  Missing command_data");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing environment_map_name");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_environment_map.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_environment_map */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int gfx_create_flow_particles(struct Parse_state *state,
 	void *create_more,void *command_data_void)
@@ -1851,7 +1615,7 @@ static int gfx_create_gauss_points(struct Parse_state *state,
 	return (return_code);
 }
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -1916,137 +1680,7 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_material_editor */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
-
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_create_grid_field_calculator(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Executes a GFX CREATE GRID_FIELD_CALCULATOR command.
-Invokes the grid field calculator dialog.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_create_grid_field_calculator);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-		{
-			if (NULL != (current_token = state->current_token))
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-					display_parse_state_location(state);
-					return_code=0;
-				}
-			}
-			else
-			{
-				return_code=bring_up_grid_field_calculator(
-					&(command_data->grid_field_calculator_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					command_data->computed_field_package,
-					&(command_data->curve_editor_dialog),
-					command_data->root_region,
-					command_data->curve_manager,
-					command_data->user_interface);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_grid_field_calculator.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_grid_field_calculator.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_grid_field_calculator */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_create_input_module_control(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 November 2001
-
-DESCRIPTION :
-Executes a GFX CREATE IM_CONTROL command.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_create_input_module_control);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-			{
-#if defined (EXT_INPUT)
-				return_code=bring_up_input_module_dialog(
-					&(command_data->input_module_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					Material_package_get_default_material(command_data->material_package),
-					Material_package_get_material_manager(command_data->material_package),command_data->default_scene,
-					command_data->scene_manager, command_data->user_interface);
-					/*???DB.  commmand_data should not be used outside of command.c */
-#else /* defined (EXT_INPUT) */
-				display_message(ERROR_MESSAGE,"External input module was not linked");
-#endif /* defined (EXT_INPUT) */
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_input_module_control.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_input_module_control.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_input_module_control */
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE)*/
 
 static int gfx_create_light(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -2243,7 +1877,7 @@ Executes a GFX CREATE LMODEL command.
 	return (return_code);
 } /* gfx_create_light_model */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_node_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2333,9 +1967,9 @@ Executes a GFX CREATE NODE_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_node_viewer */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_data_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2425,9 +2059,9 @@ Executes a GFX CREATE DATA_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_data_viewer */
-#endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 
-#if defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_element_point_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2519,7 +2153,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_element_point_viewer */
-#endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 /***************************************************************************//**
  * Executes a GFX CREATE REGION command.
@@ -4518,7 +4152,7 @@ Executes a GFX CREATE TEXTURE command.
 	return (return_code);
 } /*gfx_create_texture */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_create_time_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4557,20 +4191,12 @@ editor at a time.  This implementation may be changed later.
 		{
 			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				return_code=bring_up_time_editor_dialog(
-					&(command_data->time_editor_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					command_data->default_time_keeper, 
-					command_data->user_interface);
-#elif defined (WX_USER_INTERFACE)
 				if (command_data->graphics_window_manager)
 				{
 					 return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
 							Graphics_window_bring_up_time_editor_wx,(void *)NULL,
 							command_data->graphics_window_manager);
 				}
-#endif /* switch (USER_INTERFACE) */
 			}
 			else
 			{
@@ -4590,73 +4216,7 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_time_editor */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_create_curve_editor(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 8 November 1999
-
-DESCRIPTION :
-Executes a GFX CREATE CURVE_EDITOR command.
-If there is a variable editor dialog in existence, then bring it to the front,
-otherwise it creates a new one.  Assumes we will only ever want one variable
-editor at a time.  This implementation may be changed later.
-==============================================================================*/
-{
-	const char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(gfx_create_curve_editor);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-			{
-				return_code=bring_up_curve_editor_dialog(
-					&(command_data->curve_editor_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					command_data->curve_manager,
-					(struct Curve *)NULL,
-					command_data->user_interface);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_curve_editor.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_create_curve_editor.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_curve_editor */
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 static int gfx_create_window(struct Parse_state *state,
@@ -4931,7 +4491,7 @@ Executes a GFX CREATE WINDOW command.
 
 	return (return_code);
 } /* gfx_create_window */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)  || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE)  || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 #if defined (HAPTIC)
 static int gfx_create_haptic(struct Parse_state *state,
@@ -5030,23 +4590,6 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 #if defined (LINK_CMISS)
 /*???DB.  Not sure if this is quite the right place */
 	double wormhole_timeout;
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNwormholeTimeoutSeconds "wormholeTimeoutSeconds"
-#define XmCWormholeTimeoutSeconds "WormholeTimeoutSeconds"
-	static XtResource resources[]=
-	{
-		{
-			XmNwormholeTimeoutSeconds,
-			XmCWormholeTimeoutSeconds,
-			XmRInt,
-			sizeof(int),
-			0,
-			XmRString,
-			"300"
-		}
-	};
-	int wormhole_timeout_seconds;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (LINK_CMISS) */
 
 	ENTER(gfx_create_cmiss);
@@ -5099,15 +4642,6 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			asynchronous_commands=0;
 #if defined (LINK_CMISS)
 			wormhole_timeout=300;
-#if defined (MOTIF_USER_INTERFACE)
-			if (command_data->user_interface)
-			{
-				XtVaGetApplicationResources(User_interface_get_application_shell(
-					command_data->user_interface),&wormhole_timeout_seconds,resources,
-					XtNumber(resources),NULL);
-				wormhole_timeout=(double)wormhole_timeout_seconds;
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (LINK_CMISS) */
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table,"asynchronous_commands",
@@ -5907,32 +5441,24 @@ Executes a GFX CREATE command.
 				option_table=CREATE(Option_table)();
 				Option_table_add_entry(option_table,"axes",NULL,
 					command_data_void,gfx_create_axes);
-#if defined (MOTIF_USER_INTERFACE)
-				Option_table_add_entry(option_table,"cmiss_connection",NULL,
-					command_data_void,gfx_create_cmiss);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				Option_table_add_entry(option_table,"colour_bar",NULL,
 					command_data_void,gfx_create_colour_bar);
-#if defined (MOTIF_USER_INTERFACE)
-				Option_table_add_entry(option_table,"curve_editor",NULL,
-					command_data_void,gfx_create_curve_editor);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"data_viewer",NULL,
 					command_data_void,gfx_create_data_viewer);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "dgroup", /*use_object_type*/(void *)2,
 					(void *)command_data->root_region, gfx_create_group);
 				Option_table_add_entry(option_table, "egroup", /*use_object_type*/(void *)0,
 					(void *)command_data->root_region, gfx_create_group);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"element_creator",NULL,
 					command_data_void,gfx_create_element_creator);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE)
+#endif /* defined (WX_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"element_point_viewer",NULL,
 					command_data_void,gfx_create_element_point_viewer);
-#endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.root_region=
 					command_data->root_region;
@@ -5957,45 +5483,18 @@ Executes a GFX CREATE command.
 					command_data->default_light_model;
 				create_emoter_slider_data.emoter_dialog_address=
 					&(command_data->emoter_slider_dialog);
-#if defined (MOTIF_USER_INTERFACE)
-				if (command_data->user_interface)
-				{
-					create_emoter_slider_data.parent=
-						User_interface_get_application_shell(command_data->user_interface);
-				}
-				else
-				{
-					create_emoter_slider_data.parent=(Widget)NULL;
-				}
-				create_emoter_slider_data.curve_editor_dialog_address=
-					&(command_data->curve_editor_dialog);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				create_emoter_slider_data.user_interface=
 					command_data->user_interface;
 				Option_table_add_entry(option_table,"emoter",NULL,
 					(void *)&create_emoter_slider_data,gfx_create_emoter);
-#if defined (MOTIF_USER_INTERFACE)
-				Option_table_add_entry(option_table,"environment_map",NULL,
-					command_data_void,gfx_create_environment_map);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "flow_particles",
 					/*create_more*/(void *)0, command_data_void, gfx_create_flow_particles);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"graphical_material_editor",NULL,
 					command_data_void,gfx_create_graphical_material_editor);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "gauss_points", NULL,
 					(void *)command_data->root_region, gfx_create_gauss_points);
-#if defined (MOTIF_USER_INTERFACE)
-				Option_table_add_entry(option_table,"grid_field_calculator",NULL,
-					command_data_void,gfx_create_grid_field_calculator);
-#if defined (HAPTIC)
-				Option_table_add_entry(option_table,"haptic",NULL,
-					command_data_void,gfx_create_haptic);
-#endif /* defined (HAPTIC) */
-				Option_table_add_entry(option_table,"im_control",NULL,
-					command_data_void,gfx_create_input_module_control);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				Option_table_add_entry(option_table,"light",NULL,
 					command_data_void,gfx_create_light);
 				Option_table_add_entry(option_table,"lmodel",NULL,
@@ -6006,10 +5505,10 @@ Executes a GFX CREATE command.
 					/*create_more*/(void *)1, command_data_void, gfx_create_flow_particles);
 				Option_table_add_entry(option_table, "ngroup", /*use_object_type*/(void *)1,
 					(void *)command_data->root_region, gfx_create_group);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "region", NULL,
 					(void *)command_data->root_region, gfx_create_region);
 				Option_table_add_entry(option_table, "snake", NULL,
@@ -6018,10 +5517,10 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_spectrum);
 				Option_table_add_entry(option_table,"texture",NULL, 
 					command_data_void,gfx_create_texture); 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
@@ -6258,61 +5757,6 @@ Executes a GFX DEFINE command.
 
 	return (return_code);
 } /* execute_command_gfx_define */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_destroy_cmiss(struct Parse_state *state,
-	void *dummy_to_be_modified,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Executes a GFX DESTROY CMISS_CONNECTION command.
-==============================================================================*/
-{
-#if defined (LINK_CMISS)
-	const char *current_token;
-#endif /* defined (LINK_CMISS) */
-	int return_code;
-
-	ENTER(gfx_destroy_cmiss);
-	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	if (state)
-	{
-#if defined (LINK_CMISS)
-		if (CMISS)
-		{
-			return_code=DESTROY(CMISS_connection)(&CMISS);
-		}
-		else
-		{
-			if (!(current_token=state->current_token)||
-				(strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-			{
-				display_message(ERROR_MESSAGE,
-					"gfx_destroy_cmiss.  No CMISS connection");
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-#else /* defined (LINK_CMISS) */
-			display_message(ERROR_MESSAGE,"gfx_destroy_cmiss.  Define LINK_CMISS");
-#endif /* defined (LINK_CMISS) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_destroy_cmiss.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_destroy_cmiss */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int gfx_destroy_region(struct Parse_state *state,
 	void *dummy_to_be_modified, void *root_region_void)
@@ -7130,79 +6574,6 @@ Executes a GFX DESTROY VTEXTURES command.
 	return (return_code);
 } /* gfx_destroy_vtextures */
 
-#if defined (MOTIF_USER_INTERFACE)
-static int gfx_destroy_Graphics_window(struct Parse_state *state,
-	void *dummy_to_be_modified, void *graphics_window_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 18 September 2001
-
-DESCRIPTION :
-Executes a GFX DESTROY WINDOW command.
-==============================================================================*/
-{
-	const char *current_token;
-	struct Graphics_window *graphics_window;
-	int return_code;
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-
-	ENTER(gfx_destroy_Graphics_window);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (graphics_window_manager =
-		(struct MANAGER(Graphics_window) *)graphics_window_manager_void))
-	{
-		if (NULL != (current_token = state->current_token))
-		{
-			if (strcmp(PARSER_HELP_STRING, current_token) &&
-				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
-			{
-				if (graphics_window =
-					FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window, name)(
-						current_token, graphics_window_manager))
-				{
-					if (REMOVE_OBJECT_FROM_MANAGER(Graphics_window)(graphics_window,
-						graphics_window_manager))
-					{
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Could not remove graphics window %s from manager",
-							current_token);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Unknown graphics window: %s", current_token);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " GRAPHICS_WINDOW_NAME");
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Missing graphics window name");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_destroy_Graphics_window.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_destroy_Graphics_window */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 static int execute_command_gfx_destroy(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
@@ -7225,11 +6596,6 @@ Executes a GFX DESTROY command.
 			if (state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-#if defined (MOTIF_USER_INTERFACE)
-				/* cmiss_connection */
-				Option_table_add_entry(option_table, "cmiss_connection", NULL,
-					command_data_void, gfx_destroy_cmiss);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				/* curve */
 				Option_table_add_entry(option_table, "curve", NULL,
 					command_data->curve_manager, gfx_destroy_Curve);
@@ -7281,11 +6647,6 @@ Executes a GFX DESTROY command.
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
-#if defined (MOTIF_USER_INTERFACE)
-				/* window */
-				Option_table_add_entry(option_table, "window", NULL,
-					command_data->graphics_window_manager, gfx_destroy_Graphics_window);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -7593,7 +6954,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 	return return_code;
 }
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_edit_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7657,23 +7018,6 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 			}
 			else
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				if ((!command_data->user_interface) ||
-					(!CREATE(Region_tree_viewer)(
-						&(command_data->region_tree_viewer),
-						User_interface_get_application_shell(command_data->user_interface),
-						command_data->scene_manager,
-						scene,
-						command_data->root_region,
-						Material_package_get_material_manager(command_data->material_package),
-						Material_package_get_default_material(command_data->material_package),
-						command_data->default_font,
-						command_data->glyph_manager,
-						command_data->spectrum_manager,
-						command_data->default_spectrum,
-						command_data->volume_texture_manager,
-						command_data->user_interface)))
-#elif defined (WX_USER_INTERFACE)
 				if ((!command_data->user_interface) ||
 					(!CREATE(Region_tree_viewer)(	&(command_data->region_tree_viewer),
 						command_data->graphics_module,
@@ -7689,7 +7033,6 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 						command_data->volume_texture_manager,
 						command_data->graphics_font_package,
 						command_data->user_interface)))
-#endif /* defined (SWITCH_USER_INTERFACE) */
 				{
 					display_message(ERROR_MESSAGE, "gfx_edit_scene.  "
 						"Could not create scene editor");
@@ -7712,9 +7055,9 @@ Executes a GFX EDIT_SCENE command.  Brings up the Region_tree_viewer.
 
 	return (return_code);
 } /* gfx_edit_scene */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_edit_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7744,9 +7087,6 @@ Invokes the graphical spectrum group editor.
 			Cmiss_region *spectrum_region = Cmiss_region_create_region(command_data->root_region);
 			return_code = bring_up_spectrum_editor_dialog(
 				&(command_data->spectrum_editor_dialog),
-#if defined (MOTIF_USER_INTERFACE)
-				User_interface_get_application_shell(command_data->user_interface),
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				command_data->spectrum_manager, spectrum,
 				command_data->default_font,
 				command_data->graphics_buffer_package, command_data->user_interface,
@@ -7771,7 +7111,7 @@ Invokes the graphical spectrum group editor.
 
 	return (return_code);
 } /* gfx_edit_spectrum */
-#endif /* defined (MOTIF_USER_INTERFACE)  || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 static int execute_command_gfx_edit(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -7795,14 +7135,14 @@ Executes a GFX EDIT command.
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "graphics_object", NULL,
 				command_data_void, gfx_edit_graphics_object);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data_void, gfx_edit_scene);
-#endif /* defined (MOTIF_USER_INTERFACE) || if defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#endif /* if defined (WX_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "spectrum", NULL,
 				command_data_void, gfx_edit_spectrum);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -7823,7 +7163,7 @@ Executes a GFX EDIT command.
 	return (return_code);
 } /* execute_command_gfx_edit */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7833,15 +7173,6 @@ DESCRIPTION :
 Executes a GFX ELEMENT_CREATOR command.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	char *region_path;
-	int create_enabled, element_dimension;
-	struct Cmiss_command_data *command_data;
-	struct Element_creator *element_creator;
-	struct FE_field *coordinate_field;
-	struct Option_table *option_table;
-	struct Set_FE_field_conditional_FE_region_data set_coordinate_field_data;
-#endif /*defined (MOTIF_USER_INTERFACE)*/
 	int return_code;
 	ENTER(execute_command_gfx_element_creator);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -7852,98 +7183,12 @@ Executes a GFX ELEMENT_CREATOR command.
 		"\nElement creator has been moved to node tool in the graphics window in cmgui-wx.\n"
 		"Please use gfx node_tool command instead.\n");
 	return_code = 1;
-#elif defined (MOTIF_USER_INTERFACE)
-	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-	{
-		/* initialize defaults */
-		region_path = (char *)NULL;
-		if (element_creator=command_data->element_creator)
-		{
-			create_enabled = Element_creator_get_create_enabled(element_creator);
-			Element_creator_get_region_path(element_creator, &region_path);
-			element_dimension =
-				Element_creator_get_element_dimension(element_creator);
-			coordinate_field = Element_creator_get_coordinate_field(element_creator);
-		}
-		else
-		{
-			create_enabled = 0;
-			region_path = Cmiss_region_get_root_region_path();
-			element_dimension = 2;
-			coordinate_field = (struct FE_field *)NULL;
-		}
-		if (coordinate_field)
-		{
-			ACCESS(FE_field)(coordinate_field);
-		}
-
-		option_table=CREATE(Option_table)();
-		/* coordinate_field */
-		set_coordinate_field_data.fe_region =
-			Cmiss_region_get_FE_region(command_data->root_region);
-		set_coordinate_field_data.conditional_function=FE_field_is_coordinate_field;
-		set_coordinate_field_data.user_data=(void *)NULL;
-		Option_table_add_entry(option_table, "coordinate_field",
-			&coordinate_field, &set_coordinate_field_data,
-			set_FE_field_conditional_FE_region);
-		/* create/no_create */
-		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
-		/* dimension */
-		Option_table_add_entry(option_table,"dimension",
-			&element_dimension,NULL,set_int_non_negative);
-		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
-		if (0 != (return_code = Option_table_multi_parse(option_table, state)))
-		{
-			if (element_creator)
-			{
-				if (region_path)
-				{
-					Element_creator_set_region_path(element_creator, region_path);
-					Element_creator_set_coordinate_field(element_creator,
-						coordinate_field);
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,
-						"Please specify a region for the element_creator");
-					return_code = 0;
-				}
-				Element_creator_set_create_enabled(element_creator, create_enabled);
-				Element_creator_set_element_dimension(element_creator,
-					element_dimension);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Must create element_creator before modifying it");
-				return_code = 0;
-			}
-		} /* parse error,help */
-		DESTROY(Option_table)(&option_table);
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
-		if (coordinate_field)
-		{
-			DEACCESS(FE_field)(&coordinate_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_element_creator.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 #endif /*defined (WX_USER_INTERFACE) */
 	return (return_code);
 } /* execute_command_gfx_element_creator */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_point_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7997,10 +7242,6 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 		{
 			if (element_point_tool)
 			{
-				if (dialog_string == dialog_strings[1])
-				{
-					Element_point_tool_pop_down_dialog(element_point_tool);
-				}
 				Element_point_tool_set_command_field(element_point_tool,command_field);
 				if (dialog_string == dialog_strings[0])
 				{
@@ -8040,9 +7281,9 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_point_tool */
-#endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -8113,10 +7354,6 @@ Executes a GFX ELEMENT_TOOL command.
 		{
 			if (element_tool)
 			{
-				if (dialog_string == dialog_strings[1])
-				{
-					Element_tool_pop_down_dialog(element_tool);
-				}
 				Element_tool_set_select_elements_enabled(element_tool,
 					select_elements_enabled);
 				Element_tool_set_select_faces_enabled(element_tool,
@@ -8158,7 +7395,7 @@ Executes a GFX ELEMENT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_tool */
-#endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */ 
+#endif /* defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 static int gfx_export_alias(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -13273,386 +12510,7 @@ Executes a GFX MODIFY command.
 	return (return_code);
 } /* execute_command_gfx_modify */
 
-#if defined (SGI_MOVIE_FILE)
-#if defined (MOTIF_USER_INTERFACE)
-int gfx_movie(struct Parse_state *state,void *dummy_to_be_modified,
-	void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 2 February 2000
-
-DESCRIPTION :
-???RC Movie should ACCESS the graphics window so that it cannot be closed while
-movie is being created.
-==============================================================================*/
-{
-	static char *default_movie_name="default";
-	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
-		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
-		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,
-		rle24_sgi_movie3,skip_frames,sgi_movie3,stop;
-	double speed;
-	int height, width;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Movie_graphics *movie;
-	struct Option_table *option_table;
-	struct X3d_movie *x3d_movie;
-	struct Graphics_window *graphics_window;
-
-	ENTER(gfx_movie);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
-		{
-			/* initialise defaults */
-			if (ALLOCATE(movie_name,char,strlen(default_movie_name)+1))
-			{
-				strcpy(movie_name,default_movie_name);
-			}
-			else
-			{
-				movie_name=(char *)NULL;
-			}
-			add_frame = 0;
-			avi = 0;
-			cinepak_avi = 0;
-			cinepak_quicktime = 0;
-			create_file_name=(char *)NULL;
-			end = 0;
-			every_frame = 0;
-			force_onscreen = 0;
-			height = 0;
-			indeo_avi = 0;
-			indeo_quicktime = 0;
-			loop = 0;
-			mvc1_sgi_movie3 = 0;
-			once = 0;
-			open_file_name=(char *)NULL;
-			play = 0;
-			quicktime = 0;
-			rle24_sgi_movie3 = 0;
-			sgi_movie3 = 0;
-			skip_frames = 0;
-			speed = 0;
-			stop = 0;
-			width = 0;
-			graphics_window=(struct Graphics_window *)NULL;
-
-			option_table=CREATE(Option_table)();
-			/* add_frame */
-			Option_table_add_entry(option_table,"add_frame",&add_frame,
-				NULL,set_char_flag);
-			/* avi */
-			Option_table_add_entry(option_table,"avi",&avi,
-				NULL,set_char_flag);
-			/* cinepak_avi */
-			Option_table_add_entry(option_table,"cinepak_avi",&cinepak_avi,
-				NULL,set_char_flag);
-			/* cinepak_quicktime */
-			Option_table_add_entry(option_table,"cinepak_quicktime",
-				&cinepak_quicktime,NULL,set_char_flag);
-			/* create */
-			Option_table_add_entry(option_table,"create",&create_file_name,
-				(void *)1,set_name);
-			/* end */
-			Option_table_add_entry(option_table,"end",&end,
-				NULL,set_char_flag);
-			/* every_frame */
-			Option_table_add_entry(option_table,"every_frame",&every_frame,
-				NULL,set_char_flag);
-			/* force_onscreen */
-			Option_table_add_entry(option_table,"force_onscreen",&force_onscreen,
-				NULL,set_char_flag);
-			/* height */
-			Option_table_add_entry(option_table,"height",&height,
-				NULL,set_int_non_negative);
-			/* indeo_avi */
-			Option_table_add_entry(option_table,"indeo_avi",&indeo_avi,
-				NULL,set_char_flag);
-			/* indeo_quicktime */
-			Option_table_add_entry(option_table,"indeo_quicktime",&indeo_quicktime,
-				NULL,set_char_flag);
-			/* loop */
-			Option_table_add_entry(option_table,"loop",&loop,
-				NULL,set_char_flag);
-			/* mvc1_sgi_movie3 */
-			Option_table_add_entry(option_table,"mvc1_sgi_movie3",&mvc1_sgi_movie3,
-				NULL,set_char_flag);
-			/* name */
-			Option_table_add_entry(option_table,"name",&movie_name,
-				(void *)1,set_name);
-			/* once */
-			Option_table_add_entry(option_table,"once",&once,
-				NULL,set_char_flag);
-			/* open */
-			Option_table_add_entry(option_table,"open",&open_file_name,
-				(void *)1,set_name);
-			/* play */
-			Option_table_add_entry(option_table,"play",&play,
-				NULL,set_char_flag);
-			/* quicktime */
-			Option_table_add_entry(option_table,"quicktime",&quicktime,
-				NULL,set_char_flag);
-			/* rle24_sgi_movie3 */
-			Option_table_add_entry(option_table,"rle24_sgi_movie3",&rle24_sgi_movie3,
-				NULL,set_char_flag);
-			/* sgi_movie3 */
-			Option_table_add_entry(option_table,"sgi_movie3",&sgi_movie3,
-				NULL,set_char_flag);
-			/* skip_frames */
-			Option_table_add_entry(option_table,"skip_frames",&skip_frames,
-				NULL,set_char_flag);
-			/* speed */
-			Option_table_add_entry(option_table,"speed",&speed,
-				NULL,set_double);
-			/* stop */
-			Option_table_add_entry(option_table,"stop",&stop,
-				NULL,set_char_flag);
-			/* width */
-			Option_table_add_entry(option_table,"width",&width,
-				NULL,set_int_non_negative);
-			/* window */
-			Option_table_add_entry(option_table,"window",&graphics_window,
-				command_data->graphics_window_manager,set_Graphics_window);
-			return_code=Option_table_multi_parse(option_table,state);
-			/* no errors,not asking for help */
-			if (return_code)
-			{
-				movie=(struct Movie_graphics *)NULL;
-				if (movie_name)
-				{
-					movie=FIND_BY_IDENTIFIER_IN_MANAGER(Movie_graphics,name)(
-						movie_name,command_data->movie_graphics_manager);
-				}
-				if ((avi + cinepak_avi + cinepak_quicktime + indeo_quicktime + indeo_avi + 
-					mvc1_sgi_movie3 + quicktime + rle24_sgi_movie3 + sgi_movie3) > 1)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_movie.  Can only specify one movie format, avi,  cinepak_quicktime, "
-						"indeo_quicktime, quicktime, rle24_sgi_movie3 or sgi_movie3");
-					return_code = 0;
-				}
-				if (open_file_name && (avi + cinepak_avi + cinepak_quicktime + indeo_avi + 
-					indeo_quicktime + mvc1_sgi_movie3 + quicktime + rle24_sgi_movie3 + sgi_movie3))
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_movie.  Cannot specify a format"
-						" (avi, cinepak_quicktime, indeo_quicktime, quicktime or sgi_movie3) "
-						"when opening an existing movie (open)");
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				if (movie)
-				{
-					if (open_file_name || create_file_name)
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_movie.  Movie %s is already open and must be ended before "
-							"another opened or create",movie_name);
-					}
-				}
-				else
-				{
-					if (movie_name)
-					{
-						if (open_file_name)
-						{
-							if (create_file_name)
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_movie.  Specify only one of open and create");
-							}
-							else
-							{
-								if (!(movie=CREATE(Movie_graphics)(movie_name,open_file_name,
-									X3D_MOVIE_OPEN_FILE)))
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx_movie.  Could not create movie.");
-								}
-							}
-						}
-						else
-						{
-							if (create_file_name)
-							{
-								if(avi)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_AVI);
-								}
-								else if(cinepak_avi)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_CINEPAK_AVI);
-								}
-								else if(cinepak_quicktime)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_CINEPAK_QUICKTIME);
-								}
-								else if(indeo_avi)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_INDEO_AVI);
-								}
-								else if(indeo_quicktime)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_INDEO_QUICKTIME);
-								}
-								else if(quicktime)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME);
-								}
-								else if(rle24_sgi_movie3)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3);
-								}
-								else if(mvc1_sgi_movie3)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_MVC1_SGI_MOVIE3);
-								}
-								else
-								{
-									/* Default to this if no format is given */
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_UNCOMPRESSED_SGI_MOVIE3);
-								}
-								if (!movie)
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx_movie.  Could not create movie.");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_movie.  Need to specify 'open' or 'create' FILENAME");
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_movie.  No name given for new movie");
-					}
-					if (movie)
-					{
-						if (!ADD_OBJECT_TO_MANAGER(Movie_graphics)(movie,
-							command_data->movie_graphics_manager))
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_movie.  Could not add movie to manager");
-							DESTROY(Movie_graphics)(&movie);
-							movie = (struct Movie_graphics *)NULL;
-						}
-					}
-					if (movie)
-					{
-						/* attach the time object of the new movie to the default time
-							keeper */
-						Time_keeper_add_time_object(command_data->default_time_keeper,
-							X3d_movie_get_time_object(Movie_graphics_get_X3d_movie(movie)));
-					}
-				}
-				if (movie && (x3d_movie = Movie_graphics_get_X3d_movie(movie)))
-				{
-					if (graphics_window)
-					{
-						Movie_graphics_set_Graphics_window(movie, graphics_window);
-					}
-					if ( add_frame )
-					{
-						Movie_graphics_add_frame_to_movie(movie, width, height, force_onscreen);
-					}
-					if ( every_frame )
-					{
-						X3d_movie_set_play_every_frame(x3d_movie, 1);
-					}
-					if ( loop )
-					{
-						X3d_movie_set_play_loop(x3d_movie, 1);
-					}
-					if ( once )
-					{
-						X3d_movie_set_play_loop(x3d_movie, 0);
-					}
-					if ( play )
-					{
-						X3d_movie_play(x3d_movie);
-					}
-					if ( skip_frames )
-					{
-						X3d_movie_set_play_every_frame(x3d_movie, 0);
-					}
-					if ( speed != 0.0 )
-					{
-						X3d_movie_set_play_speed(x3d_movie, speed);
-					}
-					if ( stop )
-					{
-						X3d_movie_stop(x3d_movie);
-					}
-					if ( end )
-					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(Movie_graphics)(movie,
-							command_data->movie_graphics_manager);
-						movie=(struct Movie_graphics *)NULL;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_movie.  Invalid movie object");
-					return_code=0;
-				}
-			}
-			DESTROY(Option_table)(&option_table);
-			if (graphics_window)
-			{
-				DEACCESS(Graphics_window)(&graphics_window);
-			}
-			if (create_file_name)
-			{
-				DEALLOCATE(create_file_name);
-			}
-			if (open_file_name)
-			{
-				DEALLOCATE(open_file_name);
-			}
-			if (movie_name)
-			{
-				DEALLOCATE(movie_name);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_movie.  Missing command data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_movie.  Missing state");
-		return_code=0;
-	}
-
-	LEAVE;
-
-	return (return_code);
-} /* gfx_movie */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#endif /* defined (SGI_MOVIE_FILE) */
-
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag, void *command_data_void)
 /*******************************************************************************
@@ -13704,10 +12562,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined
+#endif /* defined (GTK_USER_INTERFACE) || defined
 			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined(WX_USER_INTERFACE */
 
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_print(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -13869,7 +12727,7 @@ Executes a GFX PRINT command.
 
 	return (return_code);
 } /* execute_command_gfx_print */
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif
 
 static int gfx_read_Curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -15753,7 +14611,7 @@ static int gfx_set_region_order(struct Parse_state *state,
 	return (return_code);
 }
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -15821,7 +14679,7 @@ Sets the time from the command line.
 
 	return (return_code);
 } /* gfx_set_time */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 
 static int set_transformation_matrix(struct Parse_state *state,
 	void *transformation_matrix_void,void *dummy_user_data)
@@ -16175,10 +15033,6 @@ Executes a GFX SET command.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
-#if defined (MOTIF_USER_INTERFACE)
-			Option_table_add_entry(option_table, "line_width", &global_line_width,
-				NULL, set_float_positive);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "node_value", NULL,
 				command_data_void, gfx_set_FE_nodal_value);
          Option_table_add_entry(option_table, "order", NULL,
@@ -16187,10 +15041,10 @@ Executes a GFX SET command.
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_set_transformation);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "time", NULL,
 				command_data_void, gfx_set_time);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 			Option_table_add_entry(option_table, "visibility", NULL,
 				command_data_void, gfx_set_visibility);
 			return_code = Option_table_parse(option_table, state);
@@ -16555,7 +15409,7 @@ Executes a GFX TRANSFORM_TOOL command.
 	return (return_code);
 } /* execute_command_gfx_transform_tool */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 static int execute_command_gfx_update(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -16620,7 +15474,7 @@ Executes a GFX UPDATE command.
 
 	return (return_code);
 } /* execute_command_gfx_update */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 static int gfx_write_All(struct Parse_state *state,
 	 void *dummy_to_be_modified,void *command_data_void)
@@ -18080,10 +16934,10 @@ Executes a GFX command.
 				command_data_void, gfx_convert);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "data_tool", /*data_tool*/(void *)1,
 			   command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
 			Option_table_add_entry(option_table, "define", NULL,
 				command_data_void, execute_command_gfx_define);
 			Option_table_add_entry(option_table, "destroy", NULL,
@@ -18092,19 +16946,18 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_draw);
 			Option_table_add_entry(option_table, "edit", NULL,
 				command_data_void, execute_command_gfx_edit);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)  || defined (WX_USER_INTERFACE)
+#endif /* defined (WX_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_point_tool", NULL,
 				command_data_void, execute_command_gfx_element_point_tool);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined
-					(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)  || defined (WX_USER_INTERFACE)*/
-#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#endif /* defined (GTK_USER_INTERFACE) || defined	(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)  || defined (WX_USER_INTERFACE)*/
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "evaluate", NULL,
 				command_data_void, gfx_evaluate);
 			Option_table_add_entry(option_table, "export", NULL,
@@ -18127,15 +16980,14 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "movie", NULL,
 				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined
-					(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#endif /* defined (GTK_USER_INTERFACE) || defined	(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "print", NULL,
 				command_data_void, execute_command_gfx_print);
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif
 			Option_table_add_entry(option_table, "read", NULL,
 				command_data_void, execute_command_gfx_read);
 			Option_table_add_entry(option_table, "select", NULL,
@@ -18152,10 +17004,10 @@ Executes a GFX command.
 				command_data_void, gfx_transform_tool);
 			Option_table_add_entry(option_table, "unselect", NULL,
 				command_data_void, execute_command_gfx_unselect);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "update", NULL,
 				command_data_void, execute_command_gfx_update);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "write", NULL,
 				command_data_void, execute_command_gfx_write);
 			return_code = Option_table_parse(option_table, state);
@@ -18234,9 +17086,6 @@ Executes a cm (back end) command.
 					command_data->element_group_manager,command_data->node_group_manager,
 					&(command_data->prompt_window),command_data->user_interface))
 				{
-#if defined (MOTIF_USER_INTERFACE)
-					write_socket(state->command_string,CONN_ID1);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 					return_code=1;
 				}
 				else
@@ -20006,18 +18855,10 @@ Executes a HELP command.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-#if !defined (HYPERTEXT_HELP) && !defined (NETSCAPE_HELP)
-#if defined (MOTIF_USER_INTERFACE)
-					do_help(current_token);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#else
+#if defined (HYPERTEXT_HELP) || defined (NETSCAPE_HELP)
 					strcpy(global_temp_string,command_data->help_url);
 					strcat(global_temp_string,current_token);
 					strcat(global_temp_string,"/");
-#if defined (MOTIF_USER_INTERFACE)
-					do_help(global_temp_string,command_data->examples_directory,
-						command_data->execute_command,command_data->user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif
 				}
 				else
@@ -20025,19 +18866,6 @@ Executes a HELP command.
 					display_message(INFORMATION_MESSAGE," WORD");
 					return_code=1;
 				}
-			}
-			else
-			{
-#if !defined (HYPERTEXT_HELP) && !defined (NETSCAPE_HELP)
-#if defined (MOTIF_USER_INTERFACE)
-				do_help(" ",command_data->execute_command,command_data->user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#else
-#if defined (MOTIF_USER_INTERFACE)
-				do_help(command_data->help_url,command_data->examples_directory,
-					command_data->execute_command,command_data->user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#endif
 			}
 			return_code=1;
 		}
@@ -20218,10 +19046,10 @@ Executes a READ command.
 				open_comfile_data.set_command=command_data->set_command;
 				open_comfile_data.io_stream_package=command_data->io_stream_package;
 				open_comfile_data.file_extension=".com";
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				open_comfile_data.comfile_window_manager =
 					command_data->comfile_window_manager;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
+#endif /* defined (WX_USER_INTERFACE)*/
 /* #if defined (WX_USER_INTERFACE) */
 /* 				change_dir(state,NULL,command_data); */
 /* #endif  (WX_USER_INTERFACE)*/ 
@@ -20396,10 +19224,10 @@ Executes a OPEN command.
 				open_comfile_data.set_command=command_data->set_command;
 				open_comfile_data.io_stream_package=command_data->io_stream_package;
 				open_comfile_data.file_extension=".com";
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				open_comfile_data.comfile_window_manager =
 					command_data->comfile_window_manager;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 				open_comfile_data.user_interface=command_data->user_interface;
 				Option_table_add_entry(option_table, "comfile", NULL,
 					(void *)&open_comfile_data, open_comfile);
@@ -20850,11 +19678,11 @@ DESCRIPTION:
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
 						execute_command_cell);
 #endif /* defined (CELL) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 					/* command_window */
 					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
 						modify_Command_window);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
@@ -20955,22 +19783,22 @@ and then executes the returned strings
 	command_data = (struct Cmiss_command_data *)NULL;
 	if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			add_to_command_list(command_string,command_data->command_window);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		quit = 0;
 
 		interpret_command(command_data->interpreter, command_string, (void *)command_data, &quit, &execute_command, &return_code);
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			reset_command_box(command_data->command_window);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
 		if (quit)
 		{
@@ -21014,12 +19842,12 @@ Execute a <command_string>. If there is a command
 			{
 				/* add command to command history */
 				/*???RC put out processed tokens instead? */
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 				if (command_data->command_window)
 				{
 					add_to_command_list(command_string,command_data->command_window);
 				}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 				/* check for a "<" as one of the of the tokens */
 					/*???DB.  Include for backward compatability.  Remove ? */
 				token=state->tokens;
@@ -21046,11 +19874,11 @@ Execute a <command_string>. If there is a command
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
 						execute_command_cell);
 #endif /* defined (CELL) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 					/* command_window */
 					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
 						modify_Command_window);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
@@ -21104,12 +19932,12 @@ Execute a <command_string>. If there is a command
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			if (command_data->command_window)
 			{
 				reset_command_box(command_data->command_window);
 			}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 			destroy_Parse_state(&state);
 		}
 		else
@@ -21141,26 +19969,26 @@ for editing and entering. If there is no command_window, does nothing.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	struct Cmiss_command_data *command_data;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 	ENTER(cmiss_set_command);
 	if (command_string
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		&& (command_data=(struct Cmiss_command_data *)command_data_void)
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 			)
 	{
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			return_code=Command_window_set_command_string(
 				command_data->command_window,command_string);
 		}
-#else /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#else
 		USE_PARAMETER(command_data_void);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -21452,11 +20280,6 @@ Parses command line options from <state>.
 		(struct Cmgui_command_line_options *)cmgui_command_line_options_void))
 	{
 		option_table = CREATE(Option_table)();
-#if defined (MOTIF_USER_INTERFACE)
-		/* -background, handled by X11 */
-		Option_table_add_entry(option_table, "-background", NULL,
-			(void *)" X11_COLOUR_NAME", ignore_entry_and_next_token);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		/* -batch */
 		Option_table_add_entry(option_table, "-batch",
 			&(command_line_options->batch_mode_flag), NULL, set_char_flag);
@@ -21477,11 +20300,6 @@ Parses command line options from <state>.
 		/* -console */
 		Option_table_add_entry(option_table, "-console",
 			&(command_line_options->console_mode_flag), NULL, set_char_flag);
-#if defined (MOTIF_USER_INTERFACE) || defined (__WXMOTIF__) || defined (__WXX11__)
-		/* -display, handled by X11 */
-		Option_table_add_entry(option_table, "-display", NULL,
-			(void *)" X11_DISPLAY_NUMBER", ignore_entry_and_next_token);
-#endif /* defined (MOTIF_USER_INTERFACE)  */
 #if defined (GTK_USER_INTERFACE) || defined (__WXGTK__)
 		/* --display, support the gtk convention for this tool */
 		Option_table_add_entry(option_table, "--display", NULL,
@@ -21499,11 +20317,6 @@ Parses command line options from <state>.
 		Option_table_add_entry(option_table, "-execute",
 			&(command_line_options->execute_string),
 			(void *)" EXECUTE_STRING", set_string);
-#if defined (MOTIF_USER_INTERFACE)
-		/* -foreground, handled by X11 */
-		Option_table_add_entry(option_table, "-foreground", NULL,
-			(void *)" X11_COLOUR_NAME", ignore_entry_and_next_token);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		/* -help */
 		Option_table_add_entry(option_table, "-help",
 			&(command_line_options->write_help_flag), NULL, set_char_flag);
@@ -21615,29 +20428,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNbackgroundColour "backgroundColour"
-#define XmCBackgroundColour "BackgroundColour"
-#define XmNforegroundColour "foregroundColour"
-#define XmCForegroundColour "ForegroundColour"
-#define XmNexamplesDirectory "examplesDirectory"
-#define XmCExamplesDirectory "ExamplesDirectory"
-#define XmNstartupComfile "startupComfile"
-#define XmCStartupComfile "StartupComfile"
-#define XmNhelpDirectory "helpDirectory"
-#define XmCHelpDirectory "HelpDirectory"
-#define XmNhelpUrl "helpUrl"
-#define XmCHelpUrl "HelpUrl"
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-/*???DB.  Need a setup routine for file I/O ? */
-/*???DB.  Put in open_user_interface and always have ? */
-	static MrmRegisterArg callbacks[]=
-	{
-		{const_cast<char *>("open_file_and_read"),(XtPointer)open_file_and_read},
-		{const_cast<char *>("open_file_and_write"),(XtPointer)open_file_and_write}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_command_line_options command_line_options;
 	struct Cmiss_command_data *command_data;
 #if defined(USE_CMGUI_COMMAND_WINDOW)
@@ -21647,10 +20437,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct Option_table *option_table;
 	struct Parse_state *state;
 	User_settings user_settings;
-
-#if defined (MOTIF_USER_INTERFACE)
-	ENTER(main);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	ENTER(WinMain);
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -21666,31 +20452,16 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->event_dispatcher = (struct Event_dispatcher *)NULL;
 		command_data->user_interface= (struct User_interface *)NULL;
 		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
-#if defined (MOTIF_USER_INTERFACE)
-		command_data->curve_editor_dialog=(Widget)NULL;
-		command_data->data_grabber_dialog=(Widget)NULL;
-		command_data->sync_2d_3d_dialog=(Widget)NULL;
-		command_data->grid_field_calculator_dialog=(Widget)NULL;
-		command_data->input_module_dialog=(Widget)NULL;
-		command_data->data_viewer=(struct Node_viewer *)NULL;
-		command_data->node_viewer=(struct Node_viewer *)NULL;
-		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
-		command_data->prompt_window=(struct Prompt_window *)NULL;
-		command_data->projection_window=(struct Projection_window *)NULL;
-		/*???RC.  Temporary - should allow more than one */
-		command_data->time_editor_dialog = (struct Time_editor_dialog *)NULL;
-		/*???RC.  Temporary - should allow more than one */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		command_data->data_viewer=(struct Node_viewer *)NULL;
 		command_data->node_viewer=(struct Node_viewer *)NULL;
 		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		command_data->material_editor = (struct Material_editor *)NULL;
 		command_data->region_tree_viewer = (struct Region_tree_viewer *)NULL;
 		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /*defined (WX_USER_INTERFACE) */
 		command_data->command_console = (struct Console *)NULL;
 #if defined (UNEMAP)
 		command_data->unemap_command_data=(struct Unemap_command_data *)NULL;
@@ -21700,9 +20471,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (CELL) */
 		command_data->example_directory=(char *)NULL;
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		command_data->comfile_window_manager=(struct MANAGER(Comfile_window) *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE)  || (defined WX_USER_INTERFACE)*/
+#endif /* defined WX_USER_INTERFACE*/
 		command_data->default_light=(struct Light *)NULL;
 		command_data->light_manager=(struct MANAGER(Light) *)NULL;
 		command_data->default_light_model=(struct Light_model *)NULL;
@@ -21732,12 +20503,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->computed_field_package=(struct Computed_field_package *)NULL;
 		command_data->default_scene=(struct Scene *)NULL;
 		command_data->scene_manager=(struct MANAGER(Scene) *)NULL;
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		command_data->command_window=(struct Command_window *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-		command_data->movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		command_data->transform_tool=(struct Interactive_tool *)NULL;
 		command_data->node_tool=(struct Node_tool *)NULL;
 		command_data->element_tool=(struct Element_tool *)NULL;
@@ -21746,11 +20514,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (USE_OPENCASCADE) */
 		command_data->data_tool=(struct Node_tool *)NULL;
 		command_data->element_point_tool=(struct Element_point_tool *)NULL;
-#if defined (MOTIF_USER_INTERFACE)
-		command_data->select_tool=(struct Select_tool *)NULL;
-
-		command_data->element_creator=(struct Element_creator *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		command_data->examples_directory=(char *)NULL;
 		command_data->example_comfile=(char *)NULL;
 		command_data->example_requirements=(char *)NULL;
@@ -21926,18 +20689,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 
-#if defined (MOTIF_USER_INTERFACE)
-		if (command_data->user_interface)
-		{
-			command_data->background_colour.red=UI_module->background_colour.red;
-			command_data->background_colour.green=UI_module->background_colour.green;
-			command_data->background_colour.blue=UI_module->background_colour.blue;
-			command_data->foreground_colour.red=UI_module->foreground_colour.red;
-			command_data->foreground_colour.green=UI_module->foreground_colour.green;
-			command_data->foreground_colour.blue=UI_module->foreground_colour.blue;
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 		/* use command line options in preference to defaults read from XResources */
 
 		if (examples_directory)
@@ -21989,10 +20740,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		/* create the managers */
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		/* comfile window manager */
 		command_data->comfile_window_manager = UI_module->comfile_window_manager;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		command_data->graphics_module = 
 			Cmiss_context_get_default_graphics_module(context);
 		/* light manager */
@@ -22029,10 +20780,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			if (NULL != (material = Material_package_get_default_material(command_data->material_package)))
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				Graphical_material_set_ambient(material, &(command_data->foreground_colour));
-				Graphical_material_set_diffuse(material, &(command_data->foreground_colour));
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				Graphical_material_set_alpha(material, 1.0);
 			}
 			Cmiss_graphics_module_define_standard_materials(command_data->graphics_module);
@@ -22198,9 +20945,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 #endif /* defined (USE_ITK) */
 		}
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-		command_data->movie_graphics_manager = UI_module->movie_graphics_manager;
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 		/* graphics_module */
 		command_data->default_time_keeper=ACCESS(Time_keeper)(UI_module->default_time_keeper);
 
@@ -22252,9 +20996,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->element_point_tool=UI_module->element_point_tool;
 			Element_point_tool_set_execute_command(command_data->element_point_tool, 
 				command_data->execute_command);
-#if defined (MOTIF_USER_INTERFACE)
-			command_data->select_tool=UI_module->select_tool;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->user_interface)
@@ -22320,106 +21061,51 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			if (!no_display)
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				/* register the callbacks in the global name table */
-				if (MrmSUCCESS==MrmRegisterNames(callbacks,XtNumber(callbacks)))
+				/* create the main window */
+				version_string_to_pass =  NULL;
+				if (!server_mode)
 				{
-#endif /* defined (MOTIF_USER_INTERFACE) */
-					/* create the main window */
-#if defined (MOTIF_USER_INTERFACE) &&(TEST)
-					/* MOTIF uses the version string for a specific purpose
-						 therefore we will setup the version string differently */
-					char version_temp[50], version_id_string[100];
-					/* construct the version ID string which is exported in the command
-						windows version atom */
-					strcpy(version_id_string,"cmiss*");
-					/* version number */
-					if (version_string && date_string)
-					{
-						strcpy(version_temp, version_string);
-						strcat(version_temp, "  ");
-						strcat(version_temp, date_string);
-						version_temp[11] = 0;
-						strcat(version_id_string,version_temp);
-					}
-					strcat(version_id_string,"*");
-					/* id from runtime */
-					if (version_command_id)
-					{
-						strcat(version_id_string,version_command_id);
-					}
-					strcat(version_id_string,"*");
-					/* link and runtime options */
-					if (start_mycm)
-					{
-						strcat(version_id_string, "mycm ");
-					}
-					else 
-					{
-						if (start_cm)
-						{
-							strcat(version_id_string, "cm ");
-						}
-					}
-					version_string_to_pass = version_id_string;
-#else /* defined (MOTIF_USER_INTERFACE) */
-					//version_string_to_pass = version_string;
-					version_string_to_pass =  NULL;
-#endif
-					if (!server_mode)
-					{
-#if defined(USE_CMGUI_COMMAND_WINDOW) 
-						if (console_mode)
-						{
-#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
-							if (!(command_data->command_console = CREATE(Console)(
-										command_data->execute_command,
-										command_data->event_dispatcher, /*stdin*/0)))
-							{
-								display_message(ERROR_MESSAGE,"main.  "
-									"Unable to create console.");
-							}
 #if defined(USE_CMGUI_COMMAND_WINDOW)
-						}
-						else if (!UI_module->external)
-						{
-							if (NULL != (command_window = CREATE(Command_window)(command_data->execute_command,
-										command_data->user_interface)))
-							{
-								command_data->command_window=command_window;
-								if (!batch_mode)
-								{
-									/* set up messages */
-									set_display_message_function(ERROR_MESSAGE,
-										display_error_message,command_window);
-									set_display_message_function(INFORMATION_MESSAGE,
-										display_information_message,command_window);
-									set_display_message_function(WARNING_MESSAGE,
-										display_warning_message,command_window);
-#if defined (USE_PERL_INTERPRETER)
-									redirect_interpreter_output(command_data->interpreter, &return_code);
-#endif /* defined (USE_PERL_INTERPRETER) */
-								}
-#if defined (MOTIF_USER_INTERFACE)
-								XSetErrorHandler(x_error_handler);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"Unable to create command window");
-								return_code=0;
-							}
-						}
+					if (console_mode)
+					{
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
+						if (!(command_data->command_console = CREATE(Console)(
+							command_data->execute_command,
+							command_data->event_dispatcher, /*stdin*/0)))
+						{
+							display_message(ERROR_MESSAGE,"main.  "
+								"Unable to create console.");
+						}
+#if defined(USE_CMGUI_COMMAND_WINDOW)
 					}
-#if defined (MOTIF_USER_INTERFACE)
+					else if (!UI_module->external)
+					{
+						if (NULL != (command_window = CREATE(Command_window)(command_data->execute_command,
+							command_data->user_interface)))
+						{
+							command_data->command_window=command_window;
+							if (!batch_mode)
+							{
+								/* set up messages */
+								set_display_message_function(ERROR_MESSAGE,
+									display_error_message,command_window);
+								set_display_message_function(INFORMATION_MESSAGE,
+									display_information_message,command_window);
+								set_display_message_function(WARNING_MESSAGE,
+									display_warning_message,command_window);
+#if defined (USE_PERL_INTERPRETER)
+								redirect_interpreter_output(command_data->interpreter, &return_code);
+#endif /* defined (USE_PERL_INTERPRETER) */
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Unable to create command window");
+							return_code=0;
+						}
+					}
+#endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Unable to register callbacks");
-					return_code=0;
-				}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			}
 		}
 
@@ -22471,14 +21157,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			/* START_ERROR_HANDLING;*/
 			switch (signal_code)
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				/*???DB.  SIGBUS is not POSIX */
-				case SIGBUS:
-				{
-					printf("Bus error occurred\n");
-					display_message(ERROR_MESSAGE,"Bus error occurred");
-				} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				case SIGFPE:
 				{
 					printf("Floating point exception occurred\n");
@@ -22574,26 +21252,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
 		}
-#if defined (MOTIF_USER_INTERFACE)
-		/* viewers */
-		if (command_data->data_viewer)
-		{
-			DESTROY(Node_viewer)(&(command_data->data_viewer));
-		}
-
-		if (command_data->node_viewer)
-		{
-			DESTROY(Node_viewer)(&(command_data->node_viewer));
-		}
-		if (command_data->element_point_viewer)
-		{
-			DESTROY(Element_point_viewer)(&(command_data->element_point_viewer));
-		}
-		if (command_data->time_editor_dialog)
-		{
-			DESTROY(Time_editor_dialog)(&(command_data->time_editor_dialog));
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		/* viewers */
 		if (command_data->data_viewer)
@@ -22609,7 +21267,7 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			DESTROY(Element_point_viewer)(&(command_data->element_point_viewer));
 		}
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		if (command_data->material_editor)
 		{
 			DESTROY(Material_editor)(&(command_data->material_editor));
@@ -22622,14 +21280,8 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DESTROY(Spectrum_editor_dialog)(&(command_data->spectrum_editor_dialog));
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE)
-		if (command_data->element_creator)
-		{
-			DESTROY(Element_creator)(&command_data->element_creator);
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		DEACCESS(Scene)(&command_data->default_scene);
 		if (command_data->graphics_module)
 		{
@@ -22674,10 +21326,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			DEALLOCATE(command_data->example_requirements);
 		}
 
-#if defined (MOTIF_USER_INTERFACE)
-		coord_widget_finish();
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 		Close_image_environment();
 
 		DESTROY(Execute_command)(&command_data->execute_command);
@@ -22691,12 +21339,12 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DESTROY(Console)(&command_data->command_console);
 		}
-#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			DESTROY(Command_window)(&command_data->command_window);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
 		if (command_data->user_interface)
 			command_data->user_interface = NULL;

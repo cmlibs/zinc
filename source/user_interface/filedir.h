@@ -4,7 +4,7 @@ FILE : filedir.h
 LAST MODIFIED : 3 June 1999
 
 DESCRIPTION :
-Routines for opening files using Motif widgets.
+Routines for opening files.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -92,10 +92,6 @@ used to keep track of the widgets involved.
 	 struct Execute_command *execute_command;
 #endif /*defined (WX_USER_INTERFACE)*/
 	/* private */
-#if defined (MOTIF_USER_INTERFACE)
-	Widget activation,file_list,selection_shell,selection,selection_label,
-		selection_text,warning_box,warning_shell;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	OPENFILENAME open_file_name;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -133,9 +129,6 @@ frees the memeory for <**file_open_data> and changes <*file_open_data> to NULL.
 ==============================================================================*/
 
 void open_file_and_read(
-#if defined (MOTIF_USER_INTERFACE)
-	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -147,16 +140,13 @@ void open_file_and_read(
 LAST MODIFIED : 20 April 1997
 
 DESCRIPTION :
-Expects a pointer to a File_open_data structure as the <client_data> (MOTIF_USER_INTERFACE).
+Expects a pointer to a File_open_data structure as the <client_data>.
 Displays a list of the file names matching the <filter>.  After the user selects
 a file name the <file_operation> is performed on the file with the <arguments>.
 ???DB.  Make uil callback a different routine ?
 ==============================================================================*/
 
 void open_file_and_write(
-#if defined (MOTIF_USER_INTERFACE)
-	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -168,7 +158,7 @@ void open_file_and_write(
 LAST MODIFIED : 21 April 1997
 
 DESCRIPTION :
-Expects a pointer to a File_open_data structure as the <client_data> (MOTIF_USER_INTERFACE).
+Expects a pointer to a File_open_data structure as the <client_data>.
 Prompts the user for the name of file, omitting the <extension>, to write to.
 The <file_operation> with the <user_arguments> and the output directed to the
 specified file.

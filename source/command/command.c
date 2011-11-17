@@ -72,34 +72,6 @@ Global functions
 ----------------
 */
 
-#if defined (MOTIF_USER_INTERFACE)
-void callback_command(Widget widget, XtPointer string, XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 15 July 2002
-
-DESCRIPTION :
-Allows easy execution of command <string>s from menu buttons.
-==============================================================================*/
-{
-	char *command_string;
-	struct Execute_command *execute_command;
-
-	ENTER(callback_command);
-	USE_PARAMETER(call_data);
-	if (widget && (command_string = (char *)string))
-	{
-		execute_command=(struct Execute_command *)NULL;
-		XtVaGetValues(widget, XmNuserData, (XtPointer)(&execute_command), NULL);
-		Execute_command_execute_string(execute_command, command_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"callback_command.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* callback_command */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 int read_iod_file_via_selection_box(char *file_name,void *execute_command_void)
 /*******************************************************************************
 LAST MODIFIED : 15 July 2002

@@ -55,12 +55,7 @@ Functions for interfacing with the graphics library.
 #  include <math.h>
 #  include <string.h>
 #  include <stdio.h>
-#  if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
-#    include <X11/Xlib.h>
-#    include <GL/glu.h>
-#    define GLX_GLXEXT_PROTOTYPES
-#    include <GL/glx.h>
-#  elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#  if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #    include <gtk/gtk.h>
 #    if defined (UNIX)
 #      define GLX_GLXEXT_PROTOTYPES
@@ -105,9 +100,6 @@ Sets up the default light, material and light model for the graphics library.
 ==============================================================================*/
 {
 #if defined(GLX_ARB_get_proc_address)
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-#endif
 #endif /* defined(GLX_ARB_get_proc_address) */
 	int return_code;
 	static int initialized=0;
@@ -121,22 +113,6 @@ Sets up the default light, material and light model for the graphics library.
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
 #if defined(GLX_ARB_get_proc_address)
-#if defined (MOTIF_USER_INTERFACE)
-		/* Try and load this function while we have the user_interface connection */
-		display = User_interface_get_display(user_interface);
-		if (GLEXTENSION_UNSURE == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
-		{
-			if (query_glx_extension("GLX_ARB_get_proc_address", display,
-				DefaultScreen(display)))
-			{
-				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 1;
-			}
-			else
-			{
-				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 0;
-			}
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined(GLX_ARB_get_proc_address) */
 #endif
 		initialized=1;

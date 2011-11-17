@@ -5241,65 +5241,6 @@ the last parameter controls the size of polygons used to do this.
 	return (return_code);
 } /* Scene_viewer_set_background_texture_info */
 
-int Scene_viewer_get_border_width(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Returns the border_width of the scene_viewer widget. Note that the border is
-only shown on the bottom and right of each viewer in the graphics window.
-==============================================================================*/
-{
-	int border_width;
-
-	ENTER(Scene_viewer_get_border_width);
-	if (scene_viewer)
-	{
-		border_width = Graphics_buffer_get_border_width(
-			scene_viewer->graphics_buffer);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_border_width.  Missing scene_viewer");
-		border_width=0;
-	}
-	LEAVE;
-
-	return (border_width);
-} /* Scene_viewer_get_border_width */
-
-int Scene_viewer_set_border_width(struct Scene_viewer *scene_viewer,
-	int border_width)
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Sets the border_width of the scene_viewer widget. Note that the border is
-only shown on the bottom and right of each viewer in the graphics window.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_border_width);
-	if (scene_viewer&&(0<=border_width))
-	{
-		Graphics_buffer_set_border_width(scene_viewer->graphics_buffer,
-			border_width);
-		Scene_viewer_set_transform_flag(scene_viewer);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_border_width.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_border_width */
-
 enum Scene_viewer_buffering_mode Scene_viewer_get_buffering_mode(
 	struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -8011,18 +7952,18 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	int number_of_components, return_code;
-#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 	struct Graphics_buffer *offscreen_buffer;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
 
-#if ! defined (MOTIF_USER_INTERFACE) && ! defined (GTK_USER_INTERFACE)
+#if ! defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(force_onscreen);
-#endif /* ! defined (MOTIF_USER_INTERFACE) && ! defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (GTK_USER_INTERFACE) */
 	if (scene_viewer && width && height)
 	{
-#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 		if ((!*width) || (!*height))
 		{
 			/* Only use the scene viewer size if either dimension is zero */
@@ -8060,7 +8001,7 @@ scene viewer on screen.
 		}
 		else
 		{
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -8085,9 +8026,9 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (GTK_USER_INTERFACE) */
 	}
 	else
 	{
@@ -9606,84 +9547,6 @@ Passes the supplied windows event on to the graphics buffer.
 	return (return_code);
 }
 #endif /* defined (WIN32_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_motif(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	Widget parent,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth)
-/*******************************************************************************
-LAST MODIFIED : 25 January 2006
-
-DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified
-<parent> widget.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
-<minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then
-the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
-chosen.
-==============================================================================*/
-{
-	Dimension height,width;
-	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
-	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
-	struct Graphics_buffer *graphics_buffer;
-	struct Cmiss_scene_viewer *scene_viewer;
-
-	ENTER(create_Cmiss_scene_viewer_x11);
-	if (cmiss_scene_viewer_package)
-	{
-		if (CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
-		}
-		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-		}
-		else
-		{
-			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-		}
-		if (CMISS_SCENE_VIEWER_STEREO_ANY_MODE==stereo_mode)
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
-		}
-		else if (CMISS_SCENE_VIEWER_STEREO_STEREO==stereo_mode)
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
-		}
-		else
-		{
-			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
-		}
-		XtVaGetValues(parent, XmNwidth,&width, XmNheight,&height,NULL);
-		graphics_buffer = create_Graphics_buffer_X3d(
-			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
-			parent, width, height,
-			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
-			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-			minimum_accumulation_buffer_depth);
-		scene_viewer = create_Scene_viewer_from_package(graphics_buffer,
-			cmiss_scene_viewer_package,
-			Cmiss_scene_viewer_package_get_default_scene(cmiss_scene_viewer_package));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_x11.  "
-			"The Cmiss_scene_viewer data must be initialised before any scene "
-			"viewers can be created.");
-		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
-	}
-	LEAVE;
-
-	return (scene_viewer);
-}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (NEW_CODE)
 Cmiss_scene_viewer_id Cmiss_scene_viewer_create_X11(

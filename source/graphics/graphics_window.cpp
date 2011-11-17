@@ -54,17 +54,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Protocols.h>
-#include <Xm/PushBG.h>
-#include <Xm/DialogS.h>
-#include <Xm/MwmUtil.h>
-#include <Xm/ToggleB.h>
-#include <Mrm/MrmPublic.h>
-#include <Mrm/MrmDecls.h>
-#include "choose/choose_enumerator.h"
-#include "colour/edit_var.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "api/cmiss_field_module.h"
 #include "command/parser.h"
 #include "computed_field/computed_field_image.h"
@@ -79,11 +68,6 @@ extern "C" {
 #include "graphics/colour.h"
 #include "graphics/graphic.h"
 #include "graphics/graphics_window.h"
-#if defined (MOTIF_USER_INTERFACE)
-static char graphics_window_uidh[] = 
-#include "graphics/graphics_window.uidh"
-	;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 #include "graphics/graphics_window_private.hpp"
 #if defined (WX_USER_INTERFACE)
@@ -135,10 +119,6 @@ extern "C" {
 #include "icon/cross.xpm"
 #include "icon/cross_selected.xpm"
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-#include "interaction/interactive_toolbar_widget.h"
-#include "user_interface/gui_dialog_macros.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 /* for writing bitmap to file: */
@@ -189,17 +169,7 @@ Contains information for a graphics window.
 	int manager_change_status;
 
 	struct Graphics_buffer_package *graphics_buffer_package;
-
-#if defined (MOTIF_USER_INTERFACE)
-	/* widgets on the Graphics_window */
-	Widget control_panel,viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
-		view_all_button,print_button,time_edit_form,time_edit_widget,
-		perspective_button,layout_mode_form,layout_mode_widget,
-		orthographic_form,ortho_up_option,
-		ortho_up_menu,ortho_front_button,
-		interactive_toolbar_form,interactive_toolbar_widget;
-	Widget window_shell,main_window;
-#elif defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
 #if GTK_MAJOR_VERSION >= 2
 	gulong close_handler_id;
@@ -296,56 +266,12 @@ struct Graphics_window_ortho_axes
 }; /* struct Graphics_window_ortho_axes */
 
 /*
-Module variables
-----------------
-*/
-#if defined (MOTIF_USER_INTERFACE)
-static int graphics_window_hierarchy_open=0;
-static MrmHierarchy graphics_window_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-/*
 Module functions
 ----------------
 */
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_window, \
         name,const char *,strcmp)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_window)
-
-#if defined (MOTIF_USER_INTERFACE)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,control_panel)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,viewing_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,viewing_area1)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,viewing_area2)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,viewing_area3)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,viewing_area4)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,view_all_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,print_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,time_edit_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,perspective_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,layout_mode_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,orthographic_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,ortho_up_option)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,ortho_up_menu)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,ortho_front_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,interactive_toolbar_form)
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	struct MANAGER(Interactive_tool) *Graphics_window_get_interactive_tool_manager(struct Graphics_window *window);
 /*******************************************************************************
@@ -475,155 +401,6 @@ converts the axis number to a three component [float] vector. eg 1 -> (1,0,0).
 	return (return_code);
 } /* axis_number_to_axis_vector */
 
-static int Graphics_window_read_defaults(
-	struct Graphics_window *graphics_window)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Reads in the default window size and border thickness and definitions of the
-orthographic up and front directions from the Xdefaults file.
-==============================================================================*/
-{
-	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNgraphicsWindowOrthoUpAxis "graphicsWindowOrthoUpAxis"
-#define XmCGraphicsWindowOrthoUpAxis "GraphicsWindowOrthoUpAxis"
-#define XmNgraphicsWindowOrthoFrontAxis "graphicsWindowOrthoFrontAxis"
-#define XmCGraphicsWindowOrthoFrontAxis "GraphicsWindowOrthoFrontAxis"
-#define XmNgraphicsWindowViewingHeight "graphicsWindowViewingHeight"
-#define XmCGraphicsWindowViewingHeight "GraphicsWindowViewingHeight"
-#define XmNgraphicsWindowViewingWidth "graphicsWindowViewingWidth"
-#define XmCGraphicsWindowViewingWidth "GraphicsWindowViewingWidth"
-#define XmNgraphicsWindowTranslateRate "graphicsWindowTranslateRate"
-#define XmCGraphicsWindowTranslateRate "GraphicsWindowTranslateRate"
-#define XmNgraphicsWindowTumbleRate "graphicsWindowTumbleRate"
-#define XmCGraphicsWindowTumbleRate "GraphicsWindowTumbleRate"
-#define XmNgraphicsWindowZoomRate "graphicsWindowZoomRate"
-#define XmCGraphicsWindowZoomRate "GraphicsWindowZoomRate"
-	int up_axis,front_axis;
-	struct Graphics_window_defaults
-	{
-		char *up_axis_name,*front_axis_name;
-		float translate_rate,tumble_rate,zoom_rate;
-		int viewing_height,viewing_width;
-	} graphics_window_defaults;
-	static XtResource resources[]=
-	{
-		{
-			const_cast<char*>(XmNgraphicsWindowOrthoUpAxis),
-			const_cast<char*>(XmCGraphicsWindowOrthoUpAxis),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(struct Graphics_window_defaults,up_axis_name),
-			XmRString,
-			const_cast<char*>("Z")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowOrthoFrontAxis),
-			const_cast<char*>(XmCGraphicsWindowOrthoFrontAxis),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(struct Graphics_window_defaults,front_axis_name),
-			XmRString,
-			const_cast<char*>("-Y")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowViewingHeight),
-			const_cast<char*>(XmCGraphicsWindowViewingHeight),
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Graphics_window_defaults,viewing_height),
-			XmRString,
-			const_cast<char*>("512")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowViewingWidth),
-			const_cast<char*>(XmCGraphicsWindowViewingWidth),
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Graphics_window_defaults,viewing_width),
-			XmRString,
-			const_cast<char*>("512")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowTranslateRate),
-			const_cast<char*>(XmCGraphicsWindowTranslateRate),
-			XmRFloat,
-			sizeof(float),
-			XtOffsetOf(struct Graphics_window_defaults,translate_rate),
-			XmRString,
-			const_cast<char*>("1.0")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowTumbleRate),
-			const_cast<char*>(XmCGraphicsWindowTumbleRate),
-			XmRFloat,
-			sizeof(float),
-			XtOffsetOf(struct Graphics_window_defaults,tumble_rate),
-			XmRString,
-			const_cast<char*>("1.5")
-		},
-		{
-			const_cast<char*>(XmNgraphicsWindowZoomRate),
-				const_cast<char*>(XmCGraphicsWindowZoomRate),
-			XmRFloat,
-			sizeof(float),
-			XtOffsetOf(struct Graphics_window_defaults,zoom_rate),
-			XmRString,
-			const_cast<char*>("1.0")
-		}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-	ENTER(Graphics_window_read_defaults);
-	if (graphics_window)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		up_axis=0;
-		front_axis=0;
-		graphics_window_defaults.up_axis_name=(char *)NULL;
-		graphics_window_defaults.front_axis_name=(char *)NULL;
-		XtVaGetApplicationResources(
-			User_interface_get_application_shell(graphics_window->user_interface),
-			&graphics_window_defaults,resources,XtNumber(resources),NULL);
-		if (graphics_window_defaults.up_axis_name)
-		{
-			up_axis=axis_name_to_axis_number(graphics_window_defaults.up_axis_name);
-		}
-		if (graphics_window_defaults.front_axis_name)
-		{
-			front_axis=axis_name_to_axis_number(
-				graphics_window_defaults.front_axis_name);
-		}
-		graphics_window->ortho_up_axis=up_axis;
-		graphics_window->ortho_front_axis=front_axis;
-		graphics_window->default_viewing_height=
-			graphics_window_defaults.viewing_height;
-		graphics_window->default_viewing_width=
-			graphics_window_defaults.viewing_width;
-		graphics_window->default_translate_rate=
-			graphics_window_defaults.translate_rate;
-		graphics_window->default_tumble_rate=
-			graphics_window_defaults.tumble_rate;
-		graphics_window->default_zoom_rate=
-			graphics_window_defaults.zoom_rate;
-		return_code=1;
-#else /* defined (MOTIF_USER_INTERFACE) */
-		return_code=1;	
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_read_defaults.  Missing graphics_window");
-		return_code=0;
-	}
-	LEAVE;
-
-	return return_code;
-} /* Graphics_window_read_defaults */
-
 #if defined (WIN32_USER_INTERFACE)
 static int Graphics_window_adjust_sizes_for_window_frame(int *width, int *height)
 {
@@ -684,66 +461,6 @@ Called when "close" is selected from the window menu, or it is double clicked.
 } /* Graphics_window_gtk_close_CB */
 #endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_close_CB(Widget caller,
-	void *graphics_window_void,void *cbs)
-/*******************************************************************************
-LAST MODIFIED : 10 December 1997
-
-DESCRIPTION :
-Called when "close" is selected from the window menu, or it is double clicked.
-How this is made to occur is as follows. The graphics_window dialog has its
-XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-function in response to the close command. See CREATE(Graphics_window) for more
-details.
-Since the Graphics_window is a managed object, we simply remove it from its
-manager. If this is successful it will be DESTROYed automatically.
-If it is not managed, can't destroy it here.
-==============================================================================*/
-{
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_close_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(cbs);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
-	{
-		if (graphics_window->graphics_window_manager)
-		{
-			REMOVE_OBJECT_FROM_MANAGER(Graphics_window)(graphics_window,
-				graphics_window->graphics_window_manager);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_close_CB.  Missing Graphics_window");
-	}
-	LEAVE;
-} /* Graphics_window_close_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_destroy_CB(Widget caller,
-	XtPointer user_data,XtPointer caller_data)
-/*******************************************************************************
-LAST MODIFIED : 24 November 1997
-
-DESCRIPTION :
-Callback for when the window is destroyed. Does not do anything since the
-Graphics_window object is now destroyed by its DESTROY function.
-Keep in case a use is found for it.
-==============================================================================*/
-{
-	ENTER(Graphics_window_destroy_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(user_data);
-	USE_PARAMETER(caller_data);
-	LEAVE;
-} /* Graphics_window_destroy_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 static int Graphics_window_set_interactive_tool(
 	struct Graphics_window *graphics_window,
 	struct Interactive_tool *interactive_tool)
@@ -760,35 +477,21 @@ toolbar to match the selection.
 	ENTER(Graphics_window_set_interactive_tool);
 	if (graphics_window && graphics_window->scene_viewer_array)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (interactive_toolbar_widget_set_current_interactive_tool(
-			graphics_window->interactive_toolbar_widget,interactive_tool))
+		graphics_window->interactive_tool=interactive_tool;
+		if (Interactive_tool_is_Transform_tool(interactive_tool))
 		{
-#endif /* defined (MOTIF_USER_INTERFACE) */
-			graphics_window->interactive_tool=interactive_tool;
-			if (Interactive_tool_is_Transform_tool(interactive_tool))
-			{
-				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_TRANSFORM);
-			}
-			else
-			{
-				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_SELECT);
-			}
-			for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers);pane_no++)
-			{
-				Scene_viewer_set_interactive_tool(
-					graphics_window->scene_viewer_array[pane_no],interactive_tool);
-			}
-			return_code=1;
-#if defined (MOTIF_USER_INTERFACE)
+			Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_TRANSFORM);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_window_set_interactive_tool.  Could not update toolbar");
-			return_code=0;
+			Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_SELECT);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
+		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers);pane_no++)
+		{
+			Scene_viewer_set_interactive_tool(
+				graphics_window->scene_viewer_array[pane_no],interactive_tool);
+		}
+		return_code=1;
 	}
 	else
 	{
@@ -801,228 +504,6 @@ toolbar to match the selection.
 	return (return_code);
 } /* Graphics_window_set_interactive_tool */
 
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_update_interactive_tool(Widget widget,
-	void *graphics_window_void,void *interactive_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2000
-
-DESCRIPTION :
-Called when a new tool is chosen in the interactive_toolbar_widget.
-==============================================================================*/
-{
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_update_interactive_tool);
-	USE_PARAMETER(widget);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
-	{
-		Graphics_window_set_interactive_tool(graphics_window,
-			(struct Interactive_tool *)interactive_tool_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_update_interactive_tool.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_update_interactive_tool */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_layout_mode_CB(Widget widget,
-	void *graphics_window_void,void *layout_mode_string_void)
-/*******************************************************************************
-LAST MODIFIED : 28 June 2000
-
-DESCRIPTION :
-Callback for change of layout_mode from the layout_mode_widget.
-==============================================================================*/
-{
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_layout_mode_CB);
-	USE_PARAMETER(widget);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
-	{
-		Graphics_window_set_layout_mode(graphics_window,
-			Graphics_window_layout_mode_from_string((char *)layout_mode_string_void));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_layout_mode_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_layout_mode_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_ortho_front_button_CB(Widget widget,
-	XtPointer window_void,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 8 October 1998
-
-DESCRIPTION :
-Callback for a change of front_axis defining the orthographic views. This
-function cycles to the next orthogonal front axis for the current ortho_up_axis.
-==============================================================================*/
-{
-	int ortho_front_axis,ortho_up_axis;
-	struct Graphics_window *window;
-
-	ENTER(Graphics_window_ortho_front_button_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (window=(struct Graphics_window *)window_void)
-	{
-		/* cycle through the possible front axes for the current up axis */
-		ortho_up_axis=window->ortho_up_axis;
-		ortho_front_axis=window->ortho_front_axis;
-		do
-		{
-			ortho_front_axis=(ortho_front_axis % 6)+1;
-		} while ((ortho_up_axis % 3) == (ortho_front_axis % 3));
-		Graphics_window_set_orthographic_axes(window,ortho_up_axis,
-			ortho_front_axis);
-		/* display the panes in the new orientation */
-		Graphics_window_set_layout_mode(window,window->layout_mode);
-		Graphics_window_update(window);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_ortho_front_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_ortho_front_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_ortho_up_menu_CB(Widget widget,
-	XtPointer window_void,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 8 October 1998
-
-DESCRIPTION :
-Callback for a change of up_axis defining the orthographic views.
-==============================================================================*/
-{
-	struct Graphics_window *window;
-	int up_axis;
-	Widget menu_item_widget;
-
-	ENTER(Graphics_window_ortho_up_menu_CB);
-	if (widget&&(window=(struct Graphics_window *)window_void)&&call_data)
-	{
-		/* get the widget from the call data */
-		if (menu_item_widget=((XmRowColumnCallbackStruct *)call_data)->widget)
-		{
-			/* Get the axis this menu item represents and make it current */
-			XtVaGetValues(menu_item_widget,XmNuserData,&up_axis,NULL);
-			if ((0<up_axis)&&(6 >= up_axis))
-			{
-				Graphics_window_set_orthographic_axes(window,
-					up_axis,window->ortho_front_axis);
-				Graphics_window_set_layout_mode(window,window->layout_mode);
-				Graphics_window_update(window);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_window_ortho_up_menu_CB.  Invalid axis");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_window_ortho_up_menu_CB.  Missing menu item widget");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_ortho_up_menu_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_ortho_up_menu_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_perspective_button_CB(Widget caller,
-	XtPointer *window_void,XmAnyCallbackStruct *caller_data)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Callback for when the perspective toggle button is pressed.
-==============================================================================*/
-{
-	enum Scene_viewer_projection_mode projection_mode;
-	struct Graphics_window *window;
-
-	ENTER(Graphics_window_perspective_button_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(caller_data);
-	if (window=(struct Graphics_window *)window_void)
-	{
-		if (XmToggleButtonGetState(window->perspective_button))
-		{
-			projection_mode=SCENE_VIEWER_PERSPECTIVE;
-		}
-		else
-		{
-			projection_mode=SCENE_VIEWER_PARALLEL;
-		}
-		if (Graphics_window_set_projection_mode(window,window->current_pane,
-			projection_mode))
-		{
-			/* update the affected scene_viewer and any tied to it */
-			Scene_viewer_redraw(window->scene_viewer_array[window->current_pane]);
-			Graphics_window_view_changed(window,window->current_pane);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_perspective_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_perspective_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_time_edit_CB(Widget edit_var,void *window_void,
-	void *current_value)
-/*******************************************************************************
-LAST MODIFIED : 18 October 1998
-
-DESCRIPTION :
-Callback for change to the time.
-==============================================================================*/
-{
-	struct Graphics_window *window;
-
-	ENTER(Graphics_window_time_edit_CB);
-	/* check arguments */
-	if (edit_var&&(window=(struct Graphics_window *)window_void)&&
-		(window->scene)&&current_value)
-	{
-		if(window->time_keeper)
-		{
-			Time_keeper_request_new_time(window->time_keeper,
-				*((EDIT_VAR_PRECISION *)current_value));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_time_edit_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_time_edit_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 #if defined (WX_USER_INTERFACE)
 static int Graphics_window_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *graphics_window_void)
@@ -1033,9 +514,6 @@ DESCRIPTION :
 Updates the time display of the time_slider
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	EDIT_VAR_PRECISION time;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code = 0;
 	struct Graphics_window *window;
 #if defined (WX_USER_INTERFACE)
@@ -1044,52 +522,10 @@ Updates the time display of the time_slider
 #endif
 
 	ENTER(Graphics_window_time_keeper_callback);
-#if !defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	USE_PARAMETER(event);
-#endif /* !defined (MOTIF_USER_INTERFACE) && (WX_USER_INTERFACE) */
+
 	if (time_keeper && (window = (struct Graphics_window *)graphics_window_void))
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		switch(event)
-		{
-			case TIME_KEEPER_NEW_TIME:
-			{
-				time = Time_keeper_get_time(window->time_keeper);
-				edit_var_set_data(window->time_edit_widget,EDIT_VAR_VALUE,time);				
-#if defined (DEBUG_CODE)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					EDIT_VAR_NUM_FORMAT, time);
-#endif /* defined (DEBUG_CODE) */
-				return_code = 1;
-			} break;
-			case TIME_KEEPER_NEW_MINIMUM:
-			{
-				time = Time_keeper_get_minimum(window->time_keeper);
-				edit_var_set_data(window->time_edit_widget,EDIT_VAR_LOW_LIMIT,time);				
-#if defined (DEBUG_CODE)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					EDIT_VAR_NUM_FORMAT, time);
-#endif /* defined (DEBUG_CODE) */
-				return_code = 1;
-			} break;
-			case TIME_KEEPER_NEW_MAXIMUM:
-			{
-				time = Time_keeper_get_maximum(window->time_keeper);
-				edit_var_set_data(window->time_edit_widget,EDIT_VAR_HIGH_LIMIT,time);				
-#if defined (DEBUG_CODE)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					EDIT_VAR_NUM_FORMAT, time);
-#endif /*defined (DEBUG_CODE) */
-				return_code = 1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_window_time_keeper_callback.  Unknown time_keeper event");
-				return_code = 0;
-			} break;
-		}
-#elif defined (WX_USER_INTERFACE)
 		if (window->time_slider && window->time_text_ctrl)
 		{
 			 switch(event)
@@ -1128,7 +564,6 @@ Updates the time display of the time_slider
 				 }
 			 }
 		}
-#endif /*defined (MOTIF_USER_INTERFACE) && (WX_USER_INTERFACE)*/
 	}
 	else
 	{
@@ -1141,93 +576,6 @@ Updates the time display of the time_slider
 	return (return_code);
 } /* Graphics_window_time_keeper_callback */
 #endif /* defined (WX_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_view_all_button_CB(Widget caller,
-	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
-/*******************************************************************************
-LAST MODIFIED : 6 October 1998
-
-DESCRIPTION :
-Callback for when the view_all_button is pressed.  Finds the x, y and z
-ranges and sets the view parameters so that everything can be seen.
-==============================================================================*/
-{
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_view_all_button_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(caller_data);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
-	{
-		if (Graphics_window_view_all(graphics_window))
-		{
-			Graphics_window_update(graphics_window);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_view_all_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_view_all_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_window_print_button_CB(Widget caller,
-	XtPointer *graphics_window_void, XmAnyCallbackStruct *caller_data)
-/*******************************************************************************
-LAST MODIFIED : 18 September 2002
-
-DESCRIPTION :
-Callback for when the print_button is pressed.
-Prompts the user for a file name, makes a Cmgui_image out of the pixels in the
-window and writes them to the filename. The image file format is determined
-wholly from the file name extension
-==============================================================================*/
-{
-	char *file_name;
-	enum Texture_storage_type storage;
-	int force_onscreen, height, width;
-	struct Cmgui_image *cmgui_image;
-	struct Cmgui_image_information *cmgui_image_information;
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_print_button_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(caller_data);
-	if (graphics_window = (struct Graphics_window *)graphics_window_void)
-	{
-		if (file_name = confirmation_get_write_filename((char *)NULL,
-			graphics_window->user_interface))
-		{
-			storage = TEXTURE_RGBA;
-			force_onscreen = 0;
-			width = 0;
-			height = 0;
-			if(cmgui_image = Graphics_window_get_image(graphics_window,
-					 force_onscreen, width, height, /*preferred_antialias*/8,
-								   /*preferred_transparency_layers*/0, storage))
-			{
-				cmgui_image_information = CREATE(Cmgui_image_information)();
-				Cmgui_image_information_add_file_name(cmgui_image_information,
-					file_name);
-				Cmgui_image_write(cmgui_image, cmgui_image_information);
-				DESTROY(Cmgui_image_information)(&cmgui_image_information);
-				DESTROY(Cmgui_image)(&cmgui_image);
-			}
-			DEALLOCATE(file_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_print_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_print_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Manager Callback Module functions
@@ -2604,9 +1952,6 @@ etc.) in all panes of the <window>.
 {
 	char update_flag,view_all_flag;
 	double rotate_angle,rotate_axis[3],rotate_data[4];
-#if defined (MOTIF_USER_INTERFACE)
-	EDIT_VAR_PRECISION time_value;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int pane_no,return_code;
 	struct Graphics_window *window;
 	struct Light *light_to_add,*light_to_remove;
@@ -2737,41 +2082,6 @@ etc.) in all panes of the <window>.
 						{
 							/* maintain pointer to scene in graphics_window */
 							REACCESS(Scene)(&(window->scene), scene);
-#if defined (OLD_CODE)
-							// Scene no longer has a time_keeper member
-							/* if the default_time_keeper of the new scene is different
-								than the old_scene change the callback */
-							struct Time_keeper *new_time_keeper = Scene_get_default_time_keeper(scene);
-							if(new_time_keeper != window->time_keeper)
-							{
-								if(window->time_keeper)
-								{
-									Time_keeper_remove_callback(window->time_keeper,
-										Graphics_window_time_keeper_callback, (void *)window);
-									DEACCESS(Time_keeper)(&(window->time_keeper));
-								}
-								if(new_time_keeper)
-								{
-									window->time_keeper = ACCESS(Time_keeper)(new_time_keeper);
-									Time_keeper_add_callback(window->time_keeper,
-										Graphics_window_time_keeper_callback, (void *)window,
-										(enum Time_keeper_event)(TIME_KEEPER_NEW_TIME | 
-										TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
-#if defined (MOTIF_USER_INTERFACE)
-									time_value = Time_keeper_get_minimum(window->time_keeper);
-									edit_var_set_data(window->time_edit_widget,EDIT_VAR_LOW_LIMIT,
-										time_value);
-									time_value = Time_keeper_get_maximum(window->time_keeper);
-									edit_var_set_data(window->time_edit_widget,EDIT_VAR_HIGH_LIMIT,
-										time_value);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-								}
-								else
-								{
-									window->time_keeper = (struct Time_keeper *)NULL;
-								}
-							}
-#endif /* defined (OLD_CODE) */
 						}
 						if (view_all_flag)
 						{
@@ -3873,10 +3183,6 @@ A stereo buffering mode will automatically be chosen when the visual supports
 it.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Atom WM_DELETE_WINDOW;
-	const char **valid_strings;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	char *window_title;
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;;
@@ -3884,67 +3190,7 @@ it.
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	int ortho_front_axis,ortho_up_axis;
 #endif /*(WX_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
-	EDIT_VAR_PRECISION time_value;
-	int init_widgets,number_of_valid_strings,ortho_front_axis,ortho_up_axis;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int pane_no,return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	MrmType graphics_window_dialog_class;
-	static MrmRegisterArg callbacks[] =
-	{
-		{const_cast<char *>("gwin_id_control_panel"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,control_panel)},
-		{const_cast<char *>("gwin_id_viewing_form"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,viewing_form)},
-		{const_cast<char *>("gwin_id_viewing_area1"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,viewing_area1)},
-		{const_cast<char *>("gwin_id_viewing_area2"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,viewing_area2)},
-		{const_cast<char *>("gwin_id_viewing_area3"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,viewing_area3)},
-		{const_cast<char *>("gwin_id_viewing_area4"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,viewing_area4)},
-		{const_cast<char *>("gwin_id_view_all_btn"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,view_all_button)},
-		{const_cast<char *>("gwin_id_print_btn"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,print_button)},
-		{const_cast<char *>("gwin_id_time_edit_form"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,time_edit_form)},
-		{const_cast<char *>("gwin_id_perspective_btn"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,perspective_button)},
-		{const_cast<char *>("gwin_id_layout_mode_form"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,layout_mode_form)},
-		{const_cast<char *>("gwin_id_orthographic_form"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,orthographic_form)},
-		{const_cast<char *>("gwin_id_ortho_up_option"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,ortho_up_option)},
-		{const_cast<char *>("gwin_id_ortho_up_menu"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,ortho_up_menu)},
-		{const_cast<char *>("gwin_id_ortho_front_btn"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,ortho_front_button)},
-		{const_cast<char *>("gwin_id_interactive_tool_form"),(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,interactive_toolbar_form)},
-		{const_cast<char *>("gwin_destroy_CB"),(XtPointer)Graphics_window_destroy_CB},
-		{const_cast<char *>("gwin_view_all_btn_CB"),
-			(XtPointer)Graphics_window_view_all_button_CB},
-		{const_cast<char *>("gwin_print_btn_CB"),
-			(XtPointer)Graphics_window_print_button_CB},
-		{const_cast<char *>("gwin_perspective_btn_CB"),
-			(XtPointer)Graphics_window_perspective_button_CB},
-		{const_cast<char *>("gwin_ortho_up_menu_CB"),
-			(XtPointer)Graphics_window_ortho_up_menu_CB},
-		{const_cast<char *>("gwin_ortho_front_btn_CB"),
-			(XtPointer)Graphics_window_ortho_front_button_CB}
-	};
-	static MrmRegisterArg identifiers[] =
-	{
-		{const_cast<char *>("gwin_structure"),(XtPointer)NULL}
-	};
-	struct Callback_data callback;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_window *window=NULL;
 
@@ -4001,8 +3247,6 @@ it.
 			window->focal_depth=0.0;
 			/* the input_mode set here is changed below */
 			window->input_mode=SCENE_VIEWER_NO_INPUT;
-			/* read default settings from Cmgui defaults file */
-			Graphics_window_read_defaults(window);
 			if (ALLOCATE(window_title,char,50+strlen(name)))
 			{
 				sprintf(window_title,"CMGUI Graphics window %s",name);
@@ -4057,334 +3301,7 @@ it.
 					return_code=0;
 				}
 			}
-#if defined (MOTIF_USER_INTERFACE)
-			/* clear widgets yet to be read in and created */
-			window->window_shell=(Widget)NULL;
-			window->main_window=(Widget)NULL;
-			window->control_panel=(Widget)NULL;
-			window->viewing_form=(Widget)NULL;
-			window->viewing_area1=(Widget)NULL;
-			window->viewing_area2=(Widget)NULL;
-			window->viewing_area3=(Widget)NULL;
-			window->viewing_area4=(Widget)NULL;
-			window->view_all_button=(Widget)NULL;
-			window->print_button=(Widget)NULL;
-			window->time_edit_form=(Widget)NULL;
-			window->time_edit_widget=(Widget)NULL;
-			window->perspective_button=(Widget)NULL;
-			window->layout_mode_form=(Widget)NULL;
-			window->layout_mode_widget=(Widget)NULL;
-			window->orthographic_form=(Widget)NULL;
-			window->ortho_up_option=(Widget)NULL;
-			window->ortho_up_menu=(Widget)NULL;
-			window->ortho_front_button=(Widget)NULL;
-			window->interactive_toolbar_form=(Widget)NULL;
-			window->interactive_toolbar_widget=(Widget)NULL;
-			if (MrmOpenHierarchy_binary_string(graphics_window_uidh,sizeof(graphics_window_uidh),
-					 &graphics_window_hierarchy,&graphics_window_hierarchy_open))
-			{
-				/* create a shell for the window */
-				if (window->window_shell=XtVaCreatePopupShell(
-						 "graphics_shell",xmDialogShellWidgetClass,
-						 User_interface_get_application_shell(user_interface),
-						 XmNdeleteResponse,XmDO_NOTHING,
-						 XmNmwmDecorations,MWM_DECOR_ALL,
-						 XmNmwmFunctions,MWM_FUNC_ALL,
-						 /*XmNtransient,FALSE,*/
-						 XmNallowShellResize,False,
-						 /* needs to be False to stop the window resizing when
-							 set_view_panel_from_toggles is called (due to changing the labels) */
-						 XmNtitle,window_title,
-						 NULL))
-				{
-					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(window->window_shell),
-						user_interface);
-					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=XmInternAtom(
-						XtDisplay(window->window_shell),const_cast<char *>("WM_DELETE_WINDOW"),False);
-					XmAddWMProtocolCallback(window->window_shell,
-						WM_DELETE_WINDOW,Graphics_window_close_CB,window);
-					/* register callbacks */
-					if (MrmSUCCESS!=MrmRegisterNamesInHierarchy(graphics_window_hierarchy,
-							 callbacks,XtNumber(callbacks)))
-					{
-						destroy_Shell_list_item_from_shell(&(window->window_shell),
-							window->user_interface);
-						XtDestroyWidget(window->window_shell);
-						DEACCESS(Scene)(&(window->scene));
-						DEALLOCATE(window->name);
-						DEALLOCATE(window);
-						display_message(ERROR_MESSAGE,
-							"CREATE(graphics_window).  Could not register the callbacks");
-					}
-					else
-					{
-						/* register identifiers */
-						identifiers[0].value=(XtPointer)window;
-						if (MrmSUCCESS != MrmRegisterNamesInHierarchy(
-								 graphics_window_hierarchy,identifiers,XtNumber(identifiers)))
-						{
-							destroy_Shell_list_item_from_shell(
-								&(window->window_shell),
-								window->user_interface);
-							XtDestroyWidget(window->window_shell);
-							DEACCESS(Scene)(&(window->scene));
-							DEALLOCATE(window->name);
-							DEALLOCATE(window);
-							display_message(ERROR_MESSAGE,
-								"CREATE(graphics_window).  Could not register the identifiers");
-						}
-						else
-						{
-							/* Get the graphics window from the uid file */
-							if (MrmSUCCESS != MrmFetchWidget(graphics_window_hierarchy,
-									const_cast<char *>("graphics_window"),window->window_shell,
-									 &window->main_window,&graphics_window_dialog_class))
-							{
-								destroy_Shell_list_item_from_shell(
-									&(window->window_shell),
-									window->user_interface);
-								XtDestroyWidget(window->window_shell);
-								DEACCESS(Scene)(&(window->scene));
-								DEALLOCATE(window->name);
-								DEALLOCATE(window);
-								display_message(ERROR_MESSAGE,
-									"CREATE(graphics_window).  Could not retrieve the 3D window");
-							}
-							else
-							{
-								init_widgets=1;
-								/* create the subwidgets with default values */
-								if (window->interactive_toolbar_widget=
-									create_interactive_toolbar_widget(
-										window->interactive_toolbar_form,
-										interactive_tool_manager,INTERACTIVE_TOOLBAR_VERTICAL))
-								{
-									FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
-										add_interactive_tool_to_interactive_toolbar_widget,
-										(void *)window->interactive_toolbar_widget,
-										interactive_tool_manager);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								/* create the time editing widget */
-								if (!(window->time_edit_widget=create_edit_var_widget(
-												window->time_edit_form,const_cast<char *>("Time"),0.0,0.0,1.0)))
-								{
-									init_widgets=0;
-								}
-								valid_strings=Graphics_window_layout_mode_get_valid_strings(
-									&number_of_valid_strings);
-								if (window->layout_mode_widget=
-									create_choose_enumerator_widget(
-										window->layout_mode_form,
-										number_of_valid_strings,valid_strings,
-										Graphics_window_layout_mode_string(
-											window->layout_mode), user_interface))
-								{
-									/* get callbacks for change of layout mode */
-									callback.data=(void *)window;
-									callback.procedure=Graphics_window_layout_mode_CB;
-									choose_enumerator_set_callback(
-										window->layout_mode_widget,&callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								DEALLOCATE(valid_strings);
-								/* create the time editing widget */
-								if (!init_widgets)
-								{
-									destroy_Shell_list_item_from_shell(
-										&(window->window_shell),
-										window->user_interface);
-									XtDestroyWidget(window->window_shell);
-									DEACCESS(Scene)(&(window->scene));
-									DEALLOCATE(window->name);
-									DEALLOCATE(window);
-									display_message(ERROR_MESSAGE,
-										"CREATE(graphics_window).  Could not create subwidgets");
-								}
-								else
-								{
-									install_accelerators(window->window_shell,
-										window->window_shell);
-									/* turn on callbacks */
-									callback.procedure=Graphics_window_time_edit_CB;
-									callback.data=window;
-									edit_var_set_callback(window->time_edit_widget,
-										&callback);
-									callback.procedure=Graphics_window_update_interactive_tool;
-									interactive_toolbar_widget_set_callback(
-										window->interactive_toolbar_widget,&callback);
-									/* create first Scene_viewer */
-									window->number_of_scene_viewers = 1;
-									if (ALLOCATE(window->scene_viewer_array,
-										struct Scene_viewer *,
-										window->number_of_scene_viewers))
-									{
-										return_code=1;
-										pane_no = 0;
-										if (graphics_buffer = create_Graphics_buffer_X3d(
-											graphics_buffer_package,
-											window->viewing_area1,
-											window->default_viewing_width,
-											window->default_viewing_height,
-											graphics_buffer_buffering_mode,
-											graphics_buffer_stereo_mode,
-											minimum_colour_buffer_depth,
-											minimum_depth_buffer_depth,
-											minimum_accumulation_buffer_depth))
-										{
-											if (window->scene_viewer_array[pane_no]=
-												CREATE(Scene_viewer)(graphics_buffer,
-													background_colour,light_manager,default_light,
-													light_model_manager,default_light_model,
-													scene_manager,window->scene,
-													window->user_interface))
-											{
-												Scene_viewer_set_interactive_tool(
-													window->scene_viewer_array[pane_no],
-													window->interactive_tool);
-												/* get scene_viewer transform callbacks to allow
-													synchronising of views in multiple panes */
-												Scene_viewer_add_sync_callback(
-													window->scene_viewer_array[pane_no],
-													Graphics_window_Scene_viewer_view_changed,
-													window);
-												Scene_viewer_set_translation_rate(
-													window->scene_viewer_array[pane_no],
-													window->default_translate_rate);
-												Scene_viewer_set_tumble_rate(
-													window->scene_viewer_array[pane_no],
-													window->default_tumble_rate);
-												Scene_viewer_set_zoom_rate(
-													window->scene_viewer_array[pane_no],
-													window->default_zoom_rate);
-											}
-											else
-											{
-												return_code=0;
-											}
-										}
-										else
-										{
-											return_code = 0;
-										}
-										if (!return_code)
-										{
-											destroy_Shell_list_item_from_shell(
-												&(window->window_shell),
-												window->user_interface);
-											XtDestroyWidget(window->window_shell);
-											DEACCESS(Scene)(&(window->scene));
-											DEALLOCATE(window->scene_viewer_array);
-											DEALLOCATE(window->name);
-											DEALLOCATE(window);
-											display_message(ERROR_MESSAGE,"CREATE(graphics_window).  "
-												"Could not create Scene_viewer");
-										}
-										else
-										{
-											Graphics_window_set_interactive_tool(
-												window, window->interactive_tool);
-											/* set and update the orthographic axes */
-											ortho_up_axis=window->ortho_up_axis;
-											ortho_front_axis=window->ortho_front_axis;
-											window->ortho_up_axis=0;
-											window->ortho_front_axis=0;
-											Graphics_window_set_orthographic_axes(window,
-												ortho_up_axis,ortho_front_axis);
-											/* The time_slider receives messages from the
-												default_time_keeper of the scene */
-											Time_keeper_add_callback(window->time_keeper,
-												Graphics_window_time_keeper_callback,
-												(void *)window,
-												(enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
-													TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
-											time_value = Time_keeper_get_minimum(window->time_keeper);
-											edit_var_set_data(window->time_edit_widget,
-												EDIT_VAR_LOW_LIMIT, time_value );
-											time_value = Time_keeper_get_maximum(window->time_keeper);
-											edit_var_set_data(window->time_edit_widget,
-												EDIT_VAR_HIGH_LIMIT, time_value );
-											/* make sure the first scene_viewer shows the front view */
-											if (Scene_viewer_get_lookat_parameters(
-													 window->scene_viewer_array[0],
-													 &(eye[0]),&(eye[1]),&(eye[2]),
-													 &(lookat[0]),&(lookat[1]),&(lookat[2]),
-													 &(up[0]),&(up[1]),&(up[2]))&&
-												axis_number_to_axis_vector(
-													window->ortho_up_axis,up)&&
-												axis_number_to_axis_vector(
-													window->ortho_front_axis,front))
-											{
-												view[0]=eye[0]-lookat[0];
-												view[1]=eye[1]-lookat[1];
-												view[2]=eye[2]-lookat[2];
-												eye_distance=normalize3(view);
-												Scene_viewer_set_lookat_parameters(
-													window->scene_viewer_array[0],
-													lookat[0]+eye_distance*front[0],
-													lookat[1]+eye_distance*front[1],
-													lookat[2]+eye_distance*front[2],
-													lookat[0],lookat[1],lookat[2],up[0],up[1],up[2]);
-											}
-											Graphics_window_view_all(window);
-											Graphics_window_set_layout_mode(window,
-												GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-
-											/* Remove the control panel so that it doesn't make the 
-												shell taller than we want the graphics window to be */
-											XtUnmanageChild(window->control_panel);
-
-											/* deferred from above for OpenGL */
-											XtManageChild(window->main_window);
-											/*XtRealizeWidget(window->window_shell);*/
-											XtPopup(window->window_shell,XtGrabNone);
-
-											/* Put the control panel back in */
-											XtManageChild(window->control_panel);
-
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"CREATE(graphics_window).  Could not allocate memory for scene viewer array.");
-										DEACCESS(Scene)(&(window->scene));
-										DEALLOCATE(window->name);
-										DEALLOCATE(window);		
-									}
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					DEACCESS(Scene)(&(window->scene));
-					DEALLOCATE(window->name);
-					DEALLOCATE(window);
-					display_message(ERROR_MESSAGE,
-						"CREATE(graphics_window).  Could not create a shell");
-				}
-				if (window_title)
-				{
-					DEALLOCATE(window_title);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(graphics_window).  Could not open hierarchy");
-				window=(struct Graphics_window *)NULL;
-			}
-#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			window->close_handler_id = 0;
 			window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 			if (window->shell_window)
@@ -5052,12 +3969,7 @@ Graphics_window_destroy_CB.
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
 		}
 #endif /* (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
-		destroy_Shell_list_item_from_shell(&(window->window_shell),
-			window->user_interface);
-		/* destroy the graphics window widget */
-		XtDestroyWidget(window->window_shell);
-#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		DestroyWindow(window->hWnd);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
@@ -5080,10 +3992,6 @@ Graphics_window_destroy_CB.
 			 and have a already closed graphics window. */
 		if(window->time_keeper)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			Time_keeper_remove_callback(window->time_keeper,
-				Graphics_window_time_keeper_callback, (void *)window);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
 #if defined (WX_USER_INTERFACE) 
@@ -5504,24 +4412,21 @@ DESCRIPTION :
 Sets the layout mode in effect on the <window>.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	double bottom,clip_factor,far_plane,left,
 		near_plane,radius,right,top;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int perturb_lines;
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
 	unsigned int transparency_layers;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-	Widget viewing_area;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxPanel* current_panel = NULL;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -5535,7 +4440,7 @@ Sets the layout mode in effect on the <window>.
 			Graphics_window_layout_mode_get_number_of_panes(layout_mode);
 		if (new_number_of_panes > window->number_of_scene_viewers)
 		{
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			first_scene_viewer = window->scene_viewer_array[0];
 			Scene_viewer_get_lookat_parameters(first_scene_viewer,
 				&(eye[0]),&(eye[1]),&(eye[2]),
@@ -5551,33 +4456,6 @@ Sets the layout mode in effect on the <window>.
 				for (pane_no = window->number_of_scene_viewers ;
 					  return_code && (pane_no < new_number_of_panes) ; pane_no++)
 				{
-#if defined (MOTIF_USER_INTERFACE)
-					switch (pane_no)
-					{
-						/* First viewing area is pane_no 0 */
-						case 1:
-						{
-							viewing_area = window->viewing_area2;
-						} break;
-						case 2:
-						{
-							viewing_area = window->viewing_area3;
-						} break;
-						case 3:
-						{
-							viewing_area = window->viewing_area4;
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE, "Graphics_window_set_layout_mode.  "
-								"Invalid pane to create");
-							return_code = 0;
-						} break;
-					}
-					if (graphics_buffer = create_Graphics_buffer_X3d_from_buffer(
-							 viewing_area, /*width*/100, /*height*/100,
-							 Scene_viewer_get_graphics_buffer(first_scene_viewer)))
-#elif defined (WX_USER_INTERFACE)
 					switch (pane_no)
 					{
 						/* First viewing area is pane_no 0 */
@@ -5608,7 +4486,6 @@ Sets the layout mode in effect on the <window>.
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
 						/*minimum_accumulation_buffer_depth*/0, Scene_viewer_get_graphics_buffer(first_scene_viewer));
 					if (graphics_buffer)
-#endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
 						window->scene_viewer_array[pane_no]=
@@ -5681,12 +4558,12 @@ Sets the layout mode in effect on the <window>.
 			{
 				return_code = 0;
 			}
-#else /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#else
 			display_message(ERROR_MESSAGE,
 				"Graphics_window_set_layout_mode.  "
 				"More than one scene viewer in the graphics window not implemented for this version.");
 			return_code=0;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		}
 		if (return_code)
 		{
@@ -5697,11 +4574,7 @@ Sets the layout mode in effect on the <window>.
 				/* get the number of panes for the new layout */
 				window->number_of_panes=
 					Graphics_window_layout_mode_get_number_of_panes(layout_mode);
-#if defined (MOTIF_USER_INTERFACE)
-				/* make sure the current layout mode is displayed on the chooser */
-				choose_enumerator_set_string(window->layout_mode_widget,
-					(char *)Graphics_window_layout_mode_string(layout_mode));
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 				wxChoice *layout_choice = XRCCTRL(
 					 *window->wx_graphics_window, "View", wxChoice);
 				layout_choice->SetStringSelection(
@@ -5759,12 +4632,6 @@ Sets the layout mode in effect on the <window>.
 						window->default_tumble_rate);
 					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
-#if defined (MOTIF_USER_INTERFACE)
-					XtVaSetValues(window->viewing_area1,
-						XmNrightPosition,2,XmNbottomPosition,2,NULL);
-					/* grey-out orthographic view controls */
-					XtSetSensitive(window->orthographic_form,False);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 			} break;
 			case GRAPHICS_WINDOW_LAYOUT_2D:
@@ -5781,8 +4648,6 @@ Sets the layout mode in effect on the <window>.
 					//XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (WX_USER_INTERFACE) */
 
-
-
 					/* disable tumbling in main scene viewer */
 					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
 						window->default_translate_rate);
@@ -5790,17 +4655,6 @@ Sets the layout mode in effect on the <window>.
 						/*tumble_rate*/0.0);
 					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
-#if defined (MOTIF_USER_INTERFACE)
-					/* single scene viewer with no tumbling, orientation controlled
-						 by orthographic axes */
-					XtUnmanageChild(window->viewing_area2);
-					XtUnmanageChild(window->viewing_area3);
-					XtUnmanageChild(window->viewing_area4);
-					XtVaSetValues(window->viewing_area1,
-						XmNrightPosition,2,XmNbottomPosition,2,NULL);
-					/* un-grey orthographic view controls */
-					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 				/* set the plan view in pane 0 */
 				if (Scene_viewer_get_lookat_parameters(window->scene_viewer_array[0],
@@ -5855,17 +4709,6 @@ Sets the layout mode in effect on the <window>.
 						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
-#if defined (MOTIF_USER_INTERFACE)
-					XtVaSetValues(window->viewing_area1,
-						XmNrightPosition,1,XmNbottomPosition,1,NULL);
-					XtVaSetValues(window->viewing_area2,
-						XmNbottomPosition,1,NULL);
-					XtManageChild(window->viewing_area2);
-					XtManageChild(window->viewing_area3);
-					XtManageChild(window->viewing_area4);
-					/* un-grey orthographic view controls */
-					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 				/* four views, 3 tied together as front, side and plan views */
 				/* set the plan view in pane 1 */
@@ -5916,17 +4759,6 @@ Sets the layout mode in effect on the <window>.
 						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
-#if defined (MOTIF_USER_INTERFACE)
-					XtVaSetValues(window->viewing_area1,
-						XmNrightPosition,1,XmNbottomPosition,2,NULL);
-					XtVaSetValues(window->viewing_area2,
-						XmNbottomPosition,2,NULL);
-					XtManageChild(window->viewing_area2);
-					XtUnmanageChild(window->viewing_area3);
-					XtUnmanageChild(window->viewing_area4);
-					/* un-grey orthographic view controls */
-					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 					//XtVaSetValues(window->viewing_area1,
 					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
@@ -6027,69 +4859,34 @@ such as GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC.
 Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 ==============================================================================*/
 {
-	int return_code = 0,new_up_axis,new_front_axis;
-#if defined (MOTIF_USER_INTERFACE)
-	int num_children;
-	XmString temp_string;
-	Widget *child_list;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+	int return_code = 0;
 
 	ENTER(Graphics_window_set_orthographic_axes);
 	if (window)
 	{
-		new_up_axis=0;
-		new_front_axis=0;
 		if (window->ortho_up_axis != ortho_up_axis)
 		{
 			window->ortho_up_axis=ortho_up_axis;
-			new_up_axis=1;
 		}
 		if (window->ortho_front_axis != ortho_front_axis)
 		{
 			window->ortho_front_axis=ortho_front_axis;
-			new_front_axis=1;
 		}
 		/* Ensure the up and front axes are legal... */
 		if (!window->ortho_up_axis)
 		{
 			window->ortho_up_axis=3;
-			new_up_axis=1;
 		}
 		if (!window->ortho_front_axis)
 		{
 			window->ortho_front_axis=5;
-			new_front_axis=1;
 		}
 		/* ...and orthogonal */
 		if ((window->ortho_up_axis % 3)==(window->ortho_front_axis % 3))
 		{
 			window->ortho_front_axis=(window->ortho_front_axis % 6)+1;
-			new_front_axis=1;
 		}
 		/* update the widgets if values have changed in this function */
-		if (new_up_axis)
-		{
-#if defined (MOTIF_USER_INTERFACE)
-			/* get children of the menu so that one may be selected */
-			XtVaGetValues(window->ortho_up_menu,XmNnumChildren,&num_children,
-				XmNchildren,&child_list,NULL);
-			if ((1 <= window->ortho_up_axis)&&(num_children >= window->ortho_up_axis))
-			{
-				XtVaSetValues(window->ortho_up_option,
-					XmNmenuHistory,child_list[window->ortho_up_axis-1],NULL);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		}
-		if (new_front_axis)
-		{
-#if defined (MOTIF_USER_INTERFACE)
-			temp_string=
-				XmStringCreateSimple((char *)axis_name[window->ortho_front_axis]);
-			XtVaSetValues(window->ortho_front_button,
-				XmNlabelString,temp_string,NULL);
-			XmStringFree(temp_string);
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		}
 		return_code = 1;
 	}
 	else
@@ -6176,28 +4973,6 @@ Must call Graphics_window_view_changed after changing tied pane.
 				/* update perspective button widget if current_pane changed */
 				if (pane_no == window->current_pane)
 				{
-#if defined (MOTIF_USER_INTERFACE)
-					/* set perspective widgets */
-					if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
-					{
-						XtVaSetValues(window->perspective_button,XmNset,True,NULL);
-					}
-					else
-					{
-						XtVaSetValues(window->perspective_button,XmNset,False,NULL);
-					}
-					if ((!Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
-						window->layout_mode,pane_no,SCENE_VIEWER_PERSPECTIVE))||
-						(SCENE_VIEWER_CUSTOM==projection_mode))
-					{
-						XtSetSensitive(window->perspective_button,False);
-					}
-					else
-					{
-						XtSetSensitive(window->perspective_button,True);
-					}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 #if defined (WX_USER_INTERFACE)
 					/* set perspective widgets */
 					if (window->wx_perspective_button)
@@ -6378,9 +5153,6 @@ graphics window has only one pane. When multiple panes are used, they are
 separated by 2 pixel borders within the viewing area.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Dimension height,width;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	RECT rect;
 #endif /* defined (WIN32_USER_INTERFACE) */	
@@ -6389,15 +5161,7 @@ separated by 2 pixel borders within the viewing area.
 	ENTER(Graphics_window_get_viewing_area_size);
 	if (window&&viewing_width&&viewing_height)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		XtVaGetValues(window->viewing_form,
-			XmNwidth,&width,
-			XmNheight,&height,NULL);
-		/* subtract 2 pixel border */
-		*viewing_width=((int)width-2);
-		*viewing_height=((int)height-2);
-		return_code=1;
-#elif defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 		gtk_window_get_size(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
@@ -6450,34 +5214,12 @@ graphics window has only one pane. When multiple panes are used, they are
 separated by 2 pixel borders within the viewing area.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Dimension old_viewing_height,old_viewing_width,shell_height,shell_width;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Graphics_window_set_viewing_area_size);
 	if (window&&(0<=viewing_width)&&(0<=viewing_height))
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		/* add allowance for two pixel border on scene_viewer */
-		viewing_width += 2;
-		viewing_height += 2;
-		XtVaGetValues(window->viewing_form,
-			XmNwidth,&old_viewing_width,
-			XmNheight,&old_viewing_height,NULL);
-		XtVaGetValues(window->main_window,
-			XmNwidth,&shell_width,
-			XmNheight,&shell_height,NULL);
-		if ((viewing_width != old_viewing_width) ||
-			(viewing_height != old_viewing_height))
-		{
-			shell_width += (viewing_width-old_viewing_width);
-			shell_height += (viewing_height-old_viewing_height);
-			XtVaSetValues(window->window_shell,
-				XmNwidth,shell_width,
-				XmNheight,shell_height,NULL);
-		}
-#elif defined (GTK_USER_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 		gtk_window_resize(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
@@ -7044,11 +5786,6 @@ graphics window on screen.
 		}
 		else
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			/* bring the graphics window to the front so image is not obscured */
-			XRaiseWindow(XtDisplay(window->window_shell),
-				XtWindow(window->window_shell));
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, &frame_width, 
 				&frame_height);
@@ -8305,7 +7042,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 	
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined
+#endif /* defined (GTK_USER_INTERFACE) || defined
 			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 int modify_Graphics_window(struct Parse_state *state,void *help_mode,

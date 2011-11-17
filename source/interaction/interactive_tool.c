@@ -77,7 +77,6 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	/* This points to the static string which identifies the tool type */
 	const char *tool_type_name;
 	Interactive_event_handler *interactive_event_handler;
-	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
 	Interactive_tool_reset_function *reset_function;
 	Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
@@ -110,7 +109,6 @@ Global functions
 struct Interactive_tool *CREATE(Interactive_tool)(const char *name,const char *display_name,
 	const char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
-	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
 	Interactive_tool_reset_function *reset_function,
 	Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
@@ -131,7 +129,7 @@ type.
 	struct Interactive_tool *interactive_tool;
 
 	ENTER(CREATE(Interactive_tool));
-	if (name&&display_name&&get_icon_function)
+	if (name&&display_name)
 	{
 		if (ALLOCATE(interactive_tool,struct Interactive_tool,1)&&
 			(interactive_tool->name=duplicate_string(name))&&
@@ -140,7 +138,6 @@ type.
 			/* We don't duplicate this string as it is the pointer to the 
 				string which identifies its type */
 			interactive_tool->tool_type_name=tool_type_name;
-			interactive_tool->get_icon_function=get_icon_function;
 			interactive_tool->bring_up_dialog_function=bring_up_dialog_function;
 			interactive_tool->reset_function=reset_function;
 			interactive_tool->interactive_event_handler=interactive_event_handler;
@@ -484,34 +481,6 @@ Passes the <interactive_event> from <device_id> to the tool wrapped by the
 
 	return (return_code);
 } /* Interactive_tool_handle_interactive_event */
-
-struct Cmgui_image *Interactive_tool_get_icon(struct Colour *foreground,
-	struct Colour *background, struct Interactive_tool *interactive_tool)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Returns the icon which a user_interface can use to represent the tool.
-==============================================================================*/
-{
-   struct Cmgui_image *image;
-
-	ENTER(Interactive_tool_get_icon);
-	if (interactive_tool)
-	{
-		image=(interactive_tool->get_icon_function)(foreground,
-			background, interactive_tool->tool_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Interactive_tool_get_icon.  Invalid argument(s)");
-		image=(struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Interactive_tool_get_icon */
 
 int Interactive_tool_copy(struct Interactive_tool *destination_interactive_tool,
    struct Interactive_tool *source_interactive_tool,

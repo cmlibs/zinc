@@ -54,9 +54,7 @@ extern "C" {
 #endif /* !defined (WIN32_SYSTEM) */
 #include "general/debug.h"
 #include "comfile/comfile.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "comfile/comfile_window.h"
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 #include "comfile/comfile_window_wx.h"
 #include "command/cmiss.h"
 #endif /* WX_USER_INTERFACE */
@@ -79,13 +77,13 @@ specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/
 {
 	 char *command_string, *filename;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	char *name;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	int i,length,return_code;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	struct Comfile_window *comfile_window;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	struct Open_comfile_data *open_comfile_data;
 	struct Option_table *option_table;
 #if defined (WX_USER_INTERFACE)
@@ -329,7 +327,7 @@ specified on the command line, a file selection box is presented to the user.
 					}
 					else
 					{
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 							name = Comfile_window_manager_make_unique_name(
 										 open_comfile_data->comfile_window_manager,
 										 filename);
@@ -369,11 +367,11 @@ specified on the command line, a file selection box is presented to the user.
 										"open_comfile.  Could not allocate window name");
 								 return_code=0;
 							}
-#else /* defined (MOTIF_USER_INTERFACE) */
+#else /* defined (WX_USER_INTERFACE) */
 							display_message(ERROR_MESSAGE,
 								 "open_comfile.  Cannot create a comfile dialog, use execute.");
 						return_code=0;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 					 }
 #if defined (WX_USER_INTERFACE)
 					 if (old_directory_name)

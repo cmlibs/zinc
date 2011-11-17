@@ -64,14 +64,6 @@ static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);
 /* Declaration for circular reference between this and the event handler and
    play private */
 
-#if defined (MOTIF_USER_INTERFACE)
-struct Time_keeper_defaults
-{
-	Boolean play_every_frame;
-	float speed;
-};
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 struct Time_keeper_callback_data
 {
 	Time_keeper_callback callback;
@@ -290,66 +282,17 @@ LAST MODIFIED : 15 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNtimePlaySpeed "timePlaySpeed"
-#define XmCtimePlaySpeed "TimePlaySpeed"
-#define XmNtimePlayEveryFrame "timePlayEveryFrame"
-#define XmCtimePlayEveryFrame "TimePlayEveryFrame"
-	struct Time_keeper_defaults time_keeper_defaults;
-	static XtResource resources[]=
-	{
-		{
-			XmNtimePlaySpeed,
-			XmCtimePlaySpeed,
-			XmRFloat,
-			sizeof(float),
-			XtOffsetOf(struct Time_keeper_defaults,speed),
-			XmRString,
-			"1.0"
-		},
-		{
-			XmNtimePlayEveryFrame,
-			XmCtimePlayEveryFrame,
-			XmRBoolean,
-			sizeof(Boolean),
-			XtOffsetOf(struct Time_keeper_defaults,play_every_frame),
-			XmRString,
-			"false"
-		}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Time_keeper *time_keeper;
 
 	ENTER(CREATE(Time_keeper));
-#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	if(name)
 	{
 		if (ALLOCATE(time_keeper, struct Time_keeper, 1) &&
 			ALLOCATE(time_keeper->name, char, strlen(name) + 1))
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			time_keeper_defaults.speed = 1.0;
-			time_keeper_defaults.play_every_frame = False;
-			if (user_interface)
-			{
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-					&time_keeper_defaults,resources,XtNumber(resources),NULL);
-			}
-			time_keeper->speed = time_keeper_defaults.speed;
-			if(time_keeper_defaults.play_every_frame)
-			{
-				time_keeper->play_every_frame = 1;
-			}
-			else
-			{
-				time_keeper->play_every_frame = 0;
-			}
-#else /* defined (MOTIF_USER_INTERFACE) */
 			time_keeper->speed = 1.0;
 			time_keeper->play_every_frame = 0;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			strcpy(time_keeper->name, name);
 			time_keeper->time_object_info_list = (struct Time_object_info *)NULL;
 			time_keeper->time = 0.0;

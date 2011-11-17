@@ -51,7 +51,7 @@ Functions and structures for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES
 #	define GLX_GLXEXT_PROTOTYPES
-#	if defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN)
+#	if !defined (DARWIN)
 #		if defined (WIN32_SYSTEM)
 //#			define WINDOWS_LEAN_AND_MEAN
 #			if !defined (NOMINMAX)
@@ -69,7 +69,7 @@ Functions and structures for interfacing with the graphics library.
 #			undef GL_NV_vertex_program
 #			undef GL_NV_register_combiners2
 #		endif /* defined (WIN32_SYSTEM) */
-#	endif /* defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN) */
+#	endif /* ! defined (DARWIN) */
 #endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"
 #if defined (GTK_USER_INTERFACE)

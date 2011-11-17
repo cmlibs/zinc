@@ -42,11 +42,6 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#if defined (MOTIF_USER_INTERFACE)
-#include "interaction/select_tool.h"
-#include "io_devices/conversion.h"
-#include "view/coord.h"
-#endif
 #include "time/time_keeper.h"
 #include "comfile/comfile.h"
 #include "command/command_window.h"
@@ -68,18 +63,6 @@ extern "C" {
 #if defined (USE_OPENCASCADE)
 #include "cad/cad_tool.h"
 #endif /* defined (USE_OPENCASCADE) */
-#if defined (MOTIF_USER_INTERFACE)
-typedef struct
-/*******************************************************************************
-LAST MODIFIED : 12 December 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	Pixel background_colour,foreground_colour;
-	char *examples_directory,*help_directory,*help_url,*startup_comfile;
-} User_settings;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE) || (!defined (WIN32_USER_INTERFACE) && !defined (_MSC_VER))
 struct User_interface_module *User_interface_module_create(
@@ -96,80 +79,6 @@ struct User_interface_module *User_interface_module_create(
 	Cmiss_region *root_region = NULL;;
 	struct Cmiss_graphics_module *graphics_module = NULL;
 	int visual_id = 0;
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-#define XmNbackgroundColour "backgroundColour"
-#define XmCBackgroundColour "BackgroundColour"
-#define XmNforegroundColour "foregroundColour"
-#define XmCForegroundColour "ForegroundColour"
-#define XmNexamplesDirectory "examplesDirectory"
-#define XmCExamplesDirectory "ExamplesDirectory"
-#define XmNstartupComfile "startupComfile"
-#define XmCStartupComfile "StartupComfile"
-#define XmNhelpDirectory "helpDirectory"
-#define XmCHelpDirectory "HelpDirectory"
-#define XmNhelpUrl "helpUrl"
-#define XmCHelpUrl "HelpUrl"
-	static XtResource resources[]=
-	{
-		{
-			const_cast<char *>(XmNbackgroundColour),
-			const_cast<char *>(XmCBackgroundColour),
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,background_colour),
-			XmRString,
-			const_cast<char *>("black")
-		},
-		{
-			const_cast<char *>(XmNforegroundColour),
-			const_cast<char *>(XmCForegroundColour),
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,foreground_colour),
-			XmRString,
-			const_cast<char *>("white")
-		},
-		{
-			const_cast<char *>(XmNexamplesDirectory),
-			const_cast<char *>(XmCExamplesDirectory),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,examples_directory),
-			XmRString,
-			const_cast<char *>("")
-		},
-		{
-			const_cast<char *>(XmNstartupComfile),
-			const_cast<char *>(XmCStartupComfile),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,startup_comfile),
-			XmRImmediate,
-			(XtPointer)0
-		},
-		{
-			const_cast<char *>(XmNhelpDirectory),
-			const_cast<char *>(XmCHelpDirectory),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,help_directory),
-			XmRString,
-			const_cast<char *>("")
-		},
-		{
-			const_cast<char *>(XmNhelpUrl),
-			const_cast<char *>(XmCHelpUrl),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,help_url),
-			XmRString,
-			const_cast<char *>("http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php")
-		},
-	};
-	XColor rgb;
-	User_settings user_settings;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	if (context && ALLOCATE(UI_module, struct User_interface_module, 1))
 	{
@@ -182,24 +91,10 @@ struct User_interface_module *User_interface_module_create(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		UI_module->graphics_window_manager = NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-#if defined (MOTIF_USER_INTERFACE)
-		UI_module->prompt_window = NULL;
-		UI_module->projection_window = NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-		UI_module->select_tool = NULL;
-		UI_module->curve_editor_dialog = NULL;
-		UI_module->data_grabber_dialog = NULL;
-		UI_module->grid_field_calculator_dialog = NULL; 
-		UI_module->input_module_dialog  = NULL;
-		UI_module->sync_2d_3d_dialog = NULL;
-		UI_module->element_creator = NULL;
-		UI_module->time_editor_dialog = NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		UI_module->default_time_keeper = NULL;
 		UI_module->user_interface = NULL;
 		UI_module->emoter_slider_dialog = NULL;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		UI_module->comfile_window_manager = NULL;
 		UI_module->data_viewer = NULL; 
 		UI_module->node_viewer = NULL;
@@ -207,7 +102,7 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->material_editor_dialog = NULL;
 		UI_module->region_tree_viewer = NULL;
 		UI_module->spectrum_editor_dialog = NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		UI_module->scene_viewer_package = NULL;
 		UI_module->graphics_buffer_package = NULL;
 		UI_module->interactive_tool_manager = NULL;
@@ -292,49 +187,10 @@ struct User_interface_module *User_interface_module_create(
 		{
 			DEALLOCATE(command_line_options.epath_directory_name);
 		}
-#if defined (MOTIF_USER_INTERFACE)
-		if (UI_module->user_interface)
-		{
-			/* retrieve application specific constants */
-			display = User_interface_get_display(UI_module->user_interface);
-			XtVaGetApplicationResources(User_interface_get_application_shell(
-			   UI_module->user_interface),&user_settings,resources,
-			   XtNumber(resources),NULL);
-			/*???DB.  User settings should be divided among tools */
-			/* retrieve the background rgb settings */
-			rgb.pixel=user_settings.background_colour;
-			XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-			/*???DB.  Get rid of 65535 ? */
-			UI_module->background_colour.red=(float)(rgb.red)/(float)65535;
-			UI_module->background_colour.green=(float)(rgb.green)/(float)65535;
-			UI_module->background_colour.blue=(float)(rgb.blue)/(float)65535;
-			/* retrieve the foreground rgb settings */
-			rgb.pixel=user_settings.foreground_colour;
-			XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-			/*???DB.  Get rid of 65535 ? */
-			UI_module->foreground_colour.red=(float)(rgb.red)/(float)65535;
-			UI_module->foreground_colour.green=(float)(rgb.green)/(float)65535;
-			UI_module->foreground_colour.blue=(float)(rgb.blue)/(float)65535;
-			if ((UI_module->foreground_colour.red ==
-					 UI_module->background_colour.red) &&
-				(UI_module->foreground_colour.green ==
-					UI_module->background_colour.green) &&
-				(UI_module->foreground_colour.blue ==
-					UI_module->background_colour.blue))
-			{
-				UI_module->foreground_colour.red =
-					1 - UI_module->background_colour.red;
-				UI_module->foreground_colour.green =
-					1 - UI_module->background_colour.green;
-				UI_module->foreground_colour.blue =
-					1 - UI_module->background_colour.blue;
-			}
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		/* comfile window manager */
 		UI_module->comfile_window_manager = CREATE(MANAGER(Comfile_window))();
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (UI_module->user_interface)
@@ -395,26 +251,8 @@ struct User_interface_module *User_interface_module_create(
 				Material_package_get_default_material(material_package),
 				UI_module->user_interface,
 				UI_module->default_time_keeper);
-#if defined (MOTIF_USER_INTERFACE)
-			UI_module->select_tool=CREATE(Select_tool)(
-				UI_module->interactive_tool_manager,
-				Cmiss_context_get_any_object_selection(context),
-				Material_package_get_default_material(material_package),
-				UI_module->user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			DEACCESS(Material_package)(&material_package);
 		}
-#if defined (MOTIF_USER_INTERFACE)
-		/* now set up the conversion routines */
-		/*???DB.  Can this be put elsewhere ? */
-		conversion_init();
-		/* initialize the coordinate widget manager */
-		/*???DB.  Still needs to be turned into a manager */
-		coord_widget_init();
-#endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-		UI_module->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 		if (UI_module->user_interface)
 		{
 			/* set up image library */
@@ -512,20 +350,11 @@ int User_interface_module_destroy(
 				DESTROY(Graphics_buffer_package)(&UI_module->graphics_buffer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-#if defined (MOTIF_USER_INTERFACE)
-			if (UI_module->select_tool)
-			{
-				DESTROY(Select_tool)(&UI_module->select_tool);
-			}
-#endif
 			DESTROY(MANAGER(Interactive_tool))(&(UI_module->interactive_tool_manager));
 
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 			DESTROY(MANAGER(Comfile_window))(&UI_module->comfile_window_manager);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-			DESTROY(MANAGER(Movie_graphics))(&UI_module->movie_graphics_manager);
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 			if (UI_module->default_time_keeper)
 				DEACCESS(Time_keeper)(&UI_module->default_time_keeper);
 			if (UI_module->user_interface)

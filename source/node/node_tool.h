@@ -112,14 +112,6 @@ DESCRIPTION :
 Pops up a dialog for editing settings of the Node_tool.
 ==============================================================================*/
 
-int Node_tool_pop_down_dialog(struct Node_tool *node_tool);
-/*******************************************************************************
-LAST MODIFIED : 20 June 2001
-
-DESCRIPTION :
-Hides the dialog for editing settings of the Node_tool.
-==============================================================================*/
-
 struct Computed_field *Node_tool_get_coordinate_field(
 	struct Node_tool *node_tool);
 /*******************************************************************************

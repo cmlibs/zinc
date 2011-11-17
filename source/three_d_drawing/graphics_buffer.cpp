@@ -47,20 +47,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
-#if defined (MOTIF_USER_INTERFACE)
-#if defined (SGI)
-/* Not compiling in as not being actively used and only available on O2's and
-   cannot compile against Mesa without function pointer tables. */
-/* #include <dmedia/dm_buffer.h> */
-#endif /* defined (SGI) */
-#define GL_GLEXT_PROTOTYPES
-#define GLX_GLXEXT_PROTOTYPES
-#include <GL/glx.h>
-#include <GL/gl.h>
-#include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -193,10 +179,6 @@ DESCRIPTION :
 {
 	int override_visual_id;
 
-#if defined (MOTIF_USER_INTERFACE)
-	GLXContext shared_glx_context;
-	Display *display;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined (GTK_USE_GTKGLAREA)
 	  GtkWidget *share_glarea;
@@ -250,38 +232,6 @@ DESCRIPTION :
 		  *expose_callback_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback))
 		  *input_callback_list;
-
-/* For GRAPHICS_BUFFER_GLX_X3D_TYPE */
-#if defined (MOTIF_USER_INTERFACE)
-	Widget drawing_widget;
-	Widget parent;
-	Display *display;
-
-#  if defined (GLX_SGIX_dmbuffer)
-	   DMbuffer dmbuffer;
-	   DMbufferpool dmpool;
-#  endif /* defined (GLX_SGIX_dmbuffer) */
-	   GLXContext context;
-#  if defined (USE_GLX_PBUFFER)
-	   GLXPbuffer glx_pbuffer;
-#  else /* defined (USE_GLX_PBUFFER) */
-#     if defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer)
-	      GLXPbufferSGIX glx_pbuffer;
-#     endif /* defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer) */
-#  endif /* defined (USE_GLX_PBUFFER) */
-#  if defined (USE_GLX_FBCONFIG)
-	   GLXFBConfig config;
-	   GLXFBConfig *config_list;
-#  else /* defined (USE_GLX_FBCONFIG) */
-#     if defined (GLX_SGIX_fbconfig)
-	      GLXFBConfigSGIX config;
-	      GLXFBConfigSGIX *config_list;
-#     endif /* defined (GLX_SGIX_fbconfig) */
-#  endif /* defined (USE_GLX_FBCONFIG) */
-	XVisualInfo *visual_info;
-	Pixmap pixmap;
-	GLXPixmap glx_pixmap;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 
@@ -435,38 +385,6 @@ contained in the this module only.
 		buffer->input_callback_list=
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))();
 
-/* For GRAPHICS_BUFFER_GLX_X3D_TYPE */
-#if defined (MOTIF_USER_INTERFACE)
-		buffer->drawing_widget = (Widget)NULL;
-		buffer->parent = (Widget)NULL;
-		buffer->display = (Display *)NULL;
-
-#  if defined (GLX_SGIX_dmbuffer)
-	   buffer->dmbuffer = (DMbuffer)NULL;
-	   buffer->dmpool = (DMbufferpool)NULL;
-#  endif /* defined (GLX_SGIX_dmbuffer) */
-	   buffer->context = (GLXContext)NULL;
-#  if defined (USE_GLX_PBUFFER)
-	   buffer->glx_pbuffer = (GLXPbuffer)NULL;
-#  else /* defined (USE_GLX_PBUFFER) */
-#     if defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer)
-		buffer->glx_pbuffer = (GLXPbufferSGIX)NULL;
-#     endif /* defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer) */
-#  endif /* defined (USE_GLX_PBUFFER) */
-#  if defined (USE_GLX_FBCONFIG)
-	   buffer->config = (GLXFBConfig)NULL;
-	   buffer->config_list = (GLXFBConfig *)NULL;
-#  else /* defined (USE_GLX_FBCONFIG) */
-#     if defined (GLX_SGIX_fbconfig)
-		buffer->config = (GLXFBConfigSGIX)NULL;
-		buffer->config_list = (GLXFBConfigSGIX *)NULL;
-#     endif /* defined (GLX_SGIX_fbconfig) */
-#  endif /* defined (USE_GLX_FBCONFIG) */
-	   buffer->visual_info = (XVisualInfo *)NULL;
-	   buffer->pixmap = (Pixmap)NULL;
-	   buffer->glx_pixmap = (GLXPixmap)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 #if defined (GTK_USER_INTERFACE)
 
 /* For GRAPHICS_BUFFER_GTKGLAREA_TYPE and GRAPHICS_BUFFER_GTKGLEXT_TYPE */
@@ -554,775 +472,6 @@ contained in the this module only.
 	LEAVE;
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
-	XtPointer graphics_buffer_structure, XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-This is the configuration callback for the GL widget.
-Sets the initial viewing transform for the graphics_buffer.
-???RC Needed at all?
-???RC Move functionality elsewhere?
-???RC Need MakeCurrent?
-==============================================================================*/
-{
-	struct Graphics_buffer *graphics_buffer;
-
-	ENTER(graphics_buffer_X3d_initialize_callback);
-	USE_PARAMETER(call_data);
-	USE_PARAMETER(graphics_buffer_widget);
-	if (graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)
-	{
-		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-			graphics_buffer->initialise_callback_list, graphics_buffer, NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphics_buffer_X3d_initialize_callback.  Missing graphics_buffer");
-	}
-	LEAVE;
-} /* Graphics_buffer_X3d_initialize_callback */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_buffer_X3d_resize_callback(Widget graphics_buffer_widget,
-	XtPointer graphics_buffer_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-Called when part of the graphics_buffer window is resized. All it does is notify
-callbacks interested in the graphics_buffers transformations.
-==============================================================================*/
-{
-	struct Graphics_buffer *graphics_buffer;
-	X3dThreeDDrawCallbackStruct *resize_callback_data;
-
-	ENTER(graphics_buffer_X3d_resize_callback);
-	if (graphics_buffer_widget&&
-		(graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)&&
-		(resize_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
-		(X3dCR_RESIZE==resize_callback_data->reason))
-	{
-		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphics_buffer_X3d_resize_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* graphics_buffer_X3d_resize_callback */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_buffer_X3d_expose_callback(Widget graphics_buffer_widget,
-	XtPointer graphics_buffer_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-Called when part of the graphics_buffer window is exposed. Does not attempt to
-redraw just the exposed area. Instead, it redraws the whole picture, but only
-if there are no more expose events pending.
-==============================================================================*/
-{
-	struct Graphics_buffer *graphics_buffer;
-	XExposeEvent *expose_event;
-	X3dThreeDDrawCallbackStruct *expose_callback_data;
-
-	ENTER(graphics_buffer_X3d_expose_callback);
-	if (graphics_buffer_widget&&
-		(graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)&&
-		(expose_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
-		(X3dCR_EXPOSE==expose_callback_data->reason)&&
-		(expose_event=(XExposeEvent *)(expose_callback_data->event)))
-	{
-		/* if no more expose events in series */
-		if (0==expose_event->count)
-		{
-			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-				graphics_buffer->expose_callback_list, graphics_buffer, NULL);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphics_buffer_X3d_expose_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* graphics_buffer_X3d_expose_callback */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Graphics_buffer_X3d_input_callback(Widget graphics_buffer_widget,
-	XtPointer graphics_buffer_structure, XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-The callback for mouse or keyboard input in the graphics_buffer window. The
-resulting behaviour depends on the <graphics_buffer> input_mode. In Transform mode
-mouse clicks and drags are converted to transformation; in Select mode OpenGL
-picking is performed with picked objects and mouse click and drag information
-returned to the scene.
-==============================================================================*/
-{
-	int input_modifier, return_code;
-	struct Graphics_buffer *graphics_buffer;
-	struct Graphics_buffer_input input;
-	XButtonEvent *button_event;
-	XEvent *event;
-	XKeyEvent *key_event;
-	XMotionEvent *motion_event;
-	X3dThreeDDrawCallbackStruct *input_callback_data;
-
-	ENTER(Graphics_buffer_input_callback);
-	USE_PARAMETER(graphics_buffer_widget);
-	if ((graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)&&
-		(input_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
-		(X3dCR_INPUT==input_callback_data->reason)&&
-		(event=(XEvent *)(input_callback_data->event)))
-	{
-		return_code = 1;
-		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
-		input.button_number = 0;
-		input.key_code = 0;
-		input.position_x = 0;
-		input.position_y = 0;
-		input_modifier = 0;
-		switch(event->type)
-		{
-			case MotionNotify:
-			{
-				input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
-				motion_event = &(event->xmotion);
-				input.position_x = motion_event->x;
-				input.position_y = motion_event->y;
-				if (ShiftMask&(motion_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-				}
-				if (ControlMask&(motion_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-				}
-				if (Mod1Mask&(motion_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-				}
-				if (Button1Mask&(motion_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-				}
-			} break;
-			case ButtonPress:
-			{
-				input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
-				button_event = &(event->xbutton);
-				input.button_number = button_event->button;
-				input.position_x = button_event->x;
-				input.position_y = button_event->y;
-				input_modifier = (enum Graphics_buffer_input_modifier)0;
-				if (ShiftMask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-				}
-				if (ControlMask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-				}
-				if (Mod1Mask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-				}
-				if (Button1Mask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-				}
-			} break;
-			case ButtonRelease:
-			{
-				input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
-				button_event = &(event->xbutton);
-				input.button_number = button_event->button;
-				input.position_x = button_event->x;
-				input.position_y = button_event->y;
-				if (ShiftMask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-				}
-				if (ControlMask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-				}
-				if (Mod1Mask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-				}
-				if (Button1Mask&(button_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-				}
-			} break;
-			case KeyPress:
-			{
-				input.type = GRAPHICS_BUFFER_KEY_PRESS;
-				key_event= &(event->xkey);
-				input.key_code = key_event->keycode;
-				if (ShiftMask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-				}
-				if (ControlMask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-				}
-				if (Mod1Mask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-				}
-				if (Button1Mask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-				}
-			} break;
-			case KeyRelease:
-			{
-				input.type = GRAPHICS_BUFFER_KEY_RELEASE;
-				key_event= &(event->xkey);
-				input.key_code = key_event->keycode;
-				if (ShiftMask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
-				}
-				if (ControlMask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
-				}
-				if (Mod1Mask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
-				}
-				if (Button1Mask&(key_event->state))
-				{
-					input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_buffer_input_callback.  Unknown X event");
-				return_code=0;
-				/* This event type is not being passed on */
-			} break;
-		}
-		input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
-			(input_modifier);
-
-		if (return_code)
-		{
-			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
-				graphics_buffer->input_callback_list, graphics_buffer, &input);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_input_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_buffer_input_callback */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-#  if defined USE_GLX_FBCONFIG
-static int Graphics_buffer_create_from_fb_config(struct Graphics_buffer *buffer,
-	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
-	int width, int height, GLXFBConfig fb_config)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	Display *display;
-	Pixmap pixmap;
-	GLXPixmap glx_pixmap;
-	XVisualInfo *visual_info;
-	Widget drawing_widget;
-#if defined (USE_GLX_PBUFFER)
-	GLXPbuffer pbuffer;
-	int pbuffer_attribs [] =
-	{
-		GLX_PBUFFER_WIDTH, 0, /* Note that these 0 values are explictly overwritten below */
-		GLX_PBUFFER_HEIGHT, 0,
-		GLX_PRESERVED_CONTENTS, True,
-		(int) None
-	};
-#endif /* defined (USE_GLX_PBUFFER) */
-	int pixmap_attribs [] =
-	{
-		/* There are currently no valid attributes */
-		(int) None
-	};
-
-	ENTER(Graphics_buffer_X3d_expose_callback);
-
-	return_code = 0;
-	display = graphics_buffer_package->display;
-#if defined (DEBUG_CODE)
-	{
-		int value;
-		printf("Graphics_buffer_create_from_fb_config\n");
- 		glXGetFBConfigAttrib(display, fb_config, GLX_FBCONFIG_ID, &value);
-		printf("   fbconfig id : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_DOUBLEBUFFER, &value);
-		printf("   doublebuffer : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_RED_SIZE, &value);
-		printf("   red : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_GREEN_SIZE, &value);
-		printf("   green : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_BLUE_SIZE, &value);
-		printf("   blue : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_ALPHA_SIZE, &value);
-		printf("   alpha : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_DEPTH_SIZE, &value);
-		printf("   depth : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_RED_SIZE, &value);
-		printf("   accumulation red : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_GREEN_SIZE, &value);
-		printf("   accumulation green : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_BLUE_SIZE, &value);
-		printf("   accumulation blue : %d\n", value);
- 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_ALPHA_SIZE, &value);
-		printf("   accumulation alpha : %d\n", value);
-	}
-#endif /* defined (DEBUG_CODE) */
-
-	switch (buffer_class)
-	{
-		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-		{
-			visual_info = glXGetVisualFromFBConfig(display, fb_config);
-			if (drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
-					threeDDrawingWidgetClass, x3d_parent_widget,
-					XtNdepth, visual_info->depth,
-					XtNvisual, visual_info->visual,
-					XmNwidth, width,
-					XmNheight, height,
-					XmNleftAttachment,XmATTACH_FORM,
-					XmNrightAttachment,XmATTACH_FORM,
-					XmNbottomAttachment,XmATTACH_FORM,
-					XmNtopAttachment,XmATTACH_FORM,
-					XmNborderWidth,0,
-					XmNleftOffset,0,
-					XmNrightOffset,0,
-					XmNbottomOffset,0,
-					XmNtopOffset,0,
-					NULL))
-			{
-				if (X3dThreeDisInitialised(drawing_widget))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_X3D_TYPE;
-					buffer->parent = x3d_parent_widget;
-					buffer->drawing_widget = drawing_widget;
-					buffer->display = display;
-					buffer->config = fb_config;
-					buffer->visual_info = glXGetVisualFromFBConfig(display, fb_config);
-					buffer->context = glXCreateNewContext(
-						display, buffer->config, GLX_RGBA_TYPE,
-						graphics_buffer_package->shared_glx_context, GL_TRUE);
-					XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
-						Graphics_buffer_X3d_initialize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNresizeCallback,
-						Graphics_buffer_X3d_resize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNexposeCallback,
-						Graphics_buffer_X3d_expose_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNinputCallback,
-						Graphics_buffer_X3d_input_callback, buffer);
-					return_code = 1;
-				}
-				else
-				{
-					XtDestroyWidget(buffer->drawing_widget);
-				}
-			}
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
-		{
-			/* On an SGI it is invalid to use the function parameters in
-				the structure initialisation */
-			pbuffer_attribs[1] = width;
-			pbuffer_attribs[3] = height;
-			if (pbuffer = glXCreatePbuffer(display,
-					fb_config, pbuffer_attribs))
-			{
-				buffer->type = GRAPHICS_BUFFER_GLX_PBUFFER_TYPE;
-				buffer->display = display;
-				buffer->config = fb_config;
-				buffer->glx_pbuffer = pbuffer;
-				buffer->visual_info =
-					glXGetVisualFromFBConfig(display, buffer->config);
-				buffer->context = glXCreateNewContext(
-					display, buffer->config, GLX_RGBA_TYPE,
-					graphics_buffer_package->shared_glx_context, GL_TRUE);
-				return_code = 1;
-			}
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
-		{
-			visual_info = glXGetVisualFromFBConfig(display, buffer->config);
-			/* ???? Should be freed */
-			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height,
-					visual_info->depth))
-			{
-				if (glx_pixmap = glXCreatePixmap(display,
-						fb_config, pixmap, pixmap_attribs))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_PIXMAP_TYPE;
-					buffer->display = display;
-					buffer->config = fb_config;
-					buffer->pixmap = pixmap;
-					buffer->glx_pixmap = glx_pixmap;
-					buffer->visual_info = visual_info;
-					/* pixmaps do not share contexts */
-					buffer->context = glXCreateNewContext(
-						display, buffer->config, GLX_RGBA_TYPE,
-						NULL, GL_TRUE);
-					return_code = 1;
-				}
-			}
-		} break;
-	}
-	switch (buffer->type)
-	{
-		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{
-			if (!graphics_buffer_package->shared_glx_context &&
-				buffer->context)
-			{
-				graphics_buffer_package->shared_glx_context = buffer->context;
-			}
-		} break;
-	}
-#if defined (DEBUG_CODE)
-	printf("Graphics_buffer_create_from_fb_config\n");
-	printf("   buffer_class : %d\n", buffer_class);
-	printf("   buffer->type : %d\n", buffer->type);
-	printf("   buffer->config : %p\n", buffer->config);
-	printf("   buffer->visual_info : %p\n", buffer->visual_info);
-	printf("   buffer->context : %p\n\n", buffer->context);
-	{
-		int value;
- 		glXQueryContext(display, buffer->context, GLX_FBCONFIG_ID, &value);
-		printf("   fbconfig id : %d\n", value);
-	}
-#endif /* defined (DEBUG_CODE) */
-
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_create_from_fb_config */
-#  endif /* defined USE_GLX_FBCONFIG */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-#  if defined (GLX_SGIX_pbuffer)
-static int Graphics_buffer_create_from_fb_config_sgi(struct Graphics_buffer *buffer,
-	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
-	int width, int height, GLXFBConfig fb_config)
-/*******************************************************************************
-LAST MODIFIED : 28 May 2004
-
-DESCRIPTION :
-Unfortunately the SGIX functions still seem to work better on the SGI than
-the equivalent GLX1.3 versions.
-==============================================================================*/
-{
-	int return_code;
-	Display *display;
-	Pixmap pixmap;
-	GLXPixmap glx_pixmap;
-	XVisualInfo *visual_info;
-	Widget drawing_widget;
-	GLXPbuffer pbuffer;
-	int pbuffer_attribs [] =
-	{
-		GLX_PRESERVED_CONTENTS, True,
-		(int) None
-	};
-	int pixmap_attribs [] =
-	{
-		/* There are currently no valid attributes */
-		(int) None
-	};
-
-	ENTER(Graphics_buffer_X3d_expose_callback);
-
-	return_code = 0;
-	display = graphics_buffer_package->display;
-	switch (buffer_class)
-	{
-		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-		{
-			visual_info =
-					glXGetVisualFromFBConfigSGIX(display, fb_config);
-			if (drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
-					threeDDrawingWidgetClass, x3d_parent_widget,
-					XtNdepth, visual_info->depth,
-					XtNvisual, visual_info->visual,
-					XmNwidth, width,
-					XmNheight, height,
-					XmNleftAttachment,XmATTACH_FORM,
-					XmNrightAttachment,XmATTACH_FORM,
-					XmNbottomAttachment,XmATTACH_FORM,
-					XmNtopAttachment,XmATTACH_FORM,
-					XmNborderWidth,0,
-					XmNleftOffset,0,
-					XmNrightOffset,0,
-					XmNbottomOffset,0,
-					XmNtopOffset,0,
-					NULL))
-			{
-				if (X3dThreeDisInitialised(drawing_widget))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_X3D_TYPE;
-					buffer->parent = x3d_parent_widget;
-					buffer->drawing_widget = drawing_widget;
-					buffer->display = display;
-					buffer->config = fb_config;
-					buffer->visual_info =
-						glXGetVisualFromFBConfigSGIX(display, buffer->config);
-					buffer->context = glXCreateContextWithConfigSGIX(
-						display, buffer->config, GLX_RGBA_TYPE_SGIX,
-						graphics_buffer_package->shared_glx_context, GL_TRUE);
-					XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
-						Graphics_buffer_X3d_initialize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNresizeCallback,
-						Graphics_buffer_X3d_resize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNexposeCallback,
-						Graphics_buffer_X3d_expose_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNinputCallback,
-						Graphics_buffer_X3d_input_callback, buffer);
-					return_code = 1;
-				}
-				else
-				{
-					XtDestroyWidget(buffer->drawing_widget);
-				}
-			}
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
-		{
-			if (pbuffer = glXCreateGLXPbufferSGIX(display,
-					fb_config, width, height, pbuffer_attribs))
-			{
-				buffer->type = GRAPHICS_BUFFER_GLX_PBUFFER_TYPE;
-				buffer->display = display;
-				buffer->config = fb_config;
-				buffer->glx_pbuffer = pbuffer;
-				buffer->visual_info =
-					glXGetVisualFromFBConfigSGIX(display, buffer->config);
-				buffer->context = glXCreateContextWithConfigSGIX(
-					display, buffer->config, GLX_RGBA_TYPE_SGIX,
-					graphics_buffer_package->shared_glx_context, GL_TRUE);
-				return_code = 1;
-			}
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
-		{
-			visual_info =
-					glXGetVisualFromFBConfigSGIX(display, fb_config);
-			/* ???? Should be freed */
-			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height,
-					visual_info->depth))
-			{
-				if (glx_pixmap = glXCreatePixmap(display,
-						fb_config, pixmap, pixmap_attribs))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_PIXMAP_TYPE;
-					buffer->display = display;
-					buffer->config = fb_config;
-					buffer->pixmap = pixmap;
-					buffer->glx_pixmap = glx_pixmap;
-					buffer->visual_info = visual_info;
-					/* pixmaps do not share contexts */
-					buffer->context = glXCreateContextWithConfigSGIX(
-						display, buffer->config, GLX_RGBA_TYPE,
-						NULL, GL_TRUE);
-					return_code = 1;
-				}
-			}
-		} break;
-	}
-	switch (buffer->type)
-	{
-		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{
-			if (!graphics_buffer_package->shared_glx_context &&
-				buffer->context)
-			{
-				graphics_buffer_package->shared_glx_context = buffer->context;
-			}
-		} break;
-	}
-#if defined (DEBUG_CODE)
-	printf("Graphics_buffer_create_from_fb_config_sgi\n");
-	printf("   buffer_class : %d\n", buffer_class);
-	printf("   buffer->type : %d\n", buffer->type);
-	printf("   buffer->config : %p\n", buffer->config);
-	printf("   buffer->visual_info : %p\n", buffer->visual_info);
-	printf("   buffer->context : %p\n\n", buffer->context);
-#endif /* defined (DEBUG_CODE) */
-
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_create_from_fb_config_sgi */
-#  endif /* defined (GLX_SGIX_pbuffer) */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int Graphics_buffer_create_from_visual_info(struct Graphics_buffer *buffer,
-	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
-	int width, int height, XVisualInfo *visual_info)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-{
-	Display *display;
-	int return_code;
-	Pixmap pixmap;
-	GLXPixmap glx_pixmap;
-	Widget drawing_widget;
-
-	ENTER(Graphics_buffer_X3d_expose_callback);
-
-	return_code = 0;
-	display = graphics_buffer_package->display;
-	switch (buffer_class)
-	{
-		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-		{
-			if (drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
-					threeDDrawingWidgetClass, x3d_parent_widget,
-					XtNdepth, visual_info->depth,
-					XtNvisual, visual_info->visual,
-					XmNwidth, width,
-					XmNheight, height,
-					XmNleftAttachment,XmATTACH_FORM,
-					XmNrightAttachment,XmATTACH_FORM,
-					XmNbottomAttachment,XmATTACH_FORM,
-					XmNtopAttachment,XmATTACH_FORM,
-					XmNborderWidth,0,
-					XmNleftOffset,0,
-					XmNrightOffset,0,
-					XmNbottomOffset,0,
-					XmNtopOffset,0,
-					NULL))
-			{
-				if (X3dThreeDisInitialised(drawing_widget))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_X3D_TYPE;
-					buffer->display = display;
-					buffer->drawing_widget = drawing_widget;
-					buffer->parent = x3d_parent_widget;
-					buffer->visual_info = visual_info;
-					buffer->context = glXCreateContext(
-						display, buffer->visual_info,
-						graphics_buffer_package->shared_glx_context,
-						GL_TRUE);
-					XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
-						Graphics_buffer_X3d_initialize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNresizeCallback,
-						Graphics_buffer_X3d_resize_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNexposeCallback,
-						Graphics_buffer_X3d_expose_callback, buffer);
-					XtAddCallback(buffer->drawing_widget, X3dNinputCallback,
-						Graphics_buffer_X3d_input_callback, buffer);
-					return_code = 1;
-				}
-				else
-				{
-					XtDestroyWidget(drawing_widget);
-				}
-			}
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
-		{
-		} break;
-		case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
-		{
-			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height,
-					visual_info->depth))
-			{
-				if (glx_pixmap = glXCreateGLXPixmap(display,
-						visual_info, pixmap))
-				{
-					buffer->type = GRAPHICS_BUFFER_GLX_PIXMAP_TYPE;
-					/* This is non shared */
-					buffer->display = display;
-					buffer->pixmap = pixmap;
-					buffer->glx_pixmap = glx_pixmap;
-					buffer->visual_info = visual_info;
-					buffer->context = glXCreateContext(
-						display, buffer->visual_info,
-						/*shared_context*/(GLXContext)NULL,
-#if defined (AIX)
-						/* While potentially any implementation may choke on a direct
-							rendering context only the AIX fails so far */
-						GL_FALSE
-#else /* defined (AIX) */
-						GL_TRUE
-#endif /* defined (AIX) */
-						);
-					return_code = 1;
-				}
-			}
-		} break;
-	}
-	switch (buffer->type)
-	{
-		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{
-			if (!graphics_buffer_package->shared_glx_context &&
-				buffer->context)
-			{
-				graphics_buffer_package->shared_glx_context = buffer->context;
-			}
-		} break;
-	}
-#if defined (DEBUG_CODE)
-	printf("Graphics_buffer_create_from_visual_info\n");
-	printf("   buffer_class : %d\n", buffer_class);
-	printf("   buffer->type : %d\n", buffer->type);
-	printf("   buffer->visual_info : %p\n", buffer->visual_info);
-	printf("   buffer->context : %p\n\n", buffer->context);
-#endif /* defined (DEBUG_CODE) */
-
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_create_from_visual_info */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsBuffer : public wxGLCanvas
@@ -1619,7 +768,7 @@ void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer)
 	 {
 			renderbuffer_width = buffer->framebuffer_width;
 	 }
-	 
+
 	 if (buffer->framebuffer_height > max_renderbuffer_size)
 	 {
 			renderbuffer_height = max_renderbuffer_size;
@@ -1632,8 +781,8 @@ void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer)
 	 {
 			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, buffer->multi_fbo);
 			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, buffer->fbo);
-			glBlitFramebufferEXT(0, 0, renderbuffer_width, renderbuffer_height, 
-				0, 0, renderbuffer_width, renderbuffer_height, 
+			glBlitFramebufferEXT(0, 0, renderbuffer_width, renderbuffer_height,
+				0, 0, renderbuffer_width, renderbuffer_height,
 				GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
 	 }
@@ -1677,13 +826,13 @@ int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, 
 			glRenderbufferStorageMultisampleEXT(
 				 GL_RENDERBUFFER_EXT, antialias, GL_RGBA,
 				 buffer->framebuffer_width, buffer->framebuffer_height);
-			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, 
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
 				 GL_RENDERBUFFER_EXT, buffer->msbuffer);
 			glGenRenderbuffersEXT(1, &buffer->multi_depthbuffer);
 			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->multi_depthbuffer);
-			glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, antialias, GL_DEPTH_COMPONENT, 
+			glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, antialias, GL_DEPTH_COMPONENT,
 				  buffer->framebuffer_width,  buffer->framebuffer_height);
-			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, 
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
 				 GL_RENDERBUFFER_EXT, buffer->multi_depthbuffer);
 			return 1;
 	 }
@@ -1758,7 +907,7 @@ DESCRIPTION :
 				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				 glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, width, height, 0, 
+				 glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, width, height, 0,
 					 GL_RGBA,GL_UNSIGNED_BYTE,NULL);
 			 }
 #endif
@@ -1991,7 +1140,7 @@ DESCRIPTION :
 				USE_PARAMETER(minimum_colour_buffer_depth);
 				USE_PARAMETER(minimum_depth_buffer_depth);
 				USE_PARAMETER(stereo_mode);
-								
+
 				/* The above routine does not work for win32 as it does not have the
 					 member m_vi in wxGLCanvas.
 					 should find a way to get the best buffer, but this default setting should work fine. */
@@ -2040,916 +1189,6 @@ DESCRIPTION :
 
 } /* Graphics_buffer_create_buffer_wx */
 #endif /* defined (WX_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-#if defined (OPENGL_API)
-static void Graphics_buffer_create_buffer_glx(struct Graphics_buffer *buffer,
-	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,
-	Widget x3d_parent_widget, int width, int height,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_alpha_buffer_depth,
-	int minimum_accumulation_buffer_depth,
-	struct Graphics_buffer *buffer_to_match)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2004
-
-DESCRIPTION :
-
-
-HISTORY :
-I have merged here the code for choosing a visual for X3d and dm_interface so
-that it is all in one place.
-==============================================================================*/
-{
-#if defined (GLX_SGIX_dmbuffer) && defined (GLX_SGIX_fbconfig)
-	DMparams *imageFormat, *poolSpec;
-	DMboolean cacheable = DM_FALSE;
-	DMboolean mapped = DM_FALSE;
-	int dmbuffer_attribs [] =
-	{
-		GLX_DIGITAL_MEDIA_PBUFFER_SGIX, True,
-		GLX_PRESERVED_CONTENTS_SGIX, True,
-		(int) None
-	};
-#endif /* defined (GLX_SGIX_dmbuffer) */
-	int config_index, nelements;
-#if defined USE_GLX_FBCONFIG
-	int glx_major_version, glx_minor_version;
-#endif /* defined USE_GLX_FBCONFIG */
-	Display *display;
-	int *attribute_ptr, number_of_visual_attributes, selection_level,
-		*visual_attributes;
-	XVisualInfo *visual_info;
-
-	ENTER(Graphics_buffer_select_visual);
-
-	visual_attributes = NULL;
-	number_of_visual_attributes = 0;
-	display = graphics_buffer_package->display;
-
-	/* 1: SGIX digital media pbuffer is preferred for offscreen when available (O2's) */
-#if defined (GLX_SGIX_dmbuffer) && defined (GLX_SGIX_fbconfig)
-	if ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-		((GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class) ||
-		(GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class)) &&
-		query_glx_extension("GLX_SGIX_dmbuffer", display, DefaultScreen(display)))
-	{
-		/* This is similar to the selection in 4: as it uses glXChooseVisual */
-		number_of_visual_attributes = 9;
-		if (minimum_depth_buffer_depth > 0)
-		{
-			number_of_visual_attributes += 2;
-		}
-		if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-		{
-			visual_attributes[0] = GLX_RGBA;
-			visual_attributes[1] = GLX_RED_SIZE;
-			visual_attributes[2] = (minimum_colour_buffer_depth + 2) / 3;
-			visual_attributes[3] = GLX_GREEN_SIZE;
-			visual_attributes[4] = (minimum_colour_buffer_depth + 2) / 3;
-			visual_attributes[5] = GLX_BLUE_SIZE;
-			visual_attributes[6] = (minimum_colour_buffer_depth + 2) / 3;
-			visual_attributes[7] = GLX_ALPHA_SIZE;
-			visual_attributes[8] = minimum_alpha_buffer_depth;
-			if (minimum_depth_buffer_depth > 0)
-			{
-				visual_attributes[9] = GLX_DEPTH_SIZE;
-				visual_attributes[10] = minimum_depth_buffer_depth;
-			}
-
-			if((DM_SUCCESS==dmParamsCreate( &imageFormat ))
-				&& (DM_SUCCESS==dmSetImageDefaults( imageFormat,
-						width, height, DM_IMAGE_PACKING_RGBA ))
-				/*	&& (DM_SUCCESS==dmParamsSetEnum( imageFormat,
-				  DM_IMAGE_ORIENTATION, DM_TOP_TO_BOTTOM ))*/
-				&& (DM_SUCCESS==dmParamsSetEnum( imageFormat,
-						DM_IMAGE_LAYOUT, DM_IMAGE_LAYOUT_GRAPHICS )))
-			{
-				if((DM_SUCCESS==dmParamsCreate(&poolSpec))
-					&& (DM_SUCCESS==dmBufferSetPoolDefaults( poolSpec,
-					/*count*/1, 0, cacheable, mapped ))
-					&& (DM_SUCCESS==dmBufferGetGLPoolParams( imageFormat,
-							poolSpec )))
-				{
-					if ((DM_SUCCESS==dmBufferCreatePool(poolSpec, &(buffer->dmpool)))
-						&&(DM_SUCCESS==dmBufferAllocatebuffer->dmpool,
-								&(buffer->dmbuffer))))
-					{
-						if((buffer->visual_info = glXChooseVisual(display,
-									DefaultScreen(display), visual_attributes))
-							&& (buffer->config  = glXGetFBConfigFromVisualSGIX(
-									 display, buffer->visual_info)))
-						{
-							if (buffer->glx_pbuffer = glXCreateGLXPbufferSGIX(display,
-								buffer->config, width, height, dmbuffer_attribs))
-							{
-								if (buffer->context = glXCreateContextWithConfigSGIX(
-									display, buffer->config, GLX_RGBA_TYPE_SGIX,
-									graphics_buffer_package->shared_glx_context, GL_TRUE))
-								{
-									if (glXAssociateDMPbufferSGIX(display,
-											buffer->glx_pbuffer, imageFormat, buffer->dmbuffer))
-									{
-										/* Finished I think, hooray! */
-										buffer->type = GRAPHICS_BUFFER_GLX_DM_PBUFFER_TYPE;
-										if (!graphics_buffer_package->shared_glx_context &&
-											buffer->context)
-										{
-											graphics_buffer_package->shared_glx_context = buffer->context;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Unable to associate pbuffer with dmbuffer");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get GLX context");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot create pbuffer");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get Frame Buffer Configuration");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot allocate Dmbuffer");
-					}
-					dmParamsDestroy(poolSpec);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot create DM Pool Parameters");
-				}
-				dmParamsDestroy(imageFormat);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot create image parameters");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot allocate image attributes");
-		}
-		printf("Graphics_buffer_create_buffer_glx dmbuffer\n");
-		printf("   buffer_class : %d\n", buffer_class);
-		printf("   buffer->type : %d\n", buffer->type);
-		printf("   buffer->visual_info : %p\n", buffer->visual_info);
-		printf("   buffer->context : %p\n\n", buffer->context);
-	}
-#endif /* defined (GLX_SGIX_dmbuffer) */
-
-	/* 2: The old equivalent SGIX pbuffer extensions seem to work better on the SGIs. */
-	/* Superseded by the GLX 1.3 code in 3 so don't do it unless we are on an IRIX box and
-		IRIX display. */
-#if defined (SGI) && defined (GLX_SGIX_pbuffer)
-	if ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-		query_glx_extension("GLX_SGIX_fbconfig", display, DefaultScreen(display)) &&
-		/* Only if an SGI server */
-		!strncmp("SGI", glXQueryServerString(display, DefaultScreen(display), GLX_VENDOR), 3))
-	{
-		XVisualInfo *visual_info;
-
-		if (graphics_buffer_package->override_visual_id)
-		{
-			number_of_visual_attributes = 5;
-			if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-			{
-				attribute_ptr = visual_attributes;
-				*attribute_ptr = GLX_RENDER_TYPE;
-				attribute_ptr++;
-				*attribute_ptr = GLX_RGBA_BIT;
-				attribute_ptr++;
-				*attribute_ptr = None;
-				attribute_ptr++;
-
-				if (buffer->config_list = glXChooseFBConfigSGIX(display,
-					DefaultScreen(display), visual_attributes, &nelements))
-				{
-					config_index = 0;
-					while ((config_index < nelements) &&
-					  (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type))
-					{
-					  if (visual_info = glXGetVisualFromFBConfigSGIX(display,
-						 buffer->config_list[config_index]))
-					  {
-						 if (visual_info->visualid ==
-							graphics_buffer_package->override_visual_id)
-						 {
-							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
-							{
-							  /* Try a shared buffer first */
-							  Graphics_buffer_create_from_fb_config_sgi(buffer,
-								 graphics_buffer_package,
-								 GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
-								 x3d_parent_widget,
-								 width, height, buffer->config_list[config_index]);
-							}
-							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-							{
-							  Graphics_buffer_create_from_fb_config_sgi(buffer,
-								 graphics_buffer_package, buffer_class, x3d_parent_widget,
-								 width, height, buffer->config_list[config_index]);
-							}
-						 }
-						 XFree(visual_info);
-					  }
-					  config_index++;
-					}
-				}
-			}
-		}
-		else if (buffer_to_match)
-		{
-			if (buffer_to_match->config)
-			{
-				/* The SGI does not have enough graphics resources to provide
-					matching offscreen buffers, so we try for one that is OK instead. */
-				Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
-					buffer_class, x3d_parent_widget, width, height,
-					GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
-					GRAPHICS_BUFFER_ANY_STEREO_MODE,
-					/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
-					/*minimum_alpha_buffer_depth*/1, /*minimum_accumulation_buffer_depth*/0,
-					/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-			}
-		}
-		else
-		{
-			/* When using Mesa3D the buffers are created in software, and for a given visual
-				extra buffers such as accumulation buffers are only created if requested.
-				So to start with we must request the maximum we may need and then work down */
-			/* Allocate the maximum possible number of attributes */
-			number_of_visual_attributes = 27;
-			if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-			{
-				/* Unfortunately this selection algorithm may do unnecessary passes
-					when minimum depth and minimum alpha passes */
-				selection_level = 5;
-				while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-					&& (selection_level > 0))
-				{
-					attribute_ptr = visual_attributes;
-					*attribute_ptr = GLX_RENDER_TYPE;
-					attribute_ptr++;
-					*attribute_ptr = GLX_RGBA_BIT;
-					attribute_ptr++;
-					switch (buffer_class)
-					{
-						case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-						{
-							*attribute_ptr = GLX_DRAWABLE_TYPE;
-							attribute_ptr++;
-							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
-						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
-						{
-							if ((selection_level > 1) ||
-								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class))
-							{
-								*attribute_ptr = GLX_DRAWABLE_TYPE;
-								attribute_ptr++;
-								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-								attribute_ptr++;
-							}
-							else
-							{
-								*attribute_ptr = GLX_DRAWABLE_TYPE;
-								attribute_ptr++;
-								*attribute_ptr = GLX_PIXMAP_BIT;
-								attribute_ptr++;
-							}
-						} break;
-					}
-					*attribute_ptr = GLX_RED_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_GREEN_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_BLUE_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					if (minimum_depth_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_DEPTH_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_depth_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 2)
-						{
-							/* Try to get a depth buffer anyway */
-							*attribute_ptr = GLX_DEPTH_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 16;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_alpha_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ALPHA_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_alpha_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 3)
-						{
-							/* Try to get an alpha buffer anyway */
-							*attribute_ptr = GLX_ALPHA_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 1;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_accumulation_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ACCUM_RED_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 4)
-						{
-							/* Try to get an accumulation buffer anyway */
-							*attribute_ptr = GLX_ACCUM_RED_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-						}
-					}
-					switch (buffering_mode)
-					{
-						case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-						{
-							*attribute_ptr = GLX_DOUBLEBUFFER;
-							attribute_ptr++;
-							*attribute_ptr = GL_FALSE;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-						{
-							*attribute_ptr = GLX_DOUBLEBUFFER;
-							attribute_ptr++;
-							*attribute_ptr = GL_TRUE;
-							attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
-							do nothing as GLX_DONT_CARE is the default */
-					}
-					switch (stereo_mode)
-					{
-						case GRAPHICS_BUFFER_MONO:
-						{
-							*attribute_ptr = GLX_STEREO;
-							attribute_ptr++;
-							*attribute_ptr = GL_FALSE;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_STEREO:
-						{
-							*attribute_ptr = GLX_STEREO;
-							attribute_ptr++;
-							*attribute_ptr = GL_TRUE;
-							attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_STEREO_MODE:
-							do nothing as GLX_DONT_CARE is the default */
-					}
-					*attribute_ptr = None;
-					attribute_ptr++;
-
-					if (buffer->config_list = glXChooseFBConfigSGIX(display,
-						DefaultScreen(display), visual_attributes, &nelements))
-					{
-						/* Need to copy config we select and free the list, currently leaky */
-
-						config_index = 0;
-						/* Check we can actually create what we want, pbuffer or  */
-						while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-							(config_index < nelements))
-						{
-							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class))
-							{
-								/* Try to get an offscreen shared buffer first if we can */
-								Graphics_buffer_create_from_fb_config_sgi(buffer,
-									graphics_buffer_package, GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
-									x3d_parent_widget,
-									width, height, buffer->config_list[config_index]);
-							}
-							else
-							{
-								Graphics_buffer_create_from_fb_config_sgi(buffer,
-									graphics_buffer_package, buffer_class, x3d_parent_widget,
-									width, height, buffer->config_list[config_index]);
-							}
-							config_index++;
-						}
-					}
-					selection_level--;
-				}
-			}
-		}
-	}
-#endif /* defined (SGI) && defined (GLX_SGIX_pbuffer) */
-
-	/* 3: Use fbconfig functions to select visual if available */
-#if defined USE_GLX_FBCONFIG
-	if ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-		glXQueryVersion(display,&glx_major_version, &glx_minor_version) &&
-		((glx_major_version == 1) && (glx_minor_version > 2)))
-	{
-		if (graphics_buffer_package->override_visual_id)
-		{
-			number_of_visual_attributes = 5;
-			if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-			{
-				attribute_ptr = visual_attributes;
-				*attribute_ptr = GLX_RENDER_TYPE;
-				attribute_ptr++;
-				*attribute_ptr = GLX_RGBA_BIT;
-				attribute_ptr++;
-				*attribute_ptr = None;
-				attribute_ptr++;
-
-				if (buffer->config_list = glXChooseFBConfig(display,
-					DefaultScreen(display), visual_attributes, &nelements))
-				{
-					config_index = 0;
-					while ((config_index < nelements) &&
-					  (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type))
-					{
-					  if (visual_info = glXGetVisualFromFBConfig(display,
-						 buffer->config_list[config_index]))
-					  {
-						  if ((int)visual_info->visualid ==
-							 graphics_buffer_package->override_visual_id)
-						 {
-							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
-							{
-							  /* Try a shared buffer first */
-							  Graphics_buffer_create_from_fb_config(buffer,
-								 graphics_buffer_package,
-								 GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
-								 x3d_parent_widget,
-								 width, height, buffer->config_list[config_index]);
-							}
-							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-							{
-							  Graphics_buffer_create_from_fb_config(buffer,
-								 graphics_buffer_package, buffer_class, x3d_parent_widget,
-								 width, height, buffer->config_list[config_index]);
-							}
-						 }
-						 XFree(visual_info);
-					  }
-					  config_index++;
-					}
-				}
-			}
-		}
-		else if (buffer_to_match)
-		{
-			if (buffer_to_match->config)
-			{
-				Graphics_buffer_create_from_fb_config(buffer,
-					graphics_buffer_package, buffer_class, x3d_parent_widget,
-					width, height, buffer_to_match->config);
-			}
-		}
-		else
-		{
-			/* When using Mesa3D the buffers are created in software, and for a given visual
-				extra buffers such as accumulation buffers are only created if requested.
-				So to start with we must request the maximum we may need and then work down */
-			/* Allocate the maximum possible number of attributes */
-			number_of_visual_attributes = 27;
-			if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-			{
-				/* Unfortunately this selection algorithm may do unnecessary passes
-					when minimum depth and minimum alpha passes */
-				selection_level = 5;
-				while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-					&& (selection_level > 0))
-				{
-					attribute_ptr = visual_attributes;
-					*attribute_ptr = GLX_RENDER_TYPE;
-					attribute_ptr++;
-					*attribute_ptr = GLX_RGBA_BIT;
-					attribute_ptr++;
-					switch (buffer_class)
-					{
-						case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-						{
-							*attribute_ptr = GLX_DRAWABLE_TYPE;
-							attribute_ptr++;
-							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
-						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
-						{
-							if ((selection_level > 1) ||
-								(GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS == buffer_class))
-							{
-								*attribute_ptr = GLX_DRAWABLE_TYPE;
-								attribute_ptr++;
-								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-								attribute_ptr++;
-							}
-							else
-							{
-								*attribute_ptr = GLX_DRAWABLE_TYPE;
-								attribute_ptr++;
-								*attribute_ptr = GLX_PIXMAP_BIT;
-								attribute_ptr++;
-							}
-						} break;
-					}
-					*attribute_ptr = GLX_RED_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_GREEN_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_BLUE_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					if (minimum_depth_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_DEPTH_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_depth_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 2)
-						{
-							/* Try to get a depth buffer anyway */
-							*attribute_ptr = GLX_DEPTH_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 16;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_alpha_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ALPHA_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_alpha_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 3)
-						{
-							/* Try to get an alpha buffer anyway */
-							*attribute_ptr = GLX_ALPHA_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 1;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_accumulation_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ACCUM_RED_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 4)
-						{
-							/* Try to get an accumulation buffer anyway */
-							*attribute_ptr = GLX_ACCUM_RED_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-						}
-					}
-					switch (buffering_mode)
-					{
-						case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-						{
-							*attribute_ptr = GLX_DOUBLEBUFFER;
-							attribute_ptr++;
-							*attribute_ptr = GL_FALSE;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-						{
-							*attribute_ptr = GLX_DOUBLEBUFFER;
-							attribute_ptr++;
-							*attribute_ptr = GL_TRUE;
-							attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
-							do nothing as GLX_DONT_CARE is the default */
-					}
-					switch (stereo_mode)
-					{
-						case GRAPHICS_BUFFER_MONO:
-						{
-							*attribute_ptr = GLX_STEREO;
-							attribute_ptr++;
-							*attribute_ptr = GL_FALSE;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_STEREO:
-						{
-							*attribute_ptr = GLX_STEREO;
-							attribute_ptr++;
-							*attribute_ptr = GL_TRUE;
-							attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_STEREO_MODE:
-							do nothing as GLX_DONT_CARE is the default */
-					}
-					*attribute_ptr = None;
-					attribute_ptr++;
-
-					if (buffer->config_list = glXChooseFBConfig(display,
-						DefaultScreen(display), visual_attributes, &nelements))
-					{
-						/* Need to copy config we select and free the list, currently leaky */
-
-						config_index = 0;
-						/* Check we can actually create what we want, pbuffer or  */
-						while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-							(config_index < nelements))
-						{
-							if ((selection_level > 1) && (GRAPHICS_BUFFER_OFFSCREEN_CLASS == buffer_class))
-							{
-								/* Try to get an offscreen shared buffer first if we can */
-								Graphics_buffer_create_from_fb_config(buffer,
-									graphics_buffer_package, GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
-									x3d_parent_widget,
-									width, height, buffer->config_list[config_index]);
-							}
-							else
-							{
-								Graphics_buffer_create_from_fb_config(buffer,
-									graphics_buffer_package, buffer_class, x3d_parent_widget,
-									width, height, buffer->config_list[config_index]);
-							}
-							config_index++;
-						}
-					}
-					selection_level--;
-				}
-			}
-		}
-	}
-#endif /* defined GLX_fbconfig */
-
-	/* 4: Use old GLX code */
-	if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-	{
-		if (graphics_buffer_package->override_visual_id)
-		{
-			XVisualInfo template_visual, *visual_info_list;
-
-			template_visual.visualid = graphics_buffer_package->override_visual_id;
-
-			if (visual_info_list = XGetVisualInfo(display, VisualIDMask, &template_visual,
-				&nelements))
-			{
-				config_index = 0;
-				Graphics_buffer_create_from_visual_info(buffer,
-					graphics_buffer_package, buffer_class, x3d_parent_widget,
-					width, height, visual_info_list + config_index);
-				XFree(visual_info_list);
-			}
-		}
-		else if (buffer_to_match)
-		{
-			if (buffer_to_match->visual_info)
-			{
-				Graphics_buffer_create_from_visual_info(buffer,
-					graphics_buffer_package, buffer_class, x3d_parent_widget,
-					width, height, buffer_to_match->visual_info);
-			}
-		}
-		else
-		{
-			/* When using Mesa3D the buffers are created in software, and for a given visual
-				extra buffers such as accumulation buffers are only created if requested.
-				So to start with we must request the maximum we may need and then work down */
-			/* Allocate the maximum possible number of attributes */
-			number_of_visual_attributes = 27;
-			if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
-			{
-				/* Unfortunately this selection algorithm may do unnecessary passes
-					when minimum depth and minimum alpha passes */
-				selection_level = 6;
-				while ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
-					&& (selection_level > 0))
-				{
-					attribute_ptr = visual_attributes;
-					*attribute_ptr = GLX_USE_GL;
-					attribute_ptr++;
-					*attribute_ptr = GLX_RGBA;
-					attribute_ptr++;
-					*attribute_ptr = GLX_RED_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_GREEN_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					*attribute_ptr = GLX_BLUE_SIZE;
-					attribute_ptr++;
-					*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					attribute_ptr++;
-					if (minimum_depth_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_DEPTH_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_depth_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 2)
-						{
-							/* Try to get a depth buffer anyway */
-							*attribute_ptr = GLX_DEPTH_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 16;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_alpha_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ALPHA_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_alpha_buffer_depth;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 3)
-						{
-							/* Try to get an alpha buffer anyway */
-							*attribute_ptr = GLX_ALPHA_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = 1;
-							attribute_ptr++;
-						}
-					}
-					if (minimum_accumulation_buffer_depth > 0)
-					{
-						*attribute_ptr = GLX_ACCUM_RED_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-						*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 4)
-						{
-							/* Try to get an accumulation buffer anyway */
-							*attribute_ptr = GLX_ACCUM_RED_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_GREEN_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-							*attribute_ptr = GLX_ACCUM_BLUE_SIZE;
-							attribute_ptr++;
-							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-							attribute_ptr++;
-						}
-					}
-					switch (buffering_mode)
-					{
-						case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-						{
-							/* Defaults to single if not specified */
-						} break;
-						case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-						{
-							*attribute_ptr = GLX_DOUBLEBUFFER;
-							attribute_ptr++;
-						} break;
-						case GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
-						{
-							/* Try double buffer, then try single buffer */
-							if (selection_level > 5)
-							{
-								*attribute_ptr = GLX_DOUBLEBUFFER;
-								attribute_ptr++;
-							}
-						} break;
-					}
-					switch (stereo_mode)
-					{
-						case GRAPHICS_BUFFER_MONO:
-						{
-							/* Defaults to mono if not specified */
-						} break;
-						case GRAPHICS_BUFFER_STEREO:
-						{
-							*attribute_ptr = GLX_STEREO;
-							attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_STEREO_MODE:
-							mono when not specified */
-					}
-					*attribute_ptr = None;
-					attribute_ptr++;
-
-					if (visual_info = glXChooseVisual(display,
-						DefaultScreen(display), visual_attributes))
-					{
-						Graphics_buffer_create_from_visual_info(buffer,
-							graphics_buffer_package, buffer_class, x3d_parent_widget,
-							width, height, visual_info);
-					}
-					selection_level--;
-				}
-			}
-		}
-	}
-	if (visual_attributes)
-	{
-		DEALLOCATE(visual_attributes);
-	}
-
-	LEAVE;
-} /* Graphics_buffer_create_buffer_glx */
-#endif /* defined (OPENGL_API) */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 static void Graphics_buffer_gtkglarea_initialise_callback(GtkWidget *widget,
@@ -3429,17 +1668,11 @@ it to share graphics contexts.
 
 	ENTER(CREATE(Graphics_buffer_package));
 
-#if ! defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* ! defined (MOTIF_USER_INTERFACE) */
 	if (ALLOCATE(package, struct Graphics_buffer_package, 1))
 	{
 		package->override_visual_id = 0;
 
-#if defined (MOTIF_USER_INTERFACE)
-		package->shared_glx_context = (GLXContext)NULL;
-		package->display = User_interface_get_display(user_interface);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined (GTK_USE_GTKGLAREA)
 		package->share_glarea = (GtkWidget *)NULL;
@@ -3506,14 +1739,6 @@ Closes the Graphics buffer package
 	if (package_ptr && (package = *package_ptr))
 	{
 		return_code=1;
-#if defined (MOTIF_USER_INTERFACE)
-		/* Destroy the shared_glx_context as we did not destroy it when closing
-			it's buffer */
-		if (package->shared_glx_context)
-		{
-			glXDestroyContext(package->display, package->shared_glx_context);
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if ! defined (GTK_USE_GTKGLAREA)
 		if (package->share_glcontext)
@@ -3606,14 +1831,6 @@ DESCRIPTION :
 	buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
 	if (buffer != NULL)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
-			GRAPHICS_BUFFER_OFFSCREEN_CLASS, (Widget)NULL, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
-			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
-			minimum_accumulation_buffer_depth,
-			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffering_mode);
@@ -3621,7 +1838,6 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_colour_buffer_depth);
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG_CODE)
@@ -3662,14 +1878,6 @@ DESCRIPTION :
 	buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
 	if (buffer != NULL)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
-			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
-			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
-			minimum_accumulation_buffer_depth,
-			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffering_mode);
@@ -3677,7 +1885,6 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_colour_buffer_depth);
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG_CODE)
@@ -3713,14 +1920,7 @@ DESCRIPTION :
 	buffer = CREATE(Graphics_buffer)(buffer_to_match->package);
 	if (buffer != NULL)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
-			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
-			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
-			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
-			buffer_to_match);
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
  		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
 #if defined (OPENGL_API) && (GL_EXT_framebuffer_object)
 		if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
@@ -3733,11 +1933,11 @@ DESCRIPTION :
 			GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			0, 0, 0, width, height,
 			buffer_to_match);
-#else /* defined (MOTIF_USER_INTERFACE) */
+#else /* defined (WX_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffer_to_match);
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG_CODE)
@@ -3758,126 +1958,6 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_offscreen_from_buffer */
-
-#if defined (MOTIF_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_X3d(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	Widget parent, int width, int height,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth)
-/*******************************************************************************
-LAST MODIFIED : 5 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Graphics_buffer *buffer;
-
-	ENTER(create_Graphics_buffer_X3d);
-
-	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
-	{
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
-			GRAPHICS_BUFFER_ONSCREEN_CLASS, parent, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
-			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
-			minimum_accumulation_buffer_depth,
-			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-		if (buffer->type != GRAPHICS_BUFFER_GLX_X3D_TYPE)
-		{
-#if defined (DEBUG_CODE)
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-				"Unable to create X3d graphics buffer.");
-#endif /* defined (DEBUG_CODE) */
-			DESTROY(Graphics_buffer)(&buffer);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-			"Unable to create generic Graphics_buffer.");
-		buffer = (struct Graphics_buffer *)NULL;
-	}
-	LEAVE;
-
-	return (buffer);
-} /* create_Graphics_buffer_X3d */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_X3d_from_buffer(
-	Widget parent, int width, int height,
-	struct Graphics_buffer *buffer_to_match)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Graphics_buffer *buffer;
-
-	ENTER(create_Graphics_buffer_X3d_from_buffer);
-
-	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
-	{
-		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
-			GRAPHICS_BUFFER_ONSCREEN_CLASS, parent, width, height,
-			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
-			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
-			buffer_to_match);
-		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
-		{
-#if defined (DEBUG_CODE)
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
-				"Unable to create X3d graphics buffer.");
-#endif /* defined (DEBUG_CODE) */
-			DESTROY(Graphics_buffer)(&buffer);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
-			"Unable to create generic Graphics_buffer.");
-		buffer = (struct Graphics_buffer *)NULL;
-	}
-	LEAVE;
-
-	return (buffer);
-} /* create_Graphics_buffer_X3d_from_buffer */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer)
-/*******************************************************************************
-LAST MODIFIED : 17 November 2005
-
-DESCRIPTION :
-Private routine to facilitate the compilation of Graphics fonts with only
-a Graphics_buffer.
-==============================================================================*/
-{
-	Widget widget;
-
-	ENTER(Graphics_buffer_X3d_get_widget);
-
-	if (buffer)
-	{
-		widget = buffer->drawing_widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Graphics_buffer_X3d_get_widget.  "
-			"Unable to create generic Graphics_buffer.");
-		widget = (Widget)NULL;
-	}
-	LEAVE;
-
-	return (widget);
-} /* Graphics_buffer_X3d_get_widget */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (ENABLE_GTK_PBUFFER_RENDERING)
 #if defined (GTK_USER_INTERFACE)
@@ -6371,28 +4451,6 @@ DESCRIPTION :
 #endif /* defined (DEBUG_CODE) */
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				glXMakeCurrent(buffer->display, XtWindow(buffer->drawing_widget),
-					buffer->context);
-				return_code = 1;
-			} break;
-#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
-			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-			{
-				glXMakeCurrent(buffer->display, buffer->glx_pbuffer,
-					buffer->context);
-				return_code = 1;
-			} break;
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-			case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
-			{
-				glXMakeCurrent(buffer->display, buffer->glx_pixmap,
-					buffer->context);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6556,13 +4614,6 @@ Returns the visual id used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				*visual_id =(int) buffer->visual_info->visualid;
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6643,13 +4694,6 @@ Returns the depth of the colour buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				glXGetConfig(buffer->display, buffer->visual_info, GLX_BUFFER_SIZE, colour_buffer_depth);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6733,13 +4777,6 @@ Returns the depth of the depth buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				glXGetConfig(buffer->display, buffer->visual_info, GLX_DEPTH_SIZE, depth_buffer_depth);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6809,9 +4846,6 @@ DESCRIPTION :
 Returns the depth of the accumulation buffer used by the graphics buffer.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int colour_size;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Graphics_buffer_get_accumulation_buffer_depth);
@@ -6820,21 +4854,6 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				*accumulation_buffer_depth = 0;
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_ACCUM_RED_SIZE, &colour_size);
-				*accumulation_buffer_depth += colour_size;
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_ACCUM_GREEN_SIZE, &colour_size);
-				*accumulation_buffer_depth += colour_size;
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_ACCUM_BLUE_SIZE, &colour_size);
-				*accumulation_buffer_depth += colour_size;
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_ACCUM_ALPHA_SIZE, &colour_size);
-				*accumulation_buffer_depth += colour_size;
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6920,9 +4939,6 @@ Returns the buffering mode used by the graphics buffer.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int double_buffer;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Graphics_buffer_get_buffering_mode);
 #if defined (GTK_USER_INTERFACE)
@@ -6932,21 +4948,6 @@ Returns the buffering mode used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_DOUBLEBUFFER, &double_buffer);
-				if (double_buffer)
-				{
-					*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-				}
-				else
-				{
-					*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-				}
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7051,10 +5052,6 @@ Returns the stereo mode used by the graphics buffer.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int stereo;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 	ENTER(Graphics_buffer_get_stereo_mode);
 #if defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(stereo_mode);
@@ -7063,21 +5060,6 @@ Returns the stereo mode used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
- 				glXGetConfig(buffer->display, buffer->visual_info, GLX_STEREO, &stereo);
-				if (stereo)
-				{
-					*stereo_mode = GRAPHICS_BUFFER_STEREO;
-				}
-				else
-				{
-					*stereo_mode = GRAPHICS_BUFFER_MONO;
-				}
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7188,25 +5170,6 @@ DESCRIPTION :
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				glXSwapBuffers(buffer->display, XtWindow(buffer->drawing_widget));
-				return_code = 1;
-			} break;
-#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
-			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-			{
-				glXSwapBuffers(buffer->display, buffer->glx_pbuffer);
-				return_code = 1;
-			} break;
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-			case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
-			{
-				glXSwapBuffers(buffer->display, buffer->glx_pixmap);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7282,27 +5245,10 @@ made current) to be the GLX destination.
 
 	if (buffer)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
-		switch (buffer->type)
-		{
-			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-			{
-				glXMakeContextCurrent(buffer->display, glXGetCurrentDrawable(),
-					buffer->glx_pbuffer, glXGetCurrentContext());
-				return_code = 1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
-					"Graphics_bufffer type unknown or not supported.");
-			} break;
-		}
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-#else
+
 		display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
 			"Graphics_bufffer type unknown or not supported.");
-#endif /* defined (MOTIF_USER_INTERFACE) */
+
 	}
 	else
 	{
@@ -7329,17 +5275,6 @@ Returns the width of buffer represented by <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xwidth;
-
-				XtVaGetValues(buffer->drawing_widget,
-					XmNwidth,&xwidth,
-					NULL);
-				width = xwidth;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7422,25 +5357,11 @@ Sets the width of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_width);
-#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(width);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xwidth;
-
-				xwidth = width;
-				XtVaSetValues(buffer->drawing_widget,
-					XmNwidth, xwidth,
-					NULL);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -7484,17 +5405,6 @@ Returns the height of buffer represented by <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xheight;
-
-				XtVaGetValues(buffer->drawing_widget,
-					XmNheight,&xheight,
-					NULL);
-				height = xheight;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7577,25 +5487,11 @@ Sets the height of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_height);
-#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(height);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xheight;
-
-				xheight = height;
-				XtVaSetValues(buffer->drawing_widget,
-					XmNheight, xheight,
-					NULL);
-				return_code = 1;
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -7702,107 +5598,6 @@ Returns the y origin of buffer represented by <buffer>.
 	return (origin_y);
 } /* Graphics_buffer_get_origin_y */
 
-int Graphics_buffer_get_border_width(struct Graphics_buffer *buffer)
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Returns the border width of buffer represented by <buffer>.
-==============================================================================*/
-{
-	int border_width = 0;
-
-	ENTER(Graphics_buffer_get_border_width);
-	if (buffer)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		switch (buffer->type)
-		{
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xborder_width;
-
-				XtVaGetValues(buffer->drawing_widget,
-					XmNborderWidth,&xborder_width,
-					NULL);
-				border_width = xborder_width;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Graphics_buffer_get_border_width.  "
-					"Graphics_bufffer type unknown or not supported.");
-				border_width = 0;
-			} break;
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_get_border_width.  Invalid buffer");
-		border_width = 0;
-	}
-	LEAVE;
-
-	return (border_width);
-} /* Graphics_buffer_get_border_width */
-
-int Graphics_buffer_set_border_width(struct Graphics_buffer *buffer, int border_width)
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Sets the border width of buffer represented by <buffer>.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Graphics_buffer_set_border_width);
-#if !defined (MOTIF_USER_INTERFACE)
-	USE_PARAMETER(border_width);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
-	if (buffer)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		switch (buffer->type)
-		{
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				Dimension xborder_width;
-
-				xborder_width = border_width;
-				/*XtVaSetValues(scene_viewer->drawing_widget,
-				   XmNborderWidth, xborder_width,NULL);*/
-				XtVaSetValues(buffer->drawing_widget,
-					XmNleftOffset, xborder_width,
-					XmNrightOffset, xborder_width,
-					XmNbottomOffset, xborder_width,
-					XmNtopOffset, xborder_width,NULL);
-				return_code = 1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
-					"Graphics_bufffer type unknown or not supported.");
-			} break;
-		}
-#else
-		display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
-			"Graphics_bufffer type unknown or not supported.");
-
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_set_border_width.  Invalid buffer");
-		return_code = 1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_buffer_set_border_width */
-
 int Graphics_buffer_is_visible(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -7821,14 +5616,6 @@ into unmanaged or invisible widgets.
 		return_code = 0;
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				return_code = XtIsManaged(buffer->drawing_widget)&&
-					XtIsRealized(buffer->drawing_widget)&&
-					XtIsManaged(buffer->parent);
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7896,12 +5683,6 @@ Activates the graphics <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
-			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-			{
-				XtManageChild(buffer->drawing_widget);
-			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7981,34 +5762,6 @@ Returns information about the type of buffer that was created.
 
 	return (buffer_type);
 } /* Graphics_buffer_get_type */
-
-#if defined (MOTIF_USER_INTERFACE)
-Display *Graphics_buffer_X11_get_display(struct Graphics_buffer *buffer)
-/*******************************************************************************
-LAST MODIFIED : 27 May 2004
-
-DESCRIPTION :
-Returns information about the type of buffer that was created.
-==============================================================================*/
-{
-	Display *display;
-
-	ENTER(Graphics_buffer_get_type);
-	if (buffer)
-	{
-		display = buffer->display;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_get_display.  Invalid buffer");
-		display = (Display *)NULL;
-	}
-	LEAVE;
-
-	return (display);
-} /* Graphics_buffer_get_type */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data)
@@ -8142,67 +5895,6 @@ x==============================================================================*
 	if (buffer_ptr && (buffer = *buffer_ptr))
 	{
 		return_code=1;
-#if defined (MOTIF_USER_INTERFACE)
-		/* I have listed everything just to make sure I have considered them all */
-		/* buffer->drawing_widget, handled by window closing */
-		/* buffer->parent, responsibility of shell */
-		/* buffer->display, just a handle */
-
-#  if defined (GLX_SGIX_dmbuffer)
-	   if (buffer->dmbuffer)
-		{
-			dmBufferFree(buffer->dmbuffer);
-		}
-		if (buffer->dmpool)
-		{
-			dmBufferDestroyPool(buffer->dmpool);
-		}
-#  endif /* defined (GLX_SGIX_dmbuffer) */
-		if (buffer->context)
-		{
-			/* Don't destroy if this is the context in the package for sharing */
-			if (buffer->context != buffer->package->shared_glx_context)
-			{
-				glXDestroyContext(buffer->display, buffer->context);
-			}
-		}
-#  if defined (USE_GLX_PBUFFER)
-		if (buffer->glx_pbuffer)
-		{
-			glXDestroyPbuffer(buffer->display, buffer->glx_pbuffer);
-		}
-#  else /* defined (USE_GLX_PBUFFER) */
-#     if defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer)
-			glXDestroyGLXPbufferSGIX(buffer->display, buffer->glx_pbuffer);
-#     endif /* defined (GLX_SGIX_dmbuffer) || (GLX_SGIX_pbuffer) */
-#  endif /* defined (USE_GLX_PBUFFER) */
-#  if defined (USE_GLX_FBCONFIG)
-			if (buffer->config_list)
-			{
-				XFree(buffer->config_list);
-			}
-#  else /* defined (USE_GLX_FBCONFIG) */
-#     if defined (GLX_SGIX_fbconfig)
-			if (buffer->config_list)
-			{
-				XFree(buffer->config_list);
-			}
-#     endif /* defined (GLX_SGIX_fbconfig) */
-#  endif /* defined (USE_GLX_FBCONFIG) */
-			if(buffer->visual_info)
-			{
-				XFree(buffer->visual_info);
-			}
-			buffer->visual_info = (XVisualInfo *)NULL;
-			if(buffer->glx_pixmap)
-			{
-				glXDestroyGLXPixmap(buffer->display, buffer->glx_pixmap);
-			}
-			if(buffer->pixmap)
-			{
-				XFreePixmap(buffer->display, buffer->pixmap);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (GTK_USE_GTKGLAREA)
 			if (buffer->glconfig)
@@ -8382,59 +6074,3 @@ x==============================================================================*
 
 	return (return_code);
 } /* DESTROY(Graphics_buffer) */
-
-#if defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE)
-int query_glx_extension(char *extName, Display *display, int screen)
-/*******************************************************************************
-LAST MODIFIED : 14 September 1998
-
-DESCRIPTION :
-Search for extName in the GLX extensions string. Use of strstr() is not sufficient
-because extension names can be prefixes of other extension names. Could use
-strtok() but the constant string returned by glGetString might be in read-only
-memory.
-???SAB.  Taken directly from above
-==============================================================================*/
-{
-	char *end,*p;
-	int extNameLen, n;
-	int return_code;
-
-	/* check arguments */
-	if (extName)
-	{
-		extNameLen=strlen(extName);
-		p=(char *)glXQueryExtensionsString(display,screen);
-		if (NULL==p)
-		{
-			return_code=0;
-		}
-		else
-		{
-			end=p+strlen(p);
-			return_code = 0;
-			while (p<end)
-			{
-				n=strcspn(p," ");
-				if ((extNameLen==n)&&(strncmp(extName,p,n)==0))
-				{
-					return_code=1;
-				}
-				p += (n+1);
-			}
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* query_glx_extension */
-#endif /* defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE) */
-
-
-
-
-
-

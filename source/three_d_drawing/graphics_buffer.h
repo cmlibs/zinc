@@ -57,10 +57,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
-#  if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#  if defined (GTK_USER_INTERFACE)
 #     define GRAPHICS_BUFFER_USE_BUFFERS
 #     define GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS
-#  endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+#  endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 
 /*
@@ -276,32 +276,6 @@ will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_X3d(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	Widget parent, int width, int height,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 5 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_X3d_from_buffer(
-	Widget parent, int width, int height, 
-	struct Graphics_buffer *buffer_to_match);
-/*******************************************************************************
-LAST MODIFIED : 6 May 2004
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 #if defined (CARBON_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -459,23 +433,6 @@ DESCRIPTION :
 Gets the y origin of buffer represented by <buffer>.
 ==============================================================================*/
 
-int Graphics_buffer_get_border_width(struct Graphics_buffer *buffer);
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Returns the border width of buffer represented by <buffer>.
-==============================================================================*/
-
-int Graphics_buffer_set_border_width(struct Graphics_buffer *buffer,
-	int border_width);
-/*******************************************************************************
-LAST MODIFIED : 2 July 2002
-
-DESCRIPTION :
-Sets the border width of buffer represented by <buffer>.
-==============================================================================*/
-
 int Graphics_buffer_is_visible(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
@@ -501,16 +458,6 @@ LAST MODIFIED : 27 May 2004
 DESCRIPTION :
 Returns information about the type of buffer that was created.
 ==============================================================================*/
-
-#if defined (MOTIF_USER_INTERFACE)
-Display *Graphics_buffer_X11_get_display(struct Graphics_buffer *buffer);
-/*******************************************************************************
-LAST MODIFIED : 27 May 2004
-
-DESCRIPTION :
-Returns information about the type of buffer that was created.
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data);
@@ -556,20 +503,6 @@ DESCRIPTION :
 Closes a Graphics buffer instance
 ==============================================================================*/
 
-#if defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE)
-int query_glx_extension(char *extName, Display *display, int screen);
-/*******************************************************************************
-LAST MODIFIED : 4 May 2004
-
-DESCRIPTION :
-Search for extName in the GLX extensions string. Use of strstr() is not sufficient
-because extension names can be prefixes of other extension names. Could use
-strtok() but the constant string returned by glGetString might be in read-only
-memory.
-???SAB.  Taken directly from above
-==============================================================================*/
-#endif /* defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE) */
-
 #if defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer,
 	HFONT font, int first_bitmap, int number_of_bitmaps, int display_list_offset);
@@ -581,17 +514,6 @@ Function provided for compiling graphics_fonts as a graphics context is
 required in the win32 case.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer);
-/*******************************************************************************
-LAST MODIFIED : 17 November 2005
-
-DESCRIPTION :
-Private routine to facilitate the compilation of Graphics fonts with only
-a Graphics_buffer.
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (CARBON_USER_INTERFACE)
 int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *graphics_buffer,

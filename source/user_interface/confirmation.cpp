@@ -56,11 +56,6 @@ extern "C" {
 #endif /* defined (WIN32_SYSTEM) */
 #include <stdio.h>
 #include <string.h>
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Xm.h>
-#include <Xm/MessageB.h>
-#include <Xm/SelectioB.h>
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "user_interface/user_interface.h"
 #include "user_interface/confirmation.h"
@@ -118,67 +113,8 @@ struct File_confirmation
 Module functions
 ----------------
 */
-#if defined (MOTIF_USER_INTERFACE)
-static void confirmation_ok(Widget widget,XtPointer confirmation_void,
-	XtPointer reason)
-/*******************************************************************************
-LAST MODIFIED : 7 April 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Confirmation *confirmation;
-
-	ENTER(confirmation_ok);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(reason);
-	if (confirmation=(struct Confirmation *)confirmation_void)
-	{
-		confirmation->response=1;
-		confirmation->dialog_active=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"confirmation_ok.  Could not get confirmation structure");
-	}
-	LEAVE;
-} /* confirmation_ok */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void confirmation_cancel(Widget widget,XtPointer confirmation_void,
-	XtPointer reason)
-/*******************************************************************************
-LAST MODIFIED : 7 April 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Confirmation *confirmation;
-
-	ENTER(confirmation_cancel);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(reason);
-	if (confirmation=(struct Confirmation *)confirmation_void)
-	{
-		confirmation->response=0;
-		confirmation->dialog_active=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"confirmation_ok.  Could not get confirmation structure");
-	}
-	LEAVE;
-} /* confirmation_cancel */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int confirmation(enum Confirm_type type,const char *title,const char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,Confirmation_add_widgets_function add_widgets_function,
-	void *add_widgets_user_data,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	 struct User_interface *user_interface 
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -194,120 +130,17 @@ button is clicked.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	static Arg settings_list[]=
-		{
-			{XmNmessageString,(XtArgVal)0},
-			{XmNtitle,(XtArgVal)0},
-			/*???DB.  Changed dialogStyle to deleteResponse because of something
-				hanging in unemap acquisition, but can't remember what.  So leaving as
-				is */
-			{XmNdialogStyle,(XtArgVal)XmDIALOG_FULL_APPLICATION_MODAL}
-/*			{XmNdeleteResponse,(XtArgVal)XmDESTROY}*/
-		};
-	struct Confirmation confirmation;
-	Widget message_box,message_parent,message_shell;
-	XmString message_string,ok_label_string,cancel_label_string;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(confirmation);
-#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(type);
 	USE_PARAMETER(title);
 	USE_PARAMETER(prompt);
-#endif /* !defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	USE_PARAMETER(execute_command);
 #endif /* defined (WX_USER_INTERFACE) */
 	return_code=0;
 	if (user_interface)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		message_string=XmStringCreateSimple(const_cast<char *>(prompt));
-		settings_list[0].value=(XtArgVal)message_string;
-		settings_list[1].value=(XtArgVal)title;
-		message_box=(Widget)NULL;
-		if (!(message_parent=parent))
-		{
-			message_parent=User_interface_get_application_shell(user_interface);
-		}
-		switch (type)
-		{
-			case WARNING_OK_CANCEL:
-			case WARNING_OK:
-			{
-				message_box=XmCreateWarningDialog(message_parent,const_cast<char *>(title),settings_list,
-					XtNumber(settings_list));
-			} break;
-			case ERROR_OK:
-			{
-				message_box=XmCreateErrorDialog(message_parent,const_cast<char *>(title),settings_list,
-					XtNumber(settings_list));
-			} break;
-			case INFORMATION_OK:
-			{
-				message_box=XmCreateInformationDialog(message_parent,const_cast<char *>(title),
-					settings_list,XtNumber(settings_list));
-			} break;
-			case QUESTION_YES_NO:
-			{
-				message_box=XmCreateQuestionDialog(message_parent,const_cast<char *>(title),settings_list,
-					XtNumber(settings_list));
-			} break;
-		}
-		message_shell=XtParent(message_box);
-		switch (type)
-		{
-			case WARNING_OK_CANCEL:
-			{
-				/* remove the help button */
-				XtUnmanageChild(XmMessageBoxGetChild(message_box,XmDIALOG_HELP_BUTTON));
-			} break;
-			case ERROR_OK:
-			case INFORMATION_OK:
-			case WARNING_OK:
-			{
-				/* remove the help button */
-				XtUnmanageChild(XmMessageBoxGetChild(message_box,XmDIALOG_HELP_BUTTON));
-				/* remove the cancel button */
-				XtUnmanageChild(XmMessageBoxGetChild(message_box,
-					XmDIALOG_CANCEL_BUTTON));
-			} break;
-			case QUESTION_YES_NO:
-			{
-				ok_label_string=XmStringCreateSimple(const_cast<char *>("Yes"));
-				cancel_label_string=XmStringCreateSimple(const_cast<char *>("No"));
-				XtVaSetValues(message_box,
-					XmNokLabelString,ok_label_string,
-					XmNcancelLabelString,cancel_label_string,
-					NULL);
-				/* remove the help button */
-				XtUnmanageChild(XmMessageBoxGetChild(message_box,XmDIALOG_HELP_BUTTON));
-				XmStringFree(ok_label_string);
-				XmStringFree(cancel_label_string);
-			} break;
-		}
-		if (add_widgets_function)
-		{
-			add_widgets_function(message_box,add_widgets_user_data);
-		}
-		XtAddCallback(message_box,XmNokCallback,confirmation_ok,&confirmation);
-		XtAddCallback(message_box,XmNcancelCallback,confirmation_cancel,
-			&confirmation);
-		create_Shell_list_item(&(message_shell),user_interface);
-		busy_cursor_on(message_shell,user_interface);
-		XtManageChild(message_box);
-		confirmation.response=1;
-		confirmation.dialog_active=1;
-		while (confirmation.dialog_active)
-		{
-			application_main_step(user_interface);
-		}
-		busy_cursor_off(message_shell,user_interface);
-		destroy_Shell_list_item_from_shell(&(message_shell),user_interface);
-		XmStringFree(message_string);
-		return_code=confirmation.response;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 		switch (type)
 		{
@@ -511,9 +344,6 @@ This routine supplies a file selection dialog window
 				case CONFIRM_READ:
 				{
 					open_file_and_read(
-#if defined (MOTIF_USER_INTERFACE)
-						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -526,9 +356,6 @@ This routine supplies a file selection dialog window
 				case CONFIRM_WRITE:
 				{
 					open_file_and_write(
-#if defined (MOTIF_USER_INTERFACE)
-						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -542,12 +369,6 @@ This routine supplies a file selection dialog window
 			/*???DB.  For WIN32_USER_INTERFACE the event loop is inside open_file_and_*.  Should
 				probably be moved here ? */
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-			while (confirmation.dialog_active&&(file_open_data->selection))
-			{
-				application_main_step(user_interface);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			if ((confirmation.response)&&(confirmation.filename))
 			{
 				switch (type)
@@ -599,81 +420,11 @@ This routine supplies a file selection dialog window
 	return (filename);
 } /* confirmation_get_filename */
 
-#if defined (MOTIF_USER_INTERFACE)
-static void confirmation_get_string_ok(Widget widget,
-	XtPointer confirmation_void,XtPointer reason)
-/*******************************************************************************
-LAST MODIFIED : 17 April 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *temp_string;
-	struct Confirmation_string *confirmation;
-	XmString xm_string;
-
-	ENTER(confirmation_get_string_ok);
-	USE_PARAMETER(reason);
-	if (confirmation=(struct Confirmation_string *)confirmation_void)
-	{
-		XtVaGetValues(widget,
-			XmNtextString,&xm_string,
-			NULL);
-		if (XmStringGetLtoR(xm_string,XmFONTLIST_DEFAULT_TAG,&temp_string))
-		{
-			if (ALLOCATE(confirmation->response,char,strlen(temp_string)+1))
-			{
-				strcpy(confirmation->response,temp_string);
-			}
-			XtFree(temp_string);
-		}
-		confirmation->dialog_active=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"confirmation_get_string_ok.  Could not get confirmation structure");
-	}
-	LEAVE;
-} /* confirmation_get_string_ok */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void confirmation_get_string_cancel(Widget widget,
-	XtPointer confirmation_void,XtPointer reason)
-/*******************************************************************************
-LAST MODIFIED : 17 April 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Confirmation_string *confirmation;
-
-	ENTER(confirmation_get_string_cancel);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(reason);
-	if (confirmation=(struct Confirmation_string *)confirmation_void)
-	{
-		confirmation->response=(char *)NULL;
-		confirmation->dialog_active=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"confirmation_get_string_cancel.  Could not get confirmation structure");
-	}
-	LEAVE;
-} /* confirmation_get_string_cancel */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 /*
 Global functions
 ----------------
 */
 int confirmation_warning_ok_cancel(const char *title,const char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	 struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -692,9 +443,6 @@ is clicked and 0 if the cancel button is clicked.
 
 	ENTER(confirmation_warning_ok_cancel);
 	return_code=confirmation(WARNING_OK_CANCEL,title,prompt,
-#if defined (MOTIF_USER_INTERFACE)
-		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 		 , execute_command
@@ -705,34 +453,7 @@ is clicked and 0 if the cancel button is clicked.
 	return (return_code);
 } /* confirmation_warning_ok_cancel */
 
-#if defined (MOTIF_USER_INTERFACE)
-int confirmation_warning_ok_cancel_plus_options(const char *title,const char *prompt,
-	Widget parent,Confirmation_add_widgets_function add_widgets_function,
-	void *add_widgets_user_data,struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 13 May 1998
-
-DESCRIPTION :
-This routine supplies a dialog window which requires a response
-before anything else will continue and returns 1 if the OK button
-is clicked and 0 if the cancel button is clicked.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(confirmation_warning_ok_cancel_plus_options);
-	return_code=confirmation(WARNING_OK_CANCEL,title,prompt,parent,
-		add_widgets_function,add_widgets_user_data,user_interface);
-	LEAVE;
-
-	return (return_code);
-} /* confirmation_warning_ok_cancel_plus_options */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 int confirmation_error_ok(char *title,char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -751,9 +472,6 @@ options are supplied.
 
 	ENTER(confirmation_error_ok);
 	return_code=confirmation(ERROR_OK,title,prompt,
-#if defined (MOTIF_USER_INTERFACE)
-		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -765,9 +483,6 @@ options are supplied.
 } /* confirmation_error_ok */
 
 int confirmation_information_ok(char *title,char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -786,9 +501,6 @@ No other options are supplied.
 
 	ENTER(confirmation_information_ok);
 	return_code=confirmation(INFORMATION_OK,title,prompt,
-#if defined (MOTIF_USER_INTERFACE)
-		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -800,9 +512,6 @@ No other options are supplied.
 } /* confirmation_information_ok */
 
 int confirmation_warning_ok(const char *title,const char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -821,9 +530,6 @@ options are supplied.
 
 	ENTER(confirmation_warning_ok);
 	return_code=confirmation(WARNING_OK,title,prompt,
-#if defined (MOTIF_USER_INTERFACE)
-		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -835,9 +541,6 @@ options are supplied.
 } /* confirmation_warning_ok */
 
 int confirmation_question_yes_no(char *title,char *prompt,
-#if defined (MOTIF_USER_INTERFACE)
-	Widget parent,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -856,9 +559,6 @@ is clicked and No if it isn't.
 
 	ENTER(confirmation_question_yes_no);
 	return_code=confirmation(QUESTION_YES_NO,title,prompt,
-#if defined (MOTIF_USER_INTERFACE)
-		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -948,64 +648,3 @@ working directory.  The new directory will be created if necessary.
 
 	return (filename);
 } /* confirmation_change_current_working_directory */
-
-#if defined (MOTIF_USER_INTERFACE)
-char *confirmation_get_string(char *title,char *prompt,char *default_string,
-	Widget parent,struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 17 April 1998
-
-DESCRIPTION :
-This routine supplies a dialog window which requires a response
-before anything else will continue and returns a char * pointer
-if the OK button is clicked and NULL if the cancel button is clicked.
-The string <default_string> is supplied as the initial text, the box
-is initially blank if <default_string> is NULL.
-==============================================================================*/
-{
-	Arg arguments[1];
-	struct Confirmation_string confirmation;
-	Widget message_box,message_shell;
-	XmString default_xm_string,message_xm_string;
-
-	ENTER(confirmation);
-	XtSetArg(arguments[0],XmNtitle,title);
-	message_box=XmCreatePromptDialog(parent,title,arguments,1);
-	message_shell=XtParent(message_box);
-	message_xm_string=XmStringCreateSimple(prompt);
-	XtVaSetValues(message_box,
-		XmNselectionLabelString,message_xm_string,
-		XmNdialogType,XmDIALOG_PROMPT,
-		XmNdialogStyle,XmDIALOG_FULL_APPLICATION_MODAL,
-		NULL);
-	XmStringFree(message_xm_string);
-	if (default_string)
-	{
-		default_xm_string=XmStringCreateSimple(default_string);
-		XtVaSetValues(message_box,
-			XmNtextString,default_xm_string,
-			NULL);
-		XmStringFree(default_xm_string);
-	}
-	/* remove the help button */
-	XtUnmanageChild(XmSelectionBoxGetChild(message_box,XmDIALOG_HELP_BUTTON));
-	XtAddCallback(message_box,XmNokCallback,confirmation_get_string_ok,
-		&confirmation);
-	XtAddCallback(message_box,XmNcancelCallback,confirmation_get_string_cancel,
-		&confirmation);
-	create_Shell_list_item(&(message_shell),user_interface);
-	busy_cursor_on(message_shell,user_interface);
-	XtManageChild(message_box);
-	confirmation.response=(char *)NULL;
-	confirmation.dialog_active=1;
-	while (confirmation.dialog_active)
-	{
-		application_main_step(user_interface);
-	}
-	busy_cursor_off(message_shell,user_interface);
-	destroy_Shell_list_item_from_shell(&(message_shell),user_interface);
-	LEAVE;
-
-	return (confirmation.response);
-} /* confirmation_get_string */
-#endif /* defined (MOTIF_USER_INTERFACE) */

@@ -45,13 +45,6 @@ Interactive tool for selecting elements with mouse and other devices.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Protocols.h>
-#include <Xm/MwmUtil.h>
-#include <Xm/Xm.h>
-#include <Xm/ToggleBG.h>
-#include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "api/cmiss_rendition.h"
 #include "command/command.h"
 #include "computed_field/computed_field.h"
@@ -60,11 +53,6 @@ extern "C" {
 #include "api/cmiss_field_subobject_group.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
-#if defined (MOTIF_USER_INTERFACE)
-	static char element_tool_uidh[] =
-#include "element/element_tool.uidh"
-		;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -73,9 +61,6 @@ extern "C" {
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "motif/image_utilities.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "graphics/rendition.h"
 #include "graphics/graphic.h"
 #include "region/cmiss_region.h"
@@ -98,11 +83,6 @@ typedef std::multimap<Cmiss_region *, Cmiss_element_id> Region_element_map;
 Module variables
 ----------------
 */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int element_tool_hierarchy_open=0;
-static MrmHierarchy element_tool_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_element_type_string[] = "element_tool";
 
@@ -142,13 +122,6 @@ struct Element_tool
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 	struct Cmiss_rendition *rendition;
-
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-	Widget select_elements_button,select_faces_button,select_lines_button,
-		command_field_button,command_field_form,command_field_widget;
-	Widget widget,window_shell;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 	wxElementTool *wx_element_tool;
@@ -209,251 +182,6 @@ int Element_tool_destroy_selected_elements(struct Element_tool *element_tool)
 	}
 	return return_code;
 }
-
-#if defined (MOTIF_USER_INTERFACE)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-select_elements_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-select_faces_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
-select_lines_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,command_field_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,command_field_form)
-
-static void Element_tool_close_CB(Widget widget,void *element_tool_void,
-								  void *call_data)
-								  /*******************************************************************************
-								  LAST MODIFIED : 20 July 2000
-
-								  DESCRIPTION :
-								  Callback when "close" is selected from the window menu, or it is double
-								  clicked. How this is made to occur is as follows. The dialog has its
-								  XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-								  WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-								  function in response to the close command. See CREATE for more details.
-								  Function pops down dialog as a response,
-								  ==============================================================================*/
-{
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_close_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		XtPopdown(element_tool->window_shell);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_close_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_close_CB */
-
-static void Element_tool_select_elements_button_CB(Widget widget,
-												   void *element_tool_void,void *call_data)
-												   /*******************************************************************************
-												   LAST MODIFIED : 20 July 2000
-
-												   DESCRIPTION :
-												   Callback from toggle button controlling whether top-level & 3-D elements can be
-												   selected.
-												   ==============================================================================*/
-{
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_select_elements_button_CB);
-	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		Element_tool_set_select_elements_enabled(element_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_select_elements_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_select_elements_button_CB */
-
-static void Element_tool_select_faces_button_CB(Widget widget,
-												void *element_tool_void,void *call_data)
-												/*******************************************************************************
-												LAST MODIFIED : 20 July 2000
-
-												DESCRIPTION :
-												Callback from toggle button controlling whether face & 2-D top-level elements
-												can be selected.
-												==============================================================================*/
-{
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_select_faces_button_CB);
-	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		Element_tool_set_select_faces_enabled(element_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_select_faces_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_select_faces_button_CB */
-
-static void Element_tool_select_lines_button_CB(Widget widget,
-												void *element_tool_void,void *call_data)
-												/*******************************************************************************
-												LAST MODIFIED : 20 July 2000
-
-												DESCRIPTION :
-												Callback from toggle button controlling whether line & 1-D top-level elements
-												can be selected.
-												==============================================================================*/
-{
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_select_lines_button_CB);
-	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		Element_tool_set_select_lines_enabled(element_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_select_lines_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_select_lines_button_CB */
-
-static void Element_tool_command_field_button_CB(Widget widget,
-												 void *element_tool_void,void *call_data)
-												 /*******************************************************************************
-												 LAST MODIFIED : 5 July 2002
-
-												 DESCRIPTION :
-												 Callback from toggle button enabling a command_field to be selected.
-												 ==============================================================================*/
-{
-	struct Computed_field *command_field;
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_command_field_button_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		if (Element_tool_get_command_field(element_tool))
-		{
-			Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
-		}
-		else
-		{
-			/* get label field from widget */
-			command_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				element_tool->command_field_widget);
-			if (command_field)
-			{
-				Element_tool_set_command_field(element_tool, command_field);
-			}
-			else
-			{
-				XtVaSetValues(element_tool->command_field_button, XmNset, False, NULL);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_command_field_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_command_field_button_CB */
-
-static void Element_tool_update_command_field(Widget widget,
-											  void *element_tool_void, void *command_field_void)
-											  /*******************************************************************************
-											  LAST MODIFIED : 5 July 2002
-
-											  DESCRIPTION :
-											  Callback for change of command_field.
-											  ==============================================================================*/
-{
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_update_command_field);
-	USE_PARAMETER(widget);
-	if (element_tool = (struct Element_tool *)element_tool_void)
-	{
-		/* skip messages from chooser if it is grayed out */
-		if (XtIsSensitive(element_tool->command_field_widget))
-		{
-			Element_tool_set_command_field(element_tool,
-				(struct Computed_field *)command_field_void);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_update_command_field.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_update_command_field */
-
-static void Element_tool_destroy_selected_CB(Widget widget,
-											 void *element_tool_void,void *call_data)
-											 /*******************************************************************************
-											 LAST MODIFIED : 20 March 2003
-
-											 DESCRIPTION :
-											 Attempts to destroy all the top-level elements currently in the global
-											 selection. ???RC could change to allow faces and lines to be destroyed, but
-											 need other safeguard controls before allowing this.
-											 ==============================================================================*/
-{
-	int number_not_destroyed;
-	struct Element_tool *element_tool;
-	struct FE_region *fe_region;
-	struct LIST(FE_element) *destroy_element_list;
-
-	ENTER(Element_tool_destroy_selected_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_tool = (struct Element_tool *)element_tool_void)
-	{
-		if (destroy_element_list = CREATE(LIST(FE_element))())
-		{
-			COPY_LIST(FE_element)(destroy_element_list,
-				FE_element_selection_get_element_list(
-				element_tool->element_selection));
-			fe_region = Cmiss_region_get_FE_region(element_tool->region);
-			FE_region_begin_change(fe_region);
-			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
-			if (0 < (number_not_destroyed =
-				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
-			{
-				display_message(WARNING_MESSAGE,
-					"%d of the selected element(s) could not be destroyed",
-					number_not_destroyed);
-			}
-			FE_region_end_change(fe_region);
-			DESTROY(LIST(FE_element))(&destroy_element_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_destroy_selected_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_tool_destroy_selected_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
 static void Element_tool_reset(void *element_tool_void)
@@ -891,72 +619,6 @@ format for passing to an Interactive_toolbar.
 } /* Element_tool_bring_up_interactive_tool_dialog */
 #endif /* defined (OPENGL_API) */
 
-static struct Cmgui_image *Element_tool_get_icon(struct Colour *foreground, 
-struct Colour *background, void *element_tool_void)
-	/*******************************************************************************
-	LAST MODIFIED : 5 July 2002
-
-	DESCRIPTION :
-	Fetches a ToggleButton with an appropriate icon for the interactive tool
-	and as a child of <parent>.
-	==============================================================================*/
-{
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-	Pixel background_pixel, foreground_pixel;
-	Pixmap pixmap;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image = NULL;
-	struct Element_tool *element_tool;
-
-	ENTER(Element_tool_get_icon);
-	if ((element_tool=(struct Element_tool *)element_tool_void))
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
-			&element_tool_hierarchy,&element_tool_hierarchy_open))
-		{
-			display = element_tool->display;
-			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
-			convert_Colour_to_Pixel(display, background, &background_pixel);
-			if (MrmSUCCESS == MrmFetchIconLiteral(element_tool_hierarchy,
-				const_cast<char *>("element_tool_icon"),DefaultScreenOfDisplay(display),display,
-				foreground_pixel, background_pixel, &pixmap))
-			{ 
-				image = create_Cmgui_image_from_Pixmap(display, pixmap);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
-					"Could not fetch widget");
-				image = (struct Cmgui_image *)NULL;
-			}			
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
-				"Could not open heirarchy");
-			image = (struct Cmgui_image *)NULL;
-		}
-#else /* defined (MOTIF_USER_INTERFACE) */
-		USE_PARAMETER(foreground);
-		USE_PARAMETER(background);
-		USE_PARAMETER(element_tool);
-		display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
-			"Not implemented for this user interface.");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_get_icon.  Invalid argument(s)");
-		image = (struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Element_tool_get_icon */
-
 #if defined (OPENGL_API)
 static int Element_tool_destroy_element_tool(void **element_tool_void)
 /*******************************************************************************
@@ -1248,39 +910,6 @@ Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
 Selects elements in <element_selection> in response to interactive_events.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Atom WM_DELETE_WINDOW;
-	int init_widgets;
-	MrmType element_tool_dialog_class;
-	static MrmRegisterArg callback_list[]=
-	{
-		{const_cast<char *>("elem_tool_id_select_elems_btn"),(XtPointer)
-		DIALOG_IDENTIFY(element_tool,select_elements_button)},
-		{const_cast<char *>("elem_tool_id_select_faces_btn"),(XtPointer)
-		DIALOG_IDENTIFY(element_tool,select_faces_button)},
-		{const_cast<char *>("elem_tool_id_select_lines_btn"),(XtPointer)
-		DIALOG_IDENTIFY(element_tool,select_lines_button)},
-		{const_cast<char *>("elem_tool_id_command_field_btn"),(XtPointer)
-		DIALOG_IDENTIFY(element_tool,command_field_button)},
-		{const_cast<char *>("elem_tool_id_command_field_form"),(XtPointer)
-		DIALOG_IDENTIFY(element_tool,command_field_form)},
-		{const_cast<char *>("elem_tool_select_elems_btn_CB"),
-		(XtPointer)Element_tool_select_elements_button_CB},
-		{const_cast<char *>("elem_tool_select_faces_btn_CB"),
-		(XtPointer)Element_tool_select_faces_button_CB},
-		{const_cast<char *>("elem_tool_select_lines_btn_CB"),
-		(XtPointer)Element_tool_select_lines_button_CB},
-		{const_cast<char *>("elem_tool_command_field_btn_CB"),
-		(XtPointer)Element_tool_command_field_button_CB},
-		{const_cast<char *>("elem_tool_destroy_selected_CB"),
-		(XtPointer)Element_tool_destroy_selected_CB}
-	};
-	static MrmRegisterArg identifier_list[]=
-	{
-		{const_cast<char *>("elem_tool_structure"),(XtPointer)NULL}
-	};
-	struct Callback_data callback;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Element_tool *element_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -1317,7 +946,6 @@ Selects elements in <element_selection> in response to interactive_events.
 				"element_tool","Element tool",
 				Interactive_tool_element_type_string,
 				Element_tool_interactive_event_handler,
-				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
 				Element_tool_reset,
 				Element_tool_destroy_element_tool,
@@ -1328,7 +956,6 @@ Selects elements in <element_selection> in response to interactive_events.
 				"element_tool","Element tool",
 				Interactive_tool_element_type_string,
 				(Interactive_event_handler*)NULL,
-				Element_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function*)NULL,
 				(Interactive_tool_reset_function*)NULL,				
 				(Interactive_tool_destroy_tool_data_function *)NULL,
@@ -1341,139 +968,9 @@ Selects elements in <element_selection> in response to interactive_events.
 			element_tool->last_picked_element=(struct FE_element *)NULL;
 			element_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 			element_tool->rubber_band=(struct GT_object *)NULL;
-
-#if defined (MOTIF_USER_INTERFACE)
-			element_tool->display = User_interface_get_display(user_interface);
-
-			/* initialise widgets */
-			element_tool->select_elements_button=(Widget)NULL;
-			element_tool->select_faces_button=(Widget)NULL;
-			element_tool->select_lines_button=(Widget)NULL;
-			element_tool->command_field_button=(Widget)NULL;
-			element_tool->command_field_form=(Widget)NULL;
-			element_tool->command_field_widget=(Widget)NULL;
-			element_tool->widget=(Widget)NULL;
-			element_tool->window_shell=(Widget)NULL;
-
-			if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
-				&element_tool_hierarchy,&element_tool_hierarchy_open))
-			{
-				/* make the dialog shell */
-				if (element_tool->window_shell=
-					XtVaCreatePopupShell("Element tool",
-					topLevelShellWidgetClass,
-					User_interface_get_application_shell(user_interface),
-					XmNdeleteResponse,XmDO_NOTHING,
-					XmNmwmDecorations,MWM_DECOR_ALL,
-					XmNmwmFunctions,MWM_FUNC_ALL,
-					/*XmNtransient,FALSE,*/
-					XmNallowShellResize,False,
-					XmNtitle,"Element tool",
-					NULL))
-				{
-					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_tool->window_shell),
-						const_cast<char *>("WM_DELETE_WINDOW"),False);
-					XmAddWMProtocolCallback(element_tool->window_shell,
-						WM_DELETE_WINDOW,Element_tool_close_CB,element_tool);
-					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(element_tool->window_shell),user_interface);
-					/* register the callbacks */
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-						element_tool_hierarchy,callback_list,XtNumber(callback_list)))
-					{
-						/* assign and register the identifiers */
-						identifier_list[0].value=(XtPointer)element_tool;
-						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							element_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
-						{
-							/* fetch element tool widgets */
-							if (MrmSUCCESS==MrmFetchWidget(element_tool_hierarchy,
-								const_cast<char *>("element_tool"),element_tool->window_shell,
-								&(element_tool->widget),&element_tool_dialog_class))
-							{
-								init_widgets=1;
-								if (element_tool->command_field_widget =
-									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-									element_tool->command_field_form,
-									element_tool->command_field, computed_field_manager,
-									Computed_field_has_string_value_type,
-									(void *)NULL, user_interface))
-								{
-									callback.data = (void *)element_tool;
-									callback.procedure = Element_tool_update_command_field;
-									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
-										element_tool->command_field_widget, &callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								if (init_widgets)
-								{
-									XmToggleButtonGadgetSetState(
-										element_tool->select_elements_button,
-										/*state*/element_tool->select_elements_enabled,
-										/*notify*/False);
-									XmToggleButtonGadgetSetState(
-										element_tool->select_faces_button,
-										/*state*/element_tool->select_faces_enabled,
-										/*notify*/False);
-									XmToggleButtonGadgetSetState(
-										element_tool->select_lines_button,
-										/*state*/element_tool->select_lines_enabled,
-										/*notify*/False);
-									XmToggleButtonGadgetSetState(element_tool->command_field_button,
-										/*state*/False, /*notify*/False);
-									XtSetSensitive(element_tool->command_field_widget,
-										/*state*/False);
-									XtManageChild(element_tool->widget);
-									XtRealizeWidget(element_tool->window_shell);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"CREATE(Element_tool).  Could not init widgets");
-									DESTROY(Element_tool)(&element_tool);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"CREATE(Element_tool).  Could not fetch element_tool");
-								DESTROY(Element_tool)(&element_tool);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(Element_tool).  Could not register identifiers");
-							DESTROY(Element_tool)(&element_tool);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(Element_tool).  Could not register callbacks");
-						DESTROY(Element_tool)(&element_tool);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(Element_tool).  Could not create Shell");
-					DESTROY(Element_tool)(&element_tool);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Element_tool).  Could not open hierarchy");
-			}
-
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			element_tool->wx_element_tool=(wxElementTool *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 		}
 		else
 		{
@@ -1516,14 +1013,6 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(element_tool->time_keeper));
 		}
-#if defined (MOTIF_USER_INTERFACE)
-		if (element_tool->window_shell)
-		{
-			destroy_Shell_list_item_from_shell(&(element_tool->window_shell),
-				element_tool->user_interface);
-			XtDestroyWidget(element_tool->window_shell);
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		if (element_tool->wx_element_tool)
 			element_tool->wx_element_tool->Destroy();
@@ -1554,12 +1043,7 @@ Pops up a dialog for editing settings of the Element_tool.
 	ENTER(Element_tool_pop_up_dialog);
 	if (element_tool)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		USE_PARAMETER(graphics_window);
-		XtPopup(element_tool->window_shell, XtGrabNone);
-		/* make sure in addition that it is not shown as an icon */
-		XtVaSetValues(element_tool->window_shell, XmNiconic, False, NULL);
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		wxPanel *pane;
 		if (!element_tool->wx_element_tool)
 		{
@@ -1592,38 +1076,6 @@ Pops up a dialog for editing settings of the Element_tool.
 
 	return (return_code);
 } /* Element_tool_pop_up_dialog */
-
-int Element_tool_pop_down_dialog(struct Element_tool *element_tool)
-/*******************************************************************************
-LAST MODIFIED : 20 June 2001
-
-DESCRIPTION :
-Hides the dialog for editing settings of the Element_tool.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Element_tool_pop_down_dialog);
-	if (element_tool)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		XtPopdown(element_tool->window_shell);
-#else /* defined (MOTIF_USER_INTERFACE) */
-		display_message(ERROR_MESSAGE, "Element_tool_pop_down_dialog.  "
-			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_pop_down_dialog.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_tool_pop_down_dialog */
 
 int Element_tool_get_select_elements_enabled(struct Element_tool *element_tool)
 /*******************************************************************************
@@ -1660,9 +1112,6 @@ DESCRIPTION :
 Sets flag controlling whether top-level & 3-D elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_elements_enabled);
@@ -1677,22 +1126,6 @@ Sets flag controlling whether top-level & 3-D elements can be selected.
 		if (select_elements_enabled != element_tool->select_elements_enabled)
 		{
 			element_tool->select_elements_enabled=select_elements_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(element_tool->select_elements_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != element_tool->select_elements_enabled)
-			{
-				XmToggleButtonGadgetSetState(element_tool->select_elements_button,
-					/*state*/element_tool->select_elements_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1741,9 +1174,6 @@ DESCRIPTION :
 Returns flag controlling whether face & 2-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_faces_enabled);
@@ -1758,22 +1188,6 @@ Returns flag controlling whether face & 2-D top-level elements can be selected.
 		if (select_faces_enabled != element_tool->select_faces_enabled)
 		{
 			element_tool->select_faces_enabled=select_faces_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(element_tool->select_faces_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != element_tool->select_faces_enabled)
-			{
-				XmToggleButtonGadgetSetState(element_tool->select_faces_button,
-					/*state*/element_tool->select_faces_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1822,9 +1236,6 @@ DESCRIPTION :
 Returns flag controlling whether line & 1-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_lines_enabled);
@@ -1839,22 +1250,6 @@ Returns flag controlling whether line & 1-D top-level elements can be selected.
 		if (select_lines_enabled != element_tool->select_lines_enabled)
 		{
 			element_tool->select_lines_enabled=select_lines_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(element_tool->select_lines_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != element_tool->select_lines_enabled)
-			{
-				XmToggleButtonGadgetSetState(element_tool->select_lines_button,
-					/*state*/element_tool->select_lines_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1906,9 +1301,6 @@ struct Computed_field *command_field)
 	on in the <element_tool>.
 	==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int field_set;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_command_field);
@@ -1919,17 +1311,6 @@ struct Computed_field *command_field)
 		if (command_field != element_tool->command_field)
 		{
 			element_tool->command_field = command_field;
-#if defined (MOTIF_USER_INTERFACE)
-			if (command_field)
-			{
-				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-					element_tool->command_field_widget,element_tool->command_field);
-			}
-			field_set = ((struct Computed_field *)NULL != command_field);
-			XtVaSetValues(element_tool->command_field_button,
-				XmNset, field_set, NULL);
-			XtSetSensitive(element_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

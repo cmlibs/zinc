@@ -46,9 +46,6 @@ Functions and types associated with commands.
 
 #include "general/object.h"
 #include "general/io_stream.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include <X11/Intrinsic.h>
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global constants
@@ -70,16 +67,6 @@ struct Execute_command;
 Global functions
 ----------------
 */
-#if defined (MOTIF_USER_INTERFACE)
-void callback_command(Widget widget_id,XtPointer command,XtPointer call_data);
-/*******************************************************************************
-LAST MODIFIED : 11 June 1993
-
-DESCRIPTION :
-Allows easy execution of <command>s from menu buttons.
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 int read_iod_file_via_selection_box(char *file_name,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 15 June 1993

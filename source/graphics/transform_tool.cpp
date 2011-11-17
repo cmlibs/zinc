@@ -48,23 +48,12 @@ Eventually use to store parameters for the transform function.
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
 #include "general/debug.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "motif/image_utilities.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "interaction/interactive_tool.h"
 #include "interaction/interactive_tool_private.h"
 #include "graphics/transform_tool.h"
-#if defined (MOTIF_USER_INTERFACE)
-static char transform_tool_uidh[] =
-#include "graphics/transform_tool.uidh"
-	;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/message.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "user_interface/user_interface.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 
 #if defined (WX_USER_INTERFACE)
@@ -75,16 +64,6 @@ static char transform_tool_uidh[] =
 #include "graphics/transform_tool.xrch"
 #include "graphics/graphics_window_private.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
-
-/*
-Module variables
-----------------
-*/
-
-#if defined (MOTIF_USER_INTERFACE)
-static int transform_tool_hierarchy_open=0;
-static MrmHierarchy transform_tool_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types
@@ -98,13 +77,6 @@ class wxTransformTool;
 
 static char Interactive_tool_transform_type_string[] = "Transform_tool";
 
-#if defined (MOTIF_USER_INTERFACE)
-struct Transform_tool_defaults
-{
-	Boolean free_spin;
-};
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 struct Transform_tool
 /*******************************************************************************
 LAST MODIFIED : 12 June 2000
@@ -116,9 +88,6 @@ DESCRIPTION :
 
 	struct User_interface *user_interface;
 	int free_spin_flag;
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
   wxTransformTool *wx_transform_tool;
@@ -283,73 +252,6 @@ format for passing to an Interactive_toolbar.
 
  	return (return_code);
 } /* Transform_tool_bring_up_interactive_tool_dialog */
-
-
-
-static struct Cmgui_image *Transform_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, void *transform_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Fetches the appropriate icon for the interactive tool.
-==============================================================================*/
-{
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-	Pixel background_pixel, foreground_pixel;
-	Pixmap pixmap;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image;
-	struct Transform_tool *transform_tool;
-
-	ENTER(Transform_tool_get_icon);
-	if ((transform_tool=(struct Transform_tool *)transform_tool_void))
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (MrmOpenHierarchy_binary_string(transform_tool_uidh,sizeof(transform_tool_uidh),
-			&transform_tool_hierarchy,&transform_tool_hierarchy_open))
-		{
-			display = transform_tool->display;
-			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
-			convert_Colour_to_Pixel(display, background, &background_pixel);
-			if (MrmSUCCESS == MrmFetchIconLiteral(transform_tool_hierarchy,
-					(char *)"transform_tool_icon",DefaultScreenOfDisplay(display),display,
-				foreground_pixel, background_pixel, &pixmap))
-			{ 
-				image = create_Cmgui_image_from_Pixmap(display, pixmap);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
-					"Could not fetch widget");
-				image = (struct Cmgui_image *)NULL;
-			}			
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
-				"Could not open heirarchy");
-			image = (struct Cmgui_image *)NULL;
-		}
-#else /* defined (MOTIF_USER_INTERFACE) */
-		USE_PARAMETER(foreground);
-		USE_PARAMETER(background);
-		display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
-			"Not implemented for this version.");
-		image = (struct Cmgui_image *)NULL;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Transform_tool_get_icon.  Invalid argument(s)");
-		image = (struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Transform_tool_get_icon */
 
 static int destroy_Interactive_tool_transform_tool_data(
 	void **interactive_tool_data_address)
@@ -543,23 +445,6 @@ Creates a transform type Interactive_tool which control the transformation of
 scene_viewers.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNtransformFreeSpin "transformFreeSpin"
-#define XmCtransformFreeSpin "TransformFreeSpin"
-	struct Transform_tool_defaults transform_tool_defaults;
-	static XtResource resources[]=
-	{
-		{
-			(char *)XmNtransformFreeSpin,
-			(char *)XmCtransformFreeSpin,
-			XmRBoolean,
-			sizeof(Boolean),
-			XtOffsetOf(struct Transform_tool_defaults,free_spin),
-			XmRString,
-			const_cast<char*>("false")
-		}
-	};
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Interactive_tool *interactive_tool;
 	struct Transform_tool *transform_tool;
 
@@ -569,24 +454,8 @@ scene_viewers.
 		if (ALLOCATE(transform_tool,struct Transform_tool,1))
 		{			
 			transform_tool->user_interface = user_interface;
-
-#if defined (MOTIF_USER_INTERFACE)
-			transform_tool_defaults.free_spin = False;
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-				&transform_tool_defaults,resources,XtNumber(resources),NULL);
-			transform_tool->display = User_interface_get_display(user_interface);
-			if (transform_tool_defaults.free_spin)
-			{
-				transform_tool->free_spin_flag = 1;
-			}
-			else
-			{
-				transform_tool->free_spin_flag = 0;
-			}
-#elif defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
-
+#if defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
 			transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
-
 #else /* switch (USER_INTERFACE) */
 			transform_tool->free_spin_flag = 0;
 #endif /* switch (USER_INTERFACE) */
@@ -594,7 +463,6 @@ scene_viewers.
 				"transform_tool","Transform tool",
 				Interactive_tool_transform_type_string,
 				(Interactive_event_handler *)NULL,
-				Transform_tool_get_icon,
 				//(Interactive_tool_bring_up_dialog_function *)NULL,
 				Transform_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_reset_function *)NULL,

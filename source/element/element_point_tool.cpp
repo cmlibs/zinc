@@ -45,22 +45,10 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Protocols.h>
-#include <Xm/MwmUtil.h>
-#include <Xm/Xm.h>
-#include <Xm/ToggleBG.h>
-#include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_tool.h"
-#if defined (MOTIF_USER_INTERFACE)
-static char element_point_tool_uidh[] =
-#include "element/element_point_tool.uidh"
-	;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
@@ -68,9 +56,6 @@ static char element_point_tool_uidh[] =
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
-#if defined (MOTIF_USER_INTERFACE)
-#include "motif/image_utilities.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
@@ -89,10 +74,6 @@ static char element_point_tool_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF_USER_INTERFACE)
-static int element_point_tool_hierarchy_open=0;
-static MrmHierarchy element_point_tool_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_element_point_type_string[] = "element_point_tool";
 
@@ -133,12 +114,6 @@ Object storing all the parameters for interactively selecting element points.
 	struct GT_object *rubber_band;
 	struct Cmiss_region *region;
 	//struct Graphics_window *graphics_window;
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-
-	Widget command_field_button, command_field_form, command_field_widget;
-	Widget widget, window_shell;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 	 wxElementPointTool *wx_element_point_tool;
@@ -151,116 +126,6 @@ Object storing all the parameters for interactively selecting element points.
 Module functions
 ----------------
 */
-
-#if defined (MOTIF_USER_INTERFACE)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_form)
-
-static void Element_point_tool_close_CB(Widget widget,void *element_point_tool_void,
-	void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Callback when "close" is selected from the window menu, or it is double
-clicked. How this is made to occur is as follows. The dialog has its
-XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-function in response to the close command. See CREATE for more details.
-Function pops down dialog as a response,
-==============================================================================*/
-{
-	struct Element_point_tool *element_point_tool;
-
-	ENTER(Element_point_tool_close_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_tool=(struct Element_point_tool *)element_point_tool_void)
-	{
-		XtPopdown(element_point_tool->window_shell);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_close_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_tool_close_CB */
-
-static void Element_point_tool_command_field_button_CB(Widget widget,
-	void *element_point_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Callback from toggle button enabling a command_field to be selected.
-==============================================================================*/
-{
-	struct Computed_field *command_field;
-	struct Element_point_tool *element_point_tool;
-
-	ENTER(Element_point_tool_command_field_button_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_tool=(struct Element_point_tool *)element_point_tool_void)
-	{
-		if (Element_point_tool_get_command_field(element_point_tool))
-		{
-			Element_point_tool_set_command_field(element_point_tool, (struct Computed_field *)NULL);
-		}
-		else
-		{
-			/* get label field from widget */
-			command_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				element_point_tool->command_field_widget);
-			if (command_field)
-			{
-				Element_point_tool_set_command_field(element_point_tool, command_field);
-			}
-			else
-			{
-				XtVaSetValues(element_point_tool->command_field_button, XmNset, False, NULL);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_command_field_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_tool_command_field_button_CB */
-
-static void Element_point_tool_update_command_field(Widget widget,
-	void *element_point_tool_void, void *command_field_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Callback for change of command_field.
-==============================================================================*/
-{
-	struct Element_point_tool *element_point_tool;
-
-	ENTER(Element_point_tool_update_command_field);
-	USE_PARAMETER(widget);
-	if (element_point_tool = (struct Element_point_tool *)element_point_tool_void)
-	{
-		/* skip messages from chooser if it is grayed out */
-		if (XtIsSensitive(element_point_tool->command_field_widget))
-		{
-			Element_point_tool_set_command_field(element_point_tool,
-				(struct Computed_field *)command_field_void);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_update_command_field.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_tool_update_command_field */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void Element_point_tool_reset(void *element_point_tool_void)
 /*******************************************************************************
@@ -568,72 +433,6 @@ format for passing to an Interactive_toolbar.
 	return (return_code);
 } /* Element_point_tool_bring_up_interactive_tool_dialog */
 
-static struct Cmgui_image *Element_point_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, void *element_point_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Fetches an icon for the Element_point tool.
-==============================================================================*/
-{
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-	Pixel background_pixel, foreground_pixel;
-	Pixmap pixmap;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image = NULL;
-	struct Element_point_tool *element_point_tool;
-
-	ENTER(Element_point_tool_get_icon);
-	if ((element_point_tool=(struct Element_point_tool *)element_point_tool_void))
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
-			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
-		{
-			display = element_point_tool->display;
-			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
-			convert_Colour_to_Pixel(display, background, &background_pixel);
-			if (MrmSUCCESS == MrmFetchIconLiteral(element_point_tool_hierarchy,
-					const_cast<char *>("element_point_tool_icon"),DefaultScreenOfDisplay(display),display,
-				foreground_pixel, background_pixel, &pixmap))
-			{ 
-				image = create_Cmgui_image_from_Pixmap(display, pixmap);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
-					"Could not fetch widget");
-				image = (struct Cmgui_image *)NULL;
-			}			
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
-				"Could not open heirarchy");
-			image = (struct Cmgui_image *)NULL;
-		}
-#else /* defined (MOTIF_USER_INTERFACE) */
-		USE_PARAMETER(foreground);
-		USE_PARAMETER(background);
-		USE_PARAMETER(element_point_tool);
-		display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
-			"Not implemented for this user interface.");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_get_icon.  Invalid argument_point(s)");
-		image = (struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Element_point_tool_get_icon */
-
-
 #if defined (WX_USER_INTERFACE)
 class wxElementPointTool : public wxPanel
 {
@@ -852,25 +651,6 @@ Creates an Element_point_tool with Interactive_tool in
 <element_point_ranges_selection> in response to interactive_events.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	Atom WM_DELETE_WINDOW;
-	int init_widgets;
-	MrmType element_point_tool_dialog_class;
-	static MrmRegisterArg callback_list[]=
-	{
-		{const_cast<char *>("elem_pnt_tool_id_cmd_field_btn"),(XtPointer)
-			DIALOG_IDENTIFY(element_point_tool,command_field_button)},
-		{const_cast<char *>("elem_pnt_tool_id_cmd_field_form"),(XtPointer)
-			DIALOG_IDENTIFY(element_point_tool,command_field_form)},
-		{const_cast<char *>("elem_pnt_tool_cmd_field_btn_CB"),
-		 (XtPointer)Element_point_tool_command_field_button_CB}
-	};
-	static MrmRegisterArg identifier_list[]=
-	{
-		{const_cast<char *>("elem_pnt_tool_structure"),(XtPointer)NULL}
-	};
-	struct Callback_data callback;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Element_point_tool *element_point_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -902,7 +682,6 @@ Creates an Element_point_tool with Interactive_tool in
 				"element_point_tool","Element point tool",
 				Interactive_tool_element_point_type_string,
 				Element_point_tool_interactive_event_handler,
-				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
 				Element_point_tool_reset,
  				Element_point_tool_destroy_element_point_tool,
@@ -916,122 +695,7 @@ Creates an Element_point_tool with Interactive_tool in
 			element_point_tool->last_interaction_volume=
 				(struct Interaction_volume *)NULL;
 			element_point_tool->rubber_band=(struct GT_object *)NULL;
-#if defined (MOTIF_USER_INTERFACE)
-			element_point_tool->display = User_interface_get_display
-				(user_interface);
-
-			/* initialise widgets */
-			element_point_tool->command_field_button=(Widget)NULL;
-			element_point_tool->command_field_form=(Widget)NULL;
-			element_point_tool->command_field_widget=(Widget)NULL;
-			element_point_tool->widget=(Widget)NULL;
-			element_point_tool->window_shell=(Widget)NULL;
-
-			if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
-					&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
-			{
-				/* make the dialog shell */
-				if (element_point_tool->window_shell=
-					XtVaCreatePopupShell("Element point tool",
-						topLevelShellWidgetClass,
-						User_interface_get_application_shell(user_interface),
-						XmNdeleteResponse,XmDO_NOTHING,
-						XmNmwmDecorations,MWM_DECOR_ALL,
-						XmNmwmFunctions,MWM_FUNC_ALL,
-						/*XmNtransient,FALSE,*/
-						XmNallowShellResize,False,
-						XmNtitle,"Element point tool",
-						NULL))
-				{
-					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_point_tool->window_shell),
-						const_cast<char *>("WM_DELETE_WINDOW"),False);
-					XmAddWMProtocolCallback(element_point_tool->window_shell,
-						WM_DELETE_WINDOW,Element_point_tool_close_CB,element_point_tool);
-					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(element_point_tool->window_shell),user_interface);
-					/* register the callbacks */					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							 element_point_tool_hierarchy,callback_list,XtNumber(callback_list)))
-					{
-						/* assign and register the identifiers */
-						identifier_list[0].value=(XtPointer)element_point_tool;
-						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-								 element_point_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
-						{
-							/* fetch element tool widgets */
-							if (MrmSUCCESS==MrmFetchWidget(element_point_tool_hierarchy,
-									const_cast<char *>("element_point_tool"),element_point_tool->window_shell,
-									&(element_point_tool->widget),&element_point_tool_dialog_class))
-							{
-								init_widgets=1;
-								if (element_point_tool->command_field_widget =
-									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-										element_point_tool->command_field_form,
-										element_point_tool->command_field, computed_field_manager,
-										Computed_field_has_string_value_type,
-										(void *)NULL, user_interface))
-								{
-									callback.data = (void *)element_point_tool;
-									callback.procedure = Element_point_tool_update_command_field;
-									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
-										element_point_tool->command_field_widget, &callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								if (init_widgets)
-								{
-									XmToggleButtonGadgetSetState(
-										element_point_tool->command_field_button,
-										/*state*/False, /*notify*/False);
-									XtSetSensitive(element_point_tool->command_field_widget,
-										/*state*/False);
-									XtManageChild(element_point_tool->widget);
-									XtRealizeWidget(element_point_tool->window_shell);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"CREATE(Element_point_tool).  Could not init widgets");
-									DESTROY(Element_point_tool)(&element_point_tool);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"CREATE(Element_point_tool).  Could not fetch element_point_tool");
-								DESTROY(Element_point_tool)(&element_point_tool);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(Element_point_tool).  Could not register identifiers");
-							DESTROY(Element_point_tool)(&element_point_tool);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(Element_point_tool).  Could not register callbacks");
-						DESTROY(Element_point_tool)(&element_point_tool);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(Element_point_tool).  Could not create Shell");
-					DESTROY(Element_point_tool)(&element_point_tool);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Element_point_tool).  Could not open hierarchy");
-			}
-
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
  			element_point_tool->wx_element_point_tool = (wxElementPointTool *)NULL;
 #endif /* switch (USER_INTERFACE) */
 		}
@@ -1082,14 +746,6 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(element_point_tool->time_keeper));
 		}
-#if defined (MOTIF_USER_INTERFACE)
-		if (element_point_tool->window_shell)
-		{
-			destroy_Shell_list_item_from_shell(&(element_point_tool->window_shell),
-				element_point_tool->user_interface);
-			XtDestroyWidget(element_point_tool->window_shell);
-		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		DEALLOCATE(*element_point_tool_address);
 		return_code=1;
 	}
@@ -1117,12 +773,7 @@ Pops up a dialog for editing settings of the Element_point_tool.
 	ENTER(Element_point_tool_pop_up_dialog);
 	if (element_point_tool)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		USE_PARAMETER(graphics_window);
-		XtPopup(element_point_tool->window_shell, XtGrabNone);
-		/* make sure in addition that it is not shown as an icon */
-		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		wxPanel *pane;
 		if (!element_point_tool->wx_element_point_tool)
 		{
@@ -1155,39 +806,6 @@ Pops up a dialog for editing settings of the Element_point_tool.
 
 	return (return_code);
 } /* Element_point_tool_pop_up_dialog */
-
-int Element_point_tool_pop_down_dialog(
-	struct Element_point_tool *element_point_tool)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Hides the dialog for editing settings of the Element_point_tool.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Element_point_tool_pop_down_dialog);
-	if (element_point_tool)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		XtPopdown(element_point_tool->window_shell);
-#else /* defined (MOTIF_USER_INTERFACE) */
-		display_message(ERROR_MESSAGE, "Element_point_tool_pop_down_dialog.  "
-			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_tool_pop_down_dialog.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_tool_pop_down_dialog */
 
 struct Computed_field *Element_point_tool_get_command_field(
 	struct Element_point_tool *element_point_tool)
@@ -1228,9 +846,6 @@ Sets the command_field to be executed when the element is clicked on in the
 <element_point_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int field_set;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_point_tool_set_command_field);
@@ -1241,17 +856,6 @@ Sets the command_field to be executed when the element is clicked on in the
 		if (command_field != element_point_tool->command_field)
 		{
 			element_point_tool->command_field = command_field;
-#if defined (MOTIF_USER_INTERFACE)
-			if (command_field)
-			{
-				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-					element_point_tool->command_field_widget,element_point_tool->command_field);
-			}
-			field_set = ((struct Computed_field *)NULL != command_field);
-			XtVaSetValues(element_point_tool->command_field_button,
-				XmNset, field_set, NULL);
-			XtSetSensitive(element_point_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

@@ -73,30 +73,17 @@ struct User_interface_module
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-	struct MANAGER(Movie_graphics) *movie_graphics_manager;
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-	struct Select_tool *select_tool;
-	struct Prompt_window *prompt_window;
-	struct Projection_window *projection_window;
-	Widget curve_editor_dialog,data_grabber_dialog,
-		grid_field_calculator_dialog,input_module_dialog,
-		sync_2d_3d_dialog;
-	struct Element_creator *element_creator;
-	struct Time_editor_dialog *time_editor_dialog;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 	struct Emoter_dialog *emoter_slider_dialog;
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Material_editor_dialog *material_editor_dialog;
 	struct Region_tree_viewer *region_tree_viewer;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	int external;

@@ -55,10 +55,6 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
-#if defined (MOTIF_USER_INTERFACE)
-#define GLX_GLXEXT_PROTOTYPES
-#include <GL/glx.h>
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -643,15 +639,6 @@ Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required so that we can determine what API is used by this buffer.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-#define XmNgraphicsFont "graphicsFont"
-#define XmCGraphicsFont "GraphicsFont"
-#define XmNgraphicsTextOffsetX "graphicsTextOffsetX"
-#define XmCGraphicsTextOffsetX "GraphicsTextOffsetX"
-#define XmNgraphicsTextOffsetY "graphicsTextOffsetY"
-#define XmCGraphicsTextOffsetY "GraphicsTextOffsetY"
-	XFontStruct *x_font;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	HFONT win32_font;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -678,44 +665,6 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			/* Can have multiple types compiled in at the same time (X and gtk) */
 			switch (Graphics_buffer_get_type(buffer))
 			{
-#if defined (MOTIF_USER_INTERFACE)
-				case GRAPHICS_BUFFER_GLX_X3D_TYPE:
-#  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
-				case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-				case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
-				{
-					if (!strcmp(font->font_string,"default"))
-					{
-						x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
-							"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
-					}
-					else
-					{
-						if (!(x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer),
-							font->font_string)))
-						{
-							display_message(WARNING_MESSAGE,
-								"Unable to get specified font \"%s\", falling back to system font.",
-								font->font_string);
-							x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
-								"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
-						}
-					}
-					if (x_font)
-					{
-						glXUseXFont(x_font->fid, font->first_bitmap,
-							font->number_of_bitmaps, font->display_list_offset);
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_font.  "
-							"Unable to get any font.");
-						return_code = 0;
-					}
-				} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined GTK_USE_GTKGLAREA
 				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:

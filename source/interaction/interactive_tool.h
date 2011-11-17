@@ -80,8 +80,6 @@ typedef void Interactive_event_handler(void *device_id,
 typedef int Interactive_tool_bring_up_dialog_function(void *user_data,
 	struct Graphics_window *graphics_window);
 typedef void Interactive_tool_reset_function(void *user_data);
-typedef struct Cmgui_image *Interactive_tool_get_icon_function(
-	struct Colour *foreground, struct Colour *background, void *user_data);
 typedef int Interactive_tool_destroy_tool_data_function(
    void **interactive_tool_data_address);
 typedef int Interactive_tool_copy_function(
@@ -99,7 +97,6 @@ Global functions
 struct Interactive_tool *CREATE(Interactive_tool)(const char *name,const char *display_name,
 	const char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
-	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
 	Interactive_tool_reset_function* reset_function,
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
@@ -165,15 +162,6 @@ LAST MODIFIED : 18 November 2005
 DESCRIPTION :
 Passes the <interactive_event> from <device_id> to the tool wrapped by the
 <interactive_tool> object.
-==============================================================================*/
-
-struct Cmgui_image *Interactive_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, struct Interactive_tool *interactive_tool);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Returns the icon which a user_interface can use to represent the tool.
 ==============================================================================*/
 
 int Interactive_tool_copy(struct Interactive_tool *destination_interactive_tool,

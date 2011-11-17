@@ -47,13 +47,6 @@ Scene input.
 
 extern "C" {
 #include <math.h>
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Protocols.h>
-#include <Xm/MwmUtil.h>
-#include <Xm/Xm.h>
-#include <Xm/ToggleBG.h>
-#include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "api/cmiss_rendition.h"
 #include "time/time_keeper.h"
 #include "computed_field/computed_field.h"
@@ -75,13 +68,6 @@ extern "C" {
 #include "node/node_tool.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
-#if defined (MOTIF_USER_INTERFACE)
-static char node_tool_uidh[] =
-#include "node/node_tool.uidh"
-	;
-#include "motif/image_utilities.h"
-#include "region/cmiss_region_chooser.h"
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "graphics/rendition.h"
 #include "graphics/graphic.h"
 #include "graphics/scene.h"
@@ -105,11 +91,6 @@ typedef std::multimap<Cmiss_region *, Cmiss_node_id> Region_node_map;
 Module variables
 ----------------
 */
-
-#if defined (MOTIF_USER_INTERFACE)
-static int node_tool_hierarchy_open=0;
-static MrmHierarchy node_tool_hierarchy;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_node_type_string[] = "node_tool";
 
@@ -192,20 +173,9 @@ changes in node position and derivatives etc.
 	struct FE_element *element;
 	/* number of nodes that have been set in the element being created */
 	int number_of_clicked_nodes;
-#if defined (MOTIF_USER_INTERFACE)
-	Display *display;
-	struct Cmiss_region_chooser *cmiss_region_chooser;
-	Widget coordinate_field_form,coordinate_field_widget,create_button,
-		constrain_to_surface_button,define_button,edit_button,
-		motion_update_button,node_group_form,node_group_widget,select_button,
-		streaming_create_button,command_field_button,command_field_form,
-		command_field_widget;
-	Widget widget,window_shell;
-#else /* defined (MOTIF_USER_INTERFACE) */
 	/* without cmiss_region_chooser need somewhere to store the region path */
 	char *current_region_path;
 	struct MANAGER(Computed_field) *computed_field_manager;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
 	 wxPoint tool_position;
@@ -270,20 +240,6 @@ struct Node_tool_element_constraint_function_data
 Module functions
 ----------------
 */
-
-#if defined (MOTIF_USER_INTERFACE)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,constrain_to_surface_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,define_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_form)
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /* Prototype */
 static int Node_tool_end_element_creation(
@@ -1393,484 +1349,6 @@ try to enforce that the node is created on that element.
 	return (merged_node);
 } /* Node_tool_create_node_at_interaction_volume */
 
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_close_CB(Widget widget,void *node_tool_void,
-	void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Callback when "close" is selected from the window menu, or it is double
-clicked. How this is made to occur is as follows. The dialog has its
-XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-function in response to the close command. See CREATE for more details.
-Function pops down dialog as a response,
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_close_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		XtPopdown(node_tool->window_shell);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Node_tool_close_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_close_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_create_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Callback from toggle button controlling whether nodes are created in
-response to interactive events.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_create_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_create_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_create_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_create_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_define_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2000
-
-DESCRIPTION :
-Callback from toggle button controlling whether fields are defined at nodes in
-response to interactive events.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_define_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_define_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_define_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_define_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_edit_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Callback from toggle button controlling whether nodes are edited in
-response to interactive events.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_edit_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_edit_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_edit_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_edit_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_motion_update_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Callback from toggle button controlling whether editing motions are updated
-during the edit - if off then updates only once at the end.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_motion_update_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_motion_update_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_motion_update_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_motion_update_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_select_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Callback from toggle button controlling whether nodes are selected in
-response to interactive events.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_select_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_select_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_select_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_select_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_streaming_create_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 14 May 2001
-
-DESCRIPTION :
-Callback from toggle button controlling whether nodes are created continuously,
-ie. streaming in response to interactive events = user drags.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_streaming_create_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_streaming_create_enabled(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_streaming_create_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_streaming_create_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_constrain_to_surface_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 18 April 2005
-
-DESCRIPTION :
-Callback from toggle button controlling whether nodes are created on surface
-elements or just halfway between near and far.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_constrain_to_surface_button_CB);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_constrain_to_surface(node_tool,
-			XmToggleButtonGadgetGetState(widget));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_constrain_to_surface_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_constrain_to_surface_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_command_field_button_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2002
-
-DESCRIPTION :
-Callback from toggle button enabling a command_field to be selected.
-==============================================================================*/
-{
-	struct Computed_field *command_field;
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_command_field_button_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		if (Node_tool_get_command_field(node_tool))
-		{
-			Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
-		}
-		else
-		{
-			/* get label field from widget */
-			command_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				node_tool->command_field_widget);
-			if (command_field)
-			{
-				Node_tool_set_command_field(node_tool, command_field);
-			}
-			else
-			{
-				XtVaSetValues(node_tool->command_field_button, XmNset, False, NULL);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_command_field_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_command_field_button_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_update_command_field(Widget widget,
-	void *node_tool_void, void *command_field_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2002
-
-DESCRIPTION :
-Callback for change of command_field.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_update_command_field);
-	USE_PARAMETER(widget);
-	if (node_tool = (struct Node_tool *)node_tool_void)
-	{
-		/* skip messages from chooser if it is grayed out */
-		if (XtIsSensitive(node_tool->command_field_widget))
-		{
-			Node_tool_set_command_field(node_tool,
-				(struct Computed_field *)command_field_void);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_update_command_field.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_update_command_field */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_update_region(Widget widget,
-	void *node_tool_void,void *region_void)
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Callback for change of region that we are working in.
-==============================================================================*/
-{
-	struct Cmiss_region *region;
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_update_region);
-	USE_PARAMETER(widget);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		region = (struct Cmiss_region *)region_void;
-		Node_tool_set_Cmiss_region(node_tool, region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_update_region.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_update_region */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_update_coordinate_field(Widget widget,
-	void *node_tool_void,void *coordinate_field_void)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2000
-
-DESCRIPTION :
-Callback for change of coordinate_field.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_update_coordinate_field);
-	USE_PARAMETER(widget);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		Node_tool_set_coordinate_field(node_tool,
-			(struct Computed_field *)coordinate_field_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_update_coordinate_field.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_update_coordinate_field */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_destroy_selected_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Attempts to destroy all the nodes currently in the global selection.
-==============================================================================*/
-{
-	struct LIST(FE_node) *destroy_node_list;
-	struct Node_tool *node_tool;
-	struct FE_region *master_fe_region;
-
-	ENTER(Node_tool_destroy_selected_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		if (destroy_node_list=CREATE(LIST(FE_node))())
-		{
-			COPY_LIST(FE_node)(destroy_node_list,
-				FE_node_selection_get_node_list(node_tool->node_selection));
-			/* nodes destroyed only if removed from ultimate master FE_region */
-			if (FE_region_get_ultimate_master_FE_region(node_tool->fe_region,
-				&master_fe_region))
-			{
-				FE_region_begin_change(master_fe_region);
-				FE_region_remove_FE_node_list(master_fe_region, destroy_node_list);
-				FE_region_end_change(master_fe_region);
-			}
-			DESTROY(LIST(FE_node))(&destroy_node_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_destroy_selected_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_destroy_selected_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-static void Node_tool_undefine_selected_CB(Widget widget,
-	void *node_tool_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 29 April 2003
-
-DESCRIPTION :
-Attempts to undefine all the nodes currently in the global selection.
-==============================================================================*/
-{
-	int number_in_elements;
-	struct FE_field *fe_field;
-	struct LIST(FE_field) *fe_field_list;
-	struct LIST(FE_node) *node_list;
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_undefine_selected_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		if (node_tool->coordinate_field && (fe_field_list=
-			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
-		{
-			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
-				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-					(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-					fe_field_list)))
-			{
-				node_list = CREATE(LIST(FE_node))();
-				if (COPY_LIST(FE_node)(node_list,
-					FE_node_selection_get_node_list(node_tool->node_selection)))
-				{
-					FE_region_begin_change(node_tool->fe_region);
-					FE_region_undefine_FE_field_in_FE_node_list(
-						node_tool->fe_region, fe_field, node_list, &number_in_elements);
-					display_message(WARNING_MESSAGE,
-						"Field could not be undefined in %d node(s) "
-						"because in-use by elements", number_in_elements);
-					FE_region_end_change(node_tool->fe_region);
-				}
-				DESTROY(LIST(FE_node))(&node_list);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Node_tool_undefine_selected_CB.  Invalid field");
-			}
-			DESTROY(LIST(FE_field))(&fe_field_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Node_tool_undefine_selected_CB.  No field to undefine");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_undefine_selected_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_undefine_selected_CB */
-#endif /* defined (MOTIF_USER_INTERFACE) */
-
 static void Node_tool_reset(void *node_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 25 February 2008
@@ -2607,82 +2085,6 @@ for passing to an Interactive_toolbar.
 	return (return_code);
 } /* Node_tool_bring_up_interactive_tool_dialog */
 
-static struct Cmgui_image *Node_tool_get_icon(struct Colour *foreground, 
-	struct Colour *background, void *node_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2002
-
-DESCRIPTION :
-Fetches the appropriate icon for the interactive tool.
-==============================================================================*/
-{
-#if defined (MOTIF_USER_INTERFACE)
-	const char *icon_name;
-	Display *display;
-	Pixel background_pixel, foreground_pixel;
-	Pixmap pixmap;
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image = NULL;
-	struct Node_tool *node_tool;
-
-	ENTER(node_tool_get_icon);
-	if ((node_tool=(struct Node_tool *)node_tool_void))
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		if (MrmOpenHierarchy_binary_string(node_tool_uidh,sizeof(node_tool_uidh),
-			&node_tool_hierarchy,&node_tool_hierarchy_open))
-		{
-			if (node_tool->use_data)
-			{
-				icon_name="data_tool_icon";
-			}
-			else
-			{
-				icon_name="node_tool_icon";
-			}
-			display = node_tool->display;
-			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
-			convert_Colour_to_Pixel(display, background, &background_pixel);
-			if (MrmSUCCESS == MrmFetchIconLiteral(node_tool_hierarchy,
-					const_cast<char *>(icon_name),DefaultScreenOfDisplay(display),display,
-				foreground_pixel, background_pixel, &pixmap))
-			{ 
-				image = create_Cmgui_image_from_Pixmap(display, pixmap);
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
-					"Could not fetch widget");
-				image = (struct Cmgui_image *)NULL;
-			}			
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
-				"Could not open heirarchy");
-			image = (struct Cmgui_image *)NULL;
-		}
-#else /* defined (MOTIF_USER_INTERFACE) */
-		USE_PARAMETER(foreground);
-		USE_PARAMETER(background);
-		USE_PARAMETER(node_tool);
-		display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
-			"Not implemented for this user interface.");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_get_icon.  Invalid argument(s)");
-		image = (struct Cmgui_image *)NULL;
-	}
-	LEAVE;
-
-	return (image);
-} /* Node_tool_get_icon */
-
-
-
 #if defined (WX_USER_INTERFACE)
 class wxNodeTool : public wxPanel
 {
@@ -3355,7 +2757,6 @@ Copies the state of one node tool to another.
 			destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 			destination_node_tool->command_field = source_node_tool->command_field;
 			destination_node_tool->element_xi_field = source_node_tool->element_xi_field;
-#if ! defined (MOTIF_USER_INTERFACE)
 			if (source_node_tool->current_region_path)
 			{
 				if (destination_node_tool->current_region_path)
@@ -3363,7 +2764,6 @@ Copies the state of one node tool to another.
 				destination_node_tool->current_region_path =
 					duplicate_string(source_node_tool->current_region_path);
 			}
-#endif /* ! defined (MOTIF_USER_INTERFACE) */
 			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
 			destination_node_tool->element_dimension = source_node_tool->element_dimension;
 			Node_tool_set_Cmiss_region(destination_node_tool,
@@ -3741,62 +3141,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 {
 	char *initial_path;
 	const char *tool_display_name,*tool_name;
-#if defined (MOTIF_USER_INTERFACE)
-	Atom WM_DELETE_WINDOW;
-	int init_widgets;
-	MrmType node_tool_dialog_class;
-	static MrmRegisterArg callback_list[]=
-	{
-		{const_cast<char *>("node_tool_id_select_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,select_button)},
-		{const_cast<char *>("node_tool_id_edit_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,edit_button)},
-		{const_cast<char *>("node_tool_id_motion_update_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,motion_update_button)},
-		{const_cast<char *>("node_tool_id_define_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,define_button)},
-		{const_cast<char *>("node_tool_id_create_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,create_button)},
-		{const_cast<char *>("node_tool_id_streaming_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,streaming_create_button)},
-		{const_cast<char *>("node_tool_id_constrain_srf_btn"),(XtPointer)
-		   DIALOG_IDENTIFY(node_tool,constrain_to_surface_button)},
-		{const_cast<char *>("node_tool_id_node_group_form"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,node_group_form)},
-		{const_cast<char *>("node_tool_id_coord_field_form"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,coordinate_field_form)},
-		{const_cast<char *>("node_tool_id_command_field_btn"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,command_field_button)},
-		{const_cast<char *>("node_tool_id_command_field_form"),(XtPointer)
-			DIALOG_IDENTIFY(node_tool,command_field_form)},
-		{const_cast<char *>("node_tool_select_btn_CB"),
-		 (XtPointer)Node_tool_select_button_CB},
-		{const_cast<char *>("node_tool_edit_btn_CB"),
-		 (XtPointer)Node_tool_edit_button_CB},
-		{const_cast<char *>("node_tool_motion_update_btn_CB"),
-		 (XtPointer)Node_tool_motion_update_button_CB},
-		{const_cast<char *>("node_tool_define_btn_CB"),
-		 (XtPointer)Node_tool_define_button_CB},
-		{const_cast<char *>("node_tool_create_btn_CB"),
-		 (XtPointer)Node_tool_create_button_CB},
-		{const_cast<char *>("node_tool_streaming_btn_CB"),
-		 (XtPointer)Node_tool_streaming_create_button_CB},
-		{const_cast<char *>("node_tool_constrain_srf_btn_CB"),
-		 (XtPointer)Node_tool_constrain_to_surface_button_CB},
-		{const_cast<char *>("node_tool_command_field_btn_CB"),
-		 (XtPointer)Node_tool_command_field_button_CB},
-		{const_cast<char *>("node_tool_destroy_selected_CB"),
-		 (XtPointer)Node_tool_destroy_selected_CB},
-		{const_cast<char *>("node_tool_undefine_selected_CB"),
-		 (XtPointer)Node_tool_undefine_selected_CB}
-	};
-	static MrmRegisterArg identifier_list[]=
-	{
-		{const_cast<char *>("node_tool_structure"),(XtPointer)NULL}
-	};
-	struct Callback_data callback;
-	struct Cmiss_region *region;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
@@ -3866,14 +3210,11 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
 			node_tool->tool_position=wxPoint(0,0);
-#elif !defined (MOTIF_USER_INTERFACE)
-			node_tool->current_region_path = (char *)NULL;
 #endif /*defined (WX_USER_INTERFACE)*/
 			node_tool->interactive_tool=CREATE(Interactive_tool)(
 				tool_name,tool_display_name,
 				Interactive_tool_node_type_string,
 				Node_tool_interactive_event_handler,
-				Node_tool_get_icon,
 				Node_tool_bring_up_interactive_tool_dialog,
 				Node_tool_reset,
  				Node_tool_destroy_node_tool,
@@ -3890,182 +3231,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 			node_tool->rubber_band=(struct GT_object *)NULL;
-#if defined (MOTIF_USER_INTERFACE)
-			/* initialise widgets */
-			node_tool->coordinate_field_form=(Widget)NULL;
-			node_tool->coordinate_field_widget=(Widget)NULL;
-			node_tool->cmiss_region_chooser=(struct Cmiss_region_chooser *)NULL;
-			node_tool->create_button=(Widget)NULL;
-			node_tool->define_button=(Widget)NULL;
-			node_tool->display = User_interface_get_display(user_interface);
-			node_tool->edit_button=(Widget)NULL;
-			node_tool->motion_update_button=(Widget)NULL;
-			node_tool->node_group_form=(Widget)NULL;
-			node_tool->node_group_widget=(Widget)NULL;
-			node_tool->select_button=(Widget)NULL;
-			node_tool->streaming_create_button=(Widget)NULL;
-			node_tool->constrain_to_surface_button=(Widget)NULL;
-			node_tool->command_field_button=(Widget)NULL;
-			node_tool->command_field_form=(Widget)NULL;
-			node_tool->command_field_widget=(Widget)NULL;
-			node_tool->widget=(Widget)NULL;
-			node_tool->window_shell=(Widget)NULL;
-
-			/* make the dialog shell */
-			if (MrmOpenHierarchy_binary_string(node_tool_uidh,sizeof(node_tool_uidh),
-				&node_tool_hierarchy,&node_tool_hierarchy_open))
-			{
-				if (node_tool->window_shell=
-					XtVaCreatePopupShell(tool_display_name,
-						topLevelShellWidgetClass,
-						User_interface_get_application_shell(user_interface),
-						XmNdeleteResponse,XmDO_NOTHING,
-						XmNmwmDecorations,MWM_DECOR_ALL,
-						XmNmwmFunctions,MWM_FUNC_ALL,
-						/*XmNtransient,FALSE,*/
-						XmNallowShellResize,False,
-						XmNtitle,tool_display_name,
-						NULL))
-				{
-					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(node_tool->window_shell),
-						const_cast<char *>("WM_DELETE_WINDOW"),False);
-					XmAddWMProtocolCallback(node_tool->window_shell,
-						WM_DELETE_WINDOW,Node_tool_close_CB,node_tool);
-					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(node_tool->window_shell),user_interface);
-					/* register the callbacks */
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-						node_tool_hierarchy,callback_list,XtNumber(callback_list)))
-					{
-						/* assign and register the identifiers */
-						identifier_list[0].value=(XtPointer)node_tool;
-						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							node_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
-						{
-							/* fetch node tool widgets */
-							if (MrmSUCCESS==MrmFetchWidget(node_tool_hierarchy,
-									const_cast<char *>("node_tool"),node_tool->window_shell,
-								&(node_tool->widget),&node_tool_dialog_class))
-							{
-								init_widgets=1;
-								if (node_tool->coordinate_field_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-										node_tool->coordinate_field_form,
-										node_tool->coordinate_field,computed_field_manager,
-										Computed_field_has_up_to_3_numerical_components,
-										(void *)NULL, user_interface))
-								{
-									callback.data=(void *)node_tool;
-									callback.procedure=Node_tool_update_coordinate_field;
-									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
-										node_tool->coordinate_field_widget,&callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								if (node_tool->command_field_widget =
-									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-										node_tool->command_field_form,
-										node_tool->command_field, computed_field_manager,
-										Computed_field_has_string_value_type,
-										(void *)NULL, user_interface))
-								{
-									callback.data = (void *)node_tool;
-									callback.procedure = Node_tool_update_command_field;
-									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
-										node_tool->command_field_widget, &callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								if (node_tool->cmiss_region_chooser =
-									CREATE(Cmiss_region_chooser)(node_tool->node_group_form,
-										node_tool->root_region, initial_path))
-								{
-									if (Cmiss_region_chooser_get_region(
-										node_tool->cmiss_region_chooser, &region))
-									{
-										Node_tool_set_Cmiss_region(node_tool, region);
-									}
-									Cmiss_region_chooser_set_callback(
-										node_tool->cmiss_region_chooser,
-										Node_tool_update_region,
-										(void *)node_tool);
-								}
-								else
-								{
-									init_widgets=0;
-								}
-								if (init_widgets)
-								{
-									XmToggleButtonGadgetSetState(node_tool->create_button,
-										/*state*/node_tool->create_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->define_button,
-										/*state*/node_tool->define_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->edit_button,
-										/*state*/node_tool->edit_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->motion_update_button,
-										/*state*/node_tool->motion_update_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->select_button,
-										/*state*/node_tool->select_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(
-										node_tool->streaming_create_button,
-										/*state*/node_tool->streaming_create_enabled,
-										/*notify*/False);
-									XmToggleButtonGadgetSetState(
-										node_tool->constrain_to_surface_button,
-										/*state*/node_tool->constrain_to_surface,
-										/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->command_field_button,
-										/*state*/False, /*notify*/False);
-									XtSetSensitive(node_tool->command_field_widget, /*state*/False);
-									XtManageChild(node_tool->widget);
-									XtRealizeWidget(node_tool->window_shell);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"CREATE(Node_tool).  Could not init widgets");
-									DESTROY(Node_tool)(&node_tool);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"CREATE(Node_tool).  Could not fetch node_tool");
-								DESTROY(Node_tool)(&node_tool);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(Node_tool).  Could not register identifiers");
-							DESTROY(Node_tool)(&node_tool);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(Node_tool).  Could not register callbacks");
-						DESTROY(Node_tool)(&node_tool);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(Node_tool).  Could not create Shell");
-					DESTROY(Node_tool)(&node_tool);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Node_tool).  Could not open hierarchy");
-			}
-#endif /* defined (USER_INTERFACE) */
 		}
 		else
 		{
@@ -4118,19 +3283,10 @@ structure itself.
 		if (node_tool->wx_node_tool)
 			 node_tool->wx_node_tool->Destroy();
 #endif /*(WX_USER_INTERFACE)*/
-#if defined (MOTIF_USER_INTERFACE)
-		if (node_tool->window_shell)
-		{
-			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),
-				node_tool->user_interface);
-			XtDestroyWidget(node_tool->window_shell);
-		}
-#else
 		if (node_tool->current_region_path != NULL)
 		{
 			 DEALLOCATE(node_tool->current_region_path);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -4157,12 +3313,7 @@ Pops up a dialog for editing settings of the Node_tool.
 	ENTER(Node_tool_pop_up_dialog);
 	if (node_tool)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		USE_PARAMETER(graphics_window);
-		XtPopup(node_tool->window_shell, XtGrabNone);
-		/* make sure in addition that it is not shown as an icon */
-		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		wxPanel *pane;
 		if (!node_tool->wx_node_tool)
 		{
@@ -4196,38 +3347,6 @@ Pops up a dialog for editing settings of the Node_tool.
 
 	return (return_code);
 } /* Node_tool_pop_up_dialog */
-
-int Node_tool_pop_down_dialog(struct Node_tool *node_tool)
-/*******************************************************************************
-LAST MODIFIED : 20 June 2001
-
-DESCRIPTION :
-Hides the dialog for editing settings of the Node_tool.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Node_tool_pop_down_dialog);
-	if (node_tool)
-	{
-#if defined (MOTIF_USER_INTERFACE)
-		XtPopdown(node_tool->window_shell);
-#else /* defined (MOTIF_USER_INTERFACE) */
-		display_message(ERROR_MESSAGE, "Node_tool_pop_down_dialog.  "
-			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF_USER_INTERFACE) */
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_pop_down_dialog.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Node_tool_pop_down_dialog */
 
 struct Computed_field *Node_tool_get_coordinate_field(
 	struct Node_tool *node_tool)
@@ -4275,11 +3394,6 @@ are on.
 		if (coordinate_field != node_tool->coordinate_field)
 		{
 			node_tool->coordinate_field=coordinate_field;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure the current field is shown on the widget */
-			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-				node_tool->coordinate_field_widget,node_tool->coordinate_field);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			if (node_tool->wx_node_tool)
 			{
@@ -4338,9 +3452,6 @@ on a mouse button press. Also ensures define is enabled if create is.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_create_enabled);
 	if (node_tool)
@@ -4367,21 +3478,6 @@ on a mouse button press. Also ensures define is enabled if create is.
 		{
 			node_tool->create_enabled=create_enabled;
 			/* make sure button shows current state */
-#if defined (MOTIF_USER_INTERFACE)
-			if (XmToggleButtonGadgetGetState(node_tool->create_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != node_tool->create_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->create_button,
-					/*state*/node_tool->create_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -4433,9 +3529,6 @@ or individually selected existing nodes.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_define_enabled);
 	if (node_tool)
@@ -4464,22 +3557,6 @@ or individually selected existing nodes.
 		if (define_enabled != node_tool->define_enabled)
 		{
 			node_tool->define_enabled=define_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->define_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != node_tool->define_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->define_button,
-					/*state*/node_tool->define_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -4530,9 +3607,6 @@ events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_edit_enabled);
 	if (node_tool)
@@ -4545,22 +3619,6 @@ events, not just at the end of a mouse gesture.
 		if (edit_enabled != node_tool->edit_enabled)
 		{
 			node_tool->edit_enabled=edit_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->edit_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != node_tool->edit_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->edit_button,
-					/*state*/node_tool->edit_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4670,9 +3728,6 @@ events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_motion_update_enabled);
 	if (node_tool)
@@ -4685,22 +3740,6 @@ events, not just at the end of a mouse gesture.
 		if (motion_update_enabled != node_tool->motion_update_enabled)
 		{
 			node_tool->motion_update_enabled=motion_update_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->motion_update_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != node_tool->motion_update_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->motion_update_button,
-					/*state*/node_tool->motion_update_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4731,10 +3770,7 @@ Up to the calling function to DEALLOCATE the returned path.
 	ENTER(Node_tool_get_region_path);
 	if (node_tool && path_address)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		return_code = Cmiss_region_chooser_get_path(node_tool->cmiss_region_chooser,
-			path_address);
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		if (node_tool->current_region_path)
 		{
 			*path_address = duplicate_string(node_tool->current_region_path);
@@ -4756,7 +3792,7 @@ Up to the calling function to DEALLOCATE the returned path.
 			*path_address = (char *)NULL;
 			return_code = 0;
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4785,12 +3821,7 @@ Sets the <path> to the region/FE_region where nodes created by
 	ENTER(Node_tool_set_region_path);
 	if (node_tool && path)
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		Cmiss_region_chooser_set_path(node_tool->cmiss_region_chooser, path);
-		region = (struct Cmiss_region *)NULL;
-		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
-		return_code = Node_tool_set_Cmiss_region(node_tool, region);
-#elif defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
 		if (node_tool->current_region_path)
 		{
 			 DEALLOCATE(node_tool->current_region_path);
@@ -4809,7 +3840,7 @@ Sets the <path> to the region/FE_region where nodes created by
 				path, &region);
 		}
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
-#else /* defined (MOTIF_USER_INTERFACE) */
+#else
 		return_code = Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
 			path, &region);
 		if (return_code)
@@ -4821,7 +3852,7 @@ Sets the <path> to the region/FE_region where nodes created by
 			 node_tool->current_region_path = duplicate_string(path);
 			 return_code = Node_tool_set_Cmiss_region(node_tool, region);
 		}
-#endif /* defined (MOTIF_USER_INTERFACE) */
+#endif /* defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4870,9 +3901,6 @@ Sets flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_select_enabled);
 	if (node_tool)
@@ -4885,22 +3913,6 @@ Sets flag controlling whether existing nodes can be selected.
 		if (select_enabled != node_tool->select_enabled)
 		{
 			node_tool->select_enabled=select_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->select_button))
-			{
-				button_state=1;
-			}
-			else
-			{
-				button_state=0;
-			}
-			if (button_state != node_tool->select_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->select_button,
-					/*state*/node_tool->select_enabled,/*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4953,9 +3965,6 @@ created as the user drags the mouse around.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_streaming_create_enabled);
 	if (node_tool)
@@ -4968,22 +3977,6 @@ created as the user drags the mouse around.
 		if (streaming_create_enabled != node_tool->streaming_create_enabled)
 		{
 			node_tool->streaming_create_enabled = streaming_create_enabled;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->streaming_create_button))
-			{
-				button_state = 1;
-			}
-			else
-			{
-				button_state = 0;
-			}
-			if (button_state != node_tool->streaming_create_enabled)
-			{
-				XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
-					/*state*/node_tool->streaming_create_enabled, /*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -5036,9 +4029,6 @@ on the closest surface element or just halfway between near and far.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF_USER_INTERFACE)
-	int button_state;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_constrain_to_surface);
 	if (node_tool)
@@ -5051,22 +4041,6 @@ on the closest surface element or just halfway between near and far.
 		if (constrain_to_surface != node_tool->constrain_to_surface)
 		{
 			node_tool->constrain_to_surface = constrain_to_surface;
-#if defined (MOTIF_USER_INTERFACE)
-			/* make sure button shows current state */
-			if (XmToggleButtonGadgetGetState(node_tool->constrain_to_surface_button))
-			{
-				button_state = 1;
-			}
-			else
-			{
-				button_state = 0;
-			}
-			if (button_state != node_tool->constrain_to_surface)
-			{
-				XmToggleButtonGadgetSetState(node_tool->constrain_to_surface_button,
-					/*state*/node_tool->constrain_to_surface, /*notify*/False);
-			}
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -5178,9 +4152,6 @@ DESCRIPTION :
 Sets the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF_USER_INTERFACE)
-	int field_set;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Node_tool_set_command_field);
@@ -5191,17 +4162,6 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 		if (command_field != node_tool->command_field)
 		{
 			node_tool->command_field = command_field;
-#if defined (MOTIF_USER_INTERFACE)
-			if (command_field)
-			{
-				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-					node_tool->command_field_widget,node_tool->command_field);
-			}
-			field_set = ((struct Computed_field *)NULL != command_field);
-			XtVaSetValues(node_tool->command_field_button,
-				XmNset, field_set, NULL);
-			XtSetSensitive(node_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

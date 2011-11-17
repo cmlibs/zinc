@@ -58,9 +58,6 @@ scenes.
 #endif
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF_USER_INTERFACE)
-#include <Xm/Xm.h>
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #include "api/types/cmiss_field_id.h"
 #include "api/types/cmiss_field_image_id.h"
@@ -369,28 +366,6 @@ Sets the maximum extent of the graphics window within which individual paints
 will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
-
-#if defined (MOTIF_USER_INTERFACE)
-Cmiss_scene_viewer_id Cmiss_scene_viewer_create_motif(
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	Widget parent,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 25 January 2006
-
-DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
-<parent> widget.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
-<minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
-the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
-chosen.
-==============================================================================*/
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************

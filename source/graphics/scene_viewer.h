@@ -560,25 +560,6 @@ texture is displayed. It does this by drawing it as a collection of polygons;
 the last parameter controls the size of polygons used to do this.
 ==============================================================================*/
 
-int Scene_viewer_get_border_width(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Returns the border_width of the scene_viewer widget. Note that the border is
-only shown on the bottom and right of each viewer in the graphics window.
-==============================================================================*/
-
-int Scene_viewer_set_border_width(struct Scene_viewer *scene_viewer,
-	int border_width);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1998
-
-DESCRIPTION :
-Sets the border_width of the scene_viewer widget. Note that the border is
-only shown on the bottom and right of each viewer in the graphics window.
-==============================================================================*/
-
 enum Scene_viewer_buffering_mode Scene_viewer_get_buffering_mode(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************
