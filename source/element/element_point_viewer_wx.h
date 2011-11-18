@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : node_viewer.h
+FILE : element_pointer_viewer_wx.h
 
 LAST MODIFIED : 6 June 2007
 

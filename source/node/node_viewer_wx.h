@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : node_viewer.h
+FILE : node_viewer_wx.h
 
 LAST MODIFIED : 24 January 2003
 

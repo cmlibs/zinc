@@ -115,7 +115,7 @@ Module functions
 */
 #if defined (MEMORY_CHECKING)
 static struct Memory_block *CREATE(Memory_block)(void *pointer,
-	char *filename, int line, char *type_string, int size,
+	const char *filename, int line, const char *type_string, int size,
 	int count)
 /*******************************************************************************
 LAST MODIFIED : 28 February 2000

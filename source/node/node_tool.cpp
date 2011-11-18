@@ -60,7 +60,6 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
-#include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
@@ -72,7 +71,6 @@ extern "C" {
 #include "graphics/graphic.h"
 #include "graphics/scene.h"
 #include "region/cmiss_region.h"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
 #if defined (WX_USER_INTERFACE)

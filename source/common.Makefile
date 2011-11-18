@@ -5,7 +5,7 @@
 #
 # DESCRIPTION :
 #
-# Makefile for common rules for cmgui, unemap and cell
+# Makefile for common rules for cmgui
 # ==========================================================================
 
 
@@ -388,8 +388,6 @@ ifeq ($(SYSNAME),win32)
    endif # COMPILER == msvc
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
-   OPENMOTIF_DIR = /usr/OpenMotif-2.1.31-22i
-   UIL = $(OPENMOTIF_DIR)/bin/uil
 #    ifeq ($(MACHNAME),ia64)
 #       # Using Intel compilers
 #       CC = ecc -c
@@ -462,9 +460,6 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
 .SUFFIXES : .xrc .xrch
 endif # USER_INTERFACE == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-.SUFFIXES : .uil .uidh
-endif # USER_INTERFACE == MOTIF_USER_INTERFACE
 ifeq ($(SYSNAME),win32)
 .SUFFIXES : .res .rc
 endif # SYSNAME == win32
@@ -513,13 +508,7 @@ ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
 	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
 	sed -e 's%$(XRCH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
 	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   # Fix up the uidh references
-	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
-	sed -e 's%$(UIDH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
-	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 endif # NO_MAKE_DEPEND
 
 %.d: %.f
@@ -555,20 +544,7 @@ ifeq ($(SYSNAME),win32)
 	set -x ; \
     $(WINDRES) -o $(OBJECT_PATH)/$*.res -O coff $*.rc
 endif # $(SYSNAME) == win32
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-
-ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-
-UID2UIDH = utilities/uid2uidh.pl
-
-%.uidh : %.uil
-	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
-		mkdir -p $(UIDH_PATH)/$(*D); \
-	fi
-	set -x ; \
-	$(UIL) -o $(UIDH_PATH)/$*.uid $*.uil && \
-	perl $(UID2UIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
 ifneq ($(STRIP),)
    STRIP_TARGET = $(STRIP) $(LINK_DIR)/$(1)$(LINK_SUFFIX) &&

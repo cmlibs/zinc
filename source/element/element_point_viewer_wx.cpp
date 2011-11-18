@@ -54,7 +54,6 @@ extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }

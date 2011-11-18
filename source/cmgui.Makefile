@@ -49,11 +49,6 @@ COMMONMAKEFILE := common.Makefile
 COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
 include $(COMMONMAKEFILE)
 
-#For built in unemap override on the command line or change to true.
-#The source directories unemap_application and unemap_hardware_service
-#must be softlinked into the cmgui source directory.
-UNEMAP = false
-LINK_CMISS = false
 USE_PERL_INTERPRETER = true
 USE_IMAGEMAGICK = true
 USE_NETGEN = true
@@ -105,10 +100,6 @@ endif # $(ABI) != 64
 
 TARGET_USER_INTERFACE_SUFFIX :=
 INTERFACE_BUILD_NAME := 
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   TARGET_USER_INTERFACE_SUFFIX := -motif
-	 INTERFACE_BUILD_NAME := motif
-endif # $(USER_INTERFACE) == 	MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE), WIN32_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -win32
 	 INTERFACE_BUILD_NAME := win32
@@ -172,12 +163,6 @@ else # $(USE_GTKMAIN) != true
    MAINLOOP_SUFFIX =
 endif # $(USE_GTKMAIN) != true 
 
-ifneq ($(UNEMAP),true)
-   UNEMAP_SUFFIX =
-else # $(UNEMAP) != true
-   UNEMAP_SUFFIX = -unemap
-endif # $(UNEMAP) != true 
-
 ifeq ($(SYSNAME:IRIX%=),)
    TARGET_FILETYPE_SUFFIX =
 endif # SYSNAME == IRIX%=
@@ -194,15 +179,12 @@ ifeq ($(SYSNAME),CYGWIN%=)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == CYGWIN%=
 
-TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
+TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
    XRCH_PATH=$(CMGUI_DEV_ROOT)/xrch/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifeq ($(findstring lib,$(TARGET)),lib)
   BIN_PATH=$(CMGUI_DEV_ROOT)/lib/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)
@@ -256,9 +238,6 @@ endif # SYSNAME == Darwin
 ifneq ($(FE_VALUE_IS_DOUBLE),false)
    FE_VALUE_DEFINES = -DFE_VALUE_IS_DOUBLE
 endif
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   USER_INTERFACE_DEFINES = -DMOTIF_USER_INTERFACE
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE), WIN32_USER_INTERFACE)
    USER_INTERFACE_DEFINES = -DWIN32_USER_INTERFACE
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
@@ -284,8 +263,8 @@ ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
   USER_INTERFACE = -DCONSOLE_USER_INTERFACE
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
-# MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
-ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+# GTK_USER_INTERFACE
+ifeq ($(filter-out GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   ifeq ($(SYSNAME),Linux)
     #Don't put the system X_LIB into the compiler if we are cross compiling
     GCC_LIBC = $(shell gcc -print-libgcc-file-name)
@@ -343,9 +322,6 @@ GRAPHICS_LIB =
 GRAPHICS_INC =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
-   ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
    ifneq ($(OPERATING_SYSTEM),darwin)
    	ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
       		GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
@@ -353,9 +329,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    	GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
    endif
    ifeq ($(OPERATING_SYSTEM),darwin)
-      ifneq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-          GRAPHICS_LIB += -framework Carbon -framework AGL -framework OpenGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
-      endif # $(USER_INTERFACE) != MOTIF_USER_INTERFACE
+     GRAPHICS_LIB += -framework Carbon -framework AGL -framework OpenGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
     endif # $(OPERATING_SYSTEM) == darwin
     ifeq ($(OPERATING_SYSTEM),win32)
       ifeq ($(COMPILER),msvc)
@@ -376,20 +350,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       GRAPHICS_LIB += -lGL -lGLU
     endif # $(OPERATING_SYSTEM) == win32 
 endif
-
-ifeq ($(LINK_CMISS),false)
-   CONNECTIVITY_DEFINES =
-   WORMHOLE_LIB =
-else # LINK_CMISS
-   WORMHOLE_PATH=$(CMISS_ROOT)/wormhole
-   WORMHOLE_INC = -I${WORMHOLE_PATH}/source
-   CONNECTIVITY_DEFINES = -DLINK_CMISS
-   # WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole_n32
-   # WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
-   # WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole
-   # WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
-   WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib/$(LIB_ARCH_DIR) -lwormhole
-endif # LINK_CMISS
 
 ifneq ($(USE_OPENCASCADE),true)
    OPENCASCADE_DEFINES =
@@ -518,85 +478,9 @@ else # ! USE_PERL_INTERPRETER
    endif # $(OPERATING_SYSTEM) == win32
 endif # ! USE_PERL_INTERPRETER
 
-ifneq ($(UNEMAP), true)
-   UNEMAP_DEFINES =
-   UNEMAP_SRCS =
-else # UNEMAP != true
-   # for all nodal stuff UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
-   UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-	 UNEMAP_DEFINES += -DMOTIF
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-   UNEMAP_SRCS = \
-	   unemap_application/acquisition.c \
-	    unemap_application/acquisition_window.c \
-	    unemap_application/acquisition_work_area.c \
-	    unemap_application/analysis.c \
-	    unemap_application/analysis_calculate.c \
-	    unemap_application/analysis_drawing.c \
-	    unemap_application/analysis_window.c \
-	    unemap_application/analysis_work_area.c \
-	    unemap_application/bard.c \
-	    unemap_application/beekeeper.c \
-	    unemap_application/cardiomapp.c \
-	    unemap_application/delaunay.c \
-	    unemap_application/edf.c \
-	    unemap_application/eimaging_time_dialog.c \
-	    unemap_application/drawing_2d.c \
-	    unemap_application/interpolate.c \
-	    unemap_application/map_dialog.c \
-	    unemap_application/mapping.c \
-	    unemap_application/mapping_window.c \
-	    unemap_application/neurosoft.c \
-	    unemap_application/pacing_window.c \
-	    unemap_application/page_window.c \
-	    unemap_application/rig.c \
-	    unemap_application/rig_node.c \
-	    unemap_application/setup_dialog.c \
-	    unemap_application/spectral_methods.c \
-	    unemap_application/system_window.c \
-	    unemap_application/trace_window.c \
-	    unemap_application/unemap_command.c \
-	    unemap_application/unemap_hardware_client.c \
-	    unemap_application/unemap_package.c 
-endif # UNEMAP != true
-
-ifndef CELL
-   CELL_DEFINES =
-   CELL_SRCS =
-else # ! CELL 
-   CELL_DEFINES = -DCELL -DCELL_DISTRIBUTED
-   CELL_SRCS = \
-	   cell/cell_calculate.c \
-	   cell/cell_calculate_dialog.c \
-	   cell/cell_cmgui_interface.c \
-	   cell/cell_cmiss_interface.c \
-	   cell/cell_component.c \
-	   cell/cell_export_dialog.c \
-	   cell/cell_graphic.c \
-	   cell/cell_input.c \
-	   cell/cell_interface.c \
-	   cell/cell_output.c \
-	   cell/cell_plot.c \
-	   cell/cell_unemap_interface.c \
-	   cell/cell_variable.c \
-	   cell/cell_variable_editing_dialog.c \
-	   cell/cell_variable_unemap_interface.c \
-      cell/cell_window.c \
-      cell/distributed_editing_dialog.c \
-      cell/distributed_editing_interface.c \
-      cell/cell_model_routines/andre.f \
-      cell/integrator_routines/euler.f \
-      cell/integrator_routines/improved_euler.f \
-      cell/integrator_routines/runge_kutta.f
-endif # ! CELL 
-
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
    UIDH_INC = -I$(XRCH_PATH)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   UIDH_INC = -I$(UIDH_PATH)
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 EXTERNAL_INPUT_DEFINES =
 EXTERNAL_INPUT_LIB = 
@@ -616,32 +500,12 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
   endif # SYSNAME == CYGWIN%=
 endif # GRAPHICS_API == OPENGL_GRAPHICS
 
-HAPTIC_LIB =
-HAPTIC_INC =
-# HAPTIC_LIB = -L/usr/local/phantom/GHOST/lib -lghost_n32Mips3
-# HAPTIC_INC = -I/usr/local/phantom/GHOST/lib
-# HAPTIC_LIB = -L/usr/local/phantom/GHOST/lib -lghost_o32
-# HAPTIC_INC = -I/usr/local/phantom/GHOST/lib
-
 # XML Stuff goes here!!
 
-ifndef CELL
    XML_PATH =
    XML_DEFINES = 
    XML_LIB =
    XML_INC = 
-else # ! CELL
-   XML_PATH = $(CMISS_ROOT)/xml
-   XML_DEFINES =
-   ifeq ($(SYSNAME:IRIX%=),)
-      XML_DEFINES += -DIRIX -D_REENTRANT
-   endif # SYSNAME == IRIX%=
-   ifeq ($(SYSNAME),Linux)
-      XML_DEFINES = -DLINUX -D_REENTRANT
-   endif # SYSNAME == Linux
-   XML_LIB = $(XML_PATH)/library/$(LIB_ARCH_DIR)/libXML-optimised-1.0.0.a
-   XML_INC = -I$(XML_PATH)/include
-endif # ! CELL
 
 ifneq ($(USE_XML2),true)
    XML2_PATH =
@@ -678,12 +542,6 @@ TEMPORARY_DEVELOPMENT_FLAGS =
 # TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DDO_NOT_ADD_DETAIL -DBLEND_NODAL_VALUES -DALLOW_MORPH_UNEQUAL_POINTSETS
 # TEMPORARY_DEVELOPMENT_FLAGS = -DWINDOWS_DEV_FLAG
 
-HELP_DEFINES = -DNETSCAPE_HELP
-HELP_INCLUDE =
-HELP_LIB =
-HELP_SRCS = \
-	help/help_interface.c
-
 MEMORYCHECK_LIB = 
 ifeq ($(SYSNAME:IRIX%=),)
    ifdef MEMORYCHECK
@@ -693,49 +551,6 @@ endif # SYSNAME == IRIX%=
 
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
-ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-   ifeq ($(SYSNAME),Linux)
-      USER_INTERFACE_INC += $(X_INC)
-      USER_INTERFACE_LIB += $(GRAPHICS_LIB) -L$(X_LIB) 
-
-      ifneq ($(STATIC_LINK),true)
-         #I am statically linking Motif so that it does not have to be installed at runtime.
-         #Debian distributions are marking libXp as deprecated, although Motif still requires it, so it isn't installed by default to lets link it statically too.
-         USER_INTERFACE_LIB += -Wl,-Bstatic -lMrm -lXm -lXp -Wl,-Bdynamic -lXt -lX11 -lXmu -lXext -lICE
-      else # STATIC_LINK != true
-         #Mandrake 8.2 static libs are incompatible, this works around it by
-         #comparing the size of the symbols and forcing Xmu to preload its
-         #version if they differ in size.  Older greps don't have -o option.
-         Xm_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
-         Xmu_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
-         ifneq ($(Xm_XeditRes),)
-            ifneq ($(Xmu_XeditRes),)
-               USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
-            endif
-         endif
-         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
-      endif # STATIC_LINK != true
-   else # SYSNAME == Linux
-      USER_INTERFACE_LIB += $(GRAPHICS_LIB) 
-      ifeq ($(SYSNAME),Darwin)
-         #OPENMOTIF_DIR set in common.Makefile
-         USER_INTERFACE_INC += -I$(OPENMOTIF_DIR)/include
-         USER_INTERFACE_LIB += $(OPENMOTIF_DIR)/lib/libMrm.a $(OPENMOTIF_DIR)/lib/libXm.a -L/usr/X11R6/lib -lXp -lXt -lX11 -lXmu -lXext
-      else # SYSNAME == Darwin
-         ifeq ($(SYSNAME:CYGWIN%=),)
-            USER_INTERFACE_INC += -I/usr/X11R6/include
-            X_LIB = /usr/X11R6/lib
-            USER_INTERFACE_LIB += -L$(X_LIB)
-            USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
-         else # SYSNAME == CYGWIN%=
-            USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
-            ifeq ($(SYSNAME:IRIX%=),)
-               USER_INTERFACE_LIB += -lSgm
-            endif # SYSNAME == IRIX%=
-         endif # SYSNAME == CYGWIN%=
-      endif # SYSNAME == Darwin
-   endif # SYSNAME == Linux
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
       USER_INTERFACE_INC += $(X_INC)
@@ -877,16 +692,15 @@ endif # SYSNAME == Darwin
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
-	$(STEREO_DISPLAY_DEFINES) $(CONNECTIVITY_DEFINES) \
-	$(EXTERNAL_INPUT_DEFINES) \
-	$(GRAPHICS_LIBRARY_DEFINES) $(HELP_DEFINES) $(OPENCASCADE_DEFINES) \
+	$(STEREO_DISPLAY_DEFINES) $(EXTERNAL_INPUT_DEFINES) \
+	$(GRAPHICS_LIBRARY_DEFINES) $(OPENCASCADE_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	$(UNEMAP_DEFINES) $(ITK_DEFINES) \
-	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
+	$(ITK_DEFINES) \
+	$(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
 	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES) $(NETGEN_DEFINES) \
 	$(MSAA_DEFINES) $(GLEW_DEFINES) $(MINIMISE_DEFINES)
 
-ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
+ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) \
 	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) $(OPENCASCADE_INC) \
 	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(NETGEN_INC) $(FIELDML_INC) \
 	$(MINIMISE_INC)
@@ -894,35 +708,13 @@ ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
-	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
-	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) $(OPENCASCADE_LIB) \
+ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) \
+	$(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(ITK_LIB) $(OPENCASCADE_LIB) \
 	$(MOVIE_FILE_LIB) $(FIELDML_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) \
 	$(SYSTEM_LIB) $(NETGEN_LIB) $(MINIMISE_LIB)
 
-CHOOSE_INTERFACE_SRCS = \
-	choose/choose_computed_field.c \
-	choose/choose_curve.c \
-	choose/choose_enumerator.c \
-	choose/choose_fe_field.c \
-	choose/choose_field_component.c \
-	choose/choose_graphical_material.c \
-	choose/choose_spectrum.c \
-	choose/choose_texture.c \
-	choose/choose_volume_texture.c \
-	choose/chooser.c \
-	choose/text_choose_fe_element.c \
-	choose/text_choose_fe_node.c
-ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-   CHOOSE_INTERFACE_SRCS += \
-	choose/choose_gt_object.c \
-	choose/choose_scene.c
-endif
-ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
-COLOUR_INTERFACE_SRCS = \
-	colour/colour_editor.c \
-	colour/edit_var.c 
-else
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor_wx.cpp
 endif
@@ -932,10 +724,6 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 COMFILE_SRCS += \
     comfile/comfile_window_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-COMFILE_INTERFACE_SRCS = \
-	comfile/comfile_window.c 
-endif #$(USER_INTERFACE) == MOTIF_USER_INTERFACE
 CONTEXT_SRCS = \
 	context/context.cpp \
 	context/user_interface_module.cpp
@@ -1026,13 +814,6 @@ endif
 
 CURVE_SRCS = \
 	curve/curve.c
-CURVE_INTERFACE_SRCS = \
-	curve/curve_editor.c \
-	curve/curve_editor_dialog.c
-DOF3_INTERFACE_SRCS = \
-	dof3/dof3.c \
-	dof3/dof3_control.c \
-	dof3/dof3_input.c
 ELEMENT_SRCS = \
 	element/element_operations.cpp \
 	element/element_point_tool.cpp \
@@ -1041,16 +822,9 @@ ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
 ELEMENT_SRCS += \
 	 element/element_point_viewer_wx.cpp
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-ELEMENT_INTERFACE_SRCS = \
-	element/element_creator.c \
-	element/element_point_field_viewer_widget.c \
-	element/element_point_viewer.c \
-	element/element_point_viewer_widget.c
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 EMOTER_SRCS = \
 	emoter/em_cmgui.c \
-	emoter/emoter_dialog.c
+	emoter/emoter_dialog.cpp
 FIELD_IO_SRCS = \
 	field_io/read_fieldml.cpp
 FINITE_ELEMENT_CORE_SRCS = \
@@ -1082,8 +856,6 @@ ifeq ($(USE_NETGEN),true)
 		finite_element/generate_mesh_netgen.cpp
 endif
 
-FINITE_ELEMENT_INTERFACE_SRCS = \
-	finite_element/grid_field_calculator.c
 GENERAL_SRCS = \
 	general/any_object.c \
 	general/callback.c \
@@ -1111,8 +883,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GENERAL_SRCS += \
       general/photogrammetry.c
 endif
-GENERAL_INTERFACE_SRCS = \
-	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/graphic.cpp \
@@ -1162,8 +932,6 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/scene_viewer.c \
 		graphics/tile_graphics_objects.c
 endif
-GRAPHICS_INTERFACE_SRCS = \
-	graphics/movie_graphics.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	GRAPHICS_SRCS += \
 		graphics/region_tree_viewer_wx.cpp\
@@ -1171,13 +939,6 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 		graphics/spectrum_editor_dialog_wx.cpp \
 		dialog/tessellation_dialog.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-	GRAPHICS_INTERFACE_SRCS += \
-		graphics/graphics_window.cpp \
-		graphics/spectrum_editor.c \
-		graphics/spectrum_editor_dialog.c \
-		graphics/spectrum_editor_settings.c
-endif
 IMAGE_PROCESSING_SRCS = \
    image_processing/computed_field_image_resample.cpp
 ifeq ($(USE_ITK),true)
@@ -1204,37 +965,17 @@ INTERACTION_SRCS = \
 	interaction/interaction_volume.c \
 	interaction/interactive_event.c \
 	interaction/interactive_tool.c
-INTERACTION_INTERFACE_SRCS = \
-	interaction/interactive_toolbar_widget.c \
-	interaction/select_tool.c
 IO_DEVICES_SRCS = \
 	io_devices/conversion.c \
 	io_devices/io_device.c \
 	io_devices/matrix.c
-IO_DEVICES_INTERFACE_SRCS = \
-	io_devices/haptic_input_module.cpp \
-	io_devices/input_module.c \
-	io_devices/input_module_dialog.c \
-	io_devices/input_module_widget.c
-ifeq ($(LINK_CMISS),false)
-   LINK_INTERFACE_SRCS =
-else # LINK_CMISS
-   LINK_INTERFACE_SRCS =  \
-	   link/cmiss.c
-endif # LINK_CMISS
 MATERIAL_INTERFACE_SRCS =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
-ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   MATERIAL_INTERFACE_SRCS +=  \
-		material/material_editor.cpp \
-		material/material_editor_dialog.c
-else
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	MATERIAL_INTERFACE_SRCS += \
 		material/material_editor_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 endif
-MOTIF_INTERFACE_SRCS =  \
-	motif/image_utilities.c
 MESH_SRCS = \
 	mesh/cmiss_element_private.cpp \
 	mesh/cmiss_node_private.cpp 
@@ -1245,12 +986,6 @@ ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
 NODE_SRCS += \
 	node/node_viewer_wx.cpp
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-NODE_INTERFACE_SRCS = \
-	node/node_field_viewer_widget.c \
-	node/node_viewer.c \
-	node/node_viewer_widget.c
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 REGION_SRCS = \
    region/cmiss_region.cpp \
    stream/cmiss_region_stream.cpp \
@@ -1258,16 +993,7 @@ REGION_SRCS = \
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 REGION_INTERFACE_SRCS = \
    region/cmiss_region_chooser_wx.cpp
-else
-REGION_INTERFACE_SRCS = \
-   region/cmiss_region_chooser.c
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
-SELECT_INTERFACE_SRCS = \
-	select/select_curve.c \
-	select/select_environment_map.c \
-	select/select_graphical_material.c \
-	select/select_private.c \
-	select/select_spectrum.c
 SELECTION_SRCS = \
 	selection/any_object_selection.c \
 	selection/element_point_ranges_selection.c
@@ -1278,19 +1004,10 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		three_d_drawing/graphics_buffer.c \
 	   three_d_drawing/window_system_extensions.cpp
 endif
-THREE_D_DRAWING_INTERFACE_SRCS = \
-	three_d_drawing/movie_extensions.c \
-	three_d_drawing/ThreeDDraw.c
 TIME_SRCS = \
 	time/time.c \
 	time/time_keeper.cpp
-TIME_INTERFACE_SRCS = \
-	time/time_editor.c \
-	time/time_editor_dialog.c
-ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
-	TRANSFORMATION_INTERFACE_SRCS = \
-		transformation/transformation_editor.c
-else
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	TRANSFORMATION_INTERFACE_SRCS = \
 		transformation/transformation_editor_wx.cpp
 endif
@@ -1301,17 +1018,6 @@ USER_INTERFACE_SRCS = \
 	user_interface/message.c \
 	user_interface/user_interface.c \
 	user_interface/idle.c
-USER_INTERFACE_INTERFACE_SRCS = \
-	user_interface/call_work_procedures.c \
-	user_interface/printer.c
-VIEW_INTERFACE_SRCS = \
-	view/camera.c \
-	view/coord.c \
-	view/coord_trans.c \
-	view/poi.c \
-	view/vector.c \
-	view/view.c \
-	view/view_control.c 
 
 # DB.  makedepend has problems if too many files
 SRCS_1 = \
@@ -1327,7 +1033,6 @@ SRCS_1 = \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
-	$(HELP_SRCS) \
 	$(IMAGE_PROCESSING_SRCS) \
 	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
@@ -1340,35 +1045,6 @@ SRCS_1 = \
 	$(TIME_SRCS) \
 	$(USER_INTERFACE_SRCS)
 
-ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-   SRCS_2 = \
-	   $(CELL_SRCS) \
-	   $(CHOOSE_INTERFACE_SRCS) \
-	   $(COLOUR_INTERFACE_SRCS) \
-	   $(COMFILE_INTERFACE_SRCS) \
-	   $(COMMAND_INTERFACE_SRCS) \
-	   $(COMPUTED_FIELD_INTERFACE_SRCS) \
-	   $(CURVE_INTERFACE_SRCS) \
-	   $(DOF3_INTERFACE_SRCS) \
-	   $(ELEMENT_INTERFACE_SRCS) \
-	   $(FINITE_ELEMENT_INTERFACE_SRCS) \
-	   $(GENERAL_INTERFACE_SRCS) \
-	   $(GRAPHICS_INTERFACE_SRCS) \
-	   $(INTERACTION_INTERFACE_SRCS) \
-	   $(IO_DEVICES_INTERFACE_SRCS) \
-	   $(LINK_INTERFACE_SRCS) \
-	   $(MATERIAL_INTERFACE_SRCS) \
-	   $(MOTIF_INTERFACE_SRCS) \
-	   $(NODE_INTERFACE_SRCS) \
-	   $(REGION_INTERFACE_SRCS) \
-	   $(SELECT_INTERFACE_SRCS) \
-	   $(SLIDER_INTERFACE_SRCS) \
-	   $(THREE_D_DRAWING_INTERFACE_SRCS) \
-	   $(TIME_INTERFACE_SRCS) \
-	   $(TRANSFORMATION_INTERFACE_SRCS) \
-	   $(USER_INTERFACE_INTERFACE_SRCS) \
-	   $(VIEW_INTERFACE_SRCS)
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       SRCS_2 = \
 	      $(COMMAND_INTERFACE_SRCS) \
@@ -1413,8 +1089,6 @@ else # $(MEMORYCHECK) != true
    OBJS = $(OBJSC:.f=.$(OBJ_SUFFIX))
 endif # $(MEMORYCHECK) != true
 
-UNEMAP_OBJS = $(UNEMAP_SRCS:.c=.$(OBJ_SUFFIX))
-
 MAIN_SRC = cmgui.cpp
 MAIN_OBJ = $(MAIN_SRC:.cpp=.$(OBJ_SUFFIX))
 
@@ -1438,7 +1112,7 @@ ifneq ($(DEBUG),true)
 else # $(DEBUG) != true
    OPTIMISATION_STRING = debug
 endif # $(DEBUG) != true 
-$(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
+$(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
@@ -1647,8 +1321,8 @@ endif # $(SYSNAME) == win32
 #Make a shorthand for the standard build target, so we can use it with so_lib and static_lib on the same build
 bin : $(BIN_TARGET)
 
-$(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
-	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
+$(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
+	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
 SO_LIB_SUFFIX = .so
 ALL_SO_LINK_FLAGS =
@@ -1745,9 +1419,9 @@ SO_LIB_PASS_THROUGH_EXTRA_ARGS =  $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpcr
 $(SO_LIB_PASS_THROUGH_TARGET) : $(LIB_PASS_THROUGH_OBJS) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_PASS_THROUGH_BASE),$(BIN_PATH),$(LIB_PASS_THROUGH_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_PASS_THROUGH_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_PASS_THROUGH_SONAME))
 
-SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
-	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
-	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
+SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) \
+	$(IMAGEMAGICK_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) \
 	$(NETGEN_LIB) $(SOLIB_LIB) $(FIELDML_LIB) $(MINIMISE_LIB)
 SO_ALL_LIB += $(SYSTEM_LIB)
@@ -1825,7 +1499,7 @@ TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 
 DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
 
-DEPEND_FILES = $(OBJS:%.$(OBJ_SUFFIX)=%.d) $(UNEMAP_OBJS:%.$(OBJ_SUFFIX)=%.d) $(MAIN_OBJ:%.$(OBJ_SUFFIX)=%.d) $(SPACES_TO_TABS_OBJS:%.$(OBJ_SUFFIX)=%.d) $(TABS_TO_SPACES_OBJS:%.$(OBJ_SUFFIX)=%.d) $(LIB_PASS_THROUGH_OBJS:%.$(OBJ_SUFFIX)=%.d)
+DEPEND_FILES = $(OBJS:%.$(OBJ_SUFFIX)=%.d) $(MAIN_OBJ:%.$(OBJ_SUFFIX)=%.d) $(SPACES_TO_TABS_OBJS:%.$(OBJ_SUFFIX)=%.d) $(TABS_TO_SPACES_OBJS:%.$(OBJ_SUFFIX)=%.d) $(LIB_PASS_THROUGH_OBJS:%.$(OBJ_SUFFIX)=%.d)
 #Look in the OBJECT_PATH
 DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))

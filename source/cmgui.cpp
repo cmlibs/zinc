@@ -54,10 +54,6 @@ extern "C"
 #include "context/user_interface_module.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
-#if defined (UNEMAP)
-#include "unemap_application/unemap_command.h"
-#include "command/cmiss_unemap_link.h"
-#endif /* defined (UNEMAP) */
 }
 
 #if defined (WX_USER_INTERFACE)

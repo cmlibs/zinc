@@ -52,11 +52,9 @@ extern "C"{
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
-#include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
 

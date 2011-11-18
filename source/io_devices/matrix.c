@@ -391,7 +391,6 @@ void matrix_euler(Gmatrix *direction,struct Dof3_data *euler)
 LAST MODIFIED : 3 March 2008
 
 DESCRIPTION :
-***Moved from coord_trans.c to matrix.c so it can be used by non-motif cmgui.
 In translating formulae just think data[across][down].  All other routines
 use data[down][across]
 Takes a direction cosine matrix and returns the equivalent euler angles in
@@ -449,7 +448,6 @@ void euler_matrix(struct Dof3_data *euler,Gmatrix *direction)
 LAST MODIFIED : 3 March 2008
 
 DESCRIPTION :
-***Moved from coord_trans.c to matrix.c so it can be used by non-motif cmgui.
 In translating formulae just think data[across][down].  All other routines
 use data[down][across]
 Returns the equivalent direction cosine matrix of the passed euler values.

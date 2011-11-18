@@ -65,9 +65,6 @@ struct User_interface_module
 #endif /* defined (USE_OPENCASCADE) */
 	struct Interactive_tool *transform_tool;
 	struct Node_tool *data_tool,*node_tool;
-#if defined (CELL)
-	struct Cell_interface *cell_interface;
-#endif /* defined (CELL) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)

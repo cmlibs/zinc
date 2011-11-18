@@ -85,8 +85,7 @@ struct Comfile_window *CREATE(Comfile_window)(char *name,
 LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
-Creates the structures and retrieves a comfile window widget from the Motif
-resource manager hierarchy.
+Creates the structures and retrieves a comfile window widget.
 ==============================================================================*/
 
 

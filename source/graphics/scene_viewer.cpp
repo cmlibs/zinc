@@ -63,7 +63,6 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
-#include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 }

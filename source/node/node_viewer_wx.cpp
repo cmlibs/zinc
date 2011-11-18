@@ -57,7 +57,6 @@ extern "C" {
 #include "general/mystring.h"
 #include "graphics/rendition.h"
 #include "node/node_viewer_wx.h"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "time/time.h"
 }

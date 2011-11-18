@@ -21,7 +21,6 @@ SET( COMMAND_SRCS source/command/command.c
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( COMMAND_SRCS ${COMMAND_SRCS} source/command/cmiss.cpp )
 	SET( COMMAND_HDRS ${COMMAND_HDRS}
-		source/command/cmiss.h
-		source/command/cmiss_unemap_link.h )
+		source/command/cmiss.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 

@@ -126,7 +126,6 @@ extern "C" {
 #include "three_d_drawing/graphics_buffer.h"
 #include "time/time_keeper.h"
 #include "user_interface/confirmation.h"
-#include "user_interface/printer.h"
 #if defined (WIN32_USER_INTERFACE)
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX

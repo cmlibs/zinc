@@ -61,7 +61,6 @@ extern "C" {
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
-#include "user_interface/gui_dialog_macros.h"
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"

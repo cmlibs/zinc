@@ -597,8 +597,8 @@ Cmiss_rendition_remove_graphic
 
 Cmiss_graphic_access
 Cmiss_graphic_destroy
-Cmiss_field_get_name
-Cmiss_field_set_name
+Cmiss_graphic_get_name
+Cmiss_graphic_set_name
 Cmiss_graphic_define
 Cmiss_graphic_set_material
 Cmiss_graphic_set_selected_material

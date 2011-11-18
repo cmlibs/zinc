@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : scene_editor.h
+FILE : region_tree_viewer_wx.h
 
 LAST MODIFIED : 26 Febuary 2007
 

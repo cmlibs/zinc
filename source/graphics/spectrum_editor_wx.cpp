@@ -29,7 +29,6 @@ extern "C" {
 #include "graphics/spectrum_editor_dialog_wx.h"
 #include "region/cmiss_region.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }

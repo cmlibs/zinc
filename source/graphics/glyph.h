@@ -209,7 +209,7 @@ struct MANAGER(GT_object) *make_standard_glyphs(struct Graphics_font *font);
 LAST MODIFIED : 18 November 2005
 
 DESCRIPTION :
-Creates a list of standard glyphs for the cmgui and unemap applications.
+Creates a list of standard glyphs for the cmgui applications.
 ==============================================================================*/
 
 #endif /* !defined (GLYPH_H) */

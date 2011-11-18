@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : comfile_window.h
+FILE : comfile_window_wx.hpp
 
 LAST MODIFIED : 3 September 2004
 

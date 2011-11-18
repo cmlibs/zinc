@@ -604,8 +604,6 @@ DESCRIPTION :
 
 	if (time_keeper)
 	{		
-		/* SAB Some things in UNEMAP expect this to callback even when the
-			value hasn't changed */
 		/* Ensure that this new time request isn't generated from the callbacks
 			inside this routine, otherwise an infinite loop could occur. */
 		if(!recursive_check)

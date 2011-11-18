@@ -51,7 +51,6 @@ represent curves in three xi-directions;
 #include "api/types/cmiss_graphics_render_type.h"
 #include "general/enumerator.h"
 
-/* Define this here rather than include the interface header and therefore Motif */
 struct User_interface;
 struct Parse_state;
 

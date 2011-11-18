@@ -53,9 +53,6 @@ DESCRIPTION :
 #endif /* defined (OLD_CODE) */
 #include "graphics/texturemap.h"
 #include "graphics/volume_texture.h"
-#if defined (OLD_CODE)
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (OLD_CODE) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "finite_element/finite_element.h"

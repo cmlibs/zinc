@@ -782,7 +782,6 @@ Names may start with a letter and contain only alphanumeric characters,
 underscore '_' or spaces and may not end in a space.
 ???RC OK, it's allowed to start with a number and have dots in it, since
 CM already has group names called 1..945.
-???RC OK, unemap uses colons in some groups names. Oh well.
 ==============================================================================*/
 {
 	int i, length, return_code;

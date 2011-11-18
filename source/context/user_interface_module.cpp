@@ -84,9 +84,6 @@ struct User_interface_module *User_interface_module_create(
 	{
 		root_region = Cmiss_context_get_default_region(context);
 		graphics_module = Cmiss_context_get_default_graphics_module(context);
-#if defined (CELL)
-		UI_module->cell_interface = NULL;
-#endif /* defined (CELL) */
 		UI_module->event_dispatcher = NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		UI_module->graphics_window_manager = NULL;

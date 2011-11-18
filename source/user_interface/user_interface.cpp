@@ -60,9 +60,6 @@ extern "C" {
 #endif
 #include "general/debug.h"
 #include "general/myio.h"
-#if defined (LINK_CMISS)
-#include "link/cmiss.h"
-#endif /* defined (LINK_CMISS) */
 }
 #if defined (GTK_USER_INTERFACE)
 extern "C" {
@@ -156,18 +153,6 @@ set.
 	struct User_interface *user_interface;
 }; /* struct Shell_list_item */
 
-/*
-Module variables
-----------------
-*/
-
-#if defined (LINK_CMISS)
-static unsigned long cmiss_link_delay_s;
-static unsigned long cmiss_link_delay_ns;
-extern struct CMISS_connection *CMISS;
-	/*???GMH.  This is a hack - when we register it will disappear (defined in
-		command.c) */
-#endif /* defined (LINK_CMISS) */
 /*???GMH.  We need to generalise the periodic update thingy.  What we need
 	is an interface that allows a tool to register a function to get called
 	at specific time intervals */
@@ -805,12 +790,6 @@ DESCRIPTION :
 		{
 			DESTROY(Machine_information)(&(user_interface->local_machine_info));
 		}
-#if defined (LINK_CMISS)
-		if (CMISS)
-		{
-			DESTROY(CMISS_connection)(&CMISS);
-		}
-#endif /* defined (LINK_CMISS) */
 #if defined (GTK_USER_INTERFACE)
 		if (user_interface->main_window)
 		{
