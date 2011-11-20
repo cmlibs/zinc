@@ -3163,6 +3163,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->user_interface=user_interface;
 			node_tool->time_keeper = (struct Time_keeper *)NULL;
 			node_tool->computed_field_manager_callback_id = NULL;
+			node_tool->current_region_path = (char *)NULL;
 			if (time_keeper)
 			{
 				node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
@@ -3206,7 +3207,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
-			node_tool->current_region_path = (char *)NULL;
 			node_tool->tool_position=wxPoint(0,0);
 #endif /*defined (WX_USER_INTERFACE)*/
 			node_tool->interactive_tool=CREATE(Interactive_tool)(
