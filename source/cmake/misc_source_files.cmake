@@ -1,6 +1,6 @@
 
 # Defines COMFILE_SRCS, CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS, FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS, 
-# FINITE_ELEMENT_SRCS (definition includes the previous two), HELP_SRCS, INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS, 
+# FINITE_ELEMENT_SRCS (definition includes the previous two), INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS, 
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
 
 SET( COMFILE_SRCS source/comfile/comfile.cpp )
@@ -24,12 +24,6 @@ IF( WX_USER_INTERFACE )
 	SET( ELEMENT_HDRS ${ELEMENT_HDRS}
 		source/element/element_point_viewer_wx.h )
 ENDIF( WX_USER_INTERFACE )
-IF( MOTIF_USER_INTERFACE )
-	SET( ELEMENT_HDRS ${ELEMENT_HDRS}
-		source/element/element_point_viewer_wx.cpp )
-#	source/element/element_creator.h
-#	source/element/element_point_viewer.h
-ENDIF( MOTIF_USER_INTERFACE )
 
 SET( EMOTER_SRCS
 	source/emoter/em_cmgui.c
@@ -37,13 +31,6 @@ SET( EMOTER_SRCS
 SET( EMOTER_HDRS
 	source/emoter/emoter_dialog.h 
 	source/emoter/em_cmgui.h )
-
-SET( NETSCAPE_HELP TRUE )
-SET( HELP_SRCS source/help/help_interface.c )
-SET( HELP_HDRS source/help/help_cmgui.h
-	source/help/help_interface.h
-	source/help/help_window.h
-	source/help/help_work.h )
 
 SET( INTERACTION_SRCS
 	source/interaction/interaction_graphics.c

@@ -32,7 +32,6 @@ SET( GENERAL_HDRS
 	source/general/block_array.hpp
 	source/general/callback.h
 	source/general/callback_class.hpp
-	source/general/callback_motif.h
 	source/general/callback_private.h
 	source/general/change_log.h
 	source/general/change_log_private.h
@@ -66,7 +65,6 @@ SET( GENERAL_HDRS
 	source/general/mystring.h
 	source/general/object.h
 	source/general/octree.h
-	source/general/postscript.h
 	source/general/random.h
 	source/general/simple_list.h
 	source/general/statistics.h

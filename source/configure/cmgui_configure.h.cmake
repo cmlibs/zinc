@@ -40,7 +40,6 @@
 #cmakedefine USE_TIFF
 
 // Miscellaneous defines
-#cmakedefine NETSCAPE_HELP
 #cmakedefine FE_VALUE_IS_DOUBLE
 #cmakedefine HAVE_VFSCANF
 #cmakedefine GLEW_STATIC

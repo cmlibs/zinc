@@ -65,7 +65,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/material.h
 	source/graphics/material.hpp
 	source/graphics/mcubes.h
-	source/graphics/movie_graphics.h
 	source/graphics/order_independent_transparency.h
 	source/graphics/quaternion.hpp
 	source/graphics/renderalias.h
@@ -75,15 +74,10 @@ SET( GRAPHICS_HDRS
 	source/graphics/renderwavefront.h
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
-	source/graphics/robo_window.h
-	source/graphics/scene_editor.h
 	source/graphics/selected_graphic.h
 	source/graphics/selection.hpp
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
-	source/graphics/spectrum_editor.h
-	source/graphics/spectrum_editor_dialog.h
-	source/graphics/spectrum_editor_settings.h
 	source/graphics/spectrum_settings.h
 	source/graphics/tessellation.hpp
 	source/graphics/texture.h
@@ -93,8 +87,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/transform_tool.h
 	source/graphics/triangle_mesh.hpp
 	source/graphics/userdef_objects.h
-	source/graphics/volume_texture.h
-	source/graphics/volume_texture_editor_dialog.h )
+	source/graphics/volume_texture.h )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}

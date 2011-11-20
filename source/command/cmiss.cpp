@@ -17634,12 +17634,6 @@ Execute a <command_string>. If there is a command
 					Option_table_add_entry(option_table, "detach", NULL, command_data_void,
 						execute_command_detach);
 #endif /* !defined (SELECT_DESCRIPTORS) */
-					/* fem */
-					Option_table_add_entry(option_table, "fem", NULL, command_data_void,
-						execute_command_cm);
-					/* gen */
-					Option_table_add_entry(option_table, "gem", NULL, command_data_void,
-						execute_command_cm);
 					/* gfx */
 					Option_table_add_entry(option_table, "gfx", NULL, command_data_void,
 						execute_command_gfx);
@@ -17661,9 +17655,6 @@ Execute a <command_string>. If there is a command
 					/* system */
 					Option_table_add_entry(option_table, "system", NULL, command_data_void,
 						execute_command_system);
-					/* default */
-					Option_table_add_entry(option_table, "", NULL, command_data_void,
-						execute_command_cm);
 					return_code=Option_table_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
 				}
