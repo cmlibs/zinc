@@ -13,7 +13,6 @@
 #cmakedefine GENERIC_PC
 
 // User interface specific defines
-#cmakedefine MOTIF_USER_INTERFACE
 #cmakedefine WIN32_USER_INTERFACE
 #cmakedefine GTK_USER_INTERFACE
 #cmakedefine WX_USER_INTERFACE

@@ -20,8 +20,6 @@ basis types, 3D visualisation and a mathematical field abstraction layer.
 
 It includes some modules which are being deprecated and phased out, and some
 which under active development.
-The graphical interface of cmgui-motif was orignially developed in Motif but will 
-soon be completely replaced by cmgui-wx which is developed in wxWidgets.
 The win32 port is almost an exact copy as the i686-linux cmgui-wx with most of the 
 important user interface components included. Active development
 The code is being redesigned so that rather than being an overall application
