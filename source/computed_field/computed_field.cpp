@@ -1624,6 +1624,22 @@ int Cmiss_field_cache_invalidate_field(Cmiss_field_cache_id field_cache,
 	return 1;
 }
 
+int Cmiss_field_invalidate_field_internal(Cmiss_field_id field)
+{
+	int return_code = 0;
+	if (Computed_field_clear_cache(field))
+	{
+		return_code = 1;
+		Cmiss_set_Cmiss_field *all_fields = reinterpret_cast<Cmiss_set_Cmiss_field *>(field->manager->object_list);
+		for (Cmiss_set_Cmiss_field::iterator iter = all_fields->begin(); iter != all_fields->end(); ++iter)
+		{
+			Cmiss_field_check_invalid_cache(*iter);
+		}
+	}
+
+	return return_code;
+}
+
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
@@ -2998,7 +3014,7 @@ is reached for which its calculation is not reversible, or is not supported yet.
 		}
 		if (!location->get_assign_to_cache())
 		{
-			Computed_field_clear_cache(field);
+			return_code = Cmiss_field_invalidate_field_internal(field);
 		}
 	}
 	else
