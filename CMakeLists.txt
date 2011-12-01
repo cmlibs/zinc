@@ -744,6 +744,9 @@ IF( CMGUI_BUILD_EXECUTABLE )
 			${COMMAND_INTERFACE_HDRS} ${COMPUTED_FIELD_INTERFACE_HDRS}
 			${GRAPHICS_INTERFACE_HDRS} ${MATERIAL_INTERFACE_HDRS} ${NODE_INTERFACE_HDRS} 
 			${REGION_INTERFACE_HDRS} ${TRANSFORMATION_INTERFACE_HDRS} ${wxWidgets_GENERATED_HDRS} )
+		IF( DEFINED MSVC )
+			SET( INTERFACE_SRCS ${INTERFACE_SRCS} source/icon/wxmsw_icon.rc )
+		ENDIF( DEFINED MSVC )
 	ENDIF( WX_USER_INTERFACE )
 	
 	# First crack at getting the version string correct
@@ -915,6 +918,7 @@ ELSE( CMGUI_BUILD_EXECUTABLE )
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_nodeset_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_scene_viewer_projection.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_subobject_group.h
+		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_time.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_field_vector_operators.h
 		${CMAKE_CURRENT_SOURCE_DIR}/source/api/cmiss_graphic.h
