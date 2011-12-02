@@ -264,51 +264,52 @@ struct Computed_field *Computed_field_create_format_output(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, char *format_string)
 {
-	Computed_field *field;
-	if (source_field->number_of_components <= 4)
+	Cmiss_field_id field = 0;
+	if (source_field && format_string)
 	{
-		int valid_string = 1;
-		char *remaining_string = format_string;
-		int number_of_format_specifiers = 0;
-		while (valid_string && (remaining_string = strchr(remaining_string, '%')))
+		if (source_field->number_of_components <= 4)
 		{
-			number_of_format_specifiers++;
-			remaining_string++;
-			/* Ignore modifiers */
-			int specifiers = strspn(remaining_string, "0123456789.hlL -+#");
-			remaining_string += specifiers;
-			/* Fail if we don't get the expected format codes */
-			if (0 != strcspn(remaining_string, "eEfgG"))
+			int valid_string = 1;
+			char *remaining_string = format_string;
+			int number_of_format_specifiers = 0;
+			while (valid_string && (remaining_string = strchr(remaining_string, '%')))
 			{
-				valid_string = 0;
+				number_of_format_specifiers++;
+				remaining_string++;
+				/* Ignore modifiers */
+				int specifiers = strspn(remaining_string, "0123456789.hlL -+#");
+				remaining_string += specifiers;
+				/* Fail if we don't get the expected format codes */
+				if (0 != strcspn(remaining_string, "eEfgG"))
+				{
+					valid_string = 0;
+				}
+				remaining_string++;
 			}
-			remaining_string++;
-		}
-		if (number_of_format_specifiers != source_field->number_of_components)
-			valid_string = 0;
-		if (valid_string)
-		{
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/true, source_field->number_of_components,
-				/*number_of_source_fields*/1, &source_field,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_format_output(source_field->number_of_components, format_string));
+			if (number_of_format_specifiers != source_field->number_of_components)
+				valid_string = 0;
+			if (valid_string)
+			{
+				field = Computed_field_create_generic(field_module,
+					/*check_source_field_regions*/true, source_field->number_of_components,
+					/*number_of_source_fields*/1, &source_field,
+					/*number_of_source_values*/0, NULL,
+					new Computed_field_format_output(source_field->number_of_components, format_string));
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_create_format_output.  Invalid or unsupported format_string.");
+			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_format_output.  Invalid or unsupported format_string.");
-			field = (Computed_field *)NULL;
+				"Computed_field_create_format_output.  Only source fields with between 1 and 4 components are currently supported.");
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_format_output.  Only source fields with between 1 and 4 components are currently supported.");
-		field = (Computed_field *)NULL;
-	}
 	return (field);
-} /* Computed_field_set_type_format_output */
+}
 
 int Computed_field_get_type_format_output(struct Computed_field *field,
 	struct Computed_field **source_field, char **format_string_out)

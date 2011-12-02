@@ -236,13 +236,16 @@ struct Computed_field *Cmiss_field_module_create_normalise(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_normalise());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_normalise());
+	}
 	return (field);
 } /* Computed_field_set_type_normalise */
 
@@ -1852,13 +1855,16 @@ struct Computed_field *Computed_field_create_cubic_texture_coordinates(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_cubic_texture_coordinates());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_cubic_texture_coordinates());
+	}
 	return (field);
 } /* Computed_field_set_type_normalise */
 

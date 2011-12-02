@@ -1856,13 +1856,16 @@ Sets the number of components equal to that of <source_field>.
 Not exposed in the API as this is really just a multiply with constant
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, scale_factors,
-		new Computed_field_scale());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, scale_factors,
+			new Computed_field_scale());
+	}
 	return (field);
 } /* Computed_field_create_scale */
 
@@ -2324,13 +2327,16 @@ SAB.  I think this should be changed so that the maximums come from a source
 field rather than constant maximums before it is exposed in the API.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, maximums,
-		new Computed_field_clamp_maximum());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, maximums,
+			new Computed_field_clamp_maximum());
+	}
 	return (field);
 } /* Computed_field_create_clamp_maximum */
 
@@ -2786,13 +2792,16 @@ SAB.  I think this should be changed so that the minimums come from a source
 field rather than constant minimums before it is exposed in the API.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, minimums,
-		new Computed_field_clamp_minimum());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, minimums,
+			new Computed_field_clamp_minimum());
+	}
 	return (field);
 } /* Computed_field_create_clamp_minimum */
 
@@ -3280,13 +3289,16 @@ components in <source_field>; this is the number of components in the field.
 Not exposed in the API is this is just an add with constant field.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, offsets,
-		new Computed_field_offset());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, offsets,
+			new Computed_field_offset());
+	}
 	return (field);
 } /* Computed_field_create_offset */
 
@@ -3681,13 +3693,16 @@ Returns allocated command string for reproducing field. Includes type.
 Computed_field *Computed_field_create_sum_components(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *weights)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		/*number_of_components*/1,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, weights,
-		new Computed_field_sum_components());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, weights,
+			new Computed_field_sum_components());
+	}
 	return (field);
 } /* Computed_field_create_sum_components */
 
@@ -4145,13 +4160,16 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/source_field->number_of_components, edit_mask,
-		new Computed_field_edit_mask());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/source_field->number_of_components, edit_mask,
+			new Computed_field_edit_mask());
+	}
 	return (field);
 } /* Computed_field_create_edit_mask */
 
@@ -4532,13 +4550,16 @@ Converts <field> to type COMPUTED_FIELD_LOG with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_log());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_log());
+	}
 	return (field);
 } /* Computed_field_create_log */
 
@@ -4848,13 +4869,16 @@ Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_sqrt());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_sqrt());
+	}
 	return (field);
 } /* Computed_field_create_sqrt */
 
@@ -5164,13 +5188,16 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_exp());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_exp());
+	}
 	return (field);
 } /* Computed_field_create_exp */
 
@@ -5497,13 +5524,16 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_abs());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_abs());
+	}
 	return (field);
 } /* Computed_field_create_abs */
 

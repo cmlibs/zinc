@@ -232,13 +232,16 @@ Computed_field *Computed_field_create_sin(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_sin());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_sin());
+	}
 	return (field);
 } /* Computed_field_create_sin */
 
@@ -543,13 +546,16 @@ Computed_field *Computed_field_create_cos(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_cos());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_cos());
+	}
 	return (field);
 } /* Computed_field_create_cos */
 
@@ -854,13 +860,16 @@ Computed_field *Computed_field_create_tan(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_tan());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_tan());
+	}
 	return (field);
 } /* Computed_field_create_tan */
 
@@ -1173,13 +1182,16 @@ Computed_field *Computed_field_create_asin(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_asin());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_asin());
+	}
 	return (field);
 } /* Computed_field_create_asin */
 
@@ -1492,13 +1504,16 @@ Computed_field *Computed_field_create_acos(
 		struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_acos());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_acos());
+	}
 	return (field);
 } /* Computed_field_create_acos */
 
@@ -1804,13 +1819,16 @@ Computed_field *Computed_field_create_atan(
 		struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_atan());
-
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_atan());
+	}
 	return (field);
 } /* Computed_field_create_atan */
 
