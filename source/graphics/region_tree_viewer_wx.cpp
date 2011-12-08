@@ -2355,11 +2355,9 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 
 	void GraphicEditorNameText(wxCommandEvent &event)
 	{
-		char new_name[200],*text_entry;
 		const char *name = NULL;
-		wxString temp;
 
-	 USE_PARAMETER(event);
+		USE_PARAMETER(event);
 
 		if (region_tree_viewer->current_graphic)
 		{
@@ -2367,10 +2365,11 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 			Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic,
 				&name);
 			nametextfield = XRCCTRL(*this, "NameTextField", wxTextCtrl);
-			temp = nametextfield->GetValue();
-			text_entry = const_cast<char *>(temp.c_str());
+			wxString wxTextEntry = nametextfield->GetValue();
+			const char *text_entry = wxTextEntry.c_str();
 			if (text_entry)
 			{
+				char *new_name = duplicate_string(text_entry);
 				sscanf(text_entry, "%s", new_name);
 				if (strcmp(name, new_name))
 				{
@@ -2434,7 +2433,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 		double *current_iso_values = NULL,decimation_threshold, *iso_values = NULL,
 			current_first_iso_value, current_last_iso_value, first_iso_value = 0.0,
 			last_iso_value = 0.0;
-		char *text_entry = NULL, temp_string[50], *vector_temp_string = NULL;
+		char temp_string[50], *vector_temp_string = NULL;
 		int allocated_length, changed_value = 0, error, i, length,
 			new_number_of_iso_values, number_of_iso_values,
 			offset, valid_value;
@@ -2464,7 +2463,8 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				isovaluesequencenumbertextctrl->Disable();
 				isovaluesequencefirsttextctrl->Disable();
 				isovaluesequencelasttextctrl->Disable();
-				text_entry = const_cast<char *>(isoscalartextctrl->GetValue().c_str());
+				wxString wxTextEntry = isoscalartextctrl->GetValue();
+				const char *text_entry = wxTextEntry.c_str();
 				if (text_entry)
 				{
 					i = 0;
@@ -2545,7 +2545,8 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 				isovaluesequencenumbertextctrl->Enable();
 				isovaluesequencefirsttextctrl->Enable();
 				isovaluesequencelasttextctrl->Enable();
-				text_entry=const_cast<char *>(isovaluesequencenumbertextctrl->GetValue().c_str());
+				wxString wxTextEntry = isovaluesequencenumbertextctrl->GetValue();
+				const char *text_entry = wxTextEntry.c_str();
 				if (text_entry)
 				{
 					sscanf(text_entry,"%d",&new_number_of_iso_values);
@@ -2555,8 +2556,9 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 					display_message(ERROR_MESSAGE,
 						"graphic_editor_streamline_width_text_CB.  Missing text");
 				}
-				
-				text_entry=const_cast<char *>(isovaluesequencefirsttextctrl->GetValue().c_str());
+
+				wxTextEntry = isovaluesequencefirsttextctrl->GetValue();
+				text_entry = wxTextEntry.c_str();
 				if (text_entry)
 				{
 					sscanf(text_entry,"%lg",&first_iso_value);
@@ -2567,7 +2569,8 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 						"graphic_editor_streamline_width_text_CB.  Missing text");
 				}
 				
-				text_entry=const_cast<char *>(isovaluesequencelasttextctrl->GetValue().c_str());
+				wxTextEntry = isovaluesequencelasttextctrl->GetValue();
+				text_entry = wxTextEntry.c_str();
 				if (text_entry)
 				{
 					sscanf(text_entry,"%lg",&last_iso_value);
@@ -2615,7 +2618,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 
 void EnterGlyphOffset(wxCommandEvent &event)
 {
-	char *text_entry = NULL, temp_string[50];
+	char temp_string[50];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	static int number_of_components=3;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
@@ -2635,8 +2638,8 @@ void EnterGlyphOffset(wxCommandEvent &event)
 					&variable_scale_field))
 		{
 			/* Get the text string */
-			text_entry = duplicate_string(
-				const_cast<char *>(offsettextctrl->GetValue().c_str()));
+			wxString wxTextEntry = offsettextctrl->GetValue();
+			const char *text_entry = wxTextEntry.c_str();
 			if (text_entry)
 			{
 				/* clean up spaces? */
@@ -2674,7 +2677,7 @@ void EnterGlyphOffset(wxCommandEvent &event)
 
 void EnterGlyphSize(wxCommandEvent &event)
 {
-	char *text_entry = NULL, temp_string[50];
+	char temp_string[50];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
@@ -2692,8 +2695,8 @@ void EnterGlyphSize(wxCommandEvent &event)
 					&variable_scale_field))
 		{
 			/* Get the text string */
-			text_entry =
-				duplicate_string(const_cast<char *>(baseglyphsizetextctrl->GetValue().c_str()));
+			wxString wxTextEntry = baseglyphsizetextctrl->GetValue();
+			const char *text_entry = wxTextEntry.c_str();
 			if (text_entry)
 			{
 				/* clean up spaces? */
@@ -2731,7 +2734,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 
 	void   EnterGlyphScale(wxCommandEvent &event)
 	{
-	char *text_entry = NULL,temp_string[50];
+	char temp_string[50];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
@@ -2752,8 +2755,8 @@ void EnterGlyphSize(wxCommandEvent &event)
 				&variable_scale_field))
 			{
 				/* Get the text string */
-				text_entry = duplicate_string(
-					const_cast<char *>(glyphscalefactorstextctrl->GetValue().c_str()));
+				wxString wxTextEntry = glyphscalefactorstextctrl->GetValue();
+				const char *text_entry = wxTextEntry.c_str();
 				if (text_entry)
 				{
 					/* clean up spaces? */
@@ -2835,7 +2838,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 
 void EnterElementDiscretization(wxCommandEvent &event)
 {
-	char *text_entry,temp_string[50];
+	char temp_string[50];
 	struct Element_discretization discretization;
 	struct Parse_state *temp_state;
 
@@ -2846,8 +2849,8 @@ void EnterElementDiscretization(wxCommandEvent &event)
 	{
 		/* Get the text string */
 		discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
-		text_entry =duplicate_string(
-			const_cast<char *>(discretizationtextctrl->GetValue().c_str()));
+		wxString wxTextEntry = discretizationtextctrl->GetValue();
+		const char *text_entry = wxTextEntry.c_str();
 		if (text_entry)
 		{
 			temp_state=create_Parse_state(text_entry);
@@ -2944,7 +2947,7 @@ void SeedElementChecked(wxCommandEvent &event)
 
 void EnterSeedXi(wxCommandEvent &event)
 {
-	char *text_entry = NULL,temp_string[50];
+	char temp_string[50];
 	static int number_of_components=3;
 	struct Parse_state *temp_state;
 	Triple seed_xi;
@@ -2956,7 +2959,8 @@ void EnterSeedXi(wxCommandEvent &event)
 				region_tree_viewer->current_graphic,seed_xi))
 	{
 		/* Get the text string */
-		text_entry = duplicate_string(const_cast<char *>(xitextctrl->GetValue().c_str()));
+		wxString wxTextEntry = xitextctrl->GetValue();
+		const char *text_entry = wxTextEntry.c_str();
 		if (text_entry)
 		{
 			/* clean up spaces? */
@@ -2988,7 +2992,7 @@ void EnterSeedXi(wxCommandEvent &event)
 
 void EnterLength(wxCommandEvent &event)
 {
-	char *text_entry,temp_string[50];
+	char temp_string[50];
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
 	int reverse_track;
@@ -3000,7 +3004,8 @@ void EnterLength(wxCommandEvent &event)
 		region_tree_viewer->current_graphic,&streamline_type,
 		&stream_vector_field,&reverse_track,&streamline_length,
 		&streamline_width);
-	text_entry=const_cast<char *>(lengthtextctrl->GetValue().c_str());
+	wxString wxTextEntry = lengthtextctrl->GetValue();
+	const char *text_entry = wxTextEntry.c_str();
 	if (text_entry)
 	{
 		sscanf(text_entry,"%g",&streamline_length);
@@ -3024,7 +3029,7 @@ void EnterLength(wxCommandEvent &event)
 
 void EnterWidth(wxCommandEvent &event)
 {
-	char *text_entry,temp_string[50];
+	char temp_string[50];
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
 	int reverse_track;
@@ -3037,7 +3042,8 @@ void EnterWidth(wxCommandEvent &event)
 		&stream_vector_field,&reverse_track,&streamline_length,
 		&streamline_width);
 	/* Get the text string */
-	text_entry=const_cast<char *>(widthtextctrl->GetValue().c_str());
+	wxString wxTextEntry = widthtextctrl->GetValue();
+	const char *text_entry = wxTextEntry.c_str();
 	if (text_entry)
 	{
 		sscanf(text_entry,"%g",&streamline_width);
@@ -3085,7 +3091,7 @@ void ReverseChecked(wxCommandEvent &event)
 
 void EnterLineWidth(wxCommandEvent &event)
 {
-	char *text_entry,temp_string[50];
+	char temp_string[50];
 	int line_width, new_line_width;
 
 	USE_PARAMETER(event);
@@ -3093,7 +3099,8 @@ void EnterLineWidth(wxCommandEvent &event)
 	line_width = Cmiss_graphic_get_line_width(region_tree_viewer->current_graphic);
 	new_line_width = line_width;
 	/* Get the text string */
-	text_entry=const_cast<char *>(linewidthtextctrl->GetValue().c_str());
+	wxString wxTextEntry = linewidthtextctrl->GetValue();
+	const char *text_entry = wxTextEntry.c_str();
 	if (text_entry)
 	{
 		sscanf(text_entry,"%d",&new_line_width);
