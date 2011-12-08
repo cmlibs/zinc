@@ -175,7 +175,6 @@ int Cmiss_region_read(Cmiss_region_id region,
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "Cmiss_region_read. Cannot read file %s", file_name);
-							break;
 						}
 						DEALLOCATE(file_name);
 					}
@@ -190,7 +189,6 @@ int Cmiss_region_read(Cmiss_region_id region,
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "Cmiss_region_read. Cannot read memory");
-							break;
 						}
 					}
 					Cmiss_stream_resource_memory_destroy(&memory_resource);
@@ -199,6 +197,9 @@ int Cmiss_region_read(Cmiss_region_id region,
 				{
 					return_code = 0;
 					display_message(ERROR_MESSAGE, "Cmiss_region_read. Stream error");
+				}
+				if (!return_code)
+				{
 					break;
 				}
 			}
@@ -278,16 +279,14 @@ int Cmiss_region_write(Cmiss_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						return_code = write_exregion_file_of_name(file_name, region,
+						if (!write_exregion_file_of_name(file_name, region,
 							Cmiss_stream_information_region_get_root_region(region_stream_information),
 							/* write_elements */1,	/* write_nodes */1, /*write_data*/0,
 							FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
-							stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE);
-						if (!return_code)
+							stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "Cmiss_region_write. Cannot write file %s", file_name);
-							break;
 						}
 						DEALLOCATE(file_name);
 					}
@@ -295,16 +294,14 @@ int Cmiss_region_write(Cmiss_region_id region,
 				}
 				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
 				{
-					return_code = write_exregion_file_to_memory_block(region,
+					if (!write_exregion_file_to_memory_block(region,
 						Cmiss_stream_information_region_get_root_region(region_stream_information),
 						/* write_elements */1,	/* write_nodes */1, /*write_data*/0,
 						FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
-						stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size);
-					if (!return_code)
+						stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
 					{
 						return_code = 0;
 						display_message(ERROR_MESSAGE, "Cmiss_region_write. Cannot write to memory block");
-						break;
 					}
 					else
 					{
@@ -316,6 +313,9 @@ int Cmiss_region_write(Cmiss_region_id region,
 				{
 					return_code = 0;
 					display_message(ERROR_MESSAGE, "Cmiss_region_write. Stream error");
+				}
+				if (!return_code)
+				{
 					break;
 				}
 			}
@@ -333,9 +333,9 @@ int Cmiss_region_write_file(Cmiss_region_id region, const char *file_name)
 			Cmiss_region_create_stream_information(region);
 		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
 			stream_information, file_name);
-	  return_code = Cmiss_region_write(region, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+		return_code = Cmiss_region_write(region, stream_information);
+		Cmiss_stream_resource_destroy(&resource);
+		Cmiss_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }

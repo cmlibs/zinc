@@ -3969,19 +3969,19 @@ Up to the calling function to check and merge the returned cmiss_region.
 	return_code = 0;
 	if (region && file_name)
 	{
-		if ((input_file = CREATE(IO_stream)(io_stream_package))
-			&& (IO_stream_open_for_read(input_file, file_name)))
+		input_file = CREATE(IO_stream)(io_stream_package);
+		if (IO_stream_open_for_read(input_file, file_name))
 		{
 			return_code = read_exregion_file_private(region, input_file, time_index,
 				/*use_data*/0);
 			IO_stream_close(input_file);
-			DESTROY(IO_stream)(&input_file);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "Could not open exregion file: %s",
 				file_name);
 		}
+		DESTROY(IO_stream)(&input_file);
 	}
 	else
 	{
