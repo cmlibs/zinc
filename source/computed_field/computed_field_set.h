@@ -92,6 +92,19 @@ Global functions
 extern "C" {
 #endif /* __cplusplus */
 
+/***************************************************************************//**
+ * Return the field from the manager with the given name. If none is found with
+ * that name, try to find the field component as fieldname.componentname, i.e.
+ * with the '.' separator. Since FieldML examples frequently use '.' in the
+ * field name itself, search after the last '.' character.
+ * @param component_number_address  On successful return this will have the
+ * value -1 for the whole field, or the component number from 0 to count - 1.
+ * @return  Non-accessed field on success, or NULL on failure.
+ */
+Cmiss_field_id Computed_field_manager_get_field_or_component(
+	struct MANAGER(Computed_field) *computed_field_manager, const char *name,
+	int *component_number_address);
+
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void, void *set_field_data_void);
 /*******************************************************************************

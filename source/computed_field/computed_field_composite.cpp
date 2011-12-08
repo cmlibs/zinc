@@ -50,6 +50,7 @@ extern "C" {
 }
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
@@ -899,7 +900,6 @@ ACCESSed in the initial source_data.
 ==============================================================================*/
 {
 	const char *current_token;
-	char *field_component_name, *temp_name;
 	double *temp_source_values, value;
 	int component_no, components_to_add = -1, i, number_of_characters, return_code,
 		source_field_number = -1, source_value_number = -1, *temp_source_field_numbers,
@@ -984,78 +984,30 @@ ACCESSed in the initial source_data.
 					}
 					else
 					{
-						field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-							current_token,computed_field_manager);
-						if (field != 0)
+						/* component_no = -1 denotes the whole field may be used */
+						component_no = -1;
+						field = Computed_field_manager_get_field_or_component(
+							computed_field_manager, current_token, &component_no);
+						if (field)
 						{
-							components_to_add = field->number_of_components;
-							/* following is the first source_value_number to add */
-							source_value_number = 0;
 							shift_Parse_state(state,1);
-						}
-						else if (strchr(current_token,'.'))
-						{
-							char *current_token_copy = duplicate_string(current_token);
-							field_component_name = strchr(current_token_copy,'.');
-							*field_component_name='\0';
-							field_component_name++;
-							field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								current_token_copy,computed_field_manager);
-							if (field != 0)
+							if (component_no == -1)
 							{
-								component_no = -1;
-								for (i=0;(0>component_no)&&(i<field->number_of_components)&&
-									return_code;i++)
-								{
-									temp_name = Computed_field_get_component_name(field,i);
-									if (temp_name != 0)
-									{
-										if (0 == strcmp(field_component_name,temp_name))
-										{
-											component_no = i;
-										}
-										DEALLOCATE(temp_name);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"set_Computed_field_composite_source_data.  "
-											"Could not get component name");
-										return_code=0;
-									}
-								}
-								if (return_code)
-								{
-									if (0 <= component_no)
-									{
-										components_to_add = 1;
-										source_value_number = component_no;
-										shift_Parse_state(state,1);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Unknown field component %s.%s",current_token_copy,
-											field_component_name);
-										display_parse_state_location(state);
-										return_code=0;
-									}
-								}
+								components_to_add = field->number_of_components;
+								/* following is the first source_value_number to add */
+								source_value_number = 0;
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"Unknown field: %s",
-									current_token_copy);
-								display_parse_state_location(state);
-								return_code=0;
+								components_to_add = 1;
+								source_value_number = component_no;
 							}
-							DEALLOCATE(current_token_copy);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"Unknown field: %s",current_token);
+							display_message(ERROR_MESSAGE,"Unknown field or field.component: %s", current_token);
 							display_parse_state_location(state);
-							return_code=0;
+							return_code = 0;
 						}
 						if (return_code)
 						{
