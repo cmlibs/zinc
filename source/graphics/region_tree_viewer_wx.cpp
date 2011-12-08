@@ -2381,6 +2381,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 						region_tree_viewer->edit_rendition);
 					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 				}
+				DEALLOCATE(new_name);
 			}
 			else
 			{
