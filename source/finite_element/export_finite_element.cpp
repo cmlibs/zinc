@@ -489,154 +489,43 @@ write_FE_field_values.
 	return (return_code);
 } /* write_FE_node_field_FE_field_values */
 
+/***************************************************************************//**
+ * Writes out the <element_shape> to <output_file>.
+ */
 static int write_FE_element_shape(ostream *output_file,
 	struct FE_element_shape *element_shape)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Writes out the <element_shape> to <output_file>.
-???RC Currently limited to handling one polygon or one simplex. Will have to
-be rewritten for 4-D and above elements.
-==============================================================================*/
 {
-	enum FE_element_shape_type shape_type;
-	int dimension, linked_dimensions, next_xi_number, number_of_polygon_vertices,
-		return_code, xi_number;
+	int return_code = 1;
 
 	ENTER(write_FE_element_shape);
+	int dimension;
 	if (output_file && element_shape &&
 		get_FE_element_shape_dimension(element_shape, &dimension))
 	{
-		return_code = 1;
 		(*output_file) << " Shape. Dimension=" << dimension << ", ";
-		linked_dimensions = 0;
-		for (xi_number = 0; (xi_number < dimension) && return_code; xi_number++)
+		char *shape_description = FE_element_shape_get_EX_description(element_shape);
+		if (shape_description)
 		{
-			if (get_FE_element_shape_xi_shape_type(element_shape, xi_number,
-				&shape_type))
-			{
-				switch (shape_type)
-				{
-					case LINE_SHAPE:
-					{
-						(*output_file) << "line";
-					} break;
-					case POLYGON_SHAPE:
-					{
-						/* logic currently limited to one polygon in shape - ok up to 3D */
-						(*output_file) << "polygon";
-						if (0 == linked_dimensions)
-						{
-							if (get_FE_element_shape_next_linked_xi_number(element_shape,
-								xi_number, &next_xi_number, &number_of_polygon_vertices) &&
-								(0 < next_xi_number))
-							{
-								if (number_of_polygon_vertices >= 3)
-								{
-									(*output_file) << "(" << number_of_polygon_vertices << ";"
-										<< next_xi_number + 1 << ")";
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
-										"Invalid number of vertices in polygon: %d",
-										number_of_polygon_vertices);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
-									"No second linked dimensions in polygon");
-								return_code = 0;
-							}
-						}
-						linked_dimensions++;
-						if (2 < linked_dimensions)
-						{
-							display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
-								"Too many linked dimensions in polygon");
-							return_code = 0;
-						}
-					} break;
-					case SIMPLEX_SHAPE:
-					{
-						/* logic currently limited to one simplex in shape - ok up to 3D */
-						(*output_file) << "simplex";
-						if (0 == linked_dimensions)
-						{
-							linked_dimensions++;
-							/* for first linked simplex dimension write (N1[;N2]) where N1 is
-								 first linked dimension, N2 is the second - for tetrahedra */
-							(*output_file) << "(";
-							next_xi_number = xi_number;
-							while (return_code && (next_xi_number < dimension))
-							{
-								if (get_FE_element_shape_next_linked_xi_number(element_shape,
-									next_xi_number, &next_xi_number, &number_of_polygon_vertices))
-								{
-									if (0 < next_xi_number)
-									{
-										linked_dimensions++;
-										if (2 < linked_dimensions)
-										{
-											(*output_file) << ";";
-										}
-										(*output_file) << next_xi_number + 1;
-									}
-									else
-									{
-										next_xi_number = dimension;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
-										"Could not get next linked xi number for simplex");
-									return_code = 0;
-								}
-							}
-							(*output_file) << ")";
-							if (1 == linked_dimensions)
-							{
-								display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
-									"Too few linked dimensions in simplex");
-								return_code = 0;
-							}
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"write_FE_element_shape.  Unknown shape type");
-						return_code = 0;
-					} break;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"write_FE_element_shape.  Could not get shape type");
-				return_code = 0;
-			}
-			if (xi_number < (dimension - 1))
-			{
-				(*output_file) << "*";
-			}
+			(*output_file) << shape_description << "\n";
+			DEALLOCATE(shape_description);
 		}
-		(*output_file) << "\n";
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_FE_element_shape.  Invalid shape");
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_FE_element_shape.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_FE_element_shape */
+}
 
 static int write_FE_element_identifier(ostream *output_file,
 	struct FE_element *element)

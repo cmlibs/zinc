@@ -22263,6 +22263,140 @@ enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
 	return shape_type;
 }
 
+// Currently limited to handling one polygon or one simplex. Will have to
+// be rewritten for 4-D and above elements.
+char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape)
+{
+	if (!element_shape)
+		return 0;
+	char *description = 0;
+	int next_xi_number, number_of_polygon_vertices;
+	int error = 0;
+	enum FE_element_shape_type shape_type;
+	int linked_dimensions = 0;
+	for (int xi_number = 0; xi_number < element_shape->dimension; xi_number++)
+	{
+		if (xi_number > 0)
+		{
+			append_string(&description, "*", &error);
+		}
+		if (get_FE_element_shape_xi_shape_type(element_shape, xi_number, &shape_type))
+		{
+			switch (shape_type)
+			{
+				case LINE_SHAPE:
+				{
+					append_string(&description, "line", &error);
+				} break;
+				case POLYGON_SHAPE:
+				{
+					/* logic currently limited to one polygon in shape - ok up to 3D */
+					append_string(&description, "polygon", &error);
+					if (0 == linked_dimensions)
+					{
+						if ((!get_FE_element_shape_next_linked_xi_number(element_shape,
+							xi_number, &next_xi_number, &number_of_polygon_vertices)) ||
+							(next_xi_number <= 0))
+						{
+							display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+								"No second linked dimensions in polygon");
+							DEALLOCATE(description);
+							return 0;
+						}
+						else if (number_of_polygon_vertices < 3)
+						{
+							display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+								"Invalid number of vertices in polygon: %d",
+								number_of_polygon_vertices);
+							DEALLOCATE(description);
+							return 0;
+						}
+						else
+						{
+							char tmp_string[50];
+							sprintf(tmp_string, "(%d;%d)", number_of_polygon_vertices, next_xi_number + 1);
+							append_string(&description, tmp_string, &error);
+						}
+					}
+					linked_dimensions++;
+					if (2 < linked_dimensions)
+					{
+						display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+							"Too many linked dimensions in polygon");
+						DEALLOCATE(description);
+						return 0;
+					}
+				} break;
+				case SIMPLEX_SHAPE:
+				{
+					/* logic currently limited to one simplex in shape - OK up to 3D */
+					append_string(&description, "simplex", &error);
+					if (0 == linked_dimensions)
+					{
+						char tmp_string[50];
+						linked_dimensions++;
+						/* for first linked simplex dimension write (N1[;N2]) where N1 is
+							 first linked dimension, N2 is the second - for tetrahedra */
+						append_string(&description, "(", &error);
+						next_xi_number = xi_number;
+						while (next_xi_number < element_shape->dimension)
+						{
+							if (get_FE_element_shape_next_linked_xi_number(element_shape,
+								next_xi_number, &next_xi_number, &number_of_polygon_vertices))
+							{
+								if (0 < next_xi_number)
+								{
+									linked_dimensions++;
+									if (2 < linked_dimensions)
+									{
+										append_string(&description, ";", &error);
+									}
+									sprintf(tmp_string, "%d", next_xi_number + 1);
+									append_string(&description, tmp_string, &error);
+								}
+								else
+								{
+									next_xi_number = element_shape->dimension;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+									"Could not get next linked xi number for simplex");
+								DEALLOCATE(description);
+								return 0;
+							}
+						}
+						append_string(&description, ")", &error);
+						if (1 == linked_dimensions)
+						{
+							display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+								"Too few linked dimensions in simplex");
+							DEALLOCATE(description);
+							return 0;
+						}
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"write_FE_element_shape.  Unknown shape type");
+					DEALLOCATE(description);
+					return 0;
+				} break;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_FE_element_shape.  Could not get shape type");
+			DEALLOCATE(description);
+			return 0;
+		}
+	}
+	return description;
+}
+
 struct FE_element_shape *FE_element_shape_create_unspecified(
 	struct FE_region *fe_region, int dimension)
 {
@@ -29113,6 +29247,12 @@ int list_FE_element(struct FE_element *element)
 		if (element->shape)
 		{
 			display_message(INFORMATION_MESSAGE,"  dimension=%d\n",element->shape->dimension);
+			char *shape_description = FE_element_shape_get_EX_description(element->shape);
+			if (shape_description)
+			{
+				display_message(INFORMATION_MESSAGE, "  shape=%s\n", shape_description);
+				DEALLOCATE(shape_description);
+			}
 			/* write the faces */
 			if ((face=element->faces)&&
 				(0<(i=element->shape->number_of_faces)))

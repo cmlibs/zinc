@@ -1905,6 +1905,15 @@ enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
 	struct FE_element_shape *element_shape);
 
 /***************************************************************************//**
+ * Returns an allocated string with the EX file description of the shape, e.g.
+ * - line*line*line
+ * - simplex(3)*line*simplex
+ * - simplex(2;3)*simplex*simplex
+ * - polygon(5;2)*polygon*line
+ */
+char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape);
+
+/***************************************************************************//**
  * Creates an unspecified element shape of the supplied dimension.
  *
  * @return  Accessed shape object or NULL on error.
