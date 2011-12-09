@@ -2619,7 +2619,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 
 void EnterGlyphOffset(wxCommandEvent &event)
 {
-	char temp_string[50];
+	char temp_string[100];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	static int number_of_components=3;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
@@ -2665,7 +2665,6 @@ void EnterGlyphOffset(wxCommandEvent &event)
 						glyph_offset[0],glyph_offset[1],glyph_offset[2]);
 					offsettextctrl->ChangeValue(temp_string);
 				}
-				DEALLOCATE(text_entry);
 			}
 			else
 			{
@@ -2678,7 +2677,7 @@ void EnterGlyphOffset(wxCommandEvent &event)
 
 void EnterGlyphSize(wxCommandEvent &event)
 {
-	char temp_string[50];
+	char temp_string[100];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
@@ -2722,7 +2721,6 @@ void EnterGlyphSize(wxCommandEvent &event)
 					baseglyphsizetextctrl->ChangeValue(temp_string);
 					destroy_Parse_state(&temp_state);
 				}
-				DEALLOCATE(text_entry);
 			}
 			else
 			{
@@ -2735,7 +2733,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 
 	void   EnterGlyphScale(wxCommandEvent &event)
 	{
-	char temp_string[50];
+	char temp_string[100];
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
@@ -2798,9 +2796,9 @@ void EnterGlyphSize(wxCommandEvent &event)
 					display_message(ERROR_MESSAGE,
 						"settings_editor_glyph_scale_factors_text_CB.  Missing text");
 				}
-				DEALLOCATE(text_entry);
 			}
-		}	}
+		}
+	}
 
 	/*Overlay disabled
    void OverlayChecked(wxCommandEvent &event)
@@ -2839,7 +2837,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 
 void EnterElementDiscretization(wxCommandEvent &event)
 {
-	char temp_string[50];
+	char temp_string[100];
 	struct Element_discretization discretization;
 	struct Parse_state *temp_state;
 
@@ -2875,7 +2873,6 @@ void EnterElementDiscretization(wxCommandEvent &event)
 					"settings_editor_discretization_text_CB.  "
 					"Could not create parse state");
 			}
-			DEALLOCATE(text_entry);
 		}
 		else
 		{
@@ -2895,7 +2892,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 
 void EnterCircleDiscretization(wxCommandEvent &event)
 {
-	char temp_string[10];
+	char temp_string[50];
 	int circle_discretization;
 
 	USE_PARAMETER(event);
@@ -2948,7 +2945,7 @@ void SeedElementChecked(wxCommandEvent &event)
 
 void EnterSeedXi(wxCommandEvent &event)
 {
-	char temp_string[50];
+	char temp_string[100];
 	static int number_of_components=3;
 	struct Parse_state *temp_state;
 	Triple seed_xi;
@@ -2978,7 +2975,6 @@ void EnterSeedXi(wxCommandEvent &event)
 				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 				destroy_Parse_state(&temp_state);
 			}
-			DEALLOCATE(text_entry);
 		}
 		else
 		{
