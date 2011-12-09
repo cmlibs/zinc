@@ -4697,9 +4697,10 @@ int set_reversed_float_vector(struct Parse_state *state,void *values_address_voi
 		{
 			for (comp_no=0;(comp_no<number_of_components);comp_no++)
 			{
-				if ((fabs(values_address[comp_no] - 0.0)) > 0.0000001)
+				// want to avoid values of -0.0
+				if (values_address[comp_no] != 0.0f)
 				{
-					values_address[comp_no]= (-1.0) * values_address[comp_no];
+					values_address[comp_no] = -values_address[comp_no];
 				}
 			}
 		}
@@ -4707,7 +4708,7 @@ int set_reversed_float_vector(struct Parse_state *state,void *values_address_voi
 	}
 
 	return (return_code);
-} /* set_float_vector */
+}
 
 int set_FE_value(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)

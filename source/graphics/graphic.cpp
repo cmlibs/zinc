@@ -2466,19 +2466,19 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 				sprintf(temp_string," size \"%g*%g*%g\"",graphic->glyph_size[0],
 					graphic->glyph_size[1],graphic->glyph_size[2]);
 				append_string(&graphic_string,temp_string,&error);
-				Triple offset;
+				// legacy command uses negative offset as glyph centre
+				Triple glyph_centre;
 				for (int comp_no=0;(comp_no<3);comp_no++)
 				{
-					if ((fabs(graphic->glyph_offset[comp_no] - 0.0)) > 0.0000001)
+					glyph_centre[comp_no] = graphic->glyph_offset[comp_no];
+					// want to avoid values of -0.0
+					if (glyph_centre[comp_no] != 0.0f)
 					{
-						offset[comp_no] = (-1.0) * graphic->glyph_offset[comp_no];
-					}
-					else
-					{
-						offset[comp_no] = graphic->glyph_offset[comp_no];
+						glyph_centre[comp_no] = -glyph_centre[comp_no];
 					}
 				}
-				sprintf(temp_string," centre %g,%g,%g", offset[0], offset[1], offset[2]);
+				sprintf(temp_string," centre %g,%g,%g",
+					glyph_centre[0], glyph_centre[1], glyph_centre[2]);
 
 				append_string(&graphic_string,temp_string,&error);
 				if (graphic->font)
@@ -6528,7 +6528,7 @@ int gfx_modify_rendition_point(struct Parse_state *state,
 						(void *)1,set_name);
 					/* centre */
 					Option_table_add_entry(option_table,"centre",glyph_offset,
-						&(number_of_components),set_float_vector);
+						&(number_of_components),set_reversed_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						rendition_command_data->computed_field_manager;
