@@ -4016,6 +4016,7 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 			if (return_code)
 			{
 				texture->combine_mode = combine_mode;
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			}
 		}
 	}
@@ -4117,7 +4118,8 @@ Sets how the texture is compressed.
 	{
 		if (compression_mode != texture->compression_mode)
 		{
-			texture->compression_mode = compression_mode;	
+			texture->compression_mode = compression_mode;
+			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 		}
 		return_code=1;
 	}
@@ -4186,6 +4188,7 @@ Sets the texture filter: linear or nearest.
 			if (filter_mode != texture->filter_mode)
 			{
 				texture->filter_mode = filter_mode;
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			}
 			return_code=1;
 		}

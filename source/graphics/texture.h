@@ -121,11 +121,11 @@ DESCRIPTION :
 What happens to when the screen and texture are at different resolutions.
 ==============================================================================*/
 {
-	TEXTURE_LINEAR_FILTER = 0,
-	TEXTURE_NEAREST_FILTER = 1,
-	TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER = 2,
+	TEXTURE_NEAREST_FILTER = 0,
+	TEXTURE_LINEAR_FILTER = 1,
+	TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER = 2,
 	TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER = 3,
-	TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER = 4
+	TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER = 4
 }; /* enum Texture_filter_mode */
 
 enum Texture_resize_filter_mode
