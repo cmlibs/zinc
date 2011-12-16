@@ -129,6 +129,7 @@ Structure for maintaining a graphical rendition of region.
 	std::list<struct Scene *> *list_of_scene;
 	/* level of cache in effect */
 	int cache;
+	int changed; /**< true if rendition has changed and haven't updated clients */
 	int fast_changing;
 	/* for accessing objects */
 	int access_count;
@@ -166,11 +167,70 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_rendition_scene_region_change, void
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_rendition_scene_region_change, \
 	struct Cmiss_rendition *, struct Cmiss_scene *)
 
+/***************************************************************************//**
+ * Informs registered clients of change in the rendition.
+ */
+static int Cmiss_rendition_inform_clients(
+	struct Cmiss_rendition *rendition)
+{
+	int return_code = 1;
+	if (rendition)
+	{
+		if (rendition->list_of_scene &&
+			!rendition->list_of_scene->empty())
+		{
+			std::list<struct Scene *>::iterator pos =
+				rendition->list_of_scene->begin();
+			while (pos != rendition->list_of_scene->end())
+			{
+				Scene_rendition_changed(*pos, rendition);
+				++pos;
+			}
+		}
+		Cmiss_rendition_callback_data *callback_data = rendition->update_callback_list;
+		while (callback_data)
+		{
+			(callback_data->callback)(rendition,
+					callback_data->callback_user_data);
+				callback_data = callback_data->next;
+		}
+		rendition->changed = 0;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Internal function marking the rendition as changed and informing clients
+ * if not caching changes.
+ */
+static int Cmiss_rendition_changed(struct Cmiss_rendition *rendition)
+{
+	int return_code = 1;
+	if (rendition)
+	{
+		rendition->changed = 1;
+		if (0 == rendition->cache)
+		{
+			Cmiss_rendition_inform_clients(rendition);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition)
 {
 	if (rendition)
 	{
-		Cmiss_rendition_begin_cache(rendition);
+		/* increment cache to allow nesting */
+		(rendition->cache)++;
 		return 1;
 	}
 	else
@@ -179,99 +239,27 @@ int Cmiss_rendition_begin_change(Cmiss_rendition_id rendition)
 	}
 }
 
-/***************************************************************************//**
- * If changes have been made to <rendition>, as indicated by its build flag
- * being set, sends a callback to all registered clients.
- */
-static int Cmiss_rendition_inform_clients(
-	struct Cmiss_rendition *rendition)
+int Cmiss_rendition_end_change(Cmiss_rendition_id rendition)
 {
-	int return_code;
-	struct Cmiss_rendition_callback_data *callback_data;
-
-	ENTER(Cmiss_rendition_inform_clients);
 	if (rendition)
 	{
-		callback_data = rendition->update_callback_list;
-		while(callback_data)
-		{
-			(callback_data->callback)(rendition,
-					callback_data->callback_user_data);
-				callback_data = callback_data->next;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_inform_clients.  Invalid Cmiss_rendition");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_inform_clients */
-
-static int Cmiss_rendition_changed_external(struct Cmiss_rendition *rendition)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_changed_external);
-	if (rendition)
-	{
-		if (rendition->list_of_scene &&
-			!rendition->list_of_scene->empty())
-		{
-			std::list<struct Scene *>::iterator pos = 
-				rendition->list_of_scene->begin();
-			while (pos != rendition->list_of_scene->end())
-			{
-				Scene_rendition_changed(*pos, rendition);
-				++pos;
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_changed_external.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_changed_external */
-
-/***************************************************************************//**
- * External modules that change a Cmiss_rendition should call this routine so that
- * objects interested in this Cmiss_rendition will be notified that is has
- * changed.
- */
-static int Cmiss_rendition_changed(struct Cmiss_rendition *rendition)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_changed);
-	if (rendition)
-	{
-		/* inform clients only if caching is off */
+		/* decrement cache to allow nesting */
+		(rendition->cache)--;
+		/* once cache has run out, inform clients of any changes */
 		if (0 == rendition->cache)
 		{
-			Cmiss_rendition_inform_clients(rendition);
+			if (rendition->changed)
+			{
+				Cmiss_rendition_inform_clients(rendition);
+			}
 		}
-		return_code = 1;
+		return 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_changed. Invalid Cmiss_rendition");
-		return_code = 0;
+		return 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_changed */
+}
 
 int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *child_rendition,
 	void *region_void)
@@ -339,7 +327,7 @@ static int Cmiss_rendition_update_default_coordinate(
 	int return_code = 0;
 	struct Computed_field *computed_field;
 
-	ENTER(Cmiss_rendition_changed);
+	ENTER(Cmiss_rendition_update_default_coordinate);
 	if (rendition)
 	{
 		return_code = 1;
@@ -370,13 +358,13 @@ static int Cmiss_rendition_update_default_coordinate(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_changed. Invalid Cmiss_rendition");
+			"Cmiss_rendition_update_default_coordinate. Invalid Cmiss_rendition");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_rendition_changed */
+}
 
 static void Cmiss_rendition_element_points_ranges_selection_change(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
@@ -406,10 +394,11 @@ Callback for change in the global element selection.
 				changes->newly_unselected_element_point_ranges_list))
 		{
 			/* update the graphics to match */
+			Cmiss_rendition_begin_change(rendition);
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-					Cmiss_graphic_selected_element_points_change, (void *)NULL,
+				Cmiss_graphic_selected_element_points_change, (void *)NULL,
 				rendition->list_of_graphics);
-			Cmiss_rendition_changed(rendition);
+			Cmiss_rendition_end_change(rendition);
 		}
 	}
 	else
@@ -468,6 +457,7 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->list_of_scene = NULL;
 				cmiss_rendition->fast_changing = 0;
 				cmiss_rendition->cache = 0;
+				cmiss_rendition->changed = 0;
 				cmiss_rendition->position = 0;
 				cmiss_rendition->transformation_callback_list =
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_rendition_transformation)))();
@@ -598,15 +588,12 @@ static void Cmiss_rendition_FE_region_change(struct FE_region *fe_region,
 		}
 		/*???RC Is there a better way of getting time to here? */
 		data.time = 0;
-		data.graphics_changed = 0;
 		data.fe_region = fe_region;
+		Cmiss_rendition_begin_change(rendition);
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_FE_region_change, (void *)&data,
 			rendition->list_of_graphics);
-		if (data.graphics_changed)
-		{
-			Cmiss_rendition_changed(rendition);
-		}
+		Cmiss_rendition_end_change(rendition);
 	}
 	else
 	{
@@ -651,15 +638,12 @@ static void Cmiss_rendition_data_FE_region_change(struct FE_region *fe_region,
 			data.time = 0;
 		}
 		
-		data.graphics_changed = 0;
 		data.fe_region = fe_region;
+		Cmiss_rendition_begin_change(rendition);
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_data_FE_region_change, (void *)&data,
 			rendition->list_of_graphics);
-		if (data.graphics_changed)
-		{
-			Cmiss_rendition_changed(rendition);
-		}
+		Cmiss_rendition_end_change(rendition);
 	}
 	else
 	{
@@ -734,19 +718,12 @@ static void Cmiss_rendition_Computed_field_change(
 		}
 		if (change_data.changed_field_list || selection_changed)
 		{
-			/*???RC Is there a better way of getting time to here? */
-			change_data.time = 0;
-			change_data.graphics_changed = 0;
-			change_data.default_coordinate_field =
-				rendition->default_coordinate_field;
 			change_data.selection_changed = selection_changed;
+			Cmiss_rendition_begin_change(rendition);
 			FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_Computed_field_change, (void *)&change_data,
 				rendition->list_of_graphics);
-			if (change_data.graphics_changed)
-			{
-				Cmiss_rendition_changed(rendition);
-			}
+			Cmiss_rendition_end_change(rendition);
 			if(change_data.changed_field_list)
 				DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
 		}
@@ -905,7 +882,7 @@ int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 	ENTER(Cmiss_rendition_update_child_rendition);
 	if (rendition)
 	{
-		Cmiss_rendition_begin_cache(rendition);
+		Cmiss_rendition_begin_change(rendition);
 		/* ensure we have a graphical element for each child region */
 		struct Cmiss_region *child_region = Cmiss_region_get_first_child(rendition->region);
 		while (child_region)
@@ -917,7 +894,7 @@ int Cmiss_rendition_update_child_rendition(struct Cmiss_rendition *rendition)
 			}
 			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
-		Cmiss_rendition_end_cache(rendition);
+		Cmiss_rendition_end_change(rendition);
 		return_code = 1;
 	}
 	else
@@ -943,25 +920,22 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 	{
 		if (region_changes->children_changed)
 		{
- 			Cmiss_rendition_begin_cache(rendition);
-
+ 			Cmiss_rendition_begin_change(rendition);
 			if (region_changes->child_added)
 			{
-				Cmiss_rendition_begin_cache(rendition);
 				child_region = region_changes->child_added;
-				Cmiss_rendition_add_child_region(rendition, 
+				Cmiss_rendition_add_child_region(rendition,
 					child_region);
-				Cmiss_rendition_end_cache(rendition);
 			}
 			else if (region_changes->child_removed)
 			{
 			}
 			else
 			{
-					Cmiss_rendition_update_child_rendition(rendition);	
+				Cmiss_rendition_update_child_rendition(rendition);
 			}
-			Cmiss_rendition_end_cache(rendition);
-		}	
+			Cmiss_rendition_end_change(rendition);
+		}
 	}
 	else
 	{
@@ -973,55 +947,6 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_rendition);
 DEFINE_ANY_OBJECT(Cmiss_rendition);
-
-int Cmiss_rendition_begin_cache(struct Cmiss_rendition *rendition)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_begin_cache);
-	if (rendition)
-	{
-		/* increment cache to allow nesting */
-		(rendition->cache)++;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_begin_cache.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_begin_cache */
-
-int Cmiss_rendition_end_cache(struct Cmiss_rendition *rendition)
-{
-	int return_code;
-
-	ENTER(Cmiss_rendition_end_cache);
-	if (rendition)
-	{
-		/* decrement cache to allow nesting */
-		(rendition->cache)--;
-		/* once cache has run out, inform clients of any changes */
-		if (0 == rendition->cache)
-		{
-			Cmiss_rendition_inform_clients(rendition);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_end_cache.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_rendition_end_cache */
 
 /***************************************************************************//**
  * List/manager iterator function returning true if the tessellation has
@@ -1695,20 +1620,14 @@ int Cmiss_rendition_spectrum_change(struct Cmiss_rendition *rendition,
 int Cmiss_rendition_tessellation_change(struct Cmiss_rendition *rendition,
 	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message)
 {
-	int return_code;
+	int return_code = 1;
 	if (rendition && manager_message)
 	{
-		return_code = 1;
-		Cmiss_graphic_tessellation_change_data tessellation_change_data;
-		tessellation_change_data.manager_message = manager_message;
-		tessellation_change_data.graphics_changed = 0;
+		Cmiss_rendition_begin_change(rendition);
 		return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
-			Cmiss_graphic_tessellation_change, (void *)&tessellation_change_data,
+			Cmiss_graphic_tessellation_change, (void *)manager_message,
 			rendition->list_of_graphics);
-		if (tessellation_change_data.graphics_changed)
-		{
-			Cmiss_rendition_changed(rendition);
-		}
+		Cmiss_rendition_end_change(rendition);
 	}
 	else
 	{
@@ -2191,7 +2110,7 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				Cmiss_rendition_begin_cache(rendition);
+				Cmiss_rendition_begin_change(rendition);
 				if (clear_flag)
  				{
 					/* remove all graphic from group */
@@ -2209,7 +2128,7 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 						default_coordinate_field);
 				}
 				/* regenerate graphics for changed graphic */
-				Cmiss_rendition_end_cache(rendition);
+				Cmiss_rendition_end_change(rendition);
 				return_code=1;
 			}
 			if (default_coordinate_field)
@@ -3117,7 +3036,7 @@ int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 		CMISS_CALLBACK_LIST_CALL(Cmiss_rendition_transformation)(
 			rendition->transformation_callback_list, rendition,
 			rendition->transformation);
-		Cmiss_rendition_changed_external(rendition);
+		Cmiss_rendition_changed(rendition);
 	}
 	else
 	{
@@ -3129,8 +3048,6 @@ int Cmiss_rendition_set_transformation(struct Cmiss_rendition *rendition,
 
 	return (return_code);
 } /* Cmiss_rendition_set_transformation */
-
-
 
 static int Cmiss_rendition_set_time_dependent_transformation(struct Time_object *time_object,
 	double current_time, void *rendition_void)
@@ -3274,10 +3191,11 @@ static int Cmiss_rendition_time_update_callback(struct Time_object *time_object,
 	USE_PARAMETER(current_time);
 	if (time_object && (rendition=(struct Cmiss_rendition *)rendition_void))
 	{
+		Cmiss_rendition_begin_change(rendition);
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_time_change,NULL,
 			rendition->list_of_graphics);
-		Cmiss_rendition_changed(rendition);
+		Cmiss_rendition_end_change(rendition);
 		return_code = 1;
 	}
 	else
@@ -3675,20 +3593,6 @@ int DESTROY(Cmiss_rendition)(
 	return (return_code);
 }
 
-int Cmiss_rendition_end_change(Cmiss_rendition_id rendition)
-{
-	if (rendition)
-	{
-		Cmiss_rendition_changed_external(rendition);
-		Cmiss_rendition_end_cache(rendition);
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 int Cmiss_rendition_add_glyph(struct Cmiss_rendition *rendition, 
 	struct GT_object *glyph, const char *cmiss_graphic_name)
 {
@@ -3756,6 +3660,7 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
 	int return_code = 1;
 	if (selection_group != rendition->selection_group)
 	{
+		Cmiss_rendition_begin_change(rendition);
 		if (selection_group)
 			Cmiss_field_access(Cmiss_field_group_base_cast(selection_group));
 		if (rendition->selection_group)
@@ -3795,7 +3700,8 @@ int Cmiss_rendition_set_selection_group(Cmiss_rendition_id rendition,
 		}
 		FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 			Cmiss_graphic_update_selected, NULL, rendition->list_of_graphics);
-		Cmiss_rendition_changed_external(rendition);
+		Cmiss_rendition_changed(rendition);
+		Cmiss_rendition_end_change(rendition);
 	}
 	return return_code;
 }
@@ -4477,4 +4383,14 @@ int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition)
 	}
 
 	return return_code;
+}
+
+int Cmiss_rendition_graphic_changed_private(struct Cmiss_rendition *rendition,
+	struct Cmiss_graphic *graphic)
+{
+	if (rendition && graphic)
+	{
+		return Cmiss_rendition_changed(rendition);
+	}
+	return 0;
 }

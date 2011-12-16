@@ -200,7 +200,7 @@ finite element group rendition.
 	enum Cmiss_graphics_coordinate_system coordinate_system;
 // 	/* for accessing objects */
 	int access_count;
-}; /* struct GT_element_settings */
+};
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_graphic);
 
@@ -212,6 +212,67 @@ struct Cmiss_graphic_select_graphics_data
 	struct FE_region *fe_region;
 	struct Cmiss_graphic *graphic;
 };
+
+enum Cmiss_graphic_change
+{
+	CMISS_GRAPHIC_CHANGE_NONE = 0,
+	CMISS_GRAPHIC_CHANGE_REDRAW = 1,          /**< minor change requiring redraw, e.g. visibility flag toggled */
+	CMISS_GRAPHIC_CHANGE_RECOMPILE = 2,       /**< graphics display list may need to be recompiled */
+	CMISS_GRAPHIC_CHANGE_SELECTION = 3,       /**< change to selected objects */
+	CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD = 4, /**< partial rebuild of graphics object */
+	CMISS_GRAPHIC_CHANGE_FULL_REBUILD = 5,    /**< graphics object needs full rebuild */
+};
+
+/***************************************************************************//**
+ * Call whenever attributes of the graphic have changed to ensure the graphics
+ * object is invalidated (if needed) or that the minimum rebuild and redraw is
+ * performed.
+ */
+static int Cmiss_graphic_changed(struct Cmiss_graphic *graphic,
+	enum Cmiss_graphic_change change)
+{
+	int return_code = 1;
+	if (graphic)
+	{
+		switch (change)
+		{
+		case CMISS_GRAPHIC_CHANGE_REDRAW:
+			break;
+		case CMISS_GRAPHIC_CHANGE_RECOMPILE:
+		case CMISS_GRAPHIC_CHANGE_SELECTION:
+			graphic->selected_graphics_changed = 1;
+			break;
+		case CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD:
+			// partial removal of graphics should have been done by caller
+			graphic->graphics_changed = 1;
+			break;
+		case CMISS_GRAPHIC_CHANGE_FULL_REBUILD:
+			graphic->graphics_changed = 1;
+			if (graphic->graphics_object)
+			{
+				// Following cannot handle change of GT_object type for isosurface, streamline
+				//GT_object_remove_primitives_at_time(
+				//	graphic->graphics_object, /*time*/0.0,
+				//	(GT_object_primitive_object_name_conditional_function *)NULL,
+				//	(void *)NULL);
+				DEACCESS(GT_object)(&(graphic->graphics_object));
+			}
+			break;
+		default:
+			return_code = 0;
+			break;
+		}
+		if (return_code)
+		{
+			Cmiss_rendition_graphic_changed_private(graphic->rendition, graphic);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return return_code;
+}
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_graphic_type)
 {
@@ -349,7 +410,7 @@ struct Cmiss_graphic *CREATE(Cmiss_graphic)(
 LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
-Allocates memory and assigns fields for a struct GT_element_settings.
+Allocates memory for a Cmiss_graphic and initialises its members.
 ==============================================================================*/
 {
 	struct Cmiss_graphic *graphic;
@@ -1683,16 +1744,20 @@ int Cmiss_graphic_set_coordinate_system(
 	ENTER(Cmiss_graphic_set_coordinate_system);
 	if (graphic)
 	{
-		graphic->coordinate_system=coordinate_system;
-		if (Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system))
+		if (coordinate_system != graphic->coordinate_system)
 		{
-			graphic->overlay_flag = 1;
-			graphic->overlay_order = 1;
-		}
-		else
-		{
-			graphic->overlay_flag = 0;
-			graphic->overlay_order = 0;
+			graphic->coordinate_system=coordinate_system;
+			if (Cmiss_graphics_coordinate_system_is_window_relative(coordinate_system))
+			{
+				graphic->overlay_flag = 1;
+				graphic->overlay_order = 1;
+			}
+			else
+			{
+				graphic->overlay_flag = 0;
+				graphic->overlay_order = 0;
+			}
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_REDRAW);
 		}
 	}
 	else
@@ -1788,7 +1853,7 @@ int Cmiss_graphic_set_visibility_flag(struct Cmiss_graphic *graphic,
 		if (graphic->visibility_flag != bool_visibility_flag)
 		{
 			graphic->visibility_flag = bool_visibility_flag;
-			// GRC: change message needed here
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_REDRAW);
 		}
 	}
 	else
@@ -1919,14 +1984,17 @@ struct Computed_field *Cmiss_graphic_get_coordinate_field(
 int Cmiss_graphic_set_coordinate_field(
 	struct Cmiss_graphic *graphic,struct Computed_field *coordinate_field)
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Cmiss_graphic_set_coordinate_field);
 	if (graphic&&((!coordinate_field)||
 		(3>=Computed_field_get_number_of_components(coordinate_field))))
 	{
-		REACCESS(Computed_field)(&(graphic->coordinate_field),coordinate_field);
-		return_code=1;
+		if (coordinate_field != graphic->coordinate_field)
+		{
+			REACCESS(Computed_field)(&(graphic->coordinate_field),coordinate_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
 	}
 	else
 	{
@@ -2004,12 +2072,29 @@ int Cmiss_graphic_update_selected(struct Cmiss_graphic *graphic, void *dummy_voi
 	USE_PARAMETER(dummy_void);
 	if (graphic)
 	{
-		graphic->selected_graphics_changed = 1;
+  		switch (graphic->select_mode)
+  		{
+		case GRAPHICS_SELECT_ON:
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_SELECTION);
+			break;
+		case GRAPHICS_NO_SELECT:
+			/* nothing to do as no names put out with graphic */
+			break;
+		case GRAPHICS_DRAW_SELECTED:
+		case GRAPHICS_DRAW_UNSELECTED:
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_graphic_update_selected.  Unknown select_mode");
+			break;
+  		}
 		return 1;
 	}
 	return 0;
 }
 
+/** replace materials and spectrums in existing graphics object */
 int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 {
 	int return_code = 0;
@@ -2028,8 +2113,6 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 			set_GT_object_Spectrum(graphic->graphics_object,
 				(void *)graphic->spectrum);
 		}
-		graphic->graphics_changed = 1;
-		graphic->selected_graphics_changed = 1;
 		return_code = 1;
 	}
 	LEAVE;
@@ -2040,14 +2123,17 @@ int Cmiss_graphic_update_non_trivial_GT_objects(struct Cmiss_graphic *graphic)
 int Cmiss_graphic_set_material(struct Cmiss_graphic *graphic,
 	struct Graphical_material *material)
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Cmiss_graphic_set_material);
 	if (graphic&&material)
 	{
-		return_code=1;
-		REACCESS(Graphical_material)(&(graphic->material),material);
-		Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+		if (material != graphic->material)
+		{
+			REACCESS(Graphical_material)(&(graphic->material),material);
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
 	}
 	else
 	{
@@ -2093,14 +2179,18 @@ int Cmiss_graphic_set_selected_material(
 	struct Cmiss_graphic *graphic,
 	struct Graphical_material *selected_material)
 {
-	int return_code;
+	int return_code = 1;
 
 	ENTER(Cmiss_graphic_set_selected_material);
 	if (graphic&&selected_material)
 	{
-		return_code=1;
-		REACCESS(Graphical_material)(&(graphic->selected_material),
-			selected_material);
+		if (selected_material != graphic->selected_material)
+		{
+			REACCESS(Graphical_material)(&(graphic->selected_material),
+				selected_material);
+			Cmiss_graphic_update_non_trivial_GT_objects(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_RECOMPILE);
+		}
 	}
 	else
 	{
@@ -3984,47 +4074,12 @@ int Cmiss_graphic_execute_visible_graphic(
 	return (return_code);
 } /* Cmiss_graphic_execute_visible_graphic */
 
-/***************************************************************************//**
- * Clears the graphics stored in the graphic and marks them for rebuild.
- */
-static int Cmiss_graphic_clear_graphics(
-	struct Cmiss_graphic *graphic)
-{
-	int return_code;
-
-	ENTER(Cmiss_graphic_clear_graphics);
-	if (graphic)
-	{
-		if (graphic->graphics_object)
-		{
-			GT_object_remove_primitives_at_time(
-				graphic->graphics_object, /*time*/0.0,
-				(GT_object_primitive_object_name_conditional_function *)NULL,
-				(void *)NULL);
-		}
-		graphic->graphics_changed = 1;
-		graphic->selected_graphics_changed = 1;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_clear_graphics.  Missing graphic");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_clear_graphics */
-
 static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 	struct Cmiss_graphic *graphic,
-	struct Computed_field *default_coordinate_field,
 	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
 	void *user_data)
 {
 	int return_code;
-	struct Computed_field *coordinate_field;
 
 	ENTER(Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition);
 	if (graphic && conditional_function)
@@ -4032,18 +4087,9 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		return_code = 0;
 		/* compare geometry graphic */
 		/* for all graphic types */
-		/* graphic can get default coordinate field from gt_element_group */
-		if (graphic->coordinate_field)
-		{
-			coordinate_field = graphic->coordinate_field;
-		}
-		else
-		{
-			coordinate_field = default_coordinate_field;
-		}
-		if (coordinate_field &&
+		if (graphic->coordinate_field &&
 			Computed_field_or_ancestor_satisfies_condition(
-				coordinate_field, conditional_function, user_data))
+				graphic->coordinate_field, conditional_function, user_data))
 		{
 			return_code = 1;
 		}
@@ -4163,8 +4209,7 @@ static int Cmiss_graphic_uses_changed_FE_field(
 		{
 			return_code =
 				Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
-					graphic, graphic->coordinate_field,
-					Computed_field_contains_changed_FE_field,
+					graphic, Computed_field_contains_changed_FE_field,
 					(void *)fe_field_change_log);
 		}
 		else
@@ -4186,53 +4231,23 @@ static int Cmiss_graphic_uses_changed_FE_field(
 int Cmiss_graphic_Computed_field_change(
 	struct Cmiss_graphic *graphic, void *change_data_void)
 {
-	int return_code;
+	int return_code = 1;
 	struct Cmiss_graphic_Computed_field_change_data *change_data;
 
 	ENTER(Cmiss_graphic_Computed_field_change);
 	if (graphic && (change_data =
 		(struct Cmiss_graphic_Computed_field_change_data *)change_data_void))
 	{
-		return_code = 1;
 		if (change_data->changed_field_list && Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
-			graphic, change_data->default_coordinate_field,
-			Computed_field_is_in_list, (void *)change_data->changed_field_list))
+			graphic, Computed_field_is_in_list, (void *)change_data->changed_field_list))
 		{
-			Cmiss_graphic_clear_graphics(graphic);
-			change_data->graphics_changed = 1;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
-		if(change_data->selection_changed)
-		{
-	  	if (graphic->graphics_object&&
-	  			((CMISS_GRAPHIC_POINT!=graphic->graphic_type) &&
-	  			(CMISS_GRAPHIC_STREAMLINES!=graphic->graphic_type)))
+		if (change_data->selection_changed && graphic->graphics_object &&
+	  		(CMISS_GRAPHIC_POINT != graphic->graphic_type) &&
+	  		(CMISS_GRAPHIC_STREAMLINES != graphic->graphic_type))
 	  	{
-	  		switch (graphic->select_mode)
-	  		{
-					case GRAPHICS_SELECT_ON:
-					{
-						/* for efficiency, just request update of selected graphics */
-						graphic->selected_graphics_changed = 1;
-						change_data->graphics_changed = 1;
-					} break;
-					case GRAPHICS_NO_SELECT:
-					{
-						/* nothing to do as no names put out with graphic */
-					} break;
-					case GRAPHICS_DRAW_SELECTED:
-					case GRAPHICS_DRAW_UNSELECTED:
-					{
-						/* need to rebuild graphics_object from scratch */
-						Cmiss_graphic_clear_graphics(graphic);
-						change_data->graphics_changed = 1;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-								"Cmiss_graphic_selected_nodes_change.  Unknown select_mode");
-					} break;
-	  		}
-	  	}
+			Cmiss_graphic_update_selected(graphic, (void *)NULL);
 		}
 	}
 	else
@@ -4246,7 +4261,6 @@ int Cmiss_graphic_Computed_field_change(
 	return (return_code);
 } /* Cmiss_graphic_Computed_field_change */
 
-// GRC pass scene and filter list
 int Cmiss_graphic_get_visible_graphics_object_range(
 	struct Cmiss_graphic *graphic,void *graphic_range_void)
 {
@@ -4518,17 +4532,10 @@ int Cmiss_graphic_set_render_type(
 	if (graphic)
 	{
 		return_code = 1;
-		if ((int)(graphic->render_type) != (int)render_type)
+		if (graphic->render_type != render_type)
 		{
 			graphic->render_type = render_type;
-
-
-			/* This will only affect the external API as it is modifying 
-				 the original graphic with a graphics object. */
-			if (graphic->graphics_object)
-			{
-				DEACCESS(GT_object)(&(graphic->graphics_object));
-			}
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 	}
 	else
@@ -5258,13 +5265,7 @@ int Cmiss_graphic_FE_region_change(
 									(0 < data->number_of_fe_node_changes)))))
 					{
 						/* currently node points are always rebuilt from scratch */
-						GT_object_remove_primitives_at_time(graphic->graphics_object,
-							data->time,
-							(GT_object_primitive_object_name_conditional_function *)NULL,
-								(void *)NULL);
-						graphic->graphics_changed = 1;
-						graphic->selected_graphics_changed = 1;
-						data->graphics_changed = 1;
+						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 					}
 				} break;
 				default:
@@ -5307,19 +5308,14 @@ int Cmiss_graphic_FE_region_change(
 							GT_object_remove_primitives_at_time(graphic->graphics_object,
 								data->time, FE_element_as_graphics_name_is_removed_or_modified,
 								data_void);
+							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_PARTIAL_REBUILD);
 						}
 						else
 						{
 							/* full rebuild for changed identifiers, FE_field definition
 								 changes or many node/element field changes */
-							GT_object_remove_primitives_at_time(graphic->graphics_object,
-								data->time,
-								(GT_object_primitive_object_name_conditional_function *)NULL,
-								(void *)NULL);
+							Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 						}
-						graphic->graphics_changed = 1;
-						graphic->selected_graphics_changed = 1;
-						data->graphics_changed = 1;
 					}
 				} break;
 			}
@@ -5327,7 +5323,7 @@ int Cmiss_graphic_FE_region_change(
 		else
 		{
 			/* Graphics have definitely changed as they have not been built yet */
-			data->graphics_changed = 1;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_REDRAW);
 		}
 		return_code = 1;
 	}
@@ -5370,14 +5366,7 @@ int Cmiss_graphic_data_FE_region_change(
 						Cmiss_graphic_uses_changed_FE_field(graphic,
 							data->fe_field_changes))
 					{
-						/* currently node points are always rebuilt from scratch */
-						GT_object_remove_primitives_at_time(graphic->graphics_object,
-							data->time,
-							(GT_object_primitive_object_name_conditional_function *)NULL,
-							(void *)NULL);
-						graphic->graphics_changed = 1;
-						graphic->selected_graphics_changed = 1;
-						data->graphics_changed = 1;
+						Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 					}
 				} break;
 				default:
@@ -5389,7 +5378,7 @@ int Cmiss_graphic_data_FE_region_change(
 		else
 		{
 			/* Graphics have definitely changed as they have not been built yet */
-			data->graphics_changed = 1;
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_REDRAW);
 		}
 		return_code = 1;
 	}
@@ -8405,8 +8394,7 @@ int Cmiss_graphic_extract_graphics_object_from_list(
 // 				graphic->overlay_order = matching_graphic->overlay_order;
 				/* reset graphics_object and flags in matching_graphic */
 				matching_graphic->graphics_object = (struct GT_object *)NULL;
-				matching_graphic->graphics_changed = 1;
-				matching_graphic->selected_graphics_changed = 1;
+				Cmiss_graphic_changed(matching_graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 			}
 		}
 	}
@@ -8594,12 +8582,15 @@ struct Cmiss_tessellation *Cmiss_graphic_get_tessellation(
 int Cmiss_graphic_set_tessellation(
 	Cmiss_graphic_id graphic, struct Cmiss_tessellation *tessellation)
 {
-	int return_code;
+	int return_code = 1;
 	if (graphic && Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
 		CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
 	{
-		return_code=1;
-		REACCESS(Cmiss_tessellation)(&(graphic->tessellation), tessellation);
+		if (tessellation != graphic->tessellation)
+		{
+			REACCESS(Cmiss_tessellation)(&(graphic->tessellation), tessellation);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
 	}
 	else
 	{
@@ -8975,21 +8966,24 @@ struct Computed_field *Cmiss_graphic_get_texture_coordinate_field(
 int Cmiss_graphic_set_texture_coordinate_field(
    struct Cmiss_graphic *graphic, struct Computed_field *texture_coordinate_field)
 {
-  int return_code;
+	int return_code = 1;
 
-  ENTER(Cmiss_graphic_set_texture_coordinate_field);
-  if (graphic)
-  {
-    return_code = 1;
-    REACCESS(Computed_field)(&graphic->texture_coordinate_field, texture_coordinate_field);
-  }
-  else
-  {
-    return_code = 0;
-    display_message(ERROR_MESSAGE,
-      "Cmiss_graphic_set_texture_coordinate_field.  Invalid argument(s)");
-  }
-  LEAVE;
+	ENTER(Cmiss_graphic_set_texture_coordinate_field);
+	if (graphic)
+	{
+		if (texture_coordinate_field != graphic->texture_coordinate_field)
+		{
+			REACCESS(Computed_field)(&graphic->texture_coordinate_field, texture_coordinate_field);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
+		}
+	}
+	else
+	{
+		return_code = 0;
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphic_set_texture_coordinate_field.  Invalid argument(s)");
+	}
+	LEAVE;
 
 	return (return_code);
 } /* Cmiss_graphic_set_texture_coordinate_field */
@@ -9076,7 +9070,7 @@ int Cmiss_graphic_time_change(
 		}
 		if (graphic->time_dependent)
 		{
-			Cmiss_graphic_clear_graphics(graphic);
+			Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		}
 	}
 	else
@@ -9302,24 +9296,22 @@ int Cmiss_graphic_spectrum_change(
 }
 
 int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
-	void *tessellation_change_data_void)
+	void *tessellation_manager_message_void)
 {
 	int return_code;
-	Cmiss_graphic_tessellation_change_data *tessellation_change_data =
-		(Cmiss_graphic_tessellation_change_data *)tessellation_change_data_void;
-	if (graphic && tessellation_change_data)
+	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message =
+		(struct MANAGER_MESSAGE(Cmiss_tessellation) *)tessellation_manager_message_void;
+	if (graphic && manager_message)
 	{
 		return_code = 1;
 		if (graphic->tessellation)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_tessellation)(
-				tessellation_change_data->manager_message, graphic->tessellation);
+				manager_message, graphic->tessellation);
 			// GRC: following could be smarter, e.g. by checking if actual discretization is changing
 			if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_tessellation))
 			{
-				/* need to rebuild graphics_object from scratch */
-				Cmiss_graphic_clear_graphics(graphic);
-				tessellation_change_data->graphics_changed = 1;
+				Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 			}
 		}
 	}
@@ -9467,30 +9459,7 @@ Must call Cmiss_graphic_to_graphics_object afterwards to complete.
 		if (graphic->graphics_object&&
 			(CMISS_GRAPHIC_ELEMENT_POINTS==graphic->graphic_type))
 		{
-			switch (graphic->select_mode)
-			{
-				case GRAPHICS_SELECT_ON:
-				{
-					/* for efficiency, just request update of selected graphics */
-					Cmiss_graphic_clear_graphics(graphic);
-				} break;
-				case GRAPHICS_NO_SELECT:
-				{
-					/* nothing to do as no names put out with graphic */
-				} break;
-				case GRAPHICS_DRAW_SELECTED:
-				case GRAPHICS_DRAW_UNSELECTED:
-				{
-					/* need to rebuild graphics_object from scratch */
-					Cmiss_graphic_clear_graphics(graphic);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_graphic_selected_element_points_change.  "
-						"Unknown select_mode");
-				} break;
-			}
+			Cmiss_graphic_update_selected(graphic, (void *)NULL);
 		}
 	}
 	else
@@ -9666,48 +9635,49 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		modify_rendition_data.modify_this_graphic = 1;
 		struct Rendition_command_data rendition_command_data;
 		Cmiss_rendition_fill_rendition_command_data(owning_rendition, &rendition_command_data);
-    switch (graphic->graphic_type)
-    {
-    	case CMISS_GRAPHIC_NODE_POINTS:
-    		return_code = gfx_modify_rendition_node_points(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_DATA_POINTS:
-    		return_code = gfx_modify_rendition_data_points(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_LINES:
-    		return_code = gfx_modify_rendition_lines(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_CYLINDERS:
-    		return_code = gfx_modify_rendition_cylinders(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_SURFACES:
-    		return_code = gfx_modify_rendition_surfaces(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_ISO_SURFACES:
-    		return_code = gfx_modify_rendition_iso_surfaces(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_ELEMENT_POINTS:
-    		return_code = gfx_modify_rendition_element_points(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_STREAMLINES:
-    		return_code = gfx_modify_rendition_streamlines(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	case CMISS_GRAPHIC_POINT:
-    		return_code = gfx_modify_rendition_point(
-    			state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
-    		break;
-    	default:
-        break;
-    }
+		switch (graphic->graphic_type)
+		{
+		case CMISS_GRAPHIC_NODE_POINTS:
+			return_code = gfx_modify_rendition_node_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_DATA_POINTS:
+			return_code = gfx_modify_rendition_data_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_LINES:
+			return_code = gfx_modify_rendition_lines(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_CYLINDERS:
+			return_code = gfx_modify_rendition_cylinders(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_SURFACES:
+			return_code = gfx_modify_rendition_surfaces(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_ISO_SURFACES:
+			return_code = gfx_modify_rendition_iso_surfaces(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_ELEMENT_POINTS:
+			return_code = gfx_modify_rendition_element_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_STREAMLINES:
+			return_code = gfx_modify_rendition_streamlines(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_POINT:
+			return_code = gfx_modify_rendition_point(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		default:
+			break;
+		}
 		destroy_Parse_state(&state);
+		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		if (modify_rendition_data.graphic)
 		{
 			Cmiss_graphic_destroy(&(modify_rendition_data.graphic));

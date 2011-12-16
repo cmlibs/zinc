@@ -198,15 +198,6 @@ struct Rendition_command_data
 
 struct Cmiss_graphic_Computed_field_change_data
 {
-	FE_value time;
-	/* rebuild_graphics flag should start at 0, and is set if any graphics
-		 objects must be rebuilt as a result of this change */
-	int graphics_changed;
-	/* the default coordinate field for the whole GT_element_group for when
-		 not overridden by settings->coordinate_field */
-	struct Computed_field *default_coordinate_field;
-	/* the list of fields that have changed
-		 before passing, enlarge to include all other fields that depend on them */
 	struct LIST(Computed_field) *changed_field_list;
 	int selection_changed;
 };
@@ -882,8 +873,6 @@ struct Cmiss_graphic_FE_region_change_data
 	int number_of_fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value time;
-	/* following set if changes affect any of the graphicsS */
-	int graphics_changed;
 	/* the FE_region the settings apply to */
 	struct FE_region *fe_region;
 	int element_type;
@@ -928,22 +917,14 @@ int Cmiss_graphic_spectrum_change(struct Cmiss_graphic *graphic,
 	void *spectrum_change_data_void);
 
 /***************************************************************************//**
- * Data to pass to Cmiss_graphic_tessellation_change.
- */
-struct Cmiss_graphic_tessellation_change_data
-{
-	struct MANAGER_MESSAGE(Cmiss_tessellation) *manager_message;
-	int graphics_changed;
-};
-
-/***************************************************************************//**
  * Inform graphic of changes in the tessellation manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of rendition.
  *
- * @param tessellation_change_data_void  Cmiss_graphic_tessellation_change_data.
+ * @param tessellation_manager_message_void  Pointer to
+ * struct MANAGER_MESSAGE(Cmiss_tessellation).
  */
 int Cmiss_graphic_tessellation_change(struct Cmiss_graphic *graphic,
-	void *tessellation_change_data_void);
+	void *tessellation_manager_message_void);
 
 int Cmiss_graphic_set_customised_graphics_object(
 	struct Cmiss_graphic *graphic, struct GT_object *graphics_object);

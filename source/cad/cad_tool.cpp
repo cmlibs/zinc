@@ -353,8 +353,10 @@ static void Cad_tool_interactive_event_handler(void *device_id,
 													}
 													if (region_rendition)
 													{
-														Cmiss_rendition_begin_cache(region_rendition);
-														Cmiss_rendition_end_cache(region_rendition);
+														// GRC this old code presumably ensured scenes were updated?
+														// Need to document why
+														// Cmiss_rendition_begin_cache(region_rendition);
+														// Cmiss_rendition_end_cache(region_rendition);
 														Cmiss_rendition_destroy(&region_rendition);
 													}
 													sub_region = pos->first;

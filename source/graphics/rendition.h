@@ -110,19 +110,6 @@ int Cmiss_rendition_get_range(struct Cmiss_rendition *rendition,
 struct Cmiss_rendition *Cmiss_region_get_rendition_internal(struct Cmiss_region *cmiss_region);
 
 /***************************************************************************//**
- * Call before making several changes to the cmiss_rendition so only a single
- * change message is sent. Call Cmiss_rendition_end_cache at the end of the
- * changes.
- */
-int Cmiss_rendition_begin_cache(struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
- * Call after making changes preceded by a call to Cmiss_rendition_begin_cache to
- * enable a final message to be sent to clients.
- */
-int Cmiss_rendition_end_cache(struct Cmiss_rendition *rendition);
-
-/***************************************************************************//**
  * Deaccess the rendition of the region
  * @param region The region to deaccess rendition from
  * @return If successfully deaccess rendition from region returns 1, otherwise 0
@@ -452,5 +439,14 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 
 int Cmiss_region_modify_rendition(struct Cmiss_region *region,
 	struct Cmiss_graphic *graphic, int delete_flag, int position);
+
+
+/***************************************************************************//**
+ * Inform clients of rendition about the change to its graphic.
+ * For internal use only.
+ */
+int Cmiss_rendition_graphic_changed_private(struct Cmiss_rendition *rendition,
+	struct Cmiss_graphic *graphic);
+
 #endif /* !defined (RENDITION_H) */
 
