@@ -599,7 +599,7 @@ int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator **iterator_address)
 
 Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(Cmiss_ensemble_iterator *iterator)
 {
-	Cmiss_ensemble_identifier identifier = 0;
+	Cmiss_ensemble_identifier identifier = -1;
 	if (iterator && (iterator->getEnsemble()))
 	{
 		identifier = iterator->getEnsemble()->getEntryIdentifier(iterator->getRef());

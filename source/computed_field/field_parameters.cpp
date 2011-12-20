@@ -85,9 +85,7 @@ public:
 		{
 			for (int i = 0; i < number_of_ensembles; i++)
 			{
-				// GRC reverse order of ensembles as supplied so external API matches
-				// FieldML Parameter Evaluator. Should update code to match internally.
-				ensembles[in_number_of_ensembles - i - 1] = in_ensembles[i];
+				ensembles[i] = in_ensembles[i];
 				refSize[i] = 0;
 				// default offset = 1 sets up single index ensemble. Multiple index ensembles will call resize
 				offsets[i] = 1;

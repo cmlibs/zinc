@@ -50,9 +50,9 @@
 
 /***************************************************************************//**
  * Create a double-precision real-valued parameter set indexed by N ensembles.
- * Parameters effectively cycle through first ensemble fast to last ensemble
- * index slowest. If one ensemble is expected to grow during processing, best
- * performance is achieved by making it the last ensemble.
+ * Parameters effectively cycle through first ensemble slowest to last ensemble
+ * index fastest. If one ensemble is expected to grow during processing, best
+ * performance is achieved by making it the first ensemble.
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
@@ -105,9 +105,9 @@ typedef struct Cmiss_field_integer_parameters *Cmiss_field_integer_parameters_id
 
 /***************************************************************************//**
  * Create an integer-valued parameter set indexed by N ensembles.
- * Parameters effectively cycle through first ensemble fast to last ensemble
- * index slowest. If one ensemble is expected to grow during processing, best
- * performance is achieved by making it the last ensemble.
+ * Parameters effectively cycle through first ensemble slowest to last ensemble
+ * index fastest. If one ensemble is expected to grow during processing, best
+ * performance is achieved by making it the first ensemble.
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
