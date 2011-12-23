@@ -929,6 +929,8 @@ static void Cmiss_rendition_region_change(struct Cmiss_region *region,
 			}
 			else if (region_changes->child_removed)
 			{
+				/* flag it as changed to trigger callback on scene */
+				Cmiss_rendition_changed(rendition);
 			}
 			else
 			{
