@@ -813,6 +813,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	delete[] keyBuffer;
 	delete[] arraySizes;
 	delete[] arrayOffsets;
+	delete[] arrayRawSizes;
 
 	if (realParameters)
 		Cmiss_field_real_parameters_destroy(&realParameters);
