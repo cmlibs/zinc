@@ -37,7 +37,7 @@
 #if !defined __CMISS_INTERACTIVE_TOOL_H__
 #define __CMISS_INTERACTIVE_TOOL_H__
 
-#include "api/types/cmiss_interactive_tool_id.h"
+#include "types/cmiss_interactive_tool_id.h"
 
 /***************************************************************************//**
  * Execute cmgui command as in standalone cmgui application however this execute

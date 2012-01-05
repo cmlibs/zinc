@@ -41,8 +41,8 @@
 #ifndef __CMISS_FIELD_VECTOR_OPERATORS_H__
 #define __CMISS_FIELD_VECTOR_OPERATORS_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a vector field with (dimension) components whose values are given by

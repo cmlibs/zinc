@@ -45,8 +45,19 @@ The public interface to the Cmiss_fields that perform logical operations.
 #ifndef __CMISS_FIELD_LOGICAL_OPERATORS_H__
 #define __CMISS_FIELD_LOGICAL_OPERATORS_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+
+/***************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one is non-zero, 0 otherwise.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field_one  First input field
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_not_that(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field_one);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of

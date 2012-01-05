@@ -42,11 +42,11 @@
 #ifndef __CMISS_NODE_H__
 #define __CMISS_NODE_H__
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_node_id.h"
-#include "api/types/cmiss_time_sequence_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
+#include "types/cmiss_time_sequence_id.h"
 
 /***************************************************************************//**
  * The type of a nodal parameter value.

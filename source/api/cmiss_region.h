@@ -44,13 +44,13 @@ The public interface to the Cmiss_regions.
 #ifndef __CMISS_REGION_H__
 #define __CMISS_REGION_H__
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_element_id.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_node_id.h"
-#include "api/types/cmiss_stream_id.h"
-#include "api/types/cmiss_region_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_element_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
+#include "types/cmiss_stream_id.h"
+#include "types/cmiss_region_id.h"
 
 /*
 Global functions

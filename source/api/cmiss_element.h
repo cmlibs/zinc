@@ -41,12 +41,12 @@
 #ifndef __CMISS_ELEMENT_H__
 #define __CMISS_ELEMENT_H__
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_differential_operator_id.h"
-#include "api/types/cmiss_element_id.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_node_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_differential_operator_id.h"
+#include "types/cmiss_element_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
 
 /*
 Global types

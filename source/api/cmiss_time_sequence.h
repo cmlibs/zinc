@@ -41,8 +41,8 @@
 #ifndef __CMISS_TIME_SEQUENCE_H__
 #define __CMISS_TIME_SEQUENCE_H__
 
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_time_sequence_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_time_sequence_id.h"
 
 /***************************************************************************//**
  * Finds or creates a Cmiss_time_sequence in the field module which matches the

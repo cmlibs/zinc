@@ -44,9 +44,9 @@ Implements cmiss fields that is controlled by time.
 #if !defined (CMISS_FIELD_TIME_H)
 #define CMISS_FIELD_TIME_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_time_keeper_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_time_keeper_id.h"
 
 /***************************************************************************//**
  * Creates a field whose value equals the source_field evaluated at the time

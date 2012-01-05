@@ -43,7 +43,7 @@
 #if !defined (CMISS_TESSELLATION_H)
 #define CMISS_TESSELLATION_H
 
-#include "api/types/cmiss_tessellation_id.h"
+#include "types/cmiss_tessellation_id.h"
 
 /***************************************************************************//**
  * Labels of tessellation attributes which may be set or obtained using generic

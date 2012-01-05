@@ -44,8 +44,8 @@ The public interface to the Cmiss_fields that perform matrix operations.
 #ifndef __CMISS_FIELD_MATRIX_OPERATORS_H__
 #define __CMISS_FIELD_MATRIX_OPERATORS_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a field returning the scalar real determinant of a square matrix

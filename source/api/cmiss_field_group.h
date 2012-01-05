@@ -45,14 +45,14 @@
 #if !defined (CMISS_FIELD_GROUP_H)
 #define CMISS_FIELD_GROUP_H
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_element_id.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_group_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_node_id.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_field_subobject_group_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_element_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_group_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
+#include "types/cmiss_region_id.h"
+#include "types/cmiss_field_subobject_group_id.h"
 
 /***************************************************************************//**
  * Creates a group field which can contain an arbitrary set of subregions or

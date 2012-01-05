@@ -44,12 +44,12 @@
 #if !defined (CMISS_FIELD_SUBOBJECT_GROUP_H)
 #define CMISS_FIELD_SUBOBJECT_GROUP_H
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_element_id.h"
-#include "api/types/cmiss_node_id.h"
-#include "api/types/cmiss_field_subobject_group_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_element_id.h"
+#include "types/cmiss_node_id.h"
+#include "types/cmiss_field_subobject_group_id.h"
 
 /***************************************************************************//**
  * Creates a node group field which packages a Cmiss_nodeset_group i.e. a subset

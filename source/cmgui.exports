@@ -128,6 +128,7 @@ Cmiss_field_module_define_field
 Cmiss_field_module_create_field
 Cmiss_field_module_create_field_iterator
 Cmiss_field_module_define_all_faces
+Cmiss_field_module_get_region
 
 /* api/cmiss_field_arithmetic_operators.h */
 Cmiss_field_module_create_power

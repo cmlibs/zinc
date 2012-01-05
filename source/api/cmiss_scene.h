@@ -45,9 +45,9 @@
 #ifndef __CMISS_SCENE_H__
 #define __CMISS_SCENE_H__
 
-#include "api/types/cmiss_graphics_filter_id.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_scene_id.h"
+#include "types/cmiss_graphics_filter_id.h"
+#include "types/cmiss_region_id.h"
+#include "types/cmiss_scene_id.h"
 
 /***************************************************************************//**
  * Labels of scene attributes which may be set or obtained using generic

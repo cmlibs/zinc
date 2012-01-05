@@ -42,10 +42,10 @@
 #ifndef __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
 #define __CMISS_FIELD_SCENE_VIEWER_PROJECTION_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_graphics_coordinate_system.h"
-#include "api/types/cmiss_scene_viewer_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_graphics_coordinate_system.h"
+#include "types/cmiss_scene_viewer_id.h"
 
 /***************************************************************************//**
  * Creates a field whose values are the 4x4 transformation matrix mapping

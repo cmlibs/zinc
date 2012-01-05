@@ -44,8 +44,8 @@ Implements cmiss fields which conditionally calculate their inputs.
 #if !defined (CMISS_FIELD_CONDITIONAL_H)
 #define CMISS_FIELD_CONDITIONAL_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /*****************************************************************************//**
  * Creates a conditional field with the same number of components as each of the

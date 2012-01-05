@@ -43,8 +43,8 @@
 #ifndef __CMISS_STREAM_H__
 #define __CMISS_STREAM_H__
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_stream_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_stream_id.h"
 
 /***************************************************************************//**
 * Returns a new reference to the stream_information with reference count

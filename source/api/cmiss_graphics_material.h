@@ -37,8 +37,8 @@
 #ifndef __CMISS_GRAPHICS_MATERIAL_H__
 #define __CMISS_GRAPHICS_MATERIAL_H__
 
-#include "api/types/cmiss_field_image_id.h"
-#include "api/types/cmiss_graphics_material_id.h"
+#include "types/cmiss_field_image_id.h"
+#include "types/cmiss_graphics_material_id.h"
 
 /***************************************************************************//**
  * Labels of material attributes which may be set or obtained using generic

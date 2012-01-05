@@ -44,8 +44,8 @@ rewind and fast forward.
 #ifndef __CMISS_TIME_KEEPER_H__
 #define __CMISS_TIME_KEEPER_H__
 
-#include "api/types/cmiss_time_id.h"
-#include "api/types/cmiss_time_keeper_id.h"
+#include "types/cmiss_time_id.h"
+#include "types/cmiss_time_keeper_id.h"
 
 /***************************************************************************//**
  * An enum type to define which direction the time keeper should go.

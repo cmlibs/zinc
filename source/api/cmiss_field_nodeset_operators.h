@@ -41,8 +41,8 @@
 #if !defined (CMISS_FIELD_NODESET_OPERATORS_H)
 #define CMISS_FIELD_NODESET_OPERATORS_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /*******************************************************************************
  * Creates a field which computes the sum of each source field component over

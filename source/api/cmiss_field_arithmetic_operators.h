@@ -45,7 +45,7 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 #ifndef __CMISS_FIELD_ARITHMETIC_OPERATORS_H__
 #define __CMISS_FIELD_ARITHMETIC_OPERATORS_H__
 
-#include "api/types/cmiss_field_id.h"
+#include "types/cmiss_field_id.h"
 
 /*****************************************************************************//**
  * Creates a field where the which calculates the components of source_field_one

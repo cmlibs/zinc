@@ -43,8 +43,8 @@ The public interface to the Cmiss_fields that perform trigonometry.
 #ifndef __CMISS_FIELD_TRIGONOMETRY_H__
 #define __CMISS_FIELD_TRIGONOMETRY_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /*****************************************************************************//**
  * Creates a field where the components are the sine value (using radians) of the

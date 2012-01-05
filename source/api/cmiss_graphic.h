@@ -45,12 +45,12 @@ The public interface to the Cmiss_rendition.
 #ifndef __CMISS_GRAPHIC_H__
 #define __CMISS_GRAPHIC_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_graphic_id.h"
-#include "api/types/cmiss_graphics_render_type.h"
-#include "api/types/cmiss_graphics_coordinate_system.h"
-#include "api/types/cmiss_graphics_material_id.h"
-#include "api/types/cmiss_tessellation_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_graphic_id.h"
+#include "types/cmiss_graphics_render_type.h"
+#include "types/cmiss_graphics_coordinate_system.h"
+#include "types/cmiss_graphics_material_id.h"
+#include "types/cmiss_tessellation_id.h"
 
 /*******************************************************************************
  * Returns a new reference to the graphic with reference count incremented.

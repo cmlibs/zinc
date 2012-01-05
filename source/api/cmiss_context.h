@@ -42,11 +42,12 @@
 #ifndef __CMISS_CONTEXT_H__
 #define __CMISS_CONTEXT_H__
 
-#include "api/types/cmiss_context_id.h"
-#include "api/cmiss_graphics_module.h"
-#include "api/cmiss_scene_viewer.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/cmiss_time_keeper.h"
+#include "types/cmiss_context_id.h"
+#include "cmiss_graphics_module.h"
+#include "cmiss_scene_viewer.h"
+#include "types/cmiss_region_id.h"
+#include "cmiss_time_keeper.h"
+
 #if defined (WIN32_USER_INTERFACE)
 //#define WINDOWS_LEAN_AND_MEAN
 #if !defined (NOMINMAX)

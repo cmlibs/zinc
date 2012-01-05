@@ -43,9 +43,9 @@
 #if !defined (CMISS_FIELD_ALIAS_H)
 #define CMISS_FIELD_ALIAS_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_alias_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_alias_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a cmiss field which is an alias for another field, possibly from

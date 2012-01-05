@@ -41,7 +41,7 @@ to Cmgui.
 #ifndef __CMISS_TIME_H__
 #define __CMISS_TIME_H__
 
-#include "api/types/cmiss_time_id.h"
+#include "types/cmiss_time_id.h"
 
 /***************************************************************************//**
  * The type used for time notifier callback. It is a pointer to a function which

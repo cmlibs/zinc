@@ -48,9 +48,9 @@
  ------------
  */
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_optimisation_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_optimisation_id.h"
 
 /***************************************************************************//**
  * The optimisation methods available via the Cmiss_optimisation object.

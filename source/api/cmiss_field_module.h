@@ -41,9 +41,9 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_region_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /*******************************************************************************
  * Automatic scalar broadcast

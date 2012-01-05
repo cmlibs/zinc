@@ -59,12 +59,12 @@ scenes.
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_image_id.h"
-#include "api/types/cmiss_graphics_coordinate_system.h"
-#include "api/types/cmiss_interactive_tool_id.h"
-#include "api/types/cmiss_scene_id.h"
-#include "api/types/cmiss_scene_viewer_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_image_id.h"
+#include "types/cmiss_graphics_coordinate_system.h"
+#include "types/cmiss_interactive_tool_id.h"
+#include "types/cmiss_scene_id.h"
+#include "types/cmiss_scene_viewer_id.h"
 
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************

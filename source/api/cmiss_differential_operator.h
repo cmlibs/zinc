@@ -42,7 +42,7 @@
 #ifndef __CMISS_DIFFERENTIAL_OPERATOR_H__
 #define __CMISS_DIFFERENTIAL_OPERATOR_H__
 
-#include "api/types/cmiss_differential_operator_id.h"
+#include "types/cmiss_differential_operator_id.h"
 
 /***************************************************************************//**
  * Returns a new reference to the differential operator with reference count

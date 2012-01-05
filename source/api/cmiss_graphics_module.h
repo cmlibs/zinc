@@ -37,14 +37,14 @@
 #ifndef __CMISS_GRAPHICS_MODULE_H__
 #define __CMISS_GRAPHICS_MODULE_H__
 
-#include "api/types/cmiss_graphics_filter_id.h"
-#include "api/types/cmiss_graphics_material_id.h"
-#include "api/types/cmiss_graphics_module_id.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_rendition_id.h"
-#include "api/types/cmiss_scene_id.h"
-#include "api/types/cmiss_spectrum_id.h"
-#include "api/types/cmiss_tessellation_id.h"
+#include "types/cmiss_graphics_filter_id.h"
+#include "types/cmiss_graphics_material_id.h"
+#include "types/cmiss_graphics_module_id.h"
+#include "types/cmiss_region_id.h"
+#include "types/cmiss_rendition_id.h"
+#include "types/cmiss_scene_id.h"
+#include "types/cmiss_spectrum_id.h"
+#include "types/cmiss_tessellation_id.h"
 
 /***************************************************************************//**
  * Find the material with the supplied name in graphics module, if any.

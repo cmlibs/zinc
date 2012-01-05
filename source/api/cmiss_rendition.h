@@ -44,12 +44,12 @@ The public interface to the Cmiss_rendition.
 #ifndef __CMISS_RENDITION_H__
 #define __CMISS_RENDITION_H__
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_group_id.h"
-#include "api/types/cmiss_graphic_id.h"
-#include "api/types/cmiss_region_id.h"
-#include "api/types/cmiss_rendition_id.h"
-#include "api/types/cmiss_selection_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_group_id.h"
+#include "types/cmiss_graphic_id.h"
+#include "types/cmiss_region_id.h"
+#include "types/cmiss_rendition_id.h"
+#include "types/cmiss_selection_id.h"
 
 /*******************************************************************************
  * Returns a new reference to the rendition with reference count incremented.

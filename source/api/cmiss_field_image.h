@@ -44,11 +44,11 @@ Implements cmiss fields which wrap images, structured grid data.
 #if !defined (CMISS_FIELD_IMAGE_H)
 #define CMISS_FIELD_IMAGE_H
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_image_id.h"
-#include "api/types/cmiss_field_module_id.h"
-#include "api/types/cmiss_stream_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_image_id.h"
+#include "types/cmiss_field_module_id.h"
+#include "types/cmiss_stream_id.h"
 
 /*****************************************************************************//**
  * Describes the format for storage.

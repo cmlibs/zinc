@@ -43,11 +43,11 @@
 #ifndef __CMISS_GRAPHICS_FILTER_H__
 #define __CMISS_GRAPHICS_FILTER_H__
 
-#include "api/types/cmiss_c_inline.h"
-#include "api/types/cmiss_graphic_id.h"
-#include "api/types/cmiss_graphics_filter_id.h"
-#include "api/types/cmiss_graphics_module_id.h"
-#include "api/types/cmiss_region_id.h"
+#include "types/cmiss_c_inline.h"
+#include "types/cmiss_graphic_id.h"
+#include "types/cmiss_graphics_filter_id.h"
+#include "types/cmiss_graphics_module_id.h"
+#include "types/cmiss_region_id.h"
 
 /***************************************************************************//**
  * Labels of graphics_filter attributes which may be set or obtained using generic

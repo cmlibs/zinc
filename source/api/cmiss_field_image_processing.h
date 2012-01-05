@@ -44,9 +44,9 @@ Implements cmiss fields which deal with image processing
 #if !defined (CMISS_FIELD_IMAGE_PROCESSING_H)
 #define CMISS_FIELD_IMAGE_PROCESSING_H
 
-#include "api/types/cmiss_field_id.h"
-#include "api/types/cmiss_field_image_processing_id.h"
-#include "api/types/cmiss_field_module_id.h"
+#include "types/cmiss_field_id.h"
+#include "types/cmiss_field_image_processing_id.h"
+#include "types/cmiss_field_module_id.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK binary dilate image filter on scalar source

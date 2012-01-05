@@ -37,7 +37,7 @@
 #if !defined __CMISS_SELECTION_H__
 #define __CMISS_SELECTION_H__
 
-#include "api/types/cmiss_selection_id.h"
+#include "types/cmiss_selection_id.h"
 
 typedef void (*Cmiss_selection_handler_callback_function)(
 	Cmiss_selection_event_id selection_event,	void *client_data);
