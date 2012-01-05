@@ -473,6 +473,18 @@ enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
 int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
    enum Cmiss_field_image_filter_mode filter_mode);
 
+/**
+ * Gets the property named in the given property string from the given field image.
+ * The returned string must be deallocated by the receiver.
+ *
+ * @param	image   	The image field.
+ * @param	property	The property to retrieve.
+ *
+ * @return	null if it fails, else an allocated string containing the properties value.
+ */
+char *Cmiss_field_image_get_property(Cmiss_field_image_id image,
+	const char* property);
+
 enum Cmiss_stream_information_image_attribute
 {
 	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,

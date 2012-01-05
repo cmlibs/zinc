@@ -2062,34 +2062,42 @@ int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
 	}
 }
 
+char *Cmiss_field_image_get_property(Cmiss_field_image_id image,
+	const char* property)
+{
+	Cmiss_texture_id texture = Cmiss_field_image_get_texture(image);
+
+	return Texture_get_property(texture, property);
+}
+
 class Cmiss_field_image_filter_mode_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_image_filter_mode mode)
-    {
-        const char *enum_string = 0;
-        switch (mode)
-        {
-        case CMISS_FIELD_IMAGE_FILTER_NEAREST:
-            enum_string = "NEAREST";
-            break;
-        case CMISS_FIELD_IMAGE_FILTER_LINEAR:
-            enum_string = "LINEAR";
-            break;
-        case CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST:
-            enum_string = "NEAREST_MIPMAP_NEAREST";
-            break;
-        case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST:
-            enum_string = "LINEAR_MIPMAP_NEAREST";
-            break;
-        case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR:
-					enum_string = "LINEAR_MIPMAP_LINEAR";
-					break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_image_filter_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+		case CMISS_FIELD_IMAGE_FILTER_NEAREST:
+			enum_string = "NEAREST";
+			break;
+		case CMISS_FIELD_IMAGE_FILTER_LINEAR:
+			enum_string = "LINEAR";
+			break;
+		case CMISS_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST:
+			enum_string = "NEAREST_MIPMAP_NEAREST";
+			break;
+		case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST:
+			enum_string = "LINEAR_MIPMAP_NEAREST";
+			break;
+		case CMISS_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR:
+			enum_string = "LINEAR_MIPMAP_LINEAR";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_string(
