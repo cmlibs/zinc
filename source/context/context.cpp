@@ -198,13 +198,16 @@ struct Cmiss_graphics_module *Cmiss_context_create_graphics_module(struct Contex
 }
 
 struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct Context *context)
-{	
+{
+	struct Cmiss_graphics_module *graphics_module = 0;
+
 	if (context)
 	{
 		if (!context->graphics_module)
 		{
 			context->graphics_module = Cmiss_context_create_graphics_module(context);
 		}
+		graphics_module = Cmiss_graphics_module_access(context->graphics_module);
 	}
 	else
 	{
@@ -212,17 +215,20 @@ struct Cmiss_graphics_module *Cmiss_context_get_default_graphics_module(struct C
 			"Cmiss_context_get_default_graphics_module.  Missing context");
 	}
 
-	return Cmiss_graphics_module_access(context->graphics_module);
+	return graphics_module;
 }
 
 struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
 {
+	struct Cmiss_region *root_region = 0;
+
 	if (context)
 	{
 		if (!context->root_region)
 		{
 			context->root_region = Cmiss_region_create_internal();
 		}
+		root_region = ACCESS(Cmiss_region)(context->root_region);
 	}
 	else
 	{
@@ -230,7 +236,7 @@ struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
 			"Cmiss_context_get_default_region.  Missing context");
 	}
 	
-	return ACCESS(Cmiss_region)(context->root_region);
+	return root_region;
 }
 
 struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
