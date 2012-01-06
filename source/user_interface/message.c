@@ -47,7 +47,7 @@ Declaration of functions for displaying messages.
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#if defined (WIN32_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (_MSC_VER)
 //#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -155,6 +155,9 @@ int display_message_string(enum Message_type message_type,
 				return_code=printf("ERROR: %s\n",the_string);
 #else /* defined (WIN32_USER_INTERFACE) */
 				return_code=printf("ERROR: %s\n",the_string);
+#if defined (_MSC_VER)
+				OutputDebugString("ERROR: ");
+#endif /* _MSC_VER */
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 		} break;
@@ -208,6 +211,9 @@ int display_message_string(enum Message_type message_type,
 				return_code=printf("WARNING: %s\n",the_string);
 #else /* defined (WIN32_USER_INTERFACE) */
 				return_code=printf("WARNING: %s\n",the_string);
+#if defined (_MSC_VER)
+				OutputDebugString("WARNING: ");
+#endif /* _MSC_VER */
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 		} break;
@@ -227,9 +233,16 @@ int display_message_string(enum Message_type message_type,
 			return_code=printf("UNKNOWN: %s\n",the_string);
 #else /* defined (WIN32_USER_INTERFACE) */
 			return_code=printf("UNKNOWN: %s\n",the_string);
+#if defined (_MSC_VER)
+			OutputDebugString("UNKNOWN: ");
+#endif /* _MSC_VER */
 #endif /* defined (WIN32_USER_INTERFACE) */
 		} break;
 	}
+#if defined (_MSC_VER)
+	OutputDebugString(the_string);
+	OutputDebugString("\n");
+#endif /* _MSC_VER */
 	LEAVE;
 
 	return (return_code);
