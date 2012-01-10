@@ -12863,12 +12863,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 				Option_table_add_entry(option_table, "data_offset", &node_offset,
 					&node_offset_flag, set_int_and_char_flag);
 			}
-			if (!use_data)
-			{
-				/* region */
-				Option_table_add_entry(option_table,"region",
-					&region_path, (void *)1, set_name);
-			}
+			/* region */
+			Option_table_add_entry(option_table,"region", &region_path, (void *)1, set_name);
 			/* time */
 			Option_table_add_entry(option_table,"time",
 				&time, &time_set_flag, set_float_and_char_flag);
