@@ -44,7 +44,6 @@ Implements computed fields that control the time behaviour.
 #if !defined (COMPUTED_FIELD_TIME_H)
 #define COMPUTED_FIELD_TIME_H
 
-#include "api/cmiss_field_image.h"
 #include "time/time_keeper.h"
 
 int Computed_field_register_types_time(

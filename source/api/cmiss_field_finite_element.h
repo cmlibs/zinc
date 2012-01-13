@@ -48,6 +48,7 @@
 #include "types/cmiss_field_id.h"
 #include "types/cmiss_field_finite_element_id.h"
 #include "types/cmiss_field_module_id.h"
+#include "types/cmiss_node_id.h"
 
 /***************************************************************************//**
  * Creates a real-valued finite_element field which can be interpolated over a
@@ -239,6 +240,20 @@ enum Cmiss_field_find_mesh_location_search_mode
 int Cmiss_field_find_mesh_location_set_search_mode(
 	Cmiss_field_find_mesh_location_id find_mesh_location_field,
 	enum Cmiss_field_find_mesh_location_search_mode search_mode);
+
+/***************************************************************************//**
+ * Creates a field which represents and returns node values/derivatives.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param field  The field for which the nodal values are stored, this
+ * 	must be a finite element field.
+ * @param type The type of nodal derivative to be represented by the newly
+ * 	created field.
+ * @return  Handle to the newly created field.
+ */
+Cmiss_field_id Cmiss_field_module_create_node_value(
+	Cmiss_field_module_id field_module, Cmiss_field_id field,
+	enum Cmiss_nodal_value_type type, int version);
 
 /***************************************************************************//**
  * Creates a field which stores and returns mesh location values at nodes.

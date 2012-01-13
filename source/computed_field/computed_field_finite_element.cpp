@@ -5838,3 +5838,54 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 
 	return (time_sequence);
 } /* Computed_field_get_FE_node_field_FE_time_sequence */
+
+Cmiss_field_id Cmiss_field_module_create_node_value(
+	Cmiss_field_module_id field_module, Cmiss_field_id field,
+	enum Cmiss_nodal_value_type type, int version)
+{
+	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
+	{
+		struct FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
+		switch (type)
+		{
+			case CMISS_NODAL_VALUE_TYPE_INVALID:
+				fe_nodal_value_type = FE_NODAL_UNKNOWN;
+				break;
+			case CMISS_NODAL_VALUE:
+				fe_nodal_value_type = FE_NODAL_VALUE;
+				break;
+			case CMISS_NODAL_D_DS1:
+				fe_nodal_value_type = FE_NODAL_D_DS1;
+				break;
+			case CMISS_NODAL_D_DS2:
+				fe_nodal_value_type = FE_NODAL_D_DS2;
+				break;
+			case CMISS_NODAL_D_DS3:
+				fe_nodal_value_type = FE_NODAL_D_DS3;
+				break;
+			case CMISS_NODAL_D2_DS1DS2:
+				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
+				break;
+			case CMISS_NODAL_D2_DS1DS3:
+				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
+				break;
+			case CMISS_NODAL_D2_DS2DS3:
+				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
+				break;
+			case CMISS_NODAL_D3_DS1DS2DS3:
+				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
+				break;
+		}
+		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
+		{
+			return NULL;
+		}
+		return Computed_field_create_node_value(field_module, fe_field,	fe_nodal_value_type, version-1);
+	}
+	else
+	{
+		return NULL;
+	}
+}
