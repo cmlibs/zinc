@@ -1287,49 +1287,25 @@ struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region);
  */
 struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region);
 
-int FE_regions_can_be_merged(struct FE_region *global_fe_region,
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2002
+/***************************************************************************//**
+ * Returns true if definitions of fields, nodes and elements in
+ * <source_fe_region> are compatible with those in <target_fe_region>, such that
+ * FE_region_merge should succeed. Neither region is modified.
+ */
+int FE_region_can_merge(struct FE_region *target_fe_region,
+	struct FE_region *source_fe_region);
 
-DESCRIPTION :
-Returns true if definitions of fields, nodes and elements in <fe_region> are
-compatible with those in <global_fe_region>, such that FE_region_merge_FE_region
-should succeed. Neither region is modified.
-Note order: <fe_region> is to be merged into <global_fe_region>.
-=============================================================================*/
-
-int Cmiss_regions_FE_regions_can_be_merged(struct Cmiss_region *global_region,
-	struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 19 November 2002
-
-DESCRIPTION :
-Returns true if the FE_region in <region> can be merged into the FE_region for
-<global_region>, and, recursively, if the same function returns true for all
-child regions with the same name.
-==============================================================================*/
-
-int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
-	struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Merges into <global_region> the fields, nodes and elements from <region>.
-It is expected that Cmiss_regions_FE_regions_can_be_merged has already been
-passed for the two regions; if so the merge should proceed without error.
-The can_be_merged check should not be necessary if the members of <region> have
-been extracted from <global_region> in the first place and only field values
-changed or new objects added.
-
-IMPORTANT NOTE:
-Caller should destroy <region> after calling this function since the FE_regions
-it contains will be significantly modified during the merge. It would be more
-expensive to keep FE_regions unchanged during the merge, a behaviour not
-required at this time for import functions. If this is required in future,
-FE_regions_merge would have to be changed.
-==============================================================================*/
+/***************************************************************************//**
+ * Merges into <target_fe_region> the fields, nodes and elements from
+ * <source_fe_region>. Note that <source_fe_region> is left in a polluted state
+ * containing objects that partly belong to the <target_fe_region> and partly to
+ * itself. Currently it needs to be left around for the remainder of the merge
+ * up and down the region graph, but it needs to be destroyed as soon as possible.
+ * @param target_root_fe_region  Target / global root matching source root for
+ * embedding data. Possibly unnecessary.
+ */
+int FE_region_merge(struct FE_region *target_fe_region,
+	struct FE_region *source_fe_region, struct FE_region *target_root_fe_region);
 
 struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
 	struct FE_region *fe_region, int dimension);

@@ -234,8 +234,21 @@ public:
 
 	~Computed_field_group()
 	{
-		clear();
-		remove_empty_subgroups();
+		if (local_node_group)
+			Cmiss_field_destroy(&local_node_group);
+		if (local_data_group)
+			Cmiss_field_destroy(&local_data_group);
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+		{
+			if (local_element_group[i])
+				Cmiss_field_destroy(&local_element_group[i]);
+		}
+		for (Region_field_map_iterator iter = subregion_group_map.begin();
+			iter != subregion_group_map.end(); ++iter)
+		{
+			Cmiss_field_group_id subregion_group_field = iter->second;
+				Cmiss_field_group_destroy(&subregion_group_field);
+		}
 		std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 		for (;it != domain_selection_group.end(); it++)
 		{
