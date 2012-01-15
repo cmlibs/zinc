@@ -40,7 +40,6 @@
 #if !defined (CMISS_GRAPHIC_H)
 #define CMISS_GRAPHIC_H
 
-#include "api/cmiss_field_group.h"
 #include "api/cmiss_graphic.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
@@ -70,17 +69,9 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_graphic_type);
 enum Cmiss_graphic_attribute
 {
 	CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION,
-	CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG,
-	CMISS_GRAPHIC_ATTRIBUTE_FACE,
-	CMISS_GRAPHIC_ATTRIBUTE_GLYPH,
 	CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH,
 	CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE,
-	CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION,
-	CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD,
-	CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE,
-	CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE,
+	CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION
 };
 
 enum Cmiss_graphic_string_details
@@ -146,10 +137,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	Cmiss_field_module_id field_module;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region;
-	// master mesh being converted into graphics:
-	Cmiss_mesh_id master_mesh;
-	// different from master mesh if iterating over group; can ignore subgroup_field if set:
-	Cmiss_mesh_id iteration_mesh;
+	Cmiss_mesh_id surface_mesh; // mesh being converted into surface graphics
 	FE_value time;
 	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */
@@ -186,7 +174,6 @@ Structure modified by g_element modify routines.
 	int position;
 	struct Cmiss_graphic *graphic;
 	int modify_this_graphic;
-	Cmiss_field_group_id group; // optional group field for migrating group regions
 }; /* struct Modify_graphic_data */
 
 /***************************************************************************//**
@@ -267,13 +254,6 @@ PROTOTYPE_LIST_FUNCTIONS(Cmiss_graphic);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_graphic,position,int);
 
 /***************************************************************************//** 
- * Returns a string summarising the graphic type, name and subset field.
- * @param graphic  The graphic.
- * @return  Allocated string.
- */
-char *Cmiss_graphic_get_summary_string(struct Cmiss_graphic *graphic);
-
-/***************************************************************************//**
  * Returns a string describing the graphic, suitable for entry into the command
  * line. Parameter <graphic_detail> selects whether appearance graphic are
  * included in the string. User must remember to DEALLOCATE the name afterwards.
@@ -361,11 +341,11 @@ int Cmiss_graphic_set_label_field(
 	struct Cmiss_graphic *graphic,struct Computed_field *label_field,
 	struct Graphics_font *font);
 
-int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **subgroup_field);
+int Cmiss_graphic_get_visibility_field(struct Cmiss_graphic *graphic,
+	struct Computed_field **visibility_field);
 
-int Cmiss_graphic_set_subgroup_field(
-	struct Cmiss_graphic *graphic,struct Computed_field *subgroup_field);
+int Cmiss_graphic_set_visibility_field(
+	struct Cmiss_graphic *graphic,struct Computed_field *visibility_field);
 
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void);
@@ -731,21 +711,11 @@ int Cmiss_graphic_same_name_or_geometry(struct Cmiss_graphic *graphic,
 	void *second_graphic_void);
 
 /***************************************************************************//**
- * Executes a GFX MODIFY RENDITION GRAPHIC_TYPE command.
- * If return_code is 1, returns the completed Modify_rendition_data with the
+ * Executes a GFX MODIFY RENDITION NODE_POINTS command.
+ * If return_code is 1, returns the completed Modify_g_element_data with the
  * parsed graphic. Note that the graphic are ACCESSed once on valid return.
  */
-int gfx_modify_rendition_graphic(struct Parse_state *state,
-	enum Cmiss_graphic_type graphic_type, const char *help_text,
-	struct Modify_rendition_data *modify_rendition_data,
-	struct Rendition_command_data *rendition_command_data);
-
-/***************************************************************************//**
- * Executes a GFX MODIFY RENDITION CYLINDERS command.
- * If return_code is 1, returns the completed Modify_rendition_data with the
- * parsed graphic. Note that the graphic are ACCESSed once on valid return.
- */
-int gfx_modify_rendition_cylinders(struct Parse_state *state,
+int gfx_modify_rendition_node_points(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**
@@ -757,11 +727,31 @@ int gfx_modify_rendition_data_points(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**
- * Executes a GFX MODIFY RENDITION ELEMENT_POINTS command.
+ * Executes a GFX MODIFY RENDITION LINES command.
  * If return_code is 1, returns the completed Modify_rendition_data with the
  * parsed graphic. Note that the graphic are ACCESSed once on valid return.
  */
-int gfx_modify_rendition_element_points(struct Parse_state *state,
+int gfx_modify_rendition_lines(struct Parse_state *state,
+	void *modify_rendition_data_void,void *rendition_command_data_void);
+
+/***************************************************************************//**
+ * Executes a GFX MODIFY RENDITION CYLINDERS command.
+ * If return_code is 1, returns the completed Modify_rendition_data with the
+ * parsed graphic. Note that the graphic are ACCESSed once on valid return.
+ */
+int gfx_modify_rendition_cylinders(struct Parse_state *state,
+	void *modify_rendition_data_void,void *rendition_command_data_void);
+
+/***************************************************************************//** 
+ * Executes a GFX MODIFY RENDITION SURFACES command.
+ * If return_code is 1, returns the completed Modify_rendition_data with the
+ * parsed graphic. Note that the graphic are ACCESSed once on valid return.
+ * @param state Parse state
+ * @param modify_rendition_data_void void pointer to a container object
+ * @param command_data_void void pointer to a container object
+ * @return if successfully modify surface returns 1, else 0
+ */
+int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**
@@ -773,26 +763,13 @@ int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**
- * Executes a GFX MODIFY RENDITION LINES command.
+ * Executes a GFX MODIFY RENDITION ELEMENT_POINTS command.
  * If return_code is 1, returns the completed Modify_rendition_data with the
  * parsed graphic. Note that the graphic are ACCESSed once on valid return.
  */
-int gfx_modify_rendition_lines(struct Parse_state *state,
+int gfx_modify_rendition_element_points(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
-/***************************************************************************//**
- * Executes a GFX MODIFY RENDITION NODE_POINTS command.
- * If return_code is 1, returns the completed Modify_g_element_data with the
- * parsed graphic. Note that the graphic are ACCESSed once on valid return.
- */
-int gfx_modify_rendition_node_points(struct Parse_state *state,
-	void *modify_rendition_data_void,void *rendition_command_data_void);
-
-/***************************************************************************//**
- * Executes a GFX MODIFY RENDITION POINT command.
- * If return_code is 1, returns the completed Modify_rendition_data with the
- * parsed graphic. Note that the graphic are ACCESSed once on valid return.
- */
 int gfx_modify_rendition_point(struct Parse_state *state,
 		void *modify_rendition_data_void,void *rendition_command_data_void);
 
@@ -802,18 +779,6 @@ int gfx_modify_rendition_point(struct Parse_state *state,
  * parsed graphic. Note that the graphic are ACCESSed once on valid return.
  */
 int gfx_modify_rendition_streamlines(struct Parse_state *state,
-	void *modify_rendition_data_void,void *rendition_command_data_void);
-
-/***************************************************************************//**
- * Executes a GFX MODIFY RENDITION SURFACES command.
- * If return_code is 1, returns the completed Modify_rendition_data with the
- * parsed graphic. Note that the graphic are ACCESSed once on valid return.
- * @param state Parse state
- * @param modify_rendition_data_void void pointer to a container object
- * @param command_data_void void pointer to a container object
- * @return if successfully modify surface returns 1, else 0
- */
-int gfx_modify_rendition_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void);
 
 /***************************************************************************//**

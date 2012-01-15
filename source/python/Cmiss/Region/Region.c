@@ -4,7 +4,6 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/import_finite_element.h"
-#include "region/cmiss_region.h"
 
 staticforward PyTypeObject CmissRegionType;
 
@@ -245,9 +244,9 @@ CmissRegion_read_file(PyObject* self, PyObject* args)
 				element_shape_list, (struct FE_import_time_index *)NULL))
 			{
 				ACCESS(Cmiss_region)(temp_region);
-				if (Cmiss_region_can_merge(cmiss_region->region, temp_region))
+				if (Cmiss_regions_FE_regions_can_be_merged(cmiss_region->region,temp_region))
 				{
-					return_code = Cmiss_region_merge(cmiss_region->region, temp_region);
+					return_code=Cmiss_regions_merge_FE_regions(cmiss_region->region,temp_region);
 				}
 				DEACCESS(Cmiss_region)(&temp_region);
 			}

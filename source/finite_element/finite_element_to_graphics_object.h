@@ -338,7 +338,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *data_field,
 	struct Graphics_font *font, struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
+	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
 	struct Computed_field *group_field);
 /*******************************************************************************
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the

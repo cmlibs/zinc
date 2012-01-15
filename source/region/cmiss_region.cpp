@@ -40,11 +40,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
-#include "api/cmiss_element.h"
-#include "api/cmiss_field_group.h"
 #include "api/cmiss_field_module.h"
-#include "api/cmiss_field_subobject_group.h"
-#include "api/cmiss_node.h"
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
@@ -66,6 +62,12 @@ Module types
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
 	struct Cmiss_region *, struct Cmiss_region_changes *);
+
+enum Cmiss_region_attach_fields_variant
+{
+	CMISS_REGION_SHARE_BASES_SHAPES,
+	CMISS_REGION_SHARE_FIELDS_GROUP
+};
 
 struct Cmiss_region_fields
 /*******************************************************************************
@@ -252,8 +254,8 @@ Frees the memory for the Cmiss_region_fields and sets
 			{
 				Cmiss_region_fields_end_callbacks(region_fields);
 			}
-			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
 			DEACCESS(FE_region)(&region_fields->fe_region);
+			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
 			DEALLOCATE(*region_fields_address);
 			return_code = 1;
 		}
@@ -472,8 +474,65 @@ struct Cmiss_region *Cmiss_region_find_subregion_at_path_internal(
 	return (subregion);
 }
 
+} // anonymous namespace
+
+/*
+Global functions
+----------------
+*/
+
+struct Cmiss_region *CREATE(Cmiss_region)(void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Private, partial constructor. Creates an empty Cmiss_region WITHOUT fields.
+The region is not fully constructed until Cmiss_region_attach_fields is called.
+Region is created with an access_count of 1; DEACCESS to destroy.
+==============================================================================*/
+{
+	struct Cmiss_region *region;
+
+	ENTER(CREATE(Cmiss_region));
+	if (ALLOCATE(region, struct Cmiss_region, 1))
+	{
+		region->name = NULL;
+		region->parent = NULL;
+		region->first_child = NULL;
+		region->next_sibling = NULL;
+		region->previous_sibling = NULL;
+		region->fields = NULL;
+		region->any_object_list = CREATE(LIST(Any_object))();
+		region->change_level = 0;
+		region->hierarchical_change_level = 0;
+		region->changes.name_changed = 0;
+		region->changes.children_changed = 0;
+		region->changes.child_added = NULL;
+		region->changes.child_removed = NULL;
+		region->change_callback_list =
+			CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))();
+		region->access_count = 1;
+
+		if (!(region->any_object_list && region->change_callback_list))
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Cmiss_region).  Could not build region");
+			DEACCESS(Cmiss_region)(&region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Cmiss_region).  Could not allocate memory");
+	}
+	LEAVE;
+
+	return (region);
+} /* CREATE(Cmiss_region) */
+
 int Cmiss_region_attach_fields(struct Cmiss_region *region,
-	struct Cmiss_region *master_region)
+	struct Cmiss_region *master_region,
+	enum Cmiss_region_attach_fields_variant variant)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2008
 
@@ -504,14 +563,29 @@ cases in code.
 			fe_region = (struct FE_region *)NULL;
 			if (master_region)
 			{
-				/* creates a full region sharing the basis manager and shape list from
-				 * the master region */
-				region->fields = CREATE(Cmiss_region_fields)(region,
-					FE_region_get_basis_manager(master_region->fields->fe_region),
-					FE_region_get_FE_element_shape_list(master_region->fields->fe_region));
-				if (region->fields)
+				switch (variant)
 				{
-					fe_region = region->fields->fe_region;
+				case CMISS_REGION_SHARE_FIELDS_GROUP:
+					{
+						/* region shares master's fields but uses a subset of nodes and elements */
+						region->fields = ACCESS(Cmiss_region_fields)(master_region->fields);
+						fe_region = CREATE(FE_region)(Cmiss_region_get_FE_region(master_region),
+							(struct MANAGER(FE_basis) *)NULL,
+							(struct LIST(FE_element_shape) *)NULL);
+					} break;
+				case CMISS_REGION_SHARE_BASES_SHAPES:
+				default:
+					{
+						/* creates a full region sharing the basis manager and shape list from
+						 * the master region */
+						region->fields = CREATE(Cmiss_region_fields)(region,
+							FE_region_get_basis_manager(master_region->fields->fe_region),
+							FE_region_get_FE_element_shape_list(master_region->fields->fe_region));
+						if (region->fields)
+						{
+							fe_region = region->fields->fe_region;
+						}
+					} break;
 				}
 			}
 			else
@@ -551,52 +625,7 @@ cases in code.
 	return (return_code);
 } /* Cmiss_region_attach_fields */
 
-/***************************************************************************//**
- * Private constructor. Creates an empty Cmiss_region with region_fields member.
- * Region is created with an access_count of 1; DEACCESS to destroy.
- */
-struct Cmiss_region *CREATE(Cmiss_region)(struct Cmiss_region *base_region)
-{
-	struct Cmiss_region *region;
-
-	ENTER(CREATE(Cmiss_region));
-	if (ALLOCATE(region, struct Cmiss_region, 1))
-	{
-		region->name = NULL;
-		region->parent = NULL;
-		region->first_child = NULL;
-		region->next_sibling = NULL;
-		region->previous_sibling = NULL;
-		region->fields = NULL;
-		region->any_object_list = CREATE(LIST(Any_object))();
-		region->change_level = 0;
-		region->hierarchical_change_level = 0;
-		region->changes.name_changed = 0;
-		region->changes.children_changed = 0;
-		region->changes.child_added = NULL;
-		region->changes.child_removed = NULL;
-		region->change_callback_list =
-			CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))();
-		region->access_count = 1;
-		if (!(region->any_object_list && region->change_callback_list &&
-			Cmiss_region_attach_fields(region, base_region)))
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Cmiss_region).  Could not build region");
-			DEACCESS(Cmiss_region)(&region);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Cmiss_region).  Could not allocate memory");
-	}
-	LEAVE;
-
-	return (region);
-} /* CREATE(Cmiss_region) */
-
-int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
+static int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
 /*******************************************************************************
 LAST MODIFIED : 29 May 2008
 
@@ -660,13 +689,6 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 	return (return_code);
 } /* DESTROY(Cmiss_region) */
 
-} // anonymous namespace
-
-/*
-Global functions
-----------------
-*/
-
 DECLARE_OBJECT_FUNCTIONS(Cmiss_region)
 
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region)
@@ -699,16 +721,87 @@ Call ONLY before deaccessing root_region in command_data.
 } /* Cmiss_region_detach_fields */
 
 struct Cmiss_region *Cmiss_region_create_internal(void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Creates a full Cmiss_region, able to have its own fields.
+Region is created with an access_count of 1; DEACCESS to destroy.
+==============================================================================*/
 {
-	return CREATE(Cmiss_region)(/*base_region*/NULL);
-}
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create_internal);
+	region = CREATE(Cmiss_region)();
+	if (!region || !Cmiss_region_attach_fields(region,/*master_region*/NULL,
+		CMISS_REGION_SHARE_BASES_SHAPES))
+	{
+		DEACCESS(Cmiss_region)(&region);
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create_internal */
+
+struct Cmiss_region *Cmiss_region_create_group(
+	struct Cmiss_region *master_region)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Creates a Cmiss_region that shares the fields with master_region but
+uses a subset of its nodes and element (i.e. a group).
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create_group);
+	region = (struct Cmiss_region *)NULL;
+	if (master_region)
+	{
+		region = CREATE(Cmiss_region)();
+		if (!region || !Cmiss_region_attach_fields(region, master_region,
+			CMISS_REGION_SHARE_FIELDS_GROUP))
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_create_group.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create_group */
 
 struct Cmiss_region *Cmiss_region_create_region(struct Cmiss_region *base_region)
 {
-	if (!base_region)
-		return 0;
-	return CREATE(Cmiss_region)(base_region);
-}
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create_region);
+	region = (struct Cmiss_region *)NULL;
+	if (base_region)
+	{
+		region = CREATE(Cmiss_region)();
+		if (!region || !Cmiss_region_attach_fields(region, base_region,
+			CMISS_REGION_SHARE_BASES_SHAPES))
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_create_region.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create_region */
 
 struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_region, 
 	const char *name)
@@ -823,7 +916,8 @@ int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
 	{
 		if ((current_token = state->current_token))
 		{
-			if (!Parse_state_help_mode(state))
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				region = Cmiss_region_find_subregion_at_path_internal(root_region, current_token);
 				if (region)
@@ -875,7 +969,7 @@ int Option_table_add_set_Cmiss_region(struct Option_table *option_table,
 	int return_code;
 
 	ENTER(Option_table_add_set_Cmiss_region);
-	if (option_table && root_region && region_address)
+	if (option_table && token && root_region && region_address)
 	{
 		return_code = Option_table_add_entry(option_table, token,
 			(void *)region_address, (void *)root_region, set_Cmiss_region);
@@ -911,7 +1005,8 @@ Modifier function for entering a path to a Cmiss_region, starting at
 	{
 		if ((current_token = state->current_token))
 		{
-			if (!Parse_state_help_mode(state))
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				region = Cmiss_region_find_subregion_at_path_internal(
 					root_region, current_token);
@@ -1736,37 +1831,43 @@ static int set_region_path_and_or_field_name(struct Parse_state *state,
 	if (state && (name_data = (struct Cmiss_region_path_and_name *)region_path_and_name_void) &&
 		(root_region = (struct Cmiss_region *)root_region_void))
 	{
-		current_token = state->current_token;
-		if (!current_token)
+		if ((current_token = state->current_token))
 		{
-			display_message(WARNING_MESSAGE, "Missing region path and/or field name");
-			display_parse_state_location(state);
-			return_code = 0;
-		}
-		else if (Parse_state_help_mode(state))
-		{
-			display_message(INFORMATION_MESSAGE, " REGION_PATH|REGION_PATH/FIELD_NAME|FIELD_NAME");
-			return_code = 1;
-		}
-		else if (Cmiss_region_get_partial_region_path(root_region, current_token,
-			&name_data->region, &name_data->region_path, &name_data->name))
-		{
-			ACCESS(Cmiss_region)(name_data->region);
-			if (!name_data->name || (NULL == strchr(name_data->name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				return_code = shift_Parse_state(state, 1);
+				if (Cmiss_region_get_partial_region_path(root_region, current_token,
+					&name_data->region, &name_data->region_path, &name_data->name))
+				{
+					ACCESS(Cmiss_region)(name_data->region);
+					if (!name_data->name || (NULL == strchr(name_data->name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
+					{
+						return_code = shift_Parse_state(state, 1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Bad region path and/or field name: %s",current_token);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_region_path_and_or_field_name.  Failed to get path and name");
+					return_code = 0;
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "Bad region path and/or field name: %s",current_token);
-				display_parse_state_location(state);
-				return_code = 0;
+				display_message(INFORMATION_MESSAGE, " REGION_PATH|REGION_PATH/FIELD_NAME|FIELD_NAME");
+				return_code=1;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"set_region_path_and_or_field_name.  Failed to get path and name");
+			display_message(WARNING_MESSAGE, "Missing region path and/or field name");
+			display_parse_state_location(state);
 			return_code = 0;
 		}
 	}
@@ -1779,7 +1880,7 @@ static int set_region_path_and_or_field_name(struct Parse_state *state,
 	LEAVE;
 
 	return (return_code);
-}
+} /* set_region_path_and_or_field_name */
 
 int Option_table_add_region_path_and_or_field_name_entry(
 	struct Option_table *option_table, char *token,
@@ -1806,77 +1907,6 @@ int Option_table_add_region_path_and_or_field_name_entry(
 
 	return (return_code);
 } /* Option_table_add_region_path_and_or_field_name_entry */
-
-int set_Cmiss_region_or_group(struct Parse_state *state,
-	void *region_address_void, void *group_address_void)
-{
-	Cmiss_region_id *region_address = reinterpret_cast<Cmiss_region_id*>(region_address_void);
-	Cmiss_field_group_id *group_address = reinterpret_cast<Cmiss_field_group_id*>(group_address_void);
-	if (!(state && region_address && *region_address && group_address && !*group_address))
-		return 0;
-	const char *current_token = state->current_token;
-	int return_code = 1;
-	if (!current_token)
-	{
-		display_message(WARNING_MESSAGE, "Missing region/group path");
-		display_parse_state_location(state);
-		return_code =  0;
-	}
-	else if (Parse_state_help_mode(state))
-	{
-		display_message(INFORMATION_MESSAGE, " REGION_PATH/GROUP");
-	}
-	else
-	{
-		char *region_path = 0;
-		char *field_name = 0;
-		Cmiss_region_id output_region = 0;
-		if (Cmiss_region_get_partial_region_path(*region_address, current_token,
-			&output_region, &region_path, &field_name) && output_region)
-		{
-			REACCESS(Cmiss_region)(region_address, output_region);
-			if (field_name)
-			{
-				Cmiss_field *field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-					field_name, Cmiss_region_get_Computed_field_manager(output_region));
-				if (field)
-				{
-					*group_address = Cmiss_field_cast_group(field);
-				}
-				return_code = (0 != group_address);
-			}
-			if (return_code)
-			{
-				shift_Parse_state(state, 1);
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE, "Invalid region or group path: %s", current_token);
-			display_parse_state_location(state);
-		}
-		DEALLOCATE(region_path);
-		DEALLOCATE(field_name);
-	}
-	return return_code;
-}
-
-int Option_table_add_region_or_group_entry(struct Option_table *option_table,
-	const char *token, Cmiss_region_id *region_address,
-	Cmiss_field_group_id *group_address)
-{
-	if (!(option_table && region_address && *region_address && group_address))
-	{
-		display_message(ERROR_MESSAGE, "Option_table_add_region_or_group_entry.  Invalid argument(s)");
-		return 0;
-	}
-	return Option_table_add_entry(option_table, token,
-		(void *)region_address, (void *)group_address, set_Cmiss_region_or_group);
-}
 
 int Cmiss_region_list(struct Cmiss_region *region,
 	int indent, int indent_increment)
@@ -2096,227 +2126,3 @@ Destroys the <region> and sets the pointer to NULL.
 
 	return (return_code);
 } /* Cmiss_region_destroy */
-
-int Cmiss_region_can_merge(Cmiss_region_id target_region, Cmiss_region_id source_region)
-{
-	if (!target_region || !source_region)
-		return 0;
-
-	// check FE_regions
-	FE_region *target_fe_region = Cmiss_region_get_FE_region(target_region);
-	FE_region *source_fe_region = Cmiss_region_get_FE_region(source_region);
-	if (!FE_region_can_merge(target_fe_region, source_fe_region))
-	{
-		char *target_path = Cmiss_region_get_path(target_region);
-		char *source_path = Cmiss_region_get_path(source_region);
-		display_message(ERROR_MESSAGE,
-			"Cannot merge incompatible fields from source region %s into %s", source_path, target_path);
-		DEALLOCATE(source_path);
-		DEALLOCATE(target_path);
-		return 0;
-	}
-
-	// check child regions can be merged
-	Cmiss_region_id source_child = Cmiss_region_get_first_child(source_region);
-	while (NULL != source_child)
-	{
-		Cmiss_region_id target_child = Cmiss_region_find_child_by_name(target_region, source_child->name);
-		if (target_child)
-		{
-			if (!Cmiss_region_can_merge(target_child, source_child))
-			{
-				Cmiss_region_destroy(&target_child);
-				Cmiss_region_destroy(&source_child);
-				return 0;
-			}
-		}
-		Cmiss_region_destroy(&target_child);
-		Cmiss_region_reaccess_next_sibling(&source_child);
-	}
-
-	return 1;
-}
-
-/** currently just merges group fields */
-static int Cmiss_region_merge_fields(Cmiss_region_id target_region,
-	Cmiss_region_id source_region)
-{
-	int return_code = 1;
-	Cmiss_field_module_id target_field_module = Cmiss_region_get_field_module(target_region);
-	Cmiss_field_module_id source_field_module = Cmiss_region_get_field_module(source_region);
-	Cmiss_field_iterator_id field_iter = Cmiss_field_module_create_field_iterator(source_field_module);
-	Cmiss_field_id source_field = 0;
-	while ((source_field = Cmiss_field_iterator_next_non_access(field_iter)) && return_code)
-	{
-		Cmiss_field_group_id source_group = Cmiss_field_cast_group(source_field);
-		if (source_group)
-		{
-			char *name = Cmiss_field_get_name(source_field);
-			Cmiss_field_id target_field = Cmiss_field_module_find_field_by_name(target_field_module, name);
-			if (!target_field)
-			{
-				target_field = Cmiss_field_module_create_group(target_field_module);
-				Cmiss_field_set_attribute_integer(target_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
-				Cmiss_field_set_name(target_field, name);
-			}
-			Cmiss_field_group_id target_group = Cmiss_field_cast_group(target_field);
-			if (target_field && (!target_group))
-			{
-				char *target_path = Cmiss_region_get_path(target_region);
-				char *source_path = Cmiss_region_get_path(source_region);
-				display_message(ERROR_MESSAGE,
-					"Cannot merge group %s from source region %s into field using same name in %s", name, source_path, target_path);
-				DEALLOCATE(source_path);
-				DEALLOCATE(target_path);
-			}
-			else if (target_group)
-			{
-				// merge node groups
-				for (int i = 0; i < 2; i++)
-				{
-					const char *nodeset_name = i ? "cmiss_data" : "cmiss_nodes";
-					Cmiss_nodeset_id source_nodeset = Cmiss_field_module_find_nodeset_by_name(source_field_module, nodeset_name);
-					Cmiss_field_node_group_id source_node_group = Cmiss_field_group_get_node_group(source_group, source_nodeset);
-					if (source_node_group)
-					{
-						Cmiss_nodeset_group_id source_nodeset_group = Cmiss_field_node_group_get_nodeset(source_node_group);
-						Cmiss_nodeset_id target_nodeset = Cmiss_field_module_find_nodeset_by_name(target_field_module, nodeset_name);
-						Cmiss_field_node_group_id target_node_group = Cmiss_field_group_get_node_group(target_group, target_nodeset);
-						if (!target_node_group)
-						{
-							target_node_group = Cmiss_field_group_create_node_group(target_group, target_nodeset);
-						}
-						Cmiss_nodeset_group_id target_nodeset_group = Cmiss_field_node_group_get_nodeset(target_node_group);
-
-						Cmiss_node_iterator_id node_iter = Cmiss_nodeset_create_node_iterator(Cmiss_nodeset_group_base_cast(source_nodeset_group));
-						Cmiss_node_id source_node = 0;
-						while ((source_node = Cmiss_node_iterator_next_non_access(node_iter)) && return_code)
-						{
-							const int identifier =  Cmiss_node_get_identifier(source_node);
-							Cmiss_node_id target_node = Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_group_base_cast(target_nodeset_group), identifier);
-							if (!target_node)
-							{
-								target_node = Cmiss_nodeset_find_node_by_identifier(target_nodeset, identifier);
-								return_code = Cmiss_nodeset_group_add_node(target_nodeset_group, target_node);
-							}
-							Cmiss_node_destroy(&target_node);
-						}
-						Cmiss_node_iterator_destroy(&node_iter);
-
-						Cmiss_nodeset_group_destroy(&target_nodeset_group);
-						Cmiss_field_node_group_destroy(&target_node_group);
-						Cmiss_nodeset_destroy(&target_nodeset);
-						Cmiss_nodeset_group_destroy(&source_nodeset_group);
-						Cmiss_field_node_group_destroy(&source_node_group);
-					}
-					Cmiss_nodeset_destroy(&source_nodeset);
-				}
-				// merge element groups
-				for (int dimension = 3; 0 < dimension; --dimension)
-				{
-					Cmiss_mesh_id source_mesh = Cmiss_field_module_find_mesh_by_dimension(source_field_module, dimension);
-					Cmiss_field_element_group_id source_element_group = Cmiss_field_group_get_element_group(source_group, source_mesh);
-					if (source_element_group)
-					{
-						Cmiss_mesh_group_id source_mesh_group = Cmiss_field_element_group_get_mesh(source_element_group);
-						Cmiss_mesh_id target_mesh = Cmiss_field_module_find_mesh_by_dimension(target_field_module, dimension);
-						Cmiss_field_element_group_id target_element_group = Cmiss_field_group_get_element_group(target_group, target_mesh);
-						if (!target_element_group)
-						{
-							target_element_group = Cmiss_field_group_create_element_group(target_group, target_mesh);
-						}
-						Cmiss_mesh_group_id target_mesh_group = Cmiss_field_element_group_get_mesh(target_element_group);
-
-						Cmiss_element_iterator_id element_iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(source_mesh_group));
-						Cmiss_element_id source_element = 0;
-						while ((source_element = Cmiss_element_iterator_next_non_access(element_iter)) && return_code)
-						{
-							const int identifier =  Cmiss_element_get_identifier(source_element);
-							Cmiss_element_id target_element = Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_group_base_cast(target_mesh_group), identifier);
-							if (!target_element)
-							{
-								target_element = Cmiss_mesh_find_element_by_identifier(target_mesh, identifier);
-								return_code = Cmiss_mesh_group_add_element(target_mesh_group, target_element);
-							}
-							Cmiss_element_destroy(&target_element);
-						}
-						Cmiss_element_iterator_destroy(&element_iter);
-
-						Cmiss_mesh_group_destroy(&target_mesh_group);
-						Cmiss_field_element_group_destroy(&target_element_group);
-						Cmiss_mesh_destroy(&target_mesh);
-						Cmiss_mesh_group_destroy(&source_mesh_group);
-						Cmiss_field_element_group_destroy(&source_element_group);
-					}
-					Cmiss_mesh_destroy(&source_mesh);
-				}
-				Cmiss_field_group_destroy(&target_group);
-			}
-			else
-			{
-				return_code = 0;
-			}
-			Cmiss_field_destroy(&target_field);
-			DEALLOCATE(name);
-			Cmiss_field_group_destroy(&source_group);
-		}
-	}
-	Cmiss_field_iterator_destroy(&field_iter);
-	Cmiss_field_module_destroy(&source_field_module);
-	Cmiss_field_module_destroy(&target_field_module);
-	return return_code;
-}
-
-static int Cmiss_region_merge_private(Cmiss_region_id target_region,
-	Cmiss_region_id source_region, Cmiss_region_id root_region)
-{
-	int return_code = 1;
-
-	// merge FE_region
-	FE_region *target_fe_region = Cmiss_region_get_FE_region(target_region);
-	FE_region *source_fe_region = Cmiss_region_get_FE_region(source_region);
-	if (!FE_region_merge(target_fe_region, source_fe_region, Cmiss_region_get_FE_region(root_region)))
-	{
-		char *target_path = Cmiss_region_get_path(target_region);
-		char *source_path = Cmiss_region_get_path(source_region);
-		display_message(ERROR_MESSAGE,
-			"Could not merge source_region region %s into %s", source_path, target_path);
-		DEALLOCATE(source_path);
-		DEALLOCATE(target_path);
-		return_code = 0;
-	}
-
-	if (!Cmiss_region_merge_fields(target_region, source_region))
-	{
-		return_code = 0;
-	}
-
-	// merge child regions
-	Cmiss_region_id source_child = Cmiss_region_get_first_child(source_region);
-	while (source_child && return_code)
-	{
-		Cmiss_region_id target_child = Cmiss_region_find_child_by_name(target_region, source_child->name);
-		if (target_child)
-		{
-			return_code = Cmiss_region_merge_private(target_child, source_child, root_region);
-		}
-		else
-		{
-			return_code = Cmiss_region_append_child(target_region, source_child);
-		}
-		Cmiss_region_destroy(&target_child);
-		Cmiss_region_reaccess_next_sibling(&source_child);
-	}
-	Cmiss_region_destroy(&source_child);
-	return (return_code);
-}
-
-int Cmiss_region_merge(Cmiss_region_id target_region, Cmiss_region_id source_region)
-{
-	if (!target_region || !source_region)
-		return 0;
-	Cmiss_region_begin_hierarchical_change(target_region);
-	int return_code = Cmiss_region_merge_private(target_region, source_region, /*root_region*/target_region);
-	Cmiss_region_end_hierarchical_change(target_region);
-	return return_code;
-}

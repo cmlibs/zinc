@@ -43,13 +43,12 @@
 extern "C" {
 #include "api/cmiss_region.h"
 #include "field_io/read_fieldml.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/read_fieldml_01.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-//#include "finite_element/finite_element_region.h"
-#include "region/cmiss_region.h"
 }
 #include "stream/cmiss_region_stream.hpp"
 
@@ -204,9 +203,9 @@ int Cmiss_region_read(Cmiss_region_id region,
 					break;
 				}
 			}
-			if (return_code && Cmiss_region_can_merge(region,temp_region))
+			if (return_code && Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
 			{
-				return_code = Cmiss_region_merge(region, temp_region);
+				return_code=Cmiss_regions_merge_FE_regions(region,temp_region);
 			}
 			DEACCESS(Cmiss_region)(&temp_region);
 			DESTROY(IO_stream_package)(&io_stream_package);

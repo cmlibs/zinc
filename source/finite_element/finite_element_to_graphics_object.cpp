@@ -99,7 +99,7 @@ Used with iterators for building glyph sets from nodes.
 		label_bounds_values, n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field, 
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
-		*subgroup_field, *group_field;
+		*visibility_field, *group_field;
 	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
 	enum Graphics_select_mode select_mode;
 };
@@ -141,9 +141,9 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 			show_point = 0;
 		}
 	}
-	if (show_point && glyph_set_data->subgroup_field)
+	if (show_point && glyph_set_data->visibility_field)
 	{
-		show_point = Cmiss_field_evaluate_boolean(glyph_set_data->subgroup_field, field_cache);
+		show_point = Cmiss_field_evaluate_boolean(glyph_set_data->visibility_field, field_cache);
 	}
 	if (show_point)
 	{
@@ -813,7 +813,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *data_field,
 	struct Graphics_font *font, struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum Graphics_select_mode select_mode,
+	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
 	struct Computed_field *group_field)
 {
 	char *glyph_name, **labels;
@@ -958,7 +958,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					glyph_set_data.data_values = data_values;
 					glyph_set_data.label_field = label_field;
 					glyph_set_data.label_density_field = label_density_field;
-					glyph_set_data.subgroup_field = subgroup_field;
+					glyph_set_data.visibility_field = visibility_field;
 					glyph_set_data.name = names;
 					glyph_set_data.time = time;
 					glyph_set_data.label_bounds_bit_pattern = label_bounds_bit_pattern;

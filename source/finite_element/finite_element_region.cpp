@@ -6888,6 +6888,424 @@ struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_regi
 	return master_fe_region->cmiss_region;
 }
 
+int FE_regions_can_be_merged(struct FE_region *global_fe_region,
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 24 March 2003
+
+DESCRIPTION :
+Returns true if definitions of fields, nodes and elements in <fe_region> are
+compatible with those in <global_fe_region>, such that FE_region_merge_FE_region
+should succeed. Neither region is modified.
+Note order: <fe_region> is to be merged into <global_fe_region>.
+=============================================================================*/
+{
+	int return_code;
+	struct FE_element_can_be_merged_data check_elements_data;
+	struct FE_node_can_be_merged_data check_nodes_data;
+	struct FE_region *global_master_fe_region, *master_fe_region;
+	struct LIST(FE_field) *global_fe_field_list;
+
+	ENTER(FE_regions_can_be_merged);
+	if (fe_region && global_fe_region)
+	{
+		if (FE_region_get_immediate_master_FE_region(fe_region,
+			&master_fe_region) &&
+			FE_region_get_immediate_master_FE_region(global_fe_region,
+				&global_master_fe_region))
+		{
+			if (master_fe_region && global_master_fe_region)
+			{
+				/* both master_fe_region and global_master_fe_region exist so
+					 can rely on them having passed this function */
+				return_code = 1;
+			}
+			else if (master_fe_region)
+			{
+				display_message(ERROR_MESSAGE, "FE_regions_can_be_merged.  "
+					"Cannot merge region with master into region without");
+				return_code = 0;
+			}
+			else
+			{
+				return_code = 1;
+				/* check fields */
+				/*???RC data_hack FE_region uses master's fe_field_list */
+				if (global_fe_region->top_data_hack)
+				{
+					global_fe_field_list = global_master_fe_region->fe_field_list;
+				}
+				else
+				{
+					global_fe_field_list = global_fe_region->fe_field_list;
+				}
+				/* check all fields of the same name have same definitions */
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
+					(void *)global_fe_field_list, fe_region->fe_field_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_regions_can_be_merged.  Fields are not compatible");
+					return_code = 0;
+				}
+
+				/* check nodes */
+				if (return_code)
+				{
+					/* check nodes against the ultimate master FE_region or the first
+						 data_hack region found */
+					FE_region_get_ultimate_master_FE_region(global_fe_region, &global_master_fe_region);
+					/* check that definition of fields in nodes of fe_region match that
+						 of equivalent fields in equivalent nodes of global_fe_region */
+					/* for efficiency, pairs of FE_node_field_info from the opposing nodes
+						 are stored if compatible to avoid checks later */
+					check_nodes_data.number_of_compatible_node_field_info = 0;
+					/* store in pairs in the single array to reduce allocations */
+					check_nodes_data.compatible_node_field_info =
+						(struct FE_node_field_info **)NULL;
+					check_nodes_data.node_list = global_master_fe_region->fe_node_list;
+					if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_can_be_merged,
+						(void *)&check_nodes_data, fe_region->fe_node_list))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_regions_can_be_merged.  Nodes are not compatible");
+						return_code = 0;
+					}
+					DEALLOCATE(check_nodes_data.compatible_node_field_info);
+				}
+
+				/* check elements */
+				if (return_code)
+				{
+					/* check elements against the ultimate master FE_region */
+					global_master_fe_region = global_fe_region;
+					while (global_master_fe_region->master_fe_region)
+					{
+						global_master_fe_region = global_master_fe_region->master_fe_region;
+					}
+					/* check that definition of fields in elements of fe_region match that
+						 of equivalent fields in equivalent elements of global_fe_region */
+					/* also check shape and that fields are appropriately defined on the
+						 either the nodes referenced in the element or global_fe_reigon */
+					/* for efficiency, pairs of FE_element_field_info from the opposing
+						 elements are stored if compatible to avoid checks later */
+					check_elements_data.number_of_compatible_element_field_info = 0;
+					/* store in pairs in the single array to reduce allocations */
+					check_elements_data.compatible_element_field_info =
+						(struct FE_element_field_info **)NULL;
+					check_elements_data.global_fe_region = global_master_fe_region;
+					if (global_fe_region->top_data_hack)
+					{
+						check_elements_data.global_node_list = (struct LIST(FE_node) *)NULL;
+					}
+					else
+					{
+						check_elements_data.global_node_list =
+							global_fe_region->fe_node_list;
+					}
+					if (!FE_region_for_each_FE_element(fe_region,
+						FE_element_can_be_merged, (void *)&check_elements_data))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_regions_can_be_merged.  Elements are not compatible");
+						return_code = 0;
+					}
+					DEALLOCATE(check_elements_data.compatible_element_field_info);
+				}
+				
+				/* check data */
+				if (return_code && fe_region->data_fe_region)
+				{
+					return_code = FE_regions_can_be_merged(
+						FE_region_get_data_FE_region(global_fe_region),
+						fe_region->data_fe_region);
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_regions_can_be_merged.  Error getting master FE_regions");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_regions_can_be_merged.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_regions_can_be_merged */
+
+static int FE_regions_check_master_FE_regions_against_parents(
+	struct FE_region *fe_region, struct FE_region *parent_fe_region,
+	struct FE_region *global_fe_region, struct FE_region *global_parent_fe_region)
+/*******************************************************************************
+LAST MODIFIED : 14 November 2002
+
+DESCRIPTION :
+Compares any master_FE_region for <fe_region> and <global_fe_region> for matches
+against their respective parents. Returns 0 if:
+* <fe_region> has a master and <global_fe_region> does not;
+* both fe_regions have masters and only one matches its parent;
+Note any of the arguments may be NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *master_fe_region, *global_master_fe_region;
+
+	ENTER(FE_regions_check_master_FE_regions_against_parents);
+	if (fe_region && global_fe_region)
+	{
+		return_code = 0;
+		if (FE_region_get_immediate_master_FE_region(fe_region,
+			&master_fe_region) &&
+			FE_region_get_immediate_master_FE_region(global_fe_region,
+				&global_master_fe_region))
+		{
+			if (master_fe_region)
+			{
+				if (global_master_fe_region)
+				{
+					if ((master_fe_region == parent_fe_region) &&
+						(global_master_fe_region == global_parent_fe_region))
+					{
+						/* ok if masters are same as respective parents */
+						return_code = 1;
+					}
+					else if ((master_fe_region != parent_fe_region) &&
+						(global_master_fe_region != global_parent_fe_region))
+					{
+						/* ok if masters are different from respective parents */
+						return_code = 1;
+					}
+				}
+			}
+			else
+			{
+				/* OK if either no masters or just global_master_fe_region */
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		/* OK if either fe_region or global_fe_regions absent */
+		return_code = 1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_regions_check_master_FE_regions_against_parents */
+
+struct FE_regions_merge_with_master_data
+/*******************************************************************************
+LAST MODIFIED : 21 November 2002
+
+DESCRIPTION :
+Data for passing to FE_node_FE_regions_merge_with_master and
+FE_element_FE_regions_merge_with_master.
+==============================================================================*/
+{
+	struct FE_region *fe_region, *master_fe_region;
+};
+
+static int FE_node_merge_into_FE_region_with_master(struct FE_node *node,
+	void *merge_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2002
+
+DESCRIPTION :
+Tries to find the node with the same identifier as <node> in <fe_region>. If
+not found, adds the node with that identifier from <master_fe_region>. The
+matching node must exist in either case.
+==============================================================================*/
+{
+	int cm_node_identifier, return_code;
+	struct FE_node *add_node;
+	struct FE_regions_merge_with_master_data *merge_data;
+
+	ENTER(FE_node_merge_into_FE_region_with_master);
+	if (node && (merge_data =
+		(struct FE_regions_merge_with_master_data *)merge_data_void) &&
+		merge_data->fe_region && merge_data->master_fe_region)
+	{
+		return_code = 1;
+		cm_node_identifier = get_FE_node_identifier(node);
+		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+			cm_node_identifier, merge_data->fe_region->fe_node_list))
+		{
+			add_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+				cm_node_identifier, merge_data->master_fe_region->fe_node_list);
+			if (add_node)
+			{
+				if (!ADD_OBJECT_TO_LIST(FE_node)(add_node,
+					merge_data->fe_region->fe_node_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_node_merge_into_FE_region_with_master.  Could not add to list");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_merge_into_FE_region_with_master.  Could not add to list");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_merge_into_FE_region_with_master.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_merge_into_FE_region_with_master */
+
+static int FE_element_merge_into_FE_region_with_master(
+	struct FE_element *element, void *merge_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2002
+
+DESCRIPTION :
+Tries to find the element with the same identifier as <element> in <fe_region>.
+If not found, adds the element with that identifier from <master_fe_region>.
+The matching element must exist in either case.
+==============================================================================*/
+{
+	int return_code;
+	struct CM_element_information identifier;
+	struct FE_element *add_element;
+	struct FE_regions_merge_with_master_data *merge_data;
+
+	ENTER(FE_element_merge_into_FE_region_with_master);
+	int dimension = get_FE_element_dimension(element);
+	if (element && (merge_data =
+		(struct FE_regions_merge_with_master_data *)merge_data_void) &&
+		merge_data->fe_region && merge_data->master_fe_region &&
+		get_FE_element_identifier(element, &identifier))
+	{
+		return_code = 1;
+		/* If we are defining faces and lines on the parent then we need to merge
+			to ensure faces and lines are in the child region too */
+		if (merge_data->master_fe_region->element_type_node_sequence_list
+			|| (!FE_region_get_FE_element_from_identifier(merge_data->fe_region,
+				dimension, identifier.number)))
+		{
+			add_element = FE_region_get_FE_element_from_identifier(
+				merge_data->master_fe_region, dimension, identifier.number);
+			if (add_element)
+			{
+				if (merge_data->master_fe_region->element_type_node_sequence_list)
+				{
+					/* We are defining faces so add dependent faces and lines too */
+					return_code = FE_region_merge_FE_element_and_faces_private(
+						merge_data->fe_region, add_element);
+				}
+				else
+				{
+					if (!ADD_OBJECT_TO_LIST(FE_element)(add_element,
+						FE_region_get_element_list(merge_data->fe_region, dimension)))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_merge_into_FE_region_with_master.  "
+							"Could not add to list");
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_merge_into_FE_region_with_master.  Could not add to list");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_merge_into_FE_region_with_master.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_merge_into_FE_region_with_master */
+
+int FE_regions_merge_with_master(struct FE_region *global_fe_region,
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2003
+
+DESCRIPTION :
+<global_fe_region> and <fe_region> must both have a master FE_region.
+Makes sure that for every node and elements in <fe_region>, the equivalent node
+or element from the master of <global_fe_region> is in <global_fe_region>.
+Change messages stemming from this function will only inform about nodes and
+elements added to <global_fe_region>, not those already in there.
+Does not modify <fe_region>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *global_master_fe_region, *master_fe_region;
+	struct FE_regions_merge_with_master_data merge_data;
+
+	ENTER(FE_regions_merge_with_master);
+	if (global_fe_region && fe_region &&
+		FE_region_get_immediate_master_FE_region(global_fe_region,
+			&global_master_fe_region)
+		&& FE_region_get_immediate_master_FE_region(fe_region, &master_fe_region) &&
+		global_master_fe_region && master_fe_region)
+	{
+		return_code = 1;
+		FE_region_begin_change(global_fe_region);
+		merge_data.fe_region = global_fe_region;
+		merge_data.master_fe_region = global_master_fe_region;
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(
+			FE_node_merge_into_FE_region_with_master, (void *)&merge_data,
+			fe_region->fe_node_list))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_regions_merge_with_master.  Could not merge nodes");
+			return_code = 0;
+		}
+		if (!FE_region_for_each_FE_element(fe_region,
+			FE_element_merge_into_FE_region_with_master, (void *)&merge_data))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_regions_merge_with_master.  Could not merge elements");
+			return_code = 0;
+		}
+		if (fe_region->data_fe_region)
+		{
+			if (!FE_regions_merge_with_master(
+				FE_region_get_data_FE_region(global_fe_region), fe_region->data_fe_region))
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_regions_merge_with_master.  Could not merge data");
+				return_code = 0;
+			}
+		}
+		FE_region_end_change(global_fe_region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_regions_merge_with_master.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_regions_merge_with_master */
+
 static int FE_field_merge_into_FE_region(struct FE_field *fe_field,
 	void *fe_region_void)
 /*******************************************************************************
@@ -6978,8 +7396,8 @@ of the FE_field for the new FE_region.
  */
 struct FE_regions_merge_embedding_data
 {
-	struct FE_region *target_root_fe_region;
-	struct FE_region *target_fe_region;
+	struct FE_region *global_root_fe_region;
+	struct FE_region *global_current_fe_region;
 	struct FE_region *source_current_fe_region;
 };
 
@@ -7000,10 +7418,10 @@ static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 	if (embedding_data && get_FE_element_identifier(element, &identifier))
 	{
 		FE_region *source_fe_region = FE_element_get_FE_region(element);
-		FE_region *global_fe_region = embedding_data->target_root_fe_region;
+		FE_region *global_fe_region = embedding_data->global_root_fe_region;
 		if (source_fe_region == embedding_data->source_current_fe_region)
 		{
-			global_fe_region = embedding_data->target_fe_region;
+			global_fe_region = embedding_data->global_current_fe_region;
 		}
 		int dimension = get_FE_element_dimension(element);
 		global_element = FE_region_get_FE_element_from_identifier(
@@ -7489,167 +7907,92 @@ plus nodes from <fe_region> of the same number as those currently used.
 	return (return_code);
 } /* FE_element_merge_into_FE_region */
 
-int FE_region_can_merge(struct FE_region *target_fe_region,
-	struct FE_region *source_fe_region)
+static int FE_regions_merge(struct FE_region *global_fe_region,
+	struct FE_region *fe_region,
+	struct FE_regions_merge_embedding_data *embedding_data)
+/*******************************************************************************
+LAST MODIFIED : 26 March 2003
+
+DESCRIPTION :
+Merges into <global_fe_region> the fields, nodes and elements from <fe_region>.
+Note that <fe_region> is left in a polluted state containing objects that partly
+belong to the <global_fe_region> and partly to itself.
+Currently it needs to be left around for the remainder of the merge up and down
+the region graph, but it needs to be destroyed as soon as possible.
+???RC It would be more expensive to return fe_region unchanged, especially for
+nodes that are in it and added to global_fe_region, since the original is
+transferred.
+==============================================================================*/
 {
-	if (!target_fe_region || !source_fe_region)
-		return 0;
+	int i, return_code;
+	struct FE_element_field_info **matching_element_field_info;
+	struct FE_element_merge_into_FE_region_data merge_elements_data;
+	struct FE_node_field_info **matching_node_field_info;
+	struct FE_node_merge_into_FE_region_data merge_nodes_data;
+	struct LIST(FE_field) *fe_field_list;
 
-	int return_code = 1;
-
-	// check fields
-	if (!source_fe_region->top_data_hack)
-	{
-		/* check all fields of the same name have same definitions */
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
-			(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_can_merge.  Fields are not compatible");
-			return_code = 0;
-		}
-	}
-
-	// check nodes
-	if (return_code)
-	{
-		/* check that definition of fields in nodes of source_fe_region match that
-			of equivalent fields in equivalent nodes of global_fe_region */
-		/* for efficiency, pairs of FE_node_field_info from the opposing nodes
-			are stored if compatible to avoid checks later */
-		struct FE_node_can_be_merged_data check_nodes_data;
-		check_nodes_data.number_of_compatible_node_field_info = 0;
-		/* store in pairs in the single array to reduce allocations */
-		check_nodes_data.compatible_node_field_info =
-			(struct FE_node_field_info **)NULL;
-		check_nodes_data.node_list = target_fe_region->fe_node_list;
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_can_be_merged,
-			(void *)&check_nodes_data, source_fe_region->fe_node_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_can_merge.  Nodes are not compatible");
-			return_code = 0;
-		}
-		DEALLOCATE(check_nodes_data.compatible_node_field_info);
-	}
-
-	// check elements
-	if (return_code && !target_fe_region->top_data_hack)
-	{
-		/* check that definition of fields in elements of source_fe_region match that
-			 of equivalent fields in equivalent elements of global_fe_region */
-		/* also check shape and that fields are appropriately defined on the
-			 either the nodes referenced in the element or global_fe_reigon */
-		/* for efficiency, pairs of FE_element_field_info from the opposing
-			 elements are stored if compatible to avoid checks later */
-		struct FE_element_can_be_merged_data check_elements_data;
-		check_elements_data.number_of_compatible_element_field_info = 0;
-		/* store in pairs in the single array to reduce allocations */
-		check_elements_data.compatible_element_field_info =
-			(struct FE_element_field_info **)NULL;
-		check_elements_data.global_fe_region = target_fe_region;
-		if (target_fe_region->top_data_hack)
-		{
-			check_elements_data.global_node_list = (struct LIST(FE_node) *)NULL;
-		}
-		else
-		{
-			check_elements_data.global_node_list =
-				target_fe_region->fe_node_list;
-		}
-		if (!FE_region_for_each_FE_element(source_fe_region,
-			FE_element_can_be_merged, (void *)&check_elements_data))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_can_merge.  Elements are not compatible");
-			return_code = 0;
-		}
-		DEALLOCATE(check_elements_data.compatible_element_field_info);
-	}
-
-	// check data
-	if (return_code && source_fe_region->data_fe_region)
-	{
-		return_code = FE_region_can_merge(
-			FE_region_get_data_FE_region(target_fe_region),
-			source_fe_region->data_fe_region);
-	}
-
-	return (return_code);
-}
-
-int FE_region_merge(struct FE_region *target_fe_region,
-	struct FE_region *source_fe_region, struct FE_region *target_root_fe_region)
-{
-	int return_code;
-
-	ENTER(FE_region_merge);
-	if (target_fe_region && source_fe_region &&
-		(!source_fe_region->master_fe_region || source_fe_region->top_data_hack) &&
-		target_root_fe_region)
+	ENTER(FE_regions_merge);
+	if (global_fe_region && fe_region &&
+		(!fe_region->master_fe_region || fe_region->top_data_hack) &&
+		embedding_data)
 	{
 		return_code = 1;
-		FE_region_begin_change(target_fe_region);
+		FE_region_begin_change(global_fe_region);
 
-		// merge fields
-		if (!source_fe_region->top_data_hack)
+		if (!fe_region->top_data_hack)
 		{
+			/* merge fields */
 			if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
-				FE_field_merge_into_FE_region, (void *)target_fe_region,
-				source_fe_region->fe_field_list))
+				FE_field_merge_into_FE_region, (void *)global_fe_region,
+				fe_region->fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_region_merge.  Could not merge fields");
+					"FE_regions_merge.  Could not merge fields");
 				return_code = 0;
 			}
 		}
 
-		// merge nodes
+		/* merge nodes */
 		if (return_code)
 		{
-			struct FE_node_merge_into_FE_region_data merge_nodes_data;
-			merge_nodes_data.fe_region = target_fe_region;
+			merge_nodes_data.fe_region = global_fe_region;
 			/* use following array and number to build up matching pairs of old node
-				field info what they become in the target_fe_region */
+				 field info what they become in the global_fe_region */
 			merge_nodes_data.matching_node_field_info =
 				(struct FE_node_field_info **)NULL;
 			merge_nodes_data.number_of_matching_node_field_info = 0;
-			FE_regions_merge_embedding_data embedding_data =
-				{ target_root_fe_region, target_fe_region, source_fe_region };
-			merge_nodes_data.embedding_data = &embedding_data;
-			/* work out which fields in source_fe_region are embedded */
+			merge_nodes_data.embedding_data = embedding_data;
+			/* work out which fields in fe_region are embedded */
 			merge_nodes_data.embedded_fields = (struct FE_field **)NULL;
 			merge_nodes_data.number_of_embedded_fields = 0;
-			struct LIST(FE_field) *fe_field_list = 0;
-			if (source_fe_region->top_data_hack)
+			if (fe_region->top_data_hack)
 			{
-				fe_field_list = source_fe_region->master_fe_region->fe_field_list;
+				fe_field_list = fe_region->master_fe_region->fe_field_list;
 			}
 			else
 			{
-				fe_field_list = source_fe_region->fe_field_list;
+				fe_field_list = fe_region->fe_field_list;
 			}
 			if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
 				FE_field_add_embedded_field_to_array, (void *)&merge_nodes_data,
 				fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_region_merge.  Could not get embedded fields");
+					"FE_regions_merge.  Could not get embedded fields");
 				return_code = 0;
 			}
 			if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(
 				FE_node_merge_into_FE_region, (void *)&merge_nodes_data,
-				source_fe_region->fe_node_list))
+				fe_region->fe_node_list))
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_region_merge.  Could not merge nodes");
+					"FE_regions_merge.  Could not merge nodes");
 				return_code = 0;
 			}
 			if (merge_nodes_data.matching_node_field_info)
 			{
-				struct FE_node_field_info **matching_node_field_info =
-					merge_nodes_data.matching_node_field_info;
-				for (int i = merge_nodes_data.number_of_matching_node_field_info;
+				matching_node_field_info = merge_nodes_data.matching_node_field_info;
+				for (i = merge_nodes_data.number_of_matching_node_field_info;
 					0 < i; i--)
 				{
 					DEACCESS(FE_node_field_info)(matching_node_field_info);
@@ -7665,11 +8008,10 @@ int FE_region_merge(struct FE_region *target_fe_region,
 		}
 
 		/* merge elements */
-		if (return_code && !source_fe_region->top_data_hack)
+		if (!fe_region->top_data_hack && return_code)
 		{
-			struct FE_element_merge_into_FE_region_data merge_elements_data;
 			/* swap elements for global equivalents */
-			merge_elements_data.fe_region = target_fe_region;
+			merge_elements_data.fe_region = global_fe_region;
 			/* use following array and number to build up matching pairs of old
 				 element field info what they become in the global_fe_region */
 			merge_elements_data.matching_element_field_info =
@@ -7681,19 +8023,19 @@ int FE_region_merge(struct FE_region *target_fe_region,
 			{
 				if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
 					FE_element_merge_into_FE_region, (void *)&merge_elements_data,
-					FE_region_get_element_list(source_fe_region, dimension)))
+					FE_region_get_element_list(fe_region, dimension)))
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_region_merge.  Could not merge elements");
+						"FE_regions_merge.  Could not merge elements");
 					return_code = 0;
 					break;
 				}
 			}
 			if (merge_elements_data.matching_element_field_info)
 			{
-				struct FE_element_field_info **matching_element_field_info =
+				matching_element_field_info =
 					merge_elements_data.matching_element_field_info;
-				for (int i = merge_elements_data.number_of_matching_element_field_info;
+				for (i = merge_elements_data.number_of_matching_element_field_info;
 					0 < i; i--)
 				{
 					DEACCESS(FE_element_field_info)(matching_element_field_info);
@@ -7703,26 +8045,257 @@ int FE_region_merge(struct FE_region *target_fe_region,
 				DEALLOCATE(merge_elements_data.matching_element_field_info);
 			}
 		}
-
+		
 		/* merge data */
-		if (return_code && source_fe_region->data_fe_region)
+		if (return_code && fe_region->data_fe_region)
 		{
-			return_code = FE_region_merge(
-				FE_region_get_data_FE_region(target_fe_region),
-				source_fe_region->data_fe_region, target_root_fe_region);
+			return_code = FE_regions_merge(
+				FE_region_get_data_FE_region(global_fe_region),
+				fe_region->data_fe_region, embedding_data);
 		}
-		FE_region_end_change(target_fe_region);
+		FE_region_end_change(global_fe_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_merge.  Invalid argument(s)");
+			"FE_regions_merge.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-}
+} /* FE_regions_merge */
+
+/***************************************************************************//**
+ * Returns true if the FE_regions within the region tree can be merged into
+ * the global_region tree.
+ * 
+ * @param global_region  Region to check merge into.
+ * @param region  Source region tree to check merge.
+ * @return  1 if merge is possible, 0 if not i.e. some objects are incompatible.
+ */
+int Cmiss_regions_FE_regions_can_be_merged(
+	struct Cmiss_region *global_region, struct Cmiss_region *region)
+{
+	char *child_region_name, *global_path, *path;
+	int return_code;
+	struct Cmiss_region *child_region, *global_child_region;
+	struct FE_region *fe_region, *global_fe_region;
+
+	ENTER(Cmiss_regions_FE_regions_can_be_merged);
+	if (global_region && region)
+	{
+		return_code = 1;
+		/* check FE_regions */
+		fe_region = Cmiss_region_get_FE_region(region);
+		global_fe_region = Cmiss_region_get_FE_region(global_region);
+		if (!FE_regions_can_be_merged(global_fe_region, fe_region))
+		{
+			global_path = Cmiss_region_get_path(global_region);
+			path = Cmiss_region_get_path(region);
+			display_message(ERROR_MESSAGE,
+				"Cannot merge incompatible fields from temporary region %s into %s", path, global_path);
+			DEALLOCATE(path);
+			DEALLOCATE(global_path);
+			return_code = 0;
+		}
+		/* check child regions can be merged */
+		child_region = Cmiss_region_get_first_child(region);
+		while ((NULL != child_region) && return_code)
+		{
+			child_region_name = Cmiss_region_get_name(child_region);
+			global_child_region =
+				Cmiss_region_find_child_by_name(global_region, child_region_name);
+			if (global_child_region)
+			{
+				return_code = 
+					FE_regions_check_master_FE_regions_against_parents(
+						fe_region, Cmiss_region_get_FE_region(child_region),
+						global_fe_region, Cmiss_region_get_FE_region(global_child_region)) &&
+					Cmiss_regions_FE_regions_can_be_merged(
+						global_child_region, child_region);
+			}
+			Cmiss_region_destroy(&global_child_region);
+			DEALLOCATE(child_region_name);
+			Cmiss_region_reaccess_next_sibling(&child_region);
+		}
+		REACCESS(Cmiss_region)(&child_region, NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_regions_FE_regions_can_be_merged.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_regions_FE_regions_can_be_merged */
+
+/****************************************************************************//**
+ * Merges the fields, nodes and elements of region into global_region.
+ * 
+ * @param global_region  Region to merge into.
+ * @param region  Source region to merge.
+ * @param merge_only_existing_regions  If set, only regions with existing
+ * global_region counterparts are merged in this sweep; should call this function
+ * a second time without this flag set in order to merge all regions.
+ * @param new_global_region  Set to 1 if global_region was created immediately
+ * before this call (by this function, nested) and therefore must be merged.
+ * @param embedding_data  Contains root region for embedded element:xi locations.
+ * @return  1 if merge was successful, 0 if not.
+ */
+static int Cmiss_regions_merge_FE_regions_private(
+	struct Cmiss_region *global_region, struct Cmiss_region *region,
+	int merge_only_existing_regions, int new_global_region,
+	struct FE_regions_merge_embedding_data *embedding_data)
+{
+	char *child_region_name, *global_path, *path;
+	int new_global_child, return_code;
+	struct Cmiss_region *child_region, *global_child_region;
+	struct FE_region *fe_region, *global_fe_region;
+
+	ENTER(Cmiss_regions_merge_FE_regions_private);
+	if (global_region && region && embedding_data)
+	{
+		return_code = 1;
+		Cmiss_region_begin_change(global_region);
+
+		if (merge_only_existing_regions || new_global_region)
+		{
+			fe_region = Cmiss_region_get_FE_region(region);
+			global_fe_region = Cmiss_region_get_FE_region(global_region);
+			if (Cmiss_region_is_group(region))
+			{
+				return_code = FE_regions_merge_with_master(global_fe_region, fe_region);
+			}
+			else
+			{
+				embedding_data->global_current_fe_region = global_fe_region;
+				embedding_data->source_current_fe_region = fe_region;
+				return_code = FE_regions_merge(global_fe_region, fe_region, embedding_data);
+			}
+			if (!return_code)
+			{
+				global_path = Cmiss_region_get_path(global_region);
+				path = Cmiss_region_get_path(region);
+				display_message(ERROR_MESSAGE,
+					"Could not merge temporary region %s into %s", path, global_path);
+				DEALLOCATE(path);
+				DEALLOCATE(global_path);
+			}
+		}
+
+		/* merge child regions */
+		child_region = Cmiss_region_get_first_child(region);
+		while ((NULL != child_region) && return_code)
+		{
+			child_region_name = Cmiss_region_get_name(child_region);
+			global_child_region =
+				Cmiss_region_find_child_by_name(global_region, child_region_name);
+			new_global_child = 0;
+			if ((NULL == global_child_region) && (!merge_only_existing_regions))
+			{
+				if (Cmiss_region_is_group(child_region))
+				{
+					global_child_region = Cmiss_region_create_group(global_region);
+				}
+				else
+				{
+					global_child_region =
+						Cmiss_region_create_region(global_region);
+				}
+				new_global_child = 1;
+				Cmiss_region_set_name(global_child_region, child_region_name);
+				if (!Cmiss_region_append_child(global_region, global_child_region))
+				{
+					return_code = 0;
+				}
+			}
+			if (global_child_region && return_code)
+			{
+				return_code = Cmiss_regions_merge_FE_regions_private(
+					global_child_region, child_region, merge_only_existing_regions,
+					new_global_child, embedding_data);
+			}
+			Cmiss_region_destroy(&global_child_region);
+			DEALLOCATE(child_region_name);
+			Cmiss_region_reaccess_next_sibling(&child_region);
+		}
+		REACCESS(Cmiss_region)(&child_region, NULL);
+
+		Cmiss_region_end_change(global_region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_regions_merge_FE_regions_private.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_regions_merge_FE_regions_private */
+
+int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
+	struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2003
+
+DESCRIPTION :
+Merges into <global_region> the fields, nodes and elements from <region>.
+It is expected that Cmiss_regions_FE_regions_can_be_merged has already been
+passed for the two regions; if so the merge should proceed without error.
+The can_be_merged check should not be necessary if the members of <region> have
+been extracted from <global_region> in the first place and only field values
+changed or new objects added.
+
+IMPORTANT NOTE:
+Caller should destroy <region> after calling this function since the FE_regions
+it contains will be significantly modified during the merge. It would be more
+expensive to keep FE_regions unchanged during the merge, a behaviour not
+required at this time for import functions. If this is required in future,
+FE_regions_merge would have to be changed.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_regions_merge_embedding_data embedding_data;
+
+	ENTER(Cmiss_regions_merge_FE_regions);
+	if (global_region && region)
+	{
+		Cmiss_region_begin_change(global_region);
+		/*???RC embedding data currently only allows embedding elements to be in
+			the root region */
+		embedding_data.global_root_fe_region = Cmiss_region_get_FE_region(global_region);
+		embedding_data.global_current_fe_region = 0;
+		embedding_data.source_current_fe_region = 0;
+		if (embedding_data.global_root_fe_region&&
+			(embedding_data.global_root_fe_region->top_data_hack))
+		{
+			embedding_data.global_root_fe_region =
+				embedding_data.global_root_fe_region->master_fe_region;
+		}
+		/* merge existing regions before new regions to handle embedding cleanly */
+		/* ???GRC not a complete solution */
+		return_code = Cmiss_regions_merge_FE_regions_private(
+			global_region, region, /*merge_only_existing_regions*/1,
+			/*new_global_region*/0, &embedding_data) &&
+			Cmiss_regions_merge_FE_regions_private(
+				global_region, region, /*merge_only_existing_regions*/0,
+				/*new_global_region*/0, &embedding_data);
+		Cmiss_region_end_change(global_region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_regions_merge_FE_regions.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_regions_merge_FE_regions */
 
 int FE_region_notify_FE_node_field_change(struct FE_region *fe_region,
 	struct FE_node *node, struct FE_field *fe_field)

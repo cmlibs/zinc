@@ -1191,8 +1191,7 @@ static int Cmiss_rendition_build_graphics_objects(
 			graphic_to_object_data.field_cache = Cmiss_field_module_create_cache(graphic_to_object_data.field_module);
 			graphic_to_object_data.fe_region = rendition->fe_region;
 			graphic_to_object_data.data_fe_region = rendition->data_fe_region;
-			graphic_to_object_data.master_mesh = 0;
-			graphic_to_object_data.iteration_mesh = 0;
+			graphic_to_object_data.surface_mesh = 0;
 			graphic_to_object_data.scene = scene;
 			graphic_to_object_data.time = time;
 			graphic_to_object_data.selected_element_point_ranges_list
@@ -2046,27 +2045,34 @@ int Cmiss_rendition_remove_callback(struct Cmiss_rendition *rendition,
 } /* Cmiss_rendition_remove_callback */
 
 int gfx_modify_rendition_general(struct Parse_state *state,
-	void *cmiss_region_void, void *group_void)
+	void *cmiss_region_void, void *dummy_void)
 {
-	int return_code = 0;
+	int clear_flag, return_code = 0;
+	struct Computed_field *default_coordinate_field = NULL;
+	struct Set_FE_field_conditional_FE_region_data
+		native_discretization_field_conditional_data;
+	struct Cmiss_rendition *rendition;
+	struct Cmiss_graphic *graphic;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_modify_rendition_general);
-	Cmiss_region_id cmiss_region = reinterpret_cast<Cmiss_region_id>(cmiss_region_void);
-	Cmiss_field_group_id group = reinterpret_cast<Cmiss_field_group_id>(group_void);
+	USE_PARAMETER(dummy_void);
+	struct Cmiss_region *cmiss_region = (Cmiss_region *)cmiss_region_void;
 	if (state && cmiss_region)
 	{
 		/* if possible, get defaults from element_group on default scene */
-		Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(cmiss_region);
+		rendition = Cmiss_region_get_rendition_internal(cmiss_region);
 		if (rendition)
 		{
-			Cmiss_field_id default_coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
-			if (default_coordinate_field)
+			if (NULL != (default_coordinate_field=
+					Cmiss_rendition_get_default_coordinate_field(rendition)))
 			{
-				Cmiss_field_access(default_coordinate_field);
+				ACCESS(Computed_field)(default_coordinate_field);
 			}
-			int clear_flag = 0;
+			clear_flag=0;
 			
-			Option_table *option_table = CREATE(Option_table)();
+			option_table = CREATE(Option_table)();
 			Option_table_add_help(option_table,
 				"The clear option removes all graphics from the rendition. "
 				"Option 'circle_discretization' is deprecated: use circle_discretization option on cylinders instead. "
@@ -2081,7 +2087,6 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			Option_table_add_entry(option_table, "clear",
 				(void *)&clear_flag, NULL, set_char_flag);
 			/* default_coordinate */
-			Set_Computed_field_conditional_data set_coordinate_field_data;
 			set_coordinate_field_data.computed_field_manager=
 				Cmiss_region_get_Computed_field_manager(cmiss_region);
 			set_coordinate_field_data.conditional_function=
@@ -2094,7 +2099,6 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			Option_table_add_divisions_entry(option_table, "element_discretization",
 				&(rendition->element_divisions), &(rendition->element_divisions_size));
 			/* native_discretization */
-			Set_FE_field_conditional_FE_region_data native_discretization_field_conditional_data;
 			native_discretization_field_conditional_data.conditional_function = 
 				(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL;
 			native_discretization_field_conditional_data.user_data = (void *)NULL;
@@ -2108,32 +2112,16 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
+				Cmiss_rendition_begin_change(rendition);
 				if (clear_flag)
  				{
-					if (group)
+					/* remove all graphic from group */
+					while (return_code && (NULL != (graphic=
+						first_graphic_in_Cmiss_rendition_that(rendition,
+							(LIST_CONDITIONAL_FUNCTION(Cmiss_graphic) *)NULL,
+							(void *)NULL))))
 					{
-						// remove only graphics using group as subgroup field
-						Cmiss_rendition_begin_change(rendition);
-						Cmiss_field_id group_field = Cmiss_field_group_base_cast(group);
-						// support legacy command files by changing visibility of each graphic using group as its subgroup field
-						Cmiss_graphic_id graphic = Cmiss_rendition_get_first_graphic(rendition);
-						while (graphic)
-						{
-							Cmiss_graphic_id this_graphic = graphic;
-							graphic = Cmiss_rendition_get_next_graphic(rendition, this_graphic);
-							Cmiss_field_id subgroup_field = 0;
-							Cmiss_graphic_get_subgroup_field(this_graphic, &subgroup_field);
-							if (subgroup_field == group_field)
-							{
-								Cmiss_rendition_remove_graphic(rendition, this_graphic);
-							}
-							Cmiss_graphic_destroy(&this_graphic);
-						}
-						Cmiss_rendition_end_change(rendition);
-					}
-					else
-					{
-						return_code = Cmiss_rendition_remove_all_graphics(rendition);
+						return_code = Cmiss_rendition_remove_graphic(rendition, graphic);
 					}
 				}
 				if (default_coordinate_field)
@@ -2141,12 +2129,15 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 					Cmiss_rendition_set_default_coordinate_field(rendition,
 						default_coordinate_field);
 				}
+				/* regenerate graphics for changed graphic */
+				Cmiss_rendition_end_change(rendition);
+				return_code=1;
 			}
 			if (default_coordinate_field)
 			{
 				DEACCESS(Computed_field)(&default_coordinate_field);
 			}
-			Cmiss_rendition_destroy(&rendition);
+			DEACCESS(Cmiss_rendition)(&rendition);
 		}
 		else
 		{
@@ -2258,7 +2249,7 @@ int Cmiss_rendition_process_Cmiss_graphic_list_contents(
  * depending on the class.
  */
 int Cmiss_rendition_process_list_or_write_window_commands(struct Cmiss_rendition *rendition,
-	 const char *command_prefix, const char *command_suffix, class Process_list_or_write_command_class *process_message)
+	 char *command_prefix,char *command_suffix, class Process_list_or_write_command_class *process_message)
 {
 	int return_code;
 	struct Cmiss_graphic_list_data list_data;
@@ -2300,7 +2291,7 @@ int Cmiss_rendition_process_list_or_write_window_commands(struct Cmiss_rendition
 } /* Cmiss_rendition_process_list_or_write_window_command*/
 
 int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
-	 const char *command_prefix, const char *command_suffix)
+	 char *command_prefix,char *command_suffix)
 {
 	 int return_code = 0;
 
@@ -4043,8 +4034,7 @@ int Cmiss_rendition_fill_rendition_command_data(Cmiss_rendition_id rendition,
 	return return_code;
 }
 
-int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
-	Cmiss_field_group_id group, struct Parse_state *state)
+int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition, struct Parse_state *state)
 {
 	int return_code = 0;
 	if (rendition && state)
@@ -4058,7 +4048,6 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
 			modify_rendition_data.position = -1;
 			modify_rendition_data.graphic = (struct Cmiss_graphic *)NULL;
 			modify_rendition_data.modify_this_graphic = 0;
-			modify_rendition_data.group = group;
 			int previous_state_index;
 			if (state && (previous_state_index = state->current_index))
 			{
@@ -4110,7 +4099,7 @@ int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
 				gfx_modify_rendition_element_points);
 			/* general */
 			Option_table_add_entry(option_table, "general",
-				(void *)rendition->region, (void *)group, gfx_modify_rendition_general);
+				(void *)rendition->region, (void *)NULL,	gfx_modify_rendition_general);
 			/* iso_surfaces */
 			Option_table_add_entry(option_table, "iso_surfaces",
 				(void *)&modify_rendition_data, (void *)&rendition_command_data,
@@ -4169,7 +4158,7 @@ int Cmiss_rendition_execute_command(Cmiss_rendition_id rendition, const char *co
 	if (rendition && command_string)
 	{
 		struct Parse_state *state = create_Parse_state(command_string);
-		return_code = Cmiss_rendition_execute_command_internal(rendition, (Cmiss_field_group_id)0, state);
+		return_code = Cmiss_rendition_execute_command_internal(rendition, state);
 		destroy_Parse_state(&state);
 	}
 	else
@@ -4385,7 +4374,6 @@ int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition)
 	if (rendition)
 	{
 		return_code = 1;
-		Cmiss_rendition_begin_change(rendition);
 		Cmiss_graphic_id graphic = NULL;
 		while (return_code && (NULL != (graphic=
 			first_graphic_in_Cmiss_rendition_that(rendition,
@@ -4394,7 +4382,6 @@ int Cmiss_rendition_remove_all_graphics(Cmiss_rendition_id rendition)
 		{
 			return_code = Cmiss_rendition_remove_graphic(rendition, graphic);
 		}
-		Cmiss_rendition_end_change(rendition);
 	}
 
 	return return_code;

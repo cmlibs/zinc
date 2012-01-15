@@ -142,7 +142,7 @@ finite element group rendition.
 	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
 	struct Computed_field *label_density_field;
-	struct Computed_field *subgroup_field;
+	struct Computed_field *visibility_field;
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
 	/* for element_points only */
@@ -376,12 +376,10 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 	switch (attribute)
 	{
 		case CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION:
-		case CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE:
 		{
 			return_code = (graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
 				(graphic_type == CMISS_GRAPHIC_STREAMLINES);
 		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_GLYPH:
 		case CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD:
 		{
 			return_code =
@@ -397,48 +395,10 @@ int Cmiss_graphic_type_uses_attribute(enum Cmiss_graphic_type graphic_type,
 				(graphic_type != CMISS_GRAPHIC_NODE_POINTS) &&
 				(graphic_type != CMISS_GRAPHIC_POINT);
 		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_LINES) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG:
-		case CMISS_GRAPHIC_ATTRIBUTE_FACE:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_LINES) ||
-				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS) ||
-				(graphic_type == CMISS_GRAPHIC_CYLINDERS);
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_LINES);
-
-		} break;
-		case CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE:
-		{
-			return_code =
-				(graphic_type == CMISS_GRAPHIC_ISO_SURFACES) ||
-				(graphic_type == CMISS_GRAPHIC_ELEMENT_POINTS);
-		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_graphic_type_uses_attribute.  Unrecognised attribute %d", attribute);
+				"Cmiss_graphic_type_uses_attribute.  Unrecognised attribute ID");
 		} break;
 	}
 	return return_code;
@@ -509,7 +469,7 @@ Allocates memory for a Cmiss_graphic and initialises its members.
 			graphic->variable_scale_field=(struct Computed_field *)NULL;
 			graphic->label_field=(struct Computed_field *)NULL;
 			graphic->label_density_field=(struct Computed_field *)NULL;
-			graphic->subgroup_field=(struct Computed_field *)NULL;
+			graphic->visibility_field=(struct Computed_field *)NULL;
 			graphic->select_mode=GRAPHICS_SELECT_ON;
 			/* for element_points and iso_surfaces */
 			graphic->use_element_type=USE_ELEMENTS;
@@ -652,9 +612,9 @@ int DESTROY(Cmiss_graphic)(
 		{
 			DEACCESS(Computed_field)(&(graphic->label_density_field));
 		}
-		if (graphic->subgroup_field)
+		if (graphic->visibility_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->subgroup_field));
+			DEACCESS(Computed_field)(&(graphic->visibility_field));
 		}
 		if (graphic->volume_texture)
 		{
@@ -826,16 +786,17 @@ static int Cmiss_graphic_uses_FE_element(
 
 /***************************************************************************//** 
  * Converts a finite element into a graphics object with the supplied graphic.
- * @param element  The Cmiss_element.
- * @param graphic_to_object_data  Data for converting finite element to graphics.
+ * @param graphic The cmiss graphic
+ * @param element FE_element
+ * @param fe_region provided to allow any checks against parent elements
  * @return return 1 if the element would contribute any graphics generated from the Cmiss_graphic
  */
 static int FE_element_to_graphics_object(struct FE_element *element,
-	Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
+	void *graphic_to_object_data_void)
 {
 	FE_value base_size[3], offset[3], initial_xi[3], scale_factors[3];
 	float time;
-	int element_dimension = 1, element_graphics_name,
+	int draw_element, element_dimension = 1, element_graphics_name,
 		element_selected, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
 		*top_level_xi_point_numbers,
@@ -854,6 +815,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
+	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
+		reinterpret_cast<struct Cmiss_graphic_to_graphics_object_data *>(graphic_to_object_data_void);
 	if (element && graphic_to_object_data &&
 		(NULL != (graphic = graphic_to_object_data->graphic)) &&
 		graphic->graphics_object)
@@ -867,24 +830,20 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			graphic_to_object_data->fe_region))
 		{
 			Cmiss_field_cache_set_element(graphic_to_object_data->field_cache, element);
-			int draw_element = 1;
-			if (graphic->subgroup_field && (graphic_to_object_data->iteration_mesh == graphic_to_object_data->master_mesh))
+			if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
+				(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
 			{
-				draw_element = Cmiss_field_evaluate_boolean(graphic->subgroup_field, graphic_to_object_data->field_cache);
-			}
-			if (draw_element)
-			{
-				if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
-					(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
+				int name_selected = 0;
+				if (graphic_to_object_data->group_field)
 				{
-					int name_selected = 0;
-					if (graphic_to_object_data->group_field)
-					{
-						name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
-					}
-					draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
-						((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
+					name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
 				}
+				draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
+					((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
+			}
+			else
+			{
+				draw_element = 1;
 			}
 			/* determine discretization of element for graphic */
 			// copy top_level_number_in_xi since scaled by native_discretization in
@@ -989,7 +948,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic_to_object_data->field_cache, element,
 									graphic_to_object_data->rc_coordinate_field,
 									graphic->texture_coordinate_field, graphic->data_field,
-									graphic_to_object_data->master_mesh,
+									graphic_to_object_data->surface_mesh,
 									number_in_xi[0], number_in_xi[1],
 									/*reverse_normals*/0, top_level_element,graphic->render_type,
 									graphic_to_object_data->time)))
@@ -1241,121 +1200,111 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphic_to_object_data->existing_graphics, time,
 									element_graphics_name);
 						}
-						if (draw_element)
+						if (!glyph_set)
 						{
-							if (!glyph_set)
+							for (i = 0; i < 3; i++)
 							{
-								for (i = 0; i < 3; i++)
+								element_point_ranges_identifier.exact_xi[i] =
+									graphic->seed_xi[i];
+							}
+							if (FE_element_get_xi_points(element,
+								graphic->xi_discretization_mode, number_in_xi,
+								element_point_ranges_identifier.exact_xi,
+								graphic_to_object_data->rc_coordinate_field,
+								graphic->xi_point_density_field,
+								&number_of_xi_points, &xi_points,
+								graphic_to_object_data->time))
+							{
+								get_FE_element_identifier(element, &cm);
+								element_graphics_name = cm.number;
+								top_level_xi_point_numbers = (int *)NULL;
+								if (XI_DISCRETIZATION_CELL_CORNERS ==
+									graphic->xi_discretization_mode)
 								{
-									element_point_ranges_identifier.exact_xi[i] =
-										graphic->seed_xi[i];
+									FE_element_convert_xi_points_cell_corners_to_top_level(
+										element, top_level_element, top_level_number_in_xi,
+										number_of_xi_points, xi_points, &top_level_xi_point_numbers);
 								}
-								if (FE_element_get_xi_points(element,
-									graphic->xi_discretization_mode, number_in_xi,
-									element_point_ranges_identifier.exact_xi,
-									graphic_to_object_data->rc_coordinate_field,
-									graphic->xi_point_density_field,
-									&number_of_xi_points, &xi_points,
-									graphic_to_object_data->time))
+								if (top_level_xi_point_numbers)
 								{
-									get_FE_element_identifier(element, &cm);
-									element_graphics_name = cm.number;
-									top_level_xi_point_numbers = (int *)NULL;
-									if (XI_DISCRETIZATION_CELL_CORNERS ==
-										graphic->xi_discretization_mode)
-									{
-										FE_element_convert_xi_points_cell_corners_to_top_level(
-											element, top_level_element, top_level_number_in_xi,
-											number_of_xi_points, xi_points, &top_level_xi_point_numbers);
-									}
-									if (top_level_xi_point_numbers)
-									{
-										/* xi_points have been converted to top-level */
-										use_element = top_level_element;
-										use_number_in_xi = top_level_number_in_xi;
-									}
-									else
-									{
-										use_element = element;
-										use_number_in_xi = number_in_xi;
-									}
-									ranges = (struct Multi_range *)NULL;
-									element_point_ranges_identifier.element = use_element;
-									element_point_ranges_identifier.top_level_element=
-										top_level_element;
-									element_point_ranges_identifier.xi_discretization_mode =
-										graphic->xi_discretization_mode;
-									use_element_dimension = get_FE_element_dimension(use_element);
-									for (i = 0; i < use_element_dimension; i++)
-									{
-										element_point_ranges_identifier.number_in_xi[i] =
-											use_number_in_xi[i];
-									}
-									if (NULL != (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
-										Element_point_ranges, identifier)(
-											&element_point_ranges_identifier,
-											graphic_to_object_data->selected_element_point_ranges_list)))
-									{
-										ranges = Element_point_ranges_get_ranges(element_point_ranges);
-									}
-									element_selected = 0;
-									if (graphic_to_object_data->group_field)
-									{
-										element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
-									}
-									base_size[0] = (FE_value)(graphic->glyph_size[0]);
-									base_size[1] = (FE_value)(graphic->glyph_size[1]);
-									base_size[2] = (FE_value)(graphic->glyph_size[2]);
-									offset[0] = (FE_value)(graphic->glyph_offset[0]);
-									offset[1] = (FE_value)(graphic->glyph_offset[1]);
-									offset[2] = (FE_value)(graphic->glyph_offset[2]);
-									scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
-									scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
-									scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-									/* NOT an error if no glyph_set produced == empty selection */
-									if ((0 < number_of_xi_points) &&
-										NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
-											use_element, top_level_element,
-											graphic_to_object_data->rc_coordinate_field,
-											number_of_xi_points, xi_points,
-											graphic->glyph, base_size, offset, scale_factors,
-											graphic_to_object_data->wrapper_orientation_scale_field,
-											graphic->variable_scale_field, graphic->data_field,
-											graphic->font, graphic->label_field, graphic->select_mode,
-											element_selected, ranges, top_level_xi_point_numbers,
-											graphic_to_object_data->time)))
-									{
-										/* set auxiliary_object_name for glyph_set to
-											 element_graphics_name so we can edit */
-										GT_glyph_set_set_auxiliary_integer_identifier(glyph_set,
-											element_graphics_name);
-									}
-									if (top_level_xi_point_numbers)
-									{
-										DEALLOCATE(top_level_xi_point_numbers);
-									}
-									DEALLOCATE(xi_points);
+									/* xi_points have been converted to top-level */
+									use_element = top_level_element;
+									use_number_in_xi = top_level_number_in_xi;
 								}
 								else
 								{
-									return_code = 0;
+									use_element = element;
+									use_number_in_xi = number_in_xi;
 								}
-							}
-							if (glyph_set)
-							{
-								if (!GT_OBJECT_ADD(GT_glyph_set)(
-									graphic->graphics_object,time,glyph_set))
+								ranges = (struct Multi_range *)NULL;
+								element_point_ranges_identifier.element = use_element;
+								element_point_ranges_identifier.top_level_element= 
+									top_level_element;
+								element_point_ranges_identifier.xi_discretization_mode =
+									graphic->xi_discretization_mode;
+								use_element_dimension = get_FE_element_dimension(use_element);
+								for (i = 0; i < use_element_dimension; i++)
 								{
-									DESTROY(GT_glyph_set)(&glyph_set);
-									return_code = 0;
+									element_point_ranges_identifier.number_in_xi[i] =
+										use_number_in_xi[i];
 								}
+								if (NULL != (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
+									Element_point_ranges, identifier)(
+										&element_point_ranges_identifier,
+										graphic_to_object_data->selected_element_point_ranges_list)))
+								{
+									ranges = Element_point_ranges_get_ranges(element_point_ranges);
+								}
+								element_selected = 0;
+								if (graphic_to_object_data->group_field)
+								{
+									element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
+								}
+								base_size[0] = (FE_value)(graphic->glyph_size[0]);
+								base_size[1] = (FE_value)(graphic->glyph_size[1]);
+								base_size[2] = (FE_value)(graphic->glyph_size[2]);
+								offset[0] = (FE_value)(graphic->glyph_offset[0]);
+								offset[1] = (FE_value)(graphic->glyph_offset[1]);
+								offset[2] = (FE_value)(graphic->glyph_offset[2]);
+								scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
+								scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
+								scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
+								/* NOT an error if no glyph_set produced == empty selection */
+								if ((0 < number_of_xi_points) &&
+									NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
+										use_element, top_level_element,
+										graphic_to_object_data->rc_coordinate_field,
+										number_of_xi_points, xi_points,
+										graphic->glyph, base_size, offset, scale_factors,
+										graphic_to_object_data->wrapper_orientation_scale_field,
+										graphic->variable_scale_field, graphic->data_field,
+										graphic->font, graphic->label_field, graphic->select_mode,
+										element_selected, ranges, top_level_xi_point_numbers,
+										graphic_to_object_data->time)))
+								{
+									/* set auxiliary_object_name for glyph_set to
+										 element_graphics_name so we can edit */
+									GT_glyph_set_set_auxiliary_integer_identifier(glyph_set,
+										element_graphics_name);
+								}
+								if (top_level_xi_point_numbers)
+								{
+									DEALLOCATE(top_level_xi_point_numbers);
+								}
+								DEALLOCATE(xi_points);
+							}
+							else
+							{
+								return_code = 0;
 							}
 						}
-						else
+						if (glyph_set)
 						{
-							if (glyph_set)
+							if (!GT_OBJECT_ADD(GT_glyph_set)(
+								graphic->graphics_object,time,glyph_set))
 							{
 								DESTROY(GT_glyph_set)(&glyph_set);
+								return_code = 0;
 							}
 						}
 					} break;
@@ -2345,34 +2294,6 @@ int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 	return (return_code);
 } /* Cmiss_graphic_set_name */
 
-char *Cmiss_graphic_get_summary_string(struct Cmiss_graphic *graphic)
-{
-	if (!graphic)
-		return 0;
-	char *graphic_string = 0;
-	int error = 0;
-	char temp_string[100];
-	if (graphic->name)
-	{
-		sprintf(temp_string, "%s. ", graphic->name);
-	}
-	else
-	{
-		sprintf(temp_string, "%i. ", graphic->position);
-	}
-	append_string(&graphic_string,temp_string,&error);
-	append_string(&graphic_string,
-		ENUMERATOR_STRING(Cmiss_graphic_type)(graphic->graphic_type),
-		&error);
-	if (graphic->subgroup_field)
-	{
-		char *name = Cmiss_field_get_name(graphic->subgroup_field);
-		append_string(&graphic_string, " subgroup ", &error);
-		append_string(&graphic_string, name, &error);
-		DEALLOCATE(name);
-	}
-	return graphic_string;
-}
 
 char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 	enum Cmiss_graphic_string_details graphic_detail)
@@ -2411,17 +2332,6 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		{
 			sprintf(temp_string," as %s", graphic->name);
 			append_string(&graphic_string,temp_string,&error);
-		}
-		if (graphic->subgroup_field)
-		{
-			if (GET_NAME(Computed_field)(graphic->subgroup_field,&name))
-			{
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				append_string(&graphic_string," subgroup ",&error);
-				append_string(&graphic_string,name,&error);
-				DEALLOCATE(name);
-			}
 		}
 		if (graphic->coordinate_field)
 		{
@@ -2519,7 +2429,7 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		append_string(&graphic_string," ",&error);
 		append_string(&graphic_string,
 			ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(graphic->coordinate_system),&error);
-		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH))
+		if (CMISS_GRAPHIC_LINES==graphic->graphic_type)
 		{
 			if (0 != graphic->line_width)
 			{
@@ -2692,6 +2602,17 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 						DEALLOCATE(name);
 					}
 				}
+				if (graphic->visibility_field)
+				{
+					if (GET_NAME(Computed_field)(graphic->visibility_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&graphic_string," visibility ",&error);
+						append_string(&graphic_string,name,&error);
+						DEALLOCATE(name);
+					}
+				}
 				if (graphic->orientation_scale_field)
 				{
 					if (GET_NAME(Computed_field)(graphic->orientation_scale_field,&name))
@@ -2786,9 +2707,9 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 		if (Cmiss_graphic_type_uses_attribute(graphic->graphic_type,
 			CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
 		{
+			append_string(&graphic_string," native_discretization ", &error);
 			if (graphic->native_discretization_field)
 			{
-				append_string(&graphic_string," native_discretization ", &error);
 				if (GET_NAME(FE_field)(graphic->native_discretization_field,&name))
 				{
 					/* put quotes around name if it contains special characters */
@@ -2802,8 +2723,11 @@ char *Cmiss_graphic_string(struct Cmiss_graphic *graphic,
 					error=1;
 				}
 			}
+			else
+			{
+				append_string(&graphic_string,"NONE",&error);
+			}
 		}
-
 		/* for graphic starting in a particular element */
 		if (CMISS_GRAPHIC_STREAMLINES==graphic->graphic_type)
 		{
@@ -3451,78 +3375,6 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 	return return_code;
 }
 
-int Cmiss_graphic_get_iteration_domain(Cmiss_graphic_id graphic,
-	Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
-{
-	if (!graphic || !graphic_to_object_data)
-		return 0;
-	graphic_to_object_data->master_mesh = 0;
-	graphic_to_object_data->iteration_mesh = 0;
-	int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
-	if (dimension > 0)
-	{
-		graphic_to_object_data->master_mesh =
-			Cmiss_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, dimension);
-		if (graphic->subgroup_field)
-		{
-			Cmiss_field_group_id group = Cmiss_field_cast_group(graphic->subgroup_field);
-			if (group)
-			{
-				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, graphic_to_object_data->master_mesh);
-				if (element_group)
-				{
-					graphic_to_object_data->iteration_mesh =
-						Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
-					Cmiss_field_element_group_destroy(&element_group);
-				}
-				Cmiss_field_group_destroy(&group);
-			}
-			else
-			{
-				Cmiss_field_element_group_id element_group = Cmiss_field_cast_element_group(graphic->subgroup_field);
-				if (element_group)
-				{
-					// check group is for same master mesh
-					graphic_to_object_data->iteration_mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
-					Cmiss_mesh_id temp_master_mesh = Cmiss_mesh_get_master(graphic_to_object_data->iteration_mesh);
-					if (!Cmiss_mesh_match(graphic_to_object_data->master_mesh, temp_master_mesh))
-					{
-						Cmiss_mesh_destroy(&graphic_to_object_data->iteration_mesh);
-					}
-					Cmiss_mesh_destroy(&temp_master_mesh);
-					Cmiss_field_element_group_destroy(&element_group);
-				}
-				else
-				{
-					graphic_to_object_data->iteration_mesh = Cmiss_mesh_access(graphic_to_object_data->master_mesh);
-				}
-			}
-		}
-		else
-		{
-			graphic_to_object_data->iteration_mesh = Cmiss_mesh_access(graphic_to_object_data->master_mesh);
-		}
-	}
-	return (0 != graphic_to_object_data->iteration_mesh);
-}
-
-static int Cmiss_mesh_to_graphics(Cmiss_mesh_id mesh, Cmiss_graphic_to_graphics_object_data *graphic_to_object_data)
-{
-	int return_code = 1;
-	Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(mesh);
-	Cmiss_element_id element = 0;
-	while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
-	{
-		if (!FE_element_to_graphics_object(element, graphic_to_object_data))
-		{
-			return_code = 0;
-			break;
-		}
-	}
-	Cmiss_element_iterator_destroy(&iterator);
-	return return_code;
-}
-
 int Cmiss_graphic_to_graphics_object(
 	struct Cmiss_graphic *graphic,void *graphic_to_object_data_void)
 {
@@ -3533,6 +3385,7 @@ int Cmiss_graphic_to_graphics_object(
 	enum GT_object_type graphics_object_type;
 	int return_code;
 	struct FE_region *fe_region;
+	struct GT_glyph_set *glyph_set = NULL;
 
 	ENTER(Cmiss_graphic_to_graphics_object);
 	struct Cmiss_graphic_to_graphics_object_data *graphic_to_object_data =
@@ -3728,7 +3581,6 @@ int Cmiss_graphic_to_graphics_object(
 								graphic->selected_graphics_changed=1;
 								/* need graphic for FE_element_to_graphics_object routine */
 								graphic_to_object_data->graphic=graphic;
-								Cmiss_graphic_get_iteration_domain(graphic, graphic_to_object_data);
 								switch (graphic->graphic_type)
 								{
 									case CMISS_GRAPHIC_NODE_POINTS:
@@ -3749,74 +3601,29 @@ int Cmiss_graphic_to_graphics_object(
 										scale_factors[0] = (FE_value)(graphic->glyph_scale_factors[0]);
 										scale_factors[1] = (FE_value)(graphic->glyph_scale_factors[1]);
 										scale_factors[2] = (FE_value)(graphic->glyph_scale_factors[2]);
-										Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
+										Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(graphic_to_object_data->field_module,
 											(graphic->graphic_type == CMISS_GRAPHIC_NODE_POINTS) ? "cmiss_nodes" : "cmiss_data");
-										Cmiss_nodeset_id iteration_nodeset = 0;
-										if (graphic->subgroup_field)
+										glyph_set = create_GT_glyph_set_from_nodeset(
+											nodeset, graphic_to_object_data->field_cache,
+											graphic_to_object_data->rc_coordinate_field,
+											graphic->glyph, base_size, offset, scale_factors,
+											graphic_to_object_data->time,
+											graphic_to_object_data->wrapper_orientation_scale_field,
+											graphic->variable_scale_field, graphic->data_field,
+											graphic->font, graphic->label_field,
+											graphic->label_density_field, graphic->visibility_field,
+											graphic->select_mode,graphic_to_object_data->group_field);
+										Cmiss_nodeset_destroy(&nodeset);
+										/* NOT an error if no glyph_set produced == empty group */
+										if (glyph_set)
 										{
-											Cmiss_field_group_id group = Cmiss_field_cast_group(graphic->subgroup_field);
-											if (group)
+											if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
+												time,glyph_set))
 											{
-												Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
-												if (node_group)
-												{
-													iteration_nodeset =
-														Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-													Cmiss_field_node_group_destroy(&node_group);
-												}
-												Cmiss_field_group_destroy(&group);
-											}
-											else
-											{
-												Cmiss_field_node_group_id node_group = Cmiss_field_cast_node_group(graphic->subgroup_field);
-												if (node_group)
-												{
-													// check group is for same master nodeset
-													iteration_nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-													Cmiss_nodeset_id temp_master_nodeset = Cmiss_nodeset_get_master(iteration_nodeset);
-													if (!Cmiss_nodeset_match(master_nodeset, temp_master_nodeset))
-													{
-														Cmiss_nodeset_destroy(&iteration_nodeset);
-													}
-													Cmiss_nodeset_destroy(&temp_master_nodeset);
-													Cmiss_field_node_group_destroy(&node_group);
-												}
-												else
-												{
-													iteration_nodeset = Cmiss_nodeset_access(master_nodeset);
-												}
+												DESTROY(GT_glyph_set)(&glyph_set);
+												return_code=0;
 											}
 										}
-										else
-										{
-											iteration_nodeset = Cmiss_nodeset_access(master_nodeset);
-										}
-										if (iteration_nodeset)
-										{
-											GT_glyph_set *glyph_set = create_GT_glyph_set_from_nodeset(
-												iteration_nodeset, graphic_to_object_data->field_cache,
-												graphic_to_object_data->rc_coordinate_field,
-												graphic->glyph, base_size, offset, scale_factors,
-												graphic_to_object_data->time,
-												graphic_to_object_data->wrapper_orientation_scale_field,
-												graphic->variable_scale_field, graphic->data_field,
-												graphic->font, graphic->label_field,
-												graphic->label_density_field,
-												(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
-												graphic->select_mode,graphic_to_object_data->group_field);
-											/* NOT an error if no glyph_set produced == empty group */
-											if (glyph_set)
-											{
-												if (!GT_OBJECT_ADD(GT_glyph_set)(graphic->graphics_object,
-													time,glyph_set))
-												{
-													DESTROY(GT_glyph_set)(&glyph_set);
-													return_code=0;
-												}
-											}
-											Cmiss_nodeset_destroy(&iteration_nodeset);
-										}
-										Cmiss_nodeset_destroy(&master_nodeset);
 									} break;
 									case CMISS_GRAPHIC_POINT:
 									{
@@ -3853,10 +3660,8 @@ int Cmiss_graphic_to_graphics_object(
 										if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 											graphic->graphics_object, lines))
 										{
-											if (graphic_to_object_data->iteration_mesh)
-											{
-												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
-											}
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, /*dimension*/1,
+												FE_element_to_graphics_object, graphic_to_object_data_void);
 										}
 										else
 										{
@@ -3896,19 +3701,28 @@ int Cmiss_graphic_to_graphics_object(
 #endif /* defined(USE_OPENCASCADE) */
 										if (!cad_surfaces)
 										{
-											if (graphic_to_object_data->iteration_mesh)
+											graphic_to_object_data->surface_mesh =
+												Cmiss_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, 2);
+											Cmiss_element_iterator_id iterator =
+												Cmiss_mesh_create_element_iterator(graphic_to_object_data->surface_mesh);
+											Cmiss_element_id element = 0;
+											while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
 											{
-												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
+												if (!FE_element_to_graphics_object(element, graphic_to_object_data_void))
+												{
+													return_code = 0;
+													break;
+												}
 											}
+											Cmiss_element_iterator_destroy(&iterator);
+											Cmiss_mesh_destroy(&graphic_to_object_data->surface_mesh);
 										}
 									} break;
 									case CMISS_GRAPHIC_CYLINDERS:
 									case CMISS_GRAPHIC_ELEMENT_POINTS:
 									{
-										if (graphic_to_object_data->iteration_mesh)
-										{
-											return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
-										}
+										return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+											FE_element_to_graphics_object, graphic_to_object_data_void);
 									} break;
 									case CMISS_GRAPHIC_ISO_SURFACES:
 									{
@@ -3925,10 +3739,9 @@ int Cmiss_graphic_to_graphics_object(
 														graphic->iso_scalar_field,
 														graphic->texture_coordinate_field);
 											}
-											if (graphic_to_object_data->iteration_mesh)
-											{
-												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
-											}
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+												FE_element_to_graphics_object,
+												graphic_to_object_data_void);
 											if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
 											{
 												Iso_surface_specification_destroy(&graphic_to_object_data->iso_surface_specification);
@@ -3967,7 +3780,7 @@ int Cmiss_graphic_to_graphics_object(
 										if (graphic->seed_element)
 										{
 											return_code = FE_element_to_graphics_object(
-												graphic->seed_element, graphic_to_object_data);
+												graphic->seed_element, graphic_to_object_data_void);
 										}
 										else if (graphic->seed_nodeset &&
 											graphic->seed_node_mesh_location_field)
@@ -3986,10 +3799,9 @@ int Cmiss_graphic_to_graphics_object(
 										}
 										else
 										{
-											if (graphic_to_object_data->iteration_mesh)
-											{
-												return_code = Cmiss_mesh_to_graphics(graphic_to_object_data->iteration_mesh, graphic_to_object_data);
-											}
+											return_code = FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
+												FE_element_to_graphics_object,
+												graphic_to_object_data_void);
 										}
 									} break;
 									default:
@@ -3997,8 +3809,6 @@ int Cmiss_graphic_to_graphics_object(
 										return_code = 0;
 									} break;
 								} /* end of switch */
-								Cmiss_mesh_destroy(&graphic_to_object_data->iteration_mesh);
-								Cmiss_mesh_destroy(&graphic_to_object_data->master_mesh);
 								if (return_code)
 								{
 									/* set the spectrum in the graphics object - if required */
@@ -4277,12 +4087,9 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 		return_code = 0;
 		/* compare geometry graphic */
 		/* for all graphic types */
-		if ((graphic->coordinate_field &&
+		if (graphic->coordinate_field &&
 			Computed_field_or_ancestor_satisfies_condition(
-				graphic->coordinate_field, conditional_function, user_data)) ||
-			(graphic->subgroup_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphic->subgroup_field, conditional_function, user_data))))
+				graphic->coordinate_field, conditional_function, user_data))
 		{
 			return_code = 1;
 		}
@@ -4324,7 +4131,10 @@ static int Cmiss_graphic_Computed_field_or_ancestor_satisfies_condition(
 					graphic->label_field, conditional_function, user_data))) ||
 			(graphic->label_density_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
-					graphic->label_density_field, conditional_function, user_data)))))
+					graphic->label_density_field, conditional_function, user_data))) ||
+			(graphic->visibility_field &&
+				(Computed_field_or_ancestor_satisfies_condition(
+					graphic->visibility_field, conditional_function, user_data)))))
 		{
 			return_code = 1;
 		}
@@ -5246,7 +5056,7 @@ int Cmiss_graphic_copy_without_graphics_object(
 		}
 
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
-		REACCESS(Computed_field)(&(destination->subgroup_field),source->subgroup_field);
+		REACCESS(Computed_field)(&(destination->visibility_field),source->visibility_field);
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
@@ -5635,6 +5445,192 @@ Cmiss_graphic* get_graphic_for_gfx_modify(Cmiss_rendition *rendition,
 
 } // namespace anonymous
 
+int gfx_modify_rendition_surfaces(struct Parse_state *state,
+	void *modify_rendition_data_void,void *rendition_command_data_void)
+{
+	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphics_select_mode select_mode;
+	enum Cmiss_graphics_render_type render_type;
+	int number_of_valid_strings,return_code, visibility;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Rendition_command_data *rendition_command_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_texture_coordinate_field_data;
+
+	ENTER(gfx_modify_rendition_surfaces);
+	if (state)
+	{
+		if (NULL != (rendition_command_data =
+			(struct Rendition_command_data *)rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data =
+				(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_SURFACES,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					visibility = graphic->visibility_flag;
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* exterior */
+					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
+						NULL,set_char_flag);
+					/* face */
+					Option_table_add_entry(option_table,"face",&(graphic->face),
+						NULL,set_exterior);
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* render_type */
+					render_type = graphic->render_type;
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(graphic->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
+						Cmiss_graphic_set_render_type(graphic, render_type);
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_surfaces.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_surfaces.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_surfaces.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_modify_rendition_surfaces.  "
+			"Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_surfaces */
+
 int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 	void *second_graphic_void)
 {
@@ -5655,7 +5651,6 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 			return_code=
 				(graphic->graphic_type==second_graphic->graphic_type)&&
 				(graphic->coordinate_field==second_graphic->coordinate_field)&&
-				(graphic->subgroup_field==second_graphic->subgroup_field)&&
 				((((char *)NULL==graphic->name)&&((char *)NULL==second_graphic->name))
 					||((graphic->name)&&(second_graphic->name)&&
 						(0==strcmp(graphic->name,second_graphic->name))))&&
@@ -5751,7 +5746,8 @@ int Cmiss_graphic_same_geometry(struct Cmiss_graphic *graphic,
 					second_graphic->variable_scale_field)&&
 				(graphic->label_field==second_graphic->label_field)&&
 				(graphic->label_density_field==second_graphic->label_density_field)&&
-				(graphic->font==second_graphic->font);
+				(graphic->font==second_graphic->font) &&
+				(graphic->visibility_field==second_graphic->visibility_field);
 		}
 		/* for element_points and iso_surfaces */
 		if (return_code&&
@@ -5886,871 +5882,2231 @@ int Cmiss_graphic_same_name_or_geometry(struct Cmiss_graphic *graphic,
 	return (return_code);
 } /* Cmiss_graphic_same_name_or_geometry */
 
-int gfx_modify_rendition_graphic(struct Parse_state *state,
-	enum Cmiss_graphic_type graphic_type, const char *help_text,
-	struct Modify_rendition_data *modify_rendition_data,
-	struct Rendition_command_data *rendition_command_data)
+int gfx_modify_rendition_node_points(struct Parse_state *state,
+	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	if (!(state && rendition_command_data && modify_rendition_data))
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_modify_rendition_graphic.  Invalid argument(s)");
-		return 0;
-	}
-	Cmiss_graphic *graphic = 0;
-	if (modify_rendition_data->modify_this_graphic)
-	{
-		graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
-		graphic_type = Cmiss_graphic_get_graphic_type(graphic);
-	}
-	else
-	{
-		graphic = get_graphic_for_gfx_modify(rendition_command_data->rendition,
-			graphic_type, modify_rendition_data->graphic);
-		if (modify_rendition_data->group && (!graphic->subgroup_field))
-		{
-			graphic->subgroup_field =
-				Cmiss_field_access(Cmiss_field_group_base_cast(modify_rendition_data->group));
-		}
-	}
-	if (!graphic)
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_modify_rendition_graphic.  Could not create graphic");
-		return 0;
-	}
-	REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
-
-	int return_code = 1;
-	Cmiss_graphics_coordinate_system coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
-	char *font_name = (char *)NULL;
-	Cmiss_field_id orientation_scale_field = 0;
-	Cmiss_field_id variable_scale_field = 0;
-	Cmiss_field_id xi_point_density_field = 0;
-	GT_object *glyph = 0;
-	Triple glyph_offset, glyph_scale_factors, glyph_size;
+	char *font_name;
+	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
 	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
-	const char *glyph_scaling_mode_string = 0;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
+	enum Graphics_select_mode select_mode;
+	int number_of_components,number_of_valid_strings,return_code,
+		visibility;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Graphics_font *new_font;
+	struct GT_object *glyph;
+	struct Rendition_command_data *rendition_command_data;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_label_field_data, set_label_density_field_data,
+		set_visibility_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
+
+	ENTER(gfx_modify_rendition_node_points);
+	if (state)
 	{
-		Cmiss_graphic_get_glyph_parameters(graphic,
-			&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
-			&orientation_scale_field, glyph_scale_factors,
-			&variable_scale_field);
-		if (glyph)
-			ACCESS(GT_object)(glyph);
-		if (orientation_scale_field)
+		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
+				rendition_command_data_void))
 		{
-			ACCESS(Computed_field)(orientation_scale_field);
-		}
-		if (variable_scale_field)
-		{
-			ACCESS(Computed_field)(variable_scale_field);
-		}
-		glyph_scaling_mode_string = ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
-	}
-	enum Use_element_type use_element_type;
-	const char *use_element_type_string = 0;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE))
-	{
-		use_element_type = graphic->use_element_type;
-		use_element_type_string = ENUMERATOR_STRING(Use_element_type)(use_element_type);
-	}
-	enum Xi_discretization_mode xi_discretization_mode;
-	const char *xi_discretization_mode_string = 0;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE))
-	{
-		Cmiss_graphic_get_xi_discretization(graphic,
-			&xi_discretization_mode, &xi_point_density_field);
-		if (xi_point_density_field)
-		{
-			ACCESS(Computed_field)(xi_point_density_field);
-		}
-		xi_discretization_mode_string = ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
-	}
-	int number_of_components = 3;
-	int visibility = graphic->visibility_flag;
-	int number_of_valid_strings;
-	const char **valid_strings;
-	enum Cmiss_graphics_render_type render_type = graphic->render_type;
-	const char *render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
-	/* The value stored in the graphic is an integer rather than a char */
-	char reverse_track = (graphic->reverse_track) ? 1 : 0;
-	char *seed_nodeset_name = 0;
-	if (graphic->seed_nodeset)
-	{
-		seed_nodeset_name = Cmiss_nodeset_get_name(graphic->seed_nodeset);
-	}
-
-	Option_table *option_table = CREATE(Option_table)();
-	if (help_text)
-	{
-		Option_table_add_help(option_table, help_text);
-	}
-
-	/* as */
-	Option_table_add_entry(option_table,"as",&(graphic->name),
-		(void *)1,set_name);
-
-	/* cell_centres/cell_corners/cell_density/exact_xi */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE))
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table,number_of_valid_strings,
-			valid_strings,&xi_discretization_mode_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* centre */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_entry(option_table,"centre",glyph_offset,
-			&(number_of_components),set_reversed_float_vector);
-	}
-
-	/* circle_discretization */
-	if (graphic_type == CMISS_GRAPHIC_CYLINDERS)
-	{
-		Option_table_add_entry(option_table, "circle_discretization",
-			(void *)&(graphic->circle_discretization), (void *)NULL,
-			set_Circle_discretization);
-	}
-
-	/* constant_radius */
-	if (graphic_type == CMISS_GRAPHIC_CYLINDERS)
-	{
-		Option_table_add_entry(option_table,"constant_radius",
-			&(graphic->constant_radius),NULL,set_float);
-	}
-
-	/* coordinate */
-	Set_Computed_field_conditional_data set_coordinate_field_data;
-	set_coordinate_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_coordinate_field_data.conditional_function = Computed_field_has_up_to_3_numerical_components;
-	set_coordinate_field_data.conditional_function_user_data = (void *)NULL;
-	Option_table_add_Computed_field_conditional_entry(option_table, "coordinate",
-		&(graphic->coordinate_field), &set_coordinate_field_data);
-
-	/* coordinate system */
-	const char *coordinate_system_string =
-		ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
-	valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
-		&number_of_valid_strings,
-		(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
-		(void *)NULL);
-	Option_table_add_enumerator(option_table, number_of_valid_strings,
-		valid_strings, &coordinate_system_string);
-	DEALLOCATE(valid_strings);
-
-	/* data */
-	Set_Computed_field_conditional_data set_data_field_data;
-	set_data_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_data_field_data.conditional_function = Computed_field_has_numerical_components;
-	set_data_field_data.conditional_function_user_data = (void *)NULL;
-	Option_table_add_Computed_field_conditional_entry(option_table, "data",
-		&(graphic->data_field), &set_data_field_data);
-
-	/* decimation_threshold */
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_double_entry(option_table, "decimation_threshold",
-			&(graphic->decimation_threshold));
-	}
-
-	/* delete */
-	Option_table_add_entry(option_table,"delete",
-		&(modify_rendition_data->delete_flag),NULL,set_char_flag);
-
-	/* density */
-	Set_Computed_field_conditional_data set_xi_point_density_field_data;
-	set_xi_point_density_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_xi_point_density_field_data.conditional_function = Computed_field_is_scalar;
-	set_xi_point_density_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "density",
-			&xi_point_density_field, &set_xi_point_density_field_data);
-	}
-
-	/* discretization */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_DISCRETIZATION))
-	{
-		Option_table_add_entry(option_table,"discretization",
-			&(graphic->discretization),NULL, set_Element_discretization);
-	}
-
-	/* ellipse/line/rectangle/ribbon */
-	Streamline_type streamline_type = STREAM_LINE;
-	const char *streamline_type_string = ENUMERATOR_STRING(Streamline_type)(streamline_type);
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table,number_of_valid_strings,
-			valid_strings,&streamline_type_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* exterior */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_EXTERIOR_FLAG))
-	{
-		Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
-			NULL,set_char_flag);
-	}
-
-	/* face */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_FACE))
-	{
-		Option_table_add_entry(option_table,"face",&(graphic->face),
-			NULL,set_exterior);
-	}
-
-	/* first_iso_value */
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_double_entry(option_table,"first_iso_value",
-			&(graphic->first_iso_value));
-	}
-
-	/* font */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-	{
-		Option_table_add_name_entry(option_table, "font",
-			&font_name);
-	}
-
-	/* glyph */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_entry(option_table,"glyph",&glyph,
-			rendition_command_data->glyph_manager,set_Graphics_object);
-	}
-
-	/* glyph scaling mode constant/scalar/vector/axes/general */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphic_glyph_scaling_mode)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Graphic_glyph_scaling_mode) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table, number_of_valid_strings,
-			valid_strings, &glyph_scaling_mode_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* iso_scalar */
-	Set_Computed_field_conditional_data set_iso_scalar_field_data;
-	set_iso_scalar_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_iso_scalar_field_data.conditional_function = Computed_field_is_scalar;
-	set_iso_scalar_field_data.conditional_function_user_data = (void *)NULL;
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "iso_scalar",
-			&(graphic->iso_scalar_field), &set_iso_scalar_field_data);
-	}
-
-	/* iso_values */
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_variable_length_double_vector_entry(option_table,
-			"iso_values", &(graphic->number_of_iso_values), &(graphic->iso_values));
-	}
-
-	/* last_iso_value */
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_double_entry(option_table,"last_iso_value",
-			&(graphic->last_iso_value));
-	}
-
-	/* label */
-	Set_Computed_field_conditional_data set_label_field_data;
-	set_label_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_label_field_data.conditional_function = (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-	set_label_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "label",
-			&(graphic->label_field), &set_label_field_data);
-	}
-
-	/* ldensity */
-	Set_Computed_field_conditional_data set_label_density_field_data;
-	set_label_density_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_label_density_field_data.conditional_function = Computed_field_has_up_to_3_numerical_components;
-	set_label_density_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "ldensity",
-			&(graphic->label_density_field), &set_label_density_field_data);
-	}
-
-	/* length */
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_entry(option_table,"length",
-			&(graphic->streamline_length),NULL,set_float);
-	}
-
-	/* line_width */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LINE_WIDTH))
-	{
-		Option_table_add_int_non_negative_entry(option_table,"line_width",
-			&(graphic->line_width));
-	}
-
-	/* material */
-	Option_table_add_entry(option_table,"material",&(graphic->material),
-		rendition_command_data->graphical_material_manager,
-		set_Graphical_material);
-
-	/* native_discretization */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_NATIVE_DISCRETIZATION_FIELD))
-	{
-		Option_table_add_set_FE_field_from_FE_region(option_table,
-			"native_discretization", &(graphic->native_discretization_field),
-			Cmiss_region_get_FE_region(rendition_command_data->region));
-	}
-
-	/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-	Streamline_data_type streamline_data_type = STREAM_NO_DATA;
-	const char *streamline_data_type_string =
-		ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type);
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table, number_of_valid_strings,
-			valid_strings, &streamline_data_type_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* orientation */
-	Set_Computed_field_conditional_data set_orientation_scale_field_data;
-	set_orientation_scale_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_orientation_scale_field_data.conditional_function = Computed_field_is_orientation_scale_capable;
-	set_orientation_scale_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "orientation",
-			&orientation_scale_field, &set_orientation_scale_field_data);
-	}
-
-	/* position */
-	Option_table_add_entry(option_table,"position",
-		&(modify_rendition_data->position),NULL,set_int_non_negative);
-
-	/* radius_scalar */
-	Set_Computed_field_conditional_data set_radius_scalar_field_data;
-	set_radius_scalar_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_radius_scalar_field_data.conditional_function = Computed_field_is_scalar;
-	set_radius_scalar_field_data.conditional_function_user_data = (void *)NULL;
-	if (graphic_type == CMISS_GRAPHIC_CYLINDERS)
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "radius_scalar",
-			&(graphic->radius_scalar_field), &set_radius_scalar_field_data);
-	}
-
-	/* range_number_of_iso_values */
-	/* Use a different temporary storage for this value so we
-		can tell it from the original variable_length array
-		"iso_values" above. */
-	int range_number_of_iso_values = 0;
-	if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-	{
-		Option_table_add_int_positive_entry(option_table,
-			"range_number_of_iso_values", &range_number_of_iso_values);
-	}
-
-	/* render_type */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
-		Option_table_add_enumerator(option_table,number_of_valid_strings,
-			valid_strings,&render_type_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* reverse */
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_entry(option_table,"reverse_track",
-			&reverse_track,NULL,set_char_flag);
-	}
-
-	/* scale_factor */
-	if (graphic_type == CMISS_GRAPHIC_CYLINDERS)
-	{
-		Option_table_add_entry(option_table, "scale_factor",
-			&(graphic->radius_scale_factor), NULL, set_float);
-	}
-
-	/* scale_factors */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_special_float3_entry(option_table,"scale_factors",
-			glyph_scale_factors,"*");
-	}
-
-	/* secondary_material (was: multipass_pass1_material) */
-	if (graphic_type == CMISS_GRAPHIC_LINES)
-	{
-		Option_table_add_entry(option_table, "secondary_material",
-			&(graphic->secondary_material), rendition_command_data->graphical_material_manager,
-			set_Graphical_material);
-	}
-
-	/* seed_element */
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_entry(option_table, "seed_element",
-			&(graphic->seed_element), Cmiss_region_get_FE_region(rendition_command_data->region),
-			set_FE_element_top_level_FE_region);
-	}
-
-	// seed_node_mesh_location_field
-	Set_Computed_field_conditional_data set_seed_mesh_location_field_data;
-	set_seed_mesh_location_field_data.conditional_function = Computed_field_has_value_type_mesh_location;
-	set_seed_mesh_location_field_data.conditional_function_user_data = (void *)NULL;
-	set_seed_mesh_location_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "seed_node_mesh_location_field",
-			&(graphic->seed_node_mesh_location_field), &set_seed_mesh_location_field_data);
-	}
-
-	// seed_nodeset
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_string_entry(option_table, "seed_nodeset", &seed_nodeset_name,
-			" NODE_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_nodes|cmiss_data|none");
-	}
-
-	/* select_mode */
-	enum Graphics_select_mode select_mode = Cmiss_graphic_get_select_mode(graphic);
-	const char *select_mode_string = ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
-	valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
-		&number_of_valid_strings,
-		(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
-		(void *)NULL);
-	Option_table_add_enumerator(option_table,number_of_valid_strings,
-		valid_strings,&select_mode_string);
-	DEALLOCATE(valid_strings);
-
-	/* selected_material */
-	Option_table_add_entry(option_table,"selected_material",
-		&(graphic->selected_material),
-		rendition_command_data->graphical_material_manager,
-		set_Graphical_material);
-
-	/* size */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_special_float3_entry(option_table,"size",
-			glyph_size,"*");
-	}
-
-	/* spectrum */
-	Option_table_add_entry(option_table,"spectrum",
-		&(graphic->spectrum),rendition_command_data->spectrum_manager,
-		set_Spectrum);
-
-	/* subgroup field */
-	Set_Computed_field_conditional_data set_subgroup_field_data;
-	set_subgroup_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_subgroup_field_data.conditional_function = Computed_field_is_scalar;
-	set_subgroup_field_data.conditional_function_user_data = (void *)NULL;
-	Option_table_add_Computed_field_conditional_entry(option_table, "subgroup",
-		&(graphic->subgroup_field), &set_subgroup_field_data);
-
-	/* tessellation */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION))
-	{
-		Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
-			rendition_command_data->graphics_module, &(graphic->tessellation));
-	}
-
-	/* texture_coordinates */
-	Set_Computed_field_conditional_data set_texture_coordinate_field_data;
-	set_texture_coordinate_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_texture_coordinate_field_data.conditional_function = Computed_field_has_up_to_3_numerical_components;
-	set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TEXTURE_COORDINATE_FIELD))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "texture_coordinates",
-			&(graphic->texture_coordinate_field), &set_texture_coordinate_field_data);
-	}
-
-	/* use_elements/use_faces/use_lines */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE))
-	{
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table,number_of_valid_strings,
-			valid_strings,&use_element_type_string);
-		DEALLOCATE(valid_strings);
-	}
-
-	/* variable_scale */
-	Set_Computed_field_conditional_data set_variable_scale_field_data;
-	set_variable_scale_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_variable_scale_field_data.conditional_function = Computed_field_has_up_to_3_numerical_components;
-	set_variable_scale_field_data.conditional_function_user_data = (void *)NULL;
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "variable_scale",
-			&variable_scale_field, &set_variable_scale_field_data);
-	}
-
-	/* vector */
-	Set_Computed_field_conditional_data set_stream_vector_field_data;
-	set_stream_vector_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
-	set_stream_vector_field_data.conditional_function = Computed_field_is_stream_vector_capable;
-	set_stream_vector_field_data.conditional_function_user_data = (void *)NULL;
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_Computed_field_conditional_entry(option_table, "vector",
-			&(graphic->stream_vector_field), &set_stream_vector_field_data);
-	}
-
-	/* visible/invisible */
-	Option_table_add_switch(option_table, "visible", "invisible", &visibility);
-
-	/* width */
-	if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-	{
-		Option_table_add_entry(option_table,"width",
-			&(graphic->streamline_width),NULL,set_float);
-	}
-
-	/* xi */
-	if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE))
-	{
-		Option_table_add_entry(option_table,"xi",
-			graphic->seed_xi,&number_of_components,set_float_vector);
-	}
-
-	if ((return_code=Option_table_multi_parse(option_table,state)))
-	{
-		if (graphic_type == CMISS_GRAPHIC_ISO_SURFACES)
-		{
-			if (graphic->iso_values)
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
 			{
-				if (range_number_of_iso_values || graphic->first_iso_value || graphic->last_iso_value)
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
 				{
-					display_message(ERROR_MESSAGE,
-						"When specifying a list of <iso_values> do not specify <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
-					return_code=0;
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
 				}
-			}
-			else
-			{
-				if (range_number_of_iso_values)
+				else
 				{
-					graphic->number_of_iso_values = range_number_of_iso_values;
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_NODE_POINTS,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					font_name = (char *)NULL;
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					glyph = (GT_object *)NULL;
+					glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
+						ACCESS(GT_object)(glyph);
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					number_of_components = 3;
+					visibility = graphic->visibility_flag;
+
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* centre */
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* font */
+					Option_table_add_name_entry(option_table, "font",
+						&font_name);
+					/* glyph */
+					Option_table_add_entry(option_table,"glyph",&glyph,
+						rendition_command_data->glyph_manager,set_Graphics_object);
+					/* label */
+					set_label_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_label_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_label_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"label",&(graphic->label_field),
+						&set_label_field_data,set_Computed_field_conditional);
+					/* ldensity */
+					set_label_density_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_label_density_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"ldensity",&(graphic->label_density_field),
+						&set_label_density_field_data,set_Computed_field_conditional);
+					/* visibility_field */
+					set_visibility_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_visibility_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_visibility_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"visibility_field",&(graphic->visibility_field),
+						&set_visibility_field_data,set_Computed_field_conditional);
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphic_glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphic_glyph_scaling_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* orientation */
+					set_orientation_scale_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_orientation_scale_field_data.conditional_function=
+						Computed_field_is_orientation_scale_capable;
+					set_orientation_scale_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"orientation",
+						&orientation_scale_field,&set_orientation_scale_field_data,
+						set_Computed_field_conditional);
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* scale_factors */
+					Option_table_add_special_float3_entry(option_table,"scale_factors",
+						glyph_scale_factors,"*");
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* size */
+					Option_table_add_special_float3_entry(option_table,"size",
+						glyph_size,"*");
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						rendition_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						if (font_name && (new_font = Graphics_font_package_get_font
+								(rendition_command_data->graphics_font_package, font_name)))
+						{
+							REACCESS(Graphics_font)(&graphic->font, new_font);
+						}
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
+
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+					if (font_name)
+					{
+						DEALLOCATE(font_name);
+					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
+					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"You must either specify a list of <iso_values> or a range with <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
-					return_code = 0;
+						"gfx_modify_rendition_node_points.  Could not create graphic");
+					return_code=0;
 				}
+				DEACCESS(Cmiss_graphic)(&graphic);
 			}
-			if ((struct Computed_field *)NULL == graphic->iso_scalar_field)
+			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_modify_rendition_iso_surfaces.  Missing iso_scalar field");
+					"gfx_modify_rendition_node_points.  No modify data");
 				return_code=0;
 			}
 		}
-
-		if (graphic->data_field&&!graphic->spectrum)
+		else
 		{
-			graphic->spectrum=ACCESS(Spectrum)(
-				rendition_command_data->default_spectrum);
-		}
-		Cmiss_graphic_set_visibility_flag(graphic, visibility);
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_XI_DISCRETIZATION_MODE))
-		{
-			STRING_TO_ENUMERATOR(Xi_discretization_mode)(
-				xi_discretization_mode_string, &xi_discretization_mode);
-			if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
-				(XI_DISCRETIZATION_CELL_POISSON != xi_discretization_mode)) ||
-				xi_point_density_field)
-			{
-				Cmiss_graphic_set_xi_discretization(graphic,
-					xi_discretization_mode, xi_point_density_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"No density field specified for cell_density|cell_poisson");
-				return_code = 0;
-			}
-		}
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_USE_ELEMENT_TYPE))
-		{
-			STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string, &use_element_type);
-			Cmiss_graphic_set_use_element_type(graphic, use_element_type);
-		}
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_LABEL_FIELD))
-		{
-			Graphics_font *new_font = 0;
-			if (font_name && (new_font = Graphics_font_package_get_font
-					(rendition_command_data->graphics_font_package, font_name)))
-			{
-				REACCESS(Graphics_font)(&graphic->font, new_font);
-			}
-		}
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_GLYPH))
-		{
-			STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
-				glyph_scaling_mode_string, &glyph_scaling_mode);
-			Cmiss_graphic_set_glyph_parameters(graphic,
-				glyph, glyph_scaling_mode, glyph_offset, glyph_size,
-				orientation_scale_field,glyph_scale_factors,
-				variable_scale_field);
-		}
-
-		STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(
-			coordinate_system_string, &coordinate_system);
-		Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
-
-		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_RENDER_TYPE))
-		{
-			STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
-			Cmiss_graphic_set_render_type(graphic, render_type);
-		}
-
-		STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string, &select_mode);
-		Cmiss_graphic_set_select_mode(graphic, select_mode);
-
-		if (graphic_type == CMISS_GRAPHIC_STREAMLINES)
-		{
-			if (!(graphic->stream_vector_field))
-			{
-				display_message(INFORMATION_MESSAGE,"Must specify a vector before any streamlines can be created");
-			}
-			if (return_code && seed_nodeset_name)
-			{
-				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition_command_data->region);
-				Cmiss_nodeset_id seed_nodeset =
-					Cmiss_field_module_find_nodeset_by_name(field_module, seed_nodeset_name);
-				if (seed_nodeset || (fuzzy_string_compare(seed_nodeset_name, "none")))
-				{
-					if (graphic->seed_nodeset)
-					{
-						Cmiss_nodeset_destroy(&graphic->seed_nodeset);
-					}
-					// take over reference:
-					graphic->seed_nodeset = seed_nodeset;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Unknown seed_nodeset %s", seed_nodeset_name);
-					return_code = 0;
-				}
-				Cmiss_field_module_destroy(&field_module);
-			}
-			if ((graphic->seed_node_mesh_location_field && (!graphic->seed_nodeset)) ||
-				((!graphic->seed_node_mesh_location_field) && graphic->seed_nodeset))
-			{
-				display_message(ERROR_MESSAGE,
-					"Must specify both seed_nodeset and seed_node_mesh_location_field, or neither");
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				Cmiss_field *stream_vector_field = 0;
-				float length = 0.0, width = 0.0;
-				int reverse_track_int;
-				Cmiss_graphic_get_streamline_parameters(graphic,
-					&streamline_type,&stream_vector_field,&reverse_track_int,
-					&length,&width);
-				STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
-					&streamline_type);
-				STRING_TO_ENUMERATOR(Streamline_data_type)(
-					streamline_data_type_string, &streamline_data_type);
-				if (graphic->data_field)
-				{
-					if (STREAM_FIELD_SCALAR != streamline_data_type)
-					{
-						display_message(WARNING_MESSAGE,
-							"Must use field_scalar option with data; ensuring this");
-						streamline_data_type=STREAM_FIELD_SCALAR;
-					}
-				}
-				else
-				{
-					if (STREAM_FIELD_SCALAR == streamline_data_type)
-					{
-						display_message(WARNING_MESSAGE,
-							"Must specify data field with field_scalar option");
-						streamline_data_type=STREAM_NO_DATA;
-					}
-				}
-				if ((STREAM_NO_DATA!=streamline_data_type)&&!graphic->spectrum)
-				{
-					graphic->spectrum=ACCESS(Spectrum)(
-						rendition_command_data->default_spectrum);
-				}
-				Cmiss_graphic_set_streamline_parameters(
-					graphic,streamline_type,stream_vector_field,(int)reverse_track,
-					length,width);
-				Cmiss_graphic_set_data_spectrum_parameters_streamlines(
-					graphic,streamline_data_type,graphic->data_field,
-					graphic->spectrum);
-			}
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_node_points.  "
+				"Missing rendition_command_data");
+			return_code=0;
 		}
 	}
-	DESTROY(Option_table)(&option_table);
-	if (!return_code)
+	else
 	{
-		/* parse error, help */
-		DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_node_points.  Missing state");
+		return_code=0;
 	}
-	if (glyph)
-	{
-		DEACCESS(GT_object)(&glyph);
-	}
-	if (orientation_scale_field)
-	{
-		DEACCESS(Computed_field)(&orientation_scale_field);
-	}
-	if (variable_scale_field)
-	{
-		DEACCESS(Computed_field)(&variable_scale_field);
-	}
-	if (xi_point_density_field)
-	{
-		DEACCESS(Computed_field)(&xi_point_density_field);
-	}
-	if (font_name)
-	{
-		DEALLOCATE(font_name);
-	}
-	if (xi_point_density_field)
-	{
-		DEACCESS(Computed_field)(&xi_point_density_field);
-	}
-	if (seed_nodeset_name)
-	{
-		DEALLOCATE(seed_nodeset_name);
-	}
-	DEACCESS(Cmiss_graphic)(&graphic);
-	return return_code;
-}
+	LEAVE;
 
-int gfx_modify_rendition_cylinders(struct Parse_state *state,
-	void *modify_rendition_data_void,void *rendition_command_data_void)
-{
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_CYLINDERS, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	return (return_code);
+} /* gfx_modify_rendition_node_points */
 
 int gfx_modify_rendition_data_points(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_DATA_POINTS, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	char *font_name; 
+	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
+	enum Graphics_select_mode select_mode;
+	int number_of_components,number_of_valid_strings,return_code,visibility;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Graphics_font *new_font;
+	struct GT_object *glyph;
+	struct Rendition_command_data *rendition_command_data;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
+		set_label_density_field_data, set_variable_scale_field_data;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
-int gfx_modify_rendition_element_points(struct Parse_state *state,
+	ENTER(gfx_modify_rendition_data_points);
+	if (state)
+	{
+		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
+				rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_DATA_POINTS,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					font_name = (char *)NULL;
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					glyph = (GT_object *)NULL;
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
+						ACCESS(GT_object)(glyph);
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					number_of_components = 3;
+					visibility = graphic->visibility_flag;
+
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* centre */
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* font */
+					Option_table_add_name_entry(option_table, "font",
+						&font_name);
+					/* glyph */
+					Option_table_add_entry(option_table,"glyph",&glyph,
+						rendition_command_data->glyph_manager,set_Graphics_object);
+					/* label */
+					set_label_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_label_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_label_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"label",&(graphic->label_field),
+						&set_label_field_data,set_Computed_field_conditional);
+					/* ldensity */
+					set_label_density_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_label_density_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"ldensity",&(graphic->label_density_field),
+						&set_label_density_field_data,set_Computed_field_conditional);
+					/* visibility_field */
+					set_visibility_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_visibility_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_visibility_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"visibility_field",&(graphic->visibility_field),
+						&set_visibility_field_data,set_Computed_field_conditional);
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphic_glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphic_glyph_scaling_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* orientation */
+					set_orientation_scale_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_orientation_scale_field_data.conditional_function=
+						Computed_field_is_orientation_scale_capable;
+					set_orientation_scale_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"orientation",
+						&orientation_scale_field,&set_orientation_scale_field_data,
+						set_Computed_field_conditional);
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* scale_factors */
+					Option_table_add_special_float3_entry(option_table,"scale_factors",
+						glyph_scale_factors,"*");
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* size */
+					Option_table_add_special_float3_entry(option_table,"size",
+						glyph_size,"*");
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						rendition_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						if (font_name && (new_font = Graphics_font_package_get_font
+								(rendition_command_data->graphics_font_package, font_name)))
+						{
+							REACCESS(Graphics_font)(&graphic->font, new_font);
+						}
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+					if (font_name)
+					{
+						DEALLOCATE(font_name);
+					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_data_points.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_data_points.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_data_points.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_data_points.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_data_points */
+
+int gfx_modify_rendition_point(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_ELEMENT_POINTS, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	char *font_name;
+	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
+	enum Graphics_select_mode select_mode;
+	int number_of_components,number_of_valid_strings,return_code,
+		visibility;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Graphics_font *new_font;
+	struct GT_object *glyph;
+	struct Rendition_command_data *rendition_command_data;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
 
-int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
-	void *modify_rendition_data_void,void *rendition_command_data_void)
-{
-	const char *help_text =
-		"Create isosurfaces in volume elements <use_elements> or isolines in face or surface elements <use_faces>.  "
-		"The isosurface will be generated at the values in the elements where <iso_scalar> equals the iso values specified.  "
-		"The iso values can be specified either as a list with the <iso_values> option "
-		"or by specifying <range_number_of_iso_values>, <first_iso_value> and <last_iso_value>.  "
-		"The <as> parameter allows a name to be specified for this setting.  "
-		"The <coordinate> parameter optionally overrides the groups default coordinate field.  "
-		"If a <data> field is specified then the <spectrum> is used to render the data values as colour on the generated isosurface.  "
-		"If a <decimation_threshold> is specified then the resulting iso_surface will be decimated according to the threshold.  "
-		"If <delete> is specified then if the graphic matches an existing setting (either by parameters or name) then it will be removed.  "
-		"If <exterior> is specified then only faces with one parent will be selected when <use_faces> is specified.  "
-		"If <face> is specified then only that face will be selected when <use_faces> is specified.  "
-		"The <material> is used to render the surface.  "
-		"You can specify the <position> the graphic has in the graphic list.  "
-		"You can specify the <line_width>, this option only applies when <use_faces> is specified.  "
-		"You can render a mesh as solid <render_shaded> or as a wireframe <render_wireframe>.  "
-		"If <select_on> is active then the element tool will select the elements the iso_surface was generated from.  "
-		"If <no_select> is active then the iso_surface cannot be selected.  "
-		"If <draw_selected> is active then iso_surfaces will only be generated in elements that are selected.  "
-		"Conversely, if <draw_unselected> is active then iso_surfaces will only be generated in elements that are not selected.  "
-		"The <texture_coordinates> are used to lay out a texture if the <material> contains a texture.  "
-		"A graphic can be made <visible> or <invisible>.  ";
+	ENTER(gfx_modify_rendition_point);
+	if (state)
+	{
+		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
+				rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_POINT,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					font_name = (char *)NULL;
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					glyph = (GT_object *)NULL;
+					Cmiss_graphic_get_glyph_parameters(graphic,
+						&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
+					if (glyph)
+						ACCESS(GT_object)(glyph);
+					if (orientation_scale_field)
+					{
+						ACCESS(Computed_field)(orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						ACCESS(Computed_field)(variable_scale_field);
+					}
 
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_ISO_SURFACES, help_text,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					number_of_components = 3;
+					visibility = graphic->visibility_flag;
+
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* centre */
+					Option_table_add_entry(option_table,"centre",glyph_offset,
+						&(number_of_components),set_reversed_float_vector);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* font */
+					Option_table_add_name_entry(option_table, "font",
+						&font_name);
+					/* glyph */
+					Option_table_add_entry(option_table,"glyph",&glyph,
+						rendition_command_data->glyph_manager,set_Graphics_object);
+					/* label */
+					set_label_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_label_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_label_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"label",&(graphic->label_field),
+						&set_label_field_data,set_Computed_field_conditional);
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphic_glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphic_glyph_scaling_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* orientation */
+					set_orientation_scale_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_orientation_scale_field_data.conditional_function=
+						Computed_field_is_orientation_scale_capable;
+					set_orientation_scale_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"orientation",
+						&orientation_scale_field,&set_orientation_scale_field_data,
+						set_Computed_field_conditional);
+					/* overlay disabled
+					overlay_option_table=CREATE(Option_table)();
+					Option_table_add_entry(overlay_option_table,"overlay",
+						&overlay_flag,(void *)NULL,set_int);
+					Option_table_add_entry(overlay_option_table,"no_overlay",
+						&overlay_flag,(void *)NULL,unset_int_switch);
+					Option_table_add_suboption_table(option_table,overlay_option_table);
+					*/
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* scale_factors */
+					Option_table_add_special_float3_entry(option_table,"scale_factors",
+						glyph_scale_factors,"*");
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* size */
+					Option_table_add_special_float3_entry(option_table,"size",
+						glyph_size,"*");
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						rendition_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						if (font_name && (new_font = Graphics_font_package_get_font
+								(rendition_command_data->graphics_font_package, font_name)))
+						{
+							REACCESS(Graphics_font)(&graphic->font, new_font);
+						}
+						/* overlay disabled
+						if (overlay_flag ==0)
+						{
+							graphic->overlay_flag = 0;
+						}
+						else
+						{
+							graphic->overlay_flag = 1;
+							graphic->overlay_order = overlay_flag;
+						}
+						*/
+						STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+							glyph_scaling_mode_string, &glyph_scaling_mode);
+						Cmiss_graphic_set_glyph_parameters(graphic,
+							glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+							orientation_scale_field,glyph_scale_factors,
+							variable_scale_field);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+					if (font_name)
+					{
+						DEALLOCATE(font_name);
+					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_point.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_point.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_point.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_point.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
 }
 
 int gfx_modify_rendition_lines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_LINES, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	const char *select_mode_string,**valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphics_select_mode select_mode;
+	int number_of_valid_strings,return_code, visibility;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Rendition_command_data *rendition_command_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_texture_coordinate_field_data;
 
-int gfx_modify_rendition_node_points(struct Parse_state *state,
+	ENTER(gfx_modify_rendition_lines);
+	if (state)
+	{
+		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
+				rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_LINES,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					visibility = graphic->visibility_flag;
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* exterior */
+					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
+						NULL,set_char_flag);
+					/* face */
+					Option_table_add_entry(option_table,"face",&(graphic->face),
+						NULL,set_exterior);
+					/* line_width */
+					Option_table_add_int_non_negative_entry(option_table,"line_width",
+						&(graphic->line_width));
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* multipass_pass1_material */
+					Option_table_add_entry(option_table,"multipass_pass1_material",
+						&(graphic->secondary_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(graphic->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_lines.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_lines.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_lines.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_modify_rendition_lines.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_lines */
+
+int gfx_modify_rendition_cylinders(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_NODE_POINTS, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	const char *render_type_string,*select_mode_string,**valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphics_select_mode select_mode;
+	enum Cmiss_graphics_render_type render_type;
+	int number_of_valid_strings,return_code, visibility;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Rendition_command_data *rendition_command_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_radius_scalar_field_data,
+		set_texture_coordinate_field_data;
 
-int gfx_modify_rendition_point(struct Parse_state *state,
+	ENTER(gfx_modify_rendition_cylinders);
+	if (state)
+	{
+		if (NULL != (rendition_command_data=(struct Rendition_command_data *)
+				rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_CYLINDERS,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					visibility = graphic->visibility_flag;
+					option_table=CREATE(Option_table)();
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* circle_discretization */
+					Option_table_add_entry(option_table, "circle_discretization",
+						(void *)&(graphic->circle_discretization), (void *)NULL,
+						set_Circle_discretization);
+					/* constant_radius */
+					Option_table_add_entry(option_table,"constant_radius",
+						&(graphic->constant_radius),NULL,set_float);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* exterior */
+					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
+						NULL,set_char_flag);
+					/* face */
+					Option_table_add_entry(option_table,"face",&(graphic->face),
+						NULL,set_exterior);
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* render_type */
+					render_type = graphic->render_type;
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
+					/* radius_scalar */
+					set_radius_scalar_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_radius_scalar_field_data.conditional_function=
+						Computed_field_is_scalar;
+					set_radius_scalar_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"radius_scalar",
+						&(graphic->radius_scalar_field),&set_radius_scalar_field_data,
+						set_Computed_field_conditional);
+					/* scale_factor */
+					Option_table_add_entry(option_table,"scale_factor",
+						&(graphic->radius_scale_factor),NULL,set_float);
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(graphic->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
+						Cmiss_graphic_set_render_type(graphic, render_type);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_cylinders.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_cylinders.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_cylinders.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_cylinders.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_cylinders */
+
+int gfx_modify_rendition_iso_surfaces(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_POINT, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	const char *render_type_string,*select_mode_string, *use_element_type_string,
+		**valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphics_select_mode select_mode;
+	enum Cmiss_graphics_render_type render_type;
+	enum Use_element_type use_element_type;
+	int number_of_valid_strings,range_number_of_iso_values,
+		return_code,visibility;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Rendition_command_data *rendition_command_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data,set_iso_scalar_field_data,
+		set_texture_coordinate_field_data;
+
+	ENTER(gfx_modify_rendition_iso_surfaces);
+	if (state)
+	{
+		if (NULL != (rendition_command_data=
+			(struct Rendition_command_data *)rendition_command_data_void))
+		{
+			if (NULL != (modify_rendition_data=
+					(struct Modify_rendition_data *)modify_rendition_data_void))
+			{
+				Cmiss_graphic *graphic = NULL;
+				if (modify_rendition_data->modify_this_graphic)
+				{
+					graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+				}
+				else
+				{
+					graphic = get_graphic_for_gfx_modify(
+						rendition_command_data->rendition, CMISS_GRAPHIC_ISO_SURFACES,
+						modify_rendition_data->graphic);
+				}
+				if (graphic)
+				{
+					coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+					REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+					visibility = graphic->visibility_flag;
+					range_number_of_iso_values = 0;
+					option_table=CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						"Create isosurfaces in volume elements <use_elements> or isolines in face or surface elements <use_faces>.  "
+						"The isosurface will be generated at the values in the elements where <iso_scalar> equals the iso values specified.  "
+						"The iso values can be specified either as a list with the <iso_values> option "
+						"or by specifying <range_number_of_iso_values>, <first_iso_value> and <last_iso_value>.  "
+						"The <as> parameter allows a name to be specified for this setting.  "
+						"The <coordinate> parameter optionally overrides the groups default coordinate field.  "
+						"If a <data> field is specified then the <spectrum> is used to render the data values as colour on the generated isosurface.  "
+						"If a <decimation_threshold> is specified then the resulting iso_surface will be decimated according to the threshold.  "
+						"If <delete> is specified then if the graphic matches an existing setting (either by parameters or name) then it will be removed.  "
+						"If <exterior> is specified then only faces with one parent will be selected when <use_faces> is specified.  "
+						"If <face> is specified then only that face will be selected when <use_faces> is specified.  "
+						"The <material> is used to render the surface.  "
+						"You can specify the <scene> the graphic is for.  "
+						"You can specify the <position> the graphic has in the graphic list.  "
+						"You can specify the <line_width>, this option only applies when <use_faces> is specified.  "
+						"You can render a mesh as solid <render_shaded> or as a wireframe <render_wireframe>.  "
+						"If <select_on> is active then the element tool will select the elements the iso_surface was generated from.  "
+						"If <no_select> is active then the iso_surface cannot be selected.  "
+						"If <draw_selected> is active then iso_surfaces will only be generated in elements that are selected.  "
+						"Conversely, if <draw_unselected> is active then iso_surfaces will only be generated in elements that are not selected.  "
+						"The <texture_coordinates> are used to lay out a texture if the <material> contains a texture.  "
+						"A graphic can be made <visible> or <invisible>.  ");
+					/* as */
+					Option_table_add_entry(option_table,"as",&(graphic->name),
+						(void *)1,set_name);
+					/* coordinate */
+					set_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"coordinate",
+						&(graphic->coordinate_field),&set_coordinate_field_data,
+						set_Computed_field_conditional);
+					/* coordinate system */
+					coordinate_system_string =
+						ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &coordinate_system_string);
+					DEALLOCATE(valid_strings);
+					/* data */
+					set_data_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_data_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_data_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"data",&(graphic->data_field),
+						&set_data_field_data,set_Computed_field_conditional);
+					/* decimation_threshold */
+					Option_table_add_double_entry(option_table, "decimation_threshold",
+						&(graphic->decimation_threshold));
+					/* delete */
+					Option_table_add_entry(option_table,"delete",
+						&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+					/* exterior */
+					Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
+						NULL,set_char_flag);
+					/* face */
+					Option_table_add_entry(option_table,"face",&(graphic->face),
+						NULL,set_exterior);
+					/* iso_scalar */
+					set_iso_scalar_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_iso_scalar_field_data.conditional_function=
+						Computed_field_is_scalar;
+					set_iso_scalar_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"iso_scalar",
+						&(graphic->iso_scalar_field),&set_iso_scalar_field_data,
+						set_Computed_field_conditional);
+					/* iso_values */
+					Option_table_add_variable_length_double_vector_entry(option_table,
+						"iso_values", &(graphic->number_of_iso_values), &(graphic->iso_values));
+					/* material */
+					Option_table_add_entry(option_table,"material",&(graphic->material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* last_iso_value */
+					Option_table_add_double_entry(option_table,"last_iso_value",
+						&(graphic->last_iso_value));
+					/* first_iso_value */
+					Option_table_add_double_entry(option_table,"first_iso_value",
+						&(graphic->first_iso_value));	
+					/* native_discretization */
+					Option_table_add_set_FE_field_from_FE_region(option_table,
+						"native_discretization", &(graphic->native_discretization_field),
+						Cmiss_region_get_FE_region(rendition_command_data->region));
+					/* position */
+					Option_table_add_entry(option_table,"position",
+						&(modify_rendition_data->position),NULL,set_int_non_negative);
+					/* range_number_of_iso_values */
+					/* Use a different temporary storage for this value so we
+						can tell it from the original variable_length array
+						"iso_values" above. */
+					Option_table_add_int_positive_entry(option_table,
+						"range_number_of_iso_values",
+						&range_number_of_iso_values);
+					Option_table_add_int_non_negative_entry(option_table,"line_width",
+						&(graphic->line_width));
+					/* render_type */
+					render_type = graphic->render_type;
+					render_type_string = ENUMERATOR_STRING(Cmiss_graphics_render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_render_type) *)NULL, (void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
+					/* select_mode */
+					select_mode = Cmiss_graphic_get_select_mode(graphic);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(graphic->selected_material),
+						rendition_command_data->graphical_material_manager,
+						set_Graphical_material);
+					/* spectrum */
+					Option_table_add_entry(option_table,"spectrum",
+						&(graphic->spectrum),rendition_command_data->spectrum_manager,
+						set_Spectrum);
+					/* tessellation */
+					Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+						rendition_command_data->graphics_module, &(graphic->tessellation));
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						rendition_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(graphic->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* use_elements/use_faces/use_lines */
+					use_element_type = graphic->use_element_type;
+					use_element_type_string =
+						ENUMERATOR_STRING(Use_element_type)(use_element_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&use_element_type_string);
+					DEALLOCATE(valid_strings);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+					if ((return_code=Option_table_multi_parse(option_table,state)))
+					{
+						if (graphic->iso_values)
+						{
+							if (range_number_of_iso_values || 
+								 graphic->first_iso_value ||
+								 graphic->last_iso_value)
+							{
+								display_message(ERROR_MESSAGE,
+									"When specifying a list of <iso_values> do not specify <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
+								return_code=0;
+							}
+						}
+						else
+						{
+							if (range_number_of_iso_values)
+							{
+								graphic->number_of_iso_values = 
+									range_number_of_iso_values;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"You must either specify a list of <iso_values> or a range with <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
+								return_code=0;
+							}
+						}
+						if ((struct Computed_field *)NULL==graphic->iso_scalar_field)
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_modify_rendition_iso_surfaces.  Missing iso_scalar field");
+							return_code=0;
+						}
+						STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+							&use_element_type);
+						Cmiss_graphic_set_use_element_type(graphic,
+							use_element_type);
+						if (graphic->data_field&&!graphic->spectrum)
+						{
+							graphic->spectrum=ACCESS(Spectrum)(
+								rendition_command_data->default_spectrum);
+						}
+						Cmiss_graphic_set_visibility_flag(graphic, visibility);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+							&coordinate_system);
+						Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						Cmiss_graphic_set_select_mode(graphic, select_mode);
+						STRING_TO_ENUMERATOR(Cmiss_graphics_render_type)(render_type_string, &render_type);
+						Cmiss_graphic_set_render_type(graphic, render_type);
+					}
+					DESTROY(Option_table)(&option_table);
+					if (!return_code)
+					{
+						/* parse error, help */
+						DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_rendition_iso_surfaces.  Could not create graphic");
+					return_code=0;
+				}
+				DEACCESS(Cmiss_graphic)(&graphic);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_rendition_iso_surfaces.  No modify data");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_rendition_iso_surfaces.  "
+				"Missing rendition_command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_iso_surfaces.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_iso_surfaces */
+
+int gfx_modify_rendition_element_points(struct Parse_state *state,
+	void *modify_rendition_data_void,void *rendition_command_data_void)
+{
+	char *font_name;
+	const char *glyph_scaling_mode_string, *select_mode_string, 
+		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphic_glyph_scaling_mode glyph_scaling_mode = GRAPHIC_GLYPH_SCALING_GENERAL;
+	enum Graphics_select_mode select_mode;
+	enum Use_element_type use_element_type;
+	enum Xi_discretization_mode xi_discretization_mode;
+	int number_of_components,number_of_valid_strings,return_code,visibility;
+	struct Computed_field *orientation_scale_field, *variable_scale_field,
+		*xi_point_density_field;
+	struct Graphics_font *new_font;
+	struct GT_object *glyph;
+	struct Rendition_command_data *rendition_command_data;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_label_density_field_data, set_variable_scale_field_data, set_xi_point_density_field_data;
+	Triple glyph_offset, glyph_scale_factors, glyph_size;
+
+	ENTER(gfx_modify_rendition_element_points);
+	if (state && (rendition_command_data=(struct Rendition_command_data *)
+		rendition_command_data_void) &&
+		(modify_rendition_data=
+			(struct Modify_rendition_data *)modify_rendition_data_void))
+	{
+		Cmiss_graphic *graphic = NULL;
+		if (modify_rendition_data->modify_this_graphic)
+		{
+			graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+		}
+		else
+		{
+			graphic = get_graphic_for_gfx_modify(
+				rendition_command_data->rendition, CMISS_GRAPHIC_ELEMENT_POINTS,
+				modify_rendition_data->graphic);
+		}
+		if (graphic)
+		{
+			coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+			REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+			font_name = (char *)NULL;
+			orientation_scale_field = (struct Computed_field *)NULL;
+			variable_scale_field = (struct Computed_field *)NULL;
+			xi_point_density_field = (struct Computed_field *)NULL;
+			glyph = (GT_object *)NULL;
+			Cmiss_graphic_get_glyph_parameters(graphic,
+				&glyph, &glyph_scaling_mode, glyph_offset, glyph_size,
+				&orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
+			if (glyph)
+				ACCESS(GT_object)(glyph);
+			if (orientation_scale_field)
+			{
+				ACCESS(Computed_field)(orientation_scale_field);
+			}
+			if (variable_scale_field)
+			{
+				ACCESS(Computed_field)(variable_scale_field);
+			}
+			Cmiss_graphic_get_xi_discretization(graphic,
+				&xi_discretization_mode, &xi_point_density_field);
+			if (xi_point_density_field)
+			{
+				ACCESS(Computed_field)(xi_point_density_field);
+			}
+			number_of_components = 3;
+			visibility = graphic->visibility_flag;
+
+			option_table=CREATE(Option_table)();
+			/* as */
+			Option_table_add_entry(option_table,"as",&(graphic->name),
+				(void *)1,set_name);
+			/* cell_centres/cell_corners/cell_density/exact_xi */ 
+			xi_discretization_mode_string =
+				ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&xi_discretization_mode_string);
+			DEALLOCATE(valid_strings);
+			/* centre */
+			Option_table_add_entry(option_table,"centre",glyph_offset,
+				&(number_of_components),set_reversed_float_vector);
+			/* coordinate */
+			set_coordinate_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"coordinate",
+				&(graphic->coordinate_field),&set_coordinate_field_data,
+				set_Computed_field_conditional);
+			/* coordinate system */
+			coordinate_system_string =
+				ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &coordinate_system_string);
+			DEALLOCATE(valid_strings);
+			/* data */
+			set_data_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_data_field_data.conditional_function=
+				Computed_field_has_numerical_components;
+			set_data_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"data",&(graphic->data_field),
+				&set_data_field_data,set_Computed_field_conditional);
+			/* delete */
+			Option_table_add_entry(option_table,"delete",
+				&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+			/* density */
+			set_xi_point_density_field_data.computed_field_manager =
+				rendition_command_data->computed_field_manager;
+			set_xi_point_density_field_data.conditional_function =
+				Computed_field_is_scalar;
+			set_xi_point_density_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table, "density",
+				&xi_point_density_field, &set_xi_point_density_field_data,
+				set_Computed_field_conditional);
+			/* discretization */
+			Option_table_add_entry(option_table,"discretization",
+				&(graphic->discretization),NULL, set_Element_discretization);
+			/* exterior */
+			Option_table_add_entry(option_table,"exterior",&(graphic->exterior),
+				NULL,set_char_flag);
+			/* face */
+			Option_table_add_entry(option_table,"face",&(graphic->face),
+				NULL,set_exterior);
+			/* font */
+			Option_table_add_name_entry(option_table, "font",
+				&font_name);
+			/* glyph */
+			Option_table_add_entry(option_table,"glyph",&glyph,
+				rendition_command_data->glyph_manager,set_Graphics_object);
+			/* label */
+			set_label_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_label_field_data.conditional_function=
+				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			set_label_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"label",&(graphic->label_field),
+				&set_label_field_data,set_Computed_field_conditional);
+			/* ldensity */
+			set_label_density_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_label_density_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"ldensity",&(graphic->label_density_field),
+				&set_label_density_field_data,set_Computed_field_conditional);
+			/* material */
+			Option_table_add_entry(option_table,"material",&(graphic->material),
+				rendition_command_data->graphical_material_manager,
+				set_Graphical_material);
+			/* native_discretization */
+			Option_table_add_set_FE_field_from_FE_region(option_table,
+				"native_discretization", &(graphic->native_discretization_field),
+				Cmiss_region_get_FE_region(rendition_command_data->region));
+			/* glyph scaling mode */
+			glyph_scaling_mode_string =
+				ENUMERATOR_STRING(Graphic_glyph_scaling_mode)(glyph_scaling_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphic_glyph_scaling_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Graphic_glyph_scaling_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &glyph_scaling_mode_string);
+			DEALLOCATE(valid_strings);
+			/* orientation */
+			set_orientation_scale_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_orientation_scale_field_data.conditional_function=
+				Computed_field_is_orientation_scale_capable;
+			set_orientation_scale_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"orientation",
+				&orientation_scale_field,&set_orientation_scale_field_data,
+				set_Computed_field_conditional);
+			/* position */
+			Option_table_add_entry(option_table,"position",
+				&(modify_rendition_data->position),NULL,set_int_non_negative);
+			/* scale_factors */
+			Option_table_add_special_float3_entry(option_table,"scale_factors",
+				glyph_scale_factors,"*");
+			/* select_mode */
+			select_mode = Cmiss_graphic_get_select_mode(graphic);
+			select_mode_string =
+				ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&select_mode_string);
+			DEALLOCATE(valid_strings);
+			/* selected_material */
+			Option_table_add_entry(option_table,"selected_material",
+				&(graphic->selected_material),
+				rendition_command_data->graphical_material_manager,
+				set_Graphical_material);
+			/* size */
+			Option_table_add_special_float3_entry(option_table,"size",
+				glyph_size,"*");
+			/* spectrum */
+			Option_table_add_entry(option_table,"spectrum",
+				&(graphic->spectrum),rendition_command_data->spectrum_manager,
+				set_Spectrum);
+			/* tessellation */
+			Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+				rendition_command_data->graphics_module, &(graphic->tessellation));
+			/* use_elements/use_faces/use_lines */
+			use_element_type = graphic->use_element_type;
+			use_element_type_string =
+				ENUMERATOR_STRING(Use_element_type)(use_element_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&use_element_type_string);
+			DEALLOCATE(valid_strings);
+			/* xi */
+			Option_table_add_entry(option_table,"xi",
+				graphic->seed_xi,&number_of_components,set_float_vector);
+			/* variable_scale */
+			set_variable_scale_field_data.computed_field_manager =
+				rendition_command_data->computed_field_manager;
+			set_variable_scale_field_data.conditional_function =
+				Computed_field_has_up_to_3_numerical_components;
+			set_variable_scale_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table,"variable_scale",
+				&variable_scale_field, &set_variable_scale_field_data,
+				set_Computed_field_conditional);
+			/* visible/invisible */
+			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+			if ((return_code=Option_table_multi_parse(option_table,state)))
+			{
+				if (graphic->data_field&&!graphic->spectrum)
+				{
+					graphic->spectrum=ACCESS(Spectrum)(
+						rendition_command_data->default_spectrum);
+				}
+				Cmiss_graphic_set_visibility_flag(graphic, visibility);
+				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+					xi_discretization_mode_string, &xi_discretization_mode);
+				if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
+					(XI_DISCRETIZATION_CELL_POISSON != xi_discretization_mode)) ||
+					xi_point_density_field)
+				{
+					Cmiss_graphic_set_xi_discretization(graphic,
+						xi_discretization_mode, xi_point_density_field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"No density field specified for cell_density|cell_poisson");
+					return_code = 0;
+				}
+				STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+					&use_element_type);
+				Cmiss_graphic_set_use_element_type(graphic,
+					use_element_type);
+				if (font_name && (new_font = Graphics_font_package_get_font
+						(rendition_command_data->graphics_font_package, font_name)))
+				{
+					REACCESS(Graphics_font)(&graphic->font, new_font);
+				}
+				if (font_name)
+				{
+					DEALLOCATE(font_name);
+				}
+				STRING_TO_ENUMERATOR(Graphic_glyph_scaling_mode)(
+					glyph_scaling_mode_string, &glyph_scaling_mode);
+				Cmiss_graphic_set_glyph_parameters(graphic,
+					glyph, glyph_scaling_mode, glyph_offset, glyph_size,
+					orientation_scale_field,glyph_scale_factors,
+					variable_scale_field);
+				STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+					&coordinate_system);
+				Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+					&select_mode);
+				Cmiss_graphic_set_select_mode(graphic, select_mode);
+			}
+			DESTROY(Option_table)(&option_table);
+			if (!return_code)
+			{
+				/* parse error, help */
+				DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+			}
+			if (glyph)
+			{
+				DEACCESS(GT_object)(&glyph);
+			}
+			if (orientation_scale_field)
+			{
+				DEACCESS(Computed_field)(&orientation_scale_field);
+			}
+			if (variable_scale_field)
+			{
+				DEACCESS(Computed_field)(&variable_scale_field);
+			}
+			if (xi_point_density_field)
+			{
+				DEACCESS(Computed_field)(&xi_point_density_field);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_modify_rendition_element_points.  Could not create graphic");
+			return_code=0;
+		}
+		DEACCESS(Cmiss_graphic)(&graphic);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_element_points.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_element_points */
 
 int gfx_modify_rendition_streamlines(struct Parse_state *state,
 	void *modify_rendition_data_void,void *rendition_command_data_void)
 {
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_STREAMLINES, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	char reverse_track;
+	const char *select_mode_string, *xi_discretization_mode_string,
+		*streamline_data_type_string,*streamline_type_string,**valid_strings, *coordinate_system_string;
+	enum Cmiss_graphics_coordinate_system coordinate_system = CMISS_GRAPHICS_COORDINATE_SYSTEM_LOCAL;
+	enum Graphics_select_mode select_mode;
+	enum Xi_discretization_mode xi_discretization_mode;
+	enum Streamline_type streamline_type;
+	enum Streamline_data_type streamline_data_type;
+	float length = 0.0, width = 0.0;
+	int number_of_components,number_of_valid_strings,return_code,
+		reverse_track_int, visibility;
+	struct Computed_field *stream_vector_field = NULL, *xi_point_density_field = NULL;
+	struct Rendition_command_data *rendition_command_data;
+	struct Modify_rendition_data *modify_rendition_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_data_field_data, set_stream_vector_field_data, set_xi_point_density_field_data;
 
-int gfx_modify_rendition_surfaces(struct Parse_state *state,
-	void *modify_rendition_data_void,void *rendition_command_data_void)
-{
-	return gfx_modify_rendition_graphic(state, CMISS_GRAPHIC_SURFACES, /*help_text*/(const char *)0,
-		reinterpret_cast<Modify_rendition_data *>(modify_rendition_data_void),
-		reinterpret_cast<Rendition_command_data *>(rendition_command_data_void));
-}
+	ENTER(gfx_modify_rendition_streamlines);
+	if (state && (rendition_command_data =
+		(struct Rendition_command_data *)rendition_command_data_void) &&
+		(modify_rendition_data =
+			(struct Modify_rendition_data *)modify_rendition_data_void))
+	{
+		Cmiss_graphic *graphic = NULL;
+		if (modify_rendition_data->modify_this_graphic)
+		{
+			graphic = Cmiss_graphic_access(modify_rendition_data->graphic);
+		}
+		else
+		{
+			graphic = get_graphic_for_gfx_modify(
+				rendition_command_data->rendition, CMISS_GRAPHIC_STREAMLINES,
+				modify_rendition_data->graphic);
+		}
+		if (graphic)
+		{
+			xi_point_density_field = (struct Computed_field *)NULL;
+			coordinate_system = Cmiss_graphic_get_coordinate_system(graphic);
+			REACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic), graphic);
+			/* The value stored in the graphic is an integer rather than a char */
+			if (graphic->reverse_track)
+			{
+				reverse_track = 1;
+			}
+			else
+			{
+				reverse_track = 0;
+			}
+			Cmiss_graphic_get_xi_discretization(graphic,
+				&xi_discretization_mode, &xi_point_density_field);
+			if (xi_point_density_field)
+			{
+				ACCESS(Computed_field)(xi_point_density_field);
+			}
+			visibility = graphic->visibility_flag;
+			char *seed_nodeset_name = 0;
+			if (graphic->seed_nodeset)
+			{
+				seed_nodeset_name = Cmiss_nodeset_get_name(graphic->seed_nodeset);
+			}
+			option_table=CREATE(Option_table)();
+			/* as */
+			Option_table_add_entry(option_table,"as",&(graphic->name),
+				(void *)1,set_name);
+			/* coordinate */
+			set_coordinate_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"coordinate",
+				&(graphic->coordinate_field),&set_coordinate_field_data,
+				set_Computed_field_conditional);
+			/* coordinate system */
+			coordinate_system_string =
+				ENUMERATOR_STRING(Cmiss_graphics_coordinate_system)(coordinate_system);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Cmiss_graphics_coordinate_system)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_graphics_coordinate_system) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &coordinate_system_string);
+			DEALLOCATE(valid_strings);
+			/* cell_centres/cell_corners/cell_density/exact_xi */
+			xi_discretization_mode_string =
+				ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&xi_discretization_mode_string);
+			DEALLOCATE(valid_strings);
+			/* data */
+			set_data_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_data_field_data.conditional_function=
+				Computed_field_has_numerical_components;
+			set_data_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"data",&(graphic->data_field),
+				&set_data_field_data,set_Computed_field_conditional);
+			/* delete */
+			Option_table_add_entry(option_table,"delete",
+				&(modify_rendition_data->delete_flag),NULL,set_char_flag);
+			/* density */
+			set_xi_point_density_field_data.computed_field_manager =
+				rendition_command_data->computed_field_manager;
+			set_xi_point_density_field_data.conditional_function =
+				Computed_field_is_scalar;
+			set_xi_point_density_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table, "density",
+				&xi_point_density_field, &set_xi_point_density_field_data,
+				set_Computed_field_conditional);
+			/* discretization */
+			Option_table_add_entry(option_table,"discretization",
+				&(graphic->discretization),NULL, set_Element_discretization);
+			/* ellipse/line/rectangle/ribbon */
+			streamline_type = STREAM_LINE;
+			streamline_type_string =
+				ENUMERATOR_STRING(Streamline_type)(streamline_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&streamline_type_string);
+			DEALLOCATE(valid_strings);
+			/* length */
+			Option_table_add_entry(option_table,"length",
+				&(graphic->streamline_length),NULL,set_float);
+			/* material */
+			Option_table_add_entry(option_table,"material",&(graphic->material),
+				rendition_command_data->graphical_material_manager,
+				set_Graphical_material);
+			/* native_discretization */
+			Option_table_add_set_FE_field_from_FE_region(option_table,
+				"native_discretization", &(graphic->native_discretization_field),
+				Cmiss_region_get_FE_region(rendition_command_data->region));
+			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
+			streamline_data_type = STREAM_NO_DATA;
+			streamline_data_type_string =
+				ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &streamline_data_type_string);
+			DEALLOCATE(valid_strings);
+			/* position */
+			Option_table_add_entry(option_table,"position",
+				&(modify_rendition_data->position),NULL,set_int_non_negative);
+			/* reverse */
+			/*???RC use negative length to denote reverse track instead? */
+			Option_table_add_entry(option_table,"reverse_track",
+				&reverse_track,NULL,set_char_flag);
+			/* seed_element */
+			Option_table_add_entry(option_table, "seed_element",
+				&(graphic->seed_element), Cmiss_region_get_FE_region(rendition_command_data->region),
+				set_FE_element_top_level_FE_region);
+			// seed_node_mesh_location_field
+			struct Set_Computed_field_conditional_data set_seed_mesh_location_field_data;
+			set_seed_mesh_location_field_data.conditional_function = Computed_field_has_value_type_mesh_location;
+			set_seed_mesh_location_field_data.conditional_function_user_data = (void *)NULL;
+			set_seed_mesh_location_field_data.computed_field_manager = rendition_command_data->computed_field_manager;
+			Option_table_add_entry(option_table, "seed_node_mesh_location_field",
+				&(graphic->seed_node_mesh_location_field),
+				&set_seed_mesh_location_field_data, set_Computed_field_conditional);
+			// seed_nodeset
+			Option_table_add_string_entry(option_table, "seed_nodeset", &seed_nodeset_name,
+				" NODE_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_nodes|cmiss_data|none");
+			/* select_mode */
+			select_mode = Cmiss_graphic_get_select_mode(graphic);
+			select_mode_string =
+				ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&select_mode_string);
+			DEALLOCATE(valid_strings);
+			/* selected_material */
+			Option_table_add_entry(option_table,"selected_material",
+				&(graphic->selected_material),
+				rendition_command_data->graphical_material_manager,
+				set_Graphical_material);
+			/* spectrum */
+			Option_table_add_entry(option_table,"spectrum",
+				&(graphic->spectrum),rendition_command_data->spectrum_manager,
+				set_Spectrum);
+			/* tessellation */
+			Option_table_add_Cmiss_tessellation_entry(option_table, "tessellation",
+				rendition_command_data->graphics_module, &(graphic->tessellation));
+			/* vector */
+			set_stream_vector_field_data.computed_field_manager=
+				rendition_command_data->computed_field_manager;
+			set_stream_vector_field_data.conditional_function=
+				Computed_field_is_stream_vector_capable;
+			set_stream_vector_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"vector",
+				&(graphic->stream_vector_field),&set_stream_vector_field_data,
+				set_Computed_field_conditional);
+			/* width */
+			Option_table_add_entry(option_table,"width",
+				&(graphic->streamline_width),NULL,set_float);
+			/* visible/invisible */
+			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
+			/* xi */
+			number_of_components = 3;
+			Option_table_add_entry(option_table,"xi",
+				graphic->seed_xi,&number_of_components,set_float_vector);
+			if ((return_code = Option_table_multi_parse(option_table,state)))
+			{
+				Cmiss_graphic_set_visibility_flag(graphic, visibility);
+				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+					xi_discretization_mode_string, &xi_discretization_mode);
+				if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
+					(XI_DISCRETIZATION_CELL_POISSON != xi_discretization_mode)) ||
+					xi_point_density_field)
+				{
+					Cmiss_graphic_set_xi_discretization(graphic,
+						xi_discretization_mode, xi_point_density_field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"No density field specified for cell_density|cell_poisson");
+					return_code = 0;
+				}
+				if (!(graphic->stream_vector_field))
+				{
+					display_message(INFORMATION_MESSAGE,"Must specify a vector before any streamlines can be created");
+				}
+				if (return_code && seed_nodeset_name)
+				{
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(rendition_command_data->region);
+					Cmiss_nodeset_id seed_nodeset =
+						Cmiss_field_module_find_nodeset_by_name(field_module, seed_nodeset_name);
+					if (seed_nodeset || (fuzzy_string_compare(seed_nodeset_name, "none")))
+					{
+						if (graphic->seed_nodeset)
+						{
+							Cmiss_nodeset_destroy(&graphic->seed_nodeset);
+						}
+						// take over reference:
+						graphic->seed_nodeset = seed_nodeset;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Unknown seed_nodeset %s", seed_nodeset_name);
+						return_code = 0;
+					}
+					Cmiss_field_module_destroy(&field_module);
+				}
+				if ((graphic->seed_node_mesh_location_field && (!graphic->seed_nodeset)) ||
+					((!graphic->seed_node_mesh_location_field) && graphic->seed_nodeset))
+				{
+					display_message(ERROR_MESSAGE,
+						"Must specify both seed_nodeset and seed_node_mesh_location_field, or neither");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					Cmiss_graphic_get_streamline_parameters(graphic,
+						&streamline_type,&stream_vector_field,&reverse_track_int,
+						&length,&width);
+					STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
+						&streamline_type);
+					STRING_TO_ENUMERATOR(Streamline_data_type)(
+						streamline_data_type_string, &streamline_data_type);
+					if (graphic->data_field)
+					{
+						if (STREAM_FIELD_SCALAR != streamline_data_type)
+						{
+							display_message(WARNING_MESSAGE,
+								"Must use field_scalar option with data; ensuring this");
+							streamline_data_type=STREAM_FIELD_SCALAR;
+						}
+					}
+					else
+					{
+						if (STREAM_FIELD_SCALAR == streamline_data_type)
+						{
+							display_message(WARNING_MESSAGE,
+								"Must specify data field with field_scalar option");
+							streamline_data_type=STREAM_NO_DATA;
+						}
+					}
+					if ((STREAM_NO_DATA!=streamline_data_type)&&!graphic->spectrum)
+					{
+						graphic->spectrum=ACCESS(Spectrum)(
+							rendition_command_data->default_spectrum);
+					}
+					Cmiss_graphic_set_streamline_parameters(
+						graphic,streamline_type,stream_vector_field,(int)reverse_track,
+						length,width);
+					Cmiss_graphic_set_data_spectrum_parameters_streamlines(
+						graphic,streamline_data_type,graphic->data_field,
+						graphic->spectrum);
+				}
+				STRING_TO_ENUMERATOR(Cmiss_graphics_coordinate_system)(coordinate_system_string,
+					&coordinate_system);
+				Cmiss_graphic_set_coordinate_system(graphic, coordinate_system);
+				STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+					&select_mode);
+				Cmiss_graphic_set_select_mode(graphic, select_mode);
+			}
+			DESTROY(Option_table)(&option_table);
+			if (!return_code)
+			{
+				/* parse error, help */
+				DEACCESS(Cmiss_graphic)(&(modify_rendition_data->graphic));
+			}
+			if (xi_point_density_field)
+			{
+				DEACCESS(Computed_field)(&xi_point_density_field);
+			}
+			if (seed_nodeset_name)
+			{
+				DEALLOCATE(seed_nodeset_name);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_modify_rendition_streamlines.  Could not create graphic");
+			return_code=0;
+		}
+		DEACCESS(Cmiss_graphic)(&graphic);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_rendition_streamlines.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_rendition_streamlines */
 
 int Cmiss_graphic_list_contents(struct Cmiss_graphic *graphic,
 	void *list_data_void)
@@ -7132,21 +8488,24 @@ int Cmiss_graphic_get_label_field(struct Cmiss_graphic *graphic,
 	return (return_code);
 } /* Cmiss_graphic_get_label_field */
 
-int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
-	struct Computed_field **subgroup_field)
+int Cmiss_graphic_get_visibility_field(struct Cmiss_graphic *graphic,
+	struct Computed_field **visibility_field)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphic_get_subgroup_field);
-	if (graphic)
+
+	ENTER(Cmiss_graphic_get_label_field);
+	if (graphic&&
+		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
+			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)))
 	{
-		*subgroup_field = graphic->subgroup_field;
+		*visibility_field = graphic->visibility_field;
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_subgroup_field.  Invalid argument(s)");
+			"Cmiss_graphic_get_label_field.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -7154,27 +8513,29 @@ int Cmiss_graphic_get_subgroup_field(struct Cmiss_graphic *graphic,
 	return (return_code);
 }
 
-int Cmiss_graphic_set_subgroup_field(
-	struct Cmiss_graphic *graphic, struct Computed_field *subgroup_field)
+int Cmiss_graphic_set_visibility_field(
+	struct Cmiss_graphic *graphic,struct Computed_field *visibility_field)
 {
 	int return_code;
 
-	ENTER(Cmiss_graphic_set_subgroup_field);
-	if (graphic)
+	ENTER(Cmiss_graphic_set_visibility_field);
+	if (graphic&&
+		((CMISS_GRAPHIC_NODE_POINTS==graphic->graphic_type)||
+			(CMISS_GRAPHIC_DATA_POINTS==graphic->graphic_type)))
 	{
-		REACCESS(Computed_field)(&(graphic->subgroup_field), subgroup_field);
+		REACCESS(Computed_field)(&(graphic->visibility_field), visibility_field);
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_set_subgroup_field.  Invalid argument(s)");
+			"Cmiss_graphic_set_visibility_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-}
+} /* Cmiss_graphic_set_visibility_field */
 
 enum Use_element_type Cmiss_graphic_get_use_element_type(
 	struct Cmiss_graphic *graphic)
@@ -7789,8 +9150,8 @@ int Cmiss_graphic_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphic->subgroup_field &&
-			Computed_field_has_multiple_times(graphic->subgroup_field))
+		if (graphic->visibility_field && 
+			Computed_field_has_multiple_times(graphic->visibility_field))
 		{
 			time_dependent = 1;
 		}
@@ -8038,9 +9399,9 @@ int Cmiss_graphic_detach_fields(struct Cmiss_graphic *graphic, void *dummy_void)
 		{
 			DEACCESS(Computed_field)(&(graphic->label_density_field));
 		}
-		if (graphic->subgroup_field)
+		if (graphic->visibility_field)
 		{
-			DEACCESS(Computed_field)(&(graphic->subgroup_field));
+			DEACCESS(Computed_field)(&(graphic->visibility_field));
 		}
 		if (graphic->displacement_map_field)
 		{
@@ -8272,11 +9633,49 @@ int Cmiss_graphic_define(Cmiss_graphic_id graphic, const char *command_string)
 		modify_rendition_data.position = -1;
 		modify_rendition_data.graphic = Cmiss_graphic_access(graphic);
 		modify_rendition_data.modify_this_graphic = 1;
-		modify_rendition_data.group = 0;
 		struct Rendition_command_data rendition_command_data;
 		Cmiss_rendition_fill_rendition_command_data(owning_rendition, &rendition_command_data);
-		return_code = gfx_modify_rendition_graphic(state, graphic->graphic_type, /*help_text*/(const char *)0,
-			&modify_rendition_data, &rendition_command_data);
+		switch (graphic->graphic_type)
+		{
+		case CMISS_GRAPHIC_NODE_POINTS:
+			return_code = gfx_modify_rendition_node_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_DATA_POINTS:
+			return_code = gfx_modify_rendition_data_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_LINES:
+			return_code = gfx_modify_rendition_lines(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_CYLINDERS:
+			return_code = gfx_modify_rendition_cylinders(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_SURFACES:
+			return_code = gfx_modify_rendition_surfaces(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_ISO_SURFACES:
+			return_code = gfx_modify_rendition_iso_surfaces(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_ELEMENT_POINTS:
+			return_code = gfx_modify_rendition_element_points(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_STREAMLINES:
+			return_code = gfx_modify_rendition_streamlines(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		case CMISS_GRAPHIC_POINT:
+			return_code = gfx_modify_rendition_point(
+				state, (void *)&modify_rendition_data, (void *)&rendition_command_data);
+			break;
+		default:
+			break;
+		}
 		destroy_Parse_state(&state);
 		Cmiss_graphic_changed(graphic, CMISS_GRAPHIC_CHANGE_FULL_REBUILD);
 		if (modify_rendition_data.graphic)

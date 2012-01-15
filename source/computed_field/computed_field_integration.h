@@ -68,20 +68,21 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct Cmiss_field_module *field_module, Cmiss_mesh_id mesh,
-	Cmiss_element_id seed_element, Computed_field *integrand,
+	struct Cmiss_field_module *field_module,
+	FE_element *seed_element,
+	FE_region *fe_region, Computed_field *integrand, 
 	int magnitude_coordinates, Computed_field *coordinate_field);
 
-/***************************************************************************//**
- * If the field is of type COMPUTED_FIELD_INTEGRATION, the arguments including
- * seed element used for the mapping are returned.
- * @param mesh_address  Pointer to mesh handle which must be null. On successful
- * return this will be an accessed handle to mesh.
- */
 int Computed_field_get_type_integration(struct Computed_field *field,
-	Cmiss_mesh_id *mesh_address, struct FE_element **seed_element,
-	struct Computed_field **integrand, int *magnitude_coordinates,
-	struct Computed_field **coordinate_field);
+	struct FE_element **seed_element, struct Computed_field **integrand,
+	int *magnitude_coordinates, struct Computed_field **coordinate_field);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_INTEGRATION, 
+the seed element used for the mapping is returned - otherwise an error is reported.
+==============================================================================*/
 
 int Computed_field_register_type_integration(
 	struct Computed_field_package *computed_field_package,
