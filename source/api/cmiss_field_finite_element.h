@@ -247,13 +247,14 @@ int Cmiss_field_find_mesh_location_set_search_mode(
  * @param field_module  Region field module which will own new field.
  * @param field  The field for which the nodal values are stored, this
  * 	must be a finite element field.
- * @param type The type of nodal derivative to be represented by the newly
- * 	created field.
+ * @param nodal_value_type  The type of nodal value or derivative to return.
+ * @param version_number  The version number of the value or derivative to
+ * return, starting from 1.
  * @return  Handle to the newly created field.
  */
 Cmiss_field_id Cmiss_field_module_create_node_value(
 	Cmiss_field_module_id field_module, Cmiss_field_id field,
-	enum Cmiss_nodal_value_type type, int version);
+	enum Cmiss_nodal_value_type nodal_value_type, int version_number);
 
 /***************************************************************************//**
  * Creates a field which stores and returns mesh location values at nodes.
