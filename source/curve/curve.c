@@ -5197,7 +5197,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 				return_code=0;
 			}
 			sprintf(file_name,"%s.curve.exregion",curve->name);
-			if (!write_exregion_file_of_name(file_name, curve->region, /*root*/curve->region,
+			if (!write_exregion_file_of_name(file_name, curve->region, (Cmiss_field_group_id)0, /*root*/curve->region,
 				/*write_elements*/1, /*write_nodes*/1, /*write_data*/0,
 					FE_WRITE_ALL_FIELDS, 0, (char **)NULL, /*time*/0.0,
 				FE_WRITE_COMPLETE_GROUP, FE_WRITE_NON_RECURSIVE))

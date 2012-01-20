@@ -3762,9 +3762,9 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 	if (state && field_modify)
 	{
 		return_code = 1;
+		Cmiss_mesh_id mesh = 0;
 		Cmiss_field_id mesh_field = 0;
 		Cmiss_field_id source_field = 0;
-		char *mesh_name = 0;
 		int find_nearest_flag = 0;
 		if (NULL != field_modify->get_field())
 		{
@@ -3772,11 +3772,9 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 				Cmiss_field_cast_find_mesh_location(field_modify->get_field());
 			if (find_mesh_location_field)
 			{
+				mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
 				source_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
 				mesh_field = Cmiss_field_get_source_field(field_modify->get_field(), 2);
-				Cmiss_mesh_id mesh = Cmiss_field_find_mesh_location_get_mesh(find_mesh_location_field);
-				mesh_name = Cmiss_mesh_get_name(mesh);
-				Cmiss_mesh_destroy(&mesh);
 				find_nearest_flag = (CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT !=
 					Cmiss_field_find_mesh_location_get_search_mode(find_mesh_location_field));
 				Cmiss_field_find_mesh_location_destroy(&find_mesh_location_field);
@@ -3796,8 +3794,7 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 			Option_table_add_switch(option_table,
 				"find_nearest", "find_exact", &find_nearest_flag);
 			// mesh
-			Option_table_add_string_entry(option_table, "mesh", &mesh_name,
-				" ELEMENT_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d");
+			Option_table_add_mesh_entry(option_table, "mesh", field_modify->get_region(), &mesh);
 			// mesh_field
 			set_mesh_field_data.conditional_function =
 				Computed_field_has_numerical_components;
@@ -3818,20 +3815,9 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				Cmiss_mesh_id mesh = 0;
-				if (mesh_name)
+				if (!mesh)
 				{
-					mesh = Cmiss_field_module_find_mesh_by_name(field_modify->get_field_module(), mesh_name);
-					if (!mesh)
-					{
-						display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  "
-							"Unknown mesh : %s", mesh_name);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "define_Computed_field_type_find_mesh_location.  Must specify mesh.");
+					display_message(ERROR_MESSAGE, "gfx define field find_mesh_location.  Must specify mesh.");
 					return_code = 0;
 				}
 				if (return_code)
@@ -3860,15 +3846,11 @@ int define_Computed_field_type_find_mesh_location(struct Parse_state *state,
 						}
 					}
 				}
-				if (mesh)
-				{
-					Cmiss_mesh_destroy(&mesh);
-				}
 			}
 		}
-		if (mesh_name)
+		if (mesh)
 		{
-			DEALLOCATE(mesh_name);
+			Cmiss_mesh_destroy(&mesh);
 		}
 		if (mesh_field)
 		{

@@ -156,6 +156,7 @@ private:
 	FE_region *fe_region;
 	FE_node *template_node;
 	std::vector<Cmiss_node_field*> fields;
+	std::vector<FE_field*> undefine_fields; // ACCESSed
 	int access_count;
 
 public:
@@ -207,7 +208,13 @@ public:
 		if (getNodeField(fe_field))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_field.  Field is already defined");
+				"Cmiss_node_template_undefine_field.  Field is already being defined");
+			return_code = 0;
+		}
+		if (getUndefineNodeField(fe_field))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_undefine_field.  Field is already being undefined");
 			return_code = 0;
 		}
 		Cmiss_field_finite_element_destroy(&finite_element_field);
@@ -329,6 +336,54 @@ public:
 		return node_field->defineVersions(component_number, number_of_versions);
 	}
 
+	int undefineField(Cmiss_field_id field)
+	{
+		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		Cmiss_field_stored_mesh_location_id stored_mesh_location_field = Cmiss_field_cast_stored_mesh_location(field);
+		Cmiss_field_stored_string_id stored_string_field = Cmiss_field_cast_stored_string(field);
+		if (!(finite_element_field || stored_mesh_location_field || stored_string_field))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_undefine_field.  "
+				"Field must be finite_element, stored_mesh_location or stored_string type");
+			return 0;
+		}
+		int return_code = 1;
+		FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		FE_region *compare_fe_region = fe_region;
+		if (FE_region_is_data_FE_region(fe_region))
+		{
+			 FE_region_get_immediate_master_FE_region(fe_region, &compare_fe_region);
+		}
+		if (FE_field_get_FE_region(fe_field) != compare_fe_region)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_undefine_field.  Field is from another region");
+			return_code = 0;
+		}
+		if (getNodeField(fe_field))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_undefine_field.  Field is already being defined");
+			return_code = 0;
+		}
+		if (getUndefineNodeField(fe_field))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_node_template_undefine_field.  Field is already being undefined");
+			return_code = 0;
+		}
+		Cmiss_field_finite_element_destroy(&finite_element_field);
+		Cmiss_field_stored_mesh_location_destroy(&stored_mesh_location_field);
+		Cmiss_field_stored_string_destroy(&stored_string_field);
+		if (!return_code)
+			return 0;
+		clearTemplateNode();
+		setUndefineNodeField(fe_field);
+		return 1;
+	}
+
 	int validate()
 	{
 		if (template_node)
@@ -352,17 +407,35 @@ public:
 		return 1;
 	}
 
+	// can be made more efficient
 	int mergeIntoNode(Cmiss_node_id node)
 	{
-		int return_code = 0;
+		int return_code = 1;
 		if (validate())
 		{
-			return_code = FE_region_merge_FE_node_existing(fe_region, node, template_node);
+			if (0 < undefine_fields.size())
+			{
+				for (unsigned int i = 0; i < undefine_fields.size(); i++)
+				{
+					if (FE_field_is_defined_at_node(undefine_fields[i], node) &&
+						!undefine_FE_field_at_node(node, undefine_fields[i]))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+			}
+			if ((0 < fields.size() &&
+				!FE_region_merge_FE_node_existing(fe_region, node, template_node)))
+			{
+				return_code = 0;
+			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Cmiss_node_merge.  Node template is not valid");
+			return_code = 0;
 		}
 		return return_code;
 	}
@@ -375,6 +448,10 @@ private:
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			delete fields[i];
+		}
+		for (unsigned int i = 0; i < undefine_fields.size(); i++)
+		{
+			DEACCESS(FE_field)(&(undefine_fields[i]));
 		}
 		REACCESS(FE_node)(&template_node, NULL);
 		DEACCESS(FE_region)(&fe_region);
@@ -392,12 +469,31 @@ private:
 		return NULL;
 	}
 
-	/** Must call getNodeField first to confirm not already defined */
+	/** Must call getNodeField first to confirm not already being defined */
 	Cmiss_node_field *createNodeField(FE_field *fe_field)
 	{
 		Cmiss_node_field *node_field = new Cmiss_node_field(fe_field);
 		fields.push_back(node_field);
 		return node_field;
+	}
+
+	bool getUndefineNodeField(FE_field *fe_field)
+	{
+		for (unsigned int i = 0; i < undefine_fields.size(); i++)
+		{
+			if (undefine_fields[i] == fe_field)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Must call getUndefineNodeField first to confirm not already being undefined */
+	void setUndefineNodeField(FE_field *fe_field)
+	{
+		ACCESS(FE_field)(fe_field);
+		undefine_fields.push_back(fe_field);
 	}
 
 	int hasFields() { return fields.size(); }
@@ -544,25 +640,13 @@ public:
 		{
 			name = Cmiss_field_get_name(Cmiss_field_node_group_base_cast(group));
 		}
+		else if (FE_region_is_data_FE_region(fe_region))
+		{
+			name = duplicate_string("cmiss_data");
+		}
 		else
 		{
-			int error = 0;
-			Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
-			if (Cmiss_region_is_group(region))
-			{
-				char *group_name = Cmiss_region_get_name(region);
-				append_string(&name, group_name, &error);
-				append_string(&name, ".", &error);
-				DEALLOCATE(group_name);
-			}
-			if (FE_region_is_data_FE_region(fe_region))
-			{
-				append_string(&name, "cmiss_data", &error);
-			}
-			else
-			{
-				append_string(&name, "cmiss_nodes", &error);
-			}
+			name = duplicate_string("cmiss_nodes");
 		}
 		return name;
 	}
@@ -586,7 +670,7 @@ public:
 
 	int isGroup()
 	{
-		return (group || FE_region_is_group(fe_region));
+		return (0 != group);
 	}
 
 	int match(Cmiss_nodeset& other_nodeset)
@@ -617,22 +701,10 @@ protected:
 			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
 		}
+		Cmiss_node_iterator_destroy(&iterator);
 		Cmiss_field_cache_destroy(&cache);
 		Cmiss_field_module_destroy(&field_module);
 		return node_list;
-	}
-
-	bool isNodeCompatible(Cmiss_node_id node)
-	{
-		// GRC: not preventing nodes from cmiss_nodes and cmiss_data from being
-		// put in other's groups as currently expensive, O(logN).
-		// FE_region_add_FE_node checks; group fields do not
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		FE_region *node_fe_region = FE_node_get_FE_region(node);
-		if (FE_region_is_data_FE_region(master_fe_region))
-			node_fe_region = FE_region_get_data_FE_region(node_fe_region);
-		return (node_fe_region == master_fe_region);
 	}
 
 };
@@ -648,62 +720,32 @@ public:
 
 	int addNode(Cmiss_node_id node)
 	{
-		int return_code = 0;
-		if (isNodeCompatible(node))
-		{
-			if (group)
-			{
-				return_code = Computed_field_node_group_core_cast(group)->addObject(node);
-			}
-			else if (FE_region_is_group(fe_region))
-			{
-				return_code = FE_region_add_FE_node(fe_region, node);
-			}
-		}
-		return return_code;
+		return Computed_field_node_group_core_cast(group)->addObject(node);
 	}
 
 	int removeAllNodes()
 	{
-		int return_code = 0;
-		if (group)
-		{
-			return_code = Computed_field_node_group_core_cast(group)->clear();
-		}
-		else if (FE_region_is_group(fe_region))
-		{
-			return removeNodesConditional(/*conditional_field*/0);
-		}
-		return 0;
+		return Computed_field_node_group_core_cast(group)->clear();
 	}
 
 	int removeNode(Cmiss_node_id node)
 	{
-		int return_code = 0;
-		if (group)
-		{
-			return_code = Computed_field_node_group_core_cast(group)->removeObject(node);
-		}
-		else if (FE_region_is_group(fe_region))
-		{
-			return_code = FE_region_remove_FE_node(fe_region, node);
-		}
-		return return_code;
+		return Computed_field_node_group_core_cast(group)->removeObject(node);
 	}
 
 	int removeNodesConditional(Cmiss_field_id conditional_field)
 	{
-		int return_code = 0;
-		if (isGroup())
-		{
-			struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
-			if (group)
-				return_code = Computed_field_node_group_core_cast(group)->removeObjectsInList(node_list);
-			else
-				return_code = FE_region_remove_FE_node_list(fe_region, node_list);
-			DESTROY(LIST(FE_node))(&node_list);
-		}
-		return return_code;
+		return Computed_field_node_group_core_cast(group)->removeNodesConditional(conditional_field);
+	}
+
+	int addElementNodes(Cmiss_element_id element)
+	{
+		return Computed_field_node_group_core_cast(group)->addElementNodes(element);
+	}
+
+	int removeElementNodes(Cmiss_element_id element)
+	{
+		return Computed_field_node_group_core_cast(group)->removeElementNodes(element);
 	}
 
 };
@@ -730,47 +772,21 @@ Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
 			}
 			Cmiss_field_destroy(&field);
 		}
-		if (!nodeset)
+		else
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			const char *dotpos = strrchr(nodeset_name, '.');
-			const char *trimmed_nodeset_name = 0;
-			if (dotpos)
+			FE_region *fe_region = 0;
+			if (0 == strcmp(nodeset_name, "cmiss_nodes"))
 			{
-				Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
-				char *group_name = duplicate_string(nodeset_name);
-				group_name[dotpos - nodeset_name] = '\0';
-				Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
-				if (child)
-				{
-					if (Cmiss_region_is_group(child))
-					{
-						region = child;
-						trimmed_nodeset_name = dotpos + 1;
-					}
-					Cmiss_region_destroy(&child);
-				}
-				DEALLOCATE(group_name);
+				fe_region = Cmiss_region_get_FE_region(region);
 			}
-			else
+			else if (0 == strcmp(nodeset_name, "cmiss_data"))
 			{
-				trimmed_nodeset_name = nodeset_name;
+				fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
 			}
-			if (trimmed_nodeset_name)
+			if (fe_region)
 			{
-				FE_region *fe_region = 0;
-				if (0 == strcmp(trimmed_nodeset_name, "cmiss_nodes"))
-				{
-					fe_region = Cmiss_region_get_FE_region(region);
-				}
-				else if (0 == strcmp(trimmed_nodeset_name, "cmiss_data"))
-				{
-					fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
-				}
-				if (fe_region)
-				{
-					nodeset = new Cmiss_nodeset(fe_region);
-				}
+				nodeset = new Cmiss_nodeset(fe_region);
 			}
 		}
 	}
@@ -921,6 +937,22 @@ int Cmiss_nodeset_group_remove_nodes_conditional(Cmiss_nodeset_group_id nodeset_
 	return 0;
 }
 
+int Cmiss_nodeset_group_add_element_nodes(
+	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element)
+{
+	if (nodeset_group && element)
+		return nodeset_group->addElementNodes(element);
+	return 0;
+}
+
+int Cmiss_nodeset_group_remove_element_nodes(
+	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element)
+{
+	if (nodeset_group && element)
+		return nodeset_group->removeElementNodes(element);
+	return 0;
+}
+
 Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
 	Cmiss_field_node_group_id node_group)
 {
@@ -933,6 +965,13 @@ struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id n
 {
 	if (nodeset)
 		return FE_region_create_related_node_list(nodeset->getFeRegion());
+	return 0;
+}
+
+FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset)
+{
+	if (nodeset)
+		return nodeset->getFeRegion();
 	return 0;
 }
 
@@ -955,6 +994,41 @@ int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset)
 	if (nodeset)
 		return FE_region_is_data_FE_region(nodeset->getFeRegion());
 	return 0;
+}
+
+Cmiss_nodeset_group_id Cmiss_field_module_create_nodeset_group_from_name_internal(
+	Cmiss_field_module_id field_module, const char *nodeset_group_name)
+{
+	Cmiss_nodeset_group_id nodeset_group = 0;
+	if (field_module && nodeset_group_name)
+	{
+		Cmiss_field_id existing_field = Cmiss_field_module_find_field_by_name(field_module, nodeset_group_name);
+		if (existing_field)
+		{
+			Cmiss_field_destroy(&existing_field);
+		}
+		else
+		{
+			char *group_name = duplicate_string(nodeset_group_name);
+			char *nodeset_name = strrchr(group_name, '.');
+			if (nodeset_name)
+			{
+				*nodeset_name = '\0';
+				++nodeset_name;
+				Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, nodeset_name);
+				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, group_name);
+				Cmiss_field_group_id group = Cmiss_field_cast_group(field);
+				Cmiss_field_node_group_id node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
+				nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+				Cmiss_field_node_group_destroy(&node_group);
+				Cmiss_field_group_destroy(&group);
+				Cmiss_field_destroy(&field);
+				Cmiss_nodeset_destroy(&master_nodeset);
+			}
+			DEALLOCATE(group_name);
+		}
+	}
+	return nodeset_group;
 }
 
 int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)
@@ -1003,6 +1077,16 @@ int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	if (node_template && field)
 	{
 		return node_template->defineVersions(field, component_number, number_of_versions);
+	}
+	return 0;
+}
+
+int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
+	Cmiss_field_id field)
+{
+	if (node_template && field)
+	{
+		return node_template->undefineField(field);
 	}
 	return 0;
 }

@@ -778,11 +778,6 @@ Returns the FE_region that the fields, nodes and elements of <fe_region>
 ultimately belong to. <fe_region> is returned if it has no immediate master.
 ==============================================================================*/
 
-/***************************************************************************//**
- * @return  1 if fe_region is a sub-group of a master fe_region, 0 if not.
- */
-int FE_region_is_group(struct FE_region *fe_region);
-
 struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
 	struct FE_region *fe_region);
 /*******************************************************************************
@@ -806,17 +801,6 @@ int FE_region_change_FE_element_identifier(struct FE_region *fe_region,
  */
 struct FE_element *FE_region_get_FE_element_from_identifier(
 	struct FE_region *fe_region, int dimension, int identifier);
-
-/***************************************************************************//**
- * Returns the conventionally understood dimension corresponding to the
- * cm_element_type:
- * CM_LINE = 1
- * CM_FACE = 2
- * CM_ELEMENT = highest dimension with elements, or 3 if empty.
- * Use with care only after elements are fully defined.
- */
-int FE_region_CM_element_type_to_dimension(struct FE_region *fe_region,
-	enum CM_element_type cm_element_type);
 
 /***************************************************************************//**
  * Returns the element identified by <cm> in <fe_region>, or NULL without error
@@ -976,24 +960,20 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 int FE_region_merge_FE_element_existing(struct FE_region *fe_region,
 	struct FE_element *destination, struct FE_element *source);
 
-int FE_region_begin_define_faces(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 13 January 2003
+/***************************************************************************//**
+ * Sets up <fe_region> to automatically define faces on any elements merged into
+ * it, and their faces recursively.
+ * @param face_dimension  Dimension of faces to define, 2, 1 or 0 for nodes.
+ * Special value -1 defines faces of all dimensions.
+ * Call FE_region_end_define_faces as soon as face definition is finished.
+ * Should put face definition calls between calls to begin_change/end_change.
+ */
+int FE_region_begin_define_faces(struct FE_region *fe_region, int face_dimension);
 
-DESCRIPTION :
-Sets up <fe_region> to automatically define faces on any elements merged into
-it, and their faces recursively.
-Call FE_region_end_define_faces as soon as face definition is finished.
-Should put face definition calls between calls to begin_change/end_change.
-==============================================================================*/
-
+/***************************************************************************//**
+ * Ends face definition in <fe_region>. Cleans up internal cache.
+ */
 int FE_region_end_define_faces(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 13 January 2003
-
-DESCRIPTION :
-Ends face definition in <fe_region>. Cleans up internal cache.
-==============================================================================*/
 
 int FE_region_merge_FE_element_and_faces_and_nodes(struct FE_region *fe_region,
 	struct FE_element *element);
@@ -1027,18 +1007,6 @@ match the geometry exactly either by using the FE_element_field_values
 xi-directions not matching up, or actual centre positions of the face being a
 trivial rejection, narrowing down to a single face or list of faces to compare
 against.
-==============================================================================*/
-
-int FE_region_merge_FE_element_and_faces_and_nodes_iterator(
-	struct FE_element *element, void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-FE_element iterator version of FE_region_merge_FE_element_and_faces_and_nodes.
-- MUST NOT iterate over the list of elements in a region to add or define faces
-as the list will be modified in the process; copy the list and iterate over
-the copy.
 ==============================================================================*/
 
 /***************************************************************************//**
@@ -1256,26 +1224,12 @@ Finds or creates a struct FE_basis in <fe_region> with the given <basis_type>.
 Recursive if fe_region has a master_fe_region.
 ==============================================================================*/
 
-int Cmiss_region_attach_FE_region(struct Cmiss_region *cmiss_region,
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Adds <fe_region> to the list of objects attached to <cmiss_region>.
-To clean up, <fe_region> will be deaccessed when detached from the Cmiss_region.
-If <cmiss_region> already has an FE_region, an error is reported.
-This function returns it, or NULL if no FE_region found.
-==============================================================================*/
-
-struct FE_region *Cmiss_region_get_FE_region(struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 1 October 2002
-
-DESCRIPTION :
-Currently, a Cmiss_region may have at most one FE_region.
-This function returns it, or NULL if no FE_region found.
-==============================================================================*/
+/***************************************************************************//**
+ * Sets the owning cmiss_region for this fe_region. Can also clear it.
+ * Private - only for use by Cmiss_region on construction and destruction!
+ */
+void FE_region_set_Cmiss_region_private(struct FE_region *fe_region,
+	struct Cmiss_region *cmiss_region);
 
 /***************************************************************************//**
  * @return  The Cmiss_region containing this fe_region.
@@ -1287,49 +1241,25 @@ struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region);
  */
 struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region);
 
-int FE_regions_can_be_merged(struct FE_region *global_fe_region,
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2002
+/***************************************************************************//**
+ * Returns true if definitions of fields, nodes and elements in
+ * <source_fe_region> are compatible with those in <target_fe_region>, such that
+ * FE_region_merge should succeed. Neither region is modified.
+ */
+int FE_region_can_merge(struct FE_region *target_fe_region,
+	struct FE_region *source_fe_region);
 
-DESCRIPTION :
-Returns true if definitions of fields, nodes and elements in <fe_region> are
-compatible with those in <global_fe_region>, such that FE_region_merge_FE_region
-should succeed. Neither region is modified.
-Note order: <fe_region> is to be merged into <global_fe_region>.
-=============================================================================*/
-
-int Cmiss_regions_FE_regions_can_be_merged(struct Cmiss_region *global_region,
-	struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 19 November 2002
-
-DESCRIPTION :
-Returns true if the FE_region in <region> can be merged into the FE_region for
-<global_region>, and, recursively, if the same function returns true for all
-child regions with the same name.
-==============================================================================*/
-
-int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
-	struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Merges into <global_region> the fields, nodes and elements from <region>.
-It is expected that Cmiss_regions_FE_regions_can_be_merged has already been
-passed for the two regions; if so the merge should proceed without error.
-The can_be_merged check should not be necessary if the members of <region> have
-been extracted from <global_region> in the first place and only field values
-changed or new objects added.
-
-IMPORTANT NOTE:
-Caller should destroy <region> after calling this function since the FE_regions
-it contains will be significantly modified during the merge. It would be more
-expensive to keep FE_regions unchanged during the merge, a behaviour not
-required at this time for import functions. If this is required in future,
-FE_regions_merge would have to be changed.
-==============================================================================*/
+/***************************************************************************//**
+ * Merges into <target_fe_region> the fields, nodes and elements from
+ * <source_fe_region>. Note that <source_fe_region> is left in a polluted state
+ * containing objects that partly belong to the <target_fe_region> and partly to
+ * itself. Currently it needs to be left around for the remainder of the merge
+ * up and down the region graph, but it needs to be destroyed as soon as possible.
+ * @param target_root_fe_region  Target / global root matching source root for
+ * embedding data. Possibly unnecessary.
+ */
+int FE_region_merge(struct FE_region *target_fe_region,
+	struct FE_region *source_fe_region, struct FE_region *target_root_fe_region);
 
 struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
 	struct FE_region *fe_region, int dimension);

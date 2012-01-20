@@ -892,29 +892,18 @@ public:
 		}
 		else
 		{
-			int error = 0;
-			Cmiss_region_id region = FE_region_get_Cmiss_region(fe_region);
-			if (Cmiss_region_is_group(region))
-			{
-				char *group_name = Cmiss_region_get_name(region);
-				append_string(&name, group_name, &error);
-				append_string(&name, ".", &error);
-				DEALLOCATE(group_name);
-			}
 			switch (dimension)
 			{
 			case 1:
-				append_string(&name, "cmiss_mesh_1d", &error);
+				name = duplicate_string("cmiss_mesh_1d");
 				break;
 			case 2:
-				append_string(&name, "cmiss_mesh_2d", &error);
+				name = duplicate_string("cmiss_mesh_2d");
 				break;
 			case 3:
-				append_string(&name, "cmiss_mesh_3d", &error);
+				name = duplicate_string("cmiss_mesh_3d");
 				break;
 			default:
-				DEALLOCATE(name);
-				name = 0;
 				break;
 			}
 		}
@@ -940,7 +929,7 @@ public:
 
 	int isGroup()
 	{
-		return (group || FE_region_is_group(fe_region));
+		return (0 != group);
 	}
 
 	int match(Cmiss_mesh& other_mesh)
@@ -973,19 +962,10 @@ protected:
 			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
 		}
+		Cmiss_element_iterator_destroy(&iterator);
 		Cmiss_field_cache_destroy(&cache);
 		Cmiss_field_module_destroy(&field_module);
 		return element_list;
-	}
-
-	bool isElementCompatible(Cmiss_element_id element)
-	{
-		if (get_FE_element_dimension(element) != dimension)
-			return false;
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		FE_region *element_fe_region = FE_element_get_FE_region(element);
-		return (element_fe_region == master_fe_region);
 	}
 
 };
@@ -1001,62 +981,32 @@ public:
 
 	int addElement(Cmiss_element_id element)
 	{
-		int return_code = 0;
-		if (isElementCompatible(element))
-		{
-			if (group)
-			{
-				return_code = Computed_field_element_group_core_cast(group)->addObject(element);
-			}
-			else if (FE_region_is_group(fe_region))
-			{
-				return_code = FE_region_add_FE_element(fe_region, element);
-			}
-		}
-		return return_code;
+		return Computed_field_element_group_core_cast(group)->addObject(element);
 	}
 
 	int removeAllElements()
 	{
-		int return_code = 0;
-		if (group)
-		{
-			return_code = Computed_field_element_group_core_cast(group)->clear();
-		}
-		else if (FE_region_is_group(fe_region))
-		{
-			return removeElementsConditional(/*conditional_field*/0);
-		}
-		return 0;
+		return Computed_field_element_group_core_cast(group)->clear();
 	}
 
 	int removeElement(Cmiss_element_id element)
 	{
-		int return_code = 0;
-		if (group)
-		{
-			return_code = Computed_field_element_group_core_cast(group)->removeObject(element);
-		}
-		else if (FE_region_is_group(fe_region))
-		{
-			return_code = FE_region_remove_FE_element(fe_region, element);
-		}
-		return return_code;
+		return Computed_field_element_group_core_cast(group)->removeObject(element);
 	}
 
 	int removeElementsConditional(Cmiss_field_id conditional_field)
 	{
-		int return_code = 0;
-		if (isGroup())
-		{
-			struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
-			if (group)
-				return_code = Computed_field_element_group_core_cast(group)->removeObjectsInList(element_list);
-			else
-				return_code = FE_region_remove_FE_element_list(fe_region, element_list);
-			DESTROY(LIST(FE_element))(&element_list);
-		}
-		return return_code;
+		return Computed_field_element_group_core_cast(group)->removeElementsConditional(conditional_field);
+	}
+
+	int addElementFaces(Cmiss_element_id element)
+	{
+		return Computed_field_element_group_core_cast(group)->addElementFaces(element);
+	}
+
+	int removeElementFaces(Cmiss_element_id element)
+	{
+		return Computed_field_element_group_core_cast(group)->removeElementFaces(element);
 	}
 
 };
@@ -1110,45 +1060,19 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 			}
 			Cmiss_field_destroy(&field);
 		}
-		if (!mesh)
+		else
 		{
 			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			const char *dotpos = strrchr(mesh_name, '.');
-			const char *trimmed_mesh_name = 0;
-			if (dotpos)
+			int mesh_dimension = 0;
+			if      (0 == strcmp(mesh_name, "cmiss_mesh_3d"))
+				mesh_dimension = 3;
+			else if (0 == strcmp(mesh_name, "cmiss_mesh_2d"))
+				mesh_dimension = 2;
+			else if (0 == strcmp(mesh_name, "cmiss_mesh_1d"))
+				mesh_dimension = 1;
+			if (0 < mesh_dimension)
 			{
-				Cmiss_region_id master_region = Cmiss_field_module_get_master_region_internal(field_module);
-				char *group_name = duplicate_string(mesh_name);
-				group_name[dotpos - mesh_name] = '\0';
-				Cmiss_region_id child = Cmiss_region_find_child_by_name(master_region, group_name);
-				if (child)
-				{
-					if (Cmiss_region_is_group(child))
-					{
-						region = child;
-						trimmed_mesh_name = dotpos + 1;
-					}
-					Cmiss_region_destroy(&child);
-				}
-				DEALLOCATE(group_name);
-			}
-			else
-			{
-				trimmed_mesh_name = mesh_name;
-			}
-			if (trimmed_mesh_name)
-			{
-				int mesh_dimension = 0;
-				if      (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_3d"))
-					mesh_dimension = 3;
-				else if (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_2d"))
-					mesh_dimension = 2;
-				else if (0 == strcmp(trimmed_mesh_name, "cmiss_mesh_1d"))
-					mesh_dimension = 1;
-				if (0 < mesh_dimension)
-				{
-					mesh = new Cmiss_mesh(region, mesh_dimension);
-				}
+				mesh = new Cmiss_mesh(region, mesh_dimension);
 			}
 		}
 	}
@@ -1325,6 +1249,20 @@ int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
 	return 0;
 }
 
+int Cmiss_mesh_group_add_element_faces(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+{
+	if (mesh_group && element)
+		return mesh_group->addElementFaces(element);
+	return 0;
+}
+
+int Cmiss_mesh_group_remove_element_faces(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+{
+	if (mesh_group && element)
+		return mesh_group->removeElementFaces(element);
+	return 0;
+}
+
 Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
 	Cmiss_field_element_group_id element_group)
 {
@@ -1337,6 +1275,13 @@ struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id m
 {
 	if (mesh)
 		return FE_region_create_related_element_list_for_dimension(mesh->getFeRegion(), mesh->getDimension());
+	return 0;
+}
+
+FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->getFeRegion();
 	return 0;
 }
 
@@ -1605,4 +1550,68 @@ char *Cmiss_basis_function_type_enum_to_string(enum Cmiss_basis_function_type ty
 {
 	const char *type_string = Cmiss_basis_function_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+static int set_Cmiss_mesh(struct Parse_state *state, void *region_void, void *mesh_address_void)
+{
+	Cmiss_region_id region = reinterpret_cast<Cmiss_region_id>(region_void);
+	Cmiss_mesh_id *mesh_address = reinterpret_cast<Cmiss_mesh_id*>(mesh_address_void);
+	if (!(state && region && mesh_address))
+		return 0;
+	const char *current_token = state->current_token;
+	int return_code = 1;
+	if (!current_token)
+	{
+		display_message(WARNING_MESSAGE, "Missing mesh name");
+		display_parse_state_location(state);
+		return_code =  0;
+	}
+	else if ((0 == strcmp(PARSER_HELP_STRING, current_token)) ||
+		(0 == strcmp(PARSER_RECURSIVE_HELP_STRING, current_token)))
+	{
+		display_message(INFORMATION_MESSAGE, " ELEMENT_GROUP_FIELD_NAME|[GROUP_NAME.]cmiss_mesh_1d|cmiss_mesh_2d|cmiss_mesh_3d[");
+		if (*mesh_address)
+		{
+			char *mesh_name = Cmiss_mesh_get_name(*mesh_address);
+			make_valid_token(&mesh_name);
+			display_message(INFORMATION_MESSAGE, "%s]", mesh_name);
+			DEALLOCATE(mesh_name);
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, "none]");
+		}
+	}
+	else
+	{
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_mesh_id new_mesh = Cmiss_field_module_find_mesh_by_name(field_module, current_token);
+		if (new_mesh)
+		{
+			if (*mesh_address)
+				Cmiss_mesh_destroy(mesh_address);
+			*mesh_address = new_mesh;
+			shift_Parse_state(state, 1);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Invalid mesh: %s", current_token);
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+		Cmiss_field_module_destroy(&field_module);
+	}
+	return return_code;
+}
+
+int Option_table_add_mesh_entry(struct Option_table *option_table,
+	const char *token, Cmiss_region_id region, Cmiss_mesh_id *mesh_address)
+{
+	if (!(option_table && token && region && mesh_address))
+	{
+		display_message(ERROR_MESSAGE, "Option_table_add_mesh_entry.  Invalid argument(s)");
+		return 0;
+	}
+	return Option_table_add_entry(option_table, token,
+		(void *)region, (void *)mesh_address, set_Cmiss_mesh);
 }

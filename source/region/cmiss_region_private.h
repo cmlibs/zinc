@@ -52,15 +52,12 @@ Global functions
 ----------------
 */
 
+/***************************************************************************//**
+ * Deaccesses fields from region and all child regions recursively.
+ * Temporary until circular references sorted out - certain fields access
+ * regions. Call ONLY before deaccessing root_region in Cmiss_context.
+ */
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region);
-/*******************************************************************************
-LAST MODIFIED : 29 May 2008
-
-DESCRIPTION :
-Deaccesses fields from region and all child regions recursively.
-Temporary until circular references sorted out - certain fields access regions.
-Call ONLY before deaccessing root_region in command_data.
-==============================================================================*/
 
 int Cmiss_region_private_attach_any_object(struct Cmiss_region *region,
 	struct Any_object *any_object);
@@ -95,28 +92,5 @@ Returns the list of objects, abstractly stored as struct Any_object from
 <region>. It is important that this list not be modified directly.
 This function is only externally visible to context objects.
 ==============================================================================*/
-
-struct Cmiss_region_fields;
-
-/***************************************************************************//**
- * Returns the master region from the private Cmiss_region_fields object.
- * Can return NULL if master Cmiss_region prematurely destroyed. 
- * 
- * @param region_fields Cmiss_region_fields object owning fields for region.
- * @return  Master Cmiss_region, or NULL if it has been prematurely destroyed.
- */
-struct Cmiss_region *Cmiss_region_fields_get_master_region(
-	struct Cmiss_region_fields *region_fields);
-
-/***************************************************************************//**
- * Internal function returning the child region which contains FE_region either
- * as the main FE_region or as data_FE_region, or NULL if not found.
- *
- * @param region  The parent region.
- * @param fe_region  The fe_region the child needs to contain
- * @return  The child region containing the FE_region, if any.
- */
-struct Cmiss_region *Cmiss_region_get_child_with_FE_region(
-	struct Cmiss_region *region, struct FE_region *fe_region);
 
 #endif /* !defined (CMISS_REGION_PRIVATE_H) */

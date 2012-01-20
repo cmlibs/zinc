@@ -511,6 +511,7 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
 		}
 		Cmiss_element_iterator_destroy(&iterator);
 	}
+	Cmiss_field_cache_destroy(&field_cache);
 	return element_list;
 }
 

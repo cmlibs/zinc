@@ -51,6 +51,9 @@ group of nodes
 #include <sys/types.h>
 #include <time.h>
 extern "C" {
+#include "api/cmiss_element.h"
+#include "api/cmiss_field_module.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "command/command.h"
 	/*???DB.  For Execute_command */
 #include "command/parser.h"
@@ -70,6 +73,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "curve/curve.h"
 #include "emoter/emoter_dialog.h"
+#include "region/cmiss_region.h"
 }
 
 /*
@@ -171,7 +175,7 @@ DESCRIPTION :
 	FE_value time_minimum, time_maximum;
 	struct Shared_emoter_slider_data *shared;
 	void *curve_manager_callback_id;
-	struct Cmiss_region *minimum_region;
+	Cmiss_nodeset_group_id minimum_nodeset_group;
 	struct Shell_list_item *shell_list_item;
 	struct Movie_graphics *movie;
 	struct Emoter_dialog **dialog_address;
@@ -241,11 +245,9 @@ Updates the node locations for the <emoter_slider>
 						if (read_exregion_file(input_sequence, input_file,
 							(struct FE_import_time_index *)NULL))
 						{
-							if (Cmiss_regions_FE_regions_can_be_merged(
-								shared_data->region, input_sequence))
+							if (Cmiss_region_can_merge(shared_data->region, input_sequence))
 							{
-								if (!Cmiss_regions_merge_FE_regions(
-									shared_data->region, input_sequence))
+								if (!Cmiss_region_merge(shared_data->region, input_sequence))
 								{
 									display_message(ERROR_MESSAGE,
 										"Error merging elements from file: %s", input_filename);
@@ -968,12 +970,7 @@ Callback for the emoter dialog - tidies up all details - mem etc
 		DEALLOCATE(emoter_dialog->shared->sliders);
 		DEACCESS(Cmiss_region)(&emoter_dialog->shared->region);
 		destroy_EM_Object(&(emoter_dialog->shared->em_object));
-
-		if(emoter_dialog->minimum_region)
-		{
-			DEACCESS(Cmiss_region)(&emoter_dialog->minimum_region);
-		}
-
+		Cmiss_nodeset_group_destroy(&emoter_dialog->minimum_nodeset_group);
 		destroy_Shell_list_item(&(emoter_dialog->shell_list_item));
 
 		DEALLOCATE(emoter_dialog->shared);
@@ -2874,9 +2871,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int i, *node_numbers, number_of_nodes, return_code;
-	struct FE_node *node;
-	struct FE_region *minimum_fe_region, *root_fe_region;
-	struct LIST(FE_node) *node_list;
 
 	ENTER(emoter_set_mode_limit);
 
@@ -2896,62 +2890,45 @@ DESCRIPTION :
 		if (node_numbers)
 		{
 			number_of_nodes = new_value;
-			root_fe_region = Cmiss_region_get_FE_region(
-				emoter_dialog->shared->region);
-			if (emoter_dialog->minimum_region)
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(emoter_dialog->shared->region);
+			Cmiss_field_module_begin_change(field_module);
+			Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+			if (emoter_dialog->minimum_nodeset_group)
 			{
-				minimum_fe_region = Cmiss_region_get_FE_region(
-					emoter_dialog->minimum_region);
-				FE_region_begin_change(minimum_fe_region);
-
-				/* Remove all the nodes from the region */
-				node_list = CREATE(LIST(FE_node))();
-				FE_region_for_each_FE_node(minimum_fe_region,
-					ensure_FE_node_is_in_list, (void *)node_list);
-				FE_region_remove_FE_node_list(minimum_fe_region, node_list);
-				DESTROY(LIST(FE_node))(&node_list);
+				Cmiss_nodeset_group_remove_all_nodes(emoter_dialog->minimum_nodeset_group);
 			}
 			else
 			{
-				if ((emoter_dialog->minimum_region =
-						Cmiss_region_create_group(emoter_dialog->shared->region)) &&
-					(minimum_fe_region =
-						Cmiss_region_get_FE_region(emoter_dialog->minimum_region)) &&
-					Cmiss_region_set_name(emoter_dialog->minimum_region, "minimum_set") &&
-					Cmiss_region_append_child(emoter_dialog->shared->region,
-						emoter_dialog->minimum_region))
-				{
-					FE_region_begin_change(minimum_fe_region);
-				}
-				else
+				Cmiss_field_id minimum_node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
+				Cmiss_field_node_group_id minimum_node_group = Cmiss_field_cast_node_group(minimum_node_group_field);
+				emoter_dialog->minimum_nodeset_group = Cmiss_field_node_group_get_nodeset(minimum_node_group);
+				Cmiss_field_node_group_destroy(&minimum_node_group);
+				Cmiss_field_destroy(&minimum_node_group_field);
+				if (!emoter_dialog->minimum_nodeset_group)
 				{
 					display_message(ERROR_MESSAGE,
-						"emoter_set_mode_limit.  Unable to create minimum region.");
+						"emoter_set_mode_limit.  Unable to create minimum node set.");
 					return_code = 0;
 				}
 			}
-
 			if (return_code)
 			{
 				for ( i = 0 ; i < number_of_nodes ; i++ )
 				{
 					if ( node_numbers[i] != -1 )
 					{
-						if ((node=FE_region_get_FE_node_from_identifier(root_fe_region,
-							node_numbers[i]))&&FE_region_merge_FE_node(minimum_fe_region,
-							node))
-						{
-							return_code = 1;
-						}
-						else
+						Cmiss_node_id node = Cmiss_nodeset_find_node_by_identifier(master_nodeset, node_numbers[i]);
+						if ((0 == node) || !Cmiss_nodeset_group_add_node(emoter_dialog->minimum_nodeset_group, node))
 						{
 							display_message(ERROR_MESSAGE,
 								"emoter_set_mode_limit.  Unable to add node %d", i);
 						}
+						Cmiss_node_destroy(&node);
 					}
 				}
-				FE_region_end_change(minimum_fe_region);
 			}
+			Cmiss_nodeset_destroy(&master_nodeset);
+			Cmiss_field_module_end_change(field_module);
 		}
 	}
 	else
@@ -3341,7 +3318,7 @@ Create emoter controls.
 		emoter_dialog->movie = (struct Movie_graphics *)NULL;
 		emoter_dialog->movie_loop = 1;
 		emoter_dialog->movie_every_frame = 1;
-		emoter_dialog->minimum_region = (struct Cmiss_region *)NULL;
+		emoter_dialog->minimum_nodeset_group = (Cmiss_nodeset_group_id)0;
 		emoter_dialog->shell_list_item = (struct Shell_list_item *)NULL;
 		emoter_dialog->autoplay_timeout =
 			(struct Event_dispatcher_timeout_callback *)NULL;

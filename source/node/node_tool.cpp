@@ -2805,7 +2805,7 @@ Adds the just created element to the fe_region, adding faces as necessary.
 	if (node_tool && node_tool->fe_region && node_tool->element)
 	{
 		FE_region_begin_change(node_tool->fe_region);
-		FE_region_begin_define_faces(node_tool->fe_region);
+		FE_region_begin_define_faces(node_tool->fe_region, /*all dimensions*/-1);
 		return_code = FE_region_merge_FE_element_and_faces_and_nodes(
 			node_tool->fe_region, node_tool->element);
 		FE_region_end_define_faces(node_tool->fe_region);

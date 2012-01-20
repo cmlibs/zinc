@@ -55,65 +55,8 @@ extern "C" {
 #include "general/debug.h"
 #include "user_interface/message.h"
 }
+#include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-
-int Computed_field_copy_values_at_node(struct FE_node *node,
-	struct Computed_field *destination_field,
-	struct Computed_field *source_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluates <source_field> at node and sets <destination_field> to those values.
-<node> must not be managed -- ie. it should be a local copy.
-Both fields must have the same number of values.
-Assumes both fields are defined at the location
-Up to user to call Computed_field_clear_cache for each field after calls to
-this function are finished.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_copy_values_at_node);
-	if (node && destination_field && source_field &&
-		(Computed_field_get_number_of_components(destination_field) ==
-			Computed_field_get_number_of_components(source_field)))
-	{
-		Field_node_location location(node, time);
-
-		if (Computed_field_evaluate_cache_at_location(source_field, &location))
-		{
-			if (Computed_field_set_values_at_location(destination_field,
-				&location, source_field->values))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_copy_values_at_node.  "
-					"Destination field not defined at node");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_copy_values_at_node.  "
-				"Source field not defined at node");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_copy_values_at_node.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_copy_values_at_node */
 
 int Cmiss_nodeset_assign_field_from_source(
 	Cmiss_nodeset_id nodeset, Cmiss_field_id destination_field,
@@ -229,12 +172,7 @@ int Cmiss_nodeset_assign_field_from_source(
 	return (return_code);
 }
 
-struct Computed_field_update_element_values_from_source_data
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+struct Cmiss_element_assign_grid_field_from_source_data
 {
 	int selected_count, success_count, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value time;
@@ -244,26 +182,19 @@ DESCRIPTION :
 	struct Computed_field *group_field;
 };
 
-int Computed_field_update_element_values_from_source_sub(
-	struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int Cmiss_element_assign_grid_field_from_source_sub(
+	Cmiss_element_id element, Cmiss_element_assign_grid_field_from_source_data *data)
 {
 	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int can_select_individual_points, destination_field_is_grid_based,
 		element_selected, grid_point_number, i, maximum_element_point_number,
 		number_of_ranges, return_code, start, stop;
-	struct Computed_field_update_element_values_from_source_data *data;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct Multi_range *selected_ranges;
 
-	ENTER(Computed_field_update_element_values_from_source_sub);
-	if (element && (data =
-		(struct Computed_field_update_element_values_from_source_data *)data_void))
+	ENTER(Cmiss_element_assign_grid_field_from_source_sub);
+	if (element && data)
 	{
 		element_point_ranges = (struct Element_point_ranges *)NULL;
 		return_code = 1;
@@ -401,73 +332,72 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_update_element_values_from_source_sub.  "
+			"Cmiss_element_assign_grid_field_from_source_sub.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_update_element_values_from_source_sub */
+} /* Cmiss_element_assign_grid_field_from_source_sub */
 
-int Computed_field_update_element_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region, struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Computed_field *group_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Set grid-based <destination_field> in all the elements in <element_group> or
-<element_manager> if not supplied to the values from <source_field>.
-Restricts update to grid points which are in <element_point_ranges_selection>
-or whose elements are in <element_selection>, if either supplied.
-Note the union of these two selections is used if both supplied.
-==============================================================================*/
+int Cmiss_mesh_assign_grid_field_from_source(
+	Cmiss_mesh_id mesh, Cmiss_field_id destination_field,
+	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
+	FE_value time)
 {
-	int return_code;
-	struct Computed_field_update_element_values_from_source_data data;
-	struct FE_region *fe_region;
-
-	ENTER(Computed_field_update_element_values_from_source);
-	return_code = 0;
-	if (destination_field && source_field && region && 
-		(fe_region = Cmiss_region_get_FE_region(region)))
+	int return_code = 1;
+	if (mesh && destination_field && source_field)
 	{
 		if (Computed_field_get_number_of_components(source_field) ==
 			 Computed_field_get_number_of_components(destination_field))
 		{
-			return_code = 1;
+			Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			Cmiss_field_module_begin_change(field_module);
+			Cmiss_element_assign_grid_field_from_source_data data;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
 			data.element_point_ranges_selection = element_point_ranges_selection;
-			data.group_field = group_field;
+			data.group_field = conditional_field;
 			data.selected_count = 0;
 			data.success_count = 0;
 			data.time = time;
-			FE_region_begin_change(fe_region);
-			FE_region_for_each_FE_element(fe_region,
-				Computed_field_update_element_values_from_source_sub,
-				(void *)&data);
+			Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
+			Cmiss_element_id element = 0;
+			while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+			{
+				if (!Cmiss_element_assign_grid_field_from_source_sub(element, &data))
+				{
+					return_code = 0;
+					break;
+				}
+			}
+			Cmiss_element_iterator_destroy(&iter);
 			if (data.success_count != data.selected_count)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_update_element_values_from_source."
+					"Cmiss_mesh_assign_grid_field_from_source."
 					"  Only able to set values for %d elements out of %d\n"
 					"  Either source field isn't defined in element "
 					"or destination field could not be set.",
 					data.success_count, data.selected_count);
-				return_code=0;
+				return_code = 0;
 			}
 			/* to be safe, clear cache of source and destination fields */
 			Computed_field_clear_cache(source_field);
 			Computed_field_clear_cache(destination_field);
-			FE_region_end_change(fe_region);
+			if (conditional_field)
+				Computed_field_clear_cache(conditional_field);
+
+			Cmiss_field_module_end_change(field_module);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_update_element_values_from_source.  "
+				"Cmiss_mesh_assign_grid_field_from_source.  "
 				"Number of components in source and destination fields must match.");
 			return_code = 0;
 		}
@@ -475,11 +405,9 @@ Note the union of these two selections is used if both supplied.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_update_element_values_from_source.  "
+			"Cmiss_mesh_assign_grid_field_from_source.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_update_element_values_from_source */
+}

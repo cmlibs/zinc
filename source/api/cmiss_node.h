@@ -74,12 +74,14 @@ char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type);
 
 /***************************************************************************//**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
- * container of nodes - i.e. Cmiss_node objects.
- * Valid names are currently limited to:
+ * container of nodes - i.e. Cmiss_node objects. Valid names may be any
+ * node_group field, or the following special names:
  * "cmiss_nodes" = the primary set of nodes for a region, able to be indexed by
  * Cmiss_elements for storing or mapping to finite element field parameters.
  * "cmiss_data" = an additional set of nodes generally used to represent data
  * points, not for finite element field parameters.
+ * Note that the default names for node group fields created from a group
+ * is GROUP_NAME.NODESET_NAME, with nodeset names as above.
  *
  * @param field_module  The field module the nodeset belongs to.
  * @param name  The name of the nodeset: "cmiss_nodes" or "cmiss_data".
@@ -406,6 +408,19 @@ int Cmiss_node_template_define_time_sequence(
  */
 int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	Cmiss_field_id field, int component_number, int number_of_versions);
+
+/***************************************************************************//**
+ * Sets field to be undefined when next merged into an existing node. Has no
+ * effect on newly created nodes. It is illegal to define and undefine the same
+ * field in a node template.
+ *
+ * @param node_template  Node template to modify.
+ * @param field  The field to undefine. May be finite_element, stored_string or
+ * stored_mesh_location type only.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
+	Cmiss_field_id field);
 
 /*******************************************************************************
  * Returns a new handle to the node with reference count incremented.

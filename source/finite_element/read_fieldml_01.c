@@ -4934,9 +4934,19 @@ DESCRIPTION :
 		region = Cmiss_region_find_child_by_name(fieldml_data->root_region, name);
 		if (NULL == region)
 		{
+			// GRC: Changed to create full regions as group regions removed
+#if defined OLD_CODE
 			region = Cmiss_region_create_group(fieldml_data->root_region);
 			Cmiss_region_set_name(region, name);
 			if (!Cmiss_region_append_child(fieldml_data->root_region, region))
+			{
+				display_message(ERROR_MESSAGE,
+					"fieldml_start_group.  Could not add child region");
+				DEACCESS(Cmiss_region)(&region);
+			}
+#endif // defined OLD_CODE
+			region = Cmiss_region_create_child(fieldml_data->root_region, name);
+			if (!region)
 			{
 				display_message(ERROR_MESSAGE,
 					"fieldml_start_group.  Could not add child region");

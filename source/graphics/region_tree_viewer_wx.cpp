@@ -529,7 +529,7 @@ class wxRegionTreeViewer : public wxFrame
 		*streamline_type_chooser_panel, *stream_vector_chooser_panel, 
 		*streamline_data_type_chooser_panel, *spectrum_chooser_panel,
 		*texture_coordinates_chooser_panel, *render_type_chooser_panel,
-		*seed_element_panel, *visibility_field_chooser_panel, *tessellation_chooser_panel;
+		*seed_element_panel, *subgroup_field_chooser_panel, *tessellation_chooser_panel;
 	wxWindow *glyphbox,*glyphline;
 	wxChoice *facechoice;
 	wxString TempText;
@@ -569,7 +569,7 @@ class wxRegionTreeViewer : public wxFrame
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*label_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	*visibility_field_chooser;
+	*subgroup_field_chooser;
 	DEFINE_MANAGER_CLASS(Graphics_font); 
 		 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
 	*font_chooser;	
@@ -732,7 +732,7 @@ public:
 	orientation_scale_field_chooser = NULL;		
 	variable_scale_field_chooser = NULL;
 	label_field_chooser= NULL;
-	visibility_field_chooser= NULL;
+	subgroup_field_chooser= NULL;
 	font_chooser=NULL;
 	use_element_type_chooser = NULL;
 	xi_discretization_mode_chooser = NULL;
@@ -836,8 +836,8 @@ public:
 				delete variable_scale_field_chooser;
 			if (label_field_chooser)
 				delete label_field_chooser;
-			if (visibility_field_chooser)
-				delete visibility_field_chooser;
+			if (subgroup_field_chooser)
+				delete subgroup_field_chooser;
 			if (use_element_type_chooser)
 				delete use_element_type_chooser;
 			if (xi_discretization_mode_chooser)
@@ -885,8 +885,8 @@ void Region_tree_viewer_wx_set_manager_in_choosers(struct Region_tree_viewer *re
 			variable_scale_field_chooser->set_manager(region_tree_viewer->field_manager);
 	if (label_field_chooser != NULL)
 			label_field_chooser->set_manager(region_tree_viewer->field_manager);
-	if (visibility_field_chooser != NULL)
-		 visibility_field_chooser->set_manager(region_tree_viewer->field_manager);
+	if (subgroup_field_chooser != NULL)
+		 subgroup_field_chooser->set_manager(region_tree_viewer->field_manager);
 	if (native_discretization_field_chooser != NULL)
 			native_discretization_field_chooser->set_manager(region_tree_viewer->field_manager);
 	if (xi_point_density_field_chooser != NULL)
@@ -912,7 +912,7 @@ Callback from wxChooser<Coordinate Field> when choice is made.
 			region_tree_viewer->current_graphic, coordinate_field);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 		return(1);
 	}
 
@@ -929,7 +929,7 @@ Callback from wxChooser<Coordinate Field> when choice is made.
 			region_tree_viewer->current_graphic, coordinate_system);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 		return(1);
 	}
 
@@ -1049,7 +1049,7 @@ Callback from wxChooser<select mode> when choice is made.
 		region_tree_viewer->current_graphic, select_mode);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1100,7 +1100,7 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 	}
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1128,7 +1128,7 @@ Callback from wxChooser<Iso Scalar> when choice is made.
 		decimation_threshold);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 
 	return 1;
 }
@@ -1160,7 +1160,7 @@ Callback from wxChooser<Glyph> when choice is made.
 			/* inform the client of the change */
 			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 				region_tree_viewer->edit_rendition);
-			Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+			//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 			return 1;
 		}
 		else
@@ -1217,7 +1217,7 @@ Callback from wxChooser<Orientation Scale> when choice is made.
 			/* inform the client of the change */
 			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 				region_tree_viewer->edit_rendition);
-			Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+			//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 			return 1;
 		}
 		else
@@ -1258,7 +1258,7 @@ Callback from wxChooser<Variable Scale> when choice is made.
 	 variable_scale_field);		
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1278,14 +1278,14 @@ Callback from wxChooser<label> when choice is made.
 		label_field, font);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 	   region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
-int visibility_field_callback(Computed_field *visibility_field)
+int subgroup_field_callback(Computed_field *subgroup_field)
 {
-	Cmiss_graphic_set_visibility_field(region_tree_viewer->current_graphic,
-		visibility_field);
+	Cmiss_graphic_set_subgroup_field(region_tree_viewer->current_graphic,
+		subgroup_field);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
 	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
@@ -1309,7 +1309,7 @@ Callback from wxChooser<font> when choice is made.
 		temp_label_field, graphics_font);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 	 region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1370,7 +1370,7 @@ Callback from wxChooser<Use Element Type> when choice is made.
 
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 	  region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
  }
 
@@ -1418,7 +1418,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 				/* inform the client of the change */
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 				 region_tree_viewer->edit_rendition);
-				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+				//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 			}
 			else
 			{
@@ -1490,7 +1490,7 @@ Callback from wxChooser<Native discretization> when choice is made.
 		region_tree_viewer->current_graphic, temp_native_discretization_field);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1514,7 +1514,7 @@ Callback from wxChooser<xi Point Denstiy Field> when choice is made.
 		xi_point_density_field);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 	 region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1530,7 +1530,7 @@ Callback from wxChooser<Seed Element> when choice is made.
 		seed_element);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1556,7 +1556,7 @@ Callback from wxChooser<Streamline Type> when choice is made.
 	{
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	return 1;
 }
@@ -1586,7 +1586,7 @@ Callback from wxChooser<Stream Vector> when choice is made.
  		/* inform the client of the change */
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 
 	return 1;
@@ -1657,7 +1657,7 @@ Callback from wxChooser<Stream Data Type> when choice is made.
 				/* inform the client of the change */
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 					region_tree_viewer->edit_rendition);
-				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+				//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 			}
 		}
 	return 1;
@@ -1708,7 +1708,7 @@ Callback from wxChooser<Data Field> when choice is made.
 
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1744,7 +1744,7 @@ Callback from wxChooser<Spectrum> when choice is made.
 	}
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1757,7 +1757,7 @@ int tessellation_callback(Cmiss_tessellation *tessellation)
 		region_tree_viewer->current_graphic, tessellation);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1774,7 +1774,7 @@ Callback from wxChooser<Texture Coord Field> when choice is made.
 			/* inform the client of the change */
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			      region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1791,7 +1791,7 @@ Callback from wxChooser<Render Type> when choice is made.
 			/* inform the client of the change */
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	return 1;
 }
 
@@ -1886,8 +1886,7 @@ void Region_tree_viewer_wx_set_list_string(Cmiss_graphic *graphic)
 	graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
 	selection=graphicalitemschecklist->GetSelection();
 	check = graphicalitemschecklist->IsChecked(selection);
-	graphic_string = Cmiss_graphic_string(graphic,
-		GRAPHIC_STRING_COMPLETE_PLUS);
+	graphic_string = Cmiss_graphic_get_summary_string(graphic);
 	graphicalitemschecklist->SetString(selection, graphic_string);
 	graphicalitemschecklist->Check(selection,check);
 	DEALLOCATE(graphic_string);
@@ -1906,8 +1905,7 @@ void Region_tree_viewer_renew_label_on_list(Cmiss_graphic *graphic)
 	position = Cmiss_rendition_get_graphic_position(
 		region_tree_viewer->edit_rendition, graphic);
 	check=graphicalitemschecklist->IsChecked(position - 1);
-	graphic_string = Cmiss_graphic_string(region_tree_viewer->current_graphic,
-		GRAPHIC_STRING_COMPLETE_PLUS);
+	graphic_string = Cmiss_graphic_get_summary_string(region_tree_viewer->current_graphic);
 	graphicalitemschecklist->SetString(position-1, graphic_string);
 	graphicalitemschecklist->Check(position-1, check);
 	DEALLOCATE(graphic_string);
@@ -2426,7 +2424,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 																							scale_factor,radius_scalar_field);
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
  	}
 
 	void EnterIsoScalar(wxCommandEvent &event)
@@ -2506,7 +2504,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 							first_iso_value, last_iso_value, decimation_threshold);
 						Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 							region_tree_viewer->edit_rendition);
-						Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);		/* inform the client of the change */
+						//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);		/* inform the client of the change */
 					}
 				}
 				else
@@ -2594,7 +2592,7 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 					/* inform the client of the change */
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
-					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+					//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 				}
 				
 				/* always restore strings to actual value in use */
@@ -2655,7 +2653,7 @@ void EnterGlyphOffset(wxCommandEvent &event)
 						glyph_scale_factors, variable_scale_field);
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
-					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+					//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 					destroy_Parse_state(&temp_state);
 					Cmiss_graphic_get_glyph_parameters(
 						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
@@ -2711,7 +2709,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 					/* inform the client of the change */
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
-					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+					//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 					Cmiss_graphic_get_glyph_parameters(
 						region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
 						glyph_size, &orientation_scale_field, glyph_scale_factors,
@@ -2780,7 +2778,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 							glyph_scale_factors, variable_scale_field);
 						Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						       region_tree_viewer->edit_rendition);
-						Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+						//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 						destroy_Parse_state(&temp_state);
 						Cmiss_graphic_get_glyph_parameters(
 							region_tree_viewer->current_graphic, &glyph, &glyph_scaling_mode, glyph_offset,
@@ -2863,7 +2861,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 					/* inform the client of the change */
 					Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 						region_tree_viewer->edit_rendition);
-					Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+					//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 				}
 				destroy_Parse_state(&temp_state);
 			}
@@ -2907,7 +2905,7 @@ void EnterCircleDiscretization(wxCommandEvent &event)
 		/* inform the client of the change */
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	else
 	{
@@ -2939,7 +2937,7 @@ void SeedElementChecked(wxCommandEvent &event)
 	}
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 
 }
 
@@ -2972,7 +2970,7 @@ void EnterSeedXi(wxCommandEvent &event)
 				/* inform the client of the change */
 				Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 					region_tree_viewer->edit_rendition);
-				Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+				//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 				destroy_Parse_state(&temp_state);
 			}
 		}
@@ -3013,7 +3011,7 @@ void EnterLength(wxCommandEvent &event)
 		/* inform the client of the change */
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	else
 	{
@@ -3050,7 +3048,7 @@ void EnterWidth(wxCommandEvent &event)
 		/* inform the client of the change */
 		Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 			region_tree_viewer->edit_rendition);
-		Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+		//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	}
 	else
 	{
@@ -3082,7 +3080,7 @@ void ReverseChecked(wxCommandEvent &event)
 	/* inform the client of the change */
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 	reversecheckbox->SetValue(reverse_track);
 }
 
@@ -3108,7 +3106,7 @@ void EnterLineWidth(wxCommandEvent &event)
 			/* inform the client of the change */
 			Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 				      region_tree_viewer->edit_rendition);
-			Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+			//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 		}
 	}
 	else
@@ -3130,7 +3128,7 @@ void ExteriorChecked(wxCommandEvent &event)
 		/* inform the client of the change */
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 }
 
 void FaceChecked(wxCommandEvent &event)
@@ -3152,7 +3150,7 @@ void FaceChecked(wxCommandEvent &event)
 	Cmiss_graphic_set_face(region_tree_viewer->current_graphic,face);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
  }
 
 void FaceChosen(wxCommandEvent &event)
@@ -3164,7 +3162,7 @@ void FaceChosen(wxCommandEvent &event)
 	Cmiss_graphic_set_face(region_tree_viewer->current_graphic,face);
 	Region_tree_viewer_autoapply(region_tree_viewer->rendition,
 		region_tree_viewer->edit_rendition);
-	Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
+	//Region_tree_viewer_renew_label_on_list(region_tree_viewer->current_graphic);
 }
 
 void SetBothMaterialChooser(Cmiss_graphic *graphic)
@@ -3183,7 +3181,7 @@ void SetGraphic(Cmiss_graphic *graphic)
 	char temp_string[50], *vector_temp_string;
 	struct Computed_field *radius_scalar_field, *iso_scalar_field, 
 		*orientation_scale_field, *variable_scale_field,	*label_field, 
-		*visibility_field, *xi_point_density_field, *stream_vector_field,
+		*xi_point_density_field, *stream_vector_field,
 		*data_field, *texture_coord_field;
 	float constant_radius,scale_factor,streamline_length,streamline_width;
 	struct GT_object *glyph;
@@ -3613,38 +3611,30 @@ void SetGraphic(Cmiss_graphic *graphic)
 			labeltext->Hide();
 		}
 		
-		/* Visibility field */
-		wxStaticText *visibility_field_text=XRCCTRL(*this,"VisibilityFieldText",wxStaticText);
-		visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
+		/* Subgroup field */
+		wxStaticText *subgroup_field_text=XRCCTRL(*this,"SubgroupFieldText",wxStaticText);
+		subgroup_field_chooser_panel = XRCCTRL(*this,"SubgroupFieldChooserPanel",wxPanel);
 
-		if (((CMISS_GRAPHIC_NODE_POINTS==region_tree_viewer->current_graphic_type)||
-				(CMISS_GRAPHIC_DATA_POINTS==region_tree_viewer->current_graphic_type)) &&
-			Cmiss_graphic_get_visibility_field(graphic,&visibility_field))
+		Cmiss_field_id subgroup_field = 0;
+		Cmiss_graphic_get_subgroup_field(graphic, &subgroup_field);
+		if (subgroup_field_chooser == NULL)
 		{
-			if (visibility_field_chooser == NULL)
-			{
-				visibility_field_chooser =
-					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-					(visibility_field_chooser_panel, visibility_field, region_tree_viewer->field_manager,
-						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL, 
-						region_tree_viewer->user_interface);
-				Callback_base< Computed_field* > *visibility_field_callback = 
-					new Callback_member_callback< Computed_field*, 
-					wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
-					(this, &wxRegionTreeViewer::visibility_field_callback);
-				visibility_field_chooser->set_callback(visibility_field_callback);
-				visibility_field_chooser_panel->Fit();
-				visibility_field_chooser->include_null_item(true);
-			}
-			visibility_field_text->Show();
-			visibility_field_chooser->set_object(visibility_field);
-			visibility_field_chooser_panel->Show();
+			subgroup_field_chooser =
+				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+				(subgroup_field_chooser_panel, subgroup_field, region_tree_viewer->field_manager,
+					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL,
+					region_tree_viewer->user_interface);
+			Callback_base< Computed_field* > *subgroup_field_callback =
+				new Callback_member_callback< Computed_field*,
+				wxRegionTreeViewer, int (wxRegionTreeViewer::*)(Computed_field *) >
+				(this, &wxRegionTreeViewer::subgroup_field_callback);
+			subgroup_field_chooser->set_callback(subgroup_field_callback);
+			subgroup_field_chooser_panel->Fit();
+			subgroup_field_chooser->include_null_item(true);
 		}
-		else
-		{
-			visibility_field_text->Hide();
-			visibility_field_chooser_panel->Hide();
-		}
+		subgroup_field_text->Show();
+		subgroup_field_chooser->set_object(subgroup_field);
+		subgroup_field_chooser_panel->Show();
 		
 		/* Set the select_mode_chooser_panel*/
 		select_mode_chooser_panel = 
@@ -4868,8 +4858,7 @@ static int Region_tree_viewer_add_graphic_item(
 	ENTER(Region_tree_viewer_add_graphic_item);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		graphic_string = Cmiss_graphic_string(graphic,
-				GRAPHIC_STRING_COMPLETE_PLUS);
+		graphic_string = Cmiss_graphic_get_summary_string(graphic);
 		wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		graphicalitemschecklist->Append(graphic_string);
 		if (Cmiss_graphic_get_visibility_flag(graphic))
@@ -5328,7 +5317,7 @@ static int Region_tree_viewer_add_graphic(
 	ENTER(Region_tree_viewer_add_graphic);
 	if (graphic && (region_tree_viewer = static_cast<Region_tree_viewer*>(region_tree_viewer_void)))
 	{
-		graphic_string = Cmiss_graphic_string(graphic, GRAPHIC_STRING_COMPLETE_PLUS);
+		graphic_string = Cmiss_graphic_get_summary_string(graphic);
 		wxCheckListBox *graphicchecklist =  XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "CmissGraphicListBox",wxCheckListBox);
 		graphicchecklist->Append(graphic_string);
 		if (Cmiss_graphic_get_visibility_flag(graphic))

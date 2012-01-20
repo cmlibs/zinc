@@ -172,7 +172,9 @@ public:
 
 };
 
+#ifdef OLD_CODE
 namespace {
+#endif // OLD_CODE
 
 	template <typename T>
 	class Computed_field_sub_group_object : public Computed_field_subobject_group
@@ -362,9 +364,13 @@ namespace {
 
 	};
 
-}
+#ifdef OLD_CODE
+} // namespace
+#endif // OLD_CODE
 
+#ifdef OLD_CODE
 namespace {
+#endif // OLD_CODE
 
 	class Computed_field_element_group : public Computed_field_subobject_group
 	{
@@ -384,10 +390,14 @@ namespace {
 			dimension(Cmiss_mesh_get_dimension(master_mesh)),
 			object_list(Cmiss_mesh_create_element_list_internal(master_mesh))
 		{
+			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region_add_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_element_group()
 		{
+			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region_remove_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_element))(&object_list);
 			Cmiss_mesh_destroy(&master_mesh);
 		}
@@ -404,14 +414,13 @@ namespace {
 
 		inline int addObject(FE_element *object)
 		{
-			if (!IS_OBJECT_IN_LIST(FE_element)(object, object_list))
+			if (isElementCompatible(object) &&
+				(!IS_OBJECT_IN_LIST(FE_element)(object, object_list)) &&
+				ADD_OBJECT_TO_LIST(FE_element)(object, object_list))
 			{
-				if (ADD_OBJECT_TO_LIST(FE_element)(object, object_list))
-				{
-					change_detail.changeAdd();
-					update();
-					return 1;
-				}
+				change_detail.changeAdd();
+				update();
+				return 1;
 			}
 			return 0;
 		};
@@ -435,23 +444,8 @@ namespace {
 			return 0;
 		};
 
-		/** remove objects from the group if they are in the supplied list */
-		int removeObjectsInList(struct LIST(FE_element) *element_list)
-		{
-			const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
-			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-				FE_element_is_in_list, (void *)element_list, object_list);
-			const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
-			if (new_size != old_size)
-			{
-				if (new_size == 0)
-					change_detail.changeClear();
-				else
-					change_detail.changeRemove();
-				update();
-			}
-			return return_code;
-		}
+		/** remove all elements for which conditional_field is true */
+		int removeElementsConditional(Cmiss_field_id conditional_field);
 
 		virtual int clear()
 		{
@@ -532,6 +526,12 @@ namespace {
 			FE_element_list_write_btree_statistics(object_list);
 		}
 
+		/** ensure parent element's faces are in element group */
+		int addElementFaces(Cmiss_element_id parent);
+
+		/** ensure parent element's faces are not in element group */
+		int removeElementFaces(Cmiss_element_id parent);
+
 	private:
 
 		Computed_field_core* copy()
@@ -602,10 +602,74 @@ namespace {
 			Computed_field_changed(field);
 		}
 
-	};
-}
+		/** remove objects from the group if they are in the supplied list */
+		int removeObjectsNotInFeRegion(struct FE_region *fe_region)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
+			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+				FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
+			const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
+			if (new_size != old_size)
+			{
+				if (new_size == 0)
+					change_detail.changeClear();
+				else
+					change_detail.changeRemove();
+				update();
+			}
+			return return_code;
+		}
 
+		/***************************************************************************//**
+		 * Callback from <fe_region> with its <changes>. Remove any destroyed elements.
+		 */
+		static void fe_region_change(struct FE_region *fe_region,
+			struct FE_region_changes *changes, void *element_group_void)
+		{
+			Computed_field_element_group *element_group =
+				reinterpret_cast<Computed_field_element_group *>(element_group_void);
+			if (fe_region && changes && element_group)
+			{
+				int fe_element_change_summary;
+				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(
+					changes->fe_element_changes[element_group->dimension - 1], &fe_element_change_summary))
+				{
+					/* remove elements removed from this fe_region */
+					if (fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
+					{
+						element_group->removeObjectsNotInFeRegion(fe_region);
+					}
+				}
+			}
+		}
+
+		bool isElementCompatible(Cmiss_element_id element)
+		{
+			if (get_FE_element_dimension(element) != dimension)
+				return false;
+			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *element_fe_region = FE_element_get_FE_region(element);
+			return (element_fe_region == fe_region);
+		}
+
+		bool isParentElementCompatible(Cmiss_element_id element)
+		{
+			if (get_FE_element_dimension(element) != dimension + 1)
+				return false;
+			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *element_fe_region = FE_element_get_FE_region(element);
+			return (element_fe_region == fe_region);
+		}
+
+	};
+
+#ifdef OLD_CODE
+} // namespace
+#endif // OLD_CODE
+
+#ifdef OLD_CODE
 namespace {
+#endif // OLD_CODE
 
 	class Computed_field_node_group : public Computed_field_subobject_group
 	{
@@ -623,10 +687,14 @@ namespace {
 			master_nodeset(Cmiss_nodeset_get_master(nodeset)),
 			object_list(Cmiss_nodeset_create_node_list_internal(master_nodeset))
 		{
+			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region_add_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_node_group()
 		{
+			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region_remove_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_node))(&object_list);
 			Cmiss_nodeset_destroy(&master_nodeset);
 		}
@@ -638,14 +706,13 @@ namespace {
 
 		inline int addObject(FE_node *object)
 		{
-			if (!IS_OBJECT_IN_LIST(FE_node)(object, object_list))
+			if (isNodeCompatible(object) &&
+				(!IS_OBJECT_IN_LIST(FE_node)(object, object_list)) &&
+				ADD_OBJECT_TO_LIST(FE_node)(object, object_list))
 			{
-				if (ADD_OBJECT_TO_LIST(FE_node)(object, object_list))
-				{
-					change_detail.changeAdd();
-					update();
-					return 1;
-				}
+				change_detail.changeAdd();
+				update();
+				return 1;
 			}
 			return 0;
 		};
@@ -669,23 +736,8 @@ namespace {
 			return 0;
 		};
 
-		/** remove objects from the group if they are in the supplied list */
-		int removeObjectsInList(struct LIST(FE_node) *node_list)
-		{
-			const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
-			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-				FE_node_is_in_list, (void *)node_list, object_list);
-			const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
-			if (new_size != old_size)
-			{
-				if (new_size == 0)
-					change_detail.changeClear();
-				else
-					change_detail.changeRemove();
-				update();
-			}
-			return return_code;
-		}
+		/** remove all nodes for which conditional_field is true */
+		int removeNodesConditional(Cmiss_field_id conditional_field);
 
 		virtual int clear()
 		{
@@ -700,17 +752,7 @@ namespace {
 
 		int containsObject(FE_node *object)
 		{
-			int return_code = 0;
-			if (IS_OBJECT_IN_LIST(FE_node)(object, object_list))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-
-			return (return_code);
+			return IS_OBJECT_IN_LIST(FE_node)(object, object_list);
 		};
 
 		Cmiss_node_iterator_id createIterator()
@@ -762,6 +804,12 @@ namespace {
 		{
 			FE_node_list_write_btree_statistics(object_list);
 		}
+
+		/** ensure element's nodes are in node group */
+		int addElementNodes(Cmiss_element_id element);
+
+		/** ensure element's nodes are not in node group */
+		int removeElementNodes(Cmiss_element_id element);
 
 	private:
 
@@ -826,8 +874,67 @@ namespace {
 			Computed_field_changed(field);
 		}
 
+		/** remove objects from the group if they are in the supplied list */
+		int removeObjectsNotInFeRegion(struct FE_region *fe_region)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
+			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_is_not_in_FE_region, (void *)fe_region, object_list);
+			const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
+			if (new_size != old_size)
+			{
+				if (new_size == 0)
+					change_detail.changeClear();
+				else
+					change_detail.changeRemove();
+				update();
+			}
+			return return_code;
+		}
+
+		/***************************************************************************//**
+		 * Callback from <fe_region> with its <changes>. Remove any destroyed nodes.
+		 */
+		static void fe_region_change(struct FE_region *fe_region,
+			struct FE_region_changes *changes, void *node_group_void)
+		{
+			Computed_field_node_group *node_group =
+				reinterpret_cast<Computed_field_node_group *>(node_group_void);
+			if (fe_region && changes && node_group)
+			{
+				int fe_node_change_summary;
+				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changes->fe_node_changes, &fe_node_change_summary))
+				{
+					/* remove nodes removed from this fe_region */
+					if (fe_node_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
+					{
+						node_group->removeObjectsNotInFeRegion(fe_region);
+					}
+				}
+			}
+		}
+
+		bool isNodeCompatible(Cmiss_node_id node)
+		{
+			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *node_fe_region = FE_node_get_FE_region(node);
+			if (FE_region_is_data_FE_region(fe_region))
+				node_fe_region = FE_region_get_data_FE_region(node_fe_region);
+			return (node_fe_region == fe_region);
+		}
+
+		bool isParentElementCompatible(Cmiss_element_id element)
+		{
+			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *element_fe_region = FE_element_get_FE_region(element);
+			return (element_fe_region == fe_region);
+		}
+
 	};
-}
+
+#ifdef OLD_CODE
+} // namespace
+#endif // OLD_CODE
 
 template <typename ObjectType, typename FieldType>
 Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_core_cast(

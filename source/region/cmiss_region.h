@@ -42,6 +42,7 @@
 #if !defined (CMISS_REGION_H)
 #define CMISS_REGION_H
 
+#include "api/cmiss_field_group.h"
 #include "api/cmiss_region.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -112,15 +113,6 @@ PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region);
 struct Cmiss_region *Cmiss_region_create_internal(void);
 
 /***************************************************************************//**
- * Creates a Cmiss_region that shares the fields with master_region but
- * uses a subset of its nodes and element (i.e. a group).
- * Region is created with an access_count of 1; DEACCESS to destroy.
- * Consider as private: NOT TO BE PUT IN THE PUBLIC API.
- */
-struct Cmiss_region *Cmiss_region_create_group(
-		struct Cmiss_region *master_region);
-
-/***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
  *
  * @param region  The region to clear the fields from. Must not be a group.
@@ -128,18 +120,28 @@ struct Cmiss_region *Cmiss_region_create_group(
  */
 int Cmiss_region_clear_finite_elements(struct Cmiss_region *region);
 
-struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 20 May 2008
+/***************************************************************************//**
+ * Returns FE_region for this Cmiss_region.
+ */
+struct FE_region *Cmiss_region_get_FE_region(struct Cmiss_region *region);
 
-DESCRIPTION :
-Returns the field manager containing all the fields for this region.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the field manager for this region.
+ */
+struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
+	struct Cmiss_region *region);
+
+/***************************************************************************//**
+ * Option_table modifier function for selecting a region by relative path.
+ * @see Option_table_add_set_Cmiss_region
+ */
+int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
+	void *root_region_void);
 
 /***************************************************************************//**
  * Adds an entry to the <option_table> under the given <token> that selects a 
  * region by relative path from the <root_region>.
+ * @param token  Optional token. If omitted, must be last option in table.
  * @param region_address  Address of region to set. Must be initialised to NULL
  * or an ACCESS region.
  */
@@ -469,6 +471,34 @@ int Option_table_add_region_path_and_or_field_name_entry(
 	struct Cmiss_region_path_and_name *region_path_and_name,
 	struct Cmiss_region *root_region);
 
+/***************************************************************************//**
+ * Modifier function to set the region and optional group field.
+ * Fields must not be the same name as a child region.
+ *
+ * Examples:
+ *   /heart/ventricles = region and group
+ *   /heart            = region only
+ */
+int set_Cmiss_region_or_group(struct Parse_state *state,
+	void *region_address_void, void *group_address_void);
+
+/***************************************************************************//**
+ * Adds token to the option table for setting a region and an optional group
+ * field. Note fields must not be the same name as a child region: region names
+ * are matched first.
+ *
+ * @param option_table  Table to add token to
+ * @param token  Token to be matched. Can be NULL for final, default entry
+ * @param region_address  Pointer to region which must be initialised to
+ * accessed root_region, and may be updated to subregion at relative path to
+ * this. Caller is responsible for deaccessing.
+ * @param group_address  Pointer to group field. Must be initialised to NULL.
+ * Caller is responsible for deaccessing if set.
+ */
+int Option_table_add_region_or_group_entry(struct Option_table *option_table,
+	const char *token, Cmiss_region_id *region_address,
+	Cmiss_field_group_id *group_address);
+
 int Cmiss_region_list(struct Cmiss_region *region,
 	int indent, int indent_increment);
 /*******************************************************************************
@@ -481,10 +511,23 @@ indented from the left margin by <indent> spaces; this is incremented by
 ==============================================================================*/
 
 /***************************************************************************//**
- * Returns true if region is a sub group of its parent region.
- * 
- * @param region  The region to test for being a group.
+ * Call to confirm compatibility of fields and other object definitions in
+ * source region tree versus those in global region. Call this before calling
+ * Cmiss_region_merge.
+ * @param target_region  Target / global region to merge into.
+ * @param source_region  Source region to check compatibility of fields for.
+ * @return  1 if compatible, 0 if not.
  */
-int Cmiss_region_is_group(struct Cmiss_region *region);
+int Cmiss_region_can_merge(Cmiss_region_id target_region, Cmiss_region_id source_region);
+
+/***************************************************************************//**
+ * Merge fields and other objects from source region tree into global region.
+ * Source must be destroyed afterwards as some of its objects may be transfered
+ * to global region.
+ * @param target_region  Target / global region to merge into.
+ * @param source_region  Source region to merge from.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_region_merge(Cmiss_region_id target_region, Cmiss_region_id source_region);
 
 #endif /* !defined (CMISS_REGION_H) */

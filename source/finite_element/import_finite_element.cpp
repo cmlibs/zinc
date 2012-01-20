@@ -42,22 +42,20 @@ interface to CMISS.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include <cmath>
 extern "C" {
-#include <ctype.h>
-#include <math.h>
+#include "api/cmiss_field_group.h"
+#include "api/cmiss_field_module.h"
+#include "api/cmiss_field_subobject_group.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
-#include "general/indexed_list_private.h"
 #include "general/math.h"
-#include "general/multi_range.h"
 #include "general/io_stream.h"
 #include "general/mystring.h"
-#include "general/object.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 }
 
 /*
@@ -65,130 +63,10 @@ Module types
 ------------
 */
 
-#if defined (OLD_CODE)
-struct File_read_FE_node_group_data
-/*******************************************************************************
-LAST MODIFIED : 6 September 1999
-
-DESCRIPTION :
-Data needed by file_read_FE_node_group.
-???RC Need data_group_manager, node_group_manager and element_group_manager
-since groups of the same name in each manager are created simultaneously, and
-node groups are updated to contain nodes used by elements in associated group.
-==============================================================================*/
-{
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct FE_time *fe_time;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
-	struct MANAGER(FE_element) *element_manager;
-}; /* File_read_FE_node_group_data */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-struct File_read_FE_element_group_data
-/*******************************************************************************
-LAST MODIFIED : 22 April 1999
-
-DESCRIPTION :
-Data needed by file_read_FE_element_group.
-???RC Need data_group_manager, node_group_manager and element_group_manager
-since groups of the same name in each manager are created simultaneously, and
-node groups are updated to contain nodes used by elements in associated group.
-==============================================================================*/
-{
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct FE_time *fe_time;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
-	struct MANAGER(FE_basis) *basis_manager;
-}; /* File_read_FE_element_group_data */
-#endif /* defined (OLD_CODE) */
-
 /*
 Module functions
 ----------------
 */
-
-#if defined (OLD_CODE)
-static int read_FE_value_array(struct IO_stream *input_file,int *number_of_values,
-	FE_value **values)
-/*******************************************************************************
-LAST MODIFIED : 22 September 1999
-
-DESCRIPTION :
-Reads an FE_VALUE_ARRAY_VALUE from <input_file>. The first number read is the
-number_of_values in the array; the real values follow.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(read_FE_value_array);
-	return_code=0;
-	if (input_file&&number_of_values&&values)
-	{
-		if (1==IO_stream_scan(input_file," %d",number_of_values))
-		{
-			if (0< *number_of_values)
-			{
-				if (ALLOCATE(*values,FE_value,*number_of_values))
-				{
-					return_code=1;
-					for (i=0;(i<(*number_of_values))&&return_code;i++)
-					{
-						if (1!=IO_stream_scan(input_file,FE_VALUE_INPUT_STRING,&((*values)[i])))
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_value_array.  Missing array value(s)");
-							DEALLOCATE(*values);
-							return_code=0;
-						}
-						if (!finite((*values)[i]))
-						{
-							display_message(ERROR_MESSAGE,"read_FE_value_array.  "
-								"Infinity or NAN value read from file.");
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_value_array.  Not enough memory");
-				}
-			}
-			else if (0== *number_of_values)
-			{
-				/* array with no values is a valid return */
-				*values=(FE_value *)NULL;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_value_array.  negative number of values %d",
-					number_of_values);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_value_array.  Missing number of values and array");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_FE_value_array.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_value_array */
-#endif /* defined (OLD_CODE) */
 
 static int read_element_xi_value(struct IO_stream *input_file,
 	struct Cmiss_region *root_region, struct Cmiss_region *current_region,
@@ -236,9 +114,8 @@ is in the root_region itself. The REGION_PATH must end in
 				 if the region path has been omitted, otherwise next in the file */
 			if (1 == sscanf(second_string, " %d", &(cm.number)))
 			{
-				// Note default changed from root_region to current_region's master
-				region = Cmiss_region_is_group(current_region) ?
-					Cmiss_region_get_parent_internal(current_region) : current_region;
+				// Note default changed from root_region to current_region
+				region = current_region;
 				element_type_string = first_string;
 			}
 			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
@@ -1497,18 +1374,15 @@ from a previous call to this function.
 	return (node);
 } /* read_FE_node_field_info */
 
+/***************************************************************************//**
+ * Reads in a node from an <input_file>.
+ * @param group  Optional group to put node into.
+ */
 static struct FE_node *read_FE_node(struct IO_stream *input_file,
 	struct FE_node *template_node, struct FE_region *fe_region,
-	struct Cmiss_region *root_region, struct Cmiss_region *current_region,
+	Cmiss_region_id root_region, Cmiss_region_id region,
 	struct FE_field_order_info *field_order_info,
 	struct FE_import_time_index *time_index)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Reads in a node from an <input_file>.
-<root_region> is root region for locating embedding elements.
-==============================================================================*/
 {
 	char *location;
 	enum Value_type value_type;
@@ -1519,7 +1393,7 @@ Reads in a node from an <input_file>.
 
 	ENTER(read_FE_node);
 	node = (struct FE_node *)NULL;
-	if (input_file && template_node && fe_region && root_region &&
+	if (input_file && template_node && fe_region && region &&
 		field_order_info)
 	{
 		if (1 == IO_stream_scan(input_file, "ode :%d", &node_number))
@@ -1561,7 +1435,7 @@ Reads in a node from an <input_file>.
 										{
 											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (!(read_element_xi_value(input_file, root_region, current_region,
+												if (!(read_element_xi_value(input_file, root_region, region,
 													&element, xi) && set_FE_nodal_element_xi_value(node,
 														field, /*component_number*/k, /*version*/0,
 														FE_NODAL_VALUE, element, xi)))
@@ -3442,8 +3316,6 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
-	struct Cmiss_region *read_region, *region;
-	struct FE_region *fe_region;
 	struct FE_element *element, *template_element;
 	struct FE_element_shape *element_shape;
 	struct FE_field_order_info *field_order_info;
@@ -3453,14 +3325,14 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 	return_code = 0;
 	if (root_region && input_file)
 	{
-		Cmiss_region_begin_change(root_region);
+		Cmiss_region_begin_hierarchical_change(root_region);
 		/* region is the same as read_region if reading into a true region,
 		 * otherwise it is the parent region of read_region group */
-		region = ACCESS(Cmiss_region)(root_region);
-		Cmiss_region_begin_change(region);
-		/* read_region starts as NULL so require initial Region or Group token */
-		read_region = (struct Cmiss_region *)NULL;
-		fe_region = (struct FE_region *)NULL; 
+		Cmiss_region_id region = Cmiss_region_access(root_region);
+		Cmiss_field_group_id group = 0;
+		Cmiss_nodeset_group_id nodeset_group = 0;
+		Cmiss_mesh_group_id mesh_group = 0;
+		struct FE_region *fe_region = 0;
 		field_order_info = (struct FE_field_order_info *)NULL;
 		template_node = (struct FE_node *)NULL;
 		template_element = (struct FE_element *)NULL;
@@ -3478,20 +3350,18 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 			{
 				switch (first_character_in_token)
 				{
-					case 'R': /* Region : <path> */
+					case 'R': /* Region : </path> */
 					case 'G': /* Group name : <name> */
 					{
-						if (read_region)
+						if (group)
 						{
-							Cmiss_region_end_change(read_region);
-							DEACCESS(Cmiss_region)(&read_region);
+							Cmiss_field_group_destroy(&group);
 						}
 						fe_region = (struct FE_region *)NULL;
 						/* Use a %1[:] so that a successful read will return 1 */
 						int valid_token = 0;
 						if ('R' == first_character_in_token)
 						{
-							Cmiss_region_end_change(region);
 							valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
 						}
 						else
@@ -3536,24 +3406,20 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 								return_code = 0;
 							}
 						}
-						/* get or create region with that path */
+						/* get or create region with path, or group with name */
 						if (return_code)
 						{
 							if ('R' == first_character_in_token)
 							{
+								Cmiss_region_destroy(&region);
 								if (region_path && (CMISS_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
 								{
-									read_region = Cmiss_region_find_child_by_name(root_region, region_path);
-									if (!read_region)
+									region = Cmiss_region_find_subregion_at_path(root_region, region_path);
+									if (!region)
 									{
-										read_region = Cmiss_region_create_subregion(root_region, region_path);
+										region = Cmiss_region_create_subregion(root_region, region_path);
 									}
-									if (read_region)
-									{
-										REACCESS(Cmiss_region)(&region, read_region);
-										Cmiss_region_begin_change(region);
-									}
-									else
+									if (!region)
 									{
 										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
@@ -3574,21 +3440,39 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							}
 							else
 							{
-								read_region = Cmiss_region_find_child_by_name(region, region_path);
-								if (NULL == read_region)
+								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+								Cmiss_field_id group_field = Cmiss_field_module_find_field_by_name(field_module, region_path);
+								if (group_field)
 								{
-									read_region = Cmiss_region_create_group(region);
-									Cmiss_region_set_name(read_region, region_path);
-									if (!Cmiss_region_append_child(region, read_region))
+									group = Cmiss_field_cast_group(group_field);
+									if (!group)
+									{
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE,
+											"Could not create group \'%s\' as name in use.  %s", region_path, location);
+										DEALLOCATE(location);
+										return_code = 0;
+									}
+								}
+								else
+								{
+									group_field = Cmiss_field_module_create_group(field_module);
+									Cmiss_field_set_attribute_integer(group_field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
+									if (Cmiss_field_set_name(group_field, region_path))
+									{
+										group = Cmiss_field_cast_group(group_field);
+									}
+									else
 									{
 										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
 											"Could not create group \'%s\'.  %s", region_path, location);
 										DEALLOCATE(location);
-										DEACCESS(Cmiss_region)(&read_region);
 										return_code = 0;
 									}
 								}
+								Cmiss_field_destroy(&group_field);
+								Cmiss_field_module_destroy(&field_module);
 							}
 						}
 						region_path = (char *)NULL;
@@ -3611,10 +3495,9 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						{
 							DESTROY(FE_field_order_info)(&field_order_info);
 						}
-						if (read_region)
+						if (region)
 						{
-							Cmiss_region_begin_change(read_region);
-							fe_region = Cmiss_region_get_FE_region(read_region);
+							fe_region = Cmiss_region_get_FE_region(region);
 							if (use_data)
 							{
 								fe_region = FE_region_get_data_FE_region(fe_region);
@@ -3630,6 +3513,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
 							field_order_info = CREATE(FE_field_order_info)();
 						}
+						Cmiss_nodeset_group_destroy(&nodeset_group);
 					} break;
 					case 'S': /* Shape */
 					{
@@ -3695,6 +3579,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							DEALLOCATE(location);
 							return_code = 0;
 						}
+						Cmiss_mesh_group_destroy(&mesh_group);
 					} break;
 					case '!': /* ! Comment ignored to end of line */
 					{
@@ -3769,10 +3654,32 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							{	
 								/* read node */
 								if (NULL != (node = read_FE_node(input_file, template_node, fe_region,
-									region, read_region, field_order_info, time_index)))
+									root_region, region, field_order_info, time_index)))
 								{
 									ACCESS(FE_node)(node);
-									if (!FE_region_merge_FE_node(fe_region, node))
+									if (FE_region_merge_FE_node(fe_region, node))
+									{
+										if (group && (!nodeset_group))
+										{
+											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+											Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module,
+												use_data ? "cmiss_data" : "cmiss_nodes");
+											Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
+											if (!node_group)
+											{
+												node_group = Cmiss_field_group_create_node_group(group, nodeset);
+											}
+											nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+											Cmiss_field_node_group_destroy(&node_group);
+											Cmiss_nodeset_destroy(&nodeset);
+											Cmiss_field_module_destroy(&field_module);
+										}
+										if (nodeset_group)
+										{
+											Cmiss_nodeset_group_add_node(nodeset_group, node);
+										}
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE,
 											"read_exregion_file.  Could not merge node into region");
@@ -3816,7 +3723,29 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 									fe_region, field_order_info)))
 								{
 									ACCESS(FE_element)(element);
-									if (!FE_region_merge_FE_element(fe_region, element))
+									if (FE_region_merge_FE_element(fe_region, element))
+									{
+										if (group && (!mesh_group))
+										{
+											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+											Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module,
+												get_FE_element_dimension(template_element));
+											Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
+											if (!element_group)
+											{
+												element_group = Cmiss_field_group_create_element_group(group, mesh);
+											}
+											mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+											Cmiss_field_element_group_destroy(&element_group);
+											Cmiss_mesh_destroy(&mesh);
+											Cmiss_field_module_destroy(&field_module);
+										}
+										if (mesh_group)
+										{
+											Cmiss_mesh_group_add_element(mesh_group, element);
+										}
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE, "read_exregion_file.  "
 											"Could not merge element into region");
@@ -3859,8 +3788,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						/* read in field values */
 						if ((template_node || template_element) && field_order_info)
 						{
-							if (!read_FE_field_values(input_file, fe_region, region,
-								read_region, field_order_info))
+							if (!read_FE_field_values(input_file, fe_region, root_region,
+								region, field_order_info))
 							{
 								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
@@ -3895,11 +3824,9 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 				} /* switch (first_character_in_token) */
 			} /* if (1 == input_result) */
 		} /* while (return_code && (1 == input_result)) */
-		if (read_region)
-		{
-			Cmiss_region_end_change(read_region);
-			DEACCESS(Cmiss_region)(&read_region);
-		}
+		Cmiss_nodeset_group_destroy(&nodeset_group);
+		Cmiss_mesh_group_destroy(&mesh_group);
+		Cmiss_field_group_destroy(&group);
 		if (template_node)
 		{
 			DEACCESS(FE_node)(&template_node);
@@ -3916,9 +3843,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		Cmiss_region_end_change(region);
 		DEACCESS(Cmiss_region)(&region);
-		Cmiss_region_end_change(root_region);
+		Cmiss_region_end_hierarchical_change(root_region);
 	}
 	else
 	{

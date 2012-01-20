@@ -48,11 +48,45 @@ extern "C" {
 #include "api/cmiss_field_subobject_group.h"
 }
 
+struct FE_region;
+struct Option_table;
+
+/***************************************************************************//**
+ * Ensures all faces of the supplied element are in this mesh_group.
+ * Candidate for external API.
+ *
+ * @param mesh_group  The mesh group to add faces to. Must be of dimension 1
+ * less than that of element and be a subgroup for the master mesh expected to
+ * own the element's faces.
+ * @param element  The element whose faces are to be added.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_mesh_group_add_element_faces(Cmiss_mesh_group_id mesh_group,
+	Cmiss_element_id element);
+
+/***************************************************************************//**
+ * Ensures all faces of the supplied element are not in this mesh_group.
+ * Candidate for external API.
+ *
+ * @param mesh_group  The mesh group to remove faces from. Must be of dimension
+ * 1 less than that of element and be a subgroup for the master mesh expected
+ * to own the element's faces.
+ * @param element  The element whose faces are to be removed.
+ * @return  Status CMISS_OK on success, any other value on failure.
+ */
+int Cmiss_mesh_group_remove_element_faces(Cmiss_mesh_group_id mesh_group,
+	Cmiss_element_id element);
+
 /** Internal use only.
  * Create a related element list to that in mesh.
  * @return  New element list.
  */
 struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id mesh);
+
+/** Internal use only
+ * @return non-accessed fe_region for this mesh.
+ */
+FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh);
 
 /** Internal use only.
  * @return non-accessed region for this mesh.
@@ -63,5 +97,17 @@ Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh);
  * @return non-accessed master region for this mesh.
  */
 Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh);
+
+/***************************************************************************//**
+ * Adds token to the option table for setting a mesh from a region.
+ *
+ * @param option_table  Table to add token to
+ * @param token  Token to be matched. Can be NULL for final, default entry.
+ * @param region  Pointer to region owning mesh.
+ * @param mesh_address  Address of mesh to set. Must be initialised to 0 or
+ * existing accessed pointer to mesh. Caller is responsible for deaccessing.
+ */
+int Option_table_add_mesh_entry(struct Option_table *option_table,
+	const char *token, Cmiss_region_id region, Cmiss_mesh_id *mesh_address);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

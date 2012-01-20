@@ -43,12 +43,13 @@
 extern "C" {
 #include "api/cmiss_region.h"
 #include "field_io/read_fieldml.h"
-#include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/read_fieldml_01.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+//#include "finite_element/finite_element_region.h"
+#include "region/cmiss_region.h"
 }
 #include "stream/cmiss_region_stream.hpp"
 
@@ -203,9 +204,9 @@ int Cmiss_region_read(Cmiss_region_id region,
 					break;
 				}
 			}
-			if (return_code && Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
+			if (return_code && Cmiss_region_can_merge(region,temp_region))
 			{
-				return_code=Cmiss_regions_merge_FE_regions(region,temp_region);
+				return_code = Cmiss_region_merge(region, temp_region);
 			}
 			DEACCESS(Cmiss_region)(&temp_region);
 			DESTROY(IO_stream_package)(&io_stream_package);
@@ -279,7 +280,7 @@ int Cmiss_region_write(Cmiss_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!write_exregion_file_of_name(file_name, region,
+						if (!write_exregion_file_of_name(file_name, region, (Cmiss_field_group_id)0,
 							Cmiss_stream_information_region_get_root_region(region_stream_information),
 							/* write_elements */1,	/* write_nodes */1, /*write_data*/0,
 							FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
@@ -294,7 +295,7 @@ int Cmiss_region_write(Cmiss_region_id region,
 				}
 				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
 				{
-					if (!write_exregion_file_to_memory_block(region,
+					if (!write_exregion_file_to_memory_block(region, (Cmiss_field_group_id)0,
 						Cmiss_stream_information_region_get_root_region(region_stream_information),
 						/* write_elements */1,	/* write_nodes */1, /*write_data*/0,
 						FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,

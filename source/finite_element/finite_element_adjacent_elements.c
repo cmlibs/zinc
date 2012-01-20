@@ -64,13 +64,8 @@ struct Find_element_data
 	struct FE_element **elements;
 };
 
-/*
-Module functions
-----------------
-*/
-
 static int FE_element_add_nodes_to_node_element_list(struct FE_element *element,
-	void *node_element_list_void)
+	struct LIST(Index_multi_range) *node_element_list)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -83,11 +78,9 @@ the <element> has.
 	struct CM_element_information cm;
 	struct FE_node *node;
 	struct Index_multi_range *node_elements;
-	struct LIST(Index_multi_range) *list;
 
 	ENTER(FE_element_add_nodes_to_node_element_list);
-	if (element &&
-		(list = (struct LIST(Index_multi_range) *)node_element_list_void))
+	if (element && node_element_list)
 	{
 		return_code = 1;
 		if (get_FE_element_identifier(element, &cm) &&
@@ -101,7 +94,7 @@ the <element> has.
 				{
 					node_number = get_FE_node_identifier(node);
 					if (NULL != (node_elements = FIND_BY_IDENTIFIER_IN_LIST
-						(Index_multi_range,index_number)(node_number,list)))
+						(Index_multi_range,index_number)(node_number,node_element_list)))
 					{
 						return_code = Index_multi_range_add_range(node_elements,
 							element_number, element_number);
@@ -111,7 +104,7 @@ the <element> has.
 						if (!((node_elements=CREATE(Index_multi_range)(node_number))
 							&& Index_multi_range_add_range(node_elements,
 								element_number, element_number) && 
-							ADD_OBJECT_TO_LIST(Index_multi_range)(node_elements, list)))
+							ADD_OBJECT_TO_LIST(Index_multi_range)(node_elements, node_element_list)))
 						{
 							DESTROY(Index_multi_range)(&node_elements);
 							return_code = 0;
@@ -141,7 +134,7 @@ int adjacent_FE_element_from_nodes(struct FE_element *element,
 	int node_index, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements, 
 	struct LIST(Index_multi_range) *node_element_list,
-	struct FE_region *fe_region)
+	Cmiss_mesh_id mesh)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -160,7 +153,7 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	struct Index_multi_range *node_elements;
 
 	ENTER(adjacent_FE_element_from_nodes);
-	if (element && node_element_list && fe_region)
+	if (element && node_element_list && mesh)
 	{
 		return_code = 1;
 		dimension = get_FE_element_dimension(element);
@@ -192,18 +185,18 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 								{
 									if (j != element_number)
 									{
-										if ((adjacent_element =
-											FE_region_get_FE_element_from_identifier(fe_region,
-												dimension, j)))
+										adjacent_element = Cmiss_mesh_find_element_by_identifier(mesh, j);
+										if (adjacent_element)
 										{
 											(*adjacent_elements)[i] = adjacent_element;
+											Cmiss_element_destroy(&adjacent_element); // this function never accessed elements
 											i++;
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
 												"adjacent_FE_element_from_nodes.  "
-												"Element %d not found in region", j);
+												"Element %d not found in mesh", j);
 											return_code = 0;
 										}
 									}
@@ -248,21 +241,27 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	return (return_code);
 } /* adjacent_FE_element_from_nodes */
 
-struct LIST(Index_multi_range) *create_node_element_list(
-	struct FE_region *fe_region, int dimension)
+struct LIST(Index_multi_range) *create_node_element_list(Cmiss_mesh_id mesh)
 {
 	struct LIST(Index_multi_range) *list;
 
 	ENTER(create_node_element_list);
-	if (fe_region)
+	if (mesh)
 	{
+		Cmiss_element_iterator_id iter;
+		Cmiss_element_id element;
 		list = CREATE(LIST(Index_multi_range))();
-		if (!(FE_region_for_each_FE_element_of_dimension(fe_region, dimension,
-			FE_element_add_nodes_to_node_element_list, (void *)list)))
+		iter = Cmiss_mesh_create_element_iterator(mesh);
+		while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
 		{
-			DESTROY(LIST(Index_multi_range))(&list);
-			list = (struct LIST(Index_multi_range) *)NULL;
+			if (!FE_element_add_nodes_to_node_element_list(element, list))
+			{
+				DESTROY(LIST(Index_multi_range))(&list);
+				list = (struct LIST(Index_multi_range) *)NULL;
+				break;
+			}
 		}
+		Cmiss_element_iterator_destroy(&iter);
 	}
 	else
 	{

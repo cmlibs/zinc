@@ -58,21 +58,6 @@ Global types
 extern "C" {
 #endif /* __cplusplus */
 
-int Computed_field_copy_values_at_node(struct FE_node *node,
-	struct Computed_field *destination_field,
-	struct Computed_field *source_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2002
-
-DESCRIPTION :
-Evaluates <source_field> at node and sets <destination_field> to those values.
-<node> must not be managed -- ie. it should be a local copy.
-Both fields must have the same number of values.
-Assumes both fields are defined at the node.
-Up to user to call Computed_field_clear_cache for each field after calls to
-this function are finished.
-==============================================================================*/
-
 /*******************************************************************************
  * Assign values of source field to destination field for nodes in nodeset at
  * the given time. Ignores nodes where either source or destination field is
@@ -91,21 +76,26 @@ int Cmiss_nodeset_assign_field_from_source(
 	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
 	FE_value time);
 
-int Computed_field_update_element_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region,
-	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Computed_field *group_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Set grid-based <destination_field> in all the elements in <region> to the
-values from <source_field>.
-Restricts update to grid points which are in <element_point_ranges_selection>
-or whose elements are in <group field>, if either supplied.
-Note the union of these two selections is used if both supplied.
-==============================================================================*/
+ * Assign values of source field to grid-based destination field for elements in
+ * mesh at the given time. Ignores elements where either source or destination
+ * field is undefined. Optional conditional field allows conditional assignment.
+ *
+ * @param mesh  The mesh to assign in.
+ * @param destination_field  The field to assign values to.
+ * @param source_field  The field to evaluate values from.
+ * @param conditional_field  If supplied, does not assign to grid points for
+ * which this field evaluates to false.
+ * @param element_point_ranges_selection  If supplied, does not assign to grid
+ * points which are not in this selection.
+ * @param time  The time to assign values at
+ * @return  1 on success, 0 on error.
+ */
+int Cmiss_mesh_assign_grid_field_from_source(
+	Cmiss_mesh_id mesh, Cmiss_field_id destination_field,
+	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
+	FE_value time);
 
 #ifdef __cplusplus
 }

@@ -365,7 +365,7 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
    DESTROY(FE_node)(&template_node);
 
    /* establish mode which automates creation of shared faces*/
-   FE_region_begin_define_faces(fe_region);
+   FE_region_begin_define_faces(fe_region, /*all dimensions*/-1);
 
    struct CM_element_information element_identifier;
    FE_element *element;

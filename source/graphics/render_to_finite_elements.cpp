@@ -1330,7 +1330,7 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 		}
 
 		FE_region_begin_change(fe_region);
-		FE_region_begin_define_faces(fe_region);
+		FE_region_begin_define_faces(fe_region, /*all dimensions*/-1);
 
 		if ((3 == Computed_field_get_number_of_components(coordinate_field)) &&
 			(fe_coordinate_field_list =

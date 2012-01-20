@@ -568,7 +568,7 @@ int define_Computed_field_type_nodeset_operator(struct Parse_state *state,
 	Option_table_add_entry(option_table, "field", &source_field,
 		&set_source_field_data, set_Computed_field_conditional);
 	Option_table_add_string_entry(option_table, "nodeset", &nodeset_name,
-		" NODE_GROUP_FIELD_NAME|[GROUP_REGION_NAME.]cmiss_nodes|cmiss_data");
+		" NODE_GROUP_FIELD_NAME|[GROUP_NAME.]cmiss_nodes|cmiss_data");
 	return_code = Option_table_multi_parse(option_table, state);
 	DESTROY(Option_table)(&option_table);
 	if (return_code)
@@ -577,6 +577,12 @@ int define_Computed_field_type_nodeset_operator(struct Parse_state *state,
 		{
 			nodeset = Cmiss_field_module_find_nodeset_by_name(
 				field_modify->get_field_module(), nodeset_name);
+			if (!nodeset)
+			{
+				nodeset = Cmiss_nodeset_group_base_cast(
+					Cmiss_field_module_create_nodeset_group_from_name_internal(
+						field_modify->get_field_module(), nodeset_name));
+			}
 			if (!nodeset)
 			{
 				display_message(ERROR_MESSAGE,

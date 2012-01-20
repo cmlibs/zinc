@@ -192,7 +192,7 @@ extern "C" {
 #include <typeinfo>
 #include "user_interface/process_list_or_write_command.hpp"
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields, struct Cmiss_field_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region, struct Cmiss_field_change_detail *);
 
 struct Computed_field_type_data
 /*******************************************************************************
@@ -1175,7 +1175,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(Computed_field,Cmiss_field_iterator)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region)
 
 /***************************************************************************//**
  * Make a 'unique' field name by appending a number onto the stem_name until no
@@ -1287,17 +1287,9 @@ Computed_field *Computed_field_create_generic(
 				if (check_source_field_regions &&
 					(Computed_field_get_region(source_fields[i]) != region))
 				{
-					struct Cmiss_region *source_field_region = Computed_field_get_region(source_fields[i]);
-					if (source_field_region != region)
-					{
-						if (!(Cmiss_region_contains_subregion(source_field_region, region) &&
-							Cmiss_region_is_group(region)))
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_create_generic.  Source field is from a different region");
-							return_code = 0;
-						}
-					}
+					display_message(ERROR_MESSAGE,
+						"Computed_field_create_generic.  Source field is from a different region");
+					return_code = 0;
 				}
 			}
 			else
@@ -1422,12 +1414,6 @@ Computed_field *Computed_field_create_generic(
 	LEAVE;
 	
 	return (field);
-}
-
-int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
-	struct Cmiss_region_fields *region_fields)
-{
-	return MANAGER_SET_OWNER(Computed_field)(manager, region_fields);
 }
 
 int Computed_field_changed(struct Computed_field *field)
@@ -5527,30 +5513,16 @@ Cmiss_field_id Cmiss_field_get_source_field(Cmiss_field_id field, int index)
 	return source_field;
 }
 
+int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
+	struct Cmiss_region *region)
+{
+	return MANAGER_SET_OWNER(Computed_field)(manager, region);
+}
+
 struct Cmiss_region *Computed_field_manager_get_region(
 	struct MANAGER(Computed_field) *manager)
 {
-	struct Cmiss_region *region;
-
-	ENTER(Computed_field_manager_get_region);
-	region = (struct Cmiss_region *)NULL;
-	if (manager)
-	{
-		struct Cmiss_region_fields *region_fields =
-			MANAGER_GET_OWNER(Computed_field)(manager);
-		if (region_fields)
-		{
-			region = Cmiss_region_fields_get_master_region(region_fields);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_manager_get_region.  Missing field");
-	}
-	LEAVE;
-
-	return (region);
+	return MANAGER_GET_OWNER(Computed_field)(manager);
 }
 
 const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
@@ -5562,30 +5534,9 @@ const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
 
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 {
-	struct Cmiss_region *region;
-
-	ENTER(Computed_field_get_region);
-	region = (struct Cmiss_region *)NULL;
 	if (field)
-	{
-		if (field->manager)
-		{
-			struct Cmiss_region_fields *region_fields =
-				MANAGER_GET_OWNER(Computed_field)(field->manager);
-			if (region_fields)
-			{
-				region = Cmiss_region_fields_get_master_region(region_fields);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_region.  Missing field");
-	}
-	LEAVE;
-
-	return (region);
+		return MANAGER_GET_OWNER(Computed_field)(field->manager);
+	return 0;
 }
 
 Computed_field *Computed_field_modify_data::get_field()

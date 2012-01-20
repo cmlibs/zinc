@@ -174,7 +174,7 @@ int Cmiss_rendition_for_each_material(struct Cmiss_rendition *rendition,
  * Note the command prefix is expected to contain the name of the region.
  */
 int Cmiss_rendition_list_commands(struct Cmiss_rendition *rendition,
-	 char *command_prefix,char *command_suffix);
+	const char *command_prefix, const char *command_suffix);
 
 /***************************************************************************//**
  * Lists the general graphic defined for <rendition>.
@@ -382,9 +382,10 @@ int Cmiss_rendition_notify_parent_rendition_callback(struct Cmiss_rendition *chi
 /***************************************************************************//**
  * Shared gfx commands used via Cmiss_rendition_execute_command API and
  * command/cmiss
+ * @param group  Optional group field for migrating group regions.
  */
 int Cmiss_rendition_execute_command_internal(Cmiss_rendition_id rendition,
-	struct Parse_state *state);
+	Cmiss_field_group_id group, struct Parse_state *state);
 
 int list_Cmiss_rendition_transformation_commands(struct Cmiss_rendition *rendition,
 	void *command_prefix_void);

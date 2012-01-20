@@ -234,8 +234,21 @@ public:
 
 	~Computed_field_group()
 	{
-		clear();
-		remove_empty_subgroups();
+		if (local_node_group)
+			Cmiss_field_destroy(&local_node_group);
+		if (local_data_group)
+			Cmiss_field_destroy(&local_data_group);
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+		{
+			if (local_element_group[i])
+				Cmiss_field_destroy(&local_element_group[i]);
+		}
+		for (Region_field_map_iterator iter = subregion_group_map.begin();
+			iter != subregion_group_map.end(); ++iter)
+		{
+			Cmiss_field_group_id subregion_group_field = iter->second;
+				Cmiss_field_group_destroy(&subregion_group_field);
+		}
 		std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 		for (;it != domain_selection_group.end(); it++)
 		{
@@ -520,12 +533,9 @@ int Computed_field_group::isEmptyNonLocal() const
 	for (Region_field_map_const_iterator iter = subregion_group_map.begin();
 		iter != subregion_group_map.end(); iter++)
 	{
-		if (!Cmiss_region_is_group(iter->first))
-		{
-			Cmiss_field_group_id subregion_group_field = iter->second;
-			if (!isSubGroupEmpty(Cmiss_field_group_base_cast(subregion_group_field)->core))
-				return 0;
-		}
+		Cmiss_field_group_id subregion_group_field = iter->second;
+		if (!isSubGroupEmpty(Cmiss_field_group_base_cast(subregion_group_field)->core))
+			return 0;
 	}
 	return 1;
 }
@@ -785,12 +795,6 @@ int Computed_field_group::containsRegion(Cmiss_region_id region)
 Cmiss_field_group_id Computed_field_group::getSubRegionGroup(Cmiss_region_id subregion)
 {
 	Cmiss_field_group_id subregion_group = NULL;
-	if (Cmiss_region_is_group(subregion))
-	{
-		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);
-		subregion_group = getSubRegionGroup(parent_region);
-		return subregion_group;
-	}
 	if (region == subregion)
 	{
 		subregion_group = Cmiss_field_cast_group(this->getField());
@@ -821,12 +825,6 @@ Cmiss_field_group_id Computed_field_group::getSubRegionGroup(Cmiss_region_id sub
 Cmiss_field_group_id Computed_field_group::createSubRegionGroup(Cmiss_region_id subregion)
 {
 	Cmiss_field_group_id subregion_group = NULL;
-	if (Cmiss_region_is_group(subregion))
-	{
-		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);
-		subregion_group = createSubRegionGroup(parent_region);
-		return subregion_group;
-	}
 	if (Cmiss_region_contains_subregion(region, subregion) && region != subregion)
 	{
 		Cmiss_region_id parent_region = Cmiss_region_get_parent_internal(subregion);

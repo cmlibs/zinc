@@ -42,7 +42,14 @@ Functions for exporting finite element data to a file.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
+#include "api/cmiss_element.h"
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_group.h"
+#include "api/cmiss_field_module.h"
+#include "api/cmiss_field_subobject_group.h"
+#include "api/cmiss_node.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -75,7 +82,7 @@ Module types
 struct Write_FE_region_element_data
 {
 	ostream *output_file;
-	int dimension, output_number_of_nodes, *output_node_indices,
+	int output_number_of_nodes, *output_node_indices,
 		output_number_of_scale_factors, *output_scale_factor_indices;
 	enum FE_write_criterion write_criterion;
 	struct FE_field_order_info *field_order_info;
@@ -1756,7 +1763,7 @@ listed in it are compared.
 } /* FE_elements_have_same_header */
 
 static int write_FE_region_element(struct FE_element *element,
-	void *write_elements_data_void)
+	Write_FE_region_element_data *write_elements_data)
 /*******************************************************************************
 LAST MODIFIED : 6 November 2002
 
@@ -1770,19 +1777,15 @@ in the header.
 	ostream *output_file;
 	int new_field_header, new_shape, return_code;
 	struct FE_element_shape *element_shape, *last_element_shape;
-	struct Write_FE_region_element_data *write_elements_data;
 
 	ENTER(write_FE_region_element);
-	write_elements_data =
-		(struct Write_FE_region_element_data *)write_elements_data_void;
-	output_file = write_elements_data->output_file;
-	if (element && (NULL != write_elements_data) && (NULL != output_file))
+	if (element && write_elements_data &&
+		(0 != (output_file = write_elements_data->output_file)))
 	{
 		return_code = 1;
 		/* only output the element if it has the specified dimension and fields
 			 appropriate to the write_criterion */
-		if ((write_elements_data->dimension == get_FE_element_dimension(element)) &&
-			FE_element_passes_write_criterion(element, write_elements_data->fe_region,
+		if (FE_element_passes_write_criterion(element, write_elements_data->fe_region,
 				write_elements_data->write_criterion, write_elements_data->field_order_info))
 		{
 			/* work out if shape or field header have changed from last element */
@@ -1844,7 +1847,7 @@ in the header.
 	LEAVE;
 
 	return (return_code);
-} /* write_FE_region_element */
+}
 
 static int write_FE_node_field(ostream *output_file,int field_number,
 	struct FE_node *node,struct FE_field *field,int *value_index)
@@ -2305,7 +2308,8 @@ listed in it are compared.
 	return (return_code);
 } /* FE_nodes_have_same_header */
 
-static int write_FE_region_node(struct FE_node *node, void *write_nodes_data_void)
+static int write_FE_region_node(struct FE_node *node,
+	Write_FE_region_node_data *write_nodes_data)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2001
 
@@ -2320,13 +2324,10 @@ has been selected for output) then the header is written out.
 		write_field_values;
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
-	struct Write_FE_region_node_data *write_nodes_data;
 	struct Write_FE_node_field_info_sub field_data;
 
 	ENTER(write_FE_region_node);
-	write_nodes_data = (struct Write_FE_region_node_data *)write_nodes_data_void;
-	output_file = write_nodes_data->output_file;
-	if (node && (NULL != write_nodes_data) && (NULL != output_file))
+	if (node && write_nodes_data && (0 != (output_file = write_nodes_data->output_file)))
 	{
 		return_code = 1;
 		field_order_info = write_nodes_data->field_order_info;
@@ -2423,9 +2424,10 @@ has been selected for output) then the header is written out.
 	LEAVE;
 
 	return (return_code);
-} /* write_FE_region_node */
+}
 
-static int write_FE_region(ostream *output_file, struct FE_region *fe_region,
+static int write_Cmiss_region_content(ostream *output_file,
+	struct Cmiss_region *region, Cmiss_field_group_id group,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
@@ -2448,17 +2450,15 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
   write only elements with any listed fields defined.
 ==============================================================================*/
 {
-	int dimension, return_code;
-	struct FE_region *use_fe_region;
-	struct FE_field_order_info *field_order_info = NULL;
-	struct Write_FE_region_element_data write_elements_data;
-	struct Write_FE_region_node_data write_nodes_data;
+	int return_code;
 
-	ENTER(write_FE_region);
-	if (output_file && fe_region)
+	ENTER(write_Cmiss_region_content);
+	if (output_file && region)
 	{
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
 		return_code = 1;
-		field_order_info = CREATE(FE_field_order_info)();
+		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
 		if (write_fields_mode == FE_WRITE_ALL_FIELDS)
 		{
 			// get list of all fields in default alphabetical order
@@ -2481,36 +2481,55 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "write_FE_region.  NULL field name");
+					display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  NULL field name");
 					return_code = 0;
 				}
 			}
 		}
 		else if (0 < number_of_field_names)
 		{
-			display_message(ERROR_MESSAGE, "write_FE_region.  Missing field names array");
+			display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  Missing field names array");
 			return_code = 0;
 		}
 
 		if (return_code)
 		{
-			use_fe_region = fe_region;
-			if (write_data)
-			{
-				use_fe_region = FE_region_get_data_FE_region(fe_region);
-			}
 			if (write_nodes || write_data)
 			{
+				Write_FE_region_node_data write_nodes_data;
 				write_nodes_data.output_file = output_file;
 				write_nodes_data.write_criterion = write_criterion;
 				write_nodes_data.field_order_info = field_order_info;
 				write_nodes_data.last_node = (struct FE_node *)NULL;
 				write_nodes_data.time = time;
-				return_code = FE_region_for_each_FE_node(use_fe_region,
-					write_FE_region_node, &write_nodes_data);
+				Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_name(field_module,
+					write_data ? "cmiss_data" : "cmiss_nodes");
+				if (group)
+				{
+					Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
+					Cmiss_nodeset_destroy(&nodeset);
+					nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
+					Cmiss_field_node_group_destroy(&node_group);
+				}
+				if (nodeset)
+				{
+					Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
+					Cmiss_node_id node = 0;
+					while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+					{
+						if (!write_FE_region_node(node, &write_nodes_data))
+						{
+							return_code = 0;
+							break;
+						}
+					}
+					Cmiss_node_iterator_destroy(&iter);
+					Cmiss_nodeset_destroy(&nodeset);
+				}
 			}
 			if (write_elements)
 			{
+				Write_FE_region_element_data write_elements_data;
 				write_elements_data.output_file = output_file;
 				write_elements_data.output_number_of_nodes = 0;
 				write_elements_data.output_node_indices = (int *)NULL;
@@ -2518,17 +2537,34 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_elements_data.output_scale_factor_indices = (int *)NULL;
 				write_elements_data.write_criterion = write_criterion;
 				write_elements_data.field_order_info = field_order_info;
-				write_elements_data.fe_region = use_fe_region;
+				write_elements_data.fe_region = fe_region;
 				write_elements_data.last_element = (struct FE_element *)NULL;
 				write_elements_data.time = time;
 				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-				for (dimension = 1; dimension <= 3; dimension++)
+				for (int dimension = 1; dimension <= 3; dimension++)
 				{
-					write_elements_data.dimension = dimension;
-					if (!FE_region_for_each_FE_element(use_fe_region,
-						write_FE_region_element, &write_elements_data))
+					Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+					if (group)
 					{
-						return_code = 0;
+						Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
+						Cmiss_mesh_destroy(&mesh);
+						mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
+						Cmiss_field_element_group_destroy(&element_group);
+					}
+					if (mesh)
+					{
+						Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
+						Cmiss_element_id element = 0;
+						while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+						{
+							if (!write_FE_region_element(element, &write_elements_data))
+							{
+								return_code = 0;
+								break;
+							}
+						}
+						Cmiss_element_iterator_destroy(&iter);
+						Cmiss_mesh_destroy(&mesh);
 					}
 				}
 				DEALLOCATE(write_elements_data.output_node_indices);
@@ -2537,24 +2573,25 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE, "write_FE_region.  Failed");
+			display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  Failed");
 			return_code = 0;
 		}
 		if (field_order_info)
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
+		Cmiss_field_module_destroy(&field_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_FE_region.  Invalid argument(s)");
+			"write_Cmiss_region_content.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_FE_region */
+}
 
 /***************************************************************************//**
  * Recursively writes the finite element fields in region tree to file.
@@ -2588,7 +2625,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
  *   recursively written.
  */
 static int write_Cmiss_region(ostream *output_file,
-	struct Cmiss_region *region, struct Cmiss_region *parent_region_output,
+	struct Cmiss_region *region, Cmiss_field_group_id group,
 	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
@@ -2603,93 +2640,86 @@ static int write_Cmiss_region(ostream *output_file,
 	if (output_file && region && root_region)
 	{
 		return_code = 1;
-		Cmiss_region *parent_region = Cmiss_region_get_parent(region);
-		/* note outputting as true region if root region is a group */
-		int is_group = (region != root_region) && parent_region &&
-			Cmiss_region_is_group(region);
 
-		/* write region and/or group name */
-		if (!is_group || (!parent_region_output && (parent_region != root_region)))
+		// write region path and/or group name */
+		if (!group || (region != root_region))
 		{
-			Cmiss_region *use_region = region;
-			if (is_group)
+			char *region_path = Cmiss_region_get_relative_path(region, root_region);
+			int len = strlen(region_path);
+			if ((1 < len) && (region_path[len - 1] == CMISS_REGION_PATH_SEPARATOR_CHAR))
 			{
-				use_region = parent_region;
+				region_path[len - 1] = '\0';
 			}
-			char *region_path = Cmiss_region_get_relative_path(use_region, root_region);
-			if (region_path && (strlen(region_path) > 0))
-			{
-				char *tidy_path = region_path;
-				if (1 < strlen(tidy_path))
-				{
-					if (tidy_path[strlen(tidy_path)-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-					{
-						tidy_path[strlen(tidy_path)-1] = '\0';
-					}
-				}
-				(*output_file) << "Region: " << tidy_path << "\n";
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "write_Cmiss_region.  Could not get region path");
-				return_code = 0;
-			}
+			(*output_file) << "Region: " << region_path << "\n";
 			DEALLOCATE(region_path);
 		}
-		if (is_group)
+		if (group)
 		{
-			char *region_path = Cmiss_region_get_relative_path(region, parent_region);
-			if (region_path && (strlen(region_path) > 0))
-			{
-				char *child_region_name = region_path;
-				if (child_region_name[strlen(child_region_name)-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-				{
-					child_region_name[strlen(child_region_name)-1] = '\0';
-				}
-				if (child_region_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-				{
-					child_region_name++;
-				}
-				(*output_file) << " Group name: " << child_region_name << "\n";
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "write_Cmiss_region.  Could not get group name");
-				return_code = 0;
-			}
-			DEALLOCATE(region_path);
+			char *group_name = Cmiss_field_get_name(Cmiss_field_group_base_cast(group));
+			(*output_file) << " Group name: " << group_name << "\n";
+			DEALLOCATE(group_name);
 		}
-		DEACCESS(Cmiss_region)(&parent_region);
 
-		/* write finite element fields for this region */
+		// write finite element fields for this region
 		if (return_code)
 		{
-			enum FE_write_fields_mode use_write_fields_mode = write_fields_mode;
-			if (is_group && parent_region_output)
-			{
-				use_write_fields_mode = FE_WRITE_NO_FIELDS;
-			}
-			return_code = write_FE_region(output_file, Cmiss_region_get_FE_region(region),
+			return_code = write_Cmiss_region_content(output_file, region, group,
 				write_elements, write_nodes, write_data,
-				use_write_fields_mode, number_of_field_names, field_names,
+				write_fields_mode, number_of_field_names, field_names,
 				field_names_counter, time, write_criterion);
 		}
 
-		/* recursively output child regions */
-		Cmiss_region *child_region = Cmiss_region_get_first_child(region);
-		while (child_region)
+		if (return_code && !group && ((write_recursion == FE_WRITE_RECURSIVE) ||
+			(write_recursion == FE_WRITE_RECURSE_SUBGROUPS)))
 		{
-			if ((write_recursion == FE_WRITE_RECURSIVE) ||
-				((write_recursion == FE_WRITE_RECURSE_SUBGROUPS) &&
-					Cmiss_region_is_group(child_region)))
+			// write group members
+			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+			Cmiss_field_iterator_id field_iter = Cmiss_field_module_create_field_iterator(field_module);
+			Cmiss_field_id field = 0;
+			while ((0 != (field = Cmiss_field_iterator_next_non_access(field_iter))) && return_code)
 			{
-				return_code = write_Cmiss_region(output_file,
-					child_region, /*parent_region_output*/region, root_region,
-					write_elements, write_nodes, write_data,
-					write_fields_mode, number_of_field_names, field_names,
-					field_names_counter, time, write_criterion, write_recursion);
+				Cmiss_field_group_id output_group = Cmiss_field_cast_group(field);
+				if (output_group)
+				{
+					char *group_name = Cmiss_field_get_name(field);
+					(*output_file) << " Group name: " << group_name << "\n";
+					DEALLOCATE(group_name);
+					return_code = write_Cmiss_region_content(output_file, region, output_group,
+						write_elements, write_nodes, write_data,
+						FE_WRITE_NO_FIELDS, number_of_field_names, field_names,
+						field_names_counter, time, write_criterion);
+					Cmiss_field_group_destroy(&output_group);
+				}
 			}
-			Cmiss_region_reaccess_next_sibling(&child_region);
+			Cmiss_field_iterator_destroy(&field_iter);
+			Cmiss_field_module_destroy(&field_module);
+		}
+
+		if (write_recursion == FE_WRITE_RECURSIVE)
+		{
+			// write child regions
+			Cmiss_region *child_region = Cmiss_region_get_first_child(region);
+			while (child_region)
+			{
+				Cmiss_field_group_id child_group = 0;
+				if ((!group) ||
+					(0 != (child_group = Cmiss_field_group_get_subregion_group(group, child_region))))
+				{
+					return_code = write_Cmiss_region(output_file,
+						child_region, child_group, root_region,
+						write_elements, write_nodes, write_data,
+						write_fields_mode, number_of_field_names, field_names,
+						field_names_counter, time, write_criterion, write_recursion);
+					if (child_group)
+						Cmiss_field_group_destroy(&child_group);
+				}
+				if (!return_code)
+				{
+					Cmiss_region_destroy(&child_region);
+					break;
+				}
+				Cmiss_region_reaccess_next_sibling(&child_region);
+			}
 		}
 	}
 	else
@@ -2773,7 +2803,8 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
  * Writes an EX file with supplied root_region at the top level of the file.
  *
  * @param output_file  The file to write region and field data to.
- * @param region  The region/group to output.
+ * @param region  The region to output.
+ * @param group  Optional subgroup to output.
  * @param root_region  The region which will become the root region in the EX
  *   file. Need not be the true root of region hierarchy, but must contain
  *   <region>.
@@ -2798,7 +2829,8 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
  *   recursively written.
  */
 int write_exregion_file(ostream *output_file,
-	struct Cmiss_region *region, struct Cmiss_region *root_region,
+	struct Cmiss_region *region, Cmiss_field_group_id group,
+	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
@@ -2828,7 +2860,7 @@ int write_exregion_file(ostream *output_file,
 				}
 			}
 			return_code = write_Cmiss_region(output_file,
-				region, /*parent_region_output*/(Cmiss_region *)NULL, root_region,
+				region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, field_names_counter,
 				time, write_criterion, write_recursion);
@@ -2873,7 +2905,8 @@ int write_exregion_file(ostream *output_file,
 } /* write_exregion_file */
 
 int write_exregion_file_of_name(const char *file_name,
-	struct Cmiss_region *region, struct Cmiss_region *root_region,
+	struct Cmiss_region *region, Cmiss_field_group_id group,
+	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
@@ -2889,7 +2922,7 @@ int write_exregion_file_of_name(const char *file_name,
 		output_file.open(file_name, ios::out);
 		if (output_file.is_open())
 		{
-			return_code = write_exregion_file(&output_file, region, root_region,
+			return_code = write_exregion_file(&output_file, region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);
@@ -2913,7 +2946,8 @@ int write_exregion_file_of_name(const char *file_name,
 	return (return_code);
 } /* write_exregion_file_of_name */
 
-int write_exregion_file_to_memory_block(struct Cmiss_region *region,
+int write_exregion_file_to_memory_block(
+	struct Cmiss_region *region, Cmiss_field_group_id group,
 	struct Cmiss_region *root_region, int write_elements,
 	int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
@@ -2930,7 +2964,7 @@ int write_exregion_file_to_memory_block(struct Cmiss_region *region,
 		ostringstream stringStream;
 		if (stringStream)
 		{
-			return_code = write_exregion_file(&stringStream, region, root_region,
+			return_code = write_exregion_file(&stringStream, region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);

@@ -130,8 +130,9 @@
 										<object class ="wxScrolledWindow" name="SceneEditing">
 					   					<object class = "wxBoxSizer">	
 												<orient>wxVERTICAL</orient>
+
 												<object class="sizeritem">
-				   								<object class = "wxBoxSizer">	
+				   									<object class = "wxBoxSizer">	
 														<orient>wxHORIZONTAL</orient>
 														<object class="sizeritem">
 															<flag>wxALIGN_CENTRE_VERTICAL</flag>
@@ -151,6 +152,23 @@
 													<object class="wxStaticLine">
 														<size>300,-1</size>
 														<style>wxLI_HORIZONTAL</style>
+													</object>
+												</object>
+
+												<object class="sizeritem">
+				   									<object class = "wxBoxSizer">	
+														<orient>wxHORIZONTAL</orient>
+														<object class="sizeritem">
+															<flag>wxALIGN_CENTRE_VERTICAL</flag>
+															<object class	="wxStaticText" name="SubgroupFieldText"> 
+																<label>Subgroup field:</label>				  			
+	 														</object>
+														</object>
+														<object class="sizeritem">
+															<object class	="wxPanel" name="SubgroupFieldChooserPanel">
+																<size>300,30</size>
+	 														</object>
+														</object>
 													</object>
 												</object>
 												
@@ -769,23 +787,6 @@
 													<object class="sizeritem">
 														<object class	="wxPanel" name="SelectModeChooserPanel">
 															<size>200,30</size>
-	 													</object>
-													</object>
-												</object>
-											</object>
-
-											<object class="sizeritem">
-				   								<object class = "wxBoxSizer">	
-													<orient>wxHORIZONTAL</orient>
-													<object class="sizeritem">
-														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText" name="VisibilityFieldText"> 
-															<label>Visibility field:</label>				  			
-	 													</object>
-													</object>
-													<object class="sizeritem">
-														<object class	="wxPanel" name="VisibilityFieldChooserPanel">
-															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>

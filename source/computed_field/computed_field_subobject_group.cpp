@@ -68,6 +68,7 @@ extern "C" {
 #include "cad/element_identifier.h"
 #endif /* defined (USE_OPENCASCADE) */
 
+namespace {
 
 class Computed_field_sub_group_object_package : public Computed_field_type_package
 {
@@ -86,6 +87,362 @@ public:
 	}
 };
 
+struct Cmiss_element_field_is_true_iterator_data
+{
+	Cmiss_field_cache_id cache;
+	Cmiss_field_id field;
+};
+
+int Cmiss_element_field_is_true_iterator(Cmiss_element_id element, void *data_void)
+{
+	Cmiss_element_field_is_true_iterator_data *data =
+		reinterpret_cast<Cmiss_element_field_is_true_iterator_data *>(data_void);
+	Cmiss_field_cache_set_element(data->cache, element);
+	return Cmiss_field_evaluate_boolean(data->field, data->cache);
+}
+
+struct Cmiss_node_field_is_true_iterator_data
+{
+	Cmiss_field_cache_id cache;
+	Cmiss_field_id field;
+};
+
+int Cmiss_node_field_is_true_iterator(Cmiss_node_id node, void *data_void)
+{
+	Cmiss_node_field_is_true_iterator_data *data =
+		reinterpret_cast<Cmiss_node_field_is_true_iterator_data *>(data_void);
+	Cmiss_field_cache_set_node(data->cache, node);
+	return Cmiss_field_evaluate_boolean(data->field, data->cache);
+}
+
+}
+
+/** remove objects from the group if they are in the supplied list */
+int Computed_field_element_group::removeElementsConditional(Cmiss_field_id conditional_field)
+{
+	if (!conditional_field)
+		return 0;
+	Computed_field_element_group *other_element_group = 0;
+	Cmiss_field_group_id group = Cmiss_field_cast_group(conditional_field);
+	if (group)
+	{
+		Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+		Cmiss_field_group_destroy(&group);
+		if (!element_group)
+			return 1;
+		other_element_group = Computed_field_element_group_core_cast(element_group);
+		Cmiss_field_element_group_destroy(&element_group);
+	}
+	else
+	{
+		other_element_group = dynamic_cast<Computed_field_element_group *>(conditional_field->core);
+	}
+	int return_code = 0;
+	const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
+	if (other_element_group)
+	{
+		if (other_element_group->field == field)
+			return clear();
+		if (other_element_group->getSize() < getSize())
+		{
+			Cmiss_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(other_element_group->object_list);
+			Cmiss_element_id element = 0;
+			while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+			{
+				if (IS_OBJECT_IN_LIST(FE_element)(element, object_list))
+					REMOVE_OBJECT_FROM_LIST(FE_element)(element, object_list);
+			}
+			Cmiss_element_iterator_destroy(&iter);
+		}
+		else
+		{
+			return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+				FE_element_is_in_list, (void *)other_element_group->object_list, object_list);
+		}
+	}
+	else
+	{
+		Cmiss_region_id region = Cmiss_mesh_get_master_region_internal(master_mesh);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_element_field_is_true_iterator_data data = { cache, conditional_field };
+		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+			Cmiss_element_field_is_true_iterator, (void *)&data, object_list);
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_field_module_destroy(&field_module);
+	}
+	const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
+	if (new_size != old_size)
+	{
+		if (new_size == 0)
+			change_detail.changeClear();
+		else
+			change_detail.changeRemove();
+		update();
+	}
+	return return_code;
+}
+
+int Computed_field_element_group::addElementFaces(Cmiss_element_id parent)
+{
+	if (!isParentElementCompatible(parent))
+		return 0;
+	int return_code = 1;
+	int number_of_faces = 0;
+	get_FE_element_number_of_faces(parent, &number_of_faces);
+	Cmiss_element_id face = 0;
+	int number_added = 0;
+	for (int i = 0; i < number_of_faces; i++)
+	{
+		if (get_FE_element_face(parent, i, &face) && face)
+		{
+			if (!IS_OBJECT_IN_LIST(FE_element)(face, object_list))
+			{
+				if (ADD_OBJECT_TO_LIST(FE_element)(face, object_list))
+				{
+					++number_added;
+				}
+				else
+				{
+					return_code = 0;
+					break;
+				}
+			}
+		}
+	}
+	if (number_added)
+	{
+		change_detail.changeAdd();
+		update();
+	}
+	return return_code;
+};
+
+int Computed_field_element_group::removeElementFaces(Cmiss_element_id parent)
+{
+	if (!isParentElementCompatible(parent))
+		return 0;
+	int number_of_faces = 0;
+	get_FE_element_number_of_faces(parent, &number_of_faces);
+	Cmiss_element_id face = 0;
+	int number_removed = 0;
+	for (int i = 0; i < number_of_faces; i++)
+	{
+		if (get_FE_element_face(parent, i, &face) && face)
+		{
+			if (IS_OBJECT_IN_LIST(FE_element)(face, object_list))
+			{
+				REMOVE_OBJECT_FROM_LIST(FE_element)(face, object_list);
+				++number_removed;
+			}
+		}
+	}
+	if (number_removed)
+	{
+		if (NUMBER_IN_LIST(FE_element)(object_list) == 0)
+			change_detail.changeClear();
+		else
+			change_detail.changeRemove();
+		update();
+	}
+	return 1;
+};
+
+int Computed_field_node_group::removeNodesConditional(Cmiss_field_id conditional_field)
+{
+	if (!conditional_field)
+		return 0;
+	Computed_field_node_group *other_node_group = 0;
+	Cmiss_field_group_id group = Cmiss_field_cast_group(conditional_field);
+	if (group)
+	{
+		Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
+		Cmiss_field_group_destroy(&group);
+		if (!node_group)
+			return 1;
+		other_node_group = Computed_field_node_group_core_cast(node_group);
+		Cmiss_field_node_group_destroy(&node_group);
+	}
+	else
+	{
+		other_node_group = dynamic_cast<Computed_field_node_group *>(conditional_field->core);
+	}
+	int return_code = 0;
+	const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
+	if (other_node_group)
+	{
+		if (other_node_group->field == field)
+			return clear();
+		if (other_node_group->getSize() < getSize())
+		{
+			Cmiss_node_iterator_id iter = CREATE_LIST_ITERATOR(FE_node)(other_node_group->object_list);
+			Cmiss_node_id node = 0;
+			while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+			{
+				if (IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+					REMOVE_OBJECT_FROM_LIST(FE_node)(node, object_list);
+			}
+			Cmiss_node_iterator_destroy(&iter);
+		}
+		else
+		{
+			return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_is_in_list, (void *)other_node_group->object_list, object_list);
+		}
+	}
+	else
+	{
+		Cmiss_region_id region = Cmiss_nodeset_get_master_region_internal(master_nodeset);
+		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_node_field_is_true_iterator_data data = { cache, conditional_field };
+		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+			Cmiss_node_field_is_true_iterator, (void *)&data, object_list);
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_field_module_destroy(&field_module);
+	}
+	const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
+	if (new_size != old_size)
+	{
+		if (new_size == 0)
+			change_detail.changeClear();
+		else
+			change_detail.changeRemove();
+		update();
+	}
+	return return_code;
+}
+
+int Computed_field_node_group::addElementNodes(Cmiss_element_id element)
+{
+	if (!isParentElementCompatible(element))
+		return 0;
+	int return_code = 1;
+	int number_of_nodes = 0;
+	int number_of_parents = 0;
+	get_FE_element_number_of_nodes(element, &number_of_nodes);
+	Cmiss_node_id node = 0;
+	int number_added = 0;
+	if (number_of_nodes)
+	{
+		for (int i = 0; i < number_of_nodes; i++)
+		{
+			if (get_FE_element_node(element, i, &node) && node)
+			{
+				if (!IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+				{
+					if (ADD_OBJECT_TO_LIST(FE_node)(node, object_list))
+					{
+						++number_added;
+					}
+					else
+					{
+						return_code = 0;
+						break;
+					}
+				}
+			}
+		}
+	}
+	else if (get_FE_element_number_of_parents(element, &number_of_parents) &&
+		(0 < number_of_parents))
+	{
+		int number_of_element_field_nodes;
+		Cmiss_node_id *element_field_nodes_array;
+		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+			&number_of_element_field_nodes, &element_field_nodes_array,
+			/*top_level_element*/(struct FE_element *)NULL))
+		{
+			for (int i = 0; i < number_of_element_field_nodes; i++)
+			{
+				node = element_field_nodes_array[i];
+				if (node)
+				{
+					if (!IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+					{
+						if (ADD_OBJECT_TO_LIST(FE_node)(node, object_list))
+						{
+							++number_added;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Could not add node");
+							return_code = 0;
+						}
+					}
+					Cmiss_node_destroy(&node);
+				}
+			}
+			DEALLOCATE(element_field_nodes_array);
+		}
+	}
+	if (number_added)
+	{
+		change_detail.changeAdd();
+		update();
+	}
+	return return_code;
+};
+
+int Computed_field_node_group::removeElementNodes(Cmiss_element_id element)
+{
+	if (!isParentElementCompatible(element))
+		return 0;
+	int return_code = 1;
+	int number_of_nodes = 0;
+	int number_of_parents = 0;
+	get_FE_element_number_of_nodes(element, &number_of_nodes);
+	Cmiss_node_id node = 0;
+	int number_removed = 0;
+	if (number_of_nodes)
+	{
+		for (int i = 0; i < number_of_nodes; i++)
+		{
+			if (get_FE_element_node(element, i, &node) && node)
+			{
+				if (IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+				{
+					REMOVE_OBJECT_FROM_LIST(FE_node)(node, object_list);
+					++number_removed;
+				}
+			}
+		}
+	}
+	else if (get_FE_element_number_of_parents(element, &number_of_parents) &&
+		(0 < number_of_parents))
+	{
+		int number_of_element_field_nodes;
+		Cmiss_node_id *element_field_nodes_array;
+		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+			&number_of_element_field_nodes, &element_field_nodes_array,
+			/*top_level_element*/(struct FE_element *)NULL))
+		{
+			for (int i = 0; i < number_of_element_field_nodes; i++)
+			{
+				node = element_field_nodes_array[i];
+				if (node)
+				{
+					if (IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+					{
+						REMOVE_OBJECT_FROM_LIST(FE_node)(node, object_list);
+						++number_removed;
+					}
+					Cmiss_node_destroy(&node);
+				}
+			}
+			DEALLOCATE(element_field_nodes_array);
+		}
+	}
+	if (number_removed)
+	{
+		if (NUMBER_IN_LIST(FE_node)(object_list) == 0)
+			change_detail.changeClear();
+		else
+			change_detail.changeRemove();
+		update();
+	}
+	return return_code;
+};
 
 Cmiss_field_node_group *Cmiss_field_cast_node_group(Cmiss_field_id field)
 {
