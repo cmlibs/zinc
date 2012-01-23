@@ -791,19 +791,6 @@ struct Cmiss_rendition *Cmiss_rendition_create_internal(struct Cmiss_region *cmi
 			}
 			else
 			{
-				/* add the default graphic here */
-				struct Cmiss_graphic *graphic;
-				if (rendition->default_coordinate_field && 
-					(graphic = CREATE(Cmiss_graphic)(CMISS_GRAPHIC_LINES)))
-				{
-					Cmiss_rendition_set_graphic_defaults(rendition, graphic);
-					if (!Cmiss_rendition_add_graphic(rendition, graphic, 0))
-					{
-						display_message(ERROR_MESSAGE, "Cmiss_rendition_create. "
-							"Could not add default line graphic");
-					}
-					DEACCESS(Cmiss_graphic)(&graphic);
-				}
 				Cmiss_graphics_module_add_member_region(graphics_module, cmiss_region);
 			}
 		}
