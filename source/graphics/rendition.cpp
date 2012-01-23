@@ -37,6 +37,7 @@ FILE : rendition.cpp
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <algorithm>
 #include <list>
 extern "C" {
 #include <stdlib.h>
