@@ -3388,7 +3388,11 @@ int Cmiss_rendition_add_scene(struct Cmiss_rendition *rendition,
 			rendition->list_of_scene = new std::list<struct Scene *>;
 		}
 		// GRC check whether scene already added?
-		rendition->list_of_scene->push_back(scene);
+		if (rendition->list_of_scene->end() ==
+			std::find(rendition->list_of_scene->begin(), rendition->list_of_scene->end(), scene))
+		{
+			rendition->list_of_scene->push_back(scene);
+		}
 		Cmiss_scene_add_rendition(scene, rendition);
 		if (hierarchical)
 		{

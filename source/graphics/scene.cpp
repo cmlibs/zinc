@@ -1348,6 +1348,99 @@ Global functions
 ----------------
 */
 
+static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
+	void *scene_void)
+{
+	int return_code;
+	struct Scene *scene;
+
+	ENTER(Scene_rendition_update_callback);
+	if (rendition &&(scene = (struct Scene *)scene_void))
+	{
+		Scene_notify_object_changed(scene,0);
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Detaches scene from rendition tree starting at the current region.
+ * Removes hierarchical change callback from current region.
+ *
+ * @param scene  The scene to detach. Must have region pointer set.
+ * @return  1 on success, otherwise 0.
+ */
+static int Cmiss_scene_detach_from_renditions(Scene *scene)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_detach_from_renditions);
+	if (scene && scene->region)
+	{
+		struct Cmiss_rendition *rendition =
+			Cmiss_region_get_rendition_internal(scene->region);
+		if (rendition)
+		{
+			Cmiss_rendition_remove_callback(rendition,
+				Scene_rendition_update_callback,
+				(void *)scene);
+			DEACCESS(Cmiss_rendition)(&rendition);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_detach_from_renditions.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Attaches scene to rendition tree starting at the current region for tracking
+ * changes. Sets up hierarchical change callback from current region.
+ *
+ * @param scene  The scene to attach. Must have region pointer set.
+ * @return  1 on success, otherwise 0.
+ */
+static int Cmiss_scene_attach_to_renditions(Scene *scene)
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_attach_to_renditions);
+	if (scene && scene->region)
+	{
+		struct Cmiss_rendition *rendition;
+		rendition = Cmiss_region_get_rendition_internal(scene->region);
+		if (rendition != 0)
+		{
+			Cmiss_rendition_add_scene(rendition, scene, /*hierarchical*/1);
+			Cmiss_rendition_add_callback(rendition,
+				Scene_rendition_update_callback, (void *)scene);
+			DEACCESS(Cmiss_rendition)(&rendition);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_attach_to_renditions.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 struct Scene *CREATE(Scene)(void)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
@@ -1456,6 +1549,7 @@ Closes the scene and disposes of the scene data structure.
 #endif /* defined (OLD_CODE) */
 			DEALLOCATE(scene->name);
 
+			Cmiss_scene_detach_from_renditions(scene);
 			if (scene->list_of_rendition)
 			{
 				if (!scene->list_of_rendition->empty())
@@ -4673,7 +4767,7 @@ struct Cmiss_region *Cmiss_scene_get_region(Scene *scene)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_get_region.  Invalid argument(s)");	
+			"Cmiss_scene_get_region.  Invalid argument(s)");
 		region = (struct Cmiss_region *)NULL;
 	}
 	LEAVE;
@@ -4690,99 +4784,6 @@ Cmiss_scene_id Cmiss_scene_access(Cmiss_scene_id scene)
 int Cmiss_scene_destroy(Cmiss_scene **scene_address)
 {
 	return DEACCESS(Scene)(scene_address);
-}
-
-static int Scene_rendition_update_callback(struct Cmiss_rendition *rendition,
-	void *scene_void)
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_rendition_update_callback);
-	if (rendition &&(scene = (struct Scene *)scene_void))
-	{
-		Scene_notify_object_changed(scene,0);
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-/***************************************************************************//**
- * Detaches scene from rendition tree starting at the current region.
- * Removes hierarchical change callback from current region.
- *
- * @param scene  The scene to detach. Must have region pointer set.
- * @return  1 on success, otherwise 0.
- */
-static int Cmiss_scene_detach_from_renditions(Scene *scene)
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_detach_from_renditions);
-	if (scene && scene->region)
-	{
-		struct Cmiss_rendition *rendition =
-			Cmiss_region_get_rendition_internal(scene->region);
-		if (rendition)
-		{
-			Cmiss_rendition_remove_callback(rendition,
-				Scene_rendition_update_callback,
-				(void *)scene);
-			DEACCESS(Cmiss_rendition)(&rendition);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_detach_from_renditions.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-/***************************************************************************//**
- * Attaches scene to rendition tree starting at the current region for tracking
- * changes. Sets up hierarchical change callback from current region.
- *
- * @param scene  The scene to attach. Must have region pointer set.
- * @return  1 on success, otherwise 0.
- */
-static int Cmiss_scene_attach_to_renditions(Scene *scene)
-{
-	int return_code;
-
-	ENTER(Cmiss_scene_attach_to_renditions);
-	if (scene && scene->region)
-	{
-		struct Cmiss_rendition *rendition;
-		rendition = Cmiss_region_get_rendition_internal(scene->region);
-		if (rendition != 0)
-		{
-			Cmiss_rendition_add_scene(rendition, scene, /*hierarchical*/1);
-			Cmiss_rendition_add_callback(rendition,
-				Scene_rendition_update_callback, (void *)scene);
-			DEACCESS(Cmiss_rendition)(&rendition);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_attach_to_renditions.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 int Cmiss_scene_set_region(Scene *scene, Cmiss_region *region)
