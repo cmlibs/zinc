@@ -896,6 +896,284 @@ struct Interpreter_command_element_selection_callback_data
 }; /* struct Interpreter_command_element_selection_callback_data */
 
 /***************************************************************************//**
+ * Adds or removes elements to/from group.
+ * @param manage_nodes  Set if nodes are added/removed with elements. Nodes are
+ * only removed if not in use by any other elements in group.
+ * @param manage_faces  Set if faces are added/removed with parent elements.
+ * Faces are only removed if not in use by any other elements in group.
+ */
+static int process_modify_element_group(Cmiss_field_group_id group,
+	Cmiss_region_id region, int dimension, char add_flag,
+	Cmiss_field_id conditional_field, Cmiss_field_group_id from_group,
+	Multi_range *element_ranges, char selected_flag, FE_value time,
+	char manage_nodes, char manage_faces)
+{
+	if (!group || !region)
+		return 0;
+	int return_code = 1;
+	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+	char remove_flag = !add_flag;
+	Cmiss_mesh_group_id selection_mesh_group = 0;
+	if (selected_flag)
+	{
+		Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
+		Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
+		if (selection_group)
+		{
+			Cmiss_field_element_group_id selection_element_group =
+				Cmiss_field_group_get_element_group(selection_group, master_mesh);
+			if (selection_element_group)
+			{
+				selection_mesh_group = Cmiss_field_element_group_get_mesh(selection_element_group);
+				Cmiss_field_element_group_destroy(&selection_element_group);
+			}
+			Cmiss_field_group_destroy(&selection_group);
+		}
+		Cmiss_rendition_destroy(&rendition);
+	}
+	Cmiss_mesh_group_id from_mesh_group = 0;
+	if (from_group)
+	{
+		Cmiss_field_element_group_id from_element_group =
+			Cmiss_field_group_get_element_group(from_group, master_mesh);
+		if (from_element_group)
+		{
+			from_mesh_group = Cmiss_field_element_group_get_mesh(from_element_group);
+			Cmiss_field_element_group_destroy(&from_element_group);
+		}
+
+	}
+	int elements_processed = 0;
+	int elements_not_processed = 0;
+	if (((!selected_flag) || selection_mesh_group) && ((!from_group) || from_mesh_group))
+	{
+		Cmiss_field_module_begin_change(field_module);
+		Cmiss_field_element_group_id modify_element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+		if (!modify_element_group)
+			modify_element_group = Cmiss_field_group_create_element_group(group, master_mesh);
+		Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(modify_element_group);
+		Cmiss_field_element_group_destroy(&modify_element_group);
+		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
+		Cmiss_field_cache_set_time(cache, time);
+
+		Cmiss_nodeset_group_id modify_nodeset_group = 0;
+		Cmiss_field_node_group_id remove_node_group = 0;
+		Cmiss_nodeset_group_id remove_nodeset_group = 0;
+		if (manage_nodes)
+		{
+			Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+			Cmiss_field_node_group_id modify_node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
+			if ((!modify_node_group) && add_flag)
+				modify_node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
+			if (modify_node_group)
+			{
+				modify_nodeset_group = Cmiss_field_node_group_get_nodeset(modify_node_group);
+				if (remove_flag)
+				{
+					Cmiss_field_id remove_node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
+					remove_node_group = Cmiss_field_cast_node_group(remove_node_group_field);
+					remove_nodeset_group = Cmiss_field_node_group_get_nodeset(remove_node_group);
+					Cmiss_field_destroy(&remove_node_group_field);
+				}
+				Cmiss_field_node_group_destroy(&modify_node_group);
+			}
+			Cmiss_nodeset_destroy(&master_nodeset);
+		}
+		Cmiss_nodeset_group_id working_nodeset_group = add_flag ? modify_nodeset_group : remove_nodeset_group;
+
+		Cmiss_mesh_id master_face_mesh = 0;
+		Cmiss_mesh_group_id modify_face_mesh_group = 0;
+		Cmiss_field_element_group_id working_face_element_group = 0;
+		Cmiss_mesh_group_id working_face_mesh_group = 0;
+		if (manage_faces && (1 < dimension))
+		{
+			master_face_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 1);
+			Cmiss_field_element_group_id modify_face_element_group = Cmiss_field_group_get_element_group(group, master_face_mesh);
+			if ((!modify_face_element_group) && add_flag)
+				modify_face_element_group = Cmiss_field_group_create_element_group(group, master_face_mesh);
+			if (modify_face_element_group)
+			{
+				modify_face_mesh_group = Cmiss_field_element_group_get_mesh(modify_face_element_group);
+				Cmiss_field_id working_face_element_group_field = Cmiss_field_module_create_element_group(field_module, master_face_mesh);
+				working_face_element_group = Cmiss_field_cast_element_group(working_face_element_group_field);
+				working_face_mesh_group = Cmiss_field_element_group_get_mesh(working_face_element_group);
+				Cmiss_field_destroy(&working_face_element_group_field);
+				Cmiss_field_element_group_destroy(&modify_face_element_group);
+			}
+		}
+
+		Cmiss_mesh_id iteration_mesh = master_mesh;
+		Cmiss_mesh_id selection_mesh = Cmiss_mesh_group_base_cast(selection_mesh_group);
+		Cmiss_mesh_id from_mesh = Cmiss_mesh_group_base_cast(from_mesh_group);
+		if (selected_flag && selection_mesh && !Cmiss_mesh_match(selection_mesh, Cmiss_mesh_group_base_cast(modify_mesh_group)))
+		{
+			iteration_mesh = selection_mesh;
+		}
+		if (from_mesh && (!Cmiss_mesh_match(from_mesh, Cmiss_mesh_group_base_cast(modify_mesh_group))) &&
+			(Cmiss_mesh_get_size(from_mesh) < Cmiss_mesh_get_size(iteration_mesh)))
+		{
+			iteration_mesh = from_mesh;
+		}
+		Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(iteration_mesh);
+		Cmiss_element_id element = 0;
+		while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+		{
+			if (element_ranges && !Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element)))
+				continue;
+			if (selection_mesh && (selection_mesh != iteration_mesh) && !Cmiss_mesh_contains_element(selection_mesh, element))
+				continue;
+			if (from_mesh && (from_mesh != iteration_mesh) && !Cmiss_mesh_contains_element(from_mesh, element))
+				continue;
+			if (conditional_field)
+			{
+				Cmiss_field_cache_set_element(cache, element);
+				if (!Cmiss_field_evaluate_boolean(conditional_field, cache))
+					continue;
+			}
+			++elements_processed;
+			if (add_flag)
+			{
+				if (!Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
+				{
+					if (!Cmiss_mesh_group_add_element(modify_mesh_group, element))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx modify egroup:  Could not add element %d", Cmiss_element_get_identifier(element));
+						return_code = 0;
+						break;
+					}
+				}
+			}
+			else
+			{
+				if (Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
+				{
+					if (!Cmiss_mesh_group_remove_element(modify_mesh_group, element))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx modify egroup:  Could not remove element %d", Cmiss_element_get_identifier(element));
+						return_code = 0;
+						break;
+					}
+				}
+			}
+			if (working_nodeset_group)
+			{
+				Cmiss_nodeset_group_add_element_nodes(working_nodeset_group, element);
+			}
+			if (working_face_mesh_group)
+			{
+				Cmiss_mesh_group_add_element_faces(working_face_mesh_group, element);
+			}
+		}
+		Cmiss_element_iterator_destroy(&iter);
+
+		if (remove_flag && (remove_nodeset_group || working_face_mesh_group))
+		{
+			// don't include faces and nodes still used by elements remaining in modify_mesh_group
+			// Note: ignores nodes for other dimensions
+			iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(modify_mesh_group));
+				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+				{
+				if (remove_nodeset_group)
+				{
+					Cmiss_nodeset_group_remove_element_nodes(remove_nodeset_group, element);
+				}
+				if (working_face_mesh_group)
+				{
+					Cmiss_mesh_group_remove_element_faces(working_face_mesh_group, element);
+				}
+				}
+				Cmiss_element_iterator_destroy(&iter);
+				if (remove_nodeset_group)
+				{
+				Cmiss_nodeset_group_remove_nodes_conditional(modify_nodeset_group,
+					Cmiss_field_node_group_base_cast(remove_node_group));
+				}
+		}
+		if (working_face_mesh_group)
+		{
+			Cmiss_mesh_group_id modify_line_mesh_group = 0;
+			Cmiss_field_element_group_id remove_line_element_group = 0;
+			Cmiss_mesh_group_id remove_line_mesh_group = 0;
+			if (2 < dimension)
+			{
+				Cmiss_mesh_id master_line_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 2);
+				Cmiss_field_element_group_id modify_line_element_group = Cmiss_field_group_get_element_group(group, master_line_mesh);
+				if (add_flag && !modify_line_element_group)
+					modify_line_element_group = Cmiss_field_group_create_element_group(group, master_line_mesh);
+				if (modify_line_element_group)
+				{
+					modify_line_mesh_group = Cmiss_field_element_group_get_mesh(modify_line_element_group);
+					if (remove_flag)
+					{
+						Cmiss_field_id remove_line_element_group_field = Cmiss_field_module_create_element_group(field_module, master_line_mesh);
+						remove_line_element_group = Cmiss_field_cast_element_group(remove_line_element_group_field);
+						remove_line_mesh_group = Cmiss_field_element_group_get_mesh(remove_line_element_group);
+						Cmiss_field_destroy(&remove_line_element_group_field);
+					}
+					Cmiss_field_element_group_destroy(&modify_line_element_group);
+				}
+				Cmiss_mesh_destroy(&master_line_mesh);
+			}
+			Cmiss_mesh_group_id working_line_mesh_group = add_flag ? modify_line_mesh_group : remove_line_mesh_group;
+			iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(working_face_mesh_group));
+			while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+			{
+				if (add_flag)
+				{
+					Cmiss_mesh_group_add_element(modify_face_mesh_group, element);
+				}
+				else
+				{
+					Cmiss_mesh_group_remove_element(modify_face_mesh_group, element);
+				}
+				if (working_line_mesh_group)
+				{
+					Cmiss_mesh_group_add_element_faces(working_line_mesh_group, element);
+				}
+			}
+			Cmiss_element_iterator_destroy(&iter);
+			if (remove_line_element_group)
+			{
+				Cmiss_mesh_group_remove_elements_conditional(modify_line_mesh_group,
+					Cmiss_field_element_group_base_cast(remove_line_element_group));
+			}
+			Cmiss_mesh_group_destroy(&remove_line_mesh_group);
+			Cmiss_field_element_group_destroy(&remove_line_element_group);
+			Cmiss_mesh_group_destroy(&modify_line_mesh_group);
+		}
+
+		Cmiss_mesh_group_destroy(&working_face_mesh_group);
+		Cmiss_field_element_group_destroy(&working_face_element_group);
+		Cmiss_mesh_group_destroy(&modify_face_mesh_group);
+		Cmiss_mesh_destroy(&master_face_mesh);
+		Cmiss_nodeset_group_destroy(&remove_nodeset_group);
+		Cmiss_field_node_group_destroy(&remove_node_group);
+		Cmiss_nodeset_group_destroy(&modify_nodeset_group);
+		Cmiss_field_cache_destroy(&cache);
+		Cmiss_mesh_group_destroy(&modify_mesh_group);
+		Cmiss_field_module_end_change(field_module);
+	}
+	if (0 < elements_not_processed)
+	{
+		display_message(WARNING_MESSAGE,
+			"gfx modify egroup:  %d elements could not be removed", elements_not_processed);
+	}
+	else if (0 == elements_processed)
+	{
+		display_message(WARNING_MESSAGE, "gfx modify egroup:  group unchanged");
+	}
+	Cmiss_mesh_group_destroy(&from_mesh_group);
+	Cmiss_mesh_group_destroy(&selection_mesh_group);
+	Cmiss_mesh_destroy(&master_mesh);
+	Cmiss_field_module_destroy(&field_module);
+
+	return return_code;
+}
+
+/***************************************************************************//**
  * Executes a GFX CREATE EGROUP/NGROUP/DGROUP command.
  * <use_object_type> is an integer; 0=elements, 1=nodes, 2=data.
  */
@@ -912,18 +1190,25 @@ static int gfx_create_group(struct Parse_state *state,
 		{
 			Cmiss_region_id region = Cmiss_region_access(root_region);
 			Multi_range *add_ranges = CREATE(Multi_range)();
-			char *from_group = 0;
+			char *from_group_name = 0;
 			Option_table *option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "add_ranges", add_ranges, NULL, set_Multi_range);
-			Option_table_add_string_entry(option_table, "from", &from_group, " GROUP_NAME_IGNORED");
+			Option_table_add_string_entry(option_table, "from", &from_group_name, " GROUP_NAME");
 			Option_table_add_set_Cmiss_region(option_table, "region", root_region, &region);
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
-			if (from_group)
+
+			Cmiss_field_group_id from_group = 0;
+			if (return_code && from_group_name)
 			{
-				display_message(ERROR_MESSAGE, "'from' option has been removed. Use subsequent gfx modify group command instead.");
-				DEALLOCATE(from_group);
-				return_code = 0;
+				Cmiss_field *field =	FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+					from_group_name, Cmiss_region_get_Computed_field_manager(region));
+				from_group = Cmiss_field_cast_group(field);
+				if (!from_group)
+				{
+					display_message(ERROR_MESSAGE, "gfx create group: '%s' is not a group.", from_group_name);
+					return_code = 0;
+				}
 			}
 			if (return_code)
 			{
@@ -956,26 +1241,10 @@ static int gfx_create_group(struct Parse_state *state,
 							case 0: // elements
 							{
 								int max_dimension = FE_region_get_highest_dimension(Cmiss_region_get_FE_region(region));
-								Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, max_dimension);
-								Cmiss_field_element_group_id element_group = Cmiss_field_group_create_element_group(group, master_mesh);
-								Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(element_group);
-								Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(master_mesh);
-				  				Cmiss_element_id element = 0;
-				  				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
-				  				{
-				  					if (Multi_range_is_value_in_range(add_ranges, Cmiss_element_get_identifier(element)))
-				  					{
-										if (!Cmiss_mesh_group_add_element(modify_mesh_group, element))
-										{
-											return_code = 0;
-											break;
-										}
-									}
-				  				}
-								Cmiss_element_iterator_destroy(&iter);
-								Cmiss_mesh_group_destroy(&modify_mesh_group);
-								Cmiss_field_element_group_destroy(&element_group);
-								Cmiss_mesh_destroy(&master_mesh);
+								double time = 0;
+								return_code = process_modify_element_group(group, region, max_dimension,
+									/*add_flag*/1, /*conditional_field*/0, from_group, add_ranges,
+									/*selected_flag*/0, time, /*manage_nodes*/1, /*manage_faces*/1);
 							} break;
 							case 1: // nodes
 							case 2: // data
@@ -1014,6 +1283,11 @@ static int gfx_create_group(struct Parse_state *state,
 				}
 				Cmiss_field_module_destroy(&field_module);
 			}
+			if (from_group_name)
+			{
+				DEALLOCATE(from_group_name);
+			}
+			Cmiss_field_group_destroy(&from_group);
 			Cmiss_region_destroy(&region);
 			DESTROY(Multi_range)(&add_ranges);
 		}
@@ -1640,7 +1914,7 @@ editor at a time.  This implementation may be changed later.
 				return_code=1;
 			}
 		}
-		else 
+		else
 		{
 			if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
 			{
@@ -2221,7 +2495,7 @@ DESCRIPTION :
 Executes a GFX CREATE SNAKE command.
 ==============================================================================*/
 {
-	char *region_path, *source_region_path;
+	char *source_region_path;
 	float density_factor, stiffness;
 	int i, number_of_elements, number_of_fitting_fields, 
 		previous_state_index, return_code;
@@ -2229,7 +2503,6 @@ Executes a GFX CREATE SNAKE command.
 	struct Cmiss_region *region, *source_region;
 	struct Computed_field *coordinate_field, **fitting_fields,
 		*weight_field;
-	struct FE_region *fe_region = NULL;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_fitting_field_data, set_weight_field_data;
@@ -2239,7 +2512,8 @@ Executes a GFX CREATE SNAKE command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		region_path = (char *)NULL;
+		region = Cmiss_region_access(command_data->root_region);
+		Cmiss_field_group_id group = 0;
 		source_region_path = (char *)NULL;
 		number_of_fitting_fields = 1;
 		coordinate_field = (struct Computed_field *)NULL;
@@ -2298,8 +2572,8 @@ Executes a GFX CREATE SNAKE command.
 		Option_table_add_entry(option_table, "source_group", &source_region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* destination_group */
-		Option_table_add_entry(option_table, "destination_group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
+		Option_table_add_region_or_group_entry(option_table, "destination_group",
+			&region, &group);
 		/* fitting_fields */
 		set_fitting_field_data.conditional_function =
 			Computed_field_has_numerical_components;
@@ -2331,7 +2605,8 @@ Executes a GFX CREATE SNAKE command.
 			&weight_field, (void *)&set_weight_field_data,
 			set_Computed_field_conditional);
 		return_code = Option_table_multi_parse(option_table, state);
-		/* no errors, not asking for help */
+		DESTROY(Option_table)(&option_table);
+
 		if (return_code)
 		{
 			if (!coordinate_field)
@@ -2340,51 +2615,68 @@ Executes a GFX CREATE SNAKE command.
 					"Must specify a coordinate_field to define on elements in snake");
 				return_code = 0;
 			}
-			if (!(region_path &&
-				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					region_path, &region) &&
-				(fe_region = Cmiss_region_get_FE_region(region))))
-			{
-				display_message(ERROR_MESSAGE, "gfx create snake.  "
-					"Must specify a destination_group to put the snake elements in");
-				return_code = 0;
-			}
 			if (!(source_region_path &&
 				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					source_region_path, &source_region)))
 			{
 				source_region = command_data->root_region;
 			}
-			if (return_code)
-			{
+		}
+		if (return_code)
+		{
 	  		Cmiss_rendition *rendition = Cmiss_graphics_module_get_rendition(command_data->graphics_module, source_region);
-	  		Cmiss_field_group_id group_field = NULL;
+	  		Cmiss_field_group_id selection_group = NULL;
 	  		if (rendition)
 	  		{
-	  			group_field = Cmiss_rendition_get_selection_group(rendition);
+	  			selection_group = Cmiss_rendition_get_selection_group(rendition);
 				Cmiss_rendition_destroy(&rendition);
 	  		}
-	  		if (group_field)
+	  		if (selection_group)
 	  		{
+	  			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
+	  			Cmiss_field_module_begin_change(field_module);
 	  			struct LIST(FE_node) *data_list = FE_node_list_from_region_and_selection_group(
-	  				source_region, NULL,	Cmiss_field_group_base_cast(group_field), NULL, 0, /*use_data*/1);
+	  				source_region, NULL,	Cmiss_field_group_base_cast(selection_group), NULL, 0, /*use_data*/1);
+	  			FE_region *fe_region = Cmiss_region_get_FE_region(region);
+	  			Cmiss_nodeset_group_id nodeset_group = 0;
+	  			Cmiss_mesh_group_id mesh_group = 0;
+	  			if (group)
+	  			{
+	  				Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
+	  				Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
+	  				if (!node_group)
+	  					node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
+	  				nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
+	  				Cmiss_field_node_group_destroy(&node_group);
+	  				Cmiss_nodeset_destroy(&master_nodeset);
+
+	  				Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, 1);
+	  				Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+	  				if (!element_group)
+	  					element_group = Cmiss_field_group_create_element_group(group, master_mesh);
+	  				mesh_group = Cmiss_field_element_group_get_mesh(element_group);
+	  				Cmiss_field_element_group_destroy(&element_group);
+	  				Cmiss_mesh_destroy(&master_mesh);
+	  			}
 	  			return_code = create_FE_element_snake_from_data_points(
 	  				fe_region, coordinate_field, weight_field,
 	  				number_of_fitting_fields, fitting_fields,
 	  				data_list,
 	  				number_of_elements,
 	  				density_factor,
-	  				stiffness);
-	  			Cmiss_field_group_destroy(&group_field);
+	  				stiffness, nodeset_group, mesh_group);
+	  			Cmiss_mesh_group_destroy(&mesh_group);
+	  			Cmiss_nodeset_group_destroy(&nodeset_group);
+	  			Cmiss_field_group_destroy(&selection_group);
 	  			DESTROY(LIST(FE_node))(&data_list);
+	  			Cmiss_field_module_end_change(field_module);
+	  			Cmiss_field_module_destroy(&field_module);
 	  		}
 	  		else
 	  		{
 	  			return_code = 0;
 	  		}
-			}
-		} /* parse error, help */
-		DESTROY(Option_table)(&option_table);
+		}
 		if (coordinate_field)
 		{
 			DEACCESS(Computed_field)(&coordinate_field);
@@ -2404,14 +2696,12 @@ Executes a GFX CREATE SNAKE command.
 			}
 			DEALLOCATE(fitting_fields);
 		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
 		if (source_region_path)
 		{
 			DEALLOCATE(source_region_path);
 		}
+		Cmiss_field_group_destroy(&group);
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{
@@ -3060,7 +3350,9 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 
 struct Texture_evaluate_image_data
 {
-	char *region_path, *field_name, *texture_coordinates_field_name;
+	Cmiss_region_id region;
+	Cmiss_field_group_id group;
+	char *field_name, *texture_coordinates_field_name;
 	int element_dimension; /* where 0 is any dimension */
 	int propagate_field;
 	struct Computed_field *field, *texture_coordinates_field;
@@ -3093,8 +3385,8 @@ Modifies the properties of a texture.
 			Option_table_add_entry(option_table, "element_dimension",
 				&data->element_dimension, NULL, set_element_dimension_or_all);
 			/* element_group */
-			Option_table_add_entry(option_table, "element_group", &data->region_path,
-				command_data->root_region, set_Cmiss_region_path);
+			Option_table_add_region_or_group_entry(option_table, "element_group",
+				&data->region, &data->group);
 			/* fail_material */
 			Option_table_add_set_Material_entry(option_table, "fail_material", 
 				&data->fail_material, command_data->material_package);
@@ -3334,11 +3626,9 @@ Modifies the properties of a texture.
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *evaluate_data_region;
 	struct Colour colour;
 	struct Option_table *option_table;
 	struct Texture *texture, *texture_copy;
-	struct Texture_evaluate_image_data evaluate_data;
 	struct Texture_image_data image_data;
 	struct Texture_file_number_series_data file_number_series_data;
 	/* do not make the following static as 'set' flag must start at 0 */
@@ -3494,7 +3784,9 @@ Modifies the properties of a texture.
 					image_data.crop_width=0;
 					image_data.crop_height=0;
 
-					evaluate_data.region_path = (char *)NULL;
+					Texture_evaluate_image_data evaluate_data;
+					evaluate_data.region = Cmiss_region_access(command_data->root_region);
+					evaluate_data.group = (Cmiss_field_group_id)0;
 					evaluate_data.element_dimension = 0; /* dimension == number of texture coordinates components */
 					evaluate_data.propagate_field = 1;
 					evaluate_data.field = (struct Computed_field *)NULL;
@@ -3648,15 +3940,13 @@ Modifies the properties of a texture.
 					return_code=Option_table_multi_parse(option_table, state);
 					if (return_code)
 					{
-						evaluate_data_region = (struct Cmiss_region *)NULL;
-						if (evaluate_data.field_name || evaluate_data.region_path ||
+						if (evaluate_data.field_name || evaluate_data.group ||
 							evaluate_data.spectrum || evaluate_data.texture_coordinates_field_name)
 						{
-							if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-									evaluate_data.region_path, &evaluate_data_region) && evaluate_data.spectrum
-									&& evaluate_data.field_name && evaluate_data.texture_coordinates_field_name)
+							if (evaluate_data.field_name && evaluate_data.texture_coordinates_field_name &&
+								evaluate_data.spectrum)
 							{
-								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(evaluate_data_region);
+								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(evaluate_data.region);
 								evaluate_data.field = Cmiss_field_module_find_field_by_name(field_module,
 									evaluate_data.field_name);
 								evaluate_data.texture_coordinates_field = Cmiss_field_module_find_field_by_name(field_module,
@@ -3898,8 +4188,7 @@ Modifies the properties of a texture.
 						}
 #endif /* defined (SGI_MOVIE_FILE) */
 
-						if (evaluate_data_region &&
-							evaluate_data.field && evaluate_data.spectrum && 
+						if (evaluate_data.field && evaluate_data.spectrum &&
 							evaluate_data.texture_coordinates_field)
 						{
 							if (Computed_field_depends_on_texture(evaluate_data.field,
@@ -3917,7 +4206,7 @@ Modifies the properties of a texture.
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field,
 								evaluate_data.propagate_field, 
-								evaluate_data.spectrum, evaluate_data_region,
+								evaluate_data.spectrum, evaluate_data.region,
 								evaluate_data.element_dimension,
 								specify_format, specify_width, 
 								specify_height, specify_depth,
@@ -3949,10 +4238,10 @@ Modifies the properties of a texture.
 						DEACCESS(Movie_graphics)(&movie);
 					}
 #endif /* defined (SGI_MOVIE_FILE) */
-					if (evaluate_data.region_path)
-					{
-						DEALLOCATE(evaluate_data.region_path);
-					}
+					if (evaluate_data.region)
+						Cmiss_region_destroy(&evaluate_data.region);
+					if (evaluate_data.group)
+						Cmiss_field_group_destroy(&evaluate_data.group);
 					if (evaluate_data.fail_material)
 					{
 						DEACCESS(Graphical_material)(&evaluate_data.fail_material);
@@ -4957,183 +5246,152 @@ Executes a GFX CONVERT ELEMENTS command.
 	return (return_code);
 } /* gfx_convert_elements */
 
+/***************************************************************************//**
+ * Executes a GFX CONVERT GRAPHICS command.
+ * Converts graphics to finite elements.
+ */
 static int gfx_convert_graphics(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 5 April 2006
-
-DESCRIPTION :
-Executes a GFX CREATE command.
-==============================================================================*/
 {
-	char *output_region_path, *path_name, *coordinate_field_name;
-	enum Render_to_finite_elements_mode render_mode;
 	int return_code;
-	struct Computed_field *coordinate_field;
-	struct Cmiss_command_data *command_data;
-	struct FE_region *fe_region;
-	struct Scene *scene;
-	struct Option_table *option_table;
 
-	ENTER(gfx_convert_graphics);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	Cmiss_command_data *command_data = reinterpret_cast<Cmiss_command_data *>(command_data_void);
+	if (state && command_data)
 	{
-		if (NULL != (command_data = (struct Cmiss_command_data *)command_data_void))
+		Cmiss_region_id region = Cmiss_region_access(command_data->root_region);
+		Cmiss_field_group_id group = 0;
+		struct Cmiss_region *input_region = NULL;
+		char *coordinate_field_name = 0;
+		Cmiss_field_id coordinate_field = 0;
+		const char *scene_name = 0;
+		const char *input_region_path = 0;
+		const char *graphic_name = NULL;
+		Cmiss_scene_id scene = 0;
+		char *scene_path_name = 0;
+		enum Render_to_finite_elements_mode render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
+
+		Option_table *option_table=CREATE(Option_table)();
+		/* coordinate */
+		Option_table_add_string_entry(option_table,"coordinate",&coordinate_field_name,
+			" FIELD_NAME");
+		/* render_to_finite_elements_mode */
+		OPTION_TABLE_ADD_ENUMERATOR(Render_to_finite_elements_mode)(option_table,
+			&render_mode);
+		/* region */
+		Option_table_add_region_or_group_entry(option_table, "region", &region, &group);
+		/* scene */
+		Option_table_add_string_entry(option_table, "scene",
+			&scene_path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
+		return_code=Option_table_multi_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+
+		if (return_code)
 		{
-			struct Cmiss_region *input_region = NULL;
-			output_region_path = Cmiss_region_get_root_region_path();
-			coordinate_field_name = NULL;
-			coordinate_field=(struct Computed_field *)NULL;
-			const char *scene_name = NULL, 
-					       *input_region_path = NULL, 
-					       *graphic_name = NULL;
-			scene = (struct Scene *)NULL;
-			path_name=(char *)NULL;
-			render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
-			option_table=CREATE(Option_table)();
-			/* coordinate */
-			Option_table_add_string_entry(option_table,"coordinate",&coordinate_field_name,
-				" FIELD_NAME");
-			/* render_to_finite_elements_mode */
-			OPTION_TABLE_ADD_ENUMERATOR(Render_to_finite_elements_mode)(option_table,
-				&render_mode);
-			/* region */
-			Option_table_add_entry(option_table, "region", &output_region_path,
-				command_data->root_region, set_Cmiss_region_path);
-			/* scene */
-			Option_table_add_string_entry(option_table, "scene",
-				&path_name, " SCENE_NAME[/REGION_PATH][.GRAPHIC_NAME]{default}");
-			return_code=Option_table_multi_parse(option_table,state);
-			DESTROY(Option_table)(&option_table);
-
-			if (return_code)
+			if (scene_path_name)
 			{
-				if (path_name)
-				{
-					export_object_name_parser(path_name, &scene_name,
-						&input_region_path, &graphic_name);
-				}
-				if (scene_name)
-				{
-					REACCESS(Scene)(&(scene), 
-						FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
-							command_data->scene_manager));
-				}
-				if (!scene)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Must specify a scene.");
-					return_code = 0;
-				}
-				fe_region = (struct FE_region *)NULL;
-				Cmiss_region *output_region = NULL;
-				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					output_region_path, &output_region) &&
-					(fe_region = Cmiss_region_get_FE_region(output_region))))
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Invalid region");
-					return_code = 0;
-				}
-				if (output_region && coordinate_field_name &&
-					(coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-							coordinate_field_name, Cmiss_region_get_Computed_field_manager(output_region))))
-				{
-					if (Computed_field_has_3_components(coordinate_field, NULL))
-					{
-						Cmiss_field_access(coordinate_field);
-					}
-					else
-					{
-						coordinate_field = NULL;
-						display_message(ERROR_MESSAGE,
-							"gfx_convert_graphics.  "
-							"Field specified is not a coordinate field.");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert_graphics.  "
-						"Field %s does not exist.", coordinate_field_name);
-				}
-				input_region = Cmiss_region_find_subregion_at_path(command_data->root_region,
-						input_region_path);
-				if (input_region_path && !input_region)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert.  Invalid input_region");
-					return_code = 0;
-				}
-				if (!coordinate_field)
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_convert_graphics.  "
-						"Must specify a coordinate field to define on the new nodes and elements.");
-					return_code = 0;
-				}
-			}
-
-			if (return_code)
-			{
-				render_to_finite_elements(scene, input_region,
-					graphic_name, fe_region, render_mode, coordinate_field);
-			}
-			if (scene)
-			{
-				DEACCESS(Scene)(&scene);
-			}
-			if (coordinate_field)
-			{
-				DEACCESS(Computed_field)(&coordinate_field);
-			}
-			if (coordinate_field_name)
-			{
-				DEALLOCATE(coordinate_field_name);
-			}
-			if (output_region_path)
-			{
-				DEALLOCATE(output_region_path);
+				export_object_name_parser(scene_path_name, &scene_name,
+					&input_region_path, &graphic_name);
 			}
 			if (scene_name)
 			{
-				DEALLOCATE(scene_name);
+				REACCESS(Scene)(&(scene),
+					FIND_BY_IDENTIFIER_IN_MANAGER(Scene,name)(scene_name,
+						command_data->scene_manager));
 			}
-			if (input_region_path)
+			if (!scene)
 			{
-				DEALLOCATE(input_region_path);
+				display_message(ERROR_MESSAGE,
+					"gfx_convert.  Must specify a scene.");
+				return_code = 0;
 			}
-			if (graphic_name)
+			if (coordinate_field_name &&
+				(coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						coordinate_field_name, Cmiss_region_get_Computed_field_manager(region))))
 			{
-				DEALLOCATE(graphic_name);
+				if (Computed_field_has_3_components(coordinate_field, NULL))
+				{
+					Cmiss_field_access(coordinate_field);
+				}
+				else
+				{
+					coordinate_field = NULL;
+					display_message(ERROR_MESSAGE,
+						"gfx_convert_graphics.  "
+						"Field specified is not a coordinate field.");
+					return_code = 0;
+				}
 			}
-			if (input_region)
+			else
 			{
-				Cmiss_region_destroy(&input_region);
+				display_message(ERROR_MESSAGE,
+					"gfx_convert_graphics.  "
+					"Field %s does not exist.", coordinate_field_name);
 			}
-			if (path_name)
+			input_region = Cmiss_region_find_subregion_at_path(command_data->root_region,
+					input_region_path);
+			if (input_region_path && !input_region)
 			{
-				DEALLOCATE(path_name);
+				display_message(ERROR_MESSAGE,
+					"gfx_convert.  Invalid input_region");
+				return_code = 0;
+			}
+			if (!coordinate_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_convert_graphics.  "
+					"Must specify a coordinate field to define on the new nodes and elements.");
+				return_code = 0;
 			}
 		}
-		else
+
+		if (return_code)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_convert_graphics.  Missing command_data");
-			return_code=0;
+			render_to_finite_elements(scene, input_region, graphic_name, render_mode,
+				region, group, coordinate_field);
 		}
+		if (scene)
+		{
+			DEACCESS(Scene)(&scene);
+		}
+		if (coordinate_field)
+		{
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (coordinate_field_name)
+		{
+			DEALLOCATE(coordinate_field_name);
+		}
+		if (scene_name)
+		{
+			DEALLOCATE(scene_name);
+		}
+		if (input_region_path)
+		{
+			DEALLOCATE(input_region_path);
+		}
+		if (graphic_name)
+		{
+			DEALLOCATE(graphic_name);
+		}
+		if (input_region)
+		{
+			Cmiss_region_destroy(&input_region);
+		}
+		if (scene_path_name)
+		{
+			DEALLOCATE(scene_path_name);
+		}
+		Cmiss_field_group_destroy(&group);
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_convert_graphics.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_convert_graphics.  Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* gfx_convert_graphics */
+}
 
 static int gfx_convert(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -8082,10 +8340,10 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
 	// for efficiency cache changes until all finished
 	FE_region_begin_change(fe_region);
-	
+
 	// create a 3-D coordinate field
 	FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region, "coordinates");
-	
+
 	const Mesh_triangle_list  triangle_list = trimesh->get_triangle_list();
 	Mesh_triangle_list_const_iterator triangle_iter;
 	const Triangle_vertex_set vertex_set = trimesh->get_vertex_set();
@@ -8105,8 +8363,8 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 		(*vertex_iter)->get_coordinates(&coord1, &coord2, &coord3);
 		template_node = CREATE(FE_node)(/*cm_node_identifier*/identifier, fe_region, /*template_node*/NULL);
 		define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
-		
-		// create a node from the template  
+
+		// create a node from the template
 		coordinates[0] = coord1;
 		coordinates[1] = coord2;
 		coordinates[2] = coord3;
@@ -8115,18 +8373,18 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 		set_FE_nodal_field_FE_value_values(coordinate_field, node, coordinates, &number_of_values_confirmed);
 		FE_region_merge_FE_node(fe_region, node);
 		DEACCESS(FE_node)(&node);
-		
+
 		DESTROY(FE_node)(&template_node);
 		i++;
 	}
 	// establish mode which automates creation of shared faces
 	FE_region_begin_define_faces(fe_region, /*all dimensions*/-1);
-	
+
 	struct CM_element_information element_identifier;
 	FE_element *element;
 	FE_element *template_element;
 	const Triangle_vertex *vertex1, *vertex2, *vertex3;
-  
+
 	// create a triangle template element with linear simplex field
 	for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
 	{
@@ -8134,7 +8392,7 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 		template_element = FE_element_create_with_simplex_shape(fe_region, /*dimension*/2);
 		set_FE_element_number_of_nodes(template_element, 3);
 		FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
-		
+
 		// make an element based on the template & fill node list
 		element_identifier.type = CM_ELEMENT;
 		element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, /*dimension*/2, 1);
@@ -8145,16 +8403,16 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 		set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,initial_identifier+vertex2->get_identifier()));
 		set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,initial_identifier+vertex3->get_identifier()));
 		FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
-		
+
 		DEACCESS(FE_element)(&element);
-		
+
    	DEACCESS(FE_element)(&template_element);
 	}
 	// must remember to end define faces mode
 	FE_region_end_define_faces(fe_region);
-	
+
 	DEACCESS(FE_field)(&coordinate_field);
-	
+
 	FE_region_end_change(fe_region);
 }
 
@@ -8172,10 +8430,10 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 		region_path = Cmiss_region_get_root_region_path();
 		if (NULL != (command_data=(struct Cmiss_command_data *)command_data_void))
 		{
-						
+
 			double maxh=100000;
 			double fineness=0.5;
-			int secondorder=0;    
+			int secondorder=0;
 			struct Scene *scene;
 			char *meshsize_file = NULL;
 			struct Option_table *option_table;
@@ -8206,7 +8464,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 					float tolerance = 0.000001;
 					double centre_x, centre_y, centre_z, size_x, size_y, size_z;
 					build_Scene(scene);
-					Scene_get_graphics_range(scene, 
+					Scene_get_graphics_range(scene,
 						&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
 					if (size_x !=0 && size_y!=0 && size_z!=0)
 					{
@@ -8230,13 +8488,13 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 							generate_netgen_para=create_netgen_parameters();
 							set_netgen_parameters_maxh(generate_netgen_para,maxh);
 							set_netgen_parameters_fineness(generate_netgen_para,fineness);
-							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
+							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);
 							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
 							if (meshsize_file)
 								set_netgen_parameters_meshsize_filename(generate_netgen_para, meshsize_file);
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
-							release_netgen_parameters(generate_netgen_para);        
-							
+							release_netgen_parameters(generate_netgen_para);
+
 						}
 						else
 						{
@@ -8251,7 +8509,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 				USE_PARAMETER(region_path);
 				display_message(ERROR_MESSAGE,
 					"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
-					" please compile cmgui with Netgen");	
+					" please compile cmgui with Netgen");
 				return_code = 0;
 #endif /* defined (USE_NETGEN) */
 			}
@@ -8313,7 +8571,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 					float tolerance = 0.000001;
 					double centre_x, centre_y, centre_z, size_x, size_y, size_z;
 					build_Scene(scene);
-					Scene_get_graphics_range(scene, 
+					Scene_get_graphics_range(scene,
 						&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
 					if (size_x !=0 && size_y!=0 && size_z!=0)
 					{
@@ -8379,12 +8637,12 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 		return_code = 1;
 
 		option_table = CREATE(Option_table)();
-		Option_table_add_entry(option_table,"tetrahedral", NULL, 
+		Option_table_add_entry(option_table,"tetrahedral", NULL,
 			(void *)command_data, gfx_mesh_graphics_tetrahedral);
-		Option_table_add_entry(option_table,"triangle", NULL, 
+		Option_table_add_entry(option_table,"triangle", NULL,
 			(void *)command_data, gfx_mesh_graphics_triangle);
 		return_code = Option_table_parse(option_table, state);
-		
+
 		DESTROY(Option_table)(&option_table);
 	}
 	else
@@ -8671,7 +8929,7 @@ Executes a GFX LIST ALL_COMMANDS.
 	ENTER(gfx_list_all_commands);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
-	{ 
+	{
 		if (NULL != (current_token = state->current_token))
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -8693,7 +8951,7 @@ Executes a GFX LIST ALL_COMMANDS.
 				if (command_data->spectrum_manager)
 				{
 					FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-						for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
+						for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);
 				}
 				/* Command of graphical_material */
 				if (NULL != (graphical_material_manager =
@@ -8701,7 +8959,7 @@ Executes a GFX LIST ALL_COMMANDS.
 				{
 					command_prefix="gfx create material ";
 					return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-						list_Graphical_material_commands,(void *)command_prefix, 
+						list_Graphical_material_commands,(void *)command_prefix,
 						graphical_material_manager);
 				}
 				return_code =1;
@@ -8866,7 +9124,7 @@ Executes a GFX LIST FIELD.
 		region_path_and_name.region = (struct Cmiss_region *)NULL;
 		region_path_and_name.region_path = (char *)NULL;
 		region_path_and_name.name = (char *)NULL;
-		
+
 		option_table=CREATE(Option_table)();
 		/* commands */
 		Option_table_add_entry(option_table, "commands", &commands_flag, NULL,
@@ -8906,7 +9164,7 @@ Executes a GFX LIST FIELD.
 					region_path_and_name.region = ACCESS(Cmiss_region)(root_region);
 				}
 				if (commands_flag)
-				{	
+				{
 					if (ALLOCATE(command_prefix_plus_region_path,char,
 						strlen(command_prefix)+1+path_length))
 					{
@@ -10622,7 +10880,7 @@ static int gfx_modify_element_group(struct Parse_state *state,
 			char all_flag = 0;
 			char selected_flag = 0;
 			Multi_range *element_ranges = CREATE(Multi_range)();
-			char *from_group = 0;
+			char *from_group_name = 0;
 			double time = 0;
 			if (command_data->default_time_keeper)
 			{
@@ -10647,7 +10905,7 @@ static int gfx_modify_element_group(struct Parse_state *state,
 			/* elements|faces|lines */
 			Option_table_add_enumerator(option_table, 3, element_type_strings, &element_type_string);
 			/* group */
-			Option_table_add_string_entry(option_table, "group", &from_group, " GROUP_NAME_IGNORED");
+			Option_table_add_string_entry(option_table, "group", &from_group_name, " GROUP_NAME");
 			/* remove */
 			Option_table_add_char_flag_entry(option_table, "remove", &remove_flag);
 			/* selected */
@@ -10658,20 +10916,26 @@ static int gfx_modify_element_group(struct Parse_state *state,
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 
+			Cmiss_field_group_id from_group = 0;
 			if (return_code)
 			{
-				if (from_group)
+				if (from_group_name)
 				{
-					display_message(ERROR_MESSAGE, "gfx modify egroup: 'group' option has been removed. Use group name as conditional_field.");
-					DEALLOCATE(from_group);
-					return_code = 0;
+					Cmiss_field *field =	FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						from_group_name, Cmiss_region_get_Computed_field_manager(region));
+					from_group = Cmiss_field_cast_group(field);
+					if (!from_group)
+					{
+						display_message(ERROR_MESSAGE, "gfx modify egroup: '%s' is not a group.", from_group_name);
+						return_code = 0;
+					}
 				}
 				if ((add_flag + remove_flag) != 1)
 				{
 					display_message(ERROR_MESSAGE, "gfx modify egroup:  Must specify operation 'add' or 'remove'.");
 					return_code = 0;
 				}
-				if ((0 == Multi_range_get_number_of_ranges(element_ranges)) && (!selected_flag) && (0 == conditional_field) && (!all_flag))
+				if ((0 == Multi_range_get_number_of_ranges(element_ranges)) && (!selected_flag) && (0 == conditional_field) && (!all_flag) && (0 == from_group))
 				{
 					display_message(ERROR_MESSAGE, "gfx modify egroup:  No elements specified.");
 					return_code = 0;
@@ -10692,241 +10956,16 @@ static int gfx_modify_element_group(struct Parse_state *state,
 				{
 					dimension = FE_region_get_highest_dimension(Cmiss_region_get_FE_region(region));
 				}
-				Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-				Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
-				Cmiss_mesh_group_id selection_mesh_group = 0;
-				if (selected_flag)
-				{
-					Cmiss_rendition *rendition = Cmiss_region_get_rendition_internal(region);
-					Cmiss_field_group_id selection_group = Cmiss_rendition_get_selection_group(rendition);
-					if (selection_group)
-					{
-						Cmiss_field_element_group_id selection_element_group =
-							Cmiss_field_group_get_element_group(selection_group, master_mesh);
-						if (selection_element_group)
-						{
-							selection_mesh_group = Cmiss_field_element_group_get_mesh(selection_element_group);
-							Cmiss_field_element_group_destroy(&selection_element_group);
-						}
-					}
-					Cmiss_field_group_destroy(&selection_group);
-					Cmiss_rendition_destroy(&rendition);
-				}
-				int elements_processed = 0;
-				int elements_not_processed = 0;
-				if ((!selected_flag) || selection_mesh_group)
-				{
-					Cmiss_field_module_begin_change(field_module);
-					Cmiss_field_element_group_id modify_element_group = Cmiss_field_group_get_element_group(group, master_mesh);
-					if (!modify_element_group)
-						modify_element_group = Cmiss_field_group_create_element_group(group, master_mesh);
-					Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(modify_element_group);
-					Cmiss_field_element_group_destroy(&modify_element_group);
-					Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
-					Cmiss_field_cache_set_time(cache, time);
-
-					Cmiss_nodeset_group_id modify_nodeset_group = 0;
-					Cmiss_field_node_group_id remove_node_group = 0;
-					Cmiss_nodeset_group_id remove_nodeset_group = 0;
-					if (manage_nodes)
-					{
-						Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, "cmiss_nodes");
-						Cmiss_field_node_group_id modify_node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
-						if ((!modify_node_group) && add_flag)
-							modify_node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
-						if (modify_node_group)
-						{
-							modify_nodeset_group = Cmiss_field_node_group_get_nodeset(modify_node_group);
-							if (remove_flag)
-							{
-								Cmiss_field_id remove_node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
-								remove_node_group = Cmiss_field_cast_node_group(remove_node_group_field);
-								remove_nodeset_group = Cmiss_field_node_group_get_nodeset(remove_node_group);
-								Cmiss_field_destroy(&remove_node_group_field);
-							}
-							Cmiss_field_node_group_destroy(&modify_node_group);
-						}
-						Cmiss_nodeset_destroy(&master_nodeset);
-					}
-					Cmiss_nodeset_group_id working_nodeset_group = add_flag ? modify_nodeset_group : remove_nodeset_group;
-
-					Cmiss_mesh_id master_face_mesh = 0;
-					Cmiss_mesh_group_id modify_face_mesh_group = 0;
-					Cmiss_field_element_group_id working_face_element_group = 0;
-					Cmiss_mesh_group_id working_face_mesh_group = 0;
-					if (manage_faces && (1 < dimension))
-					{
-						master_face_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 1);
-						Cmiss_field_element_group_id modify_face_element_group = Cmiss_field_group_get_element_group(group, master_face_mesh);
-						if ((!modify_face_element_group) && add_flag)
-							modify_face_element_group = Cmiss_field_group_create_element_group(group, master_face_mesh);
-						if (modify_face_element_group)
-						{
-							modify_face_mesh_group = Cmiss_field_element_group_get_mesh(modify_face_element_group);
-							Cmiss_field_id working_face_element_group_field = Cmiss_field_module_create_element_group(field_module, master_face_mesh);
-							working_face_element_group = Cmiss_field_cast_element_group(working_face_element_group_field);
-							working_face_mesh_group = Cmiss_field_element_group_get_mesh(working_face_element_group);
-							Cmiss_field_destroy(&working_face_element_group_field);
-							Cmiss_field_element_group_destroy(&modify_face_element_group);
-						}
-					}
-
-					Cmiss_mesh_id iteration_mesh = master_mesh;
-					if (selected_flag && (selection_mesh_group != modify_mesh_group))
-					{
-						iteration_mesh = Cmiss_mesh_group_base_cast(selection_mesh_group);
-					}
-					Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(iteration_mesh);
-	  				const bool use_element_ranges = Multi_range_get_number_of_ranges(element_ranges) > 0;
-	  				Cmiss_element_id element = 0;
-	  				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
-	  				{
-	  					if (use_element_ranges && !Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element)))
-	  						continue;
-	  					if (conditional_field)
-	  					{
-	  						Cmiss_field_cache_set_element(cache, element);
-	  						if (!Cmiss_field_evaluate_boolean(conditional_field, cache))
-	  							continue;
-	  					}
-	  					++elements_processed;
-						if (add_flag)
-						{
-							if (!Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
-							{
-								if (!Cmiss_mesh_group_add_element(modify_mesh_group, element))
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx modify egroup:  Could not add element %d", Cmiss_element_get_identifier(element));
-									return_code = 0;
-									break;
-								}
-							}
-						}
-						else
-						{
-							if (Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
-							{
-								if (!Cmiss_mesh_group_remove_element(modify_mesh_group, element))
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx modify egroup:  Could not remove element %d", Cmiss_element_get_identifier(element));
-									return_code = 0;
-									break;
-								}
-							}
-						}
-						if (working_nodeset_group)
-						{
-							Cmiss_nodeset_group_add_element_nodes(working_nodeset_group, element);
-						}
-						if (working_face_mesh_group)
-						{
-							Cmiss_mesh_group_add_element_faces(working_face_mesh_group, element);
-						}
-	  				}
-					Cmiss_element_iterator_destroy(&iter);
-
-					if (remove_flag && (remove_nodeset_group || working_face_mesh_group))
-					{
-						// don't include faces and nodes still used by elements remaining in modify_mesh_group
-						// Note: ignores nodes for other dimensions
-						iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(modify_mesh_group));
-		  				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
-		  				{
-							if (remove_nodeset_group)
-							{
-								Cmiss_nodeset_group_remove_element_nodes(remove_nodeset_group, element);
-							}
-							if (working_face_mesh_group)
-							{
-								Cmiss_mesh_group_remove_element_faces(working_face_mesh_group, element);
-							}
-		  				}
-		  				Cmiss_element_iterator_destroy(&iter);
-		  				if (remove_nodeset_group)
-		  				{
-							Cmiss_nodeset_group_remove_nodes_conditional(modify_nodeset_group,
-								Cmiss_field_node_group_base_cast(remove_node_group));
-		  				}
-					}
-					if (working_face_mesh_group)
-					{
-						Cmiss_mesh_group_id modify_line_mesh_group = 0;
-						Cmiss_field_element_group_id remove_line_element_group = 0;
-						Cmiss_mesh_group_id remove_line_mesh_group = 0;
-						if (2 < dimension)
-						{
-							Cmiss_mesh_id master_line_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 2);
-							Cmiss_field_element_group_id modify_line_element_group = Cmiss_field_group_get_element_group(group, master_line_mesh);
-							if (add_flag && !modify_line_element_group)
-								modify_line_element_group = Cmiss_field_group_create_element_group(group, master_line_mesh);
-							if (modify_line_element_group)
-							{
-								modify_line_mesh_group = Cmiss_field_element_group_get_mesh(modify_line_element_group);
-								if (remove_flag)
-								{
-									Cmiss_field_id remove_line_element_group_field = Cmiss_field_module_create_element_group(field_module, master_line_mesh);
-									remove_line_element_group = Cmiss_field_cast_element_group(remove_line_element_group_field);
-									remove_line_mesh_group = Cmiss_field_element_group_get_mesh(remove_line_element_group);
-									Cmiss_field_destroy(&remove_line_element_group_field);
-								}
-								Cmiss_field_element_group_destroy(&modify_line_element_group);
-							}
-							Cmiss_mesh_destroy(&master_line_mesh);
-						}
-						Cmiss_mesh_group_id working_line_mesh_group = add_flag ? modify_line_mesh_group : remove_line_mesh_group;
-						iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(working_face_mesh_group));
-						while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
-						{
-							if (add_flag)
-							{
-								Cmiss_mesh_group_add_element(modify_face_mesh_group, element);
-							}
-							else
-							{
-								Cmiss_mesh_group_remove_element(modify_face_mesh_group, element);
-							}
-							if (working_line_mesh_group)
-							{
-								Cmiss_mesh_group_add_element_faces(working_line_mesh_group, element);
-							}
-						}
-						Cmiss_element_iterator_destroy(&iter);
-						if (remove_line_element_group)
-						{
-							Cmiss_mesh_group_remove_elements_conditional(modify_line_mesh_group,
-								Cmiss_field_element_group_base_cast(remove_line_element_group));
-						}
-						Cmiss_mesh_group_destroy(&remove_line_mesh_group);
-						Cmiss_field_element_group_destroy(&remove_line_element_group);
-						Cmiss_mesh_group_destroy(&modify_line_mesh_group);
-					}
-
-					Cmiss_mesh_group_destroy(&working_face_mesh_group);
-					Cmiss_field_element_group_destroy(&working_face_element_group);
-					Cmiss_mesh_group_destroy(&modify_face_mesh_group);
-					Cmiss_mesh_destroy(&master_face_mesh);
-					Cmiss_nodeset_group_destroy(&remove_nodeset_group);
-					Cmiss_field_node_group_destroy(&remove_node_group);
-					Cmiss_nodeset_group_destroy(&modify_nodeset_group);
-					Cmiss_field_cache_destroy(&cache);
-					Cmiss_mesh_group_destroy(&modify_mesh_group);
-					Cmiss_field_module_end_change(field_module);
-				}
-				if (0 < elements_not_processed)
-				{
-					display_message(WARNING_MESSAGE,
-						"gfx modify egroup:  %d elements could not be removed", elements_not_processed);
-				}
-				else if (0 == elements_processed)
-				{
-					display_message(WARNING_MESSAGE, "gfx modify egroup:  group unchanged");
-				}
-				Cmiss_mesh_group_destroy(&selection_mesh_group);
-				Cmiss_mesh_destroy(&master_mesh);
-				Cmiss_field_module_destroy(&field_module);
+				return_code = process_modify_element_group(group, region, dimension,
+					add_flag, conditional_field, from_group,
+					Multi_range_get_number_of_ranges(element_ranges) > 0 ? element_ranges : 0,
+					selected_flag, time, manage_nodes, manage_faces);
 			}
+			if (from_group_name)
+			{
+				DEALLOCATE(from_group_name);
+			}
+			Cmiss_field_group_destroy(&from_group);
 			DESTROY(Multi_range)(&element_ranges);
 			Cmiss_field_destroy(&conditional_field);
 		}
@@ -11305,7 +11344,7 @@ static int gfx_modify_node_group(struct Parse_state *state,
 			char all_flag = 0;
 			char selected_flag = 0;
 			Multi_range *node_ranges = CREATE(Multi_range)();
-			char *from_group = 0;
+			char *from_group_name = 0;
 			double time = 0;
 			if (command_data->default_time_keeper)
 			{
@@ -11326,7 +11365,7 @@ static int gfx_modify_node_group(struct Parse_state *state,
 			Option_table_add_Computed_field_conditional_entry(option_table, "conditional_field",
 				&conditional_field, &set_conditional_field_data);
 			/* group */
-			Option_table_add_string_entry(option_table, "group", &from_group, " GROUP_NAME_IGNORED");
+			Option_table_add_string_entry(option_table, "group", &from_group_name, " GROUP_NAME");
 			/* remove */
 			Option_table_add_char_flag_entry(option_table, "remove", &remove_flag);
 			/* selected */
@@ -11337,20 +11376,26 @@ static int gfx_modify_node_group(struct Parse_state *state,
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 
+			Cmiss_field_group_id from_group = 0;
 			if (return_code)
 			{
-				if (from_group)
+				if (from_group_name)
 				{
-					display_message(ERROR_MESSAGE, "gfx modify ngroup: 'group' option has been removed. Use group name as conditional_field.");
-					DEALLOCATE(from_group);
-					return_code = 0;
+					Cmiss_field *field =	FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						from_group_name, Cmiss_region_get_Computed_field_manager(region));
+					from_group = Cmiss_field_cast_group(field);
+					if (!from_group)
+					{
+						display_message(ERROR_MESSAGE, "gfx modify ngroup: '%s' is not a group.", from_group_name);
+						return_code = 0;
+					}
 				}
 				if ((add_flag + remove_flag) != 1)
 				{
 					display_message(ERROR_MESSAGE, "gfx modify ngroup:  Must specify operation 'add' or 'remove'.");
 					return_code = 0;
 				}
-				if ((0 == Multi_range_get_number_of_ranges(node_ranges)) && (!selected_flag) && (0 == conditional_field) && (!all_flag))
+				if ((0 == Multi_range_get_number_of_ranges(node_ranges)) && (!selected_flag) && (0 == conditional_field) && (!all_flag) && (0 == from_group))
 				{
 					display_message(ERROR_MESSAGE, "gfx modify ngroup:  No nodes specified.");
 					return_code = 0;
@@ -11379,9 +11424,19 @@ static int gfx_modify_node_group(struct Parse_state *state,
 					Cmiss_field_group_destroy(&selection_group);
 					Cmiss_rendition_destroy(&rendition);
 				}
+				Cmiss_nodeset_group_id from_nodeset_group = 0;
+				if (from_group)
+				{
+					Cmiss_field_node_group_id from_node_group = Cmiss_field_group_get_node_group(from_group, master_nodeset);
+					if (from_node_group)
+					{
+						from_nodeset_group = Cmiss_field_node_group_get_nodeset(from_node_group);
+						Cmiss_field_node_group_destroy(&from_node_group);
+					}
+				}
 				int nodes_processed = 0;
 				int nodes_not_processed = 0;
-				if ((!selected_flag) || selection_nodeset_group)
+				if (((!selected_flag) || selection_nodeset_group) && ((!from_group) || from_nodeset_group))
 				{
 					Cmiss_field_module_begin_change(field_module);
 					Cmiss_field_node_group_id modify_node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
@@ -11393,17 +11448,30 @@ static int gfx_modify_node_group(struct Parse_state *state,
 					Cmiss_field_node_group_destroy(&modify_node_group);
 					Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
 					Cmiss_field_cache_set_time(cache, time);
+
 					Cmiss_nodeset_id iteration_nodeset = master_nodeset;
-					if (selected_flag && (selection_nodeset_group != modify_nodeset_group))
+					Cmiss_nodeset_id selection_nodeset = Cmiss_nodeset_group_base_cast(selection_nodeset_group);
+					Cmiss_nodeset_id from_nodeset = Cmiss_nodeset_group_base_cast(from_nodeset_group);
+					if (selected_flag && !Cmiss_nodeset_match(selection_nodeset, Cmiss_nodeset_group_base_cast(modify_nodeset_group)))
 					{
-						iteration_nodeset = Cmiss_nodeset_group_base_cast(selection_nodeset_group);
+						iteration_nodeset = selection_nodeset;
 					}
+					if (from_nodeset && (!Cmiss_nodeset_match(from_nodeset, Cmiss_nodeset_group_base_cast(modify_nodeset_group))) &&
+						Cmiss_nodeset_get_size(from_nodeset) < Cmiss_nodeset_get_size(iteration_nodeset))
+					{
+						iteration_nodeset = from_nodeset;
+					}
+
 					Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(iteration_nodeset);
 	  				const bool use_node_ranges = Multi_range_get_number_of_ranges(node_ranges) > 0;
 	  				Cmiss_node_id node = 0;
 	  				while (NULL != (node = Cmiss_node_iterator_next_non_access(iter)))
 	  				{
 	  					if (use_node_ranges && !Multi_range_is_value_in_range(node_ranges, Cmiss_node_get_identifier(node)))
+	  						continue;
+	  					if (selection_nodeset && (selection_nodeset != iteration_nodeset) && !Cmiss_nodeset_contains_node(selection_nodeset, node))
+	  						continue;
+	  					if (from_nodeset && (from_nodeset != iteration_nodeset) && !Cmiss_nodeset_contains_node(from_nodeset, node))
 	  						continue;
 	  					if (conditional_field)
 	  					{
@@ -11454,10 +11522,16 @@ static int gfx_modify_node_group(struct Parse_state *state,
 				{
 					display_message(WARNING_MESSAGE, "gfx modify ngroup:  group unchanged");
 				}
+				Cmiss_nodeset_group_destroy(&from_nodeset_group);
 				Cmiss_nodeset_group_destroy(&selection_nodeset_group);
 				Cmiss_nodeset_destroy(&master_nodeset);
 				Cmiss_field_module_destroy(&field_module);
 			}
+			if (from_group_name)
+			{
+				DEALLOCATE(from_group_name);
+			}
+			Cmiss_field_group_destroy(&from_group);
 			DESTROY(Multi_range)(&node_ranges);
 			Cmiss_field_destroy(&conditional_field);
 		}

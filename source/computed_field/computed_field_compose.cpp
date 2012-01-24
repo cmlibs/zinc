@@ -626,7 +626,7 @@ already) and allows its contents to be modified.
 			Option_table_add_suboption_table(option_table, find_option_table);
 			/* group */
 			Option_table_add_string_entry(option_table, "group",
-				 &search_group_name, " GROUP_NAME(DEPRECATED)");
+				 &search_group_name, " GROUP_NAME");
 			// mesh
 			Option_table_add_mesh_entry(option_table, "mesh", field_modify->get_region(), &mesh);
 			/* texture_coordinates_field */
@@ -652,27 +652,23 @@ already) and allows its contents to be modified.
 
 			if (return_code && !mesh)
 			{
-				Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(
+				mesh = Cmiss_field_module_find_mesh_by_dimension(
 					field_modify->get_field_module(), element_dimension);
 				if (search_group_name)
 				{
 					Cmiss_field_id group_field = Cmiss_field_module_find_field_by_name(field_modify->get_field_module(), search_group_name);
 					Cmiss_field_group_id group = Cmiss_field_cast_group(group_field);
 					Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
-					Cmiss_mesh_destroy(&master_mesh);
+					Cmiss_mesh_destroy(&mesh);
 					mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
 					Cmiss_field_element_group_destroy(&element_group);
 					Cmiss_field_group_destroy(&group);
 					Cmiss_field_destroy(&group_field);
 				}
-				else
-				{
-					mesh = master_mesh;
-				}
 			}
 			if (return_code && !mesh)
 			{
-				display_message(ERROR_MESSAGE, "You must specify a mesh (or group and element_dimension).");
+				display_message(ERROR_MESSAGE, "You must specify a mesh (or element_dimension and optional group).");
 				return_code = 0;
 			}
 			if (return_code)

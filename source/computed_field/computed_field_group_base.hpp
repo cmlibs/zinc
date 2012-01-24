@@ -78,6 +78,11 @@ public:
 	{
 	}
 
+	virtual char *get_command_string()
+	{
+		return 0;
+	}
+
 	virtual int isEmpty() const = 0;
 
 	virtual int clear() = 0;

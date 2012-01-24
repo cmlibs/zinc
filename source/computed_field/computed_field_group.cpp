@@ -360,8 +360,6 @@ private:
 
 	int list();
 
-	char* get_command_string();
-
 	Cmiss_field_id get_element_group_field_private(int dimension)
 	{
 		if ((dimension > 0) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
@@ -723,38 +721,6 @@ int Computed_field_group::list()
 
 	return (return_code);
 } /* list_Computed_field_group */
-
-/***************************************************************************//**
- * Returns allocated command string for reproducing this field. Includes type.
- */
-char *Computed_field_group::get_command_string()
-{
-	char *command_string;
-	int error;
-
-	ENTER(Computed_field_group::get_command_string);
-	command_string = (char *)NULL;
-	if (field)
-	{
-		error = 0;
-		append_string(&command_string, computed_field_group_type_string, &error);
-		append_string(&command_string, " region ", &error);
-		if (region)
-		{
-			char *path = Cmiss_region_get_path(region);
-			append_string(&command_string, path, &error);
-			DEALLOCATE(path);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_group::get_command_string.  Invalid field");
-	}
-	LEAVE;
-
-	return (command_string);
-} /* Computed_field_group::get_command_string */
 
 int Computed_field_group::removeRegion(Cmiss_region_id region)
 {

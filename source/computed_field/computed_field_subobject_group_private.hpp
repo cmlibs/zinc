@@ -352,11 +352,6 @@ namespace {
 			return 1;
 		};
 
-		char* get_command_string()
-		{
-			return NULL;
-		};
-
 		inline void update()
 		{
 			Computed_field_changed(field);
@@ -590,11 +585,6 @@ namespace {
 		int list()
 		{
 			return 1;
-		};
-
-		char* get_command_string()
-		{
-			return NULL;
 		};
 
 		inline void update()
@@ -862,11 +852,6 @@ namespace {
 		int list()
 		{
 			return 1;
-		};
-
-		char* get_command_string()
-		{
-			return NULL;
 		};
 
 		inline void update()

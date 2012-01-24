@@ -1553,11 +1553,11 @@ int set_Cmiss_region_or_group(struct Parse_state *state,
 			{
 				Cmiss_field *field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 					field_name, Cmiss_region_get_Computed_field_manager(output_region));
-				if (field)
+				*group_address = Cmiss_field_cast_group(field);
+				if (0 == *group_address)
 				{
-					*group_address = Cmiss_field_cast_group(field);
+					return_code = 0;
 				}
-				return_code = (0 != group_address);
 			}
 			if (return_code)
 			{

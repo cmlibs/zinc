@@ -45,12 +45,16 @@ data points.
 #if !defined (SNAKE_H)
 #define SNAKE_H
 
+#include "api/cmiss_element.h"
+#include "api/cmiss_node.h"
+
 int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
 	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
-	int number_of_elements, FE_value density_factor, FE_value stiffness);
+	int number_of_elements, FE_value density_factor, FE_value stiffness,
+	Cmiss_nodeset_group_id nodeset_group, Cmiss_mesh_group_id mesh_group);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2006
 
@@ -69,6 +73,8 @@ length in this coordinate field, when the <density_factor> is 1 then the
 elements will each correspond to an equal proportion of the data points.
 A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
+@param nodeset_group  Optional nodeset group to put snake nodes in.
+@param mesh_group  Optional mesh group to put snake elements in.
 ==============================================================================*/
 
 #endif /* !defined (SNAKE_H) */

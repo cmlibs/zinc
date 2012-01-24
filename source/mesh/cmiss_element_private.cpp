@@ -549,7 +549,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE,
 					"Cmiss_element_template_define_field_simple_nodal.  "
-					"Local node index out of range 1 to %d", element_number_of_nodes);
+					"Local node index out of range 1 to number in element(%d)", element_number_of_nodes);
 				return_code = 0;
 				break;
 			}

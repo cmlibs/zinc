@@ -72,13 +72,14 @@ Global functions
 ----------------
 */
 
-int render_to_finite_elements(struct Scene *scene, struct Cmiss_region *source_region,
-	const char *graphic_name, struct FE_region *fe_region, 
-	enum Render_to_finite_elements_mode render_mode, struct Computed_field *coordinate_field);
-/******************************************************************************
-LAST MODIFIED : 7 December 2005
+/**************************************************************************//**
+ * Renders the visible objects as finite elements into the specified <fe_region>.
+ * @param region  Region to put new elements in.
+ * @param group  Optional group to put new elements in.
+ */
+int render_to_finite_elements(Cmiss_scene_id scene, Cmiss_region_id source_region,
+	const char *graphic_name, enum Render_to_finite_elements_mode render_mode,
+	Cmiss_region_id region, Cmiss_field_group_id group,
+	Cmiss_field_id coordinate_field);
 
-DESCRIPTION :
-Renders the visible objects as finite elements into the specified <fe_region>.
-==============================================================================*/
 #endif /* !defined (RENDER_TO_FINITE_ELEMENTS_H) */

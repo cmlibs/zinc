@@ -44,6 +44,7 @@ data points.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 #include <stdio.h>
+#include "api/cmiss_element.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -566,26 +567,8 @@ int create_FE_element_snake_from_data_points(
 	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
 	struct LIST(FE_node) *data_list,
-	int number_of_elements, FE_value density_factor, FE_value stiffness)
-/*******************************************************************************
-LAST MODIFIED : 3 May 2006
-
-DESCRIPTION :
-Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
-<element_manager> and <element_group>, nodes in <node_manager> and the node
-group of the same name in <node_group_manager>. The snake follows the data in
-<data_list>. <data_list> is unmodified by this function.
-The <fitting_fields> which must be defined on the data are fitted and
-defined on the created elements.  The <coordinate_field> is used to determine
-distances between points.  If specified, the <weight_field> is evaluated at 
-each data point and used to weight the varying importance of that data point.
-The <density_factor> can vary from 0 to 1.
-When <density_factor> is 0 then the elements are spread out to have the same
-length in this coordinate field, when the <density_factor> is 1 then the
-elements will each correspond to an equal proportion of the data points.
-A positive value of <stiffness> penalises solutions with large second
-derivatives; helps make smooth snakes from few data points.
-==============================================================================*/
+	int number_of_elements, FE_value density_factor, FE_value stiffness,
+	Cmiss_nodeset_group_id nodeset_group, Cmiss_mesh_group_id mesh_group)
 {
 	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors = NULL, phi[4], phi_m, *pos, *stiffness_matrix  = NULL,
@@ -956,7 +939,14 @@ derivatives; helps make smooth snakes from few data points.
 						}
 						if (return_code)
 						{
-							if (!FE_region_merge_FE_node(fe_region, nodes[j]))
+							if (FE_region_merge_FE_node(fe_region, nodes[j]))
+							{
+								if (nodeset_group)
+								{
+									Cmiss_nodeset_group_add_node(nodeset_group, nodes[j]);
+								}
+							}
+							else
 							{
 								display_message(ERROR_MESSAGE,
 									"create_FE_element_snake_from_data_points.  "
@@ -997,7 +987,14 @@ derivatives; helps make smooth snakes from few data points.
 								}
 								if (return_code)
 								{
-									if (!FE_region_merge_FE_element(fe_region, element))
+									if (FE_region_merge_FE_element(fe_region, element))
+									{
+										if (mesh_group)
+										{
+											Cmiss_mesh_group_add_element(mesh_group, element);
+										}
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE,
 											"create_FE_element_snake_from_data_points.  "

@@ -4519,44 +4519,37 @@ DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window.
 ==============================================================================*/
 {
-	char *command_prefix, *command_string, *field_name, *temp_string;
 	int return_code;
-
-	ENTER(list_Computed_field_commands);
-	if (field && (command_prefix = (char *)command_prefix_void))
+	char *command_prefix = reinterpret_cast<char *>(command_prefix_void);
+	if (field && command_prefix)
 	{
-		if (NULL != (field_name = duplicate_string(field->name)))
+		char *command_string = field->core->get_command_string();
+		if (command_string)
 		{
+			char *field_name = duplicate_string(field->name);
 			make_valid_token(&field_name);
-			process_message->process_command(
-				 INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
+			char *coordinate_system_string = Coordinate_system_string(&field->coordinate_system);
+			process_message->process_command(INFORMATION_MESSAGE,
+				"%s%s coordinate_system %s %s;\n",
+				command_prefix, field_name, coordinate_system_string, command_string);
 			DEALLOCATE(field_name);
-		}
-		if (NULL != (temp_string = Coordinate_system_string(&field->coordinate_system)))
-		{
-			 process_message->process_command(
-					INFORMATION_MESSAGE, " coordinate_system %s",temp_string);
-			DEALLOCATE(temp_string);
-		}
-		if (NULL != (command_string = field->core->get_command_string()))
-		{
-			process_message->process_command(
-				 INFORMATION_MESSAGE, " %s", command_string);
+			DEALLOCATE(coordinate_system_string);
 			DEALLOCATE(command_string);
 		}
-		process_message->process_command(INFORMATION_MESSAGE, ";\n");
+		else
+		{
+			process_message->process_command(INFORMATION_MESSAGE, "# field %s created by other commands\n", field->name);
+		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_commands.  Invalid argument(s)");
+			"process_list_or_write_Computed_field_commands.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-	
 	return (return_code);
-} /* list_Computed_field_commands */
+}
 
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
