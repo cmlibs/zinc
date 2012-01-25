@@ -583,12 +583,6 @@ is already set up in the correct way, does nothing.
 			 
 			}
 		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_finite_element::calculate_FE_element_field_values_for_element.  "
-				"Failed");
-		}
 	}
 	else
 	{

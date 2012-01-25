@@ -447,10 +447,20 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		{
 			use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field);
 			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
+			// search_mesh is used to find domain location of texture coordinate field
+			// and evaluate source field there; as defined here it gives no scope to
+			// optimise, e.g. by searching through a subgroup of the mesh
+			const int number_of_texture_coordinate_components =
+				Computed_field_get_number_of_components(texture_coordinate_field);
+			Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+			Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module,
+				number_of_texture_coordinate_components);
 			Set_cmiss_field_value_to_texture(source_field, texture_coordinate_field,
 				texture, NULL,	NULL, image_height, image_width, image_depth, bytes_per_pixel,
 				number_of_bytes_per_component, use_pixel_location, specify_format, 0, NULL,
-				/*element_dimension*/0, /*search_region*/(struct Cmiss_region *)NULL);
+				search_mesh);
+			Cmiss_mesh_destroy(&search_mesh);
+			Cmiss_field_module_destroy(&field_module);
 			need_evaluate_texture = false;
 		}
 		else
@@ -1449,8 +1459,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 		struct Texture *texture, struct Cmiss_spectrum *spectrum,	struct Cmiss_graphics_material *fail_material,
 		int image_height, int image_width, int image_depth, int bytes_per_pixel, int number_of_bytes_per_component,
 		int use_pixel_location,	enum Texture_storage_type specify_format, int propagate_field,
-		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension,
-		struct Cmiss_region *search_region)
+		struct Graphics_buffer_package *graphics_buffer_package, Cmiss_mesh_id search_mesh)
 {
 	unsigned char *image_plane, *ptr = 0;
 	unsigned short *two_bytes_image_plane, *two_bytes_ptr = 0;
@@ -1522,13 +1531,6 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 	}
 	if ((image_plane || two_bytes_image_plane) && data_values)
 	{
-		if (!search_region)
-		{
-			search_region = Computed_field_get_region(field);
-		}
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(search_region);
-		int use_element_dimension = element_dimension ? element_dimension : number_of_texture_coordinate_components;
-		Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, use_element_dimension);
 		hint_resolution[0] = image_width;
 		hint_resolution[1] = image_height;
 		hint_resolution[2] = image_depth;
@@ -1611,7 +1613,8 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 						rgba[1] = fail_colour.green;
 						rgba[2] = fail_colour.blue;
 						rgba[3] = fail_alpha;
-						if ((graphics_buffer_package && Computed_field_find_element_xi_special(
+						if (search_mesh && (
+							(graphics_buffer_package && Computed_field_find_element_xi_special(
 								 texture_coordinate_field, &cache, values,
 								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
@@ -1619,7 +1622,7 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 							Computed_field_find_element_xi(texture_coordinate_field,
 								values, Computed_field_get_number_of_components(texture_coordinate_field),
 								/*time*/0, &element, xi, search_mesh, propagate_field,
-								/*find_nearest_location*/0))
+								/*find_nearest_location*/0)))
 						{
 							if (element)
 							{
@@ -1861,8 +1864,6 @@ int Set_cmiss_field_value_to_texture(struct Cmiss_field *field, struct Cmiss_fie
 				"Unable to find element:xi for %d out of %d pixels",
 				find_element_xi_error_count, total_number_of_pixels);
 		}
-		Cmiss_mesh_destroy(&search_mesh);
-		Cmiss_field_module_destroy(&field_module);
 	}
 	else
 	{

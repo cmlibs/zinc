@@ -23841,8 +23841,11 @@ column of the <coordinate_transformation> matrix.
 				}
 				else
 				{
+#ifdef OLD_CODE
+					// API shouldn't write these errors
 					display_message(ERROR_MESSAGE,
 						"inherit_FE_element_field.  Field not defined for parent");
+#endif
 					return_code=0;
 				}
 			}

@@ -944,7 +944,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 		}
 
 	}
-	int elements_processed = 0;
+	int objects_processed = 0;
 	int elements_not_processed = 0;
 	if (((!selected_flag) || selection_mesh_group) && ((!from_group) || from_mesh_group))
 	{
@@ -953,6 +953,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 		if (!modify_element_group)
 			modify_element_group = Cmiss_field_group_create_element_group(group, master_mesh);
 		Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(modify_element_group);
+		objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_mesh_group));
 		Cmiss_field_element_group_destroy(&modify_element_group);
 		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
 		Cmiss_field_cache_set_time(cache, time);
@@ -969,6 +970,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 			if (modify_node_group)
 			{
 				modify_nodeset_group = Cmiss_field_node_group_get_nodeset(modify_node_group);
+				objects_processed += Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(modify_nodeset_group));
 				if (remove_flag)
 				{
 					Cmiss_field_id remove_node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
@@ -995,6 +997,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 			if (modify_face_element_group)
 			{
 				modify_face_mesh_group = Cmiss_field_element_group_get_mesh(modify_face_element_group);
+				objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_face_mesh_group));
 				Cmiss_field_id working_face_element_group_field = Cmiss_field_module_create_element_group(field_module, master_face_mesh);
 				working_face_element_group = Cmiss_field_cast_element_group(working_face_element_group_field);
 				working_face_mesh_group = Cmiss_field_element_group_get_mesh(working_face_element_group);
@@ -1031,7 +1034,6 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 				if (!Cmiss_field_evaluate_boolean(conditional_field, cache))
 					continue;
 			}
-			++elements_processed;
 			if (add_flag)
 			{
 				if (!Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
@@ -1106,6 +1108,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 				if (modify_line_element_group)
 				{
 					modify_line_mesh_group = Cmiss_field_element_group_get_mesh(modify_line_element_group);
+					objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_line_mesh_group));
 					if (remove_flag)
 					{
 						Cmiss_field_id remove_line_element_group_field = Cmiss_field_module_create_element_group(field_module, master_line_mesh);
@@ -1142,17 +1145,30 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 			}
 			Cmiss_mesh_group_destroy(&remove_line_mesh_group);
 			Cmiss_field_element_group_destroy(&remove_line_element_group);
-			Cmiss_mesh_group_destroy(&modify_line_mesh_group);
+			if (modify_line_mesh_group)
+			{
+				objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_line_mesh_group));
+				Cmiss_mesh_group_destroy(&modify_line_mesh_group);
+			}
 		}
 
 		Cmiss_mesh_group_destroy(&working_face_mesh_group);
 		Cmiss_field_element_group_destroy(&working_face_element_group);
-		Cmiss_mesh_group_destroy(&modify_face_mesh_group);
+		if (modify_face_mesh_group)
+		{
+			objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_face_mesh_group));
+			Cmiss_mesh_group_destroy(&modify_face_mesh_group);
+		}
 		Cmiss_mesh_destroy(&master_face_mesh);
 		Cmiss_nodeset_group_destroy(&remove_nodeset_group);
 		Cmiss_field_node_group_destroy(&remove_node_group);
-		Cmiss_nodeset_group_destroy(&modify_nodeset_group);
+		if (modify_nodeset_group)
+		{
+			objects_processed -= Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(modify_nodeset_group));
+			Cmiss_nodeset_group_destroy(&modify_nodeset_group);
+		}
 		Cmiss_field_cache_destroy(&cache);
+		objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_mesh_group));
 		Cmiss_mesh_group_destroy(&modify_mesh_group);
 		Cmiss_field_module_end_change(field_module);
 	}
@@ -1161,7 +1177,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 		display_message(WARNING_MESSAGE,
 			"gfx modify egroup:  %d elements could not be removed", elements_not_processed);
 	}
-	else if (0 == elements_processed)
+	else if (0 == objects_processed)
 	{
 		display_message(WARNING_MESSAGE, "gfx modify egroup:  group unchanged");
 	}
@@ -3123,8 +3139,7 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	struct Computed_field *texture_coordinate_field,
 	int propagate_field,
 	struct Spectrum *spectrum,
-	struct Cmiss_region *region,
-	int element_dimension,
+	Cmiss_mesh_id search_mesh,
 	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth, 
 	int number_of_bytes_per_component,
@@ -3138,8 +3153,7 @@ Creates the image in the format given by sampling the <field> according to the
 reverse mapping of the <texture_coordinate_field>.  The values returned by
 field are converted to "colours" by applying the <spectrum>.
 Currently limited to 1 byte per component.
-An <element_dimension> of 0 searches in elements of all dimension, any other
-value searches just elements of that dimension.
+@param search_mesh  The mesh to find locations with matching texture coordinates.
 ==============================================================================*/
 {
 	char *field_name;
@@ -3148,7 +3162,7 @@ value searches just elements of that dimension.
 	struct Computed_field *source_texture_coordinate_field = NULL;
 
 	ENTER(set_Texture_image_from_field);
-	if (texture && field && spectrum && region &&
+	if (texture && field && spectrum &&
 		(4 >= (number_of_components =
 			Texture_storage_type_get_number_of_components(storage))))
 	{
@@ -3248,8 +3262,7 @@ value searches just elements of that dimension.
 			Set_cmiss_field_value_to_texture(field, texture_coordinate_field,
 				texture, spectrum,	fail_material, image_height, image_width, image_depth,
 				bytes_per_pixel, number_of_bytes_per_component, use_pixel_location,
-				storage,propagate_field,	graphics_buffer_package, element_dimension,
-				/*search_region*/region);
+				storage,propagate_field,	graphics_buffer_package, search_mesh);
 		}
 		else
 		{
@@ -3966,7 +3979,7 @@ Modifies the properties of a texture.
 							{
 								display_message(ERROR_MESSAGE,
 									"To evaluate the texture image from a field you must specify\n"
-									"a field, element_group, spectrum and texture_coordinates");
+									"a field, element_group (region and optional group), spectrum and texture_coordinates");
 								return_code = 0;
 							}
 						}
@@ -4202,12 +4215,31 @@ Modifies the properties of a texture.
 								texture_copy = texture;
 							}
 							
+							Cmiss_field_module_id field_module = Cmiss_region_get_field_module(evaluate_data.region);
+							int element_dimension = evaluate_data.element_dimension;
+							if (element_dimension == 0)
+								element_dimension = Cmiss_field_get_number_of_components(evaluate_data.texture_coordinates_field);
+							const int highest_dimension = FE_region_get_highest_dimension(Cmiss_region_get_FE_region(evaluate_data.region));
+							if (element_dimension > highest_dimension)
+								element_dimension = highest_dimension;
+							Cmiss_mesh_id search_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, element_dimension);
+							if (evaluate_data.group)
+							{
+				  				Cmiss_field_element_group_id element_group =
+				  					Cmiss_field_group_get_element_group(evaluate_data.group, search_mesh);
+				  				Cmiss_mesh_destroy(&search_mesh);
+				  				if (element_group)
+				  				{
+				  					search_mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
+				  					Cmiss_field_element_group_destroy(&element_group);
+				  				}
+							}
 							set_Texture_image_from_field(texture_copy, 
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field,
 								evaluate_data.propagate_field, 
-								evaluate_data.spectrum, evaluate_data.region,
-								evaluate_data.element_dimension,
+								evaluate_data.spectrum,
+								search_mesh,
 								specify_format, specify_width, 
 								specify_height, specify_depth,
 								specify_number_of_bytes_per_component,
@@ -4219,6 +4251,8 @@ Modifies the properties of a texture.
 								Texture_copy_without_identifier(texture_copy, texture);
 								DESTROY(Texture)(&texture_copy);
 							}
+							Cmiss_mesh_destroy(&search_mesh);
+							Cmiss_field_module_destroy(&field_module);
 						}
 						if (texture_is_managed)
 						{
@@ -9347,6 +9381,8 @@ Executes a GFX LIST ELEMENT.
 					iteration_mesh = Cmiss_mesh_group_base_cast(selection_mesh_group);
 				}
   				const bool use_element_ranges = Multi_range_get_number_of_ranges(element_ranges) > 0;
+  				if (Multi_range_get_total_number_in_ranges(element_ranges) == 1)
+  					verbose_flag = 1;
   				Multi_range *output_element_ranges = CREATE(Multi_range)();
 				Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(iteration_mesh);
   				Cmiss_element_id element = 0;
@@ -9515,6 +9551,8 @@ use node_manager and node_selection.
 					iteration_nodeset = Cmiss_nodeset_group_base_cast(selection_nodeset_group);
 				}
   				const bool use_node_ranges = Multi_range_get_number_of_ranges(node_ranges) > 0;
+  				if (Multi_range_get_total_number_in_ranges(node_ranges) == 1)
+  					verbose_flag = 1;
   				Multi_range *output_node_ranges = CREATE(Multi_range)();
 				Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(iteration_nodeset);
   				Cmiss_node_id node = 0;

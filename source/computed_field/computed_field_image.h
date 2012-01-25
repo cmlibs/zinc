@@ -129,12 +129,12 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
  * image before passing into this function.
  */
 int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
-		struct Cmiss_field *texture_coordinate_field,	struct Texture *texture,
-		struct Cmiss_spectrum *spectrum,	struct Cmiss_graphics_material *fail_material,
-		int image_height, int image_width, int image_depth, int bytes_per_pixel,
-		int number_of_bytes_per_component, int use_pixel_location,
-		enum Texture_storage_type specify_format, int propagate_field,
-		struct Graphics_buffer_package *graphics_buffer_package, int element_dimension,
-		struct Cmiss_region *search_region);
+	struct Cmiss_field *texture_coordinate_field, struct Texture *texture,
+	struct Cmiss_spectrum *spectrum,	struct Cmiss_graphics_material *fail_material,
+	int image_height, int image_width, int image_depth, int bytes_per_pixel,
+	int number_of_bytes_per_component, int use_pixel_location,
+	enum Texture_storage_type specify_format, int propagate_field,
+	struct Graphics_buffer_package *graphics_buffer_package,
+	Cmiss_mesh_id search_mesh);
 
 #endif /* !defined (COMPUTED_FIELD_IMAGE_H) */
