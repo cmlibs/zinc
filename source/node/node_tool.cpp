@@ -3066,7 +3066,7 @@ static void Node_tool_Computed_field_change(
 	LEAVE;
 }
 
-int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool ,
+int Node_tool_set_element_create_enabled(struct Node_tool *node_tool ,
 	 int element_create_enabled)
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
@@ -3189,10 +3189,12 @@ in this region only.
 				Cmiss_field_access(Cmiss_field_group_base_cast(group));
 				node_tool->group_field = group;
 			}
+#if defined (WX_USER_INTERFACE)
 			if (node_tool->wx_node_tool)
 			{
 				node_tool->wx_node_tool->setSubgroup(Cmiss_field_group_base_cast(node_tool->group_field));
 			}
+#endif
 		}
 	}
 	else
