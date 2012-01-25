@@ -1381,16 +1381,19 @@ static int Cmiss_scene_detach_from_renditions(Scene *scene)
 	int return_code;
 
 	ENTER(Cmiss_scene_detach_from_renditions);
-	if (scene && scene->region)
+	if (scene)
 	{
-		struct Cmiss_rendition *rendition =
-			Cmiss_region_get_rendition_internal(scene->region);
-		if (rendition)
+		if (scene->region)
 		{
-			Cmiss_rendition_remove_callback(rendition,
-				Scene_rendition_update_callback,
-				(void *)scene);
-			DEACCESS(Cmiss_rendition)(&rendition);
+			struct Cmiss_rendition *rendition =
+				Cmiss_region_get_rendition_internal(scene->region);
+			if (rendition)
+			{
+				Cmiss_rendition_remove_callback(rendition,
+					Scene_rendition_update_callback,
+					(void *)scene);
+				DEACCESS(Cmiss_rendition)(&rendition);
+			}
 		}
 		return_code = 1;
 	}
