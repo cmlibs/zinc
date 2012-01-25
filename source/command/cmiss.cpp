@@ -906,7 +906,7 @@ static int process_modify_element_group(Cmiss_field_group_id group,
 	Cmiss_region_id region, int dimension, char add_flag,
 	Cmiss_field_id conditional_field, Cmiss_field_group_id from_group,
 	Multi_range *element_ranges, char selected_flag, FE_value time,
-	char manage_nodes, char manage_faces)
+	int manage_nodes, int manage_faces)
 {
 	if (!group || !region)
 		return 0;
@@ -1207,9 +1207,12 @@ static int gfx_create_group(struct Parse_state *state,
 			Cmiss_region_id region = Cmiss_region_access(root_region);
 			Multi_range *add_ranges = CREATE(Multi_range)();
 			char *from_group_name = 0;
+			int manage_subobjects = 1;
+
 			Option_table *option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "add_ranges", add_ranges, NULL, set_Multi_range);
 			Option_table_add_string_entry(option_table, "from", &from_group_name, " GROUP_NAME");
+			Option_table_add_switch(option_table, "manage_subobjects", "no_manage_subobjects", &manage_subobjects);
 			Option_table_add_set_Cmiss_region(option_table, "region", root_region, &region);
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
@@ -1260,7 +1263,7 @@ static int gfx_create_group(struct Parse_state *state,
 								double time = 0;
 								return_code = process_modify_element_group(group, region, max_dimension,
 									/*add_flag*/1, /*conditional_field*/0, from_group, add_ranges,
-									/*selected_flag*/0, time, /*manage_nodes*/1, /*manage_faces*/1);
+									/*selected_flag*/0, time, /*manage_nodes*/manage_subobjects, /*manage_faces*/manage_subobjects);
 							} break;
 							case 1: // nodes
 							case 2: // data
@@ -10924,8 +10927,7 @@ static int gfx_modify_element_group(struct Parse_state *state,
 			{
 				time = Time_keeper_get_time(command_data->default_time_keeper);
 			}
-			char manage_faces = 1; // add faces and lines with elements, remove if solely in use by removed elements
-			char manage_nodes = 1; // add nodes with elements, remove if solely in use by removed elements
+			int manage_subobjects = 1; // add faces, lines and nodes with elements, remove if solely in use by removed elements
 
 			Option_table *option_table = CREATE(Option_table)();
 			/* add */
@@ -10944,6 +10946,8 @@ static int gfx_modify_element_group(struct Parse_state *state,
 			Option_table_add_enumerator(option_table, 3, element_type_strings, &element_type_string);
 			/* group */
 			Option_table_add_string_entry(option_table, "group", &from_group_name, " GROUP_NAME");
+			/* manage_subobjects|no_manage_subobjects */
+			Option_table_add_switch(option_table, "manage_subobjects", "no_manage_subobjects", &manage_subobjects);
 			/* remove */
 			Option_table_add_char_flag_entry(option_table, "remove", &remove_flag);
 			/* selected */
@@ -10994,10 +10998,11 @@ static int gfx_modify_element_group(struct Parse_state *state,
 				{
 					dimension = FE_region_get_highest_dimension(Cmiss_region_get_FE_region(region));
 				}
+				// following code
 				return_code = process_modify_element_group(group, region, dimension,
 					add_flag, conditional_field, from_group,
 					Multi_range_get_number_of_ranges(element_ranges) > 0 ? element_ranges : 0,
-					selected_flag, time, manage_nodes, manage_faces);
+					selected_flag, time, /*manage_nodes*/manage_subobjects, /*manage_faces*/manage_subobjects);
 			}
 			if (from_group_name)
 			{
@@ -14101,7 +14106,7 @@ static int gfx_set_region_order(struct Parse_state *state,
 		if (group)
 		{
 			display_message(WARNING_MESSAGE,
-				"gfx set order:  Obsolete for subgroups. To set rendering order for a region, create graphics in required order.");
+				"gfx set order:  Obsolete for subgroups. To set rendering order within a region, create graphics in required order.");
 			display_parse_state_location(state);
 		}
 		else if (return_code)
