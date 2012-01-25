@@ -76,4 +76,6 @@ int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group);
 
 int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group);
 
+int Cmiss_field_is_type_group(Cmiss_field_id field, void *dummy_void);
+
 #endif /* !defined (COMPUTED_FIELD_GROUP_H) */

@@ -225,27 +225,6 @@ Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 
-int Node_tool_get_region_path(struct Node_tool *node_tool,
-	char **path_address);
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
-
-DESCRIPTION :
-Returns in <path_address> the path to the Cmiss_region where nodes created by
-the <node_tool> are put.
-Up to the calling function to DEALLOCATE the returned path.
-==============================================================================*/
-
-int Node_tool_set_region_path(struct Node_tool *node_tool,
-	char *path);
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
-
-DESCRIPTION :
-Sets the <path> to the region/FE_region where nodes created by
-<node_tool> are placed.
-==============================================================================*/
-
 int Node_tool_get_select_enabled(struct Node_tool *node_tool);
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000

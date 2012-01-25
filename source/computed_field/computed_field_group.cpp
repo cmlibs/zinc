@@ -1347,7 +1347,8 @@ int Computed_field_group::for_each_group_hiearchical(
 
 Cmiss_field_group *Cmiss_field_cast_group(Cmiss_field_id field)
 {
-	if (dynamic_cast<Computed_field_group*>(field->core))
+
+	if (field && dynamic_cast<Computed_field_group*>(field->core))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_group_id>(field));
@@ -1903,3 +1904,28 @@ Cmiss_field_group_id Cmiss_field_group_get_first_non_empty_group(
 	}
 	return 0;
 }
+
+int Cmiss_field_is_type_group(Cmiss_field_id field, void *dummy_void)
+{
+	int return_code;
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		if (dynamic_cast<Computed_field_group*>(field->core))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_is_type_group.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Cmiss_field_is_type_group */

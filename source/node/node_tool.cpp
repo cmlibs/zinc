@@ -102,8 +102,8 @@ class wxNodeTool;
 #endif /* defined (WX_USER_INTERFACE) */
 
 
-static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
-	struct Cmiss_region *region);
+static int Node_tool_set_region(struct Node_tool *node_tool,
+	struct Cmiss_region *region, Cmiss_field_group_id group);
 
 struct Node_tool
 /*******************************************************************************
@@ -123,6 +123,7 @@ changes in node position and derivatives etc.
 	struct Cmiss_region *root_region;
 	/* The region we are working in */
 	struct Cmiss_region *region;
+	Cmiss_field_group_id group_field;
 	struct FE_region *fe_region;
 	/* needed for destroy button */
 	struct MANAGER(FE_element) *element_manager;
@@ -171,8 +172,6 @@ changes in node position and derivatives etc.
 	struct FE_element *element;
 	/* number of nodes that have been set in the element being created */
 	int number_of_clicked_nodes;
-	/* without cmiss_region_chooser need somewhere to store the region path */
-	char *current_region_path;
 	struct MANAGER(Computed_field) *computed_field_manager;
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
@@ -217,7 +216,6 @@ to its position between these two planes.
 	/* The last_picked node is used to calculate the delta change and so when
 		the whole active group is looped over this node is ignored */
 	struct FE_node *last_picked_node;
-
 	/* Fields that allow constrain_to_surface to work correctly,
 		only the last picked node will be updated as this is the only one
 		we know the element for */
@@ -1310,6 +1308,36 @@ try to enforce that the node is created on that element.
 						display_message(ERROR_MESSAGE,
 							"Node_tool_create_node_at_interaction_volume.  Could not define and set fields");
 					}
+					else
+					{
+						if (node_tool->group_field)
+						{
+							Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_tool->region);
+							Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module,
+								node_tool->use_data ? "cmiss_data" : "cmiss_nodes");
+							Cmiss_field_module_begin_change(field_module);
+							Cmiss_field_node_group_id modify_node_group =
+								Cmiss_field_group_get_node_group(node_tool->group_field, master_nodeset);
+							if (!modify_node_group)
+							{
+								modify_node_group = Cmiss_field_group_create_node_group(node_tool->group_field, master_nodeset);
+							}
+							Cmiss_nodeset_group_id modify_nodeset_group = Cmiss_field_node_group_get_nodeset(modify_node_group);
+							if (!Cmiss_nodeset_contains_node(Cmiss_nodeset_group_base_cast(modify_nodeset_group), merged_node))
+							{
+								if (!Cmiss_nodeset_group_add_node(modify_nodeset_group, merged_node))
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx modify ngroup:  Could not add node %d", Cmiss_node_get_identifier(node));
+								}
+							}
+							Cmiss_field_module_end_change(field_module);
+							Cmiss_nodeset_group_destroy(&modify_nodeset_group);
+							Cmiss_field_node_group_destroy(&modify_node_group);
+							Cmiss_nodeset_destroy(&master_nodeset);
+							Cmiss_field_module_destroy(&field_module);
+						}
+					}
 					DEACCESS(FE_node)(&node);
 				}
 				Computed_field_clear_cache(rc_coordinate_field);
@@ -2118,6 +2146,8 @@ class wxNodeTool : public wxPanel
 	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	 	*node_command_field_chooser;
 	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 	*subgroup_field_chooser;
+	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	 	*element_xi_field_chooser;
 
 public:
@@ -2184,6 +2214,26 @@ public:
 			 second_element_staticbox->Show();
 		}
 
+		wxStaticText *subgroup_field_text=XRCCTRL(*this,"SubgroupFieldText",wxStaticText);
+		wxPanel *subgroup_field_chooser_panel = XRCCTRL(*this,"SubgroupFieldChooserPanel",wxPanel);
+
+		Cmiss_field_id subgroup_field = Cmiss_field_group_base_cast(node_tool->group_field);
+		subgroup_field_chooser =
+			new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+			(subgroup_field_chooser_panel, subgroup_field, node_tool->computed_field_manager,
+				Cmiss_field_is_type_group, (void *)NULL,
+				node_tool->user_interface);
+		Callback_base< Computed_field* > *subgroup_field_callback =
+			new Callback_member_callback< Computed_field*,
+			wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
+			(this, &wxNodeTool::subgroup_field_callback);
+		subgroup_field_chooser->set_callback(subgroup_field_callback);
+		subgroup_field_chooser_panel->Fit();
+		subgroup_field_chooser->include_null_item(true);
+		subgroup_field_text->Show();
+		subgroup_field_chooser->set_object(subgroup_field);
+		subgroup_field_chooser_panel->Show();
+
 	 wxPanel *coordinate_field_chooser_panel = 
 		 XRCCTRL(*this, "CoordinateFieldChooserPanel", wxPanel);
 	  computed_field_chooser = 
@@ -2210,9 +2260,9 @@ public:
 		  wxNodeTool, int (wxNodeTool::*)(Cmiss_region *) >
 		  (this, &wxNodeTool::Node_tool_wx_region_callback);
 	  region_chooser->set_callback(Node_tool_wx_region_callback);
-	  if (node_tool->current_region_path != NULL)
+	  if (node_tool->region != NULL)
 	  {
-			wx_Node_tool_set_region_path(node_tool->current_region_path);
+			wx_Node_tool_set_region(node_tool->region);
 	  }
 
 		node_command_field_checkbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
@@ -2277,6 +2327,8 @@ public:
   {
 		 if (computed_field_chooser)
 				delete computed_field_chooser;
+		 if (subgroup_field_chooser)
+				delete subgroup_field_chooser;
 		 if (region_chooser)
 				delete region_chooser;
 		 if (node_command_field_chooser)
@@ -2297,6 +2349,20 @@ Callback from wxChooser<Computed_field> when choice is made.
 		return 1;
 	}
 
+	int subgroup_field_callback(Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Computed_field> when choice is made.
+==============================================================================*/
+	{
+		Cmiss_field_group_id subgroup_field = Cmiss_field_cast_group(field);
+		Node_tool_set_region(node_tool, node_tool->region, subgroup_field);
+		Cmiss_field_group_destroy(&subgroup_field);
+		return 1;
+	}
+
 	int Node_tool_wx_region_callback(Cmiss_region *region)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
@@ -2305,7 +2371,7 @@ DESCRIPTION :
 Callback from wxChooser<Computed_field> when choice is made.
 ==============================================================================*/
 	{
-		Node_tool_set_Cmiss_region(node_tool, region);
+		Node_tool_set_region(node_tool, region, NULL);
 		return 1;
 	}
 
@@ -2541,9 +2607,9 @@ void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 	button_constrain->SetValue(destination_node_tool->constrain_to_surface);
 	NodeToolInterfaceRenew_element_xi_field(destination_node_tool);
 	computed_field_chooser->set_object(destination_node_tool->coordinate_field);
-	if (destination_node_tool->current_region_path != NULL)
+	if (destination_node_tool->region != NULL)
 	{
-		wx_Node_tool_set_region_path(destination_node_tool->current_region_path);
+		wx_Node_tool_set_region(destination_node_tool->region);
 	}
 	Node_tool_set_element_dimension(destination_node_tool,destination_node_tool->element_dimension);
 	create_elements_checkbox->SetValue(destination_node_tool->element_create_enabled);
@@ -2583,19 +2649,6 @@ void ElementXiFieldChecked(wxCommandEvent &event)
 	Node_tool_set_element_xi_field(node_tool, element_xi_field);
 }
 
-int wx_Node_tool_get_region_path(char **path_address)
-{
-	 if (region_chooser == NULL )
-	 {
-			*path_address = region_chooser->get_path();
-	 }
-	 else
-	 {
-			*path_address = Cmiss_region_get_root_region_path();
-	 }
-	 return 1;
-}
-
 void wx_Node_tool_set_region_path(char *path)
 {
 	if (path && (region_chooser != NULL))
@@ -2624,7 +2677,7 @@ void wx_Node_tool_set_region_path(char *path)
 	}
 }
 
-struct  Cmiss_region *wx_Node_tool_get_region()
+struct Cmiss_region *wx_Node_tool_get_region()
 {
 	 if (region_chooser)
 	 {
@@ -2636,6 +2689,14 @@ struct  Cmiss_region *wx_Node_tool_get_region()
 	 }
 }
 
+void wx_Node_tool_set_region(struct Cmiss_region *new_region)
+{
+	if (region_chooser != NULL)
+	{
+		region_chooser->set_region(new_region);
+	}
+}
+
 void wx_Node_tool_set_field_chooser_manager()
 {
 	if (node_tool->computed_field_manager)
@@ -2643,6 +2704,10 @@ void wx_Node_tool_set_field_chooser_manager()
 		if (computed_field_chooser != NULL)
 		{
 			computed_field_chooser->set_manager(node_tool->computed_field_manager);
+		}
+		if (subgroup_field_chooser != NULL)
+		{
+			subgroup_field_chooser->set_manager(node_tool->computed_field_manager);
 		}
 		if (node_command_field_chooser != NULL)
 		{
@@ -2657,6 +2722,14 @@ void wx_Node_tool_set_field_chooser_manager()
 	{
 		display_message(ERROR_MESSAGE, "Node_tool_set_field_chooser_manager.  "
 			"Could not update manager in choosers. Invalid field manager");
+	}
+}
+
+void setSubgroup(Cmiss_field_id field)
+{
+	if (subgroup_field_chooser != NULL)
+	{
+		subgroup_field_chooser->set_object(field);
 	}
 }
 
@@ -2755,17 +2828,9 @@ Copies the state of one node tool to another.
 			destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 			destination_node_tool->command_field = source_node_tool->command_field;
 			destination_node_tool->element_xi_field = source_node_tool->element_xi_field;
-			if (source_node_tool->current_region_path)
-			{
-				if (destination_node_tool->current_region_path)
-					DEALLOCATE(destination_node_tool->current_region_path);
-				destination_node_tool->current_region_path =
-					duplicate_string(source_node_tool->current_region_path);
-			}
 			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
 			destination_node_tool->element_dimension = source_node_tool->element_dimension;
-			Node_tool_set_Cmiss_region(destination_node_tool,
-				source_node_tool->region);
+			Node_tool_set_region(destination_node_tool, source_node_tool->region, source_node_tool->group_field);
 #if defined (WX_USER_INTERFACE)
 			if (destination_node_tool->wx_node_tool != (wxNodeTool *) NULL)
 			{	
@@ -3058,8 +3123,8 @@ node selection.
 	return (return_code);
 } /* node_tool _set_create_enabled */
 
-static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
-	struct Cmiss_region *region)
+static int Node_tool_set_region(struct Node_tool *node_tool,
+	struct Cmiss_region *region, Cmiss_field_group_id group)
 /*******************************************************************************
 LAST MODIFIED : 8 September 2008
 
@@ -3070,12 +3135,16 @@ in this region only.
 {
 	int return_code;
 
-	ENTER(Node_tool_set_Cmiss_region);
+	ENTER(Node_tool_set_region);
 	if (node_tool)
 	{
 		return_code=1;
 		if (region != node_tool->region)
 		{
+#if defined (WX_USER_INTERFACE)
+			if (node_tool->wx_node_tool)
+				node_tool->wx_node_tool->wx_Node_tool_set_region(region);
+#endif
 			Node_tool_end_element_creation(node_tool);
 			node_tool->region = region;
 			if (region)
@@ -3106,20 +3175,36 @@ in this region only.
 			}
 #if defined (WX_USER_INTERFACE)
 			if (node_tool->wx_node_tool)
+			{
 				node_tool->wx_node_tool->wx_Node_tool_set_field_chooser_manager();
+			}
 #endif
+		}
+		if (node_tool->group_field != group)
+		{
+			if (node_tool->group_field)
+				Cmiss_field_group_destroy(&node_tool->group_field);
+			if (group)
+			{
+				Cmiss_field_access(Cmiss_field_group_base_cast(group));
+				node_tool->group_field = group;
+			}
+			if (node_tool->wx_node_tool)
+			{
+				node_tool->wx_node_tool->setSubgroup(Cmiss_field_group_base_cast(node_tool->group_field));
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_set_Cmiss_region.  Invalid argument(s)");
+			"Node_tool_set_region.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Node_tool_set_Cmiss_region */
+} /* Node_tool_set_region */
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -3156,6 +3241,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->interactive_tool_manager=interactive_tool_manager;
 			node_tool->root_region=root_region;
 			node_tool->region=(struct Cmiss_region *)NULL;
+			node_tool->group_field = (Cmiss_field_group_id)NULL;
 			node_tool->fe_region=(struct FE_region *)NULL;
 			node_tool->use_data = use_data;
 			node_tool->rubber_band_material=
@@ -3163,7 +3249,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->user_interface=user_interface;
 			node_tool->time_keeper = (struct Time_keeper *)NULL;
 			node_tool->computed_field_manager_callback_id = NULL;
-			node_tool->current_region_path = (char *)NULL;
 			if (time_keeper)
 			{
 				node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
@@ -3206,9 +3291,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->computed_field_manager=Cmiss_region_get_Computed_field_manager(root_region);
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 			/* Set defaults until we have some sort of region chooser */
-			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->tool_position=wxPoint(0,0);
 #endif /*defined (WX_USER_INTERFACE)*/
+			Node_tool_set_region(node_tool, node_tool->root_region, NULL);
 			node_tool->interactive_tool=CREATE(Interactive_tool)(
 				tool_name,tool_display_name,
 				Interactive_tool_node_type_string,
@@ -3271,6 +3356,10 @@ structure itself.
 				node_tool->computed_field_manager);
 			node_tool->computed_field_manager_callback_id=NULL;
 		}
+		if (node_tool->template_element)
+		{
+			DEACCESS(FE_element)(&node_tool->template_element);
+		}
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		if (node_tool->time_keeper)
@@ -3281,10 +3370,8 @@ structure itself.
 		if (node_tool->wx_node_tool)
 			 node_tool->wx_node_tool->Destroy();
 #endif /*(WX_USER_INTERFACE)*/
-		if (node_tool->current_region_path != NULL)
-		{
-			 DEALLOCATE(node_tool->current_region_path);
-		}
+		if (node_tool->group_field)
+			Cmiss_field_group_destroy(&node_tool->group_field);
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -3752,117 +3839,6 @@ events, not just at the end of a mouse gesture.
 	return (return_code);
 } /* Node_tool_set_motion_update_enabled */
 
-int Node_tool_get_region_path(struct Node_tool *node_tool,
-	char **path_address)
-/*******************************************************************************
-LAST MODIFIED : 17 May 2003
-
-DESCRIPTION :
-Returns in <path_address> the path to the Cmiss_region where nodes created by
-the <node_tool> are put.
-Up to the calling function to DEALLOCATE the returned path.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Node_tool_get_region_path);
-	if (node_tool && path_address)
-	{
-#if defined (WX_USER_INTERFACE)
-		if (node_tool->current_region_path)
-		{
-			*path_address = duplicate_string(node_tool->current_region_path);
-			return_code = 1;
-		}
-		else
-		{
-			*path_address = Cmiss_region_get_root_region_path();
-			 return_code = 0;
-		}
-#else /* switch USER_INTERFACE*/
-		if (node_tool->current_region_path)
-		{
-			*path_address = duplicate_string(node_tool->current_region_path);
-			return_code = 1;
-		}
-		else
-		{
-			*path_address = (char *)NULL;
-			return_code = 0;
-		}
-#endif /* defined (WX_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_get_region_path.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Node_tool_get_region_path */
-
-int Node_tool_set_region_path(struct Node_tool *node_tool,
-	char *path)
-/*******************************************************************************
-LAST MODIFIED : 17 May 2003
-
-DESCRIPTION :
-Sets the <path> to the region/FE_region where nodes created by
-<node_tool> are placed.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region *region;
-
-	ENTER(Node_tool_set_region_path);
-	if (node_tool && path)
-	{
-#if defined (WX_USER_INTERFACE)
-		if (node_tool->current_region_path)
-		{
-			 DEALLOCATE(node_tool->current_region_path);
-		}
-		node_tool->current_region_path = duplicate_string(path);
-		region = (struct Cmiss_region *)NULL;
-		if (node_tool->wx_node_tool)
-		{
-			node_tool->wx_node_tool->wx_Node_tool_set_region_path(path);
-			region = node_tool->wx_node_tool->wx_Node_tool_get_region();
-		}
-		else
-		{
-			region=node_tool->root_region;
-			Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
-				path, &region);
-		}
-		return_code = Node_tool_set_Cmiss_region(node_tool, region);
-#else
-		return_code = Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
-			path, &region);
-		if (return_code)
-		{
-			 if (node_tool->current_region_path)
-			 {
-					DEALLOCATE(node_tool->current_region_path);
-			 }
-			 node_tool->current_region_path = duplicate_string(path);
-			 return_code = Node_tool_set_Cmiss_region(node_tool, region);
-		}
-#endif /* defined (WX_USER_INTERFACE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_set_region_path.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Node_tool_set_region_path */
-
 int Node_tool_get_select_enabled(struct Node_tool *node_tool)
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -4224,6 +4200,38 @@ Call this function whether element is successfully created or not.
 				display_message(WARNING_MESSAGE,
 					"node_tool: destroying incomplete element");
 			}
+			else
+			{
+				if (node_tool->group_field)
+				{
+					Cmiss_field_module_id field_module = Cmiss_region_get_field_module(node_tool->region);
+					Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module,
+						Cmiss_element_get_dimension(node_tool->element));
+					Cmiss_field_module_begin_change(field_module);
+					Cmiss_field_element_group_id modify_element_group =
+						Cmiss_field_group_get_element_group(node_tool->group_field, master_mesh);
+					if (!modify_element_group)
+					{
+						modify_element_group = Cmiss_field_group_create_element_group(node_tool->group_field, master_mesh);
+					}
+					Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(modify_element_group);
+					if (!Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), node_tool->element))
+					{
+						if (!Cmiss_mesh_group_add_element(modify_mesh_group, node_tool->element))
+						{
+							display_message(ERROR_MESSAGE,
+								"Node_tool_end_element_creation:  Could not add element %d",
+								Cmiss_element_get_identifier(node_tool->element));
+						}
+					}
+					Cmiss_field_module_end_change(field_module);
+					Cmiss_mesh_group_destroy(&modify_mesh_group);
+					Cmiss_field_element_group_destroy(&modify_element_group);
+					Cmiss_mesh_destroy(&master_mesh);
+					Cmiss_field_module_destroy(&field_module);
+				}
+			}
+
 			DEACCESS(FE_element)(&(node_tool->element));
 #if defined (WX_USER_INTERFACE)
 			wxListBox *new_element_nodes_list_box;
@@ -4439,7 +4447,7 @@ then the <data_tool> is being modified, otherwise the <node_tool>.
 Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
-	char *region_path, *coordinate_field_name, *xi_field_name, *command_field_name;
+	char *coordinate_field_name, *xi_field_name, *command_field_name;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled, constrain_to_surface;
 #if defined (WX_USER_INTERFACE)
@@ -4447,6 +4455,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 #endif /*(WX_USER_INTERFACE)*/
 	struct Computed_field *coordinate_field, *command_field, *element_xi_field;
 	struct Option_table *option_table;
+	Cmiss_field_group_id group;
+	Cmiss_region_id region;
 
 	ENTER(Node_tool_execute_command_with_parse_state);
 	if (state)
@@ -4465,7 +4475,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 		coordinate_field_name = NULL;
 		xi_field_name = NULL;
 		command_field_name = NULL;
-		region_path = (char *)NULL;
+		region = NULL;
+		group = NULL;
 #if defined (WX_USER_INTERFACE)
 		if (node_tool && !node_tool->use_data)
 		{
@@ -4499,7 +4510,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 			{
 				xi_field_name = Cmiss_field_get_name(element_xi_field);
 			}
-			Node_tool_get_region_path(node_tool, &region_path);
 #if defined (WX_USER_INTERFACE)
 		if (node_tool && !node_tool->use_data)
 		{
@@ -4509,7 +4519,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		}
 #endif /*(WX_USER_INTERFACE)*/
 		}
-
+		region = Cmiss_region_access(node_tool->root_region);
 		option_table=CREATE(Option_table)();
 		/* coordinate_field */
 		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field_name,
@@ -4537,11 +4547,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		Option_table_add_entry(option_table,"element_xi_field",&xi_field_name,
 			NULL,set_name);
 		/* group */
-		if (node_tool)
-		{
-			Option_table_add_entry(option_table, "group", &region_path,
-				node_tool->root_region, set_Cmiss_region_path);
-		}
+		Option_table_add_region_or_group_entry(option_table, "group", &region, &group);
 		/* motion_update/no_motion_update */
 		Option_table_add_switch(option_table,"motion_update","no_motion_update",
 			&motion_update_enabled);
@@ -4558,7 +4564,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			if (node_tool)
 			{
-				Node_tool_set_region_path(node_tool,region_path);
+				Node_tool_set_region(node_tool,region , group);
 				if (node_tool->computed_field_manager)
 				{
 					if (coordinate_field_name)
@@ -4616,7 +4622,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
-
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 #if defined (WX_USER_INTERFACE)
 				if (!node_tool->use_data)
@@ -4628,9 +4633,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
-		if (region_path)
+		Cmiss_region_destroy(&region);
+		if (group)
 		{
-			DEALLOCATE(region_path);
+			Cmiss_field_group_destroy(&group);
 		}
 		if (coordinate_field_name)
 			DEALLOCATE(coordinate_field_name);

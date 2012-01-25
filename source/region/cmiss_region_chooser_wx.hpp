@@ -95,6 +95,14 @@ DESCRIPTION :
 Returns to <region_address> the region chosen in the <chooser>.
 ==============================================================================*/
 
+	int set_region(struct Cmiss_region *region);
+/*******************************************************************************
+LAST MODIFIED : 22 February 2007
+
+DESCRIPTION :
+Returns to <region_address> the region chosen in the <chooser>.
+==============================================================================*/
+
 	int set_path(const char *path);
 /*******************************************************************************
 LAST MODIFIED : 14 February 2007

@@ -120,6 +120,32 @@ Returns to <region_address> the region chosen in the <chooser>.
 	return (child_region);
 }
 
+int wxRegionChooser::set_region(struct Cmiss_region *region)
+{
+	char *path = NULL;
+	if (region)
+	{
+		char *temp_path = Cmiss_region_get_path(region);
+		int string_length = strlen(temp_path);
+		if (strcmp(temp_path, "/") && (string_length > 1))
+		{
+			ALLOCATE(path, char, string_length);
+			strncpy(path, temp_path, string_length);
+			path[string_length - 1] = '\0';
+			DEALLOCATE(temp_path);
+		}
+		else
+		{
+			path = temp_path;
+		}
+	}
+	else
+		path = duplicate_string("/");
+	int return_code = set_path(path);
+	DEALLOCATE(path);
+	return return_code;
+}
+
 int wxRegionChooser::set_path(const char *path)
 /*******************************************************************************
 LAST MODIFIED : 14 February 2007
