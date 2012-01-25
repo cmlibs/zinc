@@ -5468,43 +5468,6 @@ int FE_region_define_faces(struct FE_region *fe_region)
 	return return_code;
 }
 
-int FE_region_get_FE_element_discretization(struct FE_region *fe_region,
-	struct FE_element *element, int face_number,
-	struct FE_field *native_discretization_field,
-	int *top_level_number_in_xi,struct FE_element **top_level_element,
-	int *number_in_xi)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-FE_region wrapper for get_FE_element_discretization.
-???RC Currently <fe_region> may be omitted to place no restriction on what
-parent can be inherited from. This function will need to be tightened later.
-==============================================================================*/
-{
-	int return_code;
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional = NULL;
-	void *conditional_data = NULL;
-
-	ENTER(FE_region_get_FE_element_discretization);
-	if (fe_region && (fe_region->master_fe_region))
-	{
-		conditional = FE_region_contains_FE_element_conditional;
-		conditional_data = (void *)fe_region;
-	}
-	else
-	{
-		/* if this is a master FE_region, don't need to check list */
-	}
-	return_code = get_FE_element_discretization(element,
-		conditional, conditional_data,
-		face_number, native_discretization_field, top_level_number_in_xi,
-		top_level_element, number_in_xi);
-	LEAVE;
-
-	return (return_code);
-}
-
 static int FE_region_remove_FE_element_iterator(struct FE_element *element,
 	void *fe_region_void)
 /*******************************************************************************
@@ -5862,29 +5825,6 @@ Cmiss_element_iterator_id FE_region_create_element_iterator(
 	if (fe_region)
 		return CREATE_LIST_ITERATOR(FE_element)(FE_region_get_element_list(fe_region, dimension));
 	return 0;
-}
-
-int FE_region_FE_element_meets_topological_criteria(struct FE_region *fe_region,
-	struct FE_element *element, int dimension, int exterior, int face_number)
-{
-	int return_code;
-
-	ENTER(FE_region_FE_element_meets_topological_criteria);
-	if (fe_region && element)
-	{
-		return_code = FE_element_meets_topological_criteria(element, dimension,
-			exterior, face_number,
-			FE_region_contains_FE_element_conditional, (void *)fe_region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_FE_element_meets_topological_criteria.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 struct FE_element *FE_region_element_string_to_FE_element(

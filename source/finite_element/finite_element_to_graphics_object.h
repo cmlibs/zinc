@@ -72,43 +72,6 @@ USE_LINES    = CM_LINE or dimension 1
 	USE_LINES = 3
 }; /* enum Use_element_type */
 
-struct Element_to_cylinder_data
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Data for converting a 1-D element into a cylinder.
-==============================================================================*/
-{
-	char exterior;
-	int face_number;
-	/* radius = constant_radius + scale_factor*radius_field */
-	float constant_radius,scale_factor,time;
-	int number_of_segments_along,number_of_segments_around;
-	struct Computed_field *coordinate_field, *data_field, *radius_field,
-		*texture_coordinate_field;
-	struct Graphical_material *material;
-	struct FE_region *fe_region;
-	struct GT_object *graphics_object;
-	enum Cmiss_graphics_render_type render_type;
-}; /* struct Element_to_cylinder_data */
-
-struct Element_to_polyline_data
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Data for converting a 1-D element into a polyline.
-==============================================================================*/
-{
-	char exterior;
-	float time;
-	int face_number,number_of_segments_in_xi1;
-	struct Computed_field *coordinate_field,*data_field;
-	struct FE_region *fe_region;
-	struct GT_object *graphics_object;
-}; /* struct Element_to_line_data */
-
 struct Displacement_map
 /*******************************************************************************
 LAST MODIFIED : 27 April 1998
@@ -134,96 +97,6 @@ DESCRIPTION :
 	struct GT_pointset *surface_points;
 	struct Texture *texture;
 }; /* struct Surface_pointset */
-
-struct Element_to_volume_data
-/*******************************************************************************
-LAST MODIFIED : 4 December 2000
-
-DESCRIPTION :
-Data for converting a 3-D element into a volume.
-==============================================================================*/
-{
-	struct Clipping *clipping;
-	struct Computed_field *blur_field;
-	struct Computed_field *coordinate_field;
-	struct Computed_field *data_field;
-	struct Computed_field *texture_coordinate_field;
-	struct Computed_field *displacement_map_field;
-	int displacement_map_xi_direction;
-	struct FE_time *fe_time;
-	struct GT_object *graphics_object;
-	struct FE_region *fe_region;
-	enum Cmiss_graphics_render_type render_type;
-	float time;
-	struct VT_volume_texture *volume_texture;
-}; /* struct Element_to_volume_data */
-
-struct Element_to_iso_scalar_data
-/*******************************************************************************
-LAST MODIFIED : 4 December 2000
-
-DESCRIPTION :
-Data for converting a 3-D element into an iso_surface (via a volume_texture).
-==============================================================================*/
-{
-	char exterior;
-	double iso_value;
-	enum Use_element_type use_element_type;
-	float time;
-	int face_number;
-	struct Clipping *clipping;
-	struct Computed_field *coordinate_field, *data_field, *scalar_field;
-	struct Computed_field *texture_coordinate_field;
-	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct FE_field *native_discretization_field;
-	struct GT_object *graphics_object;
-	enum Cmiss_graphics_render_type render_type;
-	struct FE_region *fe_region;
-	struct FE_time *fe_time;
-}; /* struct Element_to_iso_surface_data */
-
-struct Element_to_glyph_set_data
-/*******************************************************************************
-LAST MODIFIED : 8 May 2001
-
-DESCRIPTION :
-Data for converting a finite element into a set of glyphs displaying information
-about fields defined over it.
-If the <native_discretization_field> is given and uses an element based field in
-any element, the native discretization is taken as the number of regular-sized
-cells in each xi direction of the element, otherwise, the three values of
-number_of_cells_in_xi* are used.
-If the <cell_corners_flag> is not set, glyphs are displayed at the cell centres,
-otherwise they are displayed at the cell corners and there will be one extra
-point in each xi-direction as there are cells.
-At each of these points the <glyph> of <glyph_size> with its centre location offset
-by <glyph_offset> is displayed. The optional <orientation_scale_field> can be used
-to orient and scale the glyph in a manner depending on the number of components
-in the field (see function make_glyph_orientation_scale_axes). The three
-<glyph_scale_factors> multiply the scaling effect in each axis taken from the
-<orientation_scale_field>.
-The optional <data_field> (currently only a scalar) is calculated as data over
-the glyph_set, for later colouration by a spectrum.
-The optional <label_field> is written beside each glyph in string form.
-The <use_element_type> determines the type/dimension of elements in use.
-If the dimension is less than 3, <exterior> and <face_number> may be used.
-==============================================================================*/
-{
-	char exterior;
-	enum Graphics_select_mode select_mode;
-	enum Use_element_type use_element_type;
-	enum Xi_discretization_mode xi_discretization_mode;
-	FE_value base_size[3], offset[3], scale_factors[3];
-	float time;
-	int face_number,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Computed_field *coordinate_field, *data_field, *variable_scale_field,
-		*label_field, *orientation_scale_field, *xi_point_density_field;
-	struct FE_field *native_discretization_field;
-	struct FE_region *fe_region;
-	struct Graphics_font *font;
-	struct GT_object *glyph,*graphics_object;
-	FE_value_triple exact_xi;
-}; /* struct Element_to_glyph_set_data */
 
 enum Collapsed_element_type
 /*******************************************************************************
@@ -531,61 +404,6 @@ LAST MODIFIED : 10 November 2005
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
 <element><block>
-==============================================================================*/
-
-int element_to_cylinder(struct FE_element *element,
-	void *void_element_to_cylinder_data);
-/*******************************************************************************
-LAST MODIFIED : 14 February 1999
-
-DESCRIPTION :
-Converts a finite element into a cylinder.
-==============================================================================*/
-
-int element_to_polyline(struct FE_element *element,
-	void *element_to_polyline_data_void);
-/*******************************************************************************
-LAST MODIFIED : 12 March 1999
-
-DESCRIPTION :
-Converts a finite element into a polyline and adds it to a graphics_object.
-==============================================================================*/
-
-int element_to_nurbs(struct FE_element *element,
-	void *void_element_to_nurbs_data);
-/*******************************************************************************
-LAST MODIFIED : 12 March 1999
-
-DESCRIPTION :
-Converts a finite element into a nurbs surface.
-==============================================================================*/
-
-int element_to_glyph_set(struct FE_element *element,
-	void *new_element_to_glyph_set_data_void);
-/*******************************************************************************
-LAST MODIFIED : 4 January 1999
-
-DESCRIPTION :
-Converts a finite element into a set of glyphs displaying information about the
-fields defined over it.
-==============================================================================*/
-
-int element_to_volume(struct FE_element *element,
-	void *void_element_to_volume_data);
-/*******************************************************************************
-LAST MODIFIED : 16 May 1998
-
-DESCRIPTION :
-Converts a 3-D element into a volume.
-==============================================================================*/
-
-int element_to_iso_scalar(struct FE_element *element,
-	void *element_to_iso_scalar_data_void);
-/*******************************************************************************
-LAST MODIFIED : 28 January 2000
-
-DESCRIPTION :
-Computes iso-surfaces/lines/points graphics from <element>.
 ==============================================================================*/
 
 int create_iso_surfaces_from_FE_element(struct FE_element *element,

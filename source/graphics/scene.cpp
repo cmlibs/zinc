@@ -858,7 +858,8 @@ and destroy it once returned.
 							native_discretization_field
 								= Cmiss_graphic_get_native_discretization_field(graphic);
 							top_level_element = (struct FE_element *) NULL;
-							if (FE_region_get_FE_element_discretization(fe_region, element,
+							if (get_FE_element_discretization(element,
+								(LIST_CONDITIONAL_FUNCTION(FE_element) *)0, (void *)0,
 								face_number, native_discretization_field,
 								top_level_number_in_xi, &top_level_element,
 								element_point_ranges_identifier.number_in_xi))

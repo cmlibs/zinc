@@ -1015,20 +1015,6 @@ against.
  */
 int FE_region_define_faces(struct FE_region *fe_region);
 
-int FE_region_get_FE_element_discretization(struct FE_region *fe_region,
-	struct FE_element *element, int face_number,
-	struct FE_field *native_discretization_field,
-	int *top_level_number_in_xi,struct FE_element **top_level_element,
-	int *number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-FE_region wrapper for get_FE_element_discretization.
-???RC Currently <fe_region> may be omitted to place no restriction on what
-parent can be inherited from. This function will need to be tightened later.
-==============================================================================*/
-
 int FE_region_remove_FE_element(struct FE_region *fe_region,
 	struct FE_element *element);
 /*******************************************************************************
@@ -1149,13 +1135,6 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
  */
 Cmiss_element_iterator_id FE_region_create_element_iterator(
 	struct FE_region *fe_region, int dimension);
-
-/***************************************************************************//**
- * Calls generic FE_element_meets_topological_criteria function with condition
- * that ancestor elements are in fe_region.
- */
-int FE_region_FE_element_meets_topological_criteria(struct FE_region *fe_region,
-	struct FE_element *element, int dimension, int exterior, int face_number);
 
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name);

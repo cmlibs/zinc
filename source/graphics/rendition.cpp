@@ -1178,16 +1178,16 @@ static int Cmiss_rendition_build_graphics_objects(
 				= Element_point_ranges_selection_get_element_point_ranges_list(
 					Cmiss_graphics_module_get_element_point_ranges_selection(
 						rendition->graphics_module));
-			graphic_to_object_data.group_field = Cmiss_field_group_base_cast(
+			graphic_to_object_data.selection_group_field = Cmiss_field_group_base_cast(
 				Cmiss_rendition_get_selection_group(rendition));
 			graphic_to_object_data.iso_surface_specification = NULL;
 			return_code = FOR_EACH_OBJECT_IN_LIST(Cmiss_graphic)(
 				Cmiss_graphic_to_graphics_object, (void *) &graphic_to_object_data,
 				rendition->list_of_graphics);
 			MANAGER_END_CACHE(Computed_field)(rendition->computed_field_manager);
-			if (graphic_to_object_data.group_field)
+			if (graphic_to_object_data.selection_group_field)
 			{
-				Cmiss_field_destroy(&graphic_to_object_data.group_field);
+				Cmiss_field_destroy(&graphic_to_object_data.selection_group_field);
 			}
 			Cmiss_field_cache_destroy(&graphic_to_object_data.field_cache);
 			Cmiss_field_module_destroy(&graphic_to_object_data.field_module);

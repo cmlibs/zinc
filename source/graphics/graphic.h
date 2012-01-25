@@ -141,7 +141,7 @@ struct Cmiss_graphic_to_graphics_object_data
 	/* default_rc_coordinate_field to use if NULL in any settings */
 	struct Computed_field *rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field,
-		*group_field;
+		*selection_group_field;
 	struct Cmiss_region *region;
 	Cmiss_field_module_id field_module;
 	struct FE_region *fe_region;

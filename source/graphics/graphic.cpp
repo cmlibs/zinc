@@ -790,39 +790,25 @@ int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region 
 	return (dimension);
 } /* Cmiss_graphic_get_dimension */
 
-/***************************************************************************//** 
- * Cmiss_graphic list conditional function returning 1 if the element
- * would contribute any graphics generated from the Cmiss_graphic. The
- * <fe_region> is provided to allow any checks against parent elements to
- * ensure the relevant parent elements are also in the group.
- * @param graphic The cmiss graphic
- * @param element FE_element
- * @param fe_region provided to allow any checks against parent elements
- * @return 1 if the element would contribute any graphics generated from the Cmiss_graphic
- */
-static int Cmiss_graphic_uses_FE_element(
-	struct Cmiss_graphic *graphic,struct FE_element *element,
-	struct FE_region *fe_region)
+struct Cmiss_element_conditional_field_data
 {
-	int return_code;
+	Cmiss_field_cache_id field_cache;
+	Cmiss_field_id conditional_field;
+};
 
-	ENTER(GT_element_graphic_uses_FE_element);
-	if (graphic && element && fe_region)
+/** @return true if conditional field evaluates to true in element */
+int Cmiss_element_conditional_field_is_true(Cmiss_element_id element,
+	void *conditional_field_data_void)
+{
+	Cmiss_element_conditional_field_data *data =
+		reinterpret_cast<Cmiss_element_conditional_field_data*>(conditional_field_data_void);
+	if (element && data)
 	{
-		int dimension = Cmiss_graphic_get_dimension(graphic, fe_region);
-		return_code = FE_region_FE_element_meets_topological_criteria(fe_region,
-			element, dimension, graphic->exterior, graphic->face);
+		Cmiss_field_cache_set_element(data->field_cache, element);
+		return Cmiss_field_evaluate_boolean(data->conditional_field, data->field_cache);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_uses_FE_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmiss_graphic_uses_FE_element */
+	return 0;
+}
 
 /***************************************************************************//** 
  * Converts a finite element into a graphics object with the supplied graphic.
@@ -863,29 +849,41 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		get_FE_element_identifier(element, &cm);
 		element_graphics_name = cm.number;
 		/* proceed only if graphic uses this element */
-		if (Cmiss_graphic_uses_FE_element(graphic, element,
-			graphic_to_object_data->fe_region))
+		int draw_element = 1;
+		Cmiss_element_conditional_field_data conditional_field_data = { graphic_to_object_data->field_cache, graphic->subgroup_field };
+		if (draw_element)
 		{
+			int dimension = Cmiss_graphic_get_dimension(graphic, graphic_to_object_data->fe_region);
+			draw_element = FE_element_meets_topological_criteria(element, dimension,
+				graphic->exterior, graphic->face,
+				graphic->subgroup_field ? Cmiss_element_conditional_field_is_true : 0,
+				graphic->subgroup_field ? (void *)&conditional_field_data : 0);
+		}
+		if (draw_element)
+		{
+			// FE_element_meets_topological_criteria may have set element in cache, so must set afterwards
 			Cmiss_field_cache_set_element(graphic_to_object_data->field_cache, element);
-			int draw_element = 1;
 			if (graphic->subgroup_field && (graphic_to_object_data->iteration_mesh == graphic_to_object_data->master_mesh))
 			{
 				draw_element = Cmiss_field_evaluate_boolean(graphic->subgroup_field, graphic_to_object_data->field_cache);
 			}
-			if (draw_element)
+		}
+		int name_selected = 0;
+		if (draw_element)
+		{
+			if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
+				(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
 			{
-				if ((GRAPHICS_DRAW_SELECTED == graphic->select_mode) ||
-					(GRAPHICS_DRAW_UNSELECTED == graphic->select_mode))
+				if (graphic_to_object_data->selection_group_field)
 				{
-					int name_selected = 0;
-					if (graphic_to_object_data->group_field)
-					{
-						name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
-					}
-					draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
-						((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
+					name_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->selection_group_field, graphic_to_object_data->field_cache);
 				}
+				draw_element = ((name_selected && (GRAPHICS_DRAW_SELECTED == graphic->select_mode)) ||
+					((!name_selected) && (GRAPHICS_DRAW_SELECTED != graphic->select_mode)));
 			}
+		}
+		if (draw_element)
+		{
 			/* determine discretization of element for graphic */
 			// copy top_level_number_in_xi since scaled by native_discretization in
 			// get_FE_element_discretization
@@ -896,9 +894,11 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			}
 			top_level_element = (struct FE_element *)NULL;
 			native_discretization_field = graphic->native_discretization_field;
-			if (FE_region_get_FE_element_discretization(
-				graphic_to_object_data->fe_region, element, graphic->face,
-				native_discretization_field, top_level_number_in_xi,
+
+			if (get_FE_element_discretization(element,
+				graphic->subgroup_field ? Cmiss_element_conditional_field_is_true : 0,
+				graphic->subgroup_field ? (void *)&conditional_field_data : 0,
+				graphic->face, native_discretization_field, top_level_number_in_xi,
 				&top_level_element, number_in_xi))
 			{
 				/* g_element renditions use only one time = 0.0. Must take care. */
@@ -1299,9 +1299,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										ranges = Element_point_ranges_get_ranges(element_point_ranges);
 									}
 									element_selected = 0;
-									if (graphic_to_object_data->group_field)
+									if (graphic_to_object_data->selection_group_field)
 									{
-										element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->group_field, graphic_to_object_data->field_cache);
+										element_selected = Cmiss_field_evaluate_boolean(graphic_to_object_data->selection_group_field, graphic_to_object_data->field_cache);
 									}
 									base_size[0] = (FE_value)(graphic->glyph_size[0]);
 									base_size[1] = (FE_value)(graphic->glyph_size[1]);
@@ -3849,7 +3849,7 @@ int Cmiss_graphic_to_graphics_object(
 												graphic->font, graphic->label_field,
 												graphic->label_density_field,
 												(iteration_nodeset == master_nodeset) ? graphic->subgroup_field : 0,
-												graphic->select_mode,graphic_to_object_data->group_field);
+												graphic->select_mode,graphic_to_object_data->selection_group_field);
 											/* NOT an error if no glyph_set produced == empty group */
 											if (glyph_set)
 											{
