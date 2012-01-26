@@ -299,17 +299,11 @@ Returns 1 if no conditional_function is supplied. \
 	return (return_code); \
 } /* CHANGE_LOG_CONDITIONAL(object_type) */
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_ITERATOR_DATA( object_type ) change_log_iterator_data_ ## object_type
-#else
-#define CHANGE_LOG_ITERATOR_DATA( object_type ) clid_ ## object_type
-#endif
+#endif /* defined (OLD_CODE_TO_KEEP) */
 
-#if ! defined (SHORT_NAMES)
+#define CHANGE_LOG_ITERATOR_DATA( object_type ) change_log_iterator_data_ ## object_type
+
 #define CHANGE_LOG_ITERATOR( object_type ) change_log_iterator_ ## object_type
-#else
-#define CHANGE_LOG_ITERATOR( object_type ) clit_ ## object_type
-#endif
 
 #define DEFINE_CHANGE_LOG_ITERATOR_DATA_AND_FUNCTION( object_type ) \
 struct CHANGE_LOG_ITERATOR_DATA(object_type) \
@@ -350,8 +344,6 @@ Calls, for the object in <entry>, the iterator_function with user_data from the 
 \
 	return (return_code); \
 } /* CHANGE_LOG_ITERATOR(object_type) */
-
-#endif /* defined (OLD_CODE_TO_KEEP) */
 
 /*
 Global functions
@@ -912,29 +904,7 @@ which has an additional middle argument of the object's change status. \
 	return (object); \
 } /* CHANGE_LOG_FIRST_OBJECT_THAT(object_type) */
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_FOR_EACH_OBJECT_( object_type ) \
-	change_log_for_each_object_ ## object_type
-#else
-#define CHANGE_LOG_FOR_EACH_OBJECT_( object_type ) clfeo_ ## object_type
-#endif
-#define CHANGE_LOG_FOR_EACH_OBJECT( object_type ) \
-	CHANGE_LOG_FOR_EACH_OBJECT_(object_type)
-
-#define PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION( object_type ) \
-int CHANGE_LOG_FOR_EACH_OBJECT(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, \
-	CHANGE_LOG_ITERATOR_FUNCTION(object_type) *iterator_function, \
-	void *user_data) \
-/***************************************************************************** \
-LAST MODIFIED : 9 December 2002 \
-\
-DESCRIPTION : \
-Calls the <iterator_function> with <user_data> for each object in \
-<change_log>. \
-Note the special format of the CHANGE_LOG_ITERATOR_FUNCTION(object_type), \
-which has an additional middle argument of the object's change status. \
-==============================================================================*/
+#endif /* defined (OLD_CODE_TO_KEEP) */
 
 #define DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION( object_type ) \
 PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type) \
@@ -972,8 +942,6 @@ which has an additional middle argument of the object's change status. \
 	return (return_code); \
 } /* CHANGE_LOG_FOR_EACH_OBJECT(object_type) */
 
-#endif /* defined (OLD_CODE_TO_KEEP) */
-
 #define FULL_DECLARE_CHANGE_LOG_TYPES( object_type ) \
 FULL_DECLARE_CHANGE_LOG_ENTRY_TYPE(object_type); \
 FULL_DECLARE_CHANGE_LOG_TYPE(object_type)
@@ -990,7 +958,8 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
 	CHANGE_LOG_ENTRY(object_type), the_object, struct object_type *, \
 	compare_pointer) \
 DECLARE_CHANGE_LOG_ENTRY_OBJECT_CHANGE_FUNCTION(object_type) \
-DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION(object_type)
+DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION(object_type) \
+DEFINE_CHANGE_LOG_ITERATOR_DATA_AND_FUNCTION(object_type)
 
 #define DECLARE_CHANGE_LOG_FUNCTIONS( object_type ) \
 DECLARE_CREATE_CHANGE_LOG_FUNCTION(object_type) \
@@ -1001,6 +970,7 @@ DECLARE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_QUERY_FUNCTION(object_type) \
-DECLARE_CHANGE_LOG_MERGE_FUNCTION(object_type)
+DECLARE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
+DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type)
 
 #endif /* !defined (CHANGE_LOG_PRIVATE_H) */

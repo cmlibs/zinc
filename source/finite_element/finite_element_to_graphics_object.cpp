@@ -2778,11 +2778,6 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			}
 		}
 		delete[] xi_points;
-		if (!surface)
-		{
-			display_message(ERROR_MESSAGE,
-				"create_GT_surface_from_FE_element.  Failed");
-		}
 		Cmiss_differential_operator_destroy(&d_dxi1);
 		Cmiss_differential_operator_destroy(&d_dxi2);
 	}

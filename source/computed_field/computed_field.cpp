@@ -1224,15 +1224,13 @@ static int Computed_field_add_to_manager_private(struct Computed_field *field,
 	{
 		if (field->name[0] != 0)
 		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-						field->name, manager))
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field->name, manager))
 			{
 				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
 #if defined (OLD_CODE)
-				display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
-					"Renaming field from %s to %s as name already in use.",
+				display_message(WARNING_MESSAGE, "Renaming field from %s to %s as name already in use.",
 					field->name, unique_name);
-#endif /* defined (OLD_CODE) */
+#endif // defined (OLD_CODE)
 				Cmiss_field_set_name(field, unique_name);
 				DEALLOCATE(unique_name);
 			}

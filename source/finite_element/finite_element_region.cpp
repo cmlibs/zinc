@@ -2285,7 +2285,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 					if (return_code)
 					{
 						FE_REGION_FE_FIELD_CHANGE(master_fe_region, field,
-							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
+							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field));
 					}
 				}
 				else
@@ -7090,7 +7090,11 @@ int FE_region_merge(struct FE_region *target_fe_region,
 				(struct FE_node_field_info **)NULL;
 			merge_nodes_data.number_of_matching_node_field_info = 0;
 			FE_regions_merge_embedding_data embedding_data =
-				{ target_root_fe_region, target_fe_region, source_fe_region };
+			{
+				source_fe_region->top_data_hack ? target_root_fe_region->master_fe_region : target_root_fe_region,
+				source_fe_region->top_data_hack ? target_fe_region->master_fe_region : target_fe_region,
+				source_fe_region->top_data_hack ? source_fe_region->master_fe_region : source_fe_region
+			};
 			merge_nodes_data.embedding_data = &embedding_data;
 			/* work out which fields in source_fe_region are embedded */
 			merge_nodes_data.embedded_fields = (struct FE_field **)NULL;

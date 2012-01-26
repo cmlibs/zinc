@@ -1269,11 +1269,9 @@ static struct Computed_field *Computed_field_create_finite_element_internal(
 	if (field_module && fe_field)
 	{
 		return_code = 1;
-		Cmiss_region *region = Cmiss_field_module_get_region(field_module);
+		Cmiss_region *region = Cmiss_field_module_get_region_internal(field_module);
 		FE_region *fe_region = Cmiss_region_get_FE_region(region);
-		FE_region *master_fe_region = NULL;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		if (FE_field_get_FE_region(fe_field) != master_fe_region)
+		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_finite_element_internal.  Region mismatch");
@@ -1320,7 +1318,6 @@ static struct Computed_field *Computed_field_create_finite_element_internal(
 			}
 			DEALLOCATE(component_names);
 		}
-		Cmiss_region_destroy(&region);
 	}
 	else
 	{
@@ -5059,78 +5056,65 @@ FE_field being made and/or modified.
 	return (return_code);
 } /* define_Computed_field_type_basis_derivative */
 
-struct FE_field_to_Computed_field_change_data
-{
-	Cmiss_region *cmiss_region;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct FE_region_changes *changes;
-};
-
 /***************************************************************************//**
  * Ensures there is an up-to-date computed field wrapper for <fe_field>.
  * @param fe_field  Field to wrap.
  * @param field_change_data_void FE_field_to_Computed_field_change_data. 
  */
 int FE_field_to_Computed_field_change(struct FE_field *fe_field,
-	void *field_change_data_void)
+	int change, void *region_void)
 {
-	int change;
-	int return_code;
-	struct FE_field_to_Computed_field_change_data *field_change_data;
-
-	ENTER(FE_field_to_Computed_field_change);
-	if (fe_field && (field_change_data =
-		(struct FE_field_to_Computed_field_change_data *)field_change_data_void))
+	int return_code = 1;
+	Cmiss_region_id region = reinterpret_cast<Cmiss_region_id>(region_void);
+	if (fe_field && region)
 	{
-		if (CHANGE_LOG_QUERY(FE_field)(field_change_data->changes->fe_field_changes,
-			fe_field, &change))
+		if (change &
+			(CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
+			 CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
+			 CHANGE_LOG_OBJECT_ADDED(FE_field)))
 		{
-			return_code = 1;
-			if (change &
-				(CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-				 CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
-				 CHANGE_LOG_OBJECT_ADDED(FE_field)))
+			char *field_name = NULL;
+			GET_NAME(FE_field)(fe_field, &field_name);
+			int update_wrapper = (change != CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field));
+			Cmiss_field_id existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				field_name, Cmiss_region_get_Computed_field_manager(region));
+			if (existing_wrapper && !Computed_field_wraps_fe_field(existing_wrapper, (void *)fe_field))
 			{
-				Cmiss_field_module *field_module =
-					Cmiss_field_module_create(field_change_data->cmiss_region);
-				struct Computed_field *existing_wrapper =
-					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_wraps_fe_field, (void *)fe_field,
-						field_change_data->computed_field_manager);
+				existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_wraps_fe_field, (void *)fe_field,
+					Cmiss_region_get_Computed_field_manager(region));
+				update_wrapper = 1;
+			}
+			if (update_wrapper)
+			{
+				Cmiss_field_module *field_module = Cmiss_field_module_create(region);
 				if (existing_wrapper)
 				{
 					Cmiss_field_module_set_replace_field(field_module, existing_wrapper);
 				}
 				else
 				{
-					char *field_name = NULL;
-					if (GET_NAME(FE_field)(fe_field, &field_name))
-					{
-						Cmiss_field_module_set_field_name(field_module, field_name);
-						DEALLOCATE(field_name);
-					}
-					struct Coordinate_system *coordinate_system =
-						get_FE_field_coordinate_system(fe_field);
+					Cmiss_field_module_set_field_name(field_module, field_name);
+					struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(fe_field);
 					if (coordinate_system)
 					{
 						Cmiss_field_module_set_coordinate_system(field_module, *coordinate_system);
 					}
 				}
-				Computed_field *field =
-					Computed_field_create_finite_element_internal(field_module, fe_field);
+				Cmiss_field_id field = Computed_field_create_finite_element_internal(field_module, fe_field);
 				Cmiss_field_set_attribute_integer(field, CMISS_FIELD_ATTRIBUTE_IS_MANAGED, 1);
 				Cmiss_field_destroy(&field);
 				Cmiss_field_module_destroy(&field_module);
+				char *new_field_name = NULL;
+				GET_NAME(FE_field)(fe_field, &new_field_name);
+				if (strcmp(new_field_name, field_name))
+				{
+					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
+						field_name, new_field_name);
+				}
+				DEALLOCATE(new_field_name);
 			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_field_to_Computed_field_change.  Could not propagate change(s)");
+			DEALLOCATE(field_name);
 		}
 	}
 	else
@@ -5139,10 +5123,8 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 			"FE_field_to_Computed_field_change.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_field_to_Computed_field_change */
+}
 
 void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void)
@@ -5167,12 +5149,8 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 
 			if (check_field_wrappers)
 			{
-				struct FE_field_to_Computed_field_change_data field_change_data;
-				field_change_data.cmiss_region = cmiss_region;
-				field_change_data.computed_field_manager = Cmiss_region_get_Computed_field_manager(cmiss_region);
-				field_change_data.changes = changes;
-				FE_region_for_each_FE_field(fe_region,
-					FE_field_to_Computed_field_change, (void *)&field_change_data);
+				CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(changes->fe_field_changes,
+					FE_field_to_Computed_field_change, (void *)cmiss_region);
 			}
 			if (add_cmiss_number_field)
 			{

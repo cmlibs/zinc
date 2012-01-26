@@ -135,8 +135,7 @@ OBJECT_IDENTIFIER_CHANGED | OBJECT_NOT_IDENTIFIER_CHANGED, a logical OR. \
 	 second argument */
 #define DECLARE_CHANGE_LOG_CONDITIONAL_FUNCTION( object_type ) \
 typedef int (CHANGE_LOG_CONDITIONAL_FUNCTION(object_type))( \
-	struct object_type *object, enum CHANGE_LOG_CHANGE(object_type) change, \
-	void *user_data)
+	struct object_type *object, int change, void *user_data)
 
 #define CHANGE_LOG_ITERATOR_FUNCTION( object_type ) \
 	change_log_iterator_function_ ## object_type
@@ -145,8 +144,7 @@ typedef int (CHANGE_LOG_CONDITIONAL_FUNCTION(object_type))( \
 	 second argument */
 #define DECLARE_CHANGE_LOG_ITERATOR_FUNCTION( object_type ) \
 typedef int (CHANGE_LOG_ITERATOR_FUNCTION(object_type))( \
-	struct object_type *object, enum CHANGE_LOG_CHANGE(object_type) change, \
-	void *user_data)
+	struct object_type *object, int change,  void *user_data)
 
 /*
 Global functions
@@ -305,6 +303,26 @@ Note that both change logs should be set up identically; either both use the \
 max_changes/change_all capability or both do not. \
 ==============================================================================*/
 
+#define CHANGE_LOG_FOR_EACH_OBJECT_( object_type ) \
+	change_log_for_each_object_ ## object_type
+#define CHANGE_LOG_FOR_EACH_OBJECT( object_type ) \
+	CHANGE_LOG_FOR_EACH_OBJECT_(object_type)
+
+#define PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION( object_type ) \
+int CHANGE_LOG_FOR_EACH_OBJECT(object_type)( \
+	struct CHANGE_LOG(object_type) *change_log, \
+	CHANGE_LOG_ITERATOR_FUNCTION(object_type) *iterator_function, \
+	void *user_data) \
+/***************************************************************************** \
+LAST MODIFIED : 9 December 2002 \
+\
+DESCRIPTION : \
+Calls the <iterator_function> with <user_data> for each object in \
+<change_log>. \
+Note the special format of the CHANGE_LOG_ITERATOR_FUNCTION(object_type), \
+which has an additional middle argument of the object's change status. \
+==============================================================================*/
+
 #define DECLARE_CHANGE_LOG_TYPES( object_type ) \
 DECLARE_CHANGE_LOG_TYPE(object_type); \
 DECLARE_CHANGE_LOG_CHANGE_TYPE(object_type); \
@@ -320,6 +338,7 @@ PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
+PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type); \
+PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type)
 
 #endif
