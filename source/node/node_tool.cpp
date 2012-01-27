@@ -1581,14 +1581,7 @@ release.
 									nearest_element_coordinate_field = (struct Computed_field *)NULL;
 									if (nearest_element)
 									{
-										if (!(nearest_element_coordinate_field = 
-												Cmiss_graphic_get_coordinate_field(graphic_element)))
-										{
-											nearest_element_coordinate_field = 
-												Cmiss_rendition_get_default_coordinate_field(
-												rendition_element);
-										}
-										
+										nearest_element_coordinate_field = Cmiss_graphic_get_coordinate_field(graphic_element);
 									}
 									/* If we are creating on elements and no element was selected then 
 										don't create */
@@ -1677,13 +1670,7 @@ release.
 										/*select_lines_enabled*/0, &scene_picked_object2,
 										&rendition_element,&graphic_element)))
 									{
-										if (!(nearest_element_coordinate_field = 
-												Cmiss_graphic_get_coordinate_field(graphic_element)))
-										{
-											nearest_element_coordinate_field = 
-												Cmiss_rendition_get_default_coordinate_field(
-													rendition_element);
-										}
+										nearest_element_coordinate_field = Cmiss_graphic_get_coordinate_field(graphic_element);
 									}
 									DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 								}
@@ -1731,15 +1718,11 @@ release.
 								/* get coordinate field to edit */
 								if (node_tool->define_enabled)
 								{
-									coordinate_field=node_tool->coordinate_field;
+									coordinate_field = node_tool->coordinate_field;
 								}
-								else if (!(coordinate_field=
-									Cmiss_graphic_get_coordinate_field(
-										node_tool->graphic)))
+								else
 								{
-									coordinate_field=
-										Cmiss_rendition_get_default_coordinate_field(
-											node_tool->rendition);
+									coordinate_field = Cmiss_graphic_get_coordinate_field(node_tool->graphic);
 								}
 								edit_info.coordinate_field=coordinate_field;
 								/* get coordinate_field in RC coordinates */

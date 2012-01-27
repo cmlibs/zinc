@@ -2071,48 +2071,6 @@ void AddGraphic(Cmiss_graphic *graphic_to_copy, enum Cmiss_graphic_type graphic_
 		}
 		else
 		{
-//==mine==
-//			/* set materials for all graphic */
-//			Cmiss_graphic_set_material(graphic,
-//				region_tree_viewer->default_material);
-//			Cmiss_graphic_set_label_field(graphic,
-//				(struct Computed_field *)NULL, region_tree_viewer->default_font);
-//			Cmiss_graphic_set_selected_material(graphic,
-//				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-//					"default_selected",region_tree_viewer->graphical_material_manager));
-//			Computed_field *default_coordinate_field=
-//				Cmiss_rendition_get_default_coordinate_field(
-//					region_tree_viewer->edit_rendition);
-//			Cmiss_graphic_set_coordinate_field(graphic, default_coordinate_field);
-//			/* for data_points, ensure either there are points with
-//				default_coordinate defined at them. If not, and any have
-//				the element_xi_coordinate field defined over them, use that */
-//			if (CMISS_GRAPHIC_DATA_POINTS==graphic_type)
-//			{
-//				FE_region *data_fe_region = FE_region_get_data_FE_region(
-//					Cmiss_region_get_FE_region(
-//						Cmiss_rendition_get_region(
-//							region_tree_viewer->edit_rendition)));
-//				if (!FE_region_get_first_FE_node_that(data_fe_region,
-//						FE_node_has_Computed_field_defined,
-//						(void *)default_coordinate_field))
-//				{
-//					MANAGER(Computed_field) *computed_field_manager=  
-//						Cmiss_region_get_Computed_field_manager(
-//							Cmiss_rendition_get_region(region_tree_viewer->edit_rendition));
-//					Computed_field *element_xi_coordinate_field;
-//					if ((element_xi_coordinate_field=
-//							FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-///								"element_xi_coordinate",computed_field_manager)) &&
-//						FE_region_get_first_FE_node_that(data_fe_region,
-//							FE_node_has_Computed_field_defined,
-//							(void *)element_xi_coordinate_field))
-//					{
-//						Cmiss_graphic_set_coordinate_field(graphic,
-//							element_xi_coordinate_field);
-//					}
-//				}
-//			}
 			Cmiss_rendition_set_graphic_defaults(region_tree_viewer->edit_rendition, graphic);
 			/* set iso_scalar_field for iso_surfaces */
 		}
@@ -2353,15 +2311,11 @@ void MoveUpInGraphicList(wxCommandEvent &event)
 
 	void GraphicEditorNameText(wxCommandEvent &event)
 	{
-		const char *name = NULL;
-
 		USE_PARAMETER(event);
-
 		if (region_tree_viewer->current_graphic)
 		{
 			graphicalitemschecklist=XRCCTRL(*this,"CmissGraphicListBox",wxCheckListBox);
-			Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic,
-				&name);
+			char *name = Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic);
 			nametextfield = XRCCTRL(*this, "NameTextField", wxTextCtrl);
 			wxString wxTextEntry = nametextfield->GetValue();
 			const char *text_entry = wxTextEntry.c_str();
@@ -3211,8 +3165,8 @@ void SetGraphic(Cmiss_graphic *graphic)
 		}
 		if (!temp_coordinate_field)
 		{
-			temp_coordinate_field = Cmiss_rendition_get_default_coordinate_field(
-				region_tree_viewer->edit_rendition);
+			temp_coordinate_field = Cmiss_rendition_guess_coordinate_field(
+				region_tree_viewer->edit_rendition, region_tree_viewer->current_graphic_type);
 		}
 		if (coordinate_field_chooser ==NULL)
 		{
@@ -4830,9 +4784,7 @@ static int get_and_set_Cmiss_graphic_widgets(void *region_tree_viewer_void)
 	/*for the text field*/
 	if (region_tree_viewer->current_graphic)
 	{
-		const char *name;
-		Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic,
-				&name);
+		char *name = Cmiss_graphic_get_name_internal(region_tree_viewer->current_graphic);
 		wxTextCtrl *nametextfield = XRCCTRL(*region_tree_viewer->wx_region_tree_viewer, "NameTextField", wxTextCtrl);
 		nametextfield->SetValue(name);
 		DEALLOCATE(name);

@@ -875,8 +875,11 @@ int Cmiss_graphic_same_non_trivial_with_graphics_object(
 int Cmiss_graphic_set_volume_texture(struct Cmiss_graphic *graphic,
 	struct VT_volume_texture *volume_texture);
 
-int Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic,
-	const char **name_ptr);
+/***************************************************************************//**
+ * Gets the graphic's stored name, or generates one based on its position.
+ * @return  Allocated string.
+ */
+char *Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic);
 
 int Cmiss_graphic_time_change(
 	struct Cmiss_graphic *graphic,void *dummy_void);

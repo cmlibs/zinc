@@ -2263,59 +2263,26 @@ char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic)
 	}
 
 	return name;
-} /* Cmiss_graphic_get_name_internal */
+}
 
-int Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic,
-	const char **name_ptr)
+char *Cmiss_graphic_get_name_internal(struct Cmiss_graphic *graphic)
 {
-	int return_code;
-	char *temp_ptr = NULL;
-	ENTER(Cmiss_graphic_get_name_internal);
-	if (graphic&&name_ptr)
+	char *name = 0;
+	if (graphic)
 	{
 		if (graphic->name)
 		{
-			if (ALLOCATE(temp_ptr,char,strlen(graphic->name)+1))
-			{
-				strcpy(temp_ptr,graphic->name);
-				*name_ptr = temp_ptr;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_get_name_internal.  Could not allocate space for name");
-				return_code=0;
-			}
+			name = duplicate_string(graphic->name);
 		}
 		else
 		{
-			/* Use the position number */
-			if (ALLOCATE(temp_ptr,char,30))
-			{
-				sprintf(temp_ptr,"%d",graphic->position);
-				*name_ptr = temp_ptr;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_graphic_get_name_internal.  Could not allocate space for position name");
-				return_code=0;
-			}
-			
+			char temp[30];
+			sprintf(temp, "%d", graphic->position);
+			name = duplicate_string(temp);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_graphic_get_name_internal.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_graphic_get_name_internal */
+	return name;
+}
 
 int Cmiss_graphic_set_name(struct Cmiss_graphic *graphic, const char *name)
 {

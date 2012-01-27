@@ -150,14 +150,14 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 	void *cmiss_region_void, void *dummy_void);
 
 /***************************************************************************//**
- * Returns the default coordinate field of the <rendition>.
- *
- * @param rendition  The handle to cmiss rendition.
- * @return  Returns the default coordinate field of rendition if found,
- * otherwise NULL.
+ * Attempt to guess which field is the most appropriate to use as a coordinate
+ * field for graphics.
+ * @param rendition  The rendition whose graphics need a coordinate field.
+ * @param graphic_type  Type of graphic to get coordinate field for.
+ * @return non-accessed field
  */
-struct Computed_field *Cmiss_rendition_get_default_coordinate_field(
-	struct Cmiss_rendition *rendition);
+Cmiss_field_id Cmiss_rendition_guess_coordinate_field(
+	struct Cmiss_rendition *rendition, Cmiss_graphic_type graphic_type);
 
 /***************************************************************************//**
  * Iterates through every material used by the scene.

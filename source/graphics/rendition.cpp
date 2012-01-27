@@ -316,56 +316,6 @@ static int Cmiss_rendition_void_detach_from_Cmiss_region(void *cmiss_rendition_v
 	return (return_code);
 }
 
-/***************************************************************************//**
- * If the <rendition> doesn't have a default coordinate yet then it 
- * tries to find one, first in the element_group, then in the node_group and
- * finally in the data group.
- */
-static int Cmiss_rendition_update_default_coordinate(
-	struct Cmiss_rendition *rendition)
-{
-	int return_code = 0;
-	struct Computed_field *computed_field;
-
-	ENTER(Cmiss_rendition_update_default_coordinate);
-	if (rendition)
-	{
-		return_code = 1;
-		/* if we don't have a computed_field_manager, we are working on an
-			 "editor copy" which does not update graphics; the
-			 default_coordinate_field will have been supplied by the global object */
-		if (rendition->computed_field_manager)
-		{
-			if (rendition->default_coordinate_field)
-			{
-				/* Don't second guess, just keep what we have */
-			}
-			else
-			{
-				/* Try to find one */
-				computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_coordinate_field, (void *)NULL, rendition->computed_field_manager);
-
-				if (computed_field != NULL )
-				{
-					/* Find the computed_field wrapper */
-					rendition->default_coordinate_field =
-						ACCESS(Computed_field)(computed_field);
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_update_default_coordinate. Invalid Cmiss_rendition");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 static void Cmiss_rendition_element_points_ranges_selection_change(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Element_point_ranges_selection_changes *changes,
@@ -468,7 +418,6 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 				cmiss_rendition->selection_group = NULL;
 				cmiss_rendition->selection_removed = 0;
 				cmiss_rendition->selection_handler_list = NULL;
- 				Cmiss_rendition_update_default_coordinate(cmiss_rendition);
  				if (graphics_module)
  				{
  					Element_point_ranges_selection_add_callback(
@@ -508,42 +457,46 @@ struct Cmiss_rendition *CREATE(Cmiss_rendition)(struct Cmiss_region *cmiss_regio
 	return (cmiss_rendition);
 } /* CREATE(Cmiss_rendition) */
 
-struct Computed_field *Cmiss_rendition_get_default_coordinate_field(
-	struct Cmiss_rendition *rendition)
+Cmiss_field_id Cmiss_rendition_guess_coordinate_field(
+	struct Cmiss_rendition *rendition, Cmiss_graphic_type graphic_type)
 {
-	struct Computed_field *default_coordinate_field;
-
-	ENTER(Cmiss_rendition_get_default_coordinate_field);
-	if (rendition)
+	Cmiss_field_id coordinate_field = 0;
+	// could be smarter here:
+	USE_PARAMETER(graphic_type);
+	/* if we don't have a computed_field_manager, we are working on an
+	   "editor copy" which does not update graphics; the
+	   default_coordinate_field will have been supplied by the global object */
+	if (rendition && rendition->computed_field_manager)
 	{
-		// GRC want to remove this:
-		if (!rendition->default_coordinate_field)
-		{
-			/* Try and get one now before returning nothing */
-			Cmiss_rendition_update_default_coordinate(rendition);
-		}
-		default_coordinate_field=rendition->default_coordinate_field;
+		coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_coordinate_field, (void *)NULL, rendition->computed_field_manager);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_rendition_get_default_coordinate_field.  Invalid argument(s)");
-		default_coordinate_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (default_coordinate_field);
+	return coordinate_field;
 }
 
-int Cmiss_rendition_set_default_coordinate_field(
+/***************************************************************************//**
+ * Get legacy default_coordinate_field set in gfx modify g_element general
+ * command, if any.
+ * @return non-accessed field
+ */
+static struct Computed_field *Cmiss_rendition_get_default_coordinate_field(
+	struct Cmiss_rendition *rendition)
+{
+	if (rendition)
+		return rendition->default_coordinate_field;
+	return 0;
+}
+
+/***************************************************************************//**
+ * Set legacy default_coordinate_field in gfx modify g_element general command.
+ */
+static int Cmiss_rendition_set_default_coordinate_field(
 	struct Cmiss_rendition *rendition,
 	struct Computed_field *default_coordinate_field)
 {
-  int return_code = 1;
-
-	ENTER(Cmiss_rendition_set_default_coordinate_field);
-	if (rendition && default_coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(default_coordinate_field)))
+	int return_code = 1;
+	if (rendition && (!default_coordinate_field ||
+		Computed_field_has_up_to_3_numerical_components(default_coordinate_field, (void *)0)))
 	{
 		REACCESS(Computed_field)(&(rendition->default_coordinate_field),
 			default_coordinate_field);
@@ -1015,7 +968,12 @@ int Cmiss_rendition_set_graphic_defaults(struct Cmiss_rendition *rendition,
 		Cmiss_rendition_set_minimum_graphic_defaults(rendition, graphic);
 		Cmiss_graphic_type graphic_type = Cmiss_graphic_get_graphic_type(graphic);
 
-		Cmiss_graphic_set_coordinate_field(graphic, Cmiss_rendition_get_default_coordinate_field(rendition));
+		Cmiss_field_id coordinate_field = Cmiss_rendition_get_default_coordinate_field(rendition);
+		// could be smarter, e.g. using graphic type
+		if (!coordinate_field)
+			coordinate_field = Cmiss_rendition_guess_coordinate_field(rendition, graphic_type);
+		if (coordinate_field)
+			Cmiss_graphic_set_coordinate_field(graphic, coordinate_field);
 
 		if (Cmiss_graphic_type_uses_attribute(graphic_type, CMISS_GRAPHIC_ATTRIBUTE_TESSELLATION) &&
 			(graphic_type != CMISS_GRAPHIC_ELEMENT_POINTS) &&
@@ -2117,6 +2075,14 @@ int gfx_modify_rendition_general(struct Parse_state *state,
 				}
 				if (default_coordinate_field)
 				{
+					if (rendition->default_coordinate_field && default_coordinate_field &&
+						(rendition->default_coordinate_field != default_coordinate_field))
+					{
+						display_message(WARNING_MESSAGE,
+							"Change of default_coordinate field can have unexpected results. "
+							"Please specify coordinate field for each graphic instead.");
+						display_parse_state_location(state);
+					}
 					Cmiss_rendition_set_default_coordinate_field(rendition,
 						default_coordinate_field);
 				}

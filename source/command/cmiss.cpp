@@ -12748,7 +12748,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 								command_data->root_region, region_path);
 							if (NULL == top_region)
 							{
-								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+								display_message(ERROR_MESSAGE, "gfx read nodes.  "
 									"Unable to find or create region '%s'.", region_path);
 								return_code = 0;
 							}
@@ -14435,48 +14435,86 @@ static int gfx_set_visibility(struct Parse_state *state,
 	Cmiss_command_data *command_data = reinterpret_cast<Cmiss_command_data *>(command_data_void);
 	if (state && command_data)
 	{
-		int visibility_flag = 1;
-		Cmiss_region_id region = Cmiss_region_access(command_data->root_region);
-		Cmiss_field_group_id group = 0;
+		char on_flag = 0;
+		char off_flag = 0;
+		char *part_graphic_name = 0;
+		char *region_path = 0;
 		Option_table *option_table = CREATE(Option_table)();
-		Option_table_add_switch(option_table, "on", "off", &visibility_flag);
-		Option_table_add_region_or_group_entry(option_table, /*token*/0, &region, &group);
+		Option_table_add_help(option_table,
+			"Set the visibility of a whole region's rendition or individual graphics in it. "
+			"Specify visibility as 'on', 'off' or omit both to toggle. If name option is "
+			"specified, sets visibility for all graphics in region whose name contains the string.");
+		Option_table_add_char_flag_entry(option_table, "off", &off_flag);
+		Option_table_add_char_flag_entry(option_table, "on", &on_flag);
+		Option_table_add_string_entry(option_table, "name", &part_graphic_name, " PART_GRAPHIC_NAME");
+		Option_table_add_default_string_entry(option_table, &region_path, " REGION_PATH");
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
+
+		Cmiss_region_id region = 0;
 		if (return_code)
 		{
-			if (return_code)
+			if (off_flag && on_flag)
 			{
-				Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
-				if (group)
+				display_message(ERROR_MESSAGE, "gfx set visibility:  Set only one of off|on");
+				return_code = 0;
+			}
+			if (!region_path)
+			{
+				display_message(ERROR_MESSAGE, "gfx set visibility:  Must specify region_path");
+				return_code = 0;
+			}
+			else
+			{
+				region = Cmiss_region_find_subregion_at_path(command_data->root_region, region_path);
+				if (!region)
 				{
-					Cmiss_rendition_begin_change(rendition);
-					Cmiss_field_id group_field = Cmiss_field_group_base_cast(group);
-					// support legacy command files by changing visibility of each graphic using group as its subgroup field
-					Cmiss_graphic_id graphic = Cmiss_rendition_get_first_graphic(rendition);
-					while (graphic)
-					{
-						Cmiss_field_id subgroup_field = 0;
-						Cmiss_graphic_get_subgroup_field(graphic, &subgroup_field);
-						if (subgroup_field == group_field)
-						{
-							Cmiss_graphic_set_visibility_flag(graphic, visibility_flag);
-						}
-						Cmiss_graphic_id temp = Cmiss_rendition_get_next_graphic(rendition, graphic);
-						Cmiss_graphic_destroy(&graphic);
-						graphic = temp;
-					}
-					Cmiss_rendition_end_change(rendition);
+					display_message(ERROR_MESSAGE, "gfx set visibility:  Could not find region %s", region_path);
+					return_code = 0;
 				}
-				else
-				{
-					Cmiss_rendition_set_visibility_flag(rendition, visibility_flag);
-				}
-				Cmiss_rendition_destroy(&rendition);
 			}
 		}
-		Cmiss_field_group_destroy(&group);
+		if (return_code)
+		{
+			Cmiss_rendition_id rendition = Cmiss_region_get_rendition_internal(region);
+			if (part_graphic_name)
+			{
+				Cmiss_rendition_begin_change(rendition);
+				// support legacy command files by changing visibility of each graphic using group as its subgroup field
+				Cmiss_graphic_id graphic = Cmiss_rendition_get_first_graphic(rendition);
+				int number_matched = 0;
+				while (graphic)
+				{
+					char *graphic_name = Cmiss_graphic_get_name_internal(graphic);
+					if (strstr(graphic_name, part_graphic_name))
+					{
+						int visibility_flag = on_flag ? 1 : (off_flag ? 0 : !Cmiss_graphic_get_visibility_flag(graphic));
+						Cmiss_graphic_set_visibility_flag(graphic, visibility_flag);
+						++number_matched;
+					}
+					DEALLOCATE(graphic_name);
+					Cmiss_graphic_id temp = Cmiss_rendition_get_next_graphic(rendition, graphic);
+					Cmiss_graphic_destroy(&graphic);
+					graphic = temp;
+				}
+				Cmiss_rendition_end_change(rendition);
+				if (0 == number_matched)
+				{
+					display_message(WARNING_MESSAGE, "gfx set visibility:  No graphics matched name '%s'", part_graphic_name);
+				}
+			}
+			else
+			{
+				int visibility_flag = on_flag ? 1 : (off_flag ? 0 : !Cmiss_rendition_get_visibility_flag(rendition));
+				Cmiss_rendition_set_visibility_flag(rendition, visibility_flag);
+			}
+			Cmiss_rendition_destroy(&rendition);
+		}
 		Cmiss_region_destroy(&region);
+		if (region_path)
+			DEALLOCATE(region_path);
+		if (part_graphic_name)
+			DEALLOCATE(part_graphic_name);
 	}
 	else
 	{
