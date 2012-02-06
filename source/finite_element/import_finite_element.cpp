@@ -58,6 +58,8 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
+#include <ctype.h>
+
 /*
 Module types
 ------------
