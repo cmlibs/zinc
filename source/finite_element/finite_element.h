@@ -2020,26 +2020,6 @@ Returns a static string describing the <cm_element_type>, eg. CM_LINE = 'line'.
 Returned string must not be deallocated!
 ==============================================================================*/
 
-int FE_element_to_element_string(struct FE_element *element,char **name_ptr);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Writes the cm.number of <element> into a newly allocated string and
-points <*name_ptr> at it.
-==============================================================================*/
-
-struct FE_element *element_string_to_FE_element(const char *name,
-	struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Converts the <name> into a CM_element_information.number sets 
-CM_element_information.type to CM_ELEMENT, finds
-and returns the element in the <element_list> with that CM_element_information.
-==============================================================================*/
-
 int FE_element_to_any_element_string(struct FE_element *element,
 	char **name_ptr);
 /*******************************************************************************

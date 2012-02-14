@@ -1136,15 +1136,12 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
 Cmiss_element_iterator_id FE_region_create_element_iterator(
 	struct FE_region *fe_region, int dimension);
 
+/***************************************************************************//**
+ * @return  Element from highest dimension mesh in region with identifier equal
+ * to number in string name.
+ */
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Calls element_string_to_FE_element with the <element_list> private to
-<fe_region>.
-==============================================================================*/
 
 /***************************************************************************//**
  * Converts name string of format "CM_ELEMENT_TYPE NUMBER" to an element

@@ -167,7 +167,6 @@ update in case it has changed, and writes the new object string in the widget.
 	{ 
 	const char *current_string; 
 	static const char *null_object_name="<NONE>"; 
-	char *object_name; 
 	int return_code; 
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
@@ -204,26 +203,23 @@ update in case it has changed, and writes the new object string in the widget.
 								 conditional_function_user_data); 
 				}
 		 }
-		 /* write out the current_object */ 
-		 if (current_object) 
-		 { 
-				if (FE_element_to_element_string( 
-							 current_object,&object_name)) 
-				{ 
-					 if (strcmp(object_name,current_string)) 
-					 { 
-							SetValue(object_name); 
-					 } 
-					 DEALLOCATE(object_name);
-				} 
-		 } 
-		 else 
-		 { 
-				if (strcmp(null_object_name,current_string)) 
-				{ 
-					 SetValue(null_object_name); 
-				} 
-		 } 
+		/* write out the current_object */
+		if (current_object)
+		{
+			char object_name[30];
+			sprintf(object_name, "%d", Cmiss_element_get_identifier(current_object));
+			if (strcmp(object_name,current_string))
+			{
+				SetValue(object_name);
+			}
+		}
+		else
+		{
+			if (strcmp(null_object_name,current_string))
+			{
+				SetValue(null_object_name);
+			}
+		}
 		 /* inform the client of any change */
 		 update();
 		 return_code=1;

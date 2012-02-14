@@ -5829,36 +5829,18 @@ Cmiss_element_iterator_id FE_region_create_element_iterator(
 
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Calls element_string_to_FE_element with the <element_list> private to
-<fe_region>.
-==============================================================================*/
 {
-	struct FE_element *element;
-
-	ENTER(FE_region_element_string_to_FE_element);
-	element = (struct FE_element *)NULL;
+	Cmiss_element_id element = 0;
 	if (fe_region && name)
 	{
 		int highest_dimension = FE_region_get_highest_dimension(fe_region);
 		if (highest_dimension)
 		{
-			element = element_string_to_FE_element(name,
-				FE_region_get_element_list(fe_region, highest_dimension));
+			element = FE_region_get_FE_element_from_identifier(fe_region, highest_dimension, atoi(name));
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_element_string_to_FE_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (element);
-} /* FE_region_element_string_to_FE_element */
+}
 
 struct FE_element *FE_region_any_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name)

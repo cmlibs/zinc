@@ -23166,69 +23166,6 @@ Returned string must not be deallocated!
 	return (return_string);
 } /* CM_element_type_string */
 
-int FE_element_to_element_string(struct FE_element *element,char **name_ptr)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Writes the cm.number of <element> into a newly allocated string and
-points <*name_ptr> at it.
-==============================================================================*/
-{
-	char temp_string[30];
-	int return_code;
-
-	ENTER(FE_element_to_element_string);
-	if (element&&name_ptr)
-	{
-		sprintf(temp_string,"%d",element->identifier.number);
-		*name_ptr=duplicate_string(temp_string);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_to_element_string.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_to_element_string */
-
-struct FE_element *element_string_to_FE_element(const char *name,
-	struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Converts the <name> into a CM_element_information.number sets 
-CM_element_information.type to CM_ELEMENT, finds
-and returns the element in the <element_list> with that CM_element_information.
-==============================================================================*/
-{
-	struct FE_element *element;
-	struct CM_element_information cm;
-
-	ENTER(element_string_to_FE_element);
-	if (name && element_list)
-	{
-		cm.number = atoi(name);
-		cm.type = CM_ELEMENT;
-		element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&cm,element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_string_to_FE_element.  Invalid argument(s)");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /* element_string_to_FE_element */
-
 int FE_element_to_any_element_string(struct FE_element *element,
 	char **name_ptr)
 /*******************************************************************************

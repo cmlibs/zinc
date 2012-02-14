@@ -764,7 +764,10 @@ int Cmiss_graphic_get_dimension(struct Cmiss_graphic *graphic, struct FE_region 
 			} break;
 			case CMISS_GRAPHIC_STREAMLINES:
 			{
-				dimension=3;
+				// GRC: should be controllable, e.g. via use_element_type
+				dimension = fe_region ? FE_region_get_highest_dimension(fe_region) : 3;
+				if (0 == dimension)
+					dimension = 3;
 			} break;
 			case CMISS_GRAPHIC_ELEMENT_POINTS:
 			case CMISS_GRAPHIC_ISO_SURFACES:
@@ -3310,11 +3313,14 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 						} break;
 						case CMISS_GRAPHIC_CYLINDERS:
 						case CMISS_GRAPHIC_LINES:
+						case CMISS_GRAPHIC_ISO_SURFACES:
+						case CMISS_GRAPHIC_ELEMENT_POINTS:
 						{
-							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-								field_module, /*dimension*/1);
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
-								group_field, temp_mesh);
+							FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
+							int dimension = Cmiss_graphic_get_dimension(graphic, fe_region);
+							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+							SubObjectGroupHighlightFunctor *functor =
+								create_highlight_functor_element(group_field, temp_mesh);
 							if (!(renderer->set_highlight_functor(functor)) && functor)
 							{
 									delete functor;
@@ -3364,39 +3370,6 @@ int Cmiss_graphic_set_renderer_highlight_functor(struct Cmiss_graphic *graphic, 
 							Cmiss_mesh_destroy(&temp_mesh);
 						} break;
 #endif /* defined(USE_OPENCASCADE) */
-						case CMISS_GRAPHIC_ISO_SURFACES:
-						{
-							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-								field_module, /*dimension*/3);
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
-								group_field, temp_mesh);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
-							{
-									delete functor;
-							}
-							Cmiss_mesh_destroy(&temp_mesh);
-						} break;
-						case CMISS_GRAPHIC_ELEMENT_POINTS:
-						{
-							int use_element_type = (int)graphic->use_element_type;
-							if (use_element_type == 1)
-							{
-								use_element_type = 3;
-							}
-							else if (use_element_type == 3)
-							{
-								use_element_type = 1;
-							}
-							Cmiss_mesh_id temp_mesh = Cmiss_field_module_find_mesh_by_dimension(
-								field_module, use_element_type);
-							SubObjectGroupHighlightFunctor *functor = create_highlight_functor_element(
-								group_field, temp_mesh);
-							if (!(renderer->set_highlight_functor(functor)) && functor)
-							{
-									delete functor;
-							}
-							Cmiss_mesh_destroy(&temp_mesh);
-						} break;
 						case CMISS_GRAPHIC_POINT:
 						case CMISS_GRAPHIC_STREAMLINES:
 						{
