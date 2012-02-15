@@ -43,6 +43,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_COORDINATE_H)
 #define COMPUTED_FIELD_COORDINATE_H
 
+#include "api/cmiss_field_coordinate_transformation.h"
+
 int Computed_field_extract_rc(struct Computed_field *field,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives);
 /*******************************************************************************
@@ -67,36 +69,6 @@ Note the order of derivatives:
 2. All the <element_dimension> derivatives of component 2.
 3. All the <element_dimension> derivatives of component 3.
 ==============================================================================*/
-
-/*****************************************************************************//**
- * Creates a field which performs a coordinate transformation from the source
- * field values in their coordinate system into the coordinate system of this
- * field. Returned field has 3 components.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field  Source field with values in their own coordinate system.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_coordinate_transformation(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *source_field);
-
-/*****************************************************************************//**
- * Create a field which performs a coordinate transformation of vectors from their
- * original coordinate system and coordinate positions, to the coordinate system
- * of this field. Sets the number of components in returned field to 3 times the
- * number of vectors expected from the source vector_field.
- * 
- * @param field_module  Region field module which will own new field.
- * @param vector_field  Vector field to be transformed. Can be a single vector
- * (1,2 or 3 components), two vectors (4 or 6 components) or three vectors
- * (9 components).
- * @param coordinate_field  Field giving location where vector value is from.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_vector_coordinate_transformation(
-	struct Cmiss_field_module *field_module,
-	struct Computed_field *vector_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_coordinate(
 	struct Computed_field_package *computed_field_package);

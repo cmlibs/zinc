@@ -525,7 +525,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_coordinate_transformation(
+struct Computed_field *Cmiss_field_module_create_coordinate_transformation(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
@@ -619,7 +619,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_coordinate_transformation(
+					Cmiss_field_module_create_coordinate_transformation(
 						field_modify->get_field_module(), source_field));
 			}
 			if (!return_code)
@@ -967,7 +967,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_vector_coordinate_transformation(
+struct Computed_field *Cmiss_field_module_create_vector_coordinate_transformation(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
@@ -1004,7 +1004,7 @@ struct Computed_field *Computed_field_create_vector_coordinate_transformation(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_vector_coordinate_transformation.  Invalid argument(s)");
+			"Cmiss_field_module_create_vector_coordinate_transformation.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -1107,7 +1107,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_vector_coordinate_transformation(
+					Cmiss_field_module_create_vector_coordinate_transformation(
 						field_modify->get_field_module(), vector_field, coordinate_field));
 			}
 			if (!return_code)

@@ -89,7 +89,7 @@ wrapped.
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
 			Cmiss_field_module_set_coordinate_system(field_module,
 				rc_coordinate_system);
-			wrapper_field = Computed_field_create_coordinate_transformation(field_module,
+			wrapper_field = Cmiss_field_module_create_coordinate_transformation(field_module,
 				coordinate_field);
 			Cmiss_field_module_destroy(&field_module);
 		}
@@ -164,7 +164,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
 			Cmiss_field_module_set_coordinate_system(field_module,
 				rc_coordinate_system);
-			wrapper_field = Computed_field_create_vector_coordinate_transformation(
+			wrapper_field = Cmiss_field_module_create_vector_coordinate_transformation(
 				field_module, orientation_scale_field, coordinate_field);
 			Cmiss_field_module_destroy(&field_module);
 		}

@@ -158,6 +158,10 @@ Cmiss_field_module_create_concatenate
 /* api/cmiss_field_conditional.h */
 Cmiss_field_module_create_if
 
+/* api/cmiss_field_coordinate_transformation.h */
+Cmiss_field_module_create_coordinate_transformation
+Cmiss_field_module_create_vector_coordinate_transformation
+
 /* api/cmiss_field_finite_element.h */
 Cmiss_field_module_create_finite_element
 Cmiss_field_cast_finite_element
