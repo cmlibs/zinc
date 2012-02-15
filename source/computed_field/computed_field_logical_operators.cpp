@@ -1916,6 +1916,115 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_is_defined */
 
+namespace {
+
+char computed_field_not_type_string[] = "not";
+
+class Computed_field_not : public Computed_field_core
+{
+public:
+	Computed_field_not() : Computed_field_core()
+	{
+	};
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_not();
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_not_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		return (0 != dynamic_cast<Computed_field_not*>(other_field));
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+};
+
+int Computed_field_not::evaluate_cache_at_location(Field_location* location)
+{
+	if (!(field && location))
+		return 0;
+	int return_code = Computed_field_evaluate_cache_at_location(field->source_fields[0], location);
+	if (return_code)
+	{
+		for (int i = 0 ; i < field->number_of_components ; i++)
+		{
+			field->values[i] = (0 != field->source_fields[0]->values[i]) ? 0 : 1;
+		}
+	}
+	return return_code;
+}
+
+} //namespace
+
+Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field)
+{
+	Cmiss_field_id field = 0;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_not());
+	}
+	return field;
+}
+
+/***************************************************************************//**
+ * Command modifier function for creating and modifying field type
+ * Computed_field_not.
+ */
+int define_Computed_field_type_not(struct Parse_state *state,
+	void *field_modify_void, void *computed_field_logical_operators_package_void)
+{
+	int return_code = 1;
+	USE_PARAMETER(computed_field_logical_operators_package_void);
+	Computed_field_modify_data *field_modify = reinterpret_cast<Computed_field_modify_data *>(field_modify_void);
+	if (state && field_modify)
+	{
+		Cmiss_field_id source_field = 0;
+		if ((NULL != field_modify->get_field()) &&
+			(NULL != (dynamic_cast<Computed_field_not*>(field_modify->get_field()->core))))
+		{
+			source_field = Cmiss_field_get_source_field(field_modify->get_field(), 1);
+		}
+
+		Option_table *option_table = CREATE(Option_table)();
+		/* field */
+		Set_Computed_field_conditional_data set_source_field_data;
+		set_source_field_data.computed_field_manager = field_modify->get_field_manager();
+		set_source_field_data.conditional_function = Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		Option_table_add_Computed_field_conditional_entry(option_table, "field", &source_field,
+			&set_source_field_data);
+		return_code = Option_table_multi_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+
+		if (return_code)
+		{
+			return_code = field_modify->update_field_and_deaccess(
+				Cmiss_field_module_create_not(field_modify->get_field_module(), source_field));
+		}
+		Cmiss_field_destroy(&source_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_not.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return return_code;
+}
+
 int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
@@ -1959,6 +2068,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_is_defined_type_string, 
 			define_Computed_field_type_is_defined,
+			computed_field_logical_operators_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_not_type_string,
+			define_Computed_field_type_not,
 			computed_field_logical_operators_package);
 	}
 	else

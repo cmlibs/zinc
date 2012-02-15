@@ -50,17 +50,6 @@ The public interface to the Cmiss_fields that perform logical operations.
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
- * source_field_one is non-zero, 0 otherwise.
- *
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  First input field
- * @return Newly created field
- */
-Cmiss_field_id Cmiss_field_module_create_not_that(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one);
-
-/***************************************************************************//**
- * Creates a field whose component values are 1 if that component of
  * source_field_one AND source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  *
@@ -126,6 +115,18 @@ Cmiss_field_id Cmiss_field_module_create_less_than(
  */
 Cmiss_field_id Cmiss_field_module_create_or(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one, Cmiss_field_id source_field_two);
+
+/***************************************************************************//**
+ * Creates a field whose component values are 1 if that component of the
+ * source_field is zero, 0 otherwise; effectively a component-wise logical not
+ * operator. Returned field has same number of components as source field.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  The source field.
+ * @return  Newly created field
+ */
+Cmiss_field_id Cmiss_field_module_create_not(Cmiss_field_module_id field_module,
+	Cmiss_field_id source_field);
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of

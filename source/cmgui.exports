@@ -277,6 +277,7 @@ Cmiss_field_module_create_equal_to
 Cmiss_field_module_create_greater_than
 Cmiss_field_module_create_less_than
 Cmiss_field_module_create_or
+Cmiss_field_module_create_not
 Cmiss_field_module_create_xor
 
 /* api/cmiss_field_matrix_operators.h */
