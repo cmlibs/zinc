@@ -586,6 +586,7 @@ COMPUTED_FIELD_INVALID with no components.
 			/* initialise all members of computed_field */	
 			field->number_of_components = 0;
 			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
+			field->coordinate_system.parameters.focus = 1.0;
 			field->component_names = (char **)NULL;
 
 			/* values/derivatives cache and working_values */
@@ -5402,6 +5403,135 @@ int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 	return return_code;
 }
 
+double Cmiss_field_get_attribute_real(Cmiss_field_id field,
+	enum Cmiss_field_attribute attribute)
+{
+	double value = 0.0;
+	if (field)
+	{
+		switch (attribute)
+		{
+		case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+			value = field->coordinate_system.parameters.focus;
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_get_attribute_real.  Invalid attribute");
+			break;
+		}
+	}
+	return value;
+}
+
+int Cmiss_field_set_attribute_real(Cmiss_field_id field,
+	enum Cmiss_field_attribute attribute, double value)
+{
+	int return_code = 0;
+	if (field)
+	{
+		return_code = 1;
+		switch (attribute)
+		{
+		case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+			if (value > 0.0)
+			{
+				field->coordinate_system.parameters.focus = value;
+				// copy to wrapped FE_field:
+				field->core->propagate_coordinate_system();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_field_set_attribute_real.  Coordinate system focus must be positive");
+				return_code = 0;
+			}
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_set_attribute_real.  Cannot set attribute");
+			return_code = 0;
+			break;
+		}
+		if (return_code)
+		{
+			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+		}
+	}
+	return return_code;
+}
+
+enum Cmiss_field_coordinate_system_type Cmiss_field_get_coordinate_system_type(
+	Cmiss_field_id field)
+{
+	enum Cmiss_field_coordinate_system_type coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
+	if (field)
+	{
+		switch (field->coordinate_system.type)
+		{
+			case RECTANGULAR_CARTESIAN:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN;
+				break;
+			case CYLINDRICAL_POLAR:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR;
+				break;
+			case SPHERICAL_POLAR:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR;
+				break;
+			case PROLATE_SPHEROIDAL:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL;
+				break;
+			case OBLATE_SPHEROIDAL:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL;
+				break;
+			case FIBRE:
+				coordinate_system_type = CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE;
+				break;
+			default:
+				break;
+		}
+	}
+	return coordinate_system_type;
+}
+
+int Cmiss_field_set_coordinate_system_type(Cmiss_field_id field,
+	enum Cmiss_field_coordinate_system_type coordinate_system_type)
+{
+	if (!field)
+		return 0;
+	enum Coordinate_system_type type = NOT_APPLICABLE;
+	switch (coordinate_system_type)
+	{
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
+			type = RECTANGULAR_CARTESIAN;
+			break;
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
+			type = CYLINDRICAL_POLAR;
+			break;
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
+			type = SPHERICAL_POLAR;
+			break;
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
+			type = PROLATE_SPHEROIDAL;
+			break;
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
+			type = OBLATE_SPHEROIDAL;
+			break;
+		case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
+			type = FIBRE;
+			break;
+		default:
+			break;
+	}
+	if (type != field->coordinate_system.type)
+	{
+		field->coordinate_system.type = type;
+		// copy to wrapped FE_field:
+		field->core->propagate_coordinate_system();
+		MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	}
+	return 1;
+}
+
 char *Cmiss_field_get_name(Cmiss_field_id field)
 {
 	char *name = NULL;
@@ -5639,28 +5769,31 @@ int Computed_field_manager_message_get_object_change_and_detail(
 class Cmiss_field_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_field_attribute attribute)
-    {
-        const char *enum_string = 0;
-        switch (attribute)
-        {
-        case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
-            enum_string = "IS_MANAGED";
-            break;
-        case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
-            enum_string = "IS_COORDINATE";
-            break;
-        case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
-            enum_string = "NUMBER_OF_COMPONENTS";
-            break;
-        case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
-            enum_string = "NUMBER_OF_SOURCE_FIELDS";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum Cmiss_field_attribute attribute)
+	{
+		const char *enum_string = 0;
+		switch (attribute)
+		{
+			case CMISS_FIELD_ATTRIBUTE_IS_MANAGED:
+				enum_string = "IS_MANAGED";
+				break;
+			case CMISS_FIELD_ATTRIBUTE_IS_COORDINATE:
+				enum_string = "IS_COORDINATE";
+				break;
+			case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
+				enum_string = "NUMBER_OF_COMPONENTS";
+				break;
+			case CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
+				enum_string = "NUMBER_OF_SOURCE_FIELDS";
+				break;
+			case CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
+				enum_string = "COORDINATE_SYSTEM_FOCUS";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
 };
 
 enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(const char *string)
@@ -5672,4 +5805,48 @@ char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute)
 {
 	const char *attribute_string = Cmiss_field_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
+}
+
+class Cmiss_field_coordinate_system_type_conversion
+{
+public:
+	static const char *to_string(enum Cmiss_field_coordinate_system_type coordinate_system_type)
+	{
+		const char *enum_string = 0;
+		switch (coordinate_system_type)
+		{
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
+				enum_string = "RECTANGULAR_CARTESIAN";
+				break;
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
+				enum_string = "CYLINDRICAL_POLAR";
+				break;
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
+				enum_string = "SPHERICAL_POLAR";
+				break;
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
+				enum_string = "PROLATE_SPHEROIDAL";
+				break;
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
+				enum_string = "OBLATE_SPHEROIDAL";
+				break;
+			case CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
+				enum_string = "FIBRE";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum Cmiss_field_coordinate_system_type Cmiss_field_coordinate_system_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum Cmiss_field_coordinate_system_type, Cmiss_field_coordinate_system_type_conversion>(string);
+}
+
+char *Cmiss_field_coordinate_system_type_enum_to_string(enum Cmiss_field_coordinate_system_type coordinate_system_type)
+{
+	const char *coordinate_system_type_string = Cmiss_field_coordinate_system_type_conversion::to_string(coordinate_system_type);
+	return (coordinate_system_type_string ? duplicate_string(coordinate_system_type_string) : 0);
 }

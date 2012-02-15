@@ -72,9 +72,35 @@ enum Cmiss_field_attribute
 	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
 	/*!< Integer number of components of field.
 	 */
-	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4
+	CMISS_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
 	/*!< Integer number of source fields the field is a function of.
 	 */
+	CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS = 5,
+	/*!< Real focus parameter for coordinate system types PROLATE_SPHEROIDAL and
+	 * OBLATE_SPHEROIDAL. Must be positive.
+	 */
+};
+
+/***************************************************************************//**
+ * Field attribute describing the type of space that its values are to be
+ * interpreted in. Although it is usually set for all fields (default is
+ * rectangular cartesian, RC), the attribute is only relevant when field is
+ * used to supply coordinates or vector values, e.g. to graphics, where it
+ * prompts automatic conversion to the underlying RC coordinate system.
+ */
+enum Cmiss_field_coordinate_system_type
+{
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
+		/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
+		/*!< uses CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+	CMISS_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
+		/*!< For Euler angles specifying fibre axes orientation from default
+		 * aligned with element xi coordinates. */
 };
 
 /*
@@ -100,6 +126,26 @@ enum Cmiss_field_attribute Cmiss_field_attribute_enum_from_string(
  * @return  an allocated string which stored the short name of the enum.
  */
 char *Cmiss_field_attribute_enum_to_string(enum Cmiss_field_attribute attribute);
+
+/***************************************************************************//**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param string  string of the short enumerator name
+ * @return  the correct enum type if a match is found.
+ */
+enum Cmiss_field_coordinate_system_type
+	Cmiss_field_coordinate_system_type_enum_from_string(const char *string);
+
+/***************************************************************************//**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call Cmiss_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+char *Cmiss_field_coordinate_system_type_enum_to_string(
+	enum Cmiss_field_coordinate_system_type coordinate_system_type);
 
 /***************************************************************************//**
  * Get the number of components of the field.
@@ -265,6 +311,50 @@ int Cmiss_field_get_attribute_integer(Cmiss_field_id field,
  */
 int Cmiss_field_set_attribute_integer(Cmiss_field_id field,
 	enum Cmiss_field_attribute attribute, int value);
+
+/***************************************************************************//**
+ * Get a scalar real attribute of the field.
+ *
+ * @param field  The field to query.
+ * @param attribute  The identifier of the real attribute to get.
+ * @return  Value of the attribute, or 0.0 if invalid or error.
+ */
+double Cmiss_field_get_attribute_real(Cmiss_field_id field,
+	enum Cmiss_field_attribute attribute);
+
+/***************************************************************************//**
+ * Set a scalar real attribute of the field.
+ *
+ * @param field  The field to set the attribute for.
+ * @param attribute  The identifier of the real attribute to set.
+ * @param value  The new value for the attribute.
+ * @return  Status CMISS_OK if attribute successfully set, any other value if
+ * failed or attribute not valid for this field.
+ */
+int Cmiss_field_set_attribute_real(Cmiss_field_id field,
+	enum Cmiss_field_attribute attribute, double value);
+
+/***************************************************************************//**
+ * Get the coordinate system type to interpret field values in.
+ *
+ * @param field  The field to query.
+ * @return  The type of coordinate system.
+ */
+enum Cmiss_field_coordinate_system_type Cmiss_field_get_coordinate_system_type(
+	Cmiss_field_id field);
+
+/***************************************************************************//**
+ * Set the coordinate system type to interpret field values in.
+ * Note PROLATE_SPHEROIDAL and OBLATE_SPHEROIDAL coordinate system types also
+ * require the real CMISS_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS to be set to a
+ * positive value.
+ *
+ * @param field  The field to modify.
+ * @param coordinate_system_type  The type of coordinate system.
+ * @return  Status CMISS_OK if successfully set, any other value if failed.
+ */
+int Cmiss_field_set_coordinate_system_type(Cmiss_field_id field,
+	enum Cmiss_field_coordinate_system_type coordinate_system_type);
 
 /***************************************************************************//**
  * Return the name of the field.

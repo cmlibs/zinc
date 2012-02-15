@@ -153,6 +153,11 @@ private:
 
 	int set_string_at_location(Field_location* location, const char *string_value);
 
+	virtual void propagate_coordinate_system()
+	{
+		set_FE_field_coordinate_system(fe_field, &(field->coordinate_system));
+	}
+
 	virtual int make_string_cache(int component_number = -1);
 
 	virtual Cmiss_element_id get_mesh_location_value(FE_value *xi) const;

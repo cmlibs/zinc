@@ -380,6 +380,11 @@ public:
 		USE_PARAMETER(message);
 	}
 
+	/** override for fields wrapping other objects with coordinate system, e.g. FE_field */
+	virtual void propagate_coordinate_system()
+	{
+	}
+
 	/** default implementation converts numerical values into string. Override for
 	 * non-string, non-numeric type to make string version of field values.
 	 */
